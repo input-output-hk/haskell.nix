@@ -17,10 +17,12 @@
    $ Cabal2Nix some.cabal > some-cabal.nix
    #+END_SRC
    
-   To produce a `cabal2nix` compatible expression the ~nix/driver.nix~ can
+   To produce a ~cabal2nix~ compatible expression the ~nix/driver.nix~ can
    be used:
    
    #+BEGIN_SRC nix
-   with import <nixpkgs> {}; (import ./nix/driver.nix { cabalexpr = import ./some-cabal.nix; pkgs = pkgs; }) { mkDerivation = x: x; stdenv = stdenv; }
+   with import <nixpkgs> {}; 
+   let pkg = import ./nix/driver.nix { cabalexpr = import ./some-cabal.nix; pkgs = pkgs; };
+   in pkgs.haskellPackages.callPackage pkg {}
    #+END_SRC
 
