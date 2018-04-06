@@ -1,0 +1,26 @@
+
+
+* ~Cabal2Nix~: transform ~cabal~ files into ~nix~ expressions.
+
+  ~Cabal2Nix~ (not to be confused with ~[[https://github.com/nixos/cabal2nix][cabal2nix]]~) translates [[https://github.com/haskell/cabal][Cabal]]'s
+  ~GenericPackageDescription~ into a ~nix~ expression that is parameterized over
+  ~flags~, ~system~ and ~compiler~, allowing the expression to change depending
+  on the flags/system/compiler provided.
+
+  It does **consierably** less than ~cabal2nix~. 
+
+** Usage
+   
+   To produce a nix representation of a cabal file, simply call
+  
+   #+SRC_BEGIN bash
+   $ Cabal2Nix some.cabal > some-cabal.nix
+   #+SRC_END
+   
+   To produce a `cabal2nix` compatible expression the ~nix/driver.nix~ can
+   be used:
+   
+   #+SRC_BEGIN
+   with import <nixpkgs> {}; (import ./nix/driver.nix { cabalexpr = import ./some-cabal.nix; pkgs = pkgs; }) { mkDerivation = x: x; stdenv = stdenv; }
+   #+SRC_END
+

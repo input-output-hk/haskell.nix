@@ -1,4 +1,4 @@
-{ cabalexpr, pkgs }:
+{ cabalexpr, pkgs, compiler ? "Ghc", os ? "OSX", arch ? "X86_64" }:
 with rec {
   # utilities
   collectAttr = a: s: pkgs.lib.lists.fold (e: acc: (if e ? ${a} then e.${a} else []) ++ acc) [] (builtins.attrValues s);
@@ -15,9 +15,9 @@ with rec {
     # we don't want those dependencies.
     hsPkgs = pkgs.haskellPackages // { ${pname} = null; };
     pkgs = pkgs;
-    compiler = cabal.compiler // { isGhc = true; };
-    system = cabal.os // { isOSX = true; }
-          // cabal.arch // { isX86_64 = true; };
+    compiler = cabal.compiler // { "is${compiler}" = true; };
+    system = cabal.os // { "is${os}" = true; }
+          // cabal.arch // { "is${arch}" = true; };
   };
 
   pname = expr.package.identifier.name;
