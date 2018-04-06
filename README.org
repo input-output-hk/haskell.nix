@@ -13,14 +13,14 @@
    
    To produce a nix representation of a cabal file, simply call
   
-   #+SRC_BEGIN bash
+   #+BEGIN_SRC sh
    $ Cabal2Nix some.cabal > some-cabal.nix
-   #+SRC_END
+   #+END_SRC
    
    To produce a `cabal2nix` compatible expression the ~nix/driver.nix~ can
    be used:
    
-   #+SRC_BEGIN
+   #+BEGIN_SRC nix
    with import <nixpkgs> {}; (import ./nix/driver.nix { cabalexpr = import ./some-cabal.nix; pkgs = pkgs; }) { mkDerivation = x: x; stdenv = stdenv; }
-   #+SRC_END
+   #+END_SRC
 
