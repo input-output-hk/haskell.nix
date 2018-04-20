@@ -32,7 +32,7 @@ with rec {
   }; in e;
 };
 { mkDerivation, stdenv, flags ? {} }:
-let expr  = expr0 (stdenv.lib.traceVal flags);
+let expr  = expr0 flags;
     pname = expr.package.identifier.name;
 in mkDerivation ({
   inherit pname;
@@ -46,7 +46,7 @@ in mkDerivation ({
   description = expr.package.synopsis;
   license     = resolve.license stdenv expr.package.license;
 
-  configureFlags = pkgs.lib.mapAttrsToList (flag: enabled: (if enabled then "-f" else "-f-") + flag) flags;
+  configureFlags = pkgs.lib.mapAttrsToList (flag: enabled: (if enabled then "-f" else "-f-") + flag) expr.flags;
 } // pkgs.lib.optionalAttrs (builtins.hasAttr pname expr.components) {
   libraryHaskellDepends = expr.components.${pname}.depends;
   libraryPkgconfigDepends = expr.components.${pname}.pkgconfig or [];
