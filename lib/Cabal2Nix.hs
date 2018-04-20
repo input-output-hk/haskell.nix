@@ -2,9 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Main where
+module Cabal2Nix (cabal2nix) where
 
-import System.Environment (getArgs)
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Verbosity (normal)
 import Distribution.Text (disp)
@@ -17,9 +16,10 @@ import Distribution.Types.ForeignLib
 import Distribution.PackageDescription
 import Distribution.Types.Dependency
 import Distribution.Types.ExeDependency
+import Distribution.Types.PkgconfigDependency
+import Distribution.Types.PkgconfigName
 
 import Data.String (fromString)
-import Nix.Pretty (prettyNix)
 
 -- import Distribution.Types.GenericPackageDescription
 -- import Distribution.Types.PackageDescription
@@ -33,20 +33,22 @@ import Data.Text (Text)
 pkgs, hsPkgs, flags :: Text
 pkgs   = "pkgs"
 hsPkgs = "hsPkgs"
+pkgconfPkgs = "pkgconfPkgs"
 flags  = "_flags"
 
-main :: IO ()
-main = getArgs >>= \case
-  [file] -> do
-    gpd <- readGenericPackageDescription normal file
-    print . prettyNix $
-      mkFunction (mkParamset [ ("system", Nothing)
-                             , ("compiler", Nothing)
-                             , ("flags", Just $ mkNonRecSet [])
-                             , (pkgs, Nothing)
-                             , (hsPkgs, Nothing)]) $
-      mkLets [ flags $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd) $// mkSym "flags" ] $ toNix gpd
-  _ -> putStrLn "call with cabalfile (Cabal2Nix file.cabal)."
+cabal2nix :: FilePath -> IO NExpr
+cabal2nix = fmap go . readGenericPackageDescription normal
+  where go :: GenericPackageDescription -> NExpr
+        go gpd = mkFunction args . lets gpd $ toNix gpd
+        args :: Params NExpr
+        args = mkParamset [ ("system", Nothing)
+                          , ("compiler", Nothing)
+                          , ("flags", Just $ mkNonRecSet [])
+                          , (pkgs, Nothing)
+                          , (hsPkgs, Nothing)
+                          , (pkgconfPkgs, Nothing)]
+        lets :: GenericPackageDescription -> NExpr -> NExpr
+        lets gpd = mkLets [ flags $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd) $// mkSym "flags" ]
 
 class HasBuildInfo a where
   getBuildInfo :: a -> BuildInfo
@@ -123,15 +125,16 @@ mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
 instance ToNixExpr GenericPackageDescription where
-  toNix gpd = mkNonRecSet [ "package"    $= (toNix (packageDescription gpd))
+  toNix gpd = mkNonRecSet [ "flags"      $= mkSym flags -- keep track of the final flags; and allow them to be inspected
+                          , "package"    $= (toNix (packageDescription gpd))
                           , "components" $= components ]
     where packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd
           component unQualName comp
             = name $= mkNonRecSet ([ "depends "   $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++
                                    [ "libs"       $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
-                                   [ "frameworks" $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ])
+                                   [ "frameworks" $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
+                                   [ "pkgconfig"  $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ])
               where name = fromString $ unUnqualComponentName unQualName
-
           components = mkNonRecSet $
             [ component packageName lib | Just lib <- [condLibrary gpd] ] ++
             (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condSubLibraries gpd ]) ++
@@ -145,6 +148,9 @@ instance ToNixExpr Dependency where
 
 instance ToNixExpr SysDependency where
   toNix = mkDot (mkSym pkgs) . fromString . unSysDependency
+
+instance ToNixExpr PkgconfigDependency where
+  toNix (PkgconfigDependency name _versionRange)= mkDot (mkSym pkgconfPkgs) . fromString . unPkgconfigName $ name
 
 instance ToNixExpr ExeDependency where
   toNix (ExeDependency pkgName _unqualCompName _versionRange) = mkSym . fromString . show . pretty $ pkgName
@@ -171,7 +177,7 @@ instance ToNixExpr a => ToNixExpr (Condition a) where
 instance (Foldable t, ToNixExpr (t a), ToNixExpr v, ToNixExpr c) => ToNixExpr (CondBranch v c (t a)) where
   toNix (CondBranch c t Nothing) = case toNix t of
     (Fix (NList [e])) -> mkSym pkgs !. "lib" !. "optional" @@ toNix c @@ e
-    e -> mkSym "optionals" @@ toNix c @@ e
+    e -> mkSym pkgs !. "lib" !. "optionals" @@ toNix c @@ e
   toNix (CondBranch _c t (Just f)) | toNix t == toNix f = toNix t
   toNix (CondBranch c  t (Just f)) = mkIf (toNix c) (toNix t) (toNix f)
 
