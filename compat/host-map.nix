@@ -1,12 +1,12 @@
 stdenv: with stdenv.hostPlatform; {
   os = if isLinux   then "Linux"   else
        if isWindows then "Windows" else
-       if isMacOS   then "OSX"     else
-       if isFreeBSD then "FreeBSD" else
-       if isOpenBSD then "OpenBSD" else
-       if isNetBSD  then "NetBSD"  else
+       if isMacOS   then "Osx"     else
+       if isFreeBSD then "Freebsd" else
+       if isOpenBSD then "Openbsd" else
+       if isNetBSD  then "Netbsd"  else
        if isHurd    then "Hurd"    else
-       if isiOS     then "IOS"     else
+       if isiOS     then "Ios"     else
        if isAndroid then "Android" else
        throw "Unknown OS";
   arch = if isx86     && is32bit then "I386"    else

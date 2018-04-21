@@ -19,10 +19,10 @@
     # OSs
     isLinux     = false;
     isWindows   = false;
-    isOSX       = false;
-    isFreeBSD   = false;
-    isOpenBSD   = false;
-    isNetBSD    = false;
+    isOsx       = false;
+    isFreebsd   = false;
+    isOpenbsd   = false;
+    isNetbsd    = false;
     isDragonFly = false;
     isSolaris   = false;
     isAIX       = false;

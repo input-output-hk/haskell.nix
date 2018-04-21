@@ -1,6 +1,6 @@
-{ cabalexpr, pkgs, compiler ? "Ghc", os ? "OSX", arch ? "X86_64" }:
+{ cabalexpr, pkgs, compiler ? "Ghc", version, os ? "Osx", arch ? "X86_64" }:
 assert (builtins.elem compiler ["Ghc" "Ghcjs" "Nhc" "Yhc" "Hugs" "Hbc" "Helium" "Jhc" "Lhc" "Uhc" "Eta"]);
-assert (builtins.elem os       ["Linux" "Windows" "OSX" "FreeBSD" "OpenBSD" "NetBSD" "DragonFly" "Solaris" "AIX" "HPUX" "IRIX" "HaLVM" "Hurd" "IOS" "Android" "Ghcjs"]);
+assert (builtins.elem os       ["Linux" "Windows" "Osx" "FreeBSD" "OpenBSD" "NetBSD" "DragonFly" "Solaris" "AIX" "HPUX" "IRIX" "HaLVM" "Hurd" "IOS" "Android" "Ghcjs"]);
 assert (builtins.elem arch     ["I386" "X86_64" "PPC" "PPC64" "Sparc" "Arm" "Aarch64" "Mips" "SH" "IA64" "S390" "Alpha" "Hppa" "Rs6000" "M68k" "Vax" "JavaScript"]);
 
 with rec {
@@ -26,7 +26,16 @@ with rec {
     # pkgconfig name -> nix package
     pkgconfPkgs = { libpcre = pkgs.pcre; };
 
-    compiler = cabal.compiler // { "is${compiler}" = true; };
+    compiler = cabal.compiler // {
+      "is${compiler}" = true;
+      version = rec {
+        eq = v: builtins.compareVersions version v == 0;
+        lt = v: builtins.compareVersions version v == -1;
+        gt = v: builtins.compareVersions version v == 1;
+        le = v: eq v || lt v;
+        ge = v: eq v || gt v;
+      };
+    };
     system = cabal.os // { "is${os}" = true; }
           // cabal.arch // { "is${arch}" = true; };
   }; in e;
@@ -50,10 +59,14 @@ in mkDerivation ({
 } // pkgs.lib.optionalAttrs (builtins.hasAttr pname expr.components) {
   libraryHaskellDepends = expr.components.${pname}.depends;
   libraryPkgconfigDepends = expr.components.${pname}.pkgconfig or [];
+  librarySystemDepends = expr.components.${pname}.libs or [];
+  libraryToolDepends   = expr.components.${pname}.build-tools or [];
 } // pkgs.lib.optionalAttrs (builtins.hasAttr "exes" expr.components) {
   executableHaskellDepends = collectAttr "depends" expr.components.exes;
 } // pkgs.lib.optionalAttrs (builtins.hasAttr "tests" expr.components) {
   testHaskellDepends = collectAttr "depends" expr.components.tests;
 } // pkgs.lib.optionalAttrs (builtins.hasAttr "benchmarks" expr.components) {
   benchmarkHaskellDepends = collectAttr "depends" expr.components.benchmarks;
+} // pkgs.lib.optionalAttrs (builtins.hasAttr "src" expr) {
+  inherit (expr) src;
 })
