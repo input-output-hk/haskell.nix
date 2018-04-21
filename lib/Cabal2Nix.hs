@@ -16,8 +16,11 @@ import Distribution.Types.ForeignLib
 import Distribution.PackageDescription
 import Distribution.Types.Dependency
 import Distribution.Types.ExeDependency
+import Distribution.Types.LegacyExeDependency
 import Distribution.Types.PkgconfigDependency
 import Distribution.Types.PkgconfigName
+import Distribution.Types.VersionRange
+import Distribution.Compiler
 
 import Data.String (fromString)
 
@@ -133,7 +136,8 @@ instance ToNixExpr GenericPackageDescription where
             = name $= mkNonRecSet ([ "depends "   $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++
                                    [ "libs"       $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
                                    [ "frameworks" $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
-                                   [ "pkgconfig"  $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ])
+                                   [ "pkgconfig"  $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
+                                   [ "build-tools"$= toNix deps | Just deps <- [shakeTree . fmap (                 buildTools . getBuildInfo) $ comp ] ])
               where name = fromString $ unUnqualComponentName unQualName
           components = mkNonRecSet $
             [ component packageName lib | Just lib <- [condLibrary gpd] ] ++
@@ -155,6 +159,9 @@ instance ToNixExpr PkgconfigDependency where
 instance ToNixExpr ExeDependency where
   toNix (ExeDependency pkgName _unqualCompName _versionRange) = mkSym . fromString . show . pretty $ pkgName
 
+instance ToNixExpr LegacyExeDependency where
+  toNix (LegacyExeDependency name _versionRange) = mkSym hsPkgs !. fromString name
+
 instance {-# OVERLAPPABLE #-} ToNixExpr String where
   toNix = mkStr . fromString
 
@@ -165,7 +172,22 @@ instance ToNixExpr ConfVar where
   toNix (OS os) = mkSym "system" !. (fromString . ("is" ++) . capitalize . show . pretty $ os)
   toNix (Arch arch) = mkSym "system" !. (fromString . ("is" ++) . capitalize . show . pretty $ arch)
   toNix (Flag flag) = mkSym flags !. (fromString . show . pretty $ flag)
-  toNix (Impl flavour _range) = mkSym "compiler" !. (fromString . ("is" ++) . capitalize . show . pretty $ flavour)
+  toNix (Impl flavour range) = toNix flavour $&& toNix range
+
+instance ToNixExpr CompilerFlavor where
+  toNix flavour = mkSym "compiler" !. (fromString . ("is" ++) . capitalize . show . pretty $ flavour)
+
+instance ToNixExpr VersionRange where
+  toNix AnyVersion              = mkBool True
+  toNix (ThisVersion       ver) = mkSym "compiler" !. "version" !. "eq" @@ mkStr (fromString (show (disp ver)))
+  toNix (LaterVersion      ver) = mkSym "compiler" !. "version" !. "gt" @@ mkStr (fromString (show (disp ver)))
+  toNix (OrLaterVersion    ver) = mkSym "compiler" !. "version" !. "ge" @@ mkStr (fromString (show (disp ver)))
+  toNix (EarlierVersion    ver) = mkSym "compiler" !. "version" !. "lt" @@ mkStr (fromString (show (disp ver)))
+  toNix (OrEarlierVersion  ver) = mkSym "compiler" !. "version" !. "le" @@ mkStr (fromString (show (disp ver)))
+  toNix (WildcardVersion   ver) = mkBool False
+--  toNix (MajorBoundVersion ver) = mkSym "compiler" !. "version" !. "eq" @@ mkStr (fromString (show (disp ver)))
+  toNix (IntersectVersionRanges v1 v2) = toNix v1 $&& toNix v2
+  toNix x = error $ "ToNixExpr VersionRange for `" ++ (show x) ++ "` not implemented!"
 
 instance ToNixExpr a => ToNixExpr (Condition a) where
   toNix (Var a) = toNix a

@@ -75,5 +75,7 @@ executable Lts2Nix
                      , filepath
                      , directory
                      , unordered-containers
+
+                     , Cabal
   hs-source-dirs:      lts2nix
   default-language:    Haskell2010
