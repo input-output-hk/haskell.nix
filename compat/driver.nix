@@ -69,4 +69,6 @@ in mkDerivation ({
   benchmarkHaskellDepends = collectAttr "depends" expr.components.benchmarks;
 } // pkgs.lib.optionalAttrs (builtins.hasAttr "src" expr) {
   inherit (expr) src;
+} // pkgs.lib.optionalAttrs (builtins.hasAttr "postUnpack" expr) {
+  inherit (expr) postUnpack;
 })
