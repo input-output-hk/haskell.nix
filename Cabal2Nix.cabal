@@ -19,8 +19,13 @@ library
   ghc-options:         -Wall
   exposed-modules:     Cabal2Nix
                      , Cabal2Nix.Util
+                     , Distribution.Nixpkgs.Fetch
   build-depends:       base >=4.11 && <4.12
                      , hnix >=0.4
+                     , aeson
+                     , process
+                     , deepseq
+                     , transformers
                      , data-fix
                      , Cabal
                      , text
@@ -75,7 +80,26 @@ executable Lts2Nix
                      , filepath
                      , directory
                      , unordered-containers
-
                      , Cabal
   hs-source-dirs:      lts2nix
+  default-language:    Haskell2010
+
+executable Stack2Nix
+  ghc-options:         -Wall
+  main-is:             Main.hs
+  build-depends:       base >=4.11 && <4.12
+                     , Cabal2Nix
+                     , transformers
+                     , hnix
+                     , yaml
+                     , aeson
+                     , microlens
+                     , microlens-aeson
+                     , text
+                     , Cabal
+                     , vector
+                     , ansi-wl-pprint
+                     , directory
+                     , filepath
+  hs-source-dirs:      stack2nix
   default-language:    Haskell2010

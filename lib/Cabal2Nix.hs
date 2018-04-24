@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Cabal2Nix (cabal2nix) where
+module Cabal2Nix (cabal2nix, Src(..)) where
 
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
 import Distribution.Verbosity (normal)
@@ -13,7 +13,7 @@ import Data.Char (toUpper)
 import Distribution.Types.CondTree
 import Distribution.Types.Library
 import Distribution.Types.ForeignLib
-import Distribution.PackageDescription
+import Distribution.PackageDescription hiding (Git)
 import Distribution.Types.Dependency
 import Distribution.Types.ExeDependency
 import Distribution.Types.LegacyExeDependency
@@ -33,16 +33,25 @@ import Nix.Expr
 import Data.Fix(Fix(..))
 import Data.Text (Text)
 
+data Src
+  = Path FilePath
+  | Git String String (Maybe String) (Maybe String)
+  deriving Show
+
 pkgs, hsPkgs, flags :: Text
 pkgs   = "pkgs"
 hsPkgs = "hsPkgs"
 pkgconfPkgs = "pkgconfPkgs"
 flags  = "_flags"
 
-cabal2nix :: FilePath -> IO NExpr
-cabal2nix = fmap go . readGenericPackageDescription normal
+($//?) :: NExpr -> Maybe NExpr -> NExpr
+lhs $//? (Just e) = lhs $// e
+lhs $//? Nothing  = lhs
+
+cabal2nix :: Maybe Src -> FilePath -> IO NExpr
+cabal2nix src = fmap go . readGenericPackageDescription normal
   where go :: GenericPackageDescription -> NExpr
-        go gpd = mkFunction args . lets gpd $ toNix gpd
+        go gpd = mkFunction args . lets gpd $ toNix gpd $//? (toNix <$> src)
         args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
@@ -101,6 +110,22 @@ class ToNixExpr a where
 class ToNixBinding a where
   toNixBinding :: a -> Binding NExpr
 
+instance ToNixExpr Src where
+  toNix (Path p) = mkRecSet [ "src" $= mkRelPath p ]
+  toNix (Git url rev mbSha256 mbPath)
+    = mkNonRecSet $
+      [ "src" $= (mkSym pkgs !. "fetchgit" @@ mkNonRecSet
+        [ "url"    $= mkStr (fromString url)
+        , "rev"    $= mkStr (fromString rev)
+        , "sha256" $= case mbSha256 of
+                        Just sha256 -> mkStr (fromString sha256)
+                        Nothing     -> mkNull
+        ])
+      ] <>
+      [ "postUnpack"
+        $= mkStr (fromString $ "sourceRoot+=/" <> root <> "; echo source root reset to $sourceRoot")
+      | Just root <- [mbPath] ]
+
 instance ToNixExpr PackageIdentifier where
   toNix ident = mkNonRecSet [ "name"    $= mkStr (fromString (show (disp (pkgName ident))))
                             , "version" $= mkStr (fromString (show (disp (pkgVersion ident))))]
@@ -128,9 +153,9 @@ mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
 instance ToNixExpr GenericPackageDescription where
-  toNix gpd = mkNonRecSet [ "flags"      $= mkSym flags -- keep track of the final flags; and allow them to be inspected
-                          , "package"    $= (toNix (packageDescription gpd))
-                          , "components" $= components ]
+  toNix gpd = mkNonRecSet $ [ "flags"      $= mkSym flags -- keep track of the final flags; and allow them to be inspected
+                            , "package"    $= (toNix (packageDescription gpd))
+                            , "components" $= components ]
     where packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd
           component unQualName comp
             = name $= mkNonRecSet ([ "depends "   $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++

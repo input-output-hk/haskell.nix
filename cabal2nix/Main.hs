@@ -28,7 +28,7 @@ writeDoc file doc =
 main :: IO ()
 main = getArgs >>= \case
   [file] -> doesDirectoryExist file >>= \case
-    False -> print . prettyNix =<< cabal2nix file
+    False -> print . prettyNix =<< cabal2nix (Just (Path ".")) file
     True  -> print . prettyNix =<< cabalexprs file
   _ -> putStrLn "call with cabalfile (Cabal2Nix file.cabal)."
 
@@ -45,7 +45,7 @@ expr p pkg version = do
   doesFileExist cabal >>= \case
     True ->
       do createDirectoryIfMissing True pkg'
-         writeDoc nix =<< prettyNix <$> cabal2nix cabal
+         writeDoc nix =<< prettyNix <$> cabal2nix Nothing cabal
          pure $ version' $= mkRelPath nix
     False -> pure $ version' $= mkNull
 

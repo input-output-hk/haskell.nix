@@ -25,11 +25,11 @@ main = getArgs >>= \case
   _ -> putStrLn "call with /path/to/lts.yaml (Lts2Nix /path/to/lts-X.Y.yaml)"
 
 ltsPackages :: FilePath -> IO NExpr
-ltsPackages lts = do
-  evalue <- decodeFileEither lts
-  case evalue of
-    Left e -> error (show e)
-    Right value -> pure $ lts2nix value
+ltsPackages lts =
+  do evalue <- decodeFileEither lts
+     case evalue of
+       Left e -> error (show e)
+       Right value -> pure $ lts2nix value
 
 lts2nix :: Value -> NExpr
 lts2nix lts = mkFunction "hackage" . mkNonRecSet $
