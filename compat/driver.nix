@@ -43,10 +43,11 @@ with rec {
 { mkDerivation, stdenv, flags ? {} }:
 let expr  = expr0 flags;
     pname = expr.package.identifier.name;
+    pversion = expr.package.identifier.version;
 in mkDerivation ({
   inherit pname;
-  version = expr.package.identifier.version;
-  sha256 = null;
+  version = pversion;
+  sha256 = (import <hackage/all-cabal-hashes.nix>).${pname}.${pversion} or null;
 
   isLibrary = builtins.hasAttr pname expr.components;
   isExecutable = builtins.hasAttr "exes" expr.components;
