@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
@@ -13,10 +14,8 @@ import Data.Aeson
 import Lens.Micro
 import Lens.Micro.Aeson
 
-import Data.HashMap.Strict (toList)
 
-import Cabal2Nix.Util
-import Data.Text as T (filter)
+import           Cabal2Nix.Plan
 
 main :: IO ()
 main = getArgs >>= \case
@@ -25,25 +24,18 @@ main = getArgs >>= \case
   _ -> putStrLn "call with /path/to/lts.yaml (Lts2Nix /path/to/lts-X.Y.yaml)"
 
 ltsPackages :: FilePath -> IO NExpr
-ltsPackages lts =
-  do evalue <- decodeFileEither lts
-     case evalue of
-       Left e -> error (show e)
-       Right value -> pure $ lts2nix value
+ltsPackages lts = do
+  evalue <- decodeFileEither lts
+  case evalue of
+    Left  e     -> error (show e)
+    Right value -> pure $ plan2nix $ lts2plan value
 
-lts2nix :: Value -> NExpr
-lts2nix lts = mkFunction "hackage" . mkNonRecSet $
-  [ "packages"          $= (mkNonRecSet $ uncurry bind  <$> toList pkgs)
-  , "compiler" $= mkNonRecSet
-    [ "version"  $= mkStr (lts ^. key "system-info" . key "ghc-version" . _String)
-    , "nix-name" $= mkStr ("ghc" <> (T.filter (/= '.') $ lts ^. key "system-info" . key "ghc-version" . _String))
-    , "packages" $= (mkNonRecSet $ uncurry bind' <$> toList corePkgs)
-    ]
-  ]
-  where pkgs = lts ^. key "packages" . _Object
-              <&> (^. key "version" . _String)
-        corePkgs = lts ^. key "system-info" . key "core-packages" . _Object
-                   <&> (^. _String)
-        bind pkg ver = quoted pkg $= (mkSym "hackage" @. pkg @. ver)
-        bind' pkg ver = quoted pkg $= mkStr ver
-
+lts2plan :: Value -> Plan
+lts2plan lts = Plan {packages , compilerVersion , compilerPackages }
+ where
+  packages = lts ^. key "packages" . _Object <&> \v -> Package
+    { packageVersion  = v ^. key "version" . _String
+    , packageRevision = v ^? key "cabal-file-info" . key "hashes" . key "SHA256" . _String
+    }
+  compilerVersion = lts ^. key "system-info" . key "ghc-version" . _String
+  compilerPackages = lts ^. key "system-info" . key "core-packages" . _Object <&> (^. _String)
