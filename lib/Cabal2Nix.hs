@@ -21,6 +21,8 @@ import Distribution.Types.PkgconfigDependency
 import Distribution.Types.PkgconfigName
 import Distribution.Types.VersionRange
 import Distribution.Compiler
+import Distribution.Types.PackageName (PackageName)
+import Distribution.Simple.BuildToolDepends (getAllToolDependencies)
 
 import Data.String (fromString)
 
@@ -148,6 +150,7 @@ instance ToNixExpr PackageDescription where
                          , "buildType"   $= mkStr (fromString (show (pretty (buildType pd)))) ]
 
 newtype SysDependency = SysDependency { unSysDependency :: String } deriving (Show, Eq, Ord)
+newtype BuildToolDependency = BuildToolDependency { unBuildToolDependency :: PackageName } deriving (Show, Eq, Ord)
 
 mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
@@ -162,8 +165,9 @@ instance ToNixExpr GenericPackageDescription where
                                    [ "libs"       $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
                                    [ "frameworks" $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
                                    [ "pkgconfig"  $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
-                                   [ "build-tools"$= toNix deps | Just deps <- [shakeTree . fmap (                 buildTools . getBuildInfo) $ comp ] ])
+                                   [ "build-tools"$= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ])
               where name = fromString $ unUnqualComponentName unQualName
+                    toolDeps bi = [ BuildToolDependency pkg | ExeDependency pkg _ _ <- getAllToolDependencies (packageDescription gpd) bi ]
           components = mkNonRecSet $
             [ component packageName lib | Just lib <- [condLibrary gpd] ] ++
             (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condSubLibraries gpd ]) ++
@@ -183,6 +187,9 @@ instance ToNixExpr PkgconfigDependency where
 
 instance ToNixExpr ExeDependency where
   toNix (ExeDependency pkgName _unqualCompName _versionRange) = mkSym . fromString . show . pretty $ pkgName
+
+instance ToNixExpr BuildToolDependency where
+  toNix (BuildToolDependency pkgName) = mkSym hsPkgs !. "buildPackages" !. (fromString . show . pretty $ pkgName)
 
 instance ToNixExpr LegacyExeDependency where
   toNix (LegacyExeDependency name _versionRange) = mkSym hsPkgs !. fromString name
