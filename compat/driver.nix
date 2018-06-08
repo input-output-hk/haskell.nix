@@ -60,10 +60,11 @@ in mkDerivation ({
 } // pkgs.lib.optionalAttrs (builtins.hasAttr pname expr.components) {
   libraryHaskellDepends = expr.components.${pname}.depends;
   libraryPkgconfigDepends = expr.components.${pname}.pkgconfig or [];
-  librarySystemDepends = expr.components.${pname}.libs or [];
+  librarySystemDepends = expr.components.${pname}.libs or []; 
   libraryToolDepends   = expr.components.${pname}.build-tools or [];
 } // pkgs.lib.optionalAttrs (builtins.hasAttr "exes" expr.components) {
   executableHaskellDepends = collectAttr "depends" expr.components.exes;
+  executableToolDepends    = collectAttr "build-tools" expr.components.exes;
 } // pkgs.lib.optionalAttrs (builtins.hasAttr "tests" expr.components) {
   testHaskellDepends = collectAttr "depends" expr.components.tests;
 } // pkgs.lib.optionalAttrs (builtins.hasAttr "benchmarks" expr.components) {
