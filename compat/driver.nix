@@ -40,12 +40,20 @@ with rec {
           // cabal.arch // { "is${arch}" = true; };
   }; in e;
 };
-{ mkDerivation, stdenv, flags ? {} }:
+# The `doVerbose` here is a nasty hack.  We want to be
+# able to say <package>.override { <some-generic-builder-arg> = <value };
+# however due to the wrapping here, we'd need to capture all arguments
+# and strip out `mkDerivation, stdenv, flags` and then inherit them all.
+# OR define the keys and inherit them here (which is what we did with
+# `doVerbose`.  The better solution then is to try and drop those values
+# from an @args caputre instead.
+{ mkDerivation, stdenv, flags ? {}, doVerbose ? false }:
 let expr  = expr0 flags;
     pname = expr.package.identifier.name;
     pversion = expr.package.identifier.version;
 in mkDerivation ({
   inherit pname;
+  inherit doVerbose;
   version = pversion;
   sha256 = (import <hackage/all-cabal-hashes.nix>).${pname}.${pversion} or null;
 
