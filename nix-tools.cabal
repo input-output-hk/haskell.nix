@@ -35,7 +35,7 @@ library
   default-language:    Haskell2010
  
 
-executable fromCabal
+executable cabal-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
   build-depends:       base >=4.11 && <4.12
@@ -47,7 +47,7 @@ executable fromCabal
   hs-source-dirs:      cabal2nix
   default-language:    Haskell2010
 
-executable fromHashes
+executable hashes-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
   build-depends:       base >=4.11 && <4.12
@@ -63,7 +63,7 @@ executable fromHashes
   hs-source-dirs:      hashes2nix
   default-language:    Haskell2010
 
-executable fromLts
+executable lts-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
   build-depends:       base >=4.11 && <4.12
@@ -81,7 +81,7 @@ executable fromLts
   hs-source-dirs:      lts2nix
   default-language:    Haskell2010
 
-executable fromStack
+executable stack-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
   build-depends:       base >=4.11 && <4.12
