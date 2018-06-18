@@ -1,8 +1,8 @@
 
 
-* ~Cabal2Nix~: transform ~cabal~ files into ~nix~ expressions.
+* ~cabal-to-nix~: transform ~cabal~ files into ~nix~ expressions.
 
-  ~Cabal2Nix~ (not to be confused with ~[[https://github.com/nixos/cabal2nix][cabal2nix]]~) translates [[https://github.com/haskell/cabal][Cabal]]'s
+  ~cabal-to-nix~ (not to be confused with ~[[https://github.com/nixos/cabal2nix][cabal2nix]]~) translates [[https://github.com/haskell/cabal][Cabal]]'s
   ~GenericPackageDescription~ into a ~nix~ expression that is parameterized over
   ~flags~, ~system~ and ~compiler~, allowing the expression to change depending
   on the flags/system/compiler provided.
@@ -14,7 +14,7 @@
    To produce a nix representation of a cabal file, simply call
   
    #+BEGIN_SRC sh
-   $ Cabal2Nix some.cabal > some-cabal.nix
+   $ cabal-to-nix some.cabal > some-cabal.nix
    #+END_SRC
    
    To produce a ~cabal2nix~ compatible expression the ~nix/driver.nix~ can
@@ -26,3 +26,32 @@
    in pkgs.haskellPackages.callPackage pkg {}
    #+END_SRC
 
+* ~hashes-to-nix~: transfrom all cabal hashes to nix expressions
+
+** Usage
+   
+   To produce a nix expression for each item int he ~all-cabal-hashes~ folder use:
+
+   #+BEGIN_SRC sh
+   $ hashes-to-nix all-cabal-hashes > all-cabal-hashes.nix
+   #+END_SRC
+
+* ~lts-to-nix~: transform a stackage lts set to a nix expression
+
+** Usage
+
+   To produce a nix expression for a given lts/nightly set:
+
+   #+BEING_SRC sh
+   $ lts-to-nix $lts > $(basename ${lts%.yaml}.nix); done
+   #+END_SRC
+
+* ~stack-to-nix~: transform a stack project to a nix expression
+
+** Usage
+
+   To produce a nix expression from a stack.yaml file
+
+   #+BEING_SRC sh
+   $ stack-to-nix stack.yaml > stack-pkgs.nix
+   #+END_SRC
