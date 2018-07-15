@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Main where
 
 import System.Environment (getArgs)
@@ -144,7 +145,7 @@ packages2nix (Stack pkgs _) =
          fmap concat . forM subdirs $ \subdir ->
            do fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
                     (Source url rev UnknownHash subdir) >>= \case
-                (Just (_derivSource, bindings)) -> return bindings
+                (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
                 _ -> return []
        _ -> return []
   where cabalFromPath
@@ -152,20 +153,19 @@ packages2nix (Stack pkgs _) =
           -> String    -- Revision
           -> FilePath  -- Subdir
           -> FilePath  -- Local Directory
-          -> MaybeT IO [Binding NExpr]
+          -> MaybeT IO (String -> IO [Binding NExpr])
         cabalFromPath url rev subdir path = do
           d <- liftIO $ doesDirectoryExist path
           unless d $ fail ("not a directory: " ++ path)
           cabalFiles <- liftIO $ findCabalFiles path
-          forM cabalFiles $ \cabalFile ->
+          return $ \sha256 ->
+            forM cabalFiles $ \cabalFile -> do
             let pkg = dropExtension . takeFileName $ cabalFile
                 nix = ".stack.nix" </> pkg <.> "nix"
-                sha256  = Nothing
                 subdir' = if subdir == "." then Nothing
                           else Just subdir
-                src = Just $ C2N.Git url rev sha256 subdir'
-            in do liftIO $ createDirectoryIfMissing True (takeDirectory nix)
-                  liftIO $ writeDoc nix =<<
-                    prettyNix <$> cabal2nix src (path </> cabalFile)
-                  return $ fromString pkg $= mkPath False nix
-
+                src = Just $ C2N.Git url rev (Just sha256) subdir'
+            createDirectoryIfMissing True (takeDirectory nix)
+            writeDoc nix =<<
+              prettyNix <$> cabal2nix src (path </> cabalFile)
+            return $ fromString pkg $= mkPath False nix
