@@ -35,6 +35,8 @@ import Nix.Expr
 import Data.Fix(Fix(..))
 import Data.Text (Text)
 
+import Cabal2Nix.Util (quoted)
+
 data Src
   = Path FilePath
   | Git String String (Maybe String) (Maybe String)
@@ -94,7 +96,6 @@ shakeBranch :: (Foldable t, Foldable f) => CondBranch v (t c) (f a) -> Maybe (Co
 shakeBranch (CondBranch c t f) = case (shakeTree t, f >>= shakeTree) of
   (Nothing, Nothing) -> Nothing
   (Nothing, Just f') -> shakeBranch (CondBranch (CNot c) f' Nothing)
-  (Just (CondNode d _c [(CondBranch c' t' f')]), Nothing) | null d -> Just $ CondBranch (CAnd c c') t' f'
   (Just t', f') -> Just (CondBranch c t' f')
 
 --- String helper
@@ -161,7 +162,8 @@ instance ToNixExpr GenericPackageDescription where
                             , "components" $= components ]
     where packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd
           component unQualName comp
-            = name $= mkNonRecSet ([ "depends "   $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++
+            = quoted name $=
+                      mkNonRecSet ([ "depends "   $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++
                                    [ "libs"       $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
                                    [ "frameworks" $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
                                    [ "pkgconfig"  $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
