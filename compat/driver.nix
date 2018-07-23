@@ -1,3 +1,4 @@
+hackage:
 { cabalexpr, pkgs, compiler ? "Ghc", version, os ? "Osx", arch ? "X86_64" }:
 assert (builtins.elem compiler ["Ghc" "Ghcjs" "Nhc" "Yhc" "Hugs" "Hbc" "Helium" "Jhc" "Lhc" "Uhc" "Eta"]);
 assert (builtins.elem os       ["Linux" "Windows" "Osx" "FreeBSD" "OpenBSD" "NetBSD" "DragonFly" "Solaris" "AIX" "HPUX" "IRIX" "HaLVM" "Hurd" "IOS" "Android" "Ghcjs"]);
@@ -50,7 +51,7 @@ let expr  = expr0 flags;
 in mkDerivation ({
   inherit pname;
   version = pversion;
-  sha256 = (import <hackage/all-cabal-hashes.nix>).${pname}.${pversion} or null;
+  sha256 = hackage.hashes.${pname}.${pversion} or null;
 
   isLibrary = builtins.hasAttr pname expr.components;
   isExecutable = builtins.hasAttr "exes" expr.components;

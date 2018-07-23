@@ -1,1 +1,1 @@
-{ compat = import ./compat; }
+hackage: { compat = import ./compat hackage; }
