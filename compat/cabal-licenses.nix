@@ -4,6 +4,8 @@ stdenv: with stdenv.lib.licenses;
   MIT = mit;
   ISC = isc;
   "LGPL-3.0-only" = lgpl3;
+  "GPL-3.0-only"  = gpl3;
+  "Apache-2.0"    = asl20;
   # Generic
   LicenseRef-LGPL = "LGPL";
   LicenseRef-PublicDomain = publicDomain;
