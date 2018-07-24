@@ -1,1 +1,4 @@
 packages: .
+allow-newer: hnix-0.4.0:deriving-compat
+
+-- constraints: hnix == 0.4.0
