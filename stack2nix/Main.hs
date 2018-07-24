@@ -37,6 +37,7 @@ import Control.Applicative ((<|>))
 import Distribution.Nixpkgs.Fetch
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
+import Control.Exception (catch, SomeException(..))
 
 --------------------------------------------------------------------------------
 -- stack.yaml parsing (subset only)
@@ -126,6 +127,33 @@ findCabalFiles :: FilePath -> IO [FilePath]
 findCabalFiles =
   fmap (filter (isSuffixOf ".cabal")) . listDirectory
 
+readCache :: IO [( String -- url
+                 , String -- rev
+                 , String -- subdir
+                 , String -- sha256
+                 , String -- pkgname
+                 , String -- nixexpr-path
+                 )]
+readCache = fmap (toTuple . words) . lines <$> readFile ".stack-to-nix.cache"
+  where toTuple [ url, rev, subdir, sha256, pkgname, exprPath ]
+          = ( url, rev, subdir, sha256, pkgname, exprPath )
+
+appendCache :: String -> String -> String -> String -> String -> String -> IO ()
+appendCache url rev subdir sha256 pkgname exprPath = do
+  appendFile ".stack-to-nix.cache" $ unwords [ url, rev, subdir, sha256, pkgname, exprPath ]
+  appendFile ".stack-to-nix.cache" "\n"
+
+cacheHits :: String -> String -> String -> IO [ (String, String) ]
+cacheHits url rev subdir
+  = do cache <- catch' readCache (const (pure []))
+       return [ ( pkgname, exprPath )
+              | ( url', rev', subdir', sha256, pkgname, exprPath ) <- cache
+              , url == url'
+              , rev == rev'
+              , subdir == subdir' ]
+  where catch' :: IO a -> (SomeException -> IO a) -> IO a
+        catch' = catch
+
 -- makeRelativeToCurrentDirectory
 packages2nix :: Stack-> IO NExpr
 packages2nix (Stack pkgs _) =
@@ -143,10 +171,16 @@ packages2nix (Stack pkgs _) =
                     return $ fromString pkg $= mkPath False nix
        (Remote (Git url rev) subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
-           do fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
-                    (Source url rev UnknownHash subdir) >>= \case
-                (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
-                _ -> return []
+         do cacheHits <- liftIO $ cacheHits url rev subdir
+            case cacheHits of
+              [] -> do
+                fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
+                  (Source url rev UnknownHash subdir) >>= \case
+                  (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
+                  _ -> return []
+              hits -> 
+                forM hits $ \( pkg, nix ) -> do
+                  return $ fromString pkg $= mkPath False nix
        _ -> return []
   where cabalFromPath
           :: String    -- URL
@@ -168,4 +202,6 @@ packages2nix (Stack pkgs _) =
             createDirectoryIfMissing True (takeDirectory nix)
             writeDoc nix =<<
               prettyNix <$> cabal2nix src (path </> cabalFile)
+            liftIO $ appendCache url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
+              
