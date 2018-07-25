@@ -62,7 +62,7 @@ in mkDerivation ({
 
   configureFlags = pkgs.lib.mapAttrsToList (flag: enabled: (if enabled then "-f" else "-f-") + flag) expr.flags;
 } // pkgs.lib.optionalAttrs (builtins.hasAttr pname expr.components) {
-  libraryHaskellDepends = expr.components.${pname}.depends;
+  libraryHaskellDepends = expr.components.${pname}.depends or [];
   libraryPkgconfigDepends = expr.components.${pname}.pkgconfig or [];
   librarySystemDepends = expr.components.${pname}.libs or []; 
   libraryToolDepends   = expr.components.${pname}.build-tools or [];
