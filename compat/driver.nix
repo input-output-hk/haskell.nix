@@ -22,7 +22,35 @@ with rec {
     hsPkgs = pkgs.haskellPackages // { ${e.package.identifier.name} = null; };
     # We also need to do some system pkgs -> haskell pkgs
     # resolution.
-    pkgs = pkgs // { };
+    pkgs = pkgs
+         # fetchgit should always come from the buildPackages
+         # if it comes from the targetPackages we won't even
+         # be able to execute it.
+         // { fetchgit = pkgs.buildPackages.fetchgit; }
+         # haskell lib -> nix lib mapping
+         // { crypto = pkgs.openssl;
+              "c++" = null; # no libc++
+              ssl = pkgs.openssl;
+              z = pkgs.zlib;
+              pthread = null; # available by default
+            }
+         # -- windows
+         // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null; 
+              shell32 = null; shfolder = null; shlwapi = null; user32 = null; 
+              winmm = null;
+              kernel32 = null; ws2_32 = null;
+
+              ssl32 = null; eay32 = pkgs.openssl;
+
+              iphlpapi = null; # IP Help API
+
+              msvcrt = null; # this is the libc
+
+              Crypt32 = null;
+            }
+         # -- os x
+         // pkgs.darwin.apple_sdk.frameworks;
+
     # package-conf mappings.
     # pkgconfig name -> nix package
     pkgconfPkgs = { libpcre = pkgs.pcre; };
@@ -64,7 +92,7 @@ let expr  = expr0 flags;
     } // pkgs.lib.optionalAttrs (builtins.hasAttr pname expr.components) {
       libraryHaskellDepends = expr.components.${pname}.depends or [];
       libraryPkgconfigDepends = expr.components.${pname}.pkgconfig or [];
-      librarySystemDepends = expr.components.${pname}.libs or []; 
+      librarySystemDepends = (expr.components.${pname}.libs or []) ++ pkgs.lib.optionals (os == "Osx") (expr.components.${pname}.frameworks or []); 
       libraryToolDepends   = expr.components.${pname}.build-tools or [];
     } // pkgs.lib.optionalAttrs (builtins.hasAttr "exes" expr.components) {
       executableHaskellDepends = collectAttr "depends" expr.components.exes;
