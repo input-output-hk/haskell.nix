@@ -98,5 +98,8 @@ executable stack-to-nix
                      , ansi-wl-pprint
                      , directory
                      , filepath
+                     , extra
+                     , hpack
+                     , bytestring
   hs-source-dirs:      stack2nix
   default-language:    Haskell2010

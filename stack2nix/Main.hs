@@ -35,9 +35,17 @@ import Data.List (isSuffixOf)
 import Control.Applicative ((<|>))
 
 import Distribution.Nixpkgs.Fetch
+import Control.Monad.Extra
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Maybe
 import Control.Exception (catch, SomeException(..))
+
+import qualified Hpack
+import qualified Hpack.Config as Hpack
+import qualified Hpack.Render as Hpack
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import Data.ByteString (ByteString)
 
 --------------------------------------------------------------------------------
 -- stack.yaml parsing (subset only)
@@ -123,9 +131,20 @@ extraDeps2nix (Stack _ deps) =
         toText :: Text a => a -> T.Text
         toText = fromString . show . disp
 
-findCabalFiles :: FilePath -> IO [FilePath]
-findCabalFiles =
-  fmap (filter (isSuffixOf ".cabal")) . listDirectory
+findCabalFiles :: FilePath -> IO [CabalFile]
+findCabalFiles path = doesFileExist (path </> Hpack.packageConfig) >>= \case
+  False -> fmap (OnDisk . (path </>)) . filter (isSuffixOf ".cabal") <$> listDirectory path
+  True -> do
+    mbPkg <- Hpack.readPackageConfig Hpack.defaultDecodeOptions {Hpack.decodeOptionsTarget = path </> Hpack.packageConfig}
+    case mbPkg of
+      Left e -> error e
+      Right r ->
+        return $ [InMemory Hpack
+                           (Hpack.decodeResultCabalFile r)
+                           (encodeUtf8 $ Hpack.renderPackage [] (Hpack.decodeResultPackage r))]
+
+  where encodeUtf8 :: String -> ByteString
+        encodeUtf8 = T.encodeUtf8 . T.pack
 
 readCache :: IO [( String -- url
                  , String -- rev
@@ -162,12 +181,12 @@ packages2nix (Stack pkgs _) =
        (Local folder) ->
          do cabalFiles <- findCabalFiles folder
             forM cabalFiles $ \cabalFile ->
-              let pkg = dropExtension . takeFileName $ cabalFile
+              let pkg = cabalFilePkgName cabalFile
                   nix = ".stack.nix" </> pkg <.> "nix"
                   src = Just . C2N.Path $ ".." </> folder
               in do createDirectoryIfMissing True (takeDirectory nix)
                     writeDoc nix =<<
-                      prettyNix <$> cabal2nix src (folder </> cabalFile)
+                      prettyNix <$> cabal2nix src cabalFile
                     return $ fromString pkg $= mkPath False nix
        (Remote (Git url rev) subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
@@ -194,14 +213,14 @@ packages2nix (Stack pkgs _) =
           cabalFiles <- liftIO $ findCabalFiles path
           return $ \sha256 ->
             forM cabalFiles $ \cabalFile -> do
-            let pkg = dropExtension . takeFileName $ cabalFile
+            let pkg = cabalFilePkgName cabalFile
                 nix = ".stack.nix" </> pkg <.> "nix"
                 subdir' = if subdir == "." then Nothing
                           else Just subdir
                 src = Just $ C2N.Git url rev (Just sha256) subdir'
             createDirectoryIfMissing True (takeDirectory nix)
             writeDoc nix =<<
-              prettyNix <$> cabal2nix src (path </> cabalFile)
+              prettyNix <$> cabal2nix src cabalFile
             liftIO $ appendCache url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
               

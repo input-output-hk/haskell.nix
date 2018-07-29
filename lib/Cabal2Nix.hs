@@ -2,13 +2,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Cabal2Nix (cabal2nix, Src(..)) where
+module Cabal2Nix (cabal2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName) where
 
-import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
+import Distribution.PackageDescription.Parsec (readGenericPackageDescription, parseGenericPackageDescriptionMaybe)
 import Distribution.Verbosity (normal)
 import Distribution.Text (disp)
 import Distribution.Pretty (pretty)
 import Data.Char (toUpper)
+import System.FilePath
+import Data.ByteString (ByteString)
 
 import Distribution.Types.CondTree
 import Distribution.Types.Library
@@ -52,10 +54,34 @@ flags  = "_flags"
 lhs $//? (Just e) = lhs $// e
 lhs $//? Nothing  = lhs
 
-cabal2nix :: Maybe Src -> FilePath -> IO NExpr
-cabal2nix src = fmap go . readGenericPackageDescription normal
-  where go :: GenericPackageDescription -> NExpr
-        go gpd = mkFunction args . lets gpd $ toNix gpd $//? (toNix <$> src)
+data CabalFileGenerator
+  = Hpack
+  deriving Show
+
+data CabalFile
+  = OnDisk FilePath
+  | InMemory CabalFileGenerator FilePath ByteString
+  deriving Show
+
+
+cabalFilePath :: CabalFile -> String
+cabalFilePath (OnDisk fp) = fp
+cabalFilePath (InMemory _ fp _) = fp
+
+cabalFilePkgName :: CabalFile -> String
+cabalFilePkgName = dropExtension . takeFileName . cabalFilePath
+
+genExtra :: CabalFileGenerator -> NExpr
+genExtra Hpack = mkNonRecSet [ "cabal-generator" $= mkStr "hpack" ]
+
+cabal2nix :: Maybe Src -> CabalFile -> IO NExpr
+cabal2nix src = \case
+  (OnDisk path) -> fmap (go Nothing)
+    $ readGenericPackageDescription normal path
+  (InMemory gen path body) -> fmap (go (Just $ genExtra gen))
+    $ maybe (error "Failed to parse in-memory cabal file") pure (parseGenericPackageDescriptionMaybe body)
+  where go :: Maybe NExpr -> GenericPackageDescription -> NExpr
+        go extra gpd = mkFunction args . lets gpd $ toNix gpd $//? (toNix <$> src) $//? extra
         args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
