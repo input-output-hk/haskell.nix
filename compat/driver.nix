@@ -48,33 +48,36 @@ with rec {
 let expr  = expr0 flags;
     pname = expr.package.identifier.name;
     pversion = expr.package.identifier.version;
-in mkDerivation ({
-  inherit pname;
-  version = pversion;
-  sha256 = hackage.hashes.${pname}.${pversion} or null;
-
-  isLibrary = builtins.hasAttr pname expr.components;
-  isExecutable = builtins.hasAttr "exes" expr.components;
-
-  homepage    = expr.package.homepage;
-  description = expr.package.synopsis;
-  license     = resolve.license stdenv expr.package.license;
-
-  configureFlags = pkgs.lib.mapAttrsToList (flag: enabled: (if enabled then "-f" else "-f-") + flag) expr.flags;
-} // pkgs.lib.optionalAttrs (builtins.hasAttr pname expr.components) {
-  libraryHaskellDepends = expr.components.${pname}.depends or [];
-  libraryPkgconfigDepends = expr.components.${pname}.pkgconfig or [];
-  librarySystemDepends = expr.components.${pname}.libs or []; 
-  libraryToolDepends   = expr.components.${pname}.build-tools or [];
-} // pkgs.lib.optionalAttrs (builtins.hasAttr "exes" expr.components) {
-  executableHaskellDepends = collectAttr "depends" expr.components.exes;
-  executableToolDepends    = collectAttr "build-tools" expr.components.exes;
-} // pkgs.lib.optionalAttrs (builtins.hasAttr "tests" expr.components) {
-  testHaskellDepends = collectAttr "depends" expr.components.tests;
-} // pkgs.lib.optionalAttrs (builtins.hasAttr "benchmarks" expr.components) {
-  benchmarkHaskellDepends = collectAttr "depends" expr.components.benchmarks;
-} // pkgs.lib.optionalAttrs (builtins.hasAttr "src" expr) {
-  inherit (expr) src;
-} // pkgs.lib.optionalAttrs (builtins.hasAttr "postUnpack" expr) {
-  inherit (expr) postUnpack;
-} // builtins.removeAttrs args [ "mkDerivation" "stdenv" "flags" ])
+    builderArgs = {
+      inherit pname;
+      version = pversion;
+      sha256 = hackage.hashes.${pname}.${pversion} or null;
+    
+      isLibrary = builtins.hasAttr pname expr.components;
+      isExecutable = builtins.hasAttr "exes" expr.components;
+    
+      homepage    = expr.package.homepage;
+      description = expr.package.synopsis;
+      license     = resolve.license stdenv expr.package.license;
+    
+      configureFlags = pkgs.lib.mapAttrsToList (flag: enabled: (if enabled then "-f" else "-f-") + flag) expr.flags;
+    } // pkgs.lib.optionalAttrs (builtins.hasAttr pname expr.components) {
+      libraryHaskellDepends = expr.components.${pname}.depends or [];
+      libraryPkgconfigDepends = expr.components.${pname}.pkgconfig or [];
+      librarySystemDepends = expr.components.${pname}.libs or []; 
+      libraryToolDepends   = expr.components.${pname}.build-tools or [];
+    } // pkgs.lib.optionalAttrs (builtins.hasAttr "exes" expr.components) {
+      executableHaskellDepends = collectAttr "depends" expr.components.exes;
+      executableToolDepends    = collectAttr "build-tools" expr.components.exes;
+    } // pkgs.lib.optionalAttrs (builtins.hasAttr "tests" expr.components) {
+      testHaskellDepends = collectAttr "depends" expr.components.tests;
+    } // pkgs.lib.optionalAttrs (builtins.hasAttr "benchmarks" expr.components) {
+      benchmarkHaskellDepends = collectAttr "depends" expr.components.benchmarks;
+    } // pkgs.lib.optionalAttrs (builtins.hasAttr "src" expr) {
+      inherit (expr) src;
+    } // pkgs.lib.optionalAttrs (builtins.hasAttr "postUnpack" expr) {
+      inherit (expr) postUnpack;
+    } // builtins.removeAttrs args [ "mkDerivation" "stdenv" "flags" ];
+in mkDerivation (builderArgs // pkgs.lib.optionalAttrs (expr.cabal-generator or "" == "hpack")
+                                { preConfigure = "hpack;" + (builderArgs.preConfigure or "");
+                                  libraryToolDepends = builderArgs.libraryToolDepends ++ [ pkgs.haskellPackages.hpack ]; })
