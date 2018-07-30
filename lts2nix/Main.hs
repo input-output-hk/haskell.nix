@@ -44,6 +44,6 @@ lts2nix lts = mkFunction "hackage" . mkNonRecSet $
               <&> (^. key "version" . _String)
         corePkgs = lts ^. key "system-info" . key "core-packages" . _Object
                    <&> (^. _String)
-        bind pkg ver = quoted pkg $= mkSym "hackage" !. pkg !. ver
+        bind pkg ver = quoted pkg $= (mkSym "hackage" @. pkg @. ver)
         bind' pkg ver = quoted pkg $= mkStr ver
 

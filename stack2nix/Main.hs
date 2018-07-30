@@ -124,7 +124,7 @@ stack2nix stack =
 extraDeps2nix :: Stack -> NExpr
 extraDeps2nix (Stack _ deps) =
   let extraDeps = parsePackageIdentifier <$> deps
-  in mkNonRecSet [ quoted (toText pkg) $= mkSym "hsPkgs" !. toText pkg !. toText ver
+  in mkNonRecSet [ quoted (toText pkg) $= (mkSym "hsPkgs" @. toText pkg @. toText ver)
                  | Just (PackageIdentifier pkg ver) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse
