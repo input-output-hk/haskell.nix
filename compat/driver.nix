@@ -14,12 +14,14 @@ with rec {
   # cabal os, arch and compilers.
   cabal = import ./cabal-os-arch-comp.nix;
 
-  expr0 = flags: let e = cabalexpr {
+  expr0 = flags: extraHsPkgs: let e = cabalexpr {
     inherit flags;
     # null out self references. Tests, Benchmarks, ...
     # naturally depend on the package (as a library), but
     # we don't want those dependencies.
-    hsPkgs = pkgs.haskellPackages // { ${e.package.identifier.name} = null; };
+    hsPkgs = pkgs.haskellPackages
+           // { ${e.package.identifier.name} = null; }
+           // extraHsPkgs;
     # We also need to do some system pkgs -> haskell pkgs
     # resolution.
     pkgs = pkgs
@@ -72,8 +74,8 @@ with rec {
 # These are the keys that <pkg>.override can override.
 # the ... is used to allow to override all potential
 # other keys, that the builder understands.
-{ mkDerivation, stdenv, flags ? {}, ... }@args:
-let expr  = expr0 flags;
+{ mkDerivation, stdenv, flags ? {}, hsPkgs ? {}, ... }@args:
+let expr  = expr0 flags hsPkgs;
     pname = expr.package.identifier.name;
     pversion = expr.package.identifier.version;
     builderArgs = {
@@ -105,7 +107,7 @@ let expr  = expr0 flags;
       inherit (expr) src;
     } // pkgs.lib.optionalAttrs (builtins.hasAttr "postUnpack" expr) {
       inherit (expr) postUnpack;
-    } // builtins.removeAttrs args [ "mkDerivation" "stdenv" "flags" ];
+    } // builtins.removeAttrs args [ "mkDerivation" "stdenv" "flags" "hsPkgs" ];
 in mkDerivation (builderArgs // pkgs.lib.optionalAttrs (expr.cabal-generator or "" == "hpack")
                                 { preConfigure = "hpack;" + (builderArgs.preConfigure or "");
                                   libraryToolDepends = builderArgs.libraryToolDepends ++ [ pkgs.haskellPackages.hpack ]; })
