@@ -43,6 +43,11 @@ with rec {
               winmm = null;
               kernel32 = null; ws2_32 = null;
 
+              # this should be bundled with gcc.
+              # if it's not we have more severe
+              # issues anyway.
+              gcc_s_seh-1 = null; 
+
               ssl32 = null; eay32 = pkgs.openssl;
 
               iphlpapi = null; # IP Help API
