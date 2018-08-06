@@ -32,6 +32,7 @@ with rec {
          # haskell lib -> nix lib mapping
          // { crypto = pkgs.openssl;
               "c++" = null; # no libc++
+              "stdc++" = null; "stdc++-6" = null;
               ssl = pkgs.openssl;
               z = pkgs.zlib;
               pthread = null; # available by default
