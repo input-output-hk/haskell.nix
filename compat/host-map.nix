@@ -1,7 +1,7 @@
 stdenv: with stdenv.hostPlatform; {
   os = if isLinux   then "Linux"   else
        if isWindows then "Windows" else
-       if isMacOS   then "Osx"     else
+       if isDarwin     then "Osx"     else
        if isFreeBSD then "Freebsd" else
        if isOpenBSD then "Openbsd" else
        if isNetBSD  then "Netbsd"  else
