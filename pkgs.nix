@@ -25,17 +25,18 @@ let
                                             sha256 = "1hjqppxh9vmvlfbfpkg7gcijjhq4hhlx4xah87ma0w1nw7vk7nda"; }))
                    hackage;
 
-  # the set of all stackage snapshots
-  stackage = import (overrideWith "stackage"
+  stackage-raw = overrideWith "stackage"
                      (pkgs.fetchFromGitHub { owner  = "angerman";
                                              repo   = "stackage.nix";
                                              rev    = "385609120d6f20a67f79e5120a93b4524d8c8862";
-                                             sha256 = "1l3k5qpbj6w2mg6rgmg0af2jk0bq1wwrijrn66grbw7kbbi4h9nx"; }))
+                                             sha256 = "1l3k5qpbj6w2mg6rgmg0af2jk0bq1wwrijrn66grbw7kbbi4h9nx"; });
+  # the set of all stackage snapshots
+  stackage = import stackage-raw
                     { inherit pkgs hackage haskell; };
   # our packages
   plan = import ./plan.nix;
 
-  pkgSet = import <stackage/package-set.nix> { inherit pkgs hackage haskell; lts-def = plan; };
+  pkgSet = import ((builtins.toPath stackage-raw) + "/package-set.nix") { inherit pkgs hackage haskell; lts-def = plan; };
   # pick the repsective stackage version here
   # and augment them with out packages
 
