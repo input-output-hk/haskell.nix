@@ -117,6 +117,7 @@
             (hsPkgs.extra)
             (hsPkgs.hpack)
             (hsPkgs.bytestring)
+            (hsPkgs.optparse-applicative)
           ];
         };
       };
