@@ -76,6 +76,7 @@ let
                                           text-metrics = dontCheck super.text-metrics;
                                           # doctest
                                           comonad = dontCheck super.comonad;
+                                          semigroupoids = dontCheck super.semigroupoids;
                                           })
  ];
 in
