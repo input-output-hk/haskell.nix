@@ -74,6 +74,8 @@ let
                                           Glob = dontCheck super.Glob;
                                           infer-license = dontCheck super.infer-license;
                                           text-metrics = dontCheck super.text-metrics;
+                                          # doctest
+                                          comonad = dontCheck super.comonad;
                                           })
  ];
 in
