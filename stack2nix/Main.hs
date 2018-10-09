@@ -11,7 +11,8 @@ import Nix.Expr
 import Distribution.Types.PackageName
 import Distribution.Types.PackageId
 import Distribution.Text
-import Data.Yaml
+import Distribution.Simple.Utils (shortRelativePath)
+import Data.Yaml hiding (Parser)
 import Data.String (fromString)
 import qualified Data.Text as T
 
@@ -47,12 +48,29 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.ByteString (ByteString)
 
+import Options.Applicative
+import Data.Semigroup ((<>))
+
+--------------------------------------------------------------------------------
+-- CLI Arguments
+data Args = Args
+  { outputPath :: FilePath
+  , stackFile  :: FilePath
+  } deriving Show
+
+-- Argument Parser
+args :: Parser Args
+args = Args
+  <$> strOption ( long "output" <> short 'o' <> metavar "DIR" <> value "." <> help "Generate output in DIR" )
+  <*> argument str ( metavar "stack.yaml" )
+
 --------------------------------------------------------------------------------
 -- stack.yaml parsing (subset only)
 type ExtraDep = String
+type Resolver = String
 
 data Stack
-  = Stack [Package] [ExtraDep]
+  = Stack Resolver [Package] [ExtraDep]
   deriving (Show)
 
 type URL = String
@@ -81,7 +99,8 @@ instance FromJSON Package where
 
 instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
-    <$> s .: "packages"
+    <$> s .: "resolver"
+    <*> s .: "packages"
     <*> s .: "extra-deps"
 --------------------------------------------------------------------------------
 
@@ -92,24 +111,27 @@ writeDoc file doc =
      hClose handle
 
 main :: IO ()
-main = getArgs >>= \case
-  [file] -> print . prettyNix =<< stackexpr file
-  _ -> putStrLn "call with stack.yaml (Stack2Nix /path/to/stack.yaml)"
+main = print . prettyNix =<< stackexpr =<< execParser opts
+  where opts = info (args <**> helper)
+          ( fullDesc
+         <> progDesc "Generate a nix expression from a stack.yaml file"
+         <> header "stack-to-nix - a stack to nix converter" )
 
-stackexpr :: FilePath -> IO NExpr
-stackexpr f =
-  do evalue <- decodeFileEither f
+stackexpr :: Args -> IO NExpr
+stackexpr args =
+  do evalue <- decodeFileEither (stackFile args)
      case evalue of
        Left e -> error (show e)
-       Right value -> stack2nix value
+       Right value -> stack2nix args value
 
-stack2nix :: Stack -> IO NExpr
-stack2nix stack =
+stack2nix :: Args -> Stack -> IO NExpr
+stack2nix args stack@(Stack resolver _ _) =
   do let extraDeps = extraDeps2nix stack
-     packages <- packages2nix stack
+     packages <- packages2nix args stack
      return $ mkNonRecSet
        [ "extraDeps" $= mkFunction "hsPkgs" extraDeps
        , "packages"  $= mkFunction "hsPkgs" packages
+       , "resolver"  $= fromString (quoted resolver)
        ]
 -- | Transform 'extra-deps' to nix expressions.
 -- The idea is to turn
@@ -122,7 +144,7 @@ stack2nix stack =
 --   { name = hsPkgs.name.version; }
 --
 extraDeps2nix :: Stack -> NExpr
-extraDeps2nix (Stack _ deps) =
+extraDeps2nix (Stack _ _ deps) =
   let extraDeps = parsePackageIdentifier <$> deps
   in mkNonRecSet [ quoted (toText pkg) $= (mkSym "hsPkgs" @. toText pkg @. quoted (toText ver))
                  | Just (PackageIdentifier pkg ver) <- extraDeps ]
@@ -174,18 +196,19 @@ cacheHits url rev subdir
         catch' = catch
 
 -- makeRelativeToCurrentDirectory
-packages2nix :: Stack-> IO NExpr
-packages2nix (Stack pkgs _) =
+packages2nix :: Args -> Stack-> IO NExpr
+packages2nix args (Stack _ pkgs _) =
   do cwd <- getCurrentDirectory
      fmap (mkNonRecSet . concat) . forM pkgs $ \case
        (Local folder) ->
-         do cabalFiles <- findCabalFiles folder
+         do cabalFiles <- findCabalFiles (dropFileName (stackFile args) </> folder)
             forM cabalFiles $ \cabalFile ->
               let pkg = cabalFilePkgName cabalFile
                   nix = ".stack.nix" </> pkg <.> "nix"
-                  src = Just . C2N.Path $ ".." </> folder
-              in do createDirectoryIfMissing True (takeDirectory nix)
-                    writeDoc nix =<<
+                  nixFile = outputPath args </> nix
+                  src = Just . C2N.Path $ relPath </> ".." </> folder
+              in do createDirectoryIfMissing True (takeDirectory nixFile)
+                    writeDoc nixFile =<<
                       prettyNix <$> cabal2nix src cabalFile
                     return $ fromString pkg $= mkPath False nix
        (Remote (Git url rev) subdirs) ->
@@ -197,11 +220,12 @@ packages2nix (Stack pkgs _) =
                   (Source url rev UnknownHash subdir) >>= \case
                   (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
                   _ -> return []
-              hits -> 
+              hits ->
                 forM hits $ \( pkg, nix ) -> do
                   return $ fromString pkg $= mkPath False nix
        _ -> return []
-  where cabalFromPath
+  where relPath = shortRelativePath (outputPath args) (dropFileName (stackFile args))
+        cabalFromPath
           :: String    -- URL
           -> String    -- Revision
           -> FilePath  -- Subdir
@@ -215,12 +239,12 @@ packages2nix (Stack pkgs _) =
             forM cabalFiles $ \cabalFile -> do
             let pkg = cabalFilePkgName cabalFile
                 nix = ".stack.nix" </> pkg <.> "nix"
+                nixFile = outputPath args </> nix
                 subdir' = if subdir == "." then Nothing
                           else Just subdir
                 src = Just $ C2N.Git url rev (Just sha256) subdir'
-            createDirectoryIfMissing True (takeDirectory nix)
-            writeDoc nix =<<
+            createDirectoryIfMissing True (takeDirectory nixFile)
+            writeDoc nixFile =<<
               prettyNix <$> cabal2nix src cabalFile
             liftIO $ appendCache url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
-              

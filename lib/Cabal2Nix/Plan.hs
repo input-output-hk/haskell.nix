@@ -38,7 +38,8 @@ plan2nix (Plan { packages, compilerVersion, compilerPackages }) =
       ]
  where
   bind pkg (Package { packageVersion, packageRevision }) =
-    let verExpr = mkSym "hackage" @. pkg @. packageVersion
-        revExpr = maybe verExpr (verExpr @.) packageRevision
-    in  quoted pkg $= revExpr
+    let verExpr = mkSym "hackage" @. pkg @. quoted packageVersion
+        revExpr = maybe verExpr (verExpr @.) (quoted <$> packageRevision)
+        -- disable revision logic, until we have that fixed in the hackage expression.
+    in  quoted pkg $= verExpr -- revExpr
   bind' pkg ver = quoted pkg $= mkStr ver

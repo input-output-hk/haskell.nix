@@ -31,7 +31,7 @@ ltsPackages lts = do
     Right value -> pure $ plan2nix $ lts2plan value
 
 lts2plan :: Value -> Plan
-lts2plan lts = Plan {packages , compilerVersion , compilerPackages }
+lts2plan lts = Plan { packages , compilerVersion , compilerPackages }
  where
   packages = lts ^. key "packages" . _Object <&> \v -> Package
     { packageVersion  = v ^. key "version" . _String

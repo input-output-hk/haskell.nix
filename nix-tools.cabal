@@ -1,12 +1,12 @@
 name:                nix-tools
 version:             0.1.0.0
--- synopsis:            
--- description:         
+-- synopsis:
+-- description:
 license:             BSD3
 license-file:        LICENSE
 author:              Moritz Angermann
 maintainer:          moritz.angermann@gmail.com
--- copyright:           
+-- copyright:
 category:            Distribution
 build-type:          Simple
 extra-source-files:  ChangeLog.md
@@ -35,7 +35,7 @@ library
                      , base16-bytestring
   hs-source-dirs:      lib
   default-language:    Haskell2010
- 
+
 
 executable cabal-to-nix
   ghc-options:         -Wall
@@ -118,5 +118,6 @@ executable stack-to-nix
                      , extra
                      , hpack
                      , bytestring
+                     , optparse-applicative
   hs-source-dirs:      stack2nix
   default-language:    Haskell2010
