@@ -44,7 +44,7 @@ nix-tools $ find . -type f -name "cabal-to-nix"
 
 To install with ~nix~, simply run
 
-#+BEING_SRC bash
+#+BEGIN_SRC bash
 nix-tools $ nix build nix-tools
 #+END_SRC
 
@@ -54,7 +54,7 @@ after a while the executables should be in ~./result/bin~
 
 Given a ~stack.yaml~ in you project directory, running:
 
-#+BEING_SRC bash
+#+BEGIN_SRC bash
 stack-project $ $(find /path/to/nix-tools/ -type f -name "stack-to-nix") stack.yaml > .stack-pkgs.nix
 #+END_SRC
 
