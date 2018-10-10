@@ -120,7 +120,7 @@ Finally we'll define the ~default.nix~ driver:
 { pkgs ? import <nixpkgs> {} }:
 let
   base = import ./pkgs.nix { inherit pkgs; };
-  overlays = [ (self: super: with pkgs.haskell.lib: {
+  overlays = [ (self: super: with pkgs.haskell.lib; {
       # you can explicilty mark packages as dontCheck.
       # e.g. if they depend on doctest or lead to cyclic
       # dependencies.
@@ -211,7 +211,7 @@ mark a few more packages as ~dontCheck~
 { pkgs ? import <nixpkgs> {} }:
 let
   base = import ./pkgs.nix { inherit pkgs; };
-  overlays = [ (self: super: with pkgs.haskell.lib: {
+  overlays = [ (self: super: with pkgs.haskell.lib; {
       # you can explicilty mark packages as dontCheck.
       # e.g. if they depend on doctest or lead to cyclic
       # dependencies.
