@@ -1,4 +1,226 @@
+* ~nix-tools~
 
+~nix-tools~ is a set of haskell to nix tools to integrate haskell
+projects into nix build environements.
+
+* Motivation
+
+Why (yet) another conversion to nix?  ~cabal2nix~ has served the nix
+community well for a long time.  It does have short comings that can't
+be easily overcome without significantly altering ~cabal2nix~.  These
+are among others:
+
+- hard coded flags / operating system upon invocation
+- package resolution in cabal2nix instead of nix.
+
+Ideally we'd convert cabal files into nix expression and retain almost
+everything from the cabal file and let nix deal with the expression
+afterwards.
+
+~nix-tools~ explores this space of a very simple ~.cabal~ conversion
+into a ~nix~ expression and then doing the lifting in nix.
+
+* QuickStart
+
+Given a ~stack~ or ~cabal~ project.  We will walk through the
+necessary steps to turn it into a nix expression.  That is you can ask
+~nix build~ to build the project and the result will be you library or
+executables.
+
+** installing ~nix-tools~
+
+You can install ~nix-tools~ with ~cabal~ or ~nix~.  For ~cabal~
+
+#+BEGIN_SRC bash
+nix-tools $ cabal new-build
+#+END_SRC
+
+should be sufficient.  And place the executables somewhere into
+~./dist-newstyle~. You can usually find the executable quite reliably
+with:
+#+BEGIN_SRC bash
+nix-tools $ find . -type f -name "cabal-to-nix"
+#+END_SRC
+
+To install with ~nix~, simply run
+
+#+BEING_SRC bash
+nix-tools $ nix build nix-tools
+#+END_SRC
+
+after a while the executables should be in ~./result/bin~
+
+** ~stack~ example
+
+Given a ~stack.yaml~ in you project directory, running:
+
+#+BEING_SRC bash
+stack-project $ $(find /path/to/nix-tools/ -type f -name "stack-to-nix") stack.yaml > .stack-pkgs.nix
+#+END_SRC
+
+should generate ~.stack.nix~ containing all the expressions for all
+packages references from the ~stack.yaml~ and ~.stack-pkgs~ should
+list them.
+
+So how do we make actual use of ~.stack-pkgs.nix~?
+
+First we will create a new file called ~pkgs.nix~ which will take
+the expressions from ~.stack-pkgs.nix~ and turn them into a package set
+that we can use with ~nixpkgs~.
+
+#+BEGIN_SRC nix
+{ pkgs ? import <nixpkgs> {}
+}:
+let
+  overrideWith = override: default:
+   let
+     try = builtins.tryEval (builtins.findFile builtins.nixPath override);
+   in if try.success then
+     builtins.trace "using search host <${override}>" try.value
+   else
+     default;
+in
+let
+  # all packages from hackage as nix expressions
+  hackage = import (overrideWith "hackage"
+                    (pkgs.fetchFromGitHub { owner  = "angerman";
+                                            repo   = "hackage.nix";
+                                            rev    = "20ad44ecdd5475c8adbe0e129638f729a26ca120";
+                                            sha256 = "0bh0p58i9w9nw2mcjgx6j9qyi6x5xg8pn5x37a696kw1bgwm8wzn"; }))
+                   ;
+  # a different haskell infrastructure
+  haskell = import (overrideWith "haskell"
+                    (pkgs.fetchFromGitHub { owner  = "angerman";
+                                            repo   = "haskell.nix";
+                                            rev    = "3b2cff33565e31e31a8a33eb5ebfa20a19aa70d6";
+                                            sha256 = "1hjqppxh9vmvlfbfpkg7gcijjhq4hhlx4xah87ma0w1nw7vk7nda"; }))
+                   hackage;
+
+  # the set of all stackage snapshots
+  stackage = import (overrideWith "stackage"
+                     (pkgs.fetchFromGitHub { owner  = "angerman";
+                                             repo   = "stackage.nix";
+                                             rev    = "385609120d6f20a67f79e5120a93b4524d8c8862";
+                                             sha256 = "1l3k5qpbj6w2mg6rgmg0af2jk0bq1wwrijrn66grbw7kbbi4h9nx"; }))
+                    { inherit pkgs hackage haskell; };
+  # our packages
+  stack-pkgs = import ./.stack-pkgs.nix;
+
+  # pick the repsective stackage version here
+  # and augment them with out packages
+  stackPackages = stackage.${stack-pkgs.resolver} {
+    extraDeps = hsPkgs: (stack-pkgs.extraDeps hsPkgs
+                      // stack-pkgs.packages  hsPkgs); };
+in stackPackages
+#+END_SRC
+
+Finally we'll define the ~default.nix~ driver:
+
+#+BEGIN_SRC nix
+{ pkgs ? import <nixpkgs> {} }:
+let
+  base = import ./pkgs.nix { inherit pkgs; };
+  overlays = [ (self: super: with pkgs.haskell.lib: {
+      # you can explicilty mark packages as dontCheck.
+      # e.g. if they depend on doctest or lead to cyclic
+      # dependencies.
+      #
+      #  aeson = dontCheck super.aeson;
+    }) ];
+in
+  builtins.fold' (pkgs: overlay: pkgs.extend overlay) base overlays;
+#+END_SRC
+
+** ~cabal~ example
+
+The cabal example is quite similar to the ~stack~ example.  We will
+utilize the ~plan.json~ from ~cabal~ ~new-build~.
+
+Given a ~cabal~ project we'll run:
+
+#+BEGIN_SRC bash
+cabal-project $ cabal new-configure                # this will generate the plan.json file
+cabal-project $ $(find /path/to/nix-tools/ -type f -name "plan-to-nix") ./dist-newstyle/cache/plan.json > plan.nix
+cabal-project $ $(find /path/to/nix-tools/ -type f -name "cabal-to-nix") PROJECT.cabal > PROJECT.nix
+#+END_SRC
+
+At this point we now have the package set as ~cabal~ has computed it
+in ~plan.nix~, and the projects cabal file translated into a nix
+expression in ~PROJECT.nix~.
+
+Similar to the stack project we need glue code to turn it into a
+buildable nix-expression:
+
+Again we'll create a ~pkgs.nix~ file:
+
+#+BEGIN_SRC nix
+{ pkgs ? import <nixpkgs> {}
+}:
+let
+  overrideWith = override: default:
+   let
+     try = builtins.tryEval (builtins.findFile builtins.nixPath override);
+   in if try.success then
+     builtins.trace "using search host <${override}>" try.value
+   else
+     default;
+in
+let
+  # all packages from hackage as nix expressions
+  hackage = import (overrideWith "hackage"
+                    (pkgs.fetchFromGitHub { owner  = "angerman";
+                                            repo   = "hackage.nix";
+                                            rev    = "20ad44ecdd5475c8adbe0e129638f729a26ca120";
+                                            sha256 = "0bh0p58i9w9nw2mcjgx6j9qyi6x5xg8pn5x37a696kw1bgwm8wzn"; }))
+                   ;
+  # a different haskell infrastructure
+  haskell = import (overrideWith "haskell"
+                    (pkgs.fetchFromGitHub { owner  = "angerman";
+                                            repo   = "haskell.nix";
+                                            rev    = "3b2cff33565e31e31a8a33eb5ebfa20a19aa70d6";
+                                            sha256 = "1hjqppxh9vmvlfbfpkg7gcijjhq4hhlx4xah87ma0w1nw7vk7nda"; }))
+                   hackage;
+
+  stackage-raw = overrideWith "stackage"
+                     (pkgs.fetchFromGitHub { owner  = "angerman";
+                                             repo   = "stackage.nix";
+                                             rev    = "385609120d6f20a67f79e5120a93b4524d8c8862";
+                                             sha256 = "1l3k5qpbj6w2mg6rgmg0af2jk0bq1wwrijrn66grbw7kbbi4h9nx"; });
+  # the set of all stackage snapshots
+  stackage = import stackage-raw
+                    { inherit pkgs hackage haskell; };
+  # our packages
+  plan = import ./plan.nix;
+
+  pkgSet = import ((builtins.toPath stackage-raw) + "/package-set.nix") { inherit pkgs hackage haskell; lts-def = plan; };
+  # pick the repsective stackage version here
+  # and augment them with out packages
+
+  packages = pkgSet {
+    extraDeps = hsPkgs: { nix-tools = ./nix-tools.nix; }; };
+in packages
+#+END_SRC
+
+Note, that this is slightly different from the one for ~stack~ due to
+the reuse of the ~package-set.nix~ from the ~stackage.nix~
+repository. This is a bug, and should be streamlined in the future.
+
+The ~default.nix~ will look identical. However, expect to have to
+mark a few more packages as ~dontCheck~
+#+BEGIN_SRC nix
+{ pkgs ? import <nixpkgs> {} }:
+let
+  base = import ./pkgs.nix { inherit pkgs; };
+  overlays = [ (self: super: with pkgs.haskell.lib: {
+      # you can explicilty mark packages as dontCheck.
+      # e.g. if they depend on doctest or lead to cyclic
+      # dependencies.
+      #
+      #  aeson = dontCheck super.aeson;
+    }) ];
+in
+  builtins.fold' (pkgs: overlay: pkgs.extend overlay) base overlays;
+#+END_SRC
 
 * ~cabal-to-nix~: transform ~cabal~ files into ~nix~ expressions.
 
@@ -7,21 +229,21 @@
   ~flags~, ~system~ and ~compiler~, allowing the expression to change depending
   on the flags/system/compiler provided.
 
-  It does **consierably** less than ~cabal2nix~. 
+  It does **consierably** less than ~cabal2nix~.
 
 ** Usage
-   
+
    To produce a nix representation of a cabal file, simply call
-  
+
    #+BEGIN_SRC sh
    $ cabal-to-nix some.cabal > some-cabal.nix
    #+END_SRC
-   
+
    To produce a ~cabal2nix~ compatible expression the ~nix/driver.nix~ can
    be used:
-   
+
    #+BEGIN_SRC nix
-   with import <nixpkgs> {}; 
+   with import <nixpkgs> {};
    let pkg = import ./nix/driver.nix { cabalexpr = import ./some-cabal.nix; pkgs = pkgs; };
    in pkgs.haskellPackages.callPackage pkg {}
    #+END_SRC
@@ -29,7 +251,7 @@
 * ~hashes-to-nix~: transfrom all cabal hashes to nix expressions
 
 ** Usage
-   
+
    To produce a nix expression for each item int he ~all-cabal-hashes~ folder use:
 
    #+BEGIN_SRC sh
