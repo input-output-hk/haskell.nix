@@ -21,24 +21,14 @@ let
   haskell = import (overrideWith "haskell"
                     (pkgs.fetchFromGitHub { owner  = "angerman";
                                             repo   = "haskell.nix";
-                                            rev    = "3b2cff33565e31e31a8a33eb5ebfa20a19aa70d6";
-                                            sha256 = "1hjqppxh9vmvlfbfpkg7gcijjhq4hhlx4xah87ma0w1nw7vk7nda"; }))
+                                            rev    = "fe5c13d8b72cf5335e5b6f71ffa3828def716736";
+                                            sha256 = "183i77jn2bg1669hpjikm28hgznwdzndjpgwvm3mdpx4kkp4ambk"; }))
                    hackage;
 
-  stackage-raw = overrideWith "stackage"
-                     (pkgs.fetchFromGitHub { owner  = "angerman";
-                                             repo   = "stackage.nix";
-                                             rev    = "385609120d6f20a67f79e5120a93b4524d8c8862";
-                                             sha256 = "1l3k5qpbj6w2mg6rgmg0af2jk0bq1wwrijrn66grbw7kbbi4h9nx"; });
-  # the set of all stackage snapshots
-  stackage = import stackage-raw
-                    { inherit pkgs hackage haskell; };
   # our packages
   plan = import ./plan.nix;
 
-  pkgSet = import ((builtins.toPath stackage-raw) + "/package-set.nix") { inherit pkgs hackage haskell; lts-def = plan; };
-  # pick the repsective stackage version here
-  # and augment them with out packages
+  pkgSet = haskell.mkPkgSet pkgs plan;
 
   packages = pkgSet {
     extraDeps = hsPkgs: { nix-tools = ./nix-tools.nix; }; };
