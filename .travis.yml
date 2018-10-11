@@ -12,7 +12,7 @@ script:
 - echo "trusted-users = root $USER"
   | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon
 - cachix use nix-tools
-- nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools
+- nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${Channel}.tar.gz -A nix-tools --cores 0
   | cachix push nix-tools
 
 env:
