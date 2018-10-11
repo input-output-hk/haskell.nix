@@ -9,10 +9,10 @@ matrix:
 
 script:
 - nix-env -iA cachix -f nix-env -iA cachix -f https://github.com/NixOS/nixpkgs/tarball/889c72032f8595fcd7542c6032c208f6b8033db6
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]
--   echo "trusted-users = root $USER"
-    | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon
-- fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]];
+  echo "trusted-users = root $USER"
+  | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon;
+  fi
 - cachix use nix-tools
 - nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools --cores 0
   | cachix push nix-tools
