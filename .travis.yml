@@ -8,8 +8,8 @@ matrix:
       env: CHANNEL=nixos-18.09
 
 script:
-- nix-env -iA cachix -f https://github.com/NixOS/nixpkgs/tarball/1d4de0d552ae9aa66a5b8dee5fb0650a4372d148
-- sudo cachix use nix-tools
+- nix-env -iA cachix -f nix-env -iA cachix -f https://github.com/NixOS/nixpkgs/tarball/889c72032f8595fcd7542c6032c208f6b8033db6
+- cachix use nix-tools
 - nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools
   | cachix push nix-tools
 
