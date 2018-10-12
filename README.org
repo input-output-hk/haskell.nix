@@ -128,7 +128,7 @@ let
       #  aeson = dontCheck super.aeson;
     }) ];
 in
-  builtins.fold' (pkgs: overlay: pkgs.extend overlay) base overlays;
+  builtins.foldl' (pkgs: overlay: pkgs.extend overlay) base overlays;
 #+END_SRC
 
 ** ~cabal~ example
@@ -216,7 +216,7 @@ let
       #  cassava = super.cassava.override { flags = { bytestring--lt-0_10_4 = false; }; };
     }) ];
 in
-  builtins.fold' (pkgs: overlay: pkgs.extend overlay) base overlays;
+  builtins.foldl' (pkgs: overlay: pkgs.extend overlay) base overlays;
 #+END_SRC
 
 * ~cabal-to-nix~: transform ~cabal~ files into ~nix~ expressions.
