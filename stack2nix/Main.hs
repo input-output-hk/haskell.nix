@@ -32,7 +32,7 @@ import Cabal2Nix.Util
 
 import Text.PrettyPrint.ANSI.Leijen (hPutDoc, Doc)
 import System.IO
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, isInfixOf)
 import Control.Applicative ((<|>))
 
 import Distribution.Nixpkgs.Fetch
@@ -164,7 +164,19 @@ stackexpr args =
   do evalue <- decodeFileEither (stackFile args)
      case evalue of
        Left e -> error (show e)
-       Right value -> stack2nix args =<< resolveSnapshot value
+       Right value -> stack2nix args
+                      =<< cleanupStack <$> resolveSnapshot value
+  where cleanupStack :: Stack -> Stack
+        cleanupStack (Stack r ps es)
+          = Stack r (cleanupPkg <$> (ps ++ [Local e | e <- es, looksLikePath e]))
+                    (cleanupExtraDep <$> [e | e <- es, not (looksLikePath e)])
+        -- drop trailing slashes. Nix doesn't like them much;
+        -- stack doesn't seem to care.
+        cleanupPkg (Local p) | "/" `isSuffixOf` p = Local (take (length p - 1) p)
+        cleanupPkg x = x
+        cleanupExtraDep = id
+        looksLikePath :: String -> Bool
+        looksLikePath = isInfixOf "/"
 
 stack2nix :: Args -> Stack -> IO NExpr
 stack2nix args stack@(Stack resolver _ _) =
