@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Cabal2Nix (cabal2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName) where
+module Cabal2Nix (cabal2nix, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName) where
 
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription, parseGenericPackageDescriptionMaybe)
 import Distribution.Verbosity (normal)
@@ -48,7 +48,7 @@ pkgs, hsPkgs, flags :: Text
 pkgs   = "pkgs"
 hsPkgs = "hsPkgs"
 pkgconfPkgs = "pkgconfPkgs"
-flags  = "_flags"
+flags  = "flags"
 
 ($//?) :: NExpr -> Maybe NExpr -> NExpr
 lhs $//? (Just e) = lhs $// e
@@ -76,13 +76,14 @@ genExtra Hpack = mkNonRecSet [ "cabal-generator" $= mkStr "hpack" ]
 
 cabal2nix :: Maybe Src -> CabalFile -> IO NExpr
 cabal2nix src = \case
-  (OnDisk path) -> fmap (go Nothing)
+  (OnDisk path) -> fmap (gpd2nix Nothing src)
     $ readGenericPackageDescription normal path
-  (InMemory gen path body) -> fmap (go (Just $ genExtra gen))
+  (InMemory gen path body) -> fmap (gpd2nix (Just $ genExtra gen) src)
     $ maybe (error "Failed to parse in-memory cabal file") pure (parseGenericPackageDescriptionMaybe body)
-  where go :: Maybe NExpr -> GenericPackageDescription -> NExpr
-        go extra gpd = mkFunction args . lets gpd $ toNix gpd $//? (toNix <$> src) $//? extra
-        args :: Params NExpr
+
+gpd2nix :: Maybe NExpr -> Maybe Src -> GenericPackageDescription -> NExpr
+gpd2nix extra src gpd = mkFunction args . lets gpd $ toNix gpd $//? (toNix <$> src) $//? extra
+  where args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
                           , ("flags", Just $ mkNonRecSet [])
@@ -184,7 +185,7 @@ mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
 instance ToNixExpr GenericPackageDescription where
-  toNix gpd = mkNonRecSet $ [ "flags"      $= mkSym flags -- keep track of the final flags; and allow them to be inspected
+  toNix gpd = mkNonRecSet $ [ "flags"      $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
                             , "package"    $= (toNix (packageDescription gpd))
                             , "components" $= components ]
     where packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd

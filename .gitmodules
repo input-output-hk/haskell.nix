@@ -1,0 +1,3 @@
+[submodule "hackage-db"]
+	path = hackage-db
+	url = https://github.com/ElvishJerricco/hackage-db.git
