@@ -10,10 +10,10 @@ import Data.Yaml (decodeFileEither)
 import Nix.Pretty (prettyNix)
 import Nix.Expr
 
-import Data.Aeson
-import Lens.Micro
-import Lens.Micro.Aeson
-
+import           Data.Aeson
+import qualified Data.HashMap.Strict           as Map
+import           Lens.Micro
+import           Lens.Micro.Aeson
 
 import           Cabal2Nix.Plan
 
@@ -36,6 +36,7 @@ lts2plan lts = Plan { packages , compilerVersion , compilerPackages }
   packages = lts ^. key "packages" . _Object <&> \v -> Package
     { packageVersion  = v ^. key "version" . _String
     , packageRevision = v ^? key "cabal-file-info" . key "hashes" . key "SHA256" . _String
+    , packageFlags    = Map.mapMaybe (^? _Bool) $ v ^. key "constraints" . key "flags" . _Object
     }
-  compilerVersion = lts ^. key "system-info" . key "ghc-version" . _String
+  compilerVersion  = lts ^. key "system-info" . key "ghc-version" . _String
   compilerPackages = lts ^. key "system-info" . key "core-packages" . _Object <&> (^. _String)

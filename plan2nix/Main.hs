@@ -40,8 +40,11 @@ value2plan plan = Plan {packages , compilerVersion , compilerPackages }
  where
   packages = filterInstallPlan $ \pkg -> if (pkg ^. key "style" . _String) /= "global"
     then Nothing
-    else Just
-      $ Package {packageVersion = pkg ^. key "pkg-version" . _String, packageRevision = Nothing}
+    else Just $ Package
+      { packageVersion  = pkg ^. key "pkg-version" . _String
+      , packageRevision = Nothing
+      , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      }
   compilerVersion  = Text.dropWhile (not . isDigit) $ plan ^. key "compiler-id" . _String
   compilerPackages = filterInstallPlan $ \pkg -> if isJust (pkg ^? key "style" . _String)
     then Nothing

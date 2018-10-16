@@ -60,7 +60,7 @@ data CabalFileGenerator
 
 data CabalFile
   = OnDisk FilePath
-  | InMemory CabalFileGenerator FilePath ByteString
+  | InMemory (Maybe CabalFileGenerator) FilePath ByteString
   deriving Show
 
 
@@ -76,23 +76,21 @@ genExtra Hpack = mkNonRecSet [ "cabal-generator" $= mkStr "hpack" ]
 
 cabal2nix :: Maybe Src -> CabalFile -> IO NExpr
 cabal2nix src = \case
-  (OnDisk path) -> fmap (gpd2nix Nothing src)
+  (OnDisk path) -> fmap (gpd2nix src Nothing)
     $ readGenericPackageDescription normal path
-  (InMemory gen path body) -> fmap (gpd2nix (Just $ genExtra gen) src)
+  (InMemory gen _ body) -> fmap (gpd2nix src (genExtra <$> gen))
     $ maybe (error "Failed to parse in-memory cabal file") pure (parseGenericPackageDescriptionMaybe body)
 
-gpd2nix :: Maybe NExpr -> Maybe Src -> GenericPackageDescription -> NExpr
-gpd2nix extra src gpd = mkFunction args . lets gpd $ toNix gpd $//? (toNix <$> src) $//? extra
+gpd2nix :: Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
+gpd2nix src extra gpd = mkFunction args $ toNix gpd $//? (toNix <$> src) $//? extra
   where args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
-                          , ("flags", Just $ mkNonRecSet [])
+                          , ("flags", Nothing)
                           , (pkgs, Nothing)
                           , (hsPkgs, Nothing)
                           , (pkgconfPkgs, Nothing)]
                           False
-        lets :: GenericPackageDescription -> NExpr -> NExpr
-        lets gpd = mkLets [ flags $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd) $// mkSym "flags" ]
 
 class HasBuildInfo a where
   getBuildInfo :: a -> BuildInfo
