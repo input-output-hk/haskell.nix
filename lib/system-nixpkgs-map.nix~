@@ -1,0 +1,23 @@
+# Maps of system pkg refenreces from
+# cabal file to nixpkgs pkgs.
+pkgs: {
+    pthread = null;
+    "stdc++" = null;
+    ssl = pkgs.openssl.dev;
+    crypto = pkgs.openssl.dev;
+    z = pkgs.zlib;
+    GL = pkgs.libGL;
+    GLU = pkgs.libGLU;
+    alut = pkgs.freealut;
+    X11 = pkgs.xorg.libX11;
+    Xrandr = pkgs.xorg.libXrandr;
+    Xext = pkgs.xorg.libXext;
+    Xi = pkgs.xorg.libXi;
+    Xxf86vm = pkgs.xorg.libXxf86vm;
+    Xcursor = pkgs.xorg.libXcursor;
+    Xinerama = pkgs.xorg.libXinerama;
+    mysqlclient = pkgs.mysql;
+    Imlib2 = pkgs.imlib2;
+    asound = pkgs.alsaLib;
+    ffi = null;
+}
