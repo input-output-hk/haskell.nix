@@ -12,9 +12,9 @@ let
 
   hackagePkgs = with pkgs.lib;
                 let shippedPkgs = filterAttrs (n: _: builtins.elem n nonReinstallablePkgs)
-                                   (mapAttrs (name: version: { ${version} = null; })
+                                   (mapAttrs (name: version: { ${version} = { revisions = { default = null; }; }; })
                                      (pkg-def {}).compiler.packages);
-                in recursiveUpdate hackage.exprs shippedPkgs;
+                in recursiveUpdate hackage shippedPkgs;
 
   # We may depend on packages shipped with ghc, or need to rebuild them.
   ghcPackages = pkgs.lib.mapAttrs (name: version: hackagePkgs.${name}.${version}
@@ -103,8 +103,14 @@ let
   });
 
   toGenericPackage = stackPkgs: args: name: path:
-    if path == null then null else
-    let expr = driver { cabalexpr = import path;
+  let path' = pkgs.lib.traceVal path.revision.outPath            # either a fixed revision from, say plan.nix
+#              or path.revisions.default.outPath   # a package which doesn't have a revision specified; assume we want the default.
+             or path.revision
+             or path;                            # or a direct path
+  in
+    if path' == null then null else
+    let expr = driver {
+             cabalexpr = import path';
              pkgs = pkgs // { haskellPackages = stackPkgs; };
              inherit (host-map pkgs.stdenv) os arch;
              version = compiler.ghc.version; };
