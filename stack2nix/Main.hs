@@ -32,7 +32,7 @@ import Cabal2Nix.Util
 
 import Text.PrettyPrint.ANSI.Leijen (hPutDoc, Doc)
 import System.IO
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, isInfixOf)
 import Control.Applicative ((<|>))
 
 import Distribution.Nixpkgs.Fetch
@@ -68,10 +68,25 @@ args = Args
 -- stack.yaml parsing (subset only)
 type ExtraDep = String
 type Resolver = String
+type Name     = String
+type Compiler = String
 
 data Stack
   = Stack Resolver [Package] [ExtraDep]
   deriving (Show)
+
+-- stack supports custom snapshots
+-- https://docs.haskellstack.org/en/stable/custom_snapshot/
+data StackSnapshot
+  = Snapshot
+    Resolver                  -- lts-XX.YY/nightly-...
+    --(Maybe Compiler)        -- possible compiler override for the snapshot
+    Name                      -- name
+    [Package]                 -- packages
+    -- [Package -> [Flag]]    -- flags
+    -- [PackageName]          -- drop-packages
+    -- [PackageName -> Bool]  -- hidden
+    -- [package -> [Opt]]     -- ghc-options
 
 type URL = String
 type Rev = String
@@ -91,17 +106,24 @@ instance FromJSON Location where
     <*> l .: "commit"
 
 instance FromJSON Package where
-  parseJSON p = parseLocal p <|> parseRemote p
+  parseJSON p = parseLocal p <|> parseRemote p -- <|> parseRemoteInline
     where parseLocal = withText "Local Package" $ pure . Local . T.unpack
           parseRemote = withObject "Remote Package" $ \l -> Remote
-            <$> l .: "location"
+            <$> (l .: "location" <|> parseJSON p)
             <*> l .:? "subdirs" .!= ["."]
 
 instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
     <$> s .: "resolver"
-    <*> s .: "packages"
-    <*> s .: "extra-deps"
+    <*> s .:? "packages"   .!= []
+    <*> s .:? "extra-deps" .!= []
+
+instance FromJSON StackSnapshot where
+  parseJSON = withObject "Snapshot" $ \s -> Snapshot
+    <$> s .: "resolver"
+    <*> s .: "name"
+    <*> s .:? "packages" .!= []
+
 --------------------------------------------------------------------------------
 
 writeDoc :: FilePath -> Doc -> IO ()
@@ -117,12 +139,44 @@ main = print . prettyNix =<< stackexpr =<< execParser opts
          <> progDesc "Generate a nix expression from a stack.yaml file"
          <> header "stack-to-nix - a stack to nix converter" )
 
+-- | If a stack.yaml file contains a @resolver@ that points to
+-- a file, resolve that file and merge the snapshot into the
+-- @Stack@ record.
+resolveSnapshot :: Stack -> IO Stack
+resolveSnapshot stack@(Stack resolver pkgs extraPkgs)
+  = if "snapshot.yaml" `isSuffixOf` resolver
+    then do evalue <- decodeFileEither resolver
+            case evalue of
+              Left e -> error (show e)
+              Right (Snapshot resolver' _name pkgs') ->
+                -- Note: this is a hack.  The extra deps are
+                -- either Remote or <pkg>-<version>, but we
+                -- do not have logic to download remote
+                -- extra deps (yet), and as such just lump
+                -- them with the packages, which do have that
+                -- logic.
+                pure $ Stack resolver' ([p | p@(Remote{}) <- pkgs'] <> pkgs)
+                                       ([p | Local p <- pkgs' ] <> extraPkgs)
+    else pure stack
+
 stackexpr :: Args -> IO NExpr
 stackexpr args =
   do evalue <- decodeFileEither (stackFile args)
      case evalue of
        Left e -> error (show e)
-       Right value -> stack2nix args value
+       Right value -> stack2nix args
+                      =<< cleanupStack <$> resolveSnapshot value
+  where cleanupStack :: Stack -> Stack
+        cleanupStack (Stack r ps es)
+          = Stack r (cleanupPkg <$> (ps ++ [Local e | e <- es, looksLikePath e]))
+                    (cleanupExtraDep <$> [e | e <- es, not (looksLikePath e)])
+        -- drop trailing slashes. Nix doesn't like them much;
+        -- stack doesn't seem to care.
+        cleanupPkg (Local p) | "/" `isSuffixOf` p = Local (take (length p - 1) p)
+        cleanupPkg x = x
+        cleanupExtraDep = id
+        looksLikePath :: String -> Bool
+        looksLikePath = isInfixOf "/"
 
 stack2nix :: Args -> Stack -> IO NExpr
 stack2nix args stack@(Stack resolver _ _) =
