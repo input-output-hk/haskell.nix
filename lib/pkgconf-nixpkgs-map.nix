@@ -8,4 +8,4 @@ pkgs: {
     libR = pkgs.R;
     fftw3f = pkgs.fftwFloat;
     fftw3 = pkgs.fftw;
-  };
+  }
