@@ -19,4 +19,4 @@ let
    })
  ];
 in
- builtins.foldl' (pkgs: overlay: pkgs.extend overlay) base overlays
+ base#builtins.foldl' (pkgs: overlay: pkgs.extend overlay) base overlays

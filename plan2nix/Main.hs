@@ -38,13 +38,25 @@ planPackages planJSON = do
 value2plan :: Value -> Plan
 value2plan plan = Plan {packages , compilerVersion , compilerPackages }
  where
-  packages = filterInstallPlan $ \pkg -> if (pkg ^. key "style" . _String) /= "global"
-    then Nothing
-    else Just $ Package
+  packages = filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
+                                              , pkg ^. key "style" . _String) of
+    (_, "global") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
       , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       }
+    -- Until we figure out how to force Cabal to reconfigure just about any package
+    -- this here might be needed, so that we get the pre-existing packages as well.
+    -- Or we would have to plug in our very custom minimal pkg-db as well.
+    --
+    -- The issue is that cabal claims anything in the package db as pre-existing and
+    -- wants to reuse it if possible.
+    ("pre-existing",_) -> Just $ Package
+      { packageVersion  = pkg ^. key "pkg-version" . _String
+      , packageRevision = Nothing
+      , packageFlags    = Map.empty
+      }
+    _ -> Nothing
   compilerVersion  = Text.dropWhile (not . isDigit) $ plan ^. key "compiler-id" . _String
   compilerPackages = filterInstallPlan $ \pkg -> if isJust (pkg ^? key "style" . _String)
     then Nothing
