@@ -151,7 +151,7 @@
   # we can never reinstall the following set of packages:
   nonReinstallables
     = [ "rts" "ghc" "base" "ghc-prim" "array" "integer-gmp" "integer-simple"
-        "deepseq" "pretty" "ghc-boot-th" "template-haskell" ];
+        "deepseq" "pretty" "ghc-boot-th" "template-haskell" "terminfo" ];
   # Thus the final plan will contain
   # { packages = hsPkgs: { "package" = { flags = ...; package = ...; components = ...; }; ...  };
   #   compiler = ... };
