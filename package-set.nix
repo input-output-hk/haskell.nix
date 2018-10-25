@@ -112,6 +112,7 @@ let
     let expr = driver {
              cabalexpr = import path';
              pkgs = pkgs // { haskellPackages = stackPkgs; };
+             lib = pkgs.lib;
              inherit (host-map pkgs.stdenv) os arch;
              version = compiler.ghc.version; };
      # Use `callPackage` from the `compiler` here, to get the

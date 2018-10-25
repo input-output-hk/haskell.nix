@@ -56,7 +56,7 @@ in stdenv.mkDerivation {
   meta = {
     homepage = package.homepage;
     description = package.synopsis;
-    license = (import ./cabal-licenses.nix lib).${package.license};
+    license = (import ../lib/cabal-licenses.nix lib).${package.license};
   };
 
   CABAL_CONFIG = writeText
