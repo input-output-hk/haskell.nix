@@ -20,7 +20,7 @@ type Revision = Text -- Can be: rNUM, cabal file sha256, or "default"
 data Plan = Plan
   { packages :: HashMap Text Package
   , compilerVersion :: Text
-  , compilerPackages :: HashMap Text Version
+  , compilerPackages :: HashMap Text (Maybe Version)
   }
 
 data Package = Package
@@ -67,4 +67,4 @@ plan2nix (Plan { packages, compilerVersion, compilerPackages }) =
           []
           packageFlags
     in  revBinding : flagBindings
-  bind' pkg ver = quoted pkg $= mkStr ver
+  bind' pkg ver = quoted pkg $= maybe mkNull mkStr ver
