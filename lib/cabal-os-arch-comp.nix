@@ -25,7 +25,7 @@
     isNetbsd    = false;
     isDragonFly = false;
     isSolaris   = false;
-    isAIX       = false;
+    isAix       = false;
     isHPUX      = false;
     isIRIX      = false;
     isHalvm     = false;
