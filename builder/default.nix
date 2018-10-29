@@ -74,7 +74,7 @@ let
   };
 
 in {
-  components = haskellLib.applyComponents buildComp components;
+  components = haskellLib.applyComponents buildComp config;
   inherit (package) identifier;
   inherit setup cabalFile;
   isHaskell = true;
