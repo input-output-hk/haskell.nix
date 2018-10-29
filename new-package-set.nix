@@ -14,23 +14,6 @@
   # complier as needed.
   ghc = pkgs.haskell.compiler.${plan.compiler.nix-name};
 
-  # Avoid pkgs.callPackage for now. It does a lot of nonsense with OOP
-  # style programming that we should avoid until we know we want it.
-
-  # weakCallPackage: call a function or (importable expression)
-  # with scope + args.
-  #
-  # weakCallPackage scope f args
-  #  will call f (scope // args)
-  #
-  # weakCallpackage scope ./path args
-  #  will call the expression at ./path with (scope // args)
-  #
-  weakCallPackage = scope: f: args:
-    let f' = if lib.isFunction f then f else import f;
-        args' = scope // args;
-    in f' (builtins.intersectAttrs (builtins.functionArgs f') args');
-
   # this is *not* the hasekllLib from nixpkgs; it is rather our own
   # library from haskell.nix
   haskellLib = import ./lib { inherit lib haskellLib; };
