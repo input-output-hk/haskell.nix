@@ -63,9 +63,10 @@ with haskellLib;
     benchmarks = "bench";
   };
 
-  applyComponents = f: comps:
+  applyComponents = f: config:
     let
-      libComp = lib.mapAttrs (cname: f {ctype="lib"; inherit cname;}) (removeAttrs comps subComponentTypes);
+      comps = config.components;
+      libComp = lib.mapAttrs (cname: f {ctype="lib"; cname=config.package.identifier.name;}) (removeAttrs comps subComponentTypes);
       subComps = lib.mapAttrs
         (ctype: lib.mapAttrs (cname: f {inherit cname; ctype=componentPrefix.${ctype};}))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);

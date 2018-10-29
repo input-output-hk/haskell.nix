@@ -19,7 +19,7 @@ let
   allFlagsAndConfigs = {
     packageDbs =
       let
-        makePairs = map (p: rec { key="${val}"; val=p.components.${p.identifier.name}; });
+        makePairs = map (p: rec { key="${val}"; val=p.components.library; });
         closure = builtins.genericClosure {
           startSet = makePairs component.depends;
           operator = {val,...}: makePairs val.config.depends;
