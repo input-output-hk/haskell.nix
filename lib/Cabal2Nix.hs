@@ -90,7 +90,7 @@ gpd2nix src extra gpd = mkFunction args $ toNix gpd $//? (toNix <$> src) $//? ex
                           , (pkgs, Nothing)
                           , (hsPkgs, Nothing)
                           , (pkgconfPkgs, Nothing)]
-                          False
+                          True
 
 class HasBuildInfo a where
   getBuildInfo :: a -> BuildInfo
@@ -197,7 +197,7 @@ instance ToNixExpr GenericPackageDescription where
               where name = fromString $ unUnqualComponentName unQualName
                     toolDeps bi = [ BuildToolDependency pkg | ExeDependency pkg _ _ <- getAllToolDependencies (packageDescription gpd) bi ]
           components = mkNonRecSet $
-            [ component packageName lib | Just lib <- [condLibrary gpd] ] ++
+            [ component "library" lib | Just lib <- [condLibrary gpd] ] ++
             (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condSubLibraries gpd ]) ++
             (bindTo "foreignlibs" . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condForeignLibs  gpd ]) ++
             (bindTo "exes"        . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condExecutables  gpd ]) ++
