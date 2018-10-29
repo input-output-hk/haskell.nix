@@ -1,14 +1,16 @@
 { pkgs, stdenv, lib, haskellLib, ghc, fetchurl, writeText, runCommand, pkgconfig }:
 
-{ flags ? {}
-, package ? {}
-, components ? {}
+{ flags
+, package
+, components
 
-, name ? "${package.identifier.name}-${package.identifier.version}"
-, sha256 ? null
-, src ? fetchurl { url = "mirror://hackage/${name}.tar.gz"; inherit sha256; }
-, revision ? null
-, revisionSha256 ? null
+, name
+, sha256
+, src
+, revision
+, revisionSha256
+
+, ...
 }@config:
 
 let
@@ -56,21 +58,7 @@ let
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib; };
 
   buildComp = componentId: component: comp-builder {
-    inherit componentId package name src flags setup cabalFile;
-    component =
-      let
-        nonNullLists = fs: component // lib.genAttrs fs (field:
-          if component ? ${field}
-            then builtins.filter (x: x != null) component.${field}
-            else []);
-      in nonNullLists [
-        "depends"
-        "libs"
-        "frameworks"
-        "pkgconfig"
-        "build-tools"
-        "configureFlags"
-      ];
+    inherit componentId component package name src flags setup cabalFile;
   };
 
 in {
