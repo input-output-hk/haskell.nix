@@ -164,7 +164,7 @@
         ;
     };
 
-  hsPkgs = weakCallPackage pkgs driver {
+  hsPkgs = with haskellLib; weakCallPackage pkgs driver {
     inherit haskellLib ghc weakCallPackage plan;
   };
 }))
