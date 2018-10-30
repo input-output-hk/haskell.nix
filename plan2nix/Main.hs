@@ -36,7 +36,7 @@ planPackages planJSON = do
     Right value -> pure $ plan2nix $ value2plan value
 
 value2plan :: Value -> Plan
-value2plan plan = Plan {packages , compilerVersion , compilerPackages }
+value2plan plan = Plan { packages, compilerVersion, compilerPackages }
  where
   packages = filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
                                               , pkg ^. key "style" . _String) of
@@ -58,7 +58,7 @@ value2plan plan = Plan {packages , compilerVersion , compilerPackages }
       }
     _ -> Nothing
   compilerVersion  = Text.dropWhile (not . isDigit) $ plan ^. key "compiler-id" . _String
-  compilerPackages = filterInstallPlan $ \pkg -> if isJust (pkg ^? key "style" . _String)
+  compilerPackages = fmap Just $ filterInstallPlan $ \pkg -> if isJust (pkg ^? key "style" . _String)
     then Nothing
     else Just $ pkg ^. key "pkg-version" . _String
 
