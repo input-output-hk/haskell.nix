@@ -215,7 +215,7 @@ findCabalFiles path = doesFileExist (path </> Hpack.packageConfig) >>= \case
     case mbPkg of
       Left e -> error e
       Right r ->
-        return $ [InMemory Hpack
+        return $ [InMemory (Just Hpack)
                            (Hpack.decodeResultCabalFile r)
                            (encodeUtf8 $ Hpack.renderPackage [] (Hpack.decodeResultPackage r))]
 

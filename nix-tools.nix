@@ -1,13 +1,12 @@
 { system
 , compiler
-, flags ? {}
+, flags
 , pkgs
 , hsPkgs
-, pkgconfPkgs }:
-  let
-    _flags = {} // flags;
-  in {
-    flags = _flags;
+, pkgconfPkgs
+, ... }:
+  {
+    flags = {};
     package = {
       specVersion = "1.10";
       identifier = {
@@ -25,7 +24,7 @@
       buildType = "Simple";
     };
     components = {
-      "nix-tools" = {
+      "library" = {
         depends  = [
           (hsPkgs.base)
           (hsPkgs.hnix)
@@ -80,6 +79,23 @@
             (hsPkgs.aeson)
             (hsPkgs.microlens)
             (hsPkgs.microlens-aeson)
+          ];
+        };
+        "hackage-to-nix" = {
+          depends  = [
+            (hsPkgs.base)
+            (hsPkgs.nix-tools)
+            (hsPkgs.hackage-db)
+            (hsPkgs.hnix)
+            (hsPkgs.Cabal)
+            (hsPkgs.containers)
+            (hsPkgs.bytestring)
+            (hsPkgs.text)
+            (hsPkgs.cryptohash-sha256)
+            (hsPkgs.base16-bytestring)
+            (hsPkgs.filepath)
+            (hsPkgs.directory)
+            (hsPkgs.transformers)
           ];
         };
         "lts-to-nix" = {

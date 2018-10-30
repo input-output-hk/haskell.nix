@@ -80,6 +80,25 @@ executable plan-to-nix
   hs-source-dirs:      plan2nix
   default-language:    Haskell2010
 
+executable hackage-to-nix
+  ghc-options:         -Wall
+  main-is:             Main.hs
+  build-depends:       base >=4.11 && <4.12
+                     , nix-tools
+                     , hackage-db
+                     , hnix
+                     , Cabal
+                     , containers
+                     , bytestring
+                     , text
+                     , cryptohash-sha256
+                     , base16-bytestring
+                     , filepath
+                     , directory
+                     , transformers
+  hs-source-dirs:      hackage2nix
+  default-language:    Haskell2010
+
 executable lts-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs

@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Cabal2Nix (cabal2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName) where
+module Cabal2Nix (cabal2nix, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName) where
 
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription, parseGenericPackageDescriptionMaybe)
 import Distribution.Verbosity (normal)
@@ -48,7 +48,7 @@ pkgs, hsPkgs, flags :: Text
 pkgs   = "pkgs"
 hsPkgs = "hsPkgs"
 pkgconfPkgs = "pkgconfPkgs"
-flags  = "_flags"
+flags  = "flags"
 
 ($//?) :: NExpr -> Maybe NExpr -> NExpr
 lhs $//? (Just e) = lhs $// e
@@ -60,7 +60,7 @@ data CabalFileGenerator
 
 data CabalFile
   = OnDisk FilePath
-  | InMemory CabalFileGenerator FilePath ByteString
+  | InMemory (Maybe CabalFileGenerator) FilePath ByteString
   deriving Show
 
 
@@ -76,22 +76,21 @@ genExtra Hpack = mkNonRecSet [ "cabal-generator" $= mkStr "hpack" ]
 
 cabal2nix :: Maybe Src -> CabalFile -> IO NExpr
 cabal2nix src = \case
-  (OnDisk path) -> fmap (go Nothing)
+  (OnDisk path) -> fmap (gpd2nix src Nothing)
     $ readGenericPackageDescription normal path
-  (InMemory gen path body) -> fmap (go (Just $ genExtra gen))
+  (InMemory gen _ body) -> fmap (gpd2nix src (genExtra <$> gen))
     $ maybe (error "Failed to parse in-memory cabal file") pure (parseGenericPackageDescriptionMaybe body)
-  where go :: Maybe NExpr -> GenericPackageDescription -> NExpr
-        go extra gpd = mkFunction args . lets gpd $ toNix gpd $//? (toNix <$> src) $//? extra
-        args :: Params NExpr
+
+gpd2nix :: Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
+gpd2nix src extra gpd = mkFunction args $ toNix gpd $//? (toNix <$> src) $//? extra
+  where args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
-                          , ("flags", Just $ mkNonRecSet [])
+                          , ("flags", Nothing)
                           , (pkgs, Nothing)
                           , (hsPkgs, Nothing)
                           , (pkgconfPkgs, Nothing)]
-                          False
-        lets :: GenericPackageDescription -> NExpr -> NExpr
-        lets gpd = mkLets [ flags $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd) $// mkSym "flags" ]
+                          True
 
 class HasBuildInfo a where
   getBuildInfo :: a -> BuildInfo
@@ -184,7 +183,7 @@ mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
 instance ToNixExpr GenericPackageDescription where
-  toNix gpd = mkNonRecSet $ [ "flags"      $= mkSym flags -- keep track of the final flags; and allow them to be inspected
+  toNix gpd = mkNonRecSet $ [ "flags"      $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
                             , "package"    $= (toNix (packageDescription gpd))
                             , "components" $= components ]
     where packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd
@@ -198,7 +197,7 @@ instance ToNixExpr GenericPackageDescription where
               where name = fromString $ unUnqualComponentName unQualName
                     toolDeps bi = [ BuildToolDependency pkg | ExeDependency pkg _ _ <- getAllToolDependencies (packageDescription gpd) bi ]
           components = mkNonRecSet $
-            [ component packageName lib | Just lib <- [condLibrary gpd] ] ++
+            [ component "library" lib | Just lib <- [condLibrary gpd] ] ++
             (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condSubLibraries gpd ]) ++
             (bindTo "foreignlibs" . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condForeignLibs  gpd ]) ++
             (bindTo "exes"        . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condExecutables  gpd ]) ++
