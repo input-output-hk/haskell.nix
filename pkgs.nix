@@ -14,15 +14,15 @@ let
   hackage = import (overrideWith "hackage"
                    (pkgs.fetchFromGitHub { owner  = "angerman";
                                            repo   = "hackage.nix";
-                                           rev    = "4815049bf755492e63ef18129b7f3b0fa62eb155";
-                                           sha256 = "1fjyyfdbn0657qqj8h0bagjsjdgf0s2da30nzjwk3zkfb5k89l31"; }))
+                                           rev    = "5910ad8039568239082e71eae18117fdcac94d89";
+                                           sha256 = "12ffzzjgirwzha3ngxbniccgn19406iryxspq19kgi4kz9lz6bpr"; }))
                    ;
   # a different haskell infrastructure
   haskell = import (overrideWith "haskell"
                     (pkgs.fetchFromGitHub { owner  = "angerman";
                                             repo   = "haskell.nix";
-                                            rev    = "13898161f0353cfacc84fd038d74596b62dad662";
-                                            sha256 = "161wbhyy0lqlrpdwixsjbq6wxybs75wwil8gi52vhccwhqqjk0k8"; }))
+                                            rev    = "866042b9bfe7cd44ff794efee5eb0fae762c5fbe";
+                                            sha256 = "05vzgx3frr7jrzhkpdrrknd2c29dynsxsdaalh39hzq95j175pmm"; }))
                    hackage;
 
   # our packages
