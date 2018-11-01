@@ -16,9 +16,9 @@ script:
 - cachix use nix-tools
 - if [[ $TRAVIS_SECURE_ENV_VARS ]]; then
   nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools-all-execs --cores 0
-  | cachix push nix-tools
+  | cachix push nix-tools;
   else
-  nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools-all-execs --cores 0
+  nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools-all-execs --cores 0;
   fi
 
 env:
