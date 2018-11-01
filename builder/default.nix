@@ -25,35 +25,33 @@ let
   '';
   defaultSetup = runCommand "default-Setup" { nativeBuildInputs = [ghc]; } ''
     cat ${defaultSetupSrc} > Setup.hs
-    ghc Setup.hs --make -o $out
+    mkdir -p $out/bin
+    ghc Setup.hs --make -o $out/bin/Setup
   '';
 
-  setup = stdenv.mkDerivation {
-    name = "${name}-setup";
-    nativeBuildInputs = [ghc];
-    inherit src;
-    phases = ["unpackPhase" "buildPhase" "installPhase"];
-    buildPhase = ''
-      setup=${defaultSetup}
-      for f in Setup.hs Setup.lhs; do
-        if [ -f $f ]; then
-          if ! (diff $f ${defaultSetupSrc} > /dev/null); then
+  setup = if package.buildType == "Simple"
+    then defaultSetup
+    else stdenv.mkDerivation {
+      name = "${name}-setup";
+      nativeBuildInputs = [ghc];
+      inherit src;
+      phases = ["unpackPhase" "buildPhase" "installPhase"];
+      buildPhase = ''
+        for f in Setup.hs Setup.lhs; do
+          if [ -f $f ]; then
             echo Compiling package $f
             ghc $f --make -o ./Setup
             setup=$(pwd)/Setup
-          else
-            echo Using default Setup
           fi
-          break
-        fi
-      done
-    '';
+        done
+        [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
+      '';
 
-    installPhase = ''
-      mkdir -p $out/bin
-      install $setup $out/bin/Setup
-    '';
-  };
+      installPhase = ''
+        mkdir -p $out/bin
+        install ./Setup $out/bin/Setup
+      '';
+    };
 
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib; };
 
