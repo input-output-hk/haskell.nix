@@ -34,7 +34,7 @@ ltsPackages lts = do
 lts2plan :: Value -> Plan
 lts2plan lts = Plan { packages , compilerVersion , compilerPackages }
  where
-  packages = lts ^. key "packages" . _Object <&> \v -> Package
+  packages = mappend compilerPackages' $ fmap Just $ lts ^. key "packages" . _Object <&> \v -> Package
     { packageVersion  = v ^. key "version" . _String
     , packageRevision = v ^? key "cabal-file-info" . key "hashes" . key "SHA256" . _String
     , packageFlags    = Map.mapMaybe (^? _Bool) $ v ^. key "constraints" . key "flags" . _Object
@@ -43,8 +43,17 @@ lts2plan lts = Plan { packages , compilerVersion , compilerPackages }
   compilerPackages =
     (lts ^.  key "system-info" . key "core-packages" . _Object <&> (Just . (^. _String)))
     <> Map.fromList
-           [ (p, Nothing) -- core-executables is just a list of exe
-                          -- names shipped with GHC, which lots of
-                          -- packages depend on (e.g. hsc2hs)
+           [ (p, Nothing) -- core-executables is just a list of
+                                 -- exe names shipped with GHC, which
+                                 -- lots of packages depend on
+                                 -- (e.g. hsc2hs)
            | p <- toList $ lts ^. key "system-info" . key "core-executables" . _Array <&> (^. _String)
            ]
+  compilerPackages' = fmap
+    (fmap $ \v -> Package
+      { packageVersion  = v
+      , packageRevision = Nothing
+      , packageFlags    = Map.empty
+      }
+    )
+    compilerPackages

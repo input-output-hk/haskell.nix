@@ -38,7 +38,7 @@ planPackages planJSON = do
 value2plan :: Value -> Plan
 value2plan plan = Plan { packages, compilerVersion, compilerPackages }
  where
-  packages = filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
+  packages = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
                                               , pkg ^. key "style" . _String) of
     (_, "global") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String

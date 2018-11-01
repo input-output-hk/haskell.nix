@@ -18,7 +18,7 @@ type Version = Text
 type Revision = Text -- Can be: rNUM, cabal file sha256, or "default"
 
 data Plan = Plan
-  { packages :: HashMap Text Package
+  { packages :: HashMap Text (Maybe Package)
   , compilerVersion :: Text
   , compilerPackages :: HashMap Text (Maybe Version)
   }
@@ -33,11 +33,11 @@ plan2nix :: Plan -> NExpr
 plan2nix (Plan { packages, compilerVersion, compilerPackages }) =
   mkFunction "hackage"
     . mkNonRecSet
-    $ [ "packages" $= (mkNonRecSet $ uncurry bind =<< Map.toList packages)
+    $ [ "packages" $= (mkNonRecSet $ uncurry bind =<< Map.toList quotedPackages)
       , "compiler" $= mkNonRecSet
         [ "version" $= mkStr compilerVersion
         , "nix-name" $= mkStr ("ghc" <> Text.filter (/= '.') compilerVersion)
-        , "packages" $= mkNonRecSet (uncurry bind' <$> Map.toList compilerPackages)
+        , "packages" $= mkNonRecSet (fmap (uncurry bind') $ Map.toList $ mapKeys quoted compilerPackages)
         ]
         -- overlay = pkgs: self: super: with pkgs.haskell.lib; { ... = dontCheck ... };
       , "overlay" $= ( mkFunction "pkgs"
@@ -55,16 +55,19 @@ plan2nix (Plan { packages, compilerVersion, compilerPackages }) =
                                       ( mkSym "x" )
                                       ) ]
                      . mkNonRecSet
-                     $ fmap (uncurry bindTo) . Map.toList $ (\k _v -> mkSym "dontCheck'" @@ (mkSym "super" @. k)) `Map.mapWithKey` packages)
+                     $ fmap (uncurry bindTo) . Map.toList $ (\k _v -> mkSym "dontCheck'" @@ (mkSym "super" @. k)) `Map.mapWithKey` quotedPackages)
       ]
  where
-  bind pkg (Package { packageVersion, packageRevision, packageFlags }) =
+  quotedPackages = mapKeys quoted packages
+  bind pkg (Just (Package { packageVersion, packageRevision, packageFlags })) =
     let verExpr      = mkSym "hackage" @. pkg @. quoted packageVersion
         revExpr      = verExpr @. "revisions" @. maybe "default" quoted packageRevision
-        revBinding   = bindPath (pkg :| ["revision"]) revExpr
         flagBindings = Map.foldrWithKey
           (\fname val acc -> bindPath (pkg :| ["flags", fname]) (mkBool val) : acc)
           []
           packageFlags
-    in  revBinding : flagBindings
-  bind' pkg ver = quoted pkg $= maybe mkNull mkStr ver
+    in  revBinding pkg revExpr : flagBindings
+  bind pkg Nothing = [revBinding pkg mkNull]
+  revBinding pkg revExpr = bindPath (pkg :| ["revision"]) revExpr
+  bind' pkg ver = pkg $= maybe mkNull mkStr ver
+  mapKeys f = Map.fromList . fmap (\(k, v) -> (f k, v)) . Map.toList
