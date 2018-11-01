@@ -30,7 +30,10 @@ let
   exactDep = pdbArg: p: ''
     if id=$(ghc-pkg ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
-      # TODO: Figure out how to do this for cabal.config for nix-shell
+    fi
+    if ver=$(ghc-pkg ${pdbArg} field ${p} version --simple-output); then
+      echo "constraint: ${p} == $ver" >> $out/cabal.config
+      echo "constraint: ${p} installed" >> $out/cabal.config
     fi
   '';
 
@@ -53,7 +56,8 @@ let
 
   '' + lib.optionalString component.doExactConfig ''
     echo "--exact-configuration" >> $out/configure-flags
-    echo "exact-configuration: True" >> $out/cabal.config
+    echo "allow-newer: ${package.identifier.name}:*" >> $out/cabal.config
+    echo "allow-older: ${package.identifier.name}:*" >> $out/cabal.config
 
     ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
     ${lib.concatMapStringsSep "\n" (exactDep "") nonReinstallablePkgs}
