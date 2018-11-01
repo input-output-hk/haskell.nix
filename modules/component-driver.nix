@@ -5,6 +5,9 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
   };
+
+  nonReinstallablePkgs = [ "rts" "ghc" "ghc-prim" "integer-gmp" "integer-simple" "base"
+                           "array" "deepseq" "pretty" "ghc-boot-th" "template-haskell"];
 in
 
 {
@@ -13,6 +16,7 @@ in
   };
 
   config.hsPkgs = { buildPackages = config.hsPkgs; }
-    // lib.mapAttrs (_: _: null) config.compiler.packages
-    // lib.mapAttrs (_: pkg: if pkg == null then null else new-builder pkg) config.packages;
+    // lib.mapAttrs
+      (name: pkg: if pkg == null || builtins.elem name nonReinstallablePkgs then null else new-builder pkg)
+      config.packages;
 }
