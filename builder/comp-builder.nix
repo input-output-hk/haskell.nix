@@ -1,4 +1,4 @@
-{ stdenv, ghc, lib, pkgconfig, writeText, haskellLib }:
+{ stdenv, ghc, lib, pkgconfig, writeText, runCommand, haskellLib }:
 
 { componentId
 , component
@@ -11,38 +11,50 @@
 }:
 
 let
-  flagsAndConfig = field: xs: {
-    flags = map (x: "--${field}=${x}") xs;
-    config = lib.optional (xs != []) "${field}: ${lib.concatStringsSep " " xs}";
-  };
+  fullName = "${name}-${componentId.ctype}-${componentId.cname}";
 
-  allFlagsAndConfigs = {
-    packageDbs =
-      let
-        makePairs = map (p: rec { key="${val}"; val=p.components.library; });
-        closure = builtins.genericClosure {
-          startSet = makePairs component.depends;
-          operator = {val,...}: makePairs val.config.depends;
-        };
-        flatDepends = map ({val,...}: val) closure;
-      in flagsAndConfig "package-db" (map (p: "${p}/package.conf.d") flatDepends);
+  flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
+    echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
+    echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
+  '';
 
-    extraLibDirs = flagsAndConfig "extra-lib-dirs" (map (p: "${p}/lib") component.libs);
-    extraIncludeDirs = flagsAndConfig "extra-include-dirs" (map (p: "${lib.getDev p}/include") component.libs);
-    extraFameworks = flagsAndConfig "extra-framework-dirs" (map (p: "${p}/Library/Frameworks") component.frameworks);
-    userFlags = {
-      flags = [("--flags=\"" + lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: lib.optionalString (!val) "-" + fname) flags) + "\"")];
-      config = [];
-    };
-  };
+  flatDepends =
+    let
+      makePairs = map (p: rec { key="${val}"; val=p.components.library; });
+      closure = builtins.genericClosure {
+        startSet = makePairs component.depends;
+        operator = {val,...}: makePairs val.config.depends;
+      };
+    in map ({val,...}: val) closure;
+
+  configFiles = runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } ''
+    mkdir -p $out
+    ghc-pkg init $out/package.conf.d
+
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
+      "extra-lib-dirs" = map (p: "${p}/lib") component.libs;
+      "extra-include-dirs" = map (p: "${lib.getDev p}/include") component.libs;
+      "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
+    })}
+
+    ${lib.concatMapStringsSep "\n" (p: ''
+      ghc-pkg --package-db ${p}/package.conf.d dump | ghc-pkg --force --package-db $out/package.conf.d register -
+    '') flatDepends}
+    ${flagsAndConfig "package-db" ["$out/package.conf.d"]}
+
+    echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
+
+    ghc-pkg --package-db $out/package.conf.d check
+  '';
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out" "${componentId.ctype}:${componentId.cname}" ]
-    ++ builtins.concatLists (lib.mapAttrsToList (_: x: x.flags) allFlagsAndConfigs)
+    ++ ["$(cat ${configFiles}/configure-flags)"]
     ++ component.configureFlags
   );
+
 in stdenv.mkDerivation {
-  name = "${name}-${componentId.ctype}-${componentId.cname}";
+  name = fullName;
 
   inherit src;
 
@@ -51,6 +63,7 @@ in stdenv.mkDerivation {
   passthru = {
     inherit (package) identifier;
     config = component;
+    inherit configFiles;
   };
 
   meta = {
@@ -59,9 +72,7 @@ in stdenv.mkDerivation {
     license = (import ../lib/cabal-licenses.nix lib).${package.license};
   };
 
-  CABAL_CONFIG = writeText
-    "package-db-cabal.config"
-    (lib.concatStringsSep "\n" (builtins.concatLists (lib.mapAttrsToList (_: x: x.config) allFlagsAndConfigs)));
+  CABAL_CONFIG = configFiles + /cabal.config;
 
   enableParallelBuilding = true;
 
@@ -102,7 +113,7 @@ in stdenv.mkDerivation {
     ${lib.optionalString (haskellLib.isLibrary componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ghc-pkg init $out/package.conf.d
-      ghc-pkg ${lib.concatStringsSep " " allFlagsAndConfigs.packageDbs.flags} -f $out/package.conf.d register ${name}.conf
+      ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
   '';
 }
