@@ -33,5 +33,8 @@
 
     # Converts config.hackage.configs and pkg-def to config.packages
     ./modules/plan.nix
+
+    # Configuration that applies to all plans
+    ./modules/configuration-nix.nix
   ];
 }
