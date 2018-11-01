@@ -28,11 +28,17 @@ let
   # our packages
   plan = import ./plan.nix;
 
-  pkgSet = haskell.mkNewPkgSet pkgs plan;
+  pkgSet = haskell.mkNewPkgSet {
+    inherit pkgs;
+    pkg-def = plan;
+    modules = [{
+      packages = {
+        nix-tools = import ./nix-tools.nix;
+        hackage-db = import ./hackage-db.nix;
+      };
+    }];
+  };
 
-  packages = pkgSet {
-    extraDeps = {
-      nix-tools = ./nix-tools.nix;
-      hackage-db = ./hackage-db.nix;
-    }; };
+  packages = pkgSet.config.hsPkgs;
+
 in packages
