@@ -4,19 +4,25 @@ let
   new-builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
+    inherit (config) nonReinstallablePkgs;
   };
-
-  nonReinstallablePkgs = [ "rts" "ghc" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                           "array" "deepseq" "pretty" "ghc-boot-th" "template-haskell"];
 in
 
 {
+  options.nonReinstallablePkgs = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+  };
+
+  config.nonReinstallablePkgs =
+    [ "rts" "ghc" "ghc-prim" "integer-gmp" "integer-simple" "base"
+    "array" "deepseq" "pretty" "ghc-boot-th" "template-haskell" ];
+
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
   };
 
   config.hsPkgs = { buildPackages = config.hsPkgs; }
     // lib.mapAttrs
-      (name: pkg: if pkg == null || builtins.elem name nonReinstallablePkgs then null else new-builder pkg)
-      config.packages;
+      (name: pkg: if pkg == null then null else new-builder pkg)
+      (config.packages // lib.genAttrs config.nonReinstallablePkgs (_: null));
 }
