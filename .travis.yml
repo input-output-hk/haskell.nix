@@ -7,14 +7,30 @@ matrix:
     - name: 18.09 nixOS
       env: CHANNEL=nixos-18.09
 
+sudo: required
+before_script:
+- sudo mount -o remount,exec,size=4G,mode=755 /run/user || true
+- sudo mkdir -p /etc/nix
+- echo "trusted-users = root $USER" | sudo tee -a /etc/nix/nix.conf
+- sudo launchctl kickstart -k system/org.nixos.nix-daemon || true
+
 script:
-- nix-env -iA cachix -f nix-env -iA cachix -f https://github.com/NixOS/nixpkgs/tarball/889c72032f8595fcd7542c6032c208f6b8033db6
+- nix-env -if https://github.com/cachix/cachix/tarball/master --extra-substituters https://cachix.cachix.org --trusted-public-keys 'cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM='
 - cachix use nix-tools
+- cachix push nix-tools --watch-store&
 - if [[ $TRAVIS_SECURE_ENV_VARS ]]; then
-  nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools-all-execs --cores 0
+  nix-build
+  -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz
+  -A nix-tools-all-execs
+  --cores 0
+  -j2
   | cachix push nix-tools;
   else
-  nix-build -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz -A nix-tools-all-execs --cores 0;
+  nix-build
+  -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz
+  -A nix-tools-all-execs
+  --cores 0
+  -j2;
   fi
 
 env:
