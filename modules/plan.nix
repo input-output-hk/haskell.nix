@@ -54,10 +54,8 @@ with types;
   config = let module = config.plan.pkg-def config.hackage.configs; in {
     inherit (module) compiler overlay;
     packages = lib.mapAttrs (_: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
-      let m = import revision.outPath modArgs;
-      in m
-        // builtins.removeAttrs revision ["outPath"]
-        // { flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or {}); }
+      let m = revision modArgs;
+      in m // { flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or {}); }
     ) module.packages;
   };
 }

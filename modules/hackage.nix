@@ -41,12 +41,11 @@ let
         (vnum: version: version // {
           revisions =
             let
-              rev2Config = rev: {
+              rev2Config = rev: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs: {
                 inherit (version) sha256;
-                inherit (rev) outPath;
                 revision = rev.revNum;
                 revisionSha256 = rev.sha256;
-              };
+              } // import rev modArgs;
               f = rev: acc: acc // {
                 # If there's a collision (e.g. a revision was
                 # reverted), pick the one with the smaller
@@ -67,8 +66,8 @@ in {
     # this should allow us to use `config` overrides
     # in the nixpkgs setup, and properly override the
     # complier as needed.
-    default = pkgs.haskell.compiler.${config.compiler.nix-name};
-    defaultText = "pkgs.haskell.compiler.\${config.compiler.nix-name}";
+    default = pkgs.buildPackages.haskell.compiler.${config.compiler.nix-name};
+    defaultText = "pkgs.buildPackages.haskell.compiler.\${config.compiler.nix-name}";
   };
 
   options.hackage.db = lib.mkOption {

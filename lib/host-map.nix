@@ -13,8 +13,8 @@ stdenv: with stdenv.hostPlatform; {
          if isx86     && is64bit then "X86_64"  else
          if isPowerPC && is32bit then "PPC"     else
          if isPowerPC && is64bit then "PPC64"   else
-         if isArm     && is32bit then "Arm"     else
-         if isArm     && is64bit then "Aarch64" else
+         if isAarch32            then "Arm"     else
+         if isAarch64            then "Aarch64" else
          if isMips               then "Mips"    else
          throw "Unknown Arch";
 }

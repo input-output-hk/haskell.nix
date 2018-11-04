@@ -1,4 +1,6 @@
-{ hackage, pkgs, pkg-def, modules ? [] }: pkgs.lib.evalModules {
+let f = { hackage, pkgs, pkg-def, modules ? [] }: let
+  buildModules = f { inherit hackage pkg-def modules; pkgs = pkgs.buildPackages; };
+in pkgs.lib.evalModules {
   modules = modules ++ [
     ({ lib, ... }: {
       # Provide all modules with haskellLib, pkgs, and pkgconfPkgs arguments
@@ -12,6 +14,8 @@
         # augment the existing pkgs set with the specific mappings:
         pkgs = pkgs // (import ./lib/system-nixpkgs-map.nix pkgs);
         pkgconfPkgs = pkgs // (import ./lib/pkgconf-nixpkgs-map.nix pkgs);
+
+        inherit buildModules;
       };
 
       # Set the hackage DB for modules/hackage.nix
@@ -37,4 +41,5 @@
     # Configuration that applies to all plans
     ./modules/configuration-nix.nix
   ];
-}
+};
+in f
