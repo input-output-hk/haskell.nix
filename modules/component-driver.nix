@@ -1,9 +1,10 @@
-{ config, pkgs, lib, haskellLib, ... }:
+{ config, pkgs, lib, haskellLib, buildModules, ... }:
 let
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
   new-builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
+    buildGHC = buildModules.config.ghc.package;
     inherit (config) nonReinstallablePkgs;
   };
 in
@@ -21,7 +22,7 @@ in
     type = lib.types.unspecified;
   };
 
-  config.hsPkgs = { buildPackages = config.hsPkgs; }
+  config.hsPkgs = { buildPackages = buildModules.config.hsPkgs; }
     // lib.mapAttrs
       (name: pkg: if pkg == null then null else new-builder pkg)
       (config.packages // lib.genAttrs config.nonReinstallablePkgs (_: null));

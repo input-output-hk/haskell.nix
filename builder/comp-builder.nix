@@ -28,10 +28,10 @@ let
     in map ({val,...}: val) closure;
 
   exactDep = pdbArg: p: ''
-    if id=$(ghc-pkg ${pdbArg} field ${p} id --simple-output); then
+    if id=$(${ghc.targetPrefix}ghc-pkg ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
     fi
-    if ver=$(ghc-pkg ${pdbArg} field ${p} version --simple-output); then
+    if ver=$(${ghc.targetPrefix}ghc-pkg ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
     fi
@@ -39,7 +39,7 @@ let
 
   configFiles = runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out
-    ghc-pkg init $out/package.conf.d
+    ${ghc.targetPrefix}ghc-pkg init $out/package.conf.d
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${p}/lib") component.libs;
@@ -48,7 +48,7 @@ let
     })}
 
     ${lib.concatMapStringsSep "\n" (p: ''
-      ghc-pkg --package-db ${p}/package.conf.d dump | ghc-pkg --force --package-db $out/package.conf.d register -
+      ${ghc.targetPrefix}ghc-pkg --package-db ${p}/package.conf.d dump | ${ghc.targetPrefix}ghc-pkg --force --package-db $out/package.conf.d register -
     '') flatDepends}
     ${flagsAndConfig "package-db" ["$out/package.conf.d"]}
 
@@ -63,13 +63,20 @@ let
     ${lib.concatMapStringsSep "\n" (exactDep "") nonReinstallablePkgs}
 
   '' + ''
-    ghc-pkg --package-db $out/package.conf.d check
+    ${ghc.targetPrefix}ghc-pkg --package-db $out/package.conf.d check
   '');
 
   finalConfigureFlags = lib.concatStringsSep " " (
-    [ "--prefix=$out" "${componentId.ctype}:${componentId.cname}" ]
-    ++ ["$(cat ${configFiles}/configure-flags)"]
-    ++ component.configureFlags
+    [ "--prefix=$out"
+      "${componentId.ctype}:${componentId.cname}"
+      "$(cat ${configFiles}/configure-flags)"
+      "--with-ghc=${ghc.targetPrefix}ghc"
+      "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
+      "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
+    ] ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
+      ["--hsc2hs-option=--cross-compile"]
+      ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}"
+    ) ++ component.configureFlags
   );
 
 in stdenv.mkDerivation {
@@ -131,8 +138,8 @@ in stdenv.mkDerivation {
     $SETUP_HS copy
     ${lib.optionalString (haskellLib.isLibrary componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
-      ghc-pkg init $out/package.conf.d
-      ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+      ${ghc.targetPrefix}ghc-pkg init $out/package.conf.d
+      ${ghc.targetPrefix}ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
   '';
 }

@@ -1,4 +1,4 @@
-{ pkgs, stdenv, lib, haskellLib, ghc, fetchurl, writeText, runCommand, pkgconfig, nonReinstallablePkgs }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, writeText, runCommand, pkgconfig, nonReinstallablePkgs }:
 
 { flags
 , package
@@ -19,21 +19,22 @@ let
       url = "https://hackage.haskell.org/package/${name}/revision/${toString revision}.cabal";
       sha256 = revisionSha256;
     };
+
   defaultSetupSrc = builtins.toFile "Setup.hs" ''
     import Distribution.Simple
     main = defaultMain
   '';
-  defaultSetup = runCommand "default-Setup" { nativeBuildInputs = [ghc]; } ''
+  defaultSetup = buildPackages.runCommand "default-Setup" { nativeBuildInputs = [buildGHC]; } ''
     cat ${defaultSetupSrc} > Setup.hs
     mkdir -p $out/bin
-    ghc Setup.hs --make -o $out/bin/Setup
+    ${buildGHC.targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
   '';
 
   setup = if package.buildType == "Simple"
     then defaultSetup
     else stdenv.mkDerivation {
       name = "${name}-setup";
-      nativeBuildInputs = [ghc];
+      nativeBuildInputs = [buildGHC];
       inherit src;
       phases = ["unpackPhase" "buildPhase" "installPhase"];
       buildPhase = ''
