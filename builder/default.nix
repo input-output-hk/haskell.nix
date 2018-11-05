@@ -9,6 +9,7 @@
 , src
 , revision
 , revisionSha256
+, patches
 
 , ...
 }@config:
@@ -57,7 +58,7 @@ let
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs; };
 
   buildComp = componentId: component: comp-builder {
-    inherit componentId component package name src flags setup cabalFile;
+    inherit componentId component package name src flags setup cabalFile patches;
   };
 
 in {

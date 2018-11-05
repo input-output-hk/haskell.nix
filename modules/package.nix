@@ -177,5 +177,9 @@ in {
       type = nullOr str;
       default = null;
     };
+    patches = mkOption {
+      type = listOf path;
+      default = [];
+    };
   };
 }
