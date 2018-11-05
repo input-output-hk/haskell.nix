@@ -178,7 +178,7 @@ in {
       default = null;
     };
     patches = mkOption {
-      type = listOf path;
+      type = listOf (either package path);
       default = [];
     };
   };
