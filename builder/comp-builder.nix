@@ -8,6 +8,7 @@
 , src
 , flags
 , cabalFile
+, patches ? []
 }:
 
 let
@@ -79,7 +80,7 @@ let
     ) ++ component.configureFlags
   );
 
-in stdenv.mkDerivation {
+in stdenv.mkDerivation ({
   name = fullName;
 
   inherit src;
@@ -142,4 +143,4 @@ in stdenv.mkDerivation {
       ${ghc.targetPrefix}ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
   '';
-}
+} // lib.optionalAttrs (patches != []) { inherit patches; })
