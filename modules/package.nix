@@ -181,5 +181,9 @@ in {
       type = listOf (either package path);
       default = [];
     };
+    postUnpack = mkOption {
+      type = nullOr str;
+      default = null;
+    };
   };
 }
