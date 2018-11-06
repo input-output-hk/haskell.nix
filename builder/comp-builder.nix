@@ -9,6 +9,7 @@
 , flags
 , cabalFile
 , patches ? []
+, postUnpack ? null
 }:
 
 let
@@ -143,4 +144,7 @@ in stdenv.mkDerivation ({
       ${ghc.targetPrefix}ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
   '';
-} // lib.optionalAttrs (patches != []) { inherit patches; })
+}
+// lib.optionalAttrs (patches != []) { inherit patches; }
+// lib.optionalAttrs (postUnpack != null) { inherit postUnpack; }
+)
