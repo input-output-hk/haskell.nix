@@ -1,5 +1,5 @@
-let f = { hackage, pkgs, pkg-def, modules ? [] }: let
-  buildModules = f { inherit hackage pkg-def modules; pkgs = pkgs.buildPackages; };
+let f = { hackage, pkgs, pkg-def, pkg-def-overlays ? [], modules ? [] }: let
+  buildModules = f { inherit hackage pkg-def pkg-def-overlays modules; pkgs = pkgs.buildPackages; };
 in pkgs.lib.evalModules {
   modules = modules ++ [
     ({ lib, ... }: {
@@ -22,7 +22,17 @@ in pkgs.lib.evalModules {
       hackage.db = hackage;
 
       # Set the plan for modules/plan.nix
-      plan.pkg-def = pkg-def;
+      plan.pkg-def = hackage: with builtins;
+        # fold any potential `pkg-def-overlays`
+        # onto the `pkg-def`.
+        #
+        # This means you can have a base definition (e.g. stackage)
+        # and augment it with custom packages to your liking.
+        foldl' lib.recursiveUpdate
+            (pkg-def hackage)
+            (map (p: p hackage) pkg-def-overlays)
+      ;
+
     })
 
     # Supplies metadata
