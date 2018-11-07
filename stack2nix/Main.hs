@@ -46,6 +46,7 @@ import qualified Hpack.Config as Hpack
 import qualified Hpack.Render as Hpack
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import           Data.List.NonEmpty                       ( NonEmpty (..) )
 import Data.ByteString (ByteString)
 
 import Options.Applicative
@@ -183,8 +184,13 @@ stack2nix args stack@(Stack resolver _ _) =
   do let extraDeps = extraDeps2nix stack
      packages <- packages2nix args stack
      return $ mkNonRecSet
-       [ "extraDeps" $= mkFunction "hsPkgs" extraDeps
-       , "packages"  $= mkFunction "hsPkgs" packages
+       [ "extra-deps" $= mkFunction "hackage" (mkNonRecSet [ "packages" $= extraDeps ])
+       , "pkgs"  $= mkFunction (mkParamset [ ("lib", Nothing) ] False)
+                    (mkWith "lib" (mkNonRecSet [ "packages" $=
+                     (mkSym "mapAttrs"
+                      @@ ("k" ==> ("v" ==>
+                          (mkSym "mkForce" @@ (mkSym "import" @@ mkSym "v"))))
+                      @@ packages )]))
        , "resolver"  $= fromString (quoted resolver)
        ]
 -- | Transform 'extra-deps' to nix expressions.
@@ -195,12 +201,12 @@ stack2nix args stack@(Stack resolver _ _) =
 --
 -- into
 --
---   { name = hsPkgs.name.version; }
+--   { name.revision = hackage.name.version.revisions.default; }
 --
 extraDeps2nix :: Stack -> NExpr
 extraDeps2nix (Stack _ _ deps) =
   let extraDeps = parsePackageIdentifier <$> deps
-  in mkNonRecSet [ quoted (toText pkg) $= (mkSym "hsPkgs" @. toText pkg @. quoted (toText ver))
+  in mkNonRecSet [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
                  | Just (PackageIdentifier pkg ver) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse

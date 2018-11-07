@@ -39,23 +39,6 @@ plan2nix (Plan { packages, compilerVersion, compilerPackages }) =
         , "nix-name" $= mkStr ("ghc" <> Text.filter (/= '.') compilerVersion)
         , "packages" $= mkNonRecSet (fmap (uncurry bind') $ Map.toList $ mapKeys quoted compilerPackages)
         ]
-        -- overlay = pkgs: self: super: with pkgs.haskell.lib; { ... = dontCheck ... };
-      , "overlay" $= ( mkFunction "pkgs"
-                     . mkFunction "self"
-                     . mkFunction "super"
-                     . mkWith (mkSym "pkgs" @. "haskell" @. "lib")
-                     -- a null-ignoring dontCheck:
-                     -- let dontCheck' = x:
-                     --   if builtins.hasAttr "override" x
-                     --     then dontCheck x
-                     --     else x
-                     . mkLets [ "dontCheck'" $= mkFunction "x"
-                                (mkIf ( (mkSym "builtins" @. "hasAttr") @@ mkStr "override" @@ mkSym "x" )
-                                      ( mkSym "dontCheck" @@ mkSym "x" )
-                                      ( mkSym "x" )
-                                      ) ]
-                     . mkNonRecSet
-                     $ fmap (uncurry bindTo) . Map.toList $ (\k _v -> mkSym "dontCheck'" @@ (mkSym "super" @. k)) `Map.mapWithKey` quotedPackages)
       ]
  where
   quotedPackages = mapKeys quoted packages
