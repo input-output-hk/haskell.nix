@@ -76,5 +76,9 @@ in {
   options.hackage.configs = lib.mkOption {
     type = lib.types.unspecified;
   };
-  config.hackage.configs = hackageConfigs;
+  # Note: we inject rts."1.0" as invalid here. This package can only
+  # be built by GHC's build system.  However it may show up in stackage
+  # snapshots. As such we just null it out.
+  config.hackage.configs = hackageConfigs
+                        // { rts."1.0".revisions.default = null; };
 }
