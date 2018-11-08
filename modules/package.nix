@@ -182,7 +182,7 @@ in {
       default = [];
     };
     postUnpack = mkOption {
-      type = nullOr str;
+      type = nullOr lines;
       default = null;
     };
   };
