@@ -49,10 +49,19 @@ let
       "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
     })}
 
+    # Copy over the nonReinstallablePkgs from the global package db.
+    # Note: we need to use --global-package-db with ghc-pkg to prevent it
+    #       from looking into the implicit global package db when registering the package.
+    ${lib.concatMapStringsSep "\n" (p: ''
+      ${ghc.targetPrefix}ghc-pkg describe ${p} | ${ghc.targetPrefix}ghc-pkg --force --global-package-db $out/package.conf.d register - || true
+    '') nonReinstallablePkgs}
+
     ${lib.concatMapStringsSep "\n" (p: ''
       ${ghc.targetPrefix}ghc-pkg --package-db ${p}/package.conf.d dump | ${ghc.targetPrefix}ghc-pkg --force --package-db $out/package.conf.d register -
     '') flatDepends}
-    ${flagsAndConfig "package-db" ["$out/package.conf.d"]}
+
+    # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
+    ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
 
     echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
 
