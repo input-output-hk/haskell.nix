@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, RecordWildCards #-}
 
 module Main where
 
@@ -18,6 +18,19 @@ import Cabal2Nix.Util
 
 import Text.PrettyPrint.ANSI.Leijen (hPutDoc, Doc)
 import System.IO
+import Distribution.Nixpkgs.Fetch
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
+import Data.ByteString (ByteString)
+
+import Data.List (isPrefixOf, isSuffixOf)
+
+import qualified Hpack
+import qualified Hpack.Config as Hpack
+import qualified Hpack.Render as Hpack
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+
 
 writeDoc :: FilePath -> Doc -> IO ()
 writeDoc file doc =
@@ -27,10 +40,51 @@ writeDoc file doc =
 
 main :: IO ()
 main = getArgs >>= \case
+  [url,hash] | "http" `isPrefixOf` url ->
+          let subdir = "." in
+          fetch (\dir -> cabalFromPath url hash subdir $ dir </> subdir)
+            (Source url mempty UnknownHash subdir) >>= \case
+            (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
+            _ -> return ()
   [file] -> doesDirectoryExist file >>= \case
     False -> print . prettyNix =<< cabal2nix (Just (Path ".")) (OnDisk file)
     True  -> print . prettyNix =<< cabalexprs file
   _ -> putStrLn "call with cabalfile (Cabal2Nix file.cabal)."
+
+cabalFromPath
+  :: String    -- URL
+  -> String    -- Revision
+  -> FilePath  -- Subdir
+  -> FilePath  -- Local Directory
+  -> MaybeT IO (String -> IO ())
+cabalFromPath url rev subdir path = do
+  d <- liftIO $ doesDirectoryExist path
+  unless d $ fail ("not a directory: " ++ path)
+  cabalFiles <- liftIO $ findCabalFiles path
+  when (length cabalFiles > 1) $ fail ("multiple cabal files detected: " ++ show cabalFiles)
+  return $ \sha256 ->
+    void . forM cabalFiles $ \cabalFile -> do
+      let pkg = cabalFilePkgName cabalFile
+          subdir' = if subdir == "." then Nothing
+                    else Just subdir
+          src = Just $ Git url rev (Just sha256) subdir'
+      print . prettyNix =<< cabal2nix src cabalFile
+
+findCabalFiles :: FilePath -> IO [CabalFile]
+findCabalFiles path = doesFileExist (path </> Hpack.packageConfig) >>= \case
+  False -> fmap (OnDisk . (path </>)) . filter (isSuffixOf ".cabal") <$> listDirectory path
+  True -> do
+    mbPkg <- Hpack.readPackageConfig Hpack.defaultDecodeOptions {Hpack.decodeOptionsTarget = path </> Hpack.packageConfig}
+    case mbPkg of
+      Left e -> error e
+      Right r ->
+        return $ [InMemory (Just Hpack)
+                           (Hpack.decodeResultCabalFile r)
+                           (encodeUtf8 $ Hpack.renderPackage [] (Hpack.decodeResultPackage r))]
+
+  where encodeUtf8 :: String -> ByteString
+        encodeUtf8 = T.encodeUtf8 . T.pack
+
 
 expr :: FilePath -> String -> String -> IO (Binding NExpr)
 expr p pkg version = do

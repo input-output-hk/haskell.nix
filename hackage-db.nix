@@ -69,4 +69,10 @@
         };
       };
     };
-  } // rec { src = ./hackage-db; }
+  } // {
+    src = pkgs.fetchgit {
+      url = "https://github.com/ElvishJerricco/hackage-db.git";
+      rev = "84ca9fc75ad45a71880e938e0d93ea4bde05f5bd";
+      sha256 = "0y3kw1hrxhsqmyx59sxba8npj4ya8dpgjljc21gkgdvdy9628q4c";
+    };
+  }

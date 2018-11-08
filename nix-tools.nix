@@ -47,7 +47,11 @@
         "cabal-to-nix" = {
           depends  = [
             (hsPkgs.base)
+            (hsPkgs.transformers)
+            (hsPkgs.bytestring)
+            (hsPkgs.hpack)
             (hsPkgs.hnix)
+            (hsPkgs.text)
             (hsPkgs.nix-tools)
             (hsPkgs.filepath)
             (hsPkgs.directory)

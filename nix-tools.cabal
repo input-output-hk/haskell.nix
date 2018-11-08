@@ -41,7 +41,11 @@ executable cabal-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
   build-depends:       base >=4.11 && <4.12
+                     , transformers
+                     , bytestring
+                     , hpack
                      , hnix >= 0.5.0
+                     , text
                      , nix-tools
                      , filepath
                      , directory
