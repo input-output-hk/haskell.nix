@@ -10,8 +10,10 @@ import Nix.Expr
 
 import Distribution.Types.PackageName
 import Distribution.Types.PackageId
+import Distribution.Compat.ReadP hiding (Parser)
 import Distribution.Text
 import Distribution.Simple.Utils (shortRelativePath)
+
 import Data.Yaml hiding (Parser)
 import Data.String (fromString)
 import qualified Data.Text as T
@@ -32,7 +34,7 @@ import Cabal2Nix.Util
 
 import Text.PrettyPrint.ANSI.Leijen (hPutDoc, Doc)
 import System.IO
-import Data.List (isSuffixOf, isInfixOf)
+import Data.List (isSuffixOf, isInfixOf, isPrefixOf)
 import Control.Applicative ((<|>))
 
 import Distribution.Nixpkgs.Fetch
@@ -48,9 +50,15 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.List.NonEmpty                       ( NonEmpty (..) )
 import Data.ByteString (ByteString)
+import Data.ByteString.Lazy (toStrict)
 
-import Options.Applicative
+import Options.Applicative hiding (option)
 import Data.Semigroup ((<>))
+
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import           Network.HTTP.Types.Status  (ok200)
+import Control.Exception.Base (SomeException(..),PatternMatchFail(..))
 
 --------------------------------------------------------------------------------
 -- CLI Arguments
@@ -65,15 +73,89 @@ args = Args
   <$> strOption ( long "output" <> short 'o' <> metavar "DIR" <> value "." <> help "Generate output in DIR" )
   <*> argument str ( metavar "stack.yaml" )
 
+
 --------------------------------------------------------------------------------
--- stack.yaml parsing (subset only)
-type ExtraDep = String
+-- The stack.yaml file
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- packages
+--
+-- * (1) Paths
+--   - ./site1
+--   - ./site2
+-- * (2) Git Locations
+--   - location:
+--       git: https://github.com/yesodweb/yesod
+--       commit: 7038ae6317cb3fe4853597633ba7a40804ca9a46
+--     extra-dep: true
+--     subdirs:
+--     - yesod-core
+--     - yesod-bin
+
+--------------------------------------------------------------------------------
+-- extra-deps
+--
+-- * (1) Package index (optional sha of cabal files contents; or revision number)
+--   - acme-missiles-0.3
+--   - acme-missiles-0.3@sha256:2ba66a092a32593880a87fb00f3213762d7bca65a687d45965778deb8694c5d1
+--   - acme-missiles-0.3@rev:0
+--
+-- * (2) Local File Path (foo-1.2.3 would be parsed as a package index)
+--   - vendor/somelib
+--   - ./foo-1.2.3
+--
+-- * (3) Git and Mercurial repos (optional subdirs; or github)
+--   - git: git@github.com:commercialhaskell/stack.git
+--     commit: 6a86ee32e5b869a877151f74064572225e1a0398
+--   - git: git@github.com:snoyberg/http-client.git
+--     commit: "a5f4f3"
+--   - hg: https://example.com/hg/repo
+--     commit: da39a3ee5e6b4b0d3255bfef95601890afd80709
+--   - git: git@github.com:yesodweb/wai
+--     commit: 2f8a8e1b771829f4a8a77c0111352ce45a14c30f
+--     subdirs:
+--     - auto-update
+--     - wai
+--   - github: snoyberg/http-client
+--     commit: a5f4f30f01366738f913968163d856366d7e0342
+--
+-- * (4) Archives (HTTP(S) or local filepath)
+--   - https://example.com/foo/bar/baz-0.0.2.tar.gz
+--   - archive: http://github.com/yesodweb/wai/archive/2f8a8e1b771829f4a8a77c0111352ce45a14c30f.zip
+--     subdirs:
+--     - wai
+--     - warp
+--   - archive: ../acme-missiles-0.3.tar.gz
+--     sha256: e563d8b524017a06b32768c4db8eff1f822f3fb22a90320b7e414402647b735b
+
+-- NOTE: We will only parse a suitable subset of the stack.yaml file.
+
+--------------------------------------------------------------------------------
+-- Some generic types
 type Resolver = String
 type Name     = String
 type Compiler = String
+type Sha256   = String
+type CabalRev = Int    -- cabal revision 0,1,2,...
+type URL      = String -- Git/Hg/... URL
+type Rev      = String -- Git revision
+
+--------------------------------------------------------------------------------
+-- Data Types
+-- Dependencies are the merged set of packages and extra-deps.
+-- As we do not distinguish them in the same way stack does, we
+-- can get away with this.
+data Dependency
+  = PkgIndex PackageIdentifier (Maybe (Either Sha256 CabalRev)) -- ^ overridden package in the stackage index
+  | LocalPath String -- ^ Some local package (potentially overriding a package in the index as well)
+  | DVCS Location [FilePath] -- ^ One or more packages fetched from git or similar.
+  -- TODO: Support archives.
+  -- | Archive ...
+  deriving (Show)
 
 data Stack
-  = Stack Resolver [Package] [ExtraDep]
+  = Stack Resolver [Dependency]
   deriving (Show)
 
 -- stack supports custom snapshots
@@ -83,41 +165,45 @@ data StackSnapshot
     Resolver                  -- lts-XX.YY/nightly-...
     --(Maybe Compiler)        -- possible compiler override for the snapshot
     Name                      -- name
-    [Package]                 -- packages
+    [Dependency]              -- packages
     -- [Package -> [Flag]]    -- flags
     -- [PackageName]          -- drop-packages
     -- [PackageName -> Bool]  -- hidden
     -- [package -> [Opt]]     -- ghc-options
 
-type URL = String
-type Rev = String
-
 data Location
   = Git URL Rev
+  | HG  URL Rev
   deriving (Show)
 
-data Package
-  = Local FilePath
-  | Remote Location [FilePath]
-  deriving (Show)
+
+--------------------------------------------------------------------------------
+-- Parsers for package indices
+sha256Suffix :: ReadP r Sha256
+sha256Suffix = string "@sha256:" *> many1 (satisfy (`elem` (['0'..'9']++['a'..'z']++['A'..'Z'])))
+
+revSuffix :: ReadP r CabalRev
+revSuffix = string "@rev:" *> (read <$> many1 (satisfy (`elem` ['0'..'9'])))
+
+suffix :: ReadP r (Maybe (Either Sha256 CabalRev))
+suffix = option Nothing (Just <$> (Left <$> sha256Suffix) +++ (Right <$> revSuffix))
+
+pkgIndex :: ReadP r Dependency
+pkgIndex = PkgIndex <$> parse <*> suffix <* eof
+
+--------------------------------------------------------------------------------
+-- JSON/YAML destructors
 
 instance FromJSON Location where
   parseJSON = withObject "Location" $ \l -> Git
     <$> l .: "git"
     <*> l .: "commit"
 
-instance FromJSON Package where
-  parseJSON p = parseLocal p <|> parseRemote p -- <|> parseRemoteInline
-    where parseLocal = withText "Local Package" $ pure . Local . T.unpack
-          parseRemote = withObject "Remote Package" $ \l -> Remote
-            <$> (l .: "location" <|> parseJSON p)
-            <*> l .:? "subdirs" .!= ["."]
-
 instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
     <$> s .: "resolver"
-    <*> s .:? "packages"   .!= []
-    <*> s .:? "extra-deps" .!= []
+    <*> ((<>) <$> s .:? "packages"   .!= []
+              <*> s .:? "extra-deps" .!= [])
 
 instance FromJSON StackSnapshot where
   parseJSON = withObject "Snapshot" $ \s -> Snapshot
@@ -125,13 +211,24 @@ instance FromJSON StackSnapshot where
     <*> s .: "name"
     <*> s .:? "packages" .!= []
 
---------------------------------------------------------------------------------
+instance FromJSON Dependency where
+  parseJSON p = parsePkgIndex p <|> parseLocalPath p <|> parseDVCS p
+    where parsePkgIndex = withText "Package Index" $ \pi ->
+            case [pi' | (pi',"") <- readP_to_S pkgIndex (T.unpack pi)] of
+              [pi'] -> return $ pi'
+              _ -> fail $ "invalid package index: " ++ show pi
+          parseLocalPath = withText "Local Path" $
+            return . LocalPath . dropTrailingSlash . T.unpack
+          parseDVCS = withObject "DVCS" $ \o -> DVCS
+            <$> (o .: "location" <|> parseJSON p)
+            <*> o .:? "subdirs" .!= ["."]
 
-writeDoc :: FilePath -> Doc -> IO ()
-writeDoc file doc =
-  do handle <- openFile file WriteMode
-     hPutDoc handle doc
-     hClose handle
+          -- drop trailing slashes. Nix doesn't like them much;
+          -- stack doesn't seem to care.
+          dropTrailingSlash p | "/" `isSuffixOf` p = take (length p - 1) p
+          dropTrailingSlash p = p
+
+--------------------------------------------------------------------------------
 
 main :: IO ()
 main = print . prettyNix =<< stackexpr =<< execParser opts
@@ -140,24 +237,39 @@ main = print . prettyNix =<< stackexpr =<< execParser opts
          <> progDesc "Generate a nix expression from a stack.yaml file"
          <> header "stack-to-nix - a stack to nix converter" )
 
+writeDoc :: FilePath -> Doc -> IO ()
+writeDoc file doc =
+  do handle <- openFile file WriteMode
+     hPutDoc handle doc
+     hClose handle
+
+-- | A @resolver@ value in a stack.yaml file may point to an URL. As such
+-- we need to be able to fetch one.
+decodeURLEither :: FromJSON a => String -> IO (Either ParseException a)
+decodeURLEither url
+  | not (("http://" `isPrefixOf` url) || ("https://" `isPrefixOf` url))
+  = return . Left . OtherParseException . SomeException . PatternMatchFail $ "No http or https prefix"
+  | otherwise = do
+      manager <- newManager tlsManagerSettings
+      request <- parseRequest url
+      response <- httpLbs request manager
+      unless (ok200 == responseStatus response) $ error ("failed to download " ++ url)
+      return . decodeEither' . toStrict $ responseBody response
+
+
 -- | If a stack.yaml file contains a @resolver@ that points to
 -- a file, resolve that file and merge the snapshot into the
 -- @Stack@ record.
 resolveSnapshot :: Stack -> IO Stack
-resolveSnapshot stack@(Stack resolver pkgs extraPkgs)
+resolveSnapshot stack@(Stack resolver pkgs)
   = if "snapshot.yaml" `isSuffixOf` resolver
-    then do evalue <- decodeFileEither resolver
+    then do evalue <- if ("http://" `isPrefixOf` resolver) || ("https://" `isPrefixOf` resolver)
+                      then decodeURLEither resolver
+                      else decodeFileEither resolver
             case evalue of
               Left e -> error (show e)
               Right (Snapshot resolver' _name pkgs') ->
-                -- Note: this is a hack.  The extra deps are
-                -- either Remote or <pkg>-<version>, but we
-                -- do not have logic to download remote
-                -- extra deps (yet), and as such just lump
-                -- them with the packages, which do have that
-                -- logic.
-                pure $ Stack resolver' ([p | p@(Remote{}) <- pkgs'] <> pkgs)
-                                       ([p | Local p <- pkgs' ] <> extraPkgs)
+                pure $ Stack resolver' (pkgs <> pkgs')
     else pure stack
 
 stackexpr :: Args -> IO NExpr
@@ -166,21 +278,10 @@ stackexpr args =
      case evalue of
        Left e -> error (show e)
        Right value -> stack2nix args
-                      =<< cleanupStack <$> resolveSnapshot value
-  where cleanupStack :: Stack -> Stack
-        cleanupStack (Stack r ps es)
-          = Stack r (cleanupPkg <$> (ps ++ [Local e | e <- es, looksLikePath e]))
-                    (cleanupExtraDep <$> [e | e <- es, not (looksLikePath e)])
-        -- drop trailing slashes. Nix doesn't like them much;
-        -- stack doesn't seem to care.
-        cleanupPkg (Local p) | "/" `isSuffixOf` p = Local (take (length p - 1) p)
-        cleanupPkg x = x
-        cleanupExtraDep = id
-        looksLikePath :: String -> Bool
-        looksLikePath = isInfixOf "/"
+                      =<< resolveSnapshot value
 
 stack2nix :: Args -> Stack -> IO NExpr
-stack2nix args stack@(Stack resolver _ _) =
+stack2nix args stack@(Stack resolver _) =
   do let extraDeps = extraDeps2nix stack
      packages <- packages2nix args stack
      return $ mkNonRecSet
@@ -193,21 +294,24 @@ stack2nix args stack@(Stack resolver _ _) =
                       @@ packages )]))
        , "resolver"  $= fromString (quoted resolver)
        ]
--- | Transform 'extra-deps' to nix expressions.
+-- | Transform simple package index expressions
 -- The idea is to turn
 --
---   extra-deps:
---   - name-version
+--   - name-version[@rev:N | @sha256:SHA]
 --
 -- into
 --
 --   { name.revision = hackage.name.version.revisions.default; }
 --
 extraDeps2nix :: Stack -> NExpr
-extraDeps2nix (Stack _ _ deps) =
-  let extraDeps = parsePackageIdentifier <$> deps
-  in mkNonRecSet [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
-                 | Just (PackageIdentifier pkg ver) <- extraDeps ]
+extraDeps2nix (Stack _ pkgs) =
+  let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
+  in mkNonRecSet $ [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
+                   | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
+                ++ [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. T.pack sha)
+                   | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
+                ++ [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. toText revNo)
+                   | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse
         toText :: Text a => a -> T.Text
@@ -257,10 +361,10 @@ cacheHits url rev subdir
 
 -- makeRelativeToCurrentDirectory
 packages2nix :: Args -> Stack-> IO NExpr
-packages2nix args (Stack _ pkgs _) =
+packages2nix args (Stack _ pkgs) =
   do cwd <- getCurrentDirectory
      fmap (mkNonRecSet . concat) . forM pkgs $ \case
-       (Local folder) ->
+       (LocalPath folder) ->
          do cabalFiles <- findCabalFiles (dropFileName (stackFile args) </> folder)
             forM cabalFiles $ \cabalFile ->
               let pkg = cabalFilePkgName cabalFile
@@ -271,7 +375,7 @@ packages2nix args (Stack _ pkgs _) =
                     writeDoc nixFile =<<
                       prettyNix <$> cabal2nix src cabalFile
                     return $ fromString pkg $= mkPath False nix
-       (Remote (Git url rev) subdirs) ->
+       (DVCS (Git url rev) subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
          do cacheHits <- liftIO $ cacheHits url rev subdir
             case cacheHits of
