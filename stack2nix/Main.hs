@@ -155,7 +155,7 @@ data Dependency
   deriving (Show)
 
 data Stack
-  = Stack Resolver [Dependency]
+  = Stack Resolver (Maybe Compiler) [Dependency]
   deriving (Show)
 
 -- stack supports custom snapshots
@@ -163,7 +163,7 @@ data Stack
 data StackSnapshot
   = Snapshot
     Resolver                  -- lts-XX.YY/nightly-...
-    --(Maybe Compiler)        -- possible compiler override for the snapshot
+    (Maybe Compiler)          -- possible compiler override for the snapshot
     Name                      -- name
     [Dependency]              -- packages
     -- [Package -> [Flag]]    -- flags
@@ -202,12 +202,14 @@ instance FromJSON Location where
 instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
     <$> s .: "resolver"
+    <*> s .:? "compiler" .!= Nothing
     <*> ((<>) <$> s .:? "packages"   .!= []
               <*> s .:? "extra-deps" .!= [])
 
 instance FromJSON StackSnapshot where
   parseJSON = withObject "Snapshot" $ \s -> Snapshot
     <$> s .: "resolver"
+    <*> s .:? "compiler" .!= Nothing
     <*> s .: "name"
     <*> s .:? "packages" .!= []
 
@@ -261,15 +263,15 @@ decodeURLEither url
 -- a file, resolve that file and merge the snapshot into the
 -- @Stack@ record.
 resolveSnapshot :: Stack -> IO Stack
-resolveSnapshot stack@(Stack resolver pkgs)
+resolveSnapshot stack@(Stack resolver compiler pkgs)
   = if "snapshot.yaml" `isSuffixOf` resolver
     then do evalue <- if ("http://" `isPrefixOf` resolver) || ("https://" `isPrefixOf` resolver)
                       then decodeURLEither resolver
                       else decodeFileEither resolver
             case evalue of
               Left e -> error (show e)
-              Right (Snapshot resolver' _name pkgs') ->
-                pure $ Stack resolver' (pkgs <> pkgs')
+              Right (Snapshot resolver' compiler' _name pkgs') ->
+                pure $ Stack resolver' (compiler' <|> compiler)  (pkgs <> pkgs')
     else pure stack
 
 stackexpr :: Args -> IO NExpr
@@ -281,18 +283,33 @@ stackexpr args =
                       =<< resolveSnapshot value
 
 stack2nix :: Args -> Stack -> IO NExpr
-stack2nix args stack@(Stack resolver _) =
+stack2nix args stack@(Stack resolver compiler _) =
   do let extraDeps = extraDeps2nix stack
      packages <- packages2nix args stack
-     return $ mkNonRecSet
+     return . mkNonRecSet $
        [ "extra-deps" $= mkFunction "hackage" (mkNonRecSet [ "packages" $= extraDeps ])
-       , "pkgs"  $= mkFunction (mkParamset [ ("lib", Nothing) ] False)
-                    (mkWith "lib" (mkNonRecSet [ "packages" $=
-                     (mkSym "mapAttrs"
-                      @@ ("k" ==> ("v" ==>
-                          (mkSym "mkForce" @@ (mkSym "import" @@ mkSym "v"))))
-                      @@ packages )]))
+       , "module"  $= mkFunction (mkParamset [ ("lib", Nothing) ] False)
+                    (mkWith "lib" (mkNonRecSet $
+                     [ "packages" $=
+                      (mkSym "mapAttrs"
+                       @@ ("k" ==> ("v" ==>
+                        (mkSym "mkForce" @@ (mkSym "import" @@ mkSym "v"))))
+                       @@ packages )]
+                  -- This is a really ugly hack :(
+                  -- we are injecting
+                  --
+                  --  compiler.version = mkForce "X.Y.Z";
+                  --  compiler.nix-name = mkForce "ghcXYZ";
+                  --
+                  -- TODO: Do this in haskell.nix via the provided `compiler` value below.
+                  ++ [ "compiler.version" $= (mkSym "mkForce" @@ fromString (quoted ver))
+                     | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
+                  ++ [ "compiler.nix-name" $= (mkSym "mkForce" @@ fromString (quoted name))
+                     | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]
+                    ))
        , "resolver"  $= fromString (quoted resolver)
+       ] ++ [
+         "compiler" $= fromString (quoted c) | (Just c) <- [compiler]
        ]
 -- | Transform simple package index expressions
 -- The idea is to turn
@@ -304,7 +321,7 @@ stack2nix args stack@(Stack resolver _) =
 --   { name.revision = hackage.name.version.revisions.default; }
 --
 extraDeps2nix :: Stack -> NExpr
-extraDeps2nix (Stack _ pkgs) =
+extraDeps2nix (Stack _ _ pkgs) =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
   in mkNonRecSet $ [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
                    | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
@@ -361,7 +378,7 @@ cacheHits url rev subdir
 
 -- makeRelativeToCurrentDirectory
 packages2nix :: Args -> Stack-> IO NExpr
-packages2nix args (Stack _ pkgs) =
+packages2nix args (Stack _ _ pkgs) =
   do cwd <- getCurrentDirectory
      fmap (mkNonRecSet . concat) . forM pkgs $ \case
        (LocalPath folder) ->
