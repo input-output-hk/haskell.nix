@@ -286,15 +286,14 @@ stack2nix :: Args -> Stack -> IO NExpr
 stack2nix args stack@(Stack resolver compiler _) =
   do let extraDeps = extraDeps2nix stack
      packages <- packages2nix args stack
-     return . mkNonRecSet $
-       [ "extra-deps" $= mkFunction "hackage" (mkNonRecSet [ "packages" $= extraDeps ])
-       , "module"  $= mkFunction (mkParamset [ ("lib", Nothing) ] False)
+     return . mkFunction "hackage" . mkNonRecSet $
+       [ "module"  $= mkFunction (mkParamset [ ("lib", Nothing) ] False)
                     (mkWith "lib" (mkNonRecSet $
                      [ "packages" $=
                       (mkSym "mapAttrs"
                        @@ ("k" ==> ("v" ==>
                         (mkSym "mkForce" @@ (mkSym "import" @@ mkSym "v"))))
-                       @@ packages )]
+                       @@ (extraDeps $// packages))]
                   -- This is a really ugly hack :(
                   -- we are injecting
                   --
@@ -323,11 +322,11 @@ stack2nix args stack@(Stack resolver compiler _) =
 extraDeps2nix :: Stack -> NExpr
 extraDeps2nix (Stack _ _ pkgs) =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
-  in mkNonRecSet $ [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
+  in mkNonRecSet $ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
                    | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
-                ++ [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. T.pack sha)
+                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. T.pack sha)
                    | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
-                ++ [ bindPath ((quoted (toText pkg)) :| ["revision"]) (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. toText revNo)
+                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. toText revNo)
                    | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse

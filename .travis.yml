@@ -39,3 +39,7 @@ env:
 
 notifications:
   irc: "chat.freenode.net#nix-tools"
+    template:
+      - "%{repository_slug}#%{build_number} (%{branch} - %{commit} : %{author}): %{message}"
+#      - "Change view : %{compare_url}"
+#      - "Build details : %{build_url}"
