@@ -5,8 +5,6 @@
 , components
 
 , name
-, sha256
-, src
 , revision
 , revisionSha256
 , patches
@@ -20,6 +18,12 @@ let
     fetchurl {
       url = "https://hackage.haskell.org/package/${name}/revision/${toString revision}.cabal";
       sha256 = revisionSha256;
+    };
+
+  src = if config.src != null then config.src else
+    fetchurl {
+      url = "mirror://hackage/${name}.tar.gz";
+      sha256 = config.sha256;
     };
 
   defaultSetupSrc = builtins.toFile "Setup.hs" ''

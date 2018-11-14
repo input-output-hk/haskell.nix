@@ -165,9 +165,9 @@ in {
       default = null;
     };
     src = mkOption {
-      type = either path package;
-      default = pkgs.fetchurl { url = "mirror://hackage/${config.name}.tar.gz"; inherit (config) sha256; };
-      defaultText = "pkgs.fetchurl { url = \"mirror://hackage/\${config.name}.tar.gz\"; inherit (config) sha256; };";
+      type = nullOr path;
+      default = null;
+#      defaultText = "pkgs.fetchurl { url = \"mirror://hackage/\${config.name}.tar.gz\"; inherit (config) sha256; };";
     };
     revision = mkOption {
       type = nullOr int;
