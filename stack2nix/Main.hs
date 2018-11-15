@@ -285,15 +285,25 @@ stackexpr args =
 stack2nix :: Args -> Stack -> IO NExpr
 stack2nix args stack@(Stack resolver compiler _) =
   do let extraDeps = extraDeps2nix stack
+     let _f_          = mkSym "f"
+         _import_     = mkSym "import"
+         _mkForce_    = mkSym "mkForce"
+         _isFunction_ = mkSym "isFunction"
+         _mapAttrs_   = mkSym "mapAttrs"
+         _config_     = mkSym "config"
      packages <- packages2nix args stack
-     return . mkFunction "hackage" . mkNonRecSet $
-       [ "module"  $= mkFunction (mkParamset [ ("lib", Nothing) ] False)
-                    (mkWith "lib" (mkNonRecSet $
-                     [ "packages" $=
-                      (mkSym "mapAttrs"
-                       @@ ("k" ==> ("v" ==>
-                        (mkSym "mkForce" @@ (mkSym "import" @@ mkSym "v"))))
-                       @@ (extraDeps $// packages))]
+     return . mkNonRecSet $
+       [ "module"  $= mkFunction (mkParamset [ ("config", Nothing)
+                                             , ("lib", Nothing) ] True)
+                    (mkLets [ "hackage" $= (_config_ @. "hackage" @. "configs") ]
+                     (mkWith "lib" (mkNonRecSet $
+                      [ "packages" $=
+                       (_mapAttrs_ @@ ("_" ==> ("f" ==>
+                        (_mkForce_ @@ (mkIf
+                                       (_isFunction_ @@ _f_)
+                                       _f_
+                                      (_import_ @@ _f_)))))
+                        @@ (extraDeps $// packages))]
                   -- This is a really ugly hack :(
                   -- we are injecting
                   --
@@ -301,11 +311,11 @@ stack2nix args stack@(Stack resolver compiler _) =
                   --  compiler.nix-name = mkForce "ghcXYZ";
                   --
                   -- TODO: Do this in haskell.nix via the provided `compiler` value below.
-                  ++ [ "compiler.version" $= (mkSym "mkForce" @@ fromString (quoted ver))
+                  ++ [ "compiler.version" $= (_mkForce_ @@ fromString (quoted ver))
                      | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
-                  ++ [ "compiler.nix-name" $= (mkSym "mkForce" @@ fromString (quoted name))
+                  ++ [ "compiler.nix-name" $= (_mkForce_ @@ fromString (quoted name))
                      | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]
-                    ))
+                    )))
        , "resolver"  $= fromString (quoted resolver)
        ] ++ [
          "compiler" $= fromString (quoted c) | (Just c) <- [compiler]
