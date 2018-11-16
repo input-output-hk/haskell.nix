@@ -13,6 +13,7 @@ import Distribution.Types.PackageId
 import Distribution.Compat.ReadP hiding (Parser)
 import Distribution.Text
 import Distribution.Simple.Utils (shortRelativePath)
+import Distribution.Types.Version (nullVersion)
 
 import Data.Yaml hiding (Parser)
 import Data.String (fromString)
@@ -170,6 +171,7 @@ data StackSnapshot
     -- [PackageName]          -- drop-packages
     -- [PackageName -> Bool]  -- hidden
     -- [package -> [Opt]]     -- ghc-options
+    deriving (Show)
 
 data Location
   = Git URL Rev
@@ -214,10 +216,17 @@ instance FromJSON StackSnapshot where
     <*> s .:? "packages" .!= []
 
 instance FromJSON Dependency where
+  -- Note: we will parse foo-X.Y.Z as a package.
+  --       if we want it to be a localPath, it needs
+  --       to be ./foo-X.Y.Z
   parseJSON p = parsePkgIndex p <|> parseLocalPath p <|> parseDVCS p
     where parsePkgIndex = withText "Package Index" $ \pi ->
             case [pi' | (pi',"") <- readP_to_S pkgIndex (T.unpack pi)] of
-              [pi'] -> return $ pi'
+              -- Cabal will happily parse "foo" as a packageIdentifier,
+              -- we however are only interested in those that have a version
+              -- as well. Any valid version is larger than @nullVersion@, as
+              -- such we can use that as a filter.
+              [pi'@(PkgIndex pkgIdent _)] | pkgVersion pkgIdent > nullVersion -> return $ pi'
               _ -> fail $ "invalid package index: " ++ show pi
           parseLocalPath = withText "Local Path" $
             return . LocalPath . dropTrailingSlash . T.unpack
