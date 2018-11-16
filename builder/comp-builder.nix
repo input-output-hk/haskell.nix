@@ -44,7 +44,7 @@ let
     ${ghc.targetPrefix}ghc-pkg init $out/package.conf.d
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
-      "extra-lib-dirs" = map (p: "${p}/lib") component.libs;
+      "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs;
       "extra-include-dirs" = map (p: "${lib.getDev p}/include") component.libs;
       "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
     })}
