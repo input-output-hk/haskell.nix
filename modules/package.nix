@@ -123,6 +123,10 @@ in {
             type = listOfFilteringNulls str;
             default = [];
           };
+          setupBuildFlags = mkOption {
+            type = listOfFilteringNulls str;
+            default = [];
+          };
           doExactConfig = mkOption {
             type = bool;
             default = false;
