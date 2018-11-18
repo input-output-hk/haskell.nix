@@ -40,10 +40,6 @@ with types;
       };
     };
 
-    overlay = mkOption {
-      type = unspecified; # Ignored. TODO: Remove and use the module system instead
-    };
-
     plan.pkg-def = mkOption {
       type = unspecified;
       visible = false;
@@ -52,7 +48,7 @@ with types;
   };
 
   config = let module = config.plan.pkg-def config.hackage.configs; in {
-    inherit (module) compiler overlay;
+    inherit (module) compiler;
     packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
 
       let m = if revision == null
