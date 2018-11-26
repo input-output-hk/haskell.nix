@@ -119,7 +119,7 @@ let
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
     ] ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
-      ["--hsc2hs-option=--cross-compile"]
+      map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"]
       ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}"
     ) ++ component.configureFlags
   );
