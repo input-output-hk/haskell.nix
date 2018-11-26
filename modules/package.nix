@@ -125,7 +125,7 @@ in {
           };
           setupBuildFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = [];
+            default = config.setupBuildFlags;
           };
           doExactConfig = mkOption {
             type = bool;
@@ -185,8 +185,48 @@ in {
       type = listOf (either package path);
       default = [];
     };
-    postUnpack = mkOption {
+    setupBuildFlags = mkOption {
+      type = listOfFilteringNulls str;
+      default = [];
+    };
+    preUnpack = mkOption {
       type = nullOr lines;
+      default = null;
+    };
+    postUnpack = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    preConfigure = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    postConfigure = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    preBuild = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    postBuild = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    preCheck = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    postCheck = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    preInstall = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    postInstall = mkOption {
+      type = nullOr string;
       default = null;
     };
   };

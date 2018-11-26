@@ -10,7 +10,17 @@
 , revision
 , revisionSha256
 , patches
+
+, preUnpack
 , postUnpack
+, preConfigure
+, postConfigure
+, preBuild
+, postBuild
+, preCheck
+, postCheck
+, preInstall
+, postInstall
 
 , ...
 }@config:
@@ -59,7 +69,8 @@ let
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs; };
 
   buildComp = componentId: component: comp-builder {
-    inherit componentId component package name src flags setup cabalFile patches postUnpack;
+    inherit componentId component package name src flags setup cabalFile patches
+            preUnpack postUnpack preConfigure postConfigure preBuild postBuild preCheck postCheck preInstall postInstall;
   };
 
 in {

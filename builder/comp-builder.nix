@@ -9,7 +9,12 @@
 , flags
 , cabalFile
 , patches ? []
-, postUnpack ? null
+
+, preUnpack ? null, postUnpack ? null
+, preConfigure ? null, postConfigure ? null
+, preBuild ? null, postBuild ? null
+, preCheck ? null, postCheck ? null
+, preInstall ? null, postInstall ? null
 }:
 
 let
@@ -160,29 +165,46 @@ in stdenv.mkDerivation ({
   '';
 
   configurePhase = ''
+    runHook preConfigure
     echo Configure flags:
     printf "%q " ${finalConfigureFlags}
     echo
     $SETUP_HS configure ${finalConfigureFlags}
+    runHook postConfigure
   '';
 
   buildPhase = ''
+    runHook preBuild
     $SETUP_HS build -j$NIX_BUILD_CORES ${lib.concatStringsSep " " component.setupBuildFlags}
+    runHook postBuild
   '';
 
   checkPhase = ''
+    runHook preCheck
     $SETUP_HS test
+    runHook postCheck
   '';
 
   installPhase = ''
+    runHook preInstall
     $SETUP_HS copy
     ${lib.optionalString (haskellLib.isLibrary componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ${ghc.targetPrefix}ghc-pkg init $out/package.conf.d
       ${ghc.targetPrefix}ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
+    runHook postInstall
   '';
 }
 // lib.optionalAttrs (patches != []) { inherit patches; }
-// lib.optionalAttrs (postUnpack != null) { inherit postUnpack; }
+// lib.optionalAttrs (preUnpack != "") { inherit preUnpack; }
+// lib.optionalAttrs (postUnpack != "") { inherit postUnpack; }
+// lib.optionalAttrs (preConfigure != "") { inherit preConfigure; }
+// lib.optionalAttrs (postConfigure != "") { inherit postConfigure; }
+// lib.optionalAttrs (preBuild != "") { inherit preBuild; }
+// lib.optionalAttrs (postBuild != "") { inherit postBuild; }
+// lib.optionalAttrs (preCheck != "") { inherit preCheck; }
+// lib.optionalAttrs (postCheck != "") { inherit postCheck; }
+// lib.optionalAttrs (preInstall != "") { inherit preInstall; }
+// lib.optionalAttrs (postInstall != "") { inherit postInstall; }
 )
