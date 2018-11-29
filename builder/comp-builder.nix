@@ -179,9 +179,19 @@ in stdenv.mkDerivation ({
     runHook postBuild
   '';
 
+  # Note: Cabal does *not* copy test executables during the `install` phase.
+  #       Thus we'll just copy them during the check phase.
   checkPhase = ''
     runHook preCheck
     $SETUP_HS test
+    mkdir -p $out/${name}
+    cp dist/test/*.log $out/${name}/
+    if [ -f "dist/build/${componentId.cname}/${componentId.cname}" ]; then
+      cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
+    fi
+    if [ -f "dist/build/${componentId.cname}/${componentId.cname}.exe" ]; then
+      cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
+    fi
     runHook postCheck
   '';
 
