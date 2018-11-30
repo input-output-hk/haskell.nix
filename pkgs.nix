@@ -22,8 +22,8 @@ let
   haskell = import (overrideWith "haskell"
                     (pkgs.fetchFromGitHub { owner  = "angerman";
                                             repo   = "haskell.nix";
-                                            rev    = "28a9c6f3528daa57d506d134e137fb617a947985";
-                                            sha256 = "0qv0vb5q96sdfi8pwwrswfhcw3ay0qh91a8l2g6bz46q7zmgp75m";
+                                            rev    = "2a3b2612a15fd7f14d32c3519aba2b64bd7b1e43";
+                                            sha256 = "181dv1zlf381kkb82snjmpibhgmkyw1n5qsvpqjrv8dxmcjqjl2k";
                                             name   = "haskell-lib-source"; }))
                    hackage;
 
@@ -33,12 +33,14 @@ let
   pkgSet = haskell.mkNewPkgSet {
     inherit pkgs;
     pkg-def = plan;
-    modules = [{
-      packages = {
-        nix-tools = import ./nix-tools.nix;
-        hackage-db = import ./hackage-db.nix;
-      };
-    }];
+    pkg-def-overlays = [
+      { nix-tools = ./nix-tools.nix;
+        hackage-db = ./hackage-db.nix;
+      }
+    ];
+    modules = [
+      # specific package overrides would go here
+    ];
   };
 
   packages = pkgSet.config.hsPkgs;
