@@ -1,4 +1,4 @@
-{ stdenv, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs }:
 
 { componentId
 , component
@@ -144,6 +144,8 @@ in stdenv.mkDerivation ({
   };
 
   CABAL_CONFIG = configFiles + /cabal.config;
+  LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
+  LC_ALL = "en_US.UTF-8";
 
   enableParallelBuilding = true;
 
@@ -217,4 +219,5 @@ in stdenv.mkDerivation ({
 // lib.optionalAttrs (postCheck != "") { inherit postCheck; }
 // lib.optionalAttrs (preInstall != "") { inherit preInstall; }
 // lib.optionalAttrs (postInstall != "") { inherit postInstall; }
+// lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
 )
