@@ -190,7 +190,7 @@ in stdenv.mkDerivation ({
       cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
     fi
     if [ -f "dist/build/${componentId.cname}/${componentId.cname}.exe" ]; then
-      cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
+      cp dist/build/${componentId.cname}/${componentId.cname}.exe $out/${name}/
     fi
     runHook postCheck
   '';
