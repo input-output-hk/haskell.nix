@@ -302,29 +302,12 @@ stack2nix args stack@(Stack resolver compiler _) =
          _config_     = mkSym "config"
      packages <- packages2nix args stack
      return . mkNonRecSet $
-       [ "module"  $= mkFunction (mkParamset [ ("config", Nothing)
-                                             , ("lib", Nothing) ] True)
-                    (mkLets [ "hackage" $= (_config_ @. "hackage" @. "configs") ]
-                     (mkWith "lib" (mkNonRecSet $
-                      [ "packages" $=
-                       (_mapAttrs_ @@ ("_" ==> ("f" ==>
-                        (_mkForce_ @@ (mkIf
-                                       (_isFunction_ @@ _f_)
-                                       _f_
-                                      (_import_ @@ _f_)))))
-                        @@ (extraDeps $// packages))]
-                  -- This is a really ugly hack :(
-                  -- we are injecting
-                  --
-                  --  compiler.version = mkForce "X.Y.Z";
-                  --  compiler.nix-name = mkForce "ghcXYZ";
-                  --
-                  -- TODO: Do this in haskell.nix via the provided `compiler` value below.
-                  ++ [ "compiler.version" $= (_mkForce_ @@ fromString (quoted ver))
-                     | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
-                  ++ [ "compiler.nix-name" $= (_mkForce_ @@ fromString (quoted name))
-                     | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]
-                    )))
+       [ "overlay" $= ("hackage" ==> mkNonRecSet
+                     ([ "packages" $= (extraDeps $// packages) ]
+                   ++ [ "compiler.version" $= (_mkForce_ @@ fromString (quoted ver))
+                      | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
+                   ++ [ "compiler.nix-name" $= (_mkForce_ @@ fromString (quoted name))
+                      | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]))
        , "resolver"  $= fromString (quoted resolver)
        ] ++ [
          "compiler" $= fromString (quoted c) | (Just c) <- [compiler]
