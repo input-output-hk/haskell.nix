@@ -15,6 +15,8 @@
 , preBuild ? null, postBuild ? null
 , preCheck ? null, postCheck ? null
 , preInstall ? null, postInstall ? null
+
+, doCheck ? componentId.ctype == "test"
 }:
 
 let
@@ -127,9 +129,7 @@ let
 in stdenv.mkDerivation ({
   name = fullName;
 
-  inherit src;
-
-  doCheck = componentId.ctype == "test";
+  inherit src doCheck;
 
   passthru = {
     inherit (package) identifier;
@@ -181,29 +181,30 @@ in stdenv.mkDerivation ({
     runHook postBuild
   '';
 
-  # Note: Cabal does *not* copy test executables during the `install` phase.
-  #       Thus we'll just copy them during the check phase.
   checkPhase = ''
     runHook preCheck
-    $SETUP_HS test
-    mkdir -p $out/${name}
+    $SETUP_HS test ${lib.concatStringsSep " " component.setupTestFlags}
     cp dist/test/*.log $out/${name}/
-    if [ -f "dist/build/${componentId.cname}/${componentId.cname}" ]; then
-      cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
-    fi
-    if [ -f "dist/build/${componentId.cname}/${componentId.cname}.exe" ]; then
-      cp dist/build/${componentId.cname}/${componentId.cname}.exe $out/${name}/
-    fi
     runHook postCheck
   '';
 
+  # Note: Cabal does *not* copy test executables during the `install` phase.
   installPhase = ''
     runHook preInstall
-    $SETUP_HS copy
+    $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
     ${lib.optionalString (haskellLib.isLibrary componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ${ghc.targetPrefix}ghc-pkg init $out/package.conf.d
       ${ghc.targetPrefix}ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+    ''}
+    ${lib.optionalString (componentId.ctype == "test") ''
+      mkdir -p $out/${name}
+      if [ -f "dist/build/${componentId.cname}/${componentId.cname}" ]; then
+        cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
+      fi
+      if [ -f "dist/build/${componentId.cname}/${componentId.cname}.exe" ]; then
+        cp dist/build/${componentId.cname}/${componentId.cname}.exe $out/${name}/
+      fi
     ''}
     runHook postInstall
   '';

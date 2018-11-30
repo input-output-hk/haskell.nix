@@ -127,6 +127,14 @@ in {
             type = listOfFilteringNulls str;
             default = config.setupBuildFlags;
           };
+          setupTestFlags = mkOption {
+            type = listOfFilteringNulls str;
+            default = config.setupTestFlags;
+          };
+          setupInstallFlags = mkOption {
+            type = listOfFilteringNulls str;
+            default = config.setupInstallFlags;
+          };
           doExactConfig = mkOption {
             type = bool;
             default = false;
@@ -186,6 +194,14 @@ in {
       default = [];
     };
     setupBuildFlags = mkOption {
+      type = listOfFilteringNulls str;
+      default = [];
+    };
+    setupTestFlags = mkOption {
+      type = listOfFilteringNulls str;
+      default = [];
+    };
+    setupInstallFlags = mkOption {
       type = listOfFilteringNulls str;
       default = [];
     };
