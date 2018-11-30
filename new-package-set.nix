@@ -23,14 +23,47 @@ in pkgs.lib.evalModules {
 
       # Set the plan for modules/plan.nix
       plan.pkg-def = hackage: with builtins;
+        # The desugar reason.
+        #
+        # it is quite combersome to write
+        # (hackage: { packages.x.revision = hackage...;
+        #             packages.y.revision = import ./foo.nix; })
+        # where we'd rather write:
+        # (hackage: { x = hackage...; })
+        # or
+        # { y = ./foo.nix; }
+        # As such the desugarer desugars this short hand syntax.
+        let desugar = overlay:
+          let
+            isPath  = x: builtins.typeOf x == "path";
+            # rewrite
+            #   { ... }
+            # into
+            #   { package = { ... }; }
+            inject-packages = o: if o ? "packages" then o else { packages = o; };
+            # rewrite
+            #   x = pkg;
+            # into
+            #   x.revision = pkg;
+            inject-revision = pkg: if pkg ? "revision" then pkg else { revision = pkg; };
+            # rewrite
+            #   x.revision = ./some/path;
+            # into
+            #   x.revision = import ./some/path;
+            expand-paths = pkg: if !(isPath pkg.revision) then pkg else { revision = import pkg.revision; };
+          # apply injection and expansion to the "packages" in overlay.
+          in lib.mapAttrs (k: v: if k != "packages"
+                              then v
+                              else lib.mapAttrs (_: pkg: (expand-paths (inject-revision pkg))) v)
+                                                (inject-packages overlay);
         # fold any potential `pkg-def-overlays`
         # onto the `pkg-def`.
         #
         # This means you can have a base definition (e.g. stackage)
         # and augment it with custom packages to your liking.
-        foldl' lib.recursiveUpdate
+        in foldl' lib.recursiveUpdate
             (pkg-def hackage)
-            (map (p: p hackage) pkg-def-overlays)
+            (map (p: desugar (if builtins.isFunction p then p hackage else p)) pkg-def-overlays)
       ;
 
     })
