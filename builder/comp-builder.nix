@@ -184,6 +184,7 @@ in stdenv.mkDerivation ({
   checkPhase = ''
     runHook preCheck
     $SETUP_HS test ${lib.concatStringsSep " " component.setupTestFlags}
+    mkdir -p $out/${name}
     cp dist/test/*.log $out/${name}/
     runHook postCheck
   '';
