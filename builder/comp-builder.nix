@@ -150,6 +150,7 @@ in stdenv.mkDerivation ({
   enableParallelBuilding = true;
 
   buildInputs = component.libs
+    ++ component.frameworks
     ++ component.pkgconfig;
 
   nativeBuildInputs =
