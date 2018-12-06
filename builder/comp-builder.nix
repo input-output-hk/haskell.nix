@@ -180,6 +180,10 @@ in stdenv.mkDerivation ({
     runHook preBuild
     $SETUP_HS build -j$NIX_BUILD_CORES ${lib.concatStringsSep " " component.setupBuildFlags}
     runHook postBuild
+  '' + lib.optionalString (doCheck && stdenv.hostPlatform != stdenv.buildPlatform) ''
+    # this is a hack to allow us to run tests; even though nixpkgs insists on
+    # tests not being run in a cross compiled setting. However we *may* know better.
+    export doCheck=1
   '';
 
   checkPhase = ''
