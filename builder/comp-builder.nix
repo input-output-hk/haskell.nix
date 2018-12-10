@@ -16,7 +16,8 @@
 , preCheck ? null, postCheck ? null
 , preInstall ? null, postInstall ? null
 
-, doCheck ? componentId.ctype == "test"
+, doCheck ? component.doCheck || componentId.ctype == "test"
+, doCrossCheck ? component.doCrossCheck || false
 }:
 
 let
@@ -129,7 +130,7 @@ let
 in stdenv.mkDerivation ({
   name = fullName;
 
-  inherit src doCheck;
+  inherit src doCheck doCrossCheck;
 
   passthru = {
     inherit (package) identifier;

@@ -97,7 +97,7 @@ in {
     };
 
     components = let
-      componentType = submodule {
+      componentType = check: submodule {
         options = {
           depends = mkOption {
             type = listOfFilteringNulls unspecified;
@@ -139,30 +139,38 @@ in {
             type = bool;
             default = false;
           };
+          doCheck = mkOption {
+            type = bool;
+            default = check;
+          };
+          doCrossCheck = mkOption {
+            type = bool;
+            default = config.doCrossCheck;
+          };
         };
       };
     in {
       library = mkOption {
-        type = componentType;
+        type = componentType false;
       };
       sublibs = mkOption {
-        type = attrsOf componentType;
+        type = attrsOf (componentType false);
         default = {};
       };
       foreignlibs = mkOption {
-        type = attrsOf componentType;
+        type = attrsOf (componentType false);
         default = {};
       };
       exes = mkOption {
-        type = attrsOf componentType;
+        type = attrsOf (componentType false);
         default = {};
       };
       tests = mkOption {
-        type = attrsOf componentType;
+        type = attrsOf (componentType config.doCheck);
         default = {};
       };
       benchmarks = mkOption {
-        type = attrsOf componentType;
+        type = attrsOf (componentType false);
         default = {};
       };
     };
@@ -244,6 +252,15 @@ in {
     postInstall = mkOption {
       type = nullOr string;
       default = null;
+    };
+    doCheck = mkOption {
+      type = bool;
+      default = false;
+    };
+    doCrossCheck = mkOption {
+      description = "Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.";
+      type = bool;
+      default = false;
     };
   };
 }

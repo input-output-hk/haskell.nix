@@ -70,7 +70,8 @@ let
 
   buildComp = componentId: component: comp-builder {
     inherit componentId component package name src flags setup cabalFile patches
-            preUnpack postUnpack preConfigure postConfigure preBuild postBuild preCheck postCheck preInstall postInstall;
+            preUnpack postUnpack preConfigure postConfigure preBuild postBuild preCheck postCheck preInstall postInstall
+            ;
   };
 
 in {
