@@ -46,6 +46,9 @@ main = getArgs >>= \case
             (Source url mempty UnknownHash subdir) >>= \case
             (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
             _ -> return ()
+  [path,file] -> doesDirectoryExist file >>= \case
+    False -> print . prettyNix =<< cabal2nix (Just (Path path)) (OnDisk file)
+    True  -> print . prettyNix =<< cabalexprs file
   [file] -> doesDirectoryExist file >>= \case
     False -> print . prettyNix =<< cabal2nix (Just (Path ".")) (OnDisk file)
     True  -> print . prettyNix =<< cabalexprs file
