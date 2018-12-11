@@ -189,6 +189,10 @@ in {
       default = pkgs.fetchurl { url = "mirror://hackage/${config.name}.tar.gz"; inherit (config) sha256; };
       defaultText = "pkgs.fetchurl { url = \"mirror://hackage/\${config.name}.tar.gz\"; inherit (config) sha256; };";
     };
+    cabal-generator = mkOption {
+      type = nullOr str;
+      default = null;
+    };
     revision = mkOption {
       type = nullOr int;
       default = null;
