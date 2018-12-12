@@ -326,9 +326,9 @@ extraDeps2nix (Stack _ _ pkgs) =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
   in mkNonRecSet $ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
                    | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
-                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. T.pack sha)
+                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. quoted (T.pack sha))
                    | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
-                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revision" @. toText revNo)
+                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. toText revNo)
                    | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse
