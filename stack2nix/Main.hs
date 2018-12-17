@@ -273,7 +273,7 @@ decodeURLEither url
 -- @Stack@ record.
 resolveSnapshot :: Stack -> IO Stack
 resolveSnapshot stack@(Stack resolver compiler pkgs)
-  = if "snapshot.yaml" `isSuffixOf` resolver
+  = if ".yaml" `isSuffixOf` resolver
     then do evalue <- if ("http://" `isPrefixOf` resolver) || ("https://" `isPrefixOf` resolver)
                       then decodeURLEither resolver
                       else decodeFileEither resolver
