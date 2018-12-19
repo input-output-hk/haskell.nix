@@ -25,7 +25,7 @@
     };
     components = {
       "library" = {
-        depends  = [
+        depends = [
           (hsPkgs.base)
           (hsPkgs.hnix)
           (hsPkgs.aeson)
@@ -45,7 +45,7 @@
       };
       exes = {
         "cabal-to-nix" = {
-          depends  = [
+          depends = [
             (hsPkgs.base)
             (hsPkgs.transformers)
             (hsPkgs.bytestring)
@@ -59,7 +59,7 @@
           ];
         };
         "hashes-to-nix" = {
-          depends  = [
+          depends = [
             (hsPkgs.base)
             (hsPkgs.hnix)
             (hsPkgs.nix-tools)
@@ -73,7 +73,7 @@
           ];
         };
         "plan-to-nix" = {
-          depends  = [
+          depends = [
             (hsPkgs.base)
             (hsPkgs.nix-tools)
             (hsPkgs.hnix)
@@ -86,7 +86,7 @@
           ];
         };
         "hackage-to-nix" = {
-          depends  = [
+          depends = [
             (hsPkgs.base)
             (hsPkgs.nix-tools)
             (hsPkgs.hackage-db)
@@ -103,7 +103,7 @@
           ];
         };
         "lts-to-nix" = {
-          depends  = [
+          depends = [
             (hsPkgs.base)
             (hsPkgs.nix-tools)
             (hsPkgs.hnix)
@@ -119,7 +119,7 @@
           ];
         };
         "stack-to-nix" = {
-          depends  = [
+          depends = [
             (hsPkgs.base)
             (hsPkgs.nix-tools)
             (hsPkgs.transformers)
@@ -138,8 +138,13 @@
             (hsPkgs.hpack)
             (hsPkgs.bytestring)
             (hsPkgs.optparse-applicative)
+            (hsPkgs.http-client-tls)
+            (hsPkgs.http-client)
+            (hsPkgs.http-types)
           ];
         };
       };
     };
-  } // rec { src = ./.; }
+  } // rec {
+    src = pkgs.lib.mkDefault ./.;
+  }

@@ -142,10 +142,10 @@ class ToNixBinding a where
   toNixBinding :: a -> Binding NExpr
 
 instance ToNixExpr Src where
-  toNix (Path p) = mkRecSet [ "src" $= mkRelPath p ]
+  toNix (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
   toNix (Git url rev mbSha256 mbPath)
     = mkNonRecSet $
-      [ "src" $= (mkSym pkgs @. "fetchgit" @@ mkNonRecSet
+      [ "src" $= applyMkDefault (mkSym pkgs @. "fetchgit" @@ mkNonRecSet
         [ "url"    $= mkStr (fromString url)
         , "rev"    $= mkStr (fromString rev)
         , "sha256" $= case mbSha256 of
@@ -156,6 +156,9 @@ instance ToNixExpr Src where
       [ "postUnpack"
         $= mkStr (fromString $ "sourceRoot+=/" <> root <> "; echo source root reset to $sourceRoot")
       | Just root <- [mbPath] ]
+
+applyMkDefault :: NExpr -> NExpr
+applyMkDefault expr = mkSym pkgs @. "lib" @. "mkDefault" @@ expr
 
 instance ToNixExpr PackageIdentifier where
   toNix ident = mkNonRecSet [ "name"    $= mkStr (fromString (show (disp (pkgName ident))))

@@ -40,6 +40,9 @@ let
     ];
     modules = [
       # specific package overrides would go here
+      ({ lib, ... }: {
+        packages.nix-tools.src = lib.cleanSource ./.;
+      })
     ];
   };
 
