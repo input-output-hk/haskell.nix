@@ -28,6 +28,7 @@
 let
   cabalFile = if revision == null || revision == 0 then null else
     fetchurl {
+      name = "${name}-${toString revision}.cabal";
       url = "https://hackage.haskell.org/package/${name}/revision/${toString revision}.cabal";
       sha256 = revisionSha256;
     };
