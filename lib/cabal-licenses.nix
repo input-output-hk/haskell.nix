@@ -11,4 +11,5 @@ lib: with lib.licenses;
   LicenseRef-LGPL = "LGPL";
   LicenseRef-PublicDomain = publicDomain;
   LicenseRef-OtherLicense = null;
+  NONE = null;
 }
