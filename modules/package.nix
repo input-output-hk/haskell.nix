@@ -121,7 +121,7 @@ in {
           };
           configureFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = [];
+            default = config.configureFlags;
           };
           setupBuildFlags = mkOption {
             type = listOfFilteringNulls str;
@@ -203,6 +203,10 @@ in {
     };
     patches = mkOption {
       type = listOf (either package path);
+      default = [];
+    };
+    configureFlags = mkOption {
+      type = listOfFilteringNulls str;
       default = [];
     };
     setupBuildFlags = mkOption {
