@@ -20,6 +20,9 @@
 , doCrossCheck ? component.doCrossCheck || false
 , dontPatchELF ? true
 , dontStrip ? true
+
+, static ? stdenv.hostPlatform.isMusl
+, deadCodeElimination ? true
 }:
 
 let
@@ -131,14 +134,14 @@ let
       "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
       "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       # other flags
-      "--enable-static"
-      "--enable-split-sections"
       "--enable-executable-stripping"
       "--enable-library-stripping"
-    ] ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
-      map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"]
-      ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}"
-    ) ++ component.configureFlags
+    ] ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
+      ++ lib.optional (static) "--enable-static"
+      ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
+        map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"]
+        ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
+      ++ component.configureFlags
   );
 
 in stdenv.mkDerivation ({
