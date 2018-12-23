@@ -18,6 +18,8 @@
 
 , doCheck ? component.doCheck || componentId.ctype == "test"
 , doCrossCheck ? component.doCrossCheck || false
+, dontPatchELF ? true
+, dontStrip ? true
 }:
 
 let
@@ -118,9 +120,21 @@ let
     [ "--prefix=$out"
       "${componentId.ctype}:${componentId.cname}"
       "$(cat ${configFiles}/configure-flags)"
+      # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
+      # CC
+      "--with-gcc=${stdenv.cc.targetPrefix}cc"
+      # BINTOOLS
+      "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
+      "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
+      "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
+      # other flags
+      "--enable-static"
+      "--enable-split-sections"
+      "--enable-executable-stripping"
+      "--enable-library-stripping"
     ] ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
       map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"]
       ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}"
@@ -130,7 +144,7 @@ let
 in stdenv.mkDerivation ({
   name = fullName;
 
-  inherit src doCheck doCrossCheck;
+  inherit src doCheck doCrossCheck dontPatchELF dontStrip;
 
   passthru = {
     inherit (package) identifier;
