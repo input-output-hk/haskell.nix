@@ -16,6 +16,7 @@
 , preBuild ? null, postBuild ? null
 , preCheck ? null, postCheck ? null
 , preInstall ? null, postInstall ? null
+, preHaddock ? null, postHaddock ? null
 , shellHook ? null
 
 , doCheck ? component.doCheck || haskellLib.isTest componentId
@@ -25,6 +26,11 @@
 
 , static ? stdenv.hostPlatform.isMusl
 , deadCodeElimination ? true
+
+# Options for Haddock generation
+, doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
+, doHoogle ? true  # Also build a hoogle index
+, hyperlinkSource ? true  # Link documentation to the source code
 }:
 
 let
@@ -164,7 +170,8 @@ let
       # other flags
       "--enable-executable-stripping"
       "--enable-library-stripping"
-    ] ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
+    ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
+      ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
       ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
         map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"]
@@ -182,7 +189,14 @@ let
     inherit package configFiles;
   };
 
-in stdenv.mkDerivation ({
+  # the target dir for haddock documentation
+  docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
+
+  doHaddock' = doHaddock && (haskellLib.isLibrary componentId);
+
+in stdenv.lib.fix (drv:
+
+stdenv.mkDerivation ({
   name = fullName;
 
   inherit src doCheck doCrossCheck dontPatchELF dontStrip;
@@ -192,6 +206,10 @@ in stdenv.mkDerivation ({
     config = component;
     inherit configFiles;
     env = shellWrappers;
+
+    # The directory containing the haddock documentation.
+    # `null' if no haddock documentation was built.
+    haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
   };
 
   meta = {
@@ -216,13 +234,17 @@ in stdenv.mkDerivation ({
     ++ component.pkgconfig;
 
   nativeBuildInputs =
-    [ghc]
+    [ghc buildPackages.removeReferencesTo]
     ++ lib.optional (component.pkgconfig != []) pkgconfig
     ++ executableToolDepends;
 
   SETUP_HS = setup + /bin/Setup;
 
+  outputs = ["out" ] ++ (lib.optional doHaddock' "doc");
+
   # Phases
+  preInstallPhases = lib.optional doHaddock' "haddockPhase";
+
   prePatch = lib.optionalString (cabalFile != null) ''
     cat ${cabalFile} > ${package.identifier.name}.cabal
   '';
@@ -248,6 +270,32 @@ in stdenv.mkDerivation ({
     mkdir -p $out/${name}
     cp dist/test/*.log $out/${name}/
     runHook postCheck
+  '';
+
+  haddockPhase = ''
+    runHook preHaddock
+    docdir="${docdir "$doc"}"
+    mkdir -p "$docdir"
+
+    $SETUP_HS haddock \
+      "--html" \
+      ${lib.optionalString doHoogle "--hoogle"} \
+      ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
+      ${lib.concatStringsSep " " component.setupHaddockFlags}
+
+    html="dist/doc/html/${componentId.cname}"
+
+    if [ -d "$html" ]; then
+       # Ensure that libraries are not pulled into the docs closure.
+       # As an example, the prettified source code of a
+       # Paths_package module will contain store paths of the library package.
+       for x in "$html/src/"*.html; do
+         remove-references-to -t $out $x
+       done
+
+       cp -R "$html" "$docdir"/html
+    fi
+    runHook postHaddock
   '';
 
   # Note: Cabal does *not* copy test executables during the `install` phase.
@@ -278,15 +326,10 @@ in stdenv.mkDerivation ({
 }
 # patches can (if they like) depend on the version and revision of the package.
 // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
-// lib.optionalAttrs (preUnpack != "") { inherit preUnpack; }
-// lib.optionalAttrs (postUnpack != "") { inherit postUnpack; }
-// lib.optionalAttrs (preConfigure != "") { inherit preConfigure; }
-// lib.optionalAttrs (postConfigure != "") { inherit postConfigure; }
-// lib.optionalAttrs (preBuild != "") { inherit preBuild; }
-// lib.optionalAttrs (postBuild != "") { inherit postBuild; }
-// lib.optionalAttrs (preCheck != "") { inherit preCheck; }
-// lib.optionalAttrs (postCheck != "") { inherit postCheck; }
-// lib.optionalAttrs (preInstall != "") { inherit preInstall; }
-// lib.optionalAttrs (postInstall != "") { inherit postInstall; }
+// haskellLib.optionalHooks {
+  inherit preUnpack postUnpack preConfigure postConfigure
+    preBuild postBuild preCheck postCheck
+    preInstall postInstall preHaddock postHaddock;
+}
 // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
-)
+))

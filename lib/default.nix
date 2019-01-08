@@ -61,6 +61,9 @@ with haskellLib;
     if componentId.ctype == "all" then ""
     else "${componentId.ctype}:${componentId.cname}";
 
+  # Remove null or empty values from an attrset.
+  optionalHooks = lib.filterAttrs (_: hook: hook != null && hook != "");
+
   # Avoid pkgs.callPackage for now. It does a lot of nonsense with OOP
   # style programming that we should avoid until we know we want it.
 
