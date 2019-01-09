@@ -4,7 +4,7 @@
 
 module Cabal2Nix (cabal2nix, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName) where
 
-import Distribution.PackageDescription.Parsec (readGenericPackageDescription, parseGenericPackageDescriptionMaybe)
+import Distribution.PackageDescription.Parsec (readGenericPackageDescription, parseGenericPackageDescription, runParseResult)
 import Distribution.Verbosity (normal)
 import Distribution.Text (disp)
 import Distribution.Pretty (pretty)
@@ -79,7 +79,9 @@ cabal2nix src = \case
   (OnDisk path) -> fmap (gpd2nix src Nothing)
     $ readGenericPackageDescription normal path
   (InMemory gen _ body) -> fmap (gpd2nix src (genExtra <$> gen))
-    $ maybe (error "Failed to parse in-memory cabal file") pure (parseGenericPackageDescriptionMaybe body)
+    $ case (runParseResult (parseGenericPackageDescription body)) of
+        (_, Left (_, err)) -> (error ("Failed to parse in-memory cabal file: " ++ show err))
+        (_, Right desc) -> pure desc
 
 gpd2nix :: Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
 gpd2nix src extra gpd = mkFunction args $ toNix gpd $//? (toNix <$> src) $//? extra
