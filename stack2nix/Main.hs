@@ -33,7 +33,8 @@ import Cabal2Nix hiding (Git)
 import qualified Cabal2Nix as C2N
 import Cabal2Nix.Util
 
-import Text.PrettyPrint.ANSI.Leijen (hPutDoc, Doc)
+import Data.Text.Prettyprint.Doc (Doc)
+import Data.Text.Prettyprint.Doc.Render.Text (hPutDoc)
 import System.IO
 import Data.List (isSuffixOf, isInfixOf, isPrefixOf)
 import Control.Applicative ((<|>))
@@ -248,7 +249,7 @@ main = print . prettyNix =<< stackexpr =<< execParser opts
          <> progDesc "Generate a nix expression from a stack.yaml file"
          <> header "stack-to-nix - a stack to nix converter" )
 
-writeDoc :: FilePath -> Doc -> IO ()
+writeDoc :: FilePath -> Doc ann -> IO ()
 writeDoc file doc =
   do handle <- openFile file WriteMode
      hPutDoc handle doc

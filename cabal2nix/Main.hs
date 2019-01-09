@@ -16,7 +16,8 @@ import Data.String (fromString)
 import Cabal2Nix
 import Cabal2Nix.Util
 
-import Text.PrettyPrint.ANSI.Leijen (hPutDoc, Doc)
+import Data.Text.Prettyprint.Doc (Doc)
+import Data.Text.Prettyprint.Doc.Render.Text (hPutDoc)
 import System.IO
 import Distribution.Nixpkgs.Fetch
 import Control.Monad.IO.Class
@@ -32,7 +33,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
-writeDoc :: FilePath -> Doc -> IO ()
+writeDoc :: FilePath -> Doc ann -> IO ()
 writeDoc file doc =
   do handle <- openFile file WriteMode
      hPutDoc handle doc
