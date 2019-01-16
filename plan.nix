@@ -236,7 +236,8 @@ hackage:
       "deriving-compat".flags.template-haskell-2-11 = true;
       "deriving-compat".flags.new-functor-classes = true;
       "text".revision = (((hackage."text")."1.2.3.1").revisions).default;
-      "Cabal".revision = (((hackage."Cabal")."2.2.0.1").revisions).default;
+      "Cabal".revision = (((hackage."Cabal")."2.4.1.0").revisions).default;
+      "Cabal".flags.bundled-binary-generic = false;
       "Diff".revision = (((hackage."Diff")."0.3.4").revisions).default;
       "unordered-containers".revision = (((hackage."unordered-containers")."0.2.9.0").revisions).default;
       "unordered-containers".flags.debug = false;
@@ -350,7 +351,6 @@ hackage:
         "containers" = "0.5.11.0";
         "bytestring" = "0.10.8.2";
         "text" = "1.2.3.1";
-        "Cabal" = "2.2.0.1";
         "base" = "4.11.1.0";
         "time" = "1.8.0.2";
         "terminfo" = "0.4.1.1";

@@ -26,7 +26,7 @@ library
                      , deepseq
                      , transformers
                      , data-fix
-                     , Cabal
+                     , Cabal >= 2.4
                      , text
                      , filepath
                      , directory
