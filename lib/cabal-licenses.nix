@@ -11,6 +11,7 @@ lib: with lib.licenses;
   "Apache-2.0"    = asl20;
   # Generic
   LicenseRef-Apache = "Apache";
+  LicenseRef-GPL = "GPL";
   LicenseRef-LGPL = "LGPL";
   LicenseRef-PublicDomain = publicDomain;
   LicenseRef-OtherLicense = null;
