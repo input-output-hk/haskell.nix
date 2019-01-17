@@ -20,6 +20,7 @@
     isLinux     = false;
     isWindows   = false;
     isOsx       = false;
+    isIos       = false;
     isFreebsd   = false;
     isOpenbsd   = false;
     isNetbsd    = false;
