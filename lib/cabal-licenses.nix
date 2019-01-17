@@ -5,6 +5,7 @@ lib: with lib.licenses;
   ISC = isc;
   "LGPL-2.1-only" = lgpl21;
   "LGPL-3.0-only" = lgpl3;
+  "GPL-2.0-only"  = gpl2;
   "GPL-3.0-only"  = gpl3;
   "Apache-2.0"    = asl20;
   # Generic
