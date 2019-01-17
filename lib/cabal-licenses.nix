@@ -10,6 +10,7 @@ lib: with lib.licenses;
   "GPL-3.0-only"  = gpl3;
   "Apache-2.0"    = asl20;
   # Generic
+  LicenseRef-Apache = "Apache";
   LicenseRef-LGPL = "LGPL";
   LicenseRef-PublicDomain = publicDomain;
   LicenseRef-OtherLicense = null;
