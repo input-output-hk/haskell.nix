@@ -13,6 +13,11 @@ let
              (pkg-def hackage);
 in
 hackage: let haskell = {
+  # ghc hackage patches.
+  # these are patches that turn hackage packages into the same as the ones
+  # ghc ships with the supposedly same version. See GHC Track Issue: 16199
+  ghcHackagePatches = import ./patches;
+
   compat = import ./compat hackage;
   mkPkgSet = pkgs: pkg-def: import ./package-set.nix { inherit pkgs hackage haskell; pkg-def = strip-pkg-def pkgs pkg-def; };
   # The *new* pkg set is one that build components.

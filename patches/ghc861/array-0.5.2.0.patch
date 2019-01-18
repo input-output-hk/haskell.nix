@@ -1,0 +1,302 @@
+diff -ur hackage-package-array-0.5.2.0/Data/Array/Base.hs ghc-package-array-0.5.2.0/Data/Array/Base.hs
+--- hackage-package-array-0.5.2.0/Data/Array/Base.hs	2017-07-04 06:06:07.000000000 +0800
++++ ghc-package-array-0.5.2.0/Data/Array/Base.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -1,5 +1,15 @@
+-{-# LANGUAGE BangPatterns, CPP, RankNTypes, MagicHash, UnboxedTuples, MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, DeriveDataTypeable, UnliftedFFITypes #-}
+-{-# LANGUAGE RoleAnnotations #-}
++{-# LANGUAGE
++    BangPatterns
++  , CPP
++  , RankNTypes
++  , MagicHash
++  , UnboxedTuples
++  , MultiParamTypeClasses
++  , FlexibleInstances
++  , FlexibleContexts
++  , UnliftedFFITypes
++  , RoleAnnotations
++ #-}
+ {-# OPTIONS_HADDOCK hide #-}
+ 
+ -----------------------------------------------------------------------------
+@@ -39,7 +49,6 @@
+ import GHC.IO           ( stToIO )
+ import GHC.IOArray      ( IOArray(..),
+                           newIOArray, unsafeReadIOArray, unsafeWriteIOArray )
+-import Data.Typeable
+ 
+ #include "MachDeps.h"
+ 
+@@ -398,7 +407,6 @@
+ -- "Data.Array.Unboxed" instead of "Data.Array").
+ --
+ data UArray i e = UArray !i !i !Int ByteArray#
+-                  deriving Typeable
+ -- There are class-based invariants on both parameters. See also #9220.
+ type role UArray nominal nominal
+ 
+@@ -979,7 +987,6 @@
+ -- don\'t use 'STUArray' if you require the non-strictness that
+ -- 'STArray' provides.
+ data STUArray s i e = STUArray !i !i !Int (MutableByteArray# s)
+-                      deriving Typeable
+ -- The "ST" parameter must be nominal for the safety of the ST trick.
+ -- The other parameters have class constraints. See also #9220.
+ type role STUArray nominal nominal nominal
+@@ -1370,11 +1377,7 @@
+   -- use the safe array creation function here.
+   return (listArray (l,u) es)
+ 
+-#if __GLASGOW_HASKELL__ >= 711
+ freezeSTUArray :: STUArray s i e -> ST s (UArray i e)
+-#else
+-freezeSTUArray :: Ix i => STUArray s i e -> ST s (UArray i e)
+-#endif
+ freezeSTUArray (STUArray l u n marr#) = ST $ \s1# ->
+     case sizeofMutableByteArray# marr#  of { n# ->
+     case newByteArray# n# s1#           of { (# s2#, marr'# #) ->
+@@ -1449,11 +1452,7 @@
+               | i <- [0 .. n - 1]]
+     return marr
+ 
+-#if __GLASGOW_HASKELL__ >= 711
+ thawSTUArray :: UArray i e -> ST s (STUArray s i e)
+-#else
+-thawSTUArray :: Ix i => UArray i e -> ST s (STUArray s i e)
+-#endif
+ thawSTUArray (UArray l u n arr#) = ST $ \s1# ->
+     case sizeofByteArray# arr#          of { n# ->
+     case newByteArray# n# s1#           of { (# s2#, marr# #) ->
+@@ -1513,11 +1512,7 @@
+ unsafeThaw = thaw
+ 
+ {-# INLINE unsafeThawSTUArray #-}
+-#if __GLASGOW_HASKELL__ >= 711
+ unsafeThawSTUArray :: UArray i e -> ST s (STUArray s i e)
+-#else
+-unsafeThawSTUArray :: Ix i => UArray i e -> ST s (STUArray s i e)
+-#endif
+ unsafeThawSTUArray (UArray l u n marr#) =
+     return (STUArray l u n (unsafeCoerce# marr#))
+ 
+@@ -1527,11 +1522,7 @@
+     #-}
+ 
+ {-# INLINE unsafeThawIOArray #-}
+-#if __GLASGOW_HASKELL__ >= 711
+ unsafeThawIOArray :: Arr.Array ix e -> IO (IOArray ix e)
+-#else
+-unsafeThawIOArray :: Ix ix => Arr.Array ix e -> IO (IOArray ix e)
+-#endif
+ unsafeThawIOArray arr = stToIO $ do
+     marr <- ArrST.unsafeThawSTArray arr
+     return (IOArray marr)
+@@ -1540,11 +1531,7 @@
+ "unsafeThaw/IOArray"  unsafeThaw = unsafeThawIOArray
+     #-}
+ 
+-#if __GLASGOW_HASKELL__ >= 711
+ thawIOArray :: Arr.Array ix e -> IO (IOArray ix e)
+-#else
+-thawIOArray :: Ix ix => Arr.Array ix e -> IO (IOArray ix e)
+-#endif
+ thawIOArray arr = stToIO $ do
+     marr <- ArrST.thawSTArray arr
+     return (IOArray marr)
+@@ -1553,11 +1540,7 @@
+ "thaw/IOArray"  thaw = thawIOArray
+     #-}
+ 
+-#if __GLASGOW_HASKELL__ >= 711
+ freezeIOArray :: IOArray ix e -> IO (Arr.Array ix e)
+-#else
+-freezeIOArray :: Ix ix => IOArray ix e -> IO (Arr.Array ix e)
+-#endif
+ freezeIOArray (IOArray marr) = stToIO (ArrST.freezeSTArray marr)
+ 
+ {-# RULES
+@@ -1565,11 +1548,7 @@
+     #-}
+ 
+ {-# INLINE unsafeFreezeIOArray #-}
+-#if __GLASGOW_HASKELL__ >= 711
+ unsafeFreezeIOArray :: IOArray ix e -> IO (Arr.Array ix e)
+-#else
+-unsafeFreezeIOArray :: Ix ix => IOArray ix e -> IO (Arr.Array ix e)
+-#endif
+ unsafeFreezeIOArray (IOArray marr) = stToIO (ArrST.unsafeFreezeSTArray marr)
+ 
+ {-# RULES
+diff -ur hackage-package-array-0.5.2.0/Data/Array/IO/Internals.hs ghc-package-array-0.5.2.0/Data/Array/IO/Internals.hs
+--- hackage-package-array-0.5.2.0/Data/Array/IO/Internals.hs	2017-07-04 06:06:07.000000000 +0800
++++ ghc-package-array-0.5.2.0/Data/Array/IO/Internals.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -1,6 +1,8 @@
+-{-# LANGUAGE DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses,
+-             CPP #-}
+-{-# LANGUAGE RoleAnnotations #-}
++{-# LANGUAGE
++    FlexibleInstances
++  , MultiParamTypeClasses
++  , RoleAnnotations
++ #-}
+ 
+ {-# OPTIONS_HADDOCK hide #-}
+ -----------------------------------------------------------------------------
+@@ -27,15 +29,11 @@
+ 
+ import Data.Int
+ import Data.Word
+-import Data.Typeable
+ 
+ import Control.Monad.ST         ( RealWorld, stToIO )
+ import Foreign.Ptr              ( Ptr, FunPtr )
+ import Foreign.StablePtr        ( StablePtr )
+ 
+-#if __GLASGOW_HASKELL__ < 711
+-import Data.Ix
+-#endif
+ import Data.Array.Base
+ 
+ import GHC.IOArray (IOArray(..))
+@@ -52,7 +50,6 @@
+ --    are supported: see "Data.Array.MArray" for a list of instances.
+ --
+ newtype IOUArray i e = IOUArray (STUArray RealWorld i e)
+-                       deriving Typeable
+ -- Both parameters have class-based invariants. See also #9220.
+ type role IOUArray nominal nominal
+ 
+@@ -374,11 +371,7 @@
+     return (IOUArray marr')
+ 
+ {-# INLINE unsafeThawIOUArray #-}
+-#if __GLASGOW_HASKELL__ >= 711
+ unsafeThawIOUArray :: UArray ix e -> IO (IOUArray ix e)
+-#else
+-unsafeThawIOUArray :: Ix ix => UArray ix e -> IO (IOUArray ix e)
+-#endif
+ unsafeThawIOUArray arr = stToIO $ do
+     marr <- unsafeThawSTUArray arr
+     return (IOUArray marr)
+@@ -387,11 +380,7 @@
+ "unsafeThaw/IOUArray" unsafeThaw = unsafeThawIOUArray
+     #-}
+ 
+-#if __GLASGOW_HASKELL__ >= 711
+ thawIOUArray :: UArray ix e -> IO (IOUArray ix e)
+-#else
+-thawIOUArray :: Ix ix => UArray ix e -> IO (IOUArray ix e)
+-#endif
+ thawIOUArray arr = stToIO $ do
+     marr <- thawSTUArray arr
+     return (IOUArray marr)
+@@ -401,22 +390,14 @@
+     #-}
+ 
+ {-# INLINE unsafeFreezeIOUArray #-}
+-#if __GLASGOW_HASKELL__ >= 711
+ unsafeFreezeIOUArray :: IOUArray ix e -> IO (UArray ix e)
+-#else
+-unsafeFreezeIOUArray :: Ix ix => IOUArray ix e -> IO (UArray ix e)
+-#endif
+ unsafeFreezeIOUArray (IOUArray marr) = stToIO (unsafeFreezeSTUArray marr)
+ 
+ {-# RULES
+ "unsafeFreeze/IOUArray" unsafeFreeze = unsafeFreezeIOUArray
+     #-}
+ 
+-#if __GLASGOW_HASKELL__ >= 711
+ freezeIOUArray :: IOUArray ix e -> IO (UArray ix e)
+-#else
+-freezeIOUArray :: Ix ix => IOUArray ix e -> IO (UArray ix e)
+-#endif
+ freezeIOUArray (IOUArray marr) = stToIO (freezeSTUArray marr)
+ 
+ {-# RULES
+diff -ur hackage-package-array-0.5.2.0/Data/Array/ST.hs ghc-package-array-0.5.2.0/Data/Array/ST.hs
+--- hackage-package-array-0.5.2.0/Data/Array/ST.hs	2017-07-04 06:06:07.000000000 +0800
++++ ghc-package-array-0.5.2.0/Data/Array/ST.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -1,4 +1,3 @@
+-{-# LANGUAGE CPP #-}
+ {-# LANGUAGE RankNTypes #-}
+ -----------------------------------------------------------------------------
+ -- |
+@@ -38,11 +37,7 @@
+ -- the array before returning it - it uses 'unsafeFreeze' internally, but
+ -- this wrapper is a safe interface to that function.
+ --
+-#if __GLASGOW_HASKELL__ >= 711
+ runSTArray :: (forall s . ST s (STArray s i e)) -> Array i e
+-#else
+-runSTArray :: Ix i => (forall s . ST s (STArray s i e)) -> Array i e
+-#endif
+ runSTArray st = runST (st >>= unsafeFreezeSTArray)
+ 
+ -- | A safe way to create and work with an unboxed mutable array before
+@@ -51,11 +46,7 @@
+ -- 'unsafeFreeze' internally, but this wrapper is a safe interface to
+ -- that function.
+ --
+-#if __GLASGOW_HASKELL__ >= 711
+ runSTUArray :: (forall s . ST s (STUArray s i e)) -> UArray i e
+-#else
+-runSTUArray :: Ix i => (forall s . ST s (STUArray s i e)) -> UArray i e
+-#endif
+ runSTUArray st = runST (st >>= unsafeFreezeSTUArray)
+ 
+ 
+diff -ur hackage-package-array-0.5.2.0/Data/Array.hs ghc-package-array-0.5.2.0/Data/Array.hs
+--- hackage-package-array-0.5.2.0/Data/Array.hs	2017-07-04 06:06:07.000000000 +0800
++++ ghc-package-array-0.5.2.0/Data/Array.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -54,8 +54,6 @@
+   ) where
+ 
+ import Data.Ix
+-import Data.Typeable ()
+-
+ import GHC.Arr  -- Most of the hard work is done here
+ 
+ {- $intro
+diff -ur hackage-package-array-0.5.2.0/array.cabal ghc-package-array-0.5.2.0/array.cabal
+--- hackage-package-array-0.5.2.0/array.cabal	2017-07-04 06:06:07.000000000 +0800
++++ ghc-package-array-0.5.2.0/array.cabal	2001-09-09 09:46:40.000000000 +0800
+@@ -9,7 +9,7 @@
+ category:      Data Structures
+ build-type:    Simple
+ cabal-version: >=1.10
+-tested-with:   GHC==8.2.1, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4
++tested-with:   GHC==8.4.2, GHC==8.2.1, GHC==8.0.2
+ description:
+     In addition to providing the "Data.Array" module
+     <http://www.haskell.org/onlinereport/haskell2010/haskellch14.html as specified in the Haskell 2010 Language Report>,
+@@ -28,7 +28,6 @@
+   other-extensions:
+       BangPatterns,
+       CPP,
+-      DeriveDataTypeable,
+       FlexibleContexts,
+       FlexibleInstances,
+       MagicHash,
+@@ -37,7 +36,7 @@
+       Trustworthy,
+       UnboxedTuples,
+       UnliftedFFITypes
+-  build-depends: base >= 4.7 && < 4.11
++  build-depends: base >= 4.9 && < 4.13
+   ghc-options: -Wall
+   exposed-modules:
+       Data.Array
+diff -ur hackage-package-array-0.5.2.0/changelog.md ghc-package-array-0.5.2.0/changelog.md
+--- hackage-package-array-0.5.2.0/changelog.md	2017-07-04 06:06:07.000000000 +0800
++++ ghc-package-array-0.5.2.0/changelog.md	2001-09-09 09:46:40.000000000 +0800
+@@ -1,5 +1,10 @@
+ # Changelog for [`array` package](http://hackage.haskell.org/package/array)
+ 
++## Next
++
++  * Bundled with GHC 8.6.1
++  * Drop support for GHC versions prior to GHC 8.0
++
+ ## 0.5.2.0  *Jul 2017*
+ 
+   * Bundled with GHC 8.2.1

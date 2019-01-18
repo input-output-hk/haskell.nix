@@ -1,0 +1,16 @@
+diff -ur hackage-package-hpc-0.6.0.3/hpc.cabal ghc-package-hpc-0.6.0.3/hpc.cabal
+--- hackage-package-hpc-0.6.0.3/hpc.cabal	2016-05-04 18:47:19.000000000 +0800
++++ ghc-package-hpc-0.6.0.3/hpc.cabal	2001-09-09 09:46:40.000000000 +0800
+@@ -35,9 +35,9 @@
+         Trace.Hpc.Reflect
+ 
+     Build-Depends:
+-        base       >= 4.4.1 && < 4.10,
++        base       >= 4.4.1 && < 4.12,
+         containers >= 0.4.1 && < 0.6,
+-        directory  >= 1.1   && < 1.3,
++        directory  >= 1.1   && < 1.4,
+         filepath   >= 1     && < 1.5,
+-        time       >= 1.2   && < 1.7
++        time       >= 1.2   && < 1.9
+     ghc-options: -Wall

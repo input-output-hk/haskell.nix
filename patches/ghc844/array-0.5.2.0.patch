@@ -1,0 +1,12 @@
+diff -ur hackage-package-array-0.5.2.0/array.cabal ghc-package-array-0.5.2.0/array.cabal
+--- hackage-package-array-0.5.2.0/array.cabal	2017-07-04 06:06:07.000000000 +0800
++++ ghc-package-array-0.5.2.0/array.cabal	2001-09-09 09:46:40.000000000 +0800
+@@ -37,7 +37,7 @@
+       Trustworthy,
+       UnboxedTuples,
+       UnliftedFFITypes
+-  build-depends: base >= 4.7 && < 4.11
++  build-depends: base >= 4.7 && < 4.12
+   ghc-options: -Wall
+   exposed-modules:
+       Data.Array

@@ -1,0 +1,12 @@
+diff -ur hackage-package-parallel-3.2.1.1/parallel.cabal ghc-package-parallel-3.2.1.1/parallel.cabal
+--- hackage-package-parallel-3.2.1.1/parallel.cabal	2017-04-09 00:25:01.000000000 +0800
++++ ghc-package-parallel-3.2.1.1/parallel.cabal	2001-09-09 09:46:40.000000000 +0800
+@@ -34,7 +34,7 @@
+ 
+     build-depends:
+         array      >= 0.3 && < 0.6,
+-        base       >= 4.3 && < 4.11,
++        base       >= 4.3 && < 4.12,
+         containers >= 0.4 && < 0.6,
+         deepseq    >= 1.1 && < 1.5
+ 

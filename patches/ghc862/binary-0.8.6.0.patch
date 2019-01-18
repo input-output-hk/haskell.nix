@@ -1,0 +1,19 @@
+diff -ur hackage-package-binary-0.8.6.0/binary.cabal ghc-package-binary-0.8.6.0/binary.cabal
+--- hackage-package-binary-0.8.6.0/binary.cabal	2018-08-04 20:33:08.000000000 +0800
++++ ghc-package-binary-0.8.6.0/binary.cabal	2001-09-09 09:46:40.000000000 +0800
+@@ -158,7 +158,6 @@
+     Data.Binary.Class
+     Data.Binary.FloatCast
+     Data.Binary.Generic
+-    Data.Binary.Get
+     Data.Binary.Get.Internal
+     Data.Binary.Internal
+     Data.Binary.Put
+@@ -191,7 +190,6 @@
+     Data.Binary.Get
+     Data.Binary.Get.Internal
+     Data.Binary.Internal
+-    Data.Binary.Put
+   build-depends:
+     base >= 4.5.0.0 && < 5,
+     bytestring >= 0.10.4,

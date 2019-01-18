@@ -1,0 +1,256 @@
+diff -ur hackage-package-mtl-2.2.2/CHANGELOG.markdown ghc-package-mtl-2.2.2/CHANGELOG.markdown
+--- hackage-package-mtl-2.2.2/CHANGELOG.markdown	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/CHANGELOG.markdown	2001-09-09 09:46:40.000000000 +0800
+@@ -3,10 +3,6 @@
+ * `Control.Monad.Identity` now re-exports `Control.Monad.Trans.Identity`
+ * Fix a bug in which `Control.Monad.State.Class.modify'` was not as strict in
+   the new state as its counterparts in `transformers`
+-* Add a `MonadError () Maybe` instance
+-* Add `liftEither :: MonadError e m => Either e a -> m a` to
+-  `Control.Monad.Except{.Class}`
+-* Add a `MonadWriter w ((,) w)` instance (when built against `base-4.9` or later)
+ 
+ 2.2.1
+ -------
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/Cont/Class.hs ghc-package-mtl-2.2.2/Control/Monad/Cont/Class.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/Cont/Class.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/Cont/Class.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -104,7 +104,6 @@
+ instance (Error e, MonadCont m) => MonadCont (ErrorT e m) where
+     callCC = Error.liftCallCC callCC
+ 
+-{- | @since 2.2 -}
+ instance MonadCont m => MonadCont (ExceptT e m) where
+     callCC = Except.liftCallCC callCC
+ 
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/Error/Class.hs ghc-package-mtl-2.2.2/Control/Monad/Error/Class.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/Error/Class.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/Error/Class.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -41,7 +41,6 @@
+ module Control.Monad.Error.Class (
+     Error(..),
+     MonadError(..),
+-    liftEither,
+   ) where
+ 
+ import Control.Monad.Trans.Except (Except, ExceptT)
+@@ -68,7 +67,7 @@
+ #endif
+ 
+ import Data.Monoid
+-import Prelude (Either(..), Maybe(..), either, (.), IO)
++import Prelude (Either(..), (.), IO)
+ 
+ {- |
+ The strategy of combining computations that can throw exceptions
+@@ -77,7 +76,7 @@
+ 
+ Is parameterized over the type of error information and
+ the monad type constructor.
+-It is common to use @'Either' String@ as the monad type constructor
++It is common to use @'Data.Either' String@ as the monad type constructor
+ for an error monad in which error descriptions take the form of strings.
+ In that case and many other common cases the resulting monad is already defined
+ as an instance of the 'MonadError' class.
+@@ -106,28 +105,10 @@
+     {-# MINIMAL throwError, catchError #-}
+ #endif
+ 
+-{- |
+-Lifts an @'Either' e@ into any @'MonadError' e@.
+-
+-> do { val <- liftEither =<< action1; action2 }
+-
+-where @action1@ returns an 'Either' to represent errors.
+-
+-@since 2.2.2
+--}
+-liftEither :: MonadError e m => Either e a -> m a
+-liftEither = either throwError return
+-
+ instance MonadError IOException IO where
+     throwError = ioError
+     catchError = catch
+ 
+-{- | @since 2.2.2 -}
+-instance MonadError () Maybe where
+-    throwError ()        = Nothing
+-    catchError Nothing f = f ()
+-    catchError x       _ = x
+-
+ -- ---------------------------------------------------------------------------
+ -- Our parameterizable error monad
+ 
+@@ -140,7 +121,6 @@
+     throwError = ErrorT.throwError
+     catchError = ErrorT.catchError
+ 
+-{- | @since 2.2 -}
+ instance Monad m => MonadError e (ExceptT e m) where
+     throwError = ExceptT.throwE
+     catchError = ExceptT.catchE
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/Error.hs ghc-package-mtl-2.2.2/Control/Monad/Error.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/Error.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/Error.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -22,7 +22,7 @@
+ [Zero and plus:] Zero is represented by an empty error and the plus operation
+ executes its second argument if the first fails.
+ 
+-[Example type:] @'Either' String a@
++[Example type:] @'Data.Either' String a@
+ 
+ The Error monad (also called the Exception monad).
+ -}
+@@ -33,7 +33,7 @@
+     Andy Gill (<http://web.cecs.pdx.edu/~andy/>)
+ -}
+ module Control.Monad.Error
+-  {-# DEPRECATED "Use \"Control.Monad.Except\" instead" #-} (
++  {-# DEPRECATED "Use Control.Monad.Except instead" #-} (
+     -- * Monads with error handling
+     MonadError(..),
+     Error(..),
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/Except.hs ghc-package-mtl-2.2.2/Control/Monad/Except.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/Except.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/Except.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -19,11 +19,9 @@
+ [Useful for:] Building computations from sequences of functions that may fail
+ or using exception handling to structure error handling.
+ 
+-[Example type:] @'Either' String a@
++[Example type:] @'Data.Either' String a@
+ 
+ The Error monad (also called the Exception monad).
+-
+-@since 2.2.1
+ -}
+ 
+ {-
+@@ -33,11 +31,8 @@
+ -}
+ module Control.Monad.Except
+   (
+-    -- * Warning
+-    -- $warning
+     -- * Monads with error handling
+     MonadError(..),
+-    liftEither,
+     -- * The ExceptT monad transformer
+     ExceptT(ExceptT),
+     Except,
+@@ -75,18 +70,6 @@
+ import Control.Monad.Instances ()
+ #endif
+ 
+-{- $warning
+-Please do not confuse 'ExceptT' and 'throwError' with 'Control.Exception.Exception' /
+-'Control.Exception.SomeException' and 'Control.Exception.catch', respectively. The latter
+-are for exceptions built into GHC, by default, and are mostly used from within the IO monad.
+-They do not interact with the \"exceptions\" in this package at all. This package allows you
+-to define a new kind of exception control mechanism which does not necessarily need your code to
+-be placed in the IO monad.
+-
+-In short, all \"catching\" mechanisms in this library will be unable to catch exceptions thrown
+-by functions in the "Control.Exception" module, and vice-versa.
+--}
+-
+ {- $customErrorExample
+ Here is an example that demonstrates the use of a custom error data type with
+ the 'throwError' and 'catchError' exception mechanism from 'MonadError'.
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/RWS/Class.hs ghc-package-mtl-2.2.2/Control/Monad/RWS/Class.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/RWS/Class.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/RWS/Class.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -57,7 +57,6 @@
+ -- All of these instances need UndecidableInstances,
+ -- because they do not satisfy the coverage condition.
+ 
+--- | @since 2.2
+ instance MonadRWS r w s m => MonadRWS r w s (ExceptT e m)
+ instance (Error e, MonadRWS r w s m) => MonadRWS r w s (ErrorT e m)
+ instance MonadRWS r w s m => MonadRWS r w s (IdentityT m)
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/Reader/Class.hs ghc-package-mtl-2.2.2/Control/Monad/Reader/Class.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/Reader/Class.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/Reader/Class.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -137,7 +137,6 @@
+     local = mapErrorT . local
+     reader = lift . reader
+ 
+-{- | @since 2.2 -}
+ instance MonadReader r m => MonadReader r (ExceptT e m) where
+     ask   = lift ask
+     local = mapExceptT . local
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/State/Class.hs ghc-package-mtl-2.2.2/Control/Monad/State/Class.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/State/Class.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/State/Class.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -89,8 +89,6 @@
+ 
+ -- | A variant of 'modify' in which the computation is strict in the
+ -- new state.
+---
+--- @since 2.2
+ modify' :: MonadState s m => (s -> s) -> m ()
+ modify' f = do
+   s' <- get
+@@ -139,7 +137,6 @@
+     put = lift . put
+     state = lift . state
+ 
+--- | @since 2.2
+ instance MonadState s m => MonadState s (ExceptT e m) where
+     get = lift get
+     put = lift . put
+diff -ur hackage-package-mtl-2.2.2/Control/Monad/Writer/Class.hs ghc-package-mtl-2.2.2/Control/Monad/Writer/Class.hs
+--- hackage-package-mtl-2.2.2/Control/Monad/Writer/Class.hs	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/Control/Monad/Writer/Class.hs	2001-09-09 09:46:40.000000000 +0800
+@@ -103,17 +103,6 @@
+     a <- m
+     return (a, f)
+ 
+-#if MIN_VERSION_base(4,9,0)
+--- | __NOTE__: This instance is only defined for @base >= 4.9.0@.
+---
+--- @since 2.2.2
+-instance (Monoid w) => MonadWriter w ((,) w) where
+-  writer ~(a, w) = (w, a)
+-  tell w = (w, ())
+-  listen ~(w, a) = (w, (a, w))
+-  pass ~(w, (a, f)) = (f w, a)
+-#endif
+-
+ instance (Monoid w, Monad m) => MonadWriter w (Lazy.WriterT w m) where
+     writer = Lazy.writer
+     tell   = Lazy.tell
+@@ -150,7 +139,6 @@
+     listen = Error.liftListen listen
+     pass   = Error.liftPass pass
+ 
+--- | @since 2.2
+ instance MonadWriter w m => MonadWriter w (ExceptT e m) where
+     writer = lift . writer
+     tell   = lift . tell
+diff -ur hackage-package-mtl-2.2.2/mtl.cabal ghc-package-mtl-2.2.2/mtl.cabal
+--- hackage-package-mtl-2.2.2/mtl.cabal	2018-02-25 06:02:27.000000000 +0800
++++ ghc-package-mtl-2.2.2/mtl.cabal	2001-09-09 09:46:40.000000000 +0800
+@@ -25,8 +25,8 @@
+   GHC==7.8.4,
+   GHC==7.10.3,
+   GHC==8.0.2,
+-  GHC==8.2.2,
+-  GHC==8.4.1
++  GHC==8.2.1,
++  GHC==8.3.*
+ 
+ source-repository head
+   type: git
+@@ -66,11 +66,6 @@
+     FlexibleInstances
+     UndecidableInstances
+ 
+-  -- This is a SafeHaskell safeguard (pun intended) to explicitly declare the API contract of `mtl`
+-  -- GHC versions before 7.4 were hopelessly broken or incapable of SafeHaskell
+-  if impl(ghc >= 7.4)
+-    default-extensions: Safe
+-
+   ghc-options: -Wall -fno-warn-unused-imports -fno-warn-warnings-deprecations
+ 
+   if impl(ghc >= 8.0)
