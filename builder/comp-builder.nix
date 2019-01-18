@@ -7,6 +7,7 @@
 , setup
 , src
 , flags
+, revision
 , cabalFile
 , patches ? []
 
@@ -229,7 +230,8 @@ in stdenv.mkDerivation ({
     runHook postInstall
   '';
 }
-// lib.optionalAttrs (patches != []) { inherit patches; }
+# patches can (if they like) depend on the version and revision of the package.
+// lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
 // lib.optionalAttrs (preUnpack != "") { inherit preUnpack; }
 // lib.optionalAttrs (postUnpack != "") { inherit postUnpack; }
 // lib.optionalAttrs (preConfigure != "") { inherit preConfigure; }

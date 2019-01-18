@@ -202,7 +202,7 @@ in {
       default = null;
     };
     patches = mkOption {
-      type = listOf (either package path);
+      type = listOf (either unspecified path);
       default = [];
     };
     configureFlags = mkOption {
