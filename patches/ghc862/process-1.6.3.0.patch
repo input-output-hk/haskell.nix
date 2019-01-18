@@ -1,40 +1,8 @@
-diff -ur hackage-package-process-1.6.3.0/System/Process/Common.hs ghc-package-process-1.6.3.0/System/Process/Common.hs
---- hackage-package-process-1.6.3.0/System/Process/Common.hs	2017-03-31 01:02:13.000000000 +0800
-+++ ghc-package-process-1.6.3.0/System/Process/Common.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -44,7 +44,7 @@
- import GHC.IO.Handle.Types hiding (ClosedHandle)
- import System.IO.Error
- import Data.Typeable
--import GHC.IO.IOMode
-+import System.IO (IOMode)
- 
- -- We do a minimal amount of CPP here to provide uniform data types across
- -- Windows and POSIX.
-diff -ur hackage-package-process-1.6.3.0/System/Process/Windows.hsc ghc-package-process-1.6.3.0/System/Process/Windows.hsc
---- hackage-package-process-1.6.3.0/System/Process/Windows.hsc	2017-02-21 21:53:00.000000000 +0800
-+++ ghc-package-process-1.6.3.0/System/Process/Windows.hsc	2001-09-09 09:46:40.000000000 +0800
-@@ -34,7 +34,7 @@
- import GHC.IO.Handle.FD
- import GHC.IO.Handle.Types hiding (ClosedHandle)
- import System.IO.Error
--import GHC.IO.IOMode
-+import System.IO (IOMode(..))
- 
- import System.Directory         ( doesFileExist )
- import System.Environment       ( getEnv )
-@@ -208,7 +208,7 @@
-                  then Just <$> peek p_exitCode
-                  else return Nothing
- 
--insertItem :: Eq k => MVar [(k, v)] -> k -> v -> IO ()
-+insertItem :: MVar [(k, v)] -> k -> v -> IO ()
- insertItem env_ k v = modifyMVar_ env_ (return . ((k, v):))
- 
- getItem :: Eq k => MVar [(k, v)] -> k -> IO v
-diff -ur hackage-package-process-1.6.3.0/System/Process.hs ghc-package-process-1.6.3.0/System/Process.hs
---- hackage-package-process-1.6.3.0/System/Process.hs	2017-12-27 17:35:11.000000000 +0800
-+++ ghc-package-process-1.6.3.0/System/Process.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -43,6 +43,7 @@
+diff --git a/System/Process.hs b/System/Process.hs
+index 2678a93..d03dc6e 100644
+--- a/System/Process.hs
++++ b/System/Process.hs
+@@ -43,6 +43,7 @@ module System.Process (
      readCreateProcessWithExitCode,
      readProcessWithExitCode,
      withCreateProcess,
@@ -42,7 +10,7 @@ diff -ur hackage-package-process-1.6.3.0/System/Process.hs ghc-package-process-1
  
      -- ** Related utilities
      showCommandForUser,
-@@ -245,7 +246,12 @@
+@@ -245,7 +246,12 @@ withCreateProcess_ fun c action =
      C.bracketOnError (createProcess_ fun c) cleanupProcess
                       (\(m_in, m_out, m_err, ph) -> action m_in m_out m_err ph)
  
@@ -56,7 +24,7 @@ diff -ur hackage-package-process-1.6.3.0/System/Process.hs ghc-package-process-1
  cleanupProcess :: (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
                 -> IO ()
  cleanupProcess (mb_stdin, mb_stdout, mb_stderr,
-@@ -728,8 +734,10 @@
+@@ -728,8 +734,10 @@ getProcessExitCode ph@(ProcessHandle _ delegating_ctlc _) = tryLockWaitpid $ do
  -- has indeed terminated, use 'getProcessExitCode'.
  --
  -- On Unix systems, 'terminateProcess' sends the process the SIGTERM signal.
@@ -69,10 +37,46 @@ diff -ur hackage-package-process-1.6.3.0/System/Process.hs ghc-package-process-1
  --
  -- Note: on Windows, if the process was a shell command created by
  -- 'createProcess' with 'shell', or created by 'runCommand' or
-diff -ur hackage-package-process-1.6.3.0/cbits/runProcess.c ghc-package-process-1.6.3.0/cbits/runProcess.c
---- hackage-package-process-1.6.3.0/cbits/runProcess.c	2017-02-06 16:42:31.000000000 +0800
-+++ ghc-package-process-1.6.3.0/cbits/runProcess.c	2001-09-09 09:46:40.000000000 +0800
-@@ -111,6 +111,18 @@
+diff --git a/System/Process/Common.hs b/System/Process/Common.hs
+index b424764..fe55889 100644
+--- a/System/Process/Common.hs
++++ b/System/Process/Common.hs
+@@ -44,7 +44,7 @@ import GHC.IO.Handle.Internals
+ import GHC.IO.Handle.Types hiding (ClosedHandle)
+ import System.IO.Error
+ import Data.Typeable
+-import GHC.IO.IOMode
++import System.IO (IOMode)
+ 
+ -- We do a minimal amount of CPP here to provide uniform data types across
+ -- Windows and POSIX.
+diff --git a/System/Process/Windows.hsc b/System/Process/Windows.hsc
+index 6c92b02..23498f5 100644
+--- a/System/Process/Windows.hsc
++++ b/System/Process/Windows.hsc
+@@ -34,7 +34,7 @@ import GHC.IO.Exception
+ import GHC.IO.Handle.FD
+ import GHC.IO.Handle.Types hiding (ClosedHandle)
+ import System.IO.Error
+-import GHC.IO.IOMode
++import System.IO (IOMode(..))
+ 
+ import System.Directory         ( doesFileExist )
+ import System.Environment       ( getEnv )
+@@ -208,7 +208,7 @@ waitForJobCompletion job io timeout =
+                  then Just <$> peek p_exitCode
+                  else return Nothing
+ 
+-insertItem :: Eq k => MVar [(k, v)] -> k -> v -> IO ()
++insertItem :: MVar [(k, v)] -> k -> v -> IO ()
+ insertItem env_ k v = modifyMVar_ env_ (return . ((k, v):))
+ 
+ getItem :: Eq k => MVar [(k, v)] -> k -> IO v
+diff --git a/cbits/runProcess.c b/cbits/runProcess.c
+index ae184c8..16ef4fe 100644
+--- a/cbits/runProcess.c
++++ b/cbits/runProcess.c
+@@ -111,6 +111,18 @@ runInteractiveProcess (char *const args[],
      r = pipe(forkCommunicationFds);
      if (r == -1) {
          *failed_doing = "runInteractiveProcess: pipe";
@@ -91,9 +95,10 @@ diff -ur hackage-package-process-1.6.3.0/cbits/runProcess.c ghc-package-process-
          return -1;
      }
  
-diff -ur hackage-package-process-1.6.3.0/changelog.md ghc-package-process-1.6.3.0/changelog.md
---- hackage-package-process-1.6.3.0/changelog.md	2018-01-22 10:51:34.000000000 +0800
-+++ ghc-package-process-1.6.3.0/changelog.md	2001-09-09 09:46:40.000000000 +0800
+diff --git a/changelog.md b/changelog.md
+index 851c3ca..d4c43ae 100644
+--- a/changelog.md
++++ b/changelog.md
 @@ -1,5 +1,13 @@
  # Changelog for [`process` package](http://hackage.haskell.org/package/process)
  
@@ -108,10 +113,11 @@ diff -ur hackage-package-process-1.6.3.0/changelog.md ghc-package-process-1.6.3.
  ## 1.6.3.0 *January 2018*
  
  * Added `getPid` and export of platform specific `Pid` type
-diff -ur hackage-package-process-1.6.3.0/process.cabal ghc-package-process-1.6.3.0/process.cabal
---- hackage-package-process-1.6.3.0/process.cabal	2018-01-22 10:52:21.000000000 +0800
-+++ ghc-package-process-1.6.3.0/process.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -46,8 +46,9 @@
+diff --git a/process.cabal b/process.cabal
+index cb6cbb3..350591a 100644
+--- a/process.cabal
++++ b/process.cabal
+@@ -46,8 +46,9 @@ library
          InterruptibleFFI
          RecordWildCards
          Trustworthy
@@ -123,7 +129,7 @@ diff -ur hackage-package-process-1.6.3.0/process.cabal ghc-package-process-1.6.3
  
      exposed-modules:
          System.Cmd
-@@ -61,7 +62,7 @@
+@@ -61,7 +62,7 @@ library
          cpp-options: -DWINDOWS
      else
          other-modules: System.Process.Posix
@@ -132,7 +138,7 @@ diff -ur hackage-package-process-1.6.3.0/process.cabal ghc-package-process-1.6.3
  
      c-sources:
          cbits/runProcess.c
-@@ -74,7 +75,7 @@
+@@ -74,7 +75,7 @@ library
  
      ghc-options: -Wall
  
@@ -141,7 +147,7 @@ diff -ur hackage-package-process-1.6.3.0/process.cabal ghc-package-process-1.6.3
                     directory >= 1.1 && < 1.4,
                     filepath  >= 1.2 && < 1.5,
                     deepseq   >= 1.1 && < 1.5
-@@ -84,7 +85,9 @@
+@@ -84,7 +85,9 @@ test-suite test
    hs-source-dirs: test
    main-is: main.hs
    type: exitcode-stdio-1.0

@@ -1,7 +1,8 @@
-diff -ur hackage-package-array-0.5.2.0/array.cabal ghc-package-array-0.5.2.0/array.cabal
---- hackage-package-array-0.5.2.0/array.cabal	2017-07-04 06:06:07.000000000 +0800
-+++ ghc-package-array-0.5.2.0/array.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -37,7 +37,7 @@
+diff --git a/array.cabal b/array.cabal
+index 1a71bab..ceaf54d 100644
+--- a/array.cabal
++++ b/array.cabal
+@@ -37,7 +37,7 @@ library
        Trustworthy,
        UnboxedTuples,
        UnliftedFFITypes

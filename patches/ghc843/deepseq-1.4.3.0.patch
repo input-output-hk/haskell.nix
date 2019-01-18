@@ -1,7 +1,8 @@
-diff -ur hackage-package-deepseq-1.4.3.0/deepseq.cabal ghc-package-deepseq-1.4.3.0/deepseq.cabal
---- hackage-package-deepseq-1.4.3.0/deepseq.cabal	2017-07-20 06:00:58.000000000 +0800
-+++ ghc-package-deepseq-1.4.3.0/deepseq.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -61,7 +61,7 @@
+diff --git a/deepseq.cabal b/deepseq.cabal
+index 7f54e2a..7191fa9 100644
+--- a/deepseq.cabal
++++ b/deepseq.cabal
+@@ -61,7 +61,7 @@ library
    if impl(ghc>=7.8)
      other-extensions: EmptyCase
  

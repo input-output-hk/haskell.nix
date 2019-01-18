@@ -1,7 +1,8 @@
-diff -ur hackage-package-parallel-3.2.1.1/parallel.cabal ghc-package-parallel-3.2.1.1/parallel.cabal
---- hackage-package-parallel-3.2.1.1/parallel.cabal	2017-04-09 00:25:01.000000000 +0800
-+++ ghc-package-parallel-3.2.1.1/parallel.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -34,7 +34,7 @@
+diff --git a/parallel.cabal b/parallel.cabal
+index 577a11e..0ae23e9 100644
+--- a/parallel.cabal
++++ b/parallel.cabal
+@@ -34,7 +34,7 @@ library
  
      build-depends:
          array      >= 0.3 && < 0.6,

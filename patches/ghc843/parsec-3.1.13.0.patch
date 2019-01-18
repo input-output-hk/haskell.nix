@@ -1,7 +1,8 @@
-diff -ur hackage-package-parsec-3.1.13.0/parsec.cabal ghc-package-parsec-3.1.13.0/parsec.cabal
---- hackage-package-parsec-3.1.13.0/parsec.cabal	2018-02-06 17:13:02.000000000 +0800
-+++ ghc-package-parsec-3.1.13.0/parsec.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -21,8 +21,8 @@
+diff --git a/parsec.cabal b/parsec.cabal
+index 9531768..7c2a399 100644
+--- a/parsec.cabal
++++ b/parsec.cabal
+@@ -21,8 +21,8 @@ license:        BSD3
  license-file:   LICENSE
  author:         Daan Leijen <daan@microsoft.com>, Paolo Martini <paolo@nemail.it>, Antoine Latter <aslatter@gmail.com>
  maintainer:     Herbert Valerio Riedel <hvr@gnu.org>
@@ -12,7 +13,7 @@ diff -ur hackage-package-parsec-3.1.13.0/parsec.cabal ghc-package-parsec-3.1.13.
  category:       Parsing
  
  build-type:     Simple
-@@ -32,7 +32,7 @@
+@@ -32,7 +32,7 @@ extra-source-files: ChangeLog.md, README.md
  
  source-repository head
      type: git

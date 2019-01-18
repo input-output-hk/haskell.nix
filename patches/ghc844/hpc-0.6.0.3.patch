@@ -1,7 +1,8 @@
-diff -ur hackage-package-hpc-0.6.0.3/hpc.cabal ghc-package-hpc-0.6.0.3/hpc.cabal
---- hackage-package-hpc-0.6.0.3/hpc.cabal	2016-05-04 18:47:19.000000000 +0800
-+++ ghc-package-hpc-0.6.0.3/hpc.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -35,9 +35,9 @@
+diff --git a/hpc.cabal b/hpc.cabal
+index 7e77973..017a609 100644
+--- a/hpc.cabal
++++ b/hpc.cabal
+@@ -35,9 +35,9 @@ Library
          Trace.Hpc.Reflect
  
      Build-Depends:

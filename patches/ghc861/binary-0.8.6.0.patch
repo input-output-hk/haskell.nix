@@ -1,7 +1,8 @@
-diff -ur hackage-package-binary-0.8.6.0/binary.cabal ghc-package-binary-0.8.6.0/binary.cabal
---- hackage-package-binary-0.8.6.0/binary.cabal	2018-08-04 20:33:08.000000000 +0800
-+++ ghc-package-binary-0.8.6.0/binary.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -158,7 +158,6 @@
+diff --git a/binary.cabal b/binary.cabal
+index 9b25877..1d1b9cf 100644
+--- a/binary.cabal
++++ b/binary.cabal
+@@ -158,7 +158,6 @@ benchmark get
      Data.Binary.Class
      Data.Binary.FloatCast
      Data.Binary.Generic
@@ -9,7 +10,7 @@ diff -ur hackage-package-binary-0.8.6.0/binary.cabal ghc-package-binary-0.8.6.0/
      Data.Binary.Get.Internal
      Data.Binary.Internal
      Data.Binary.Put
-@@ -191,7 +190,6 @@
+@@ -191,7 +190,6 @@ benchmark put
      Data.Binary.Get
      Data.Binary.Get.Internal
      Data.Binary.Internal

@@ -2,7 +2,6 @@
   packages.array.patches = [ ./array-0.5.2.0.patch ];
   packages.binary.patches = [ ./binary-0.8.6.0.patch ];
   packages.containers.patches = [ ./containers-0.6.0.1.patch ];
-  packages.default.nix.patches = [ ./default.nix ];
   packages.hpc.patches = [ ./hpc-0.6.0.3.patch ];
   packages.parsec.patches = [ ./parsec-3.1.13.0.patch ];
   packages.process.patches = [ ./process-1.6.3.0.patch ];

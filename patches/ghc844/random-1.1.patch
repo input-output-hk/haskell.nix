@@ -1,7 +1,8 @@
-diff -ur hackage-package-random-1.1/README.md ghc-package-random-1.1/README.md
---- hackage-package-random-1.1/README.md	2014-09-17 05:34:43.000000000 +0800
-+++ ghc-package-random-1.1/README.md	2001-09-09 09:46:40.000000000 +0800
-@@ -10,7 +10,7 @@
+diff --git a/README.md b/README.md
+index 9d5bb51..47b7589 100644
+--- a/README.md
++++ b/README.md
+@@ -10,7 +10,7 @@ The API documentation can be found here:
  
  A module supplying this interface is required for Haskell 98 (but not Haskell
  2010). An older [version]
@@ -10,9 +11,10 @@ diff -ur hackage-package-random-1.1/README.md ghc-package-random-1.1/README.md
  of this library is included with GHC in the haskell98 package. This newer
  version, with compatible api, is included in the [Haskell Platform]
  (http://www.haskell.org/platform/contents.html).
-diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/System/Random.hs
---- hackage-package-random-1.1/System/Random.hs	2014-09-17 05:34:43.000000000 +0800
-+++ ghc-package-random-1.1/System/Random.hs	2001-09-09 09:46:40.000000000 +0800
+diff --git a/System/Random.hs b/System/Random.hs
+index ab77274..dfd2088 100644
+--- a/System/Random.hs
++++ b/System/Random.hs
 @@ -7,7 +7,7 @@
  -- Module      :  System.Random
  -- Copyright   :  (c) The University of Glasgow 2001
@@ -94,7 +96,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  import Prelude
  
-@@ -83,15 +83,15 @@
+@@ -83,15 +83,15 @@ import Data.Word
  import Foreign.C.Types
  
  #ifdef __NHC__
@@ -115,7 +117,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  import System.IO.Unsafe ( unsafePerformIO )
  import Data.IORef       ( IORef, newIORef, readIORef, writeIORef )
  #if MIN_VERSION_base (4,6,0)
-@@ -99,7 +99,7 @@
+@@ -99,7 +99,7 @@ import Data.IORef       ( atomicModifyIORef' )
  #else
  import Data.IORef       ( atomicModifyIORef )
  #endif
@@ -124,7 +126,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  #ifdef __GLASGOW_HASKELL__
  import GHC.Exts         ( build )
-@@ -201,17 +201,17 @@
+@@ -201,17 +201,17 @@ It is required that @'read' ('show' g) == g@.
  
  In addition, 'reads' may be used to map an arbitrary string (not necessarily one
  produced by 'show') onto a value of type 'StdGen'. In general, the 'Read'
@@ -146,7 +148,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
   = StdGen !Int32 !Int32
  
  instance RandomGen StdGen where
-@@ -224,8 +224,8 @@
+@@ -224,8 +224,8 @@ instance SplittableGen StdGen where
    split = stdSplit
  
  instance Show StdGen where
@@ -157,7 +159,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
       showChar ' ' .
       showsPrec p s2
  
-@@ -234,11 +234,11 @@
+@@ -234,11 +234,11 @@ instance Read StdGen where
       case try_read r of
         r'@[_] -> r'
         _   -> [stdFromString r] -- because it shouldn't ever fail.
@@ -172,7 +174,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  {-
   If we cannot unravel the StdGen from a string, create
-@@ -246,7 +246,7 @@
+@@ -246,7 +246,7 @@ instance Read StdGen where
  -}
  stdFromString         :: String -> (StdGen, String)
  stdFromString s        = (mkStdGen num, rest)
@@ -181,7 +183,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
                num        = foldl (\a x -> x + 3 * a) 1 (map ord cs)
  
  
-@@ -266,11 +266,11 @@
+@@ -266,11 +266,11 @@ respectively."
  mkStdGen32 :: Int32 -> StdGen
  mkStdGen32 sMaybeNegative = StdGen (s1+1) (s2+1)
        where
@@ -198,7 +200,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  createStdGen :: Integer -> StdGen
  createStdGen s = mkStdGen32 $ fromIntegral s
-@@ -323,7 +323,7 @@
+@@ -323,7 +323,7 @@ class Random a where
    -- | A variant of 'random' that uses the global random number generator
    -- (see "System.Random#globalrng").
    randomIO  :: IO a
@@ -207,7 +209,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  -- | Produce an infinite list-equivalent of random values.
  {-# INLINE buildRandoms #-}
-@@ -340,7 +340,7 @@
+@@ -340,7 +340,7 @@ buildRandoms cons rand = go
  
  instance Random Integer where
    randomR ival g = randomIvalInteger ival g
@@ -216,7 +218,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  instance Random Int        where randomR = randomIvalIntegral; random = randomBounded
  instance Random Int8       where randomR = randomIvalIntegral; random = randomBounded
-@@ -378,13 +378,13 @@
+@@ -378,13 +378,13 @@ instance Random CIntMax    where randomR = randomIvalIntegral; random = randomBo
  instance Random CUIntMax   where randomR = randomIvalIntegral; random = randomBounded
  
  instance Random Char where
@@ -233,7 +235,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
        case (randomIvalInteger (bool2Int a, bool2Int b) g) of
          (x, g') -> (int2Bool x, g')
         where
-@@ -392,42 +392,42 @@
+@@ -392,42 +392,42 @@ instance Random Bool where
           bool2Int False = 0
           bool2Int True  = 1
  
@@ -298,7 +300,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  --         (encodeFloat rand (-24), rng')
     where
       mask24 = twoto24 - 1
-@@ -436,8 +436,8 @@
+@@ -436,8 +436,8 @@ instance Random Float where
  -- CFloat/CDouble are basically the same as a Float/Double:
  instance Random CFloat where
    randomR = randomRFloating
@@ -309,7 +311,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  instance Random CDouble where
    randomR = randomRFloating
-@@ -445,8 +445,8 @@
+@@ -445,8 +445,8 @@ instance Random CDouble where
    -- Presently, this is showing better performance than the Double instance:
    -- (And yet, if the Double instance uses randomFrac then its performance is much worse!)
    random  = randomFrac
@@ -320,7 +322,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  mkStdRNG :: Integer -> IO StdGen
  mkStdRNG o = do
-@@ -463,7 +463,7 @@
+@@ -463,7 +463,7 @@ randomIvalIntegral (l,h) = randomIvalInteger (toInteger l, toInteger h)
  
  {-# SPECIALIZE randomIvalInteger :: (Num a) =>
      (Integer, Integer) -> StdGen -> (a, StdGen) #-}
@@ -329,7 +331,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  randomIvalInteger :: (RandomGen g, Num a) => (Integer, Integer) -> g -> (a, g)
  randomIvalInteger (l,h) rng
   | l > h     = randomIvalInteger (h,l) rng
-@@ -482,7 +482,7 @@
+@@ -482,7 +482,7 @@ randomIvalInteger (l,h) rng
         k = h - l + 1
         magtgt = k * q
  
@@ -338,7 +340,7 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
         f mag v g | mag >= magtgt = (v, g)
                   | otherwise = v' `seq`f (mag*b) v' g' where
                          (x,g') = next g
-@@ -494,18 +494,18 @@
+@@ -494,18 +494,18 @@ randomFrac :: (RandomGen g, Fractional a) => g -> (a, g)
  randomFrac = randomIvalDouble (0::Double,1) realToFrac
  
  randomIvalDouble :: (RandomGen g, Fractional a) => (Double, Double) -> (Double -> a) -> g -> (a, g)
@@ -366,15 +368,13 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  int32Count :: Integer
  int32Count = toInteger (maxBound::Int32) - toInteger (minBound::Int32) + 1  -- GHC ticket #3982
-@@ -516,16 +516,16 @@
+@@ -516,16 +516,16 @@ stdRange = (1, 2147483562)
  stdNext :: StdGen -> (Int, StdGen)
  -- Returns values in the range stdRange
  stdNext (StdGen s1 s2) = (fromIntegral z', StdGen s1'' s2'')
 -	where	z'   = if z < 1 then z + 2147483562 else z
 -		z    = s1'' - s2''
-+        where   z'   = if z < 1 then z + 2147483562 else z
-+                z    = s1'' - s2''
- 
+-
 -		k    = s1 `quot` 53668
 -		s1'  = 40014 * (s1 - k * 53668) - k * 12211
 -		s1'' = if s1' < 0 then s1' + 2147483563 else s1'
@@ -382,6 +382,9 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
 -		k'   = s2 `quot` 52774
 -		s2'  = 40692 * (s2 - k' * 52774) - k' * 3791
 -		s2'' = if s2' < 0 then s2' + 2147483399 else s2'
++        where   z'   = if z < 1 then z + 2147483562 else z
++                z    = s1'' - s2''
++
 +                k    = s1 `quot` 53668
 +                s1'  = 40014 * (s1 - k * 53668) - k * 12211
 +                s1'' = if s1' < 0 then s1' + 2147483563 else s1'
@@ -392,10 +395,11 @@ diff -ur hackage-package-random-1.1/System/Random.hs ghc-package-random-1.1/Syst
  
  stdSplit            :: StdGen -> (StdGen, StdGen)
  stdSplit std@(StdGen s1 s2)
-diff -ur hackage-package-random-1.1/random.cabal ghc-package-random-1.1/random.cabal
---- hackage-package-random-1.1/random.cabal	2014-09-17 05:34:43.000000000 +0800
-+++ ghc-package-random-1.1/random.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -40,7 +40,7 @@
+diff --git a/random.cabal b/random.cabal
+index fd29840..a28063c 100644
+--- a/random.cabal
++++ b/random.cabal
+@@ -40,7 +40,7 @@ Library
  
  source-repository head
      type:     git

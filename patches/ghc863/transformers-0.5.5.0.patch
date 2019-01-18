@@ -1,7 +1,8 @@
-diff -ur hackage-package-transformers-0.5.5.0/Control/Applicative/Backwards.hs ghc-package-transformers-0.5.5.0/Control/Applicative/Backwards.hs
---- hackage-package-transformers-0.5.5.0/Control/Applicative/Backwards.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Applicative/Backwards.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -27,6 +27,9 @@
+diff --git a/Control/Applicative/Backwards.hs b/Control/Applicative/Backwards.hs
+index ebb8a0b..7ed74ac 100644
+--- a/Control/Applicative/Backwards.hs
++++ b/Control/Applicative/Backwards.hs
+@@ -27,6 +27,9 @@ module Control.Applicative.Backwards (
    ) where
  
  import Data.Functor.Classes
@@ -11,7 +12,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Applicative/Backwards.hs g
  
  import Prelude hiding (foldr, foldr1, foldl, foldl1, null, length)
  import Control.Applicative
-@@ -100,3 +103,10 @@
+@@ -100,3 +103,10 @@ instance (Traversable f) => Traversable (Backwards f) where
      {-# INLINE traverse #-}
      sequenceA (Backwards t) = fmap Backwards (sequenceA t)
      {-# INLINE sequenceA #-}
@@ -22,10 +23,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Applicative/Backwards.hs g
 +    contramap f = Backwards . contramap f . forwards
 +    {-# INLINE contramap #-}
 +#endif
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Class.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Class.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Class.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Class.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -113,7 +113,13 @@
+diff --git a/Control/Monad/Trans/Class.hs b/Control/Monad/Trans/Class.hs
+index 9c2e260..b92bc0e 100644
+--- a/Control/Monad/Trans/Class.hs
++++ b/Control/Monad/Trans/Class.hs
+@@ -113,7 +113,13 @@ an action that is strict in the component you want evaluated.
  
  {- $example1
  
@@ -40,7 +42,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Class.hs ghc-p
  to be parsed) to the @[]@ monad, which provides non-determinism:
  
  > import Control.Monad.Trans.State
-@@ -189,7 +195,8 @@
+@@ -189,7 +195,8 @@ Then the parser will keep track of how many @tick@s it executes.
  {- $example3
  
  This example is a cut-down version of the one in
@@ -50,10 +52,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Class.hs ghc-p
  by Sheng Liang, Paul Hudak and Mark Jones in /POPL'95/
  (<http://web.cecs.pdx.edu/~mpj/pubs/modinterp.html>).
  
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Error.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Error.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Error.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Error.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -58,6 +58,9 @@
+diff --git a/Control/Monad/Trans/Error.hs b/Control/Monad/Trans/Error.hs
+index 144da45..f50b051 100644
+--- a/Control/Monad/Trans/Error.hs
++++ b/Control/Monad/Trans/Error.hs
+@@ -58,6 +58,9 @@ import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
  import Data.Functor.Classes
@@ -63,7 +66,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Error.hs ghc-p
  
  import Control.Applicative
  import Control.Exception (IOException)
-@@ -263,6 +266,11 @@
+@@ -263,6 +266,11 @@ instance MonadTrans (ErrorT e) where
  instance (Error e, MonadIO m) => MonadIO (ErrorT e m) where
      liftIO = lift . liftIO
  
@@ -75,9 +78,10 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Error.hs ghc-p
  -- | Signal an error value @e@.
  --
  -- * @'runErrorT' ('throwError' e) = 'return' ('Left' e)@
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Except.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Except.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Except.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Except.hs	2001-09-09 09:46:40.000000000 +0800
+diff --git a/Control/Monad/Trans/Except.hs b/Control/Monad/Trans/Except.hs
+index 6a06297..b5446e4 100644
+--- a/Control/Monad/Trans/Except.hs
++++ b/Control/Monad/Trans/Except.hs
 @@ -15,7 +15,7 @@
  -- Stability   :  experimental
  -- Portability :  portable
@@ -87,7 +91,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Except.hs ghc-
  --
  -- A sequence of actions terminates normally, producing a value,
  -- only if none of the actions in the sequence throws an exception.
-@@ -51,6 +51,9 @@
+@@ -51,6 +51,9 @@ import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
  import Data.Functor.Classes
@@ -97,7 +101,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Except.hs ghc-
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -255,6 +258,12 @@
+@@ -255,6 +258,12 @@ instance (MonadZip m) => MonadZip (ExceptT e m) where
      {-# INLINE mzipWith #-}
  #endif
  
@@ -110,10 +114,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Except.hs ghc-
  -- | Signal an exception value @e@.
  --
  -- * @'runExceptT' ('throwE' e) = 'return' ('Left' e)@
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Identity.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Identity.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Identity.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Identity.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -36,6 +36,9 @@
+diff --git a/Control/Monad/Trans/Identity.hs b/Control/Monad/Trans/Identity.hs
+index b04428e..81d0c21 100644
+--- a/Control/Monad/Trans/Identity.hs
++++ b/Control/Monad/Trans/Identity.hs
+@@ -36,6 +36,9 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class (MonadTrans(lift))
  import Data.Functor.Classes
@@ -123,7 +128,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Identity.hs gh
  
  import Control.Applicative
  import Control.Monad (MonadPlus(mzero, mplus))
-@@ -154,6 +157,12 @@
+@@ -154,6 +157,12 @@ instance MonadTrans IdentityT where
      lift = IdentityT
      {-# INLINE lift #-}
  
@@ -136,10 +141,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Identity.hs gh
  -- | Lift a unary operation to the new monad.
  mapIdentityT :: (m a -> n b) -> IdentityT m a -> IdentityT n b
  mapIdentityT f = IdentityT . f . runIdentityT
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/List.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/List.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/List.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/List.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -34,12 +34,16 @@
+diff --git a/Control/Monad/Trans/List.hs b/Control/Monad/Trans/List.hs
+index e87fb0c..6af4b10 100644
+--- a/Control/Monad/Trans/List.hs
++++ b/Control/Monad/Trans/List.hs
+@@ -34,12 +34,16 @@ import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
  import Data.Functor.Classes
@@ -156,7 +162,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/List.hs ghc-pa
  #if MIN_VERSION_base(4,4,0)
  import Control.Monad.Zip (MonadZip(mzipWith))
  #endif
-@@ -137,6 +141,12 @@
+@@ -137,6 +141,12 @@ instance (Monad m) => MonadPlus (ListT m) where
          return (a ++ b)
      {-# INLINE mplus #-}
  
@@ -169,7 +175,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/List.hs ghc-pa
  instance MonadTrans ListT where
      lift m = ListT $ do
          a <- m
-@@ -153,6 +163,12 @@
+@@ -153,6 +163,12 @@ instance (MonadZip m) => MonadZip (ListT m) where
      {-# INLINE mzipWith #-}
  #endif
  
@@ -182,10 +188,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/List.hs ghc-pa
  -- | Lift a @callCC@ operation to the new monad.
  liftCallCC :: CallCC m [a] [b] -> CallCC (ListT m) a b
  liftCallCC callCC f = ListT $
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Maybe.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Maybe.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Maybe.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Maybe.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -45,6 +45,9 @@
+diff --git a/Control/Monad/Trans/Maybe.hs b/Control/Monad/Trans/Maybe.hs
+index 13114b1..997a4c0 100644
+--- a/Control/Monad/Trans/Maybe.hs
++++ b/Control/Monad/Trans/Maybe.hs
+@@ -45,6 +45,9 @@ import Control.Monad.Signatures
  import Control.Monad.Trans.Class
  import Control.Monad.Trans.Except (ExceptT(..))
  import Data.Functor.Classes
@@ -195,7 +202,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Maybe.hs ghc-p
  
  import Control.Applicative
  import Control.Monad (MonadPlus(mzero, mplus), liftM)
-@@ -202,6 +205,12 @@
+@@ -202,6 +205,12 @@ instance (MonadZip m) => MonadZip (MaybeT m) where
      {-# INLINE mzipWith #-}
  #endif
  
@@ -208,10 +215,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Maybe.hs ghc-p
  -- | Lift a @callCC@ operation to the new monad.
  liftCallCC :: CallCC m (Maybe a) (Maybe b) -> CallCC (MaybeT m) a b
  liftCallCC callCC f =
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Lazy.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Lazy.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Lazy.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Lazy.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -63,6 +63,9 @@
+diff --git a/Control/Monad/Trans/RWS/Lazy.hs b/Control/Monad/Trans/RWS/Lazy.hs
+index 36694c5..c366d5d 100644
+--- a/Control/Monad/Trans/RWS/Lazy.hs
++++ b/Control/Monad/Trans/RWS/Lazy.hs
+@@ -63,6 +63,9 @@ module Control.Monad.Trans.RWS.Lazy (
  import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
@@ -221,7 +229,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Lazy.hs gh
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -231,6 +234,13 @@
+@@ -231,6 +234,13 @@ instance (Monoid w, MonadIO m) => MonadIO (RWST r w s m) where
      liftIO = lift . liftIO
      {-# INLINE liftIO #-}
  
@@ -235,10 +243,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Lazy.hs gh
  -- ---------------------------------------------------------------------------
  -- Reader operations
  
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Strict.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Strict.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Strict.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Strict.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -63,6 +63,9 @@
+diff --git a/Control/Monad/Trans/RWS/Strict.hs b/Control/Monad/Trans/RWS/Strict.hs
+index 32f2af5..c5e3f6c 100644
+--- a/Control/Monad/Trans/RWS/Strict.hs
++++ b/Control/Monad/Trans/RWS/Strict.hs
+@@ -63,6 +63,9 @@ module Control.Monad.Trans.RWS.Strict (
  import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
@@ -248,7 +257,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Strict.hs 
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -231,6 +234,13 @@
+@@ -231,6 +234,13 @@ instance (Monoid w, MonadIO m) => MonadIO (RWST r w s m) where
      liftIO = lift . liftIO
      {-# INLINE liftIO #-}
  
@@ -262,10 +271,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/RWS/Strict.hs 
  -- ---------------------------------------------------------------------------
  -- Reader operations
  
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Reader.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Reader.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Reader.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Reader.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -49,6 +49,9 @@
+diff --git a/Control/Monad/Trans/Reader.hs b/Control/Monad/Trans/Reader.hs
+index b577b2d..f0b80f7 100644
+--- a/Control/Monad/Trans/Reader.hs
++++ b/Control/Monad/Trans/Reader.hs
+@@ -49,6 +49,9 @@ module Control.Monad.Trans.Reader (
  import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
@@ -275,7 +285,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Reader.hs ghc-
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -207,6 +210,12 @@
+@@ -207,6 +210,12 @@ instance (MonadZip m) => MonadZip (ReaderT r m) where
      {-# INLINE mzipWith #-}
  #endif
  
@@ -288,10 +298,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Reader.hs ghc-
  liftReaderT :: m a -> ReaderT r m a
  liftReaderT m = ReaderT (const m)
  {-# INLINE liftReaderT #-}
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Lazy.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/State/Lazy.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Lazy.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/State/Lazy.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -76,6 +76,9 @@
+diff --git a/Control/Monad/Trans/State/Lazy.hs b/Control/Monad/Trans/State/Lazy.hs
+index 13f61f4..e719f02 100644
+--- a/Control/Monad/Trans/State/Lazy.hs
++++ b/Control/Monad/Trans/State/Lazy.hs
+@@ -76,6 +76,9 @@ module Control.Monad.Trans.State.Lazy (
  import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
@@ -301,7 +312,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Lazy.hs 
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -253,6 +256,13 @@
+@@ -253,6 +256,13 @@ instance (MonadIO m) => MonadIO (StateT s m) where
      liftIO = lift . liftIO
      {-# INLINE liftIO #-}
  
@@ -315,10 +326,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Lazy.hs 
  -- | Fetch the current value of the state within the monad.
  get :: (Monad m) => StateT s m s
  get = state $ \ s -> (s, s)
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Strict.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/State/Strict.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Strict.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/State/Strict.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -73,6 +73,9 @@
+diff --git a/Control/Monad/Trans/State/Strict.hs b/Control/Monad/Trans/State/Strict.hs
+index f1fb782..31fd52a 100644
+--- a/Control/Monad/Trans/State/Strict.hs
++++ b/Control/Monad/Trans/State/Strict.hs
+@@ -73,6 +73,9 @@ module Control.Monad.Trans.State.Strict (
  import Control.Monad.IO.Class
  import Control.Monad.Signatures
  import Control.Monad.Trans.Class
@@ -328,7 +340,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Strict.h
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -250,6 +253,13 @@
+@@ -250,6 +253,13 @@ instance (MonadIO m) => MonadIO (StateT s m) where
      liftIO = lift . liftIO
      {-# INLINE liftIO #-}
  
@@ -342,10 +354,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/State/Strict.h
  -- | Fetch the current value of the state within the monad.
  get :: (Monad m) => StateT s m s
  get = state $ \ s -> (s, s)
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Lazy.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Lazy.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Lazy.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Lazy.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -52,6 +52,9 @@
+diff --git a/Control/Monad/Trans/Writer/Lazy.hs b/Control/Monad/Trans/Writer/Lazy.hs
+index c7f689c..721e15c 100644
+--- a/Control/Monad/Trans/Writer/Lazy.hs
++++ b/Control/Monad/Trans/Writer/Lazy.hs
+@@ -52,6 +52,9 @@ module Control.Monad.Trans.Writer.Lazy (
  import Control.Monad.IO.Class
  import Control.Monad.Trans.Class
  import Data.Functor.Classes
@@ -355,7 +368,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Lazy.hs
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -237,6 +240,12 @@
+@@ -237,6 +240,12 @@ instance (Monoid w, MonadZip m) => MonadZip (WriterT w m) where
      {-# INLINE mzipWith #-}
  #endif
  
@@ -368,10 +381,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Lazy.hs
  -- | @'tell' w@ is an action that produces the output @w@.
  tell :: (Monad m) => w -> WriterT w m ()
  tell w = writer ((), w)
-diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Strict.hs ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Strict.hs
---- hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Strict.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Strict.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -55,6 +55,9 @@
+diff --git a/Control/Monad/Trans/Writer/Strict.hs b/Control/Monad/Trans/Writer/Strict.hs
+index 33058af..b18b4a8 100644
+--- a/Control/Monad/Trans/Writer/Strict.hs
++++ b/Control/Monad/Trans/Writer/Strict.hs
+@@ -55,6 +55,9 @@ module Control.Monad.Trans.Writer.Strict (
  import Control.Monad.IO.Class
  import Control.Monad.Trans.Class
  import Data.Functor.Classes
@@ -381,7 +395,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Strict.
  import Data.Functor.Identity
  
  import Control.Applicative
-@@ -240,6 +243,12 @@
+@@ -240,6 +243,12 @@ instance (Monoid w, MonadZip m) => MonadZip (WriterT w m) where
      {-# INLINE mzipWith #-}
  #endif
  
@@ -394,10 +408,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Control/Monad/Trans/Writer/Strict.
  -- | @'tell' w@ is an action that produces the output @w@.
  tell :: (Monad m) => w -> WriterT w m ()
  tell w = writer ((), w)
-diff -ur hackage-package-transformers-0.5.5.0/Data/Functor/Constant.hs ghc-package-transformers-0.5.5.0/Data/Functor/Constant.hs
---- hackage-package-transformers-0.5.5.0/Data/Functor/Constant.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Data/Functor/Constant.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -26,6 +26,9 @@
+diff --git a/Data/Functor/Constant.hs b/Data/Functor/Constant.hs
+index e22f0d6..9c0b8d4 100644
+--- a/Data/Functor/Constant.hs
++++ b/Data/Functor/Constant.hs
+@@ -26,6 +26,9 @@ module Data.Functor.Constant (
    ) where
  
  import Data.Functor.Classes
@@ -407,7 +422,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Data/Functor/Constant.hs ghc-packa
  
  import Control.Applicative
  import Data.Foldable
-@@ -141,3 +144,9 @@
+@@ -141,3 +144,9 @@ instance Bitraversable Constant where
      bitraverse f _ (Constant a) = Constant <$> f a
      {-# INLINE bitraverse #-}
  #endif
@@ -417,10 +432,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Data/Functor/Constant.hs ghc-packa
 +    contramap _ (Constant a) = Constant a
 +    {-# INLINE contramap #-}
 +#endif
-diff -ur hackage-package-transformers-0.5.5.0/Data/Functor/Reverse.hs ghc-package-transformers-0.5.5.0/Data/Functor/Reverse.hs
---- hackage-package-transformers-0.5.5.0/Data/Functor/Reverse.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/Data/Functor/Reverse.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -28,6 +28,9 @@
+diff --git a/Data/Functor/Reverse.hs b/Data/Functor/Reverse.hs
+index a6abc46..dcb6290 100644
+--- a/Data/Functor/Reverse.hs
++++ b/Data/Functor/Reverse.hs
+@@ -28,6 +28,9 @@ module Data.Functor.Reverse (
  
  import Control.Applicative.Backwards
  import Data.Functor.Classes
@@ -430,7 +446,7 @@ diff -ur hackage-package-transformers-0.5.5.0/Data/Functor/Reverse.hs ghc-packag
  
  import Prelude hiding (foldr, foldr1, foldl, foldl1, null, length)
  import Control.Applicative
-@@ -129,3 +132,10 @@
+@@ -129,3 +132,10 @@ instance (Traversable f) => Traversable (Reverse f) where
      traverse f (Reverse t) =
          fmap Reverse . forwards $ traverse (Backwards . f) t
      {-# INLINE traverse #-}
@@ -441,10 +457,11 @@ diff -ur hackage-package-transformers-0.5.5.0/Data/Functor/Reverse.hs ghc-packag
 +    contramap f = Reverse . contramap f . getReverse
 +    {-# INLINE contramap #-}
 +#endif
-diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Compose.hs ghc-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Compose.hs
---- hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Compose.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Compose.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -35,6 +35,9 @@
+diff --git a/legacy/pre711/Data/Functor/Compose.hs b/legacy/pre711/Data/Functor/Compose.hs
+index 161a2e9..ed78130 100644
+--- a/legacy/pre711/Data/Functor/Compose.hs
++++ b/legacy/pre711/Data/Functor/Compose.hs
+@@ -35,6 +35,9 @@ module Data.Functor.Compose (
    ) where
  
  import Data.Functor.Classes
@@ -454,7 +471,7 @@ diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Compose
  
  import Control.Applicative
  #if __GLASGOW_HASKELL__ >= 708
-@@ -144,3 +147,8 @@
+@@ -144,3 +147,8 @@ instance (Applicative f, Applicative g) => Applicative (Compose f g) where
  instance (Alternative f, Applicative g) => Alternative (Compose f g) where
      empty = Compose empty
      Compose x <|> Compose y = Compose (x <|> y)
@@ -463,10 +480,11 @@ diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Compose
 +instance (Functor f, Contravariant g) => Contravariant (Compose f g) where
 +    contramap f (Compose fga) = Compose (fmap (contramap f) fga)
 +#endif
-diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Product.hs ghc-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Product.hs
---- hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Product.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Product.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -45,6 +45,9 @@
+diff --git a/legacy/pre711/Data/Functor/Product.hs b/legacy/pre711/Data/Functor/Product.hs
+index 51c99a3..ba0dc04 100644
+--- a/legacy/pre711/Data/Functor/Product.hs
++++ b/legacy/pre711/Data/Functor/Product.hs
+@@ -45,6 +45,9 @@ import Data.Data
  #endif
  import Data.Foldable (Foldable(foldMap))
  import Data.Functor.Classes
@@ -476,7 +494,7 @@ diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Product
  import Data.Monoid (mappend)
  import Data.Traversable (Traversable(traverse))
  #if __GLASGOW_HASKELL__ >= 702
-@@ -146,3 +149,8 @@
+@@ -146,3 +149,8 @@ instance (MonadFix f, MonadFix g) => MonadFix (Product f g) where
  instance (MonadZip f, MonadZip g) => MonadZip (Product f g) where
      mzipWith f (Pair x1 y1) (Pair x2 y2) = Pair (mzipWith f x1 x2) (mzipWith f y1 y2)
  #endif
@@ -485,10 +503,11 @@ diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Product
 +instance (Contravariant f, Contravariant g) => Contravariant (Product f g) where
 +    contramap f (Pair a b) = Pair (contramap f a) (contramap f b)
 +#endif
-diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Sum.hs ghc-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Sum.hs
---- hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Sum.hs	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Sum.hs	2001-09-09 09:46:40.000000000 +0800
-@@ -40,6 +40,9 @@
+diff --git a/legacy/pre711/Data/Functor/Sum.hs b/legacy/pre711/Data/Functor/Sum.hs
+index 9c314e7..e6d1428 100644
+--- a/legacy/pre711/Data/Functor/Sum.hs
++++ b/legacy/pre711/Data/Functor/Sum.hs
+@@ -40,6 +40,9 @@ import Data.Data
  #endif
  import Data.Foldable (Foldable(foldMap))
  import Data.Functor.Classes
@@ -498,7 +517,7 @@ diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Sum.hs 
  import Data.Monoid (mappend)
  import Data.Traversable (Traversable(traverse))
  #if __GLASGOW_HASKELL__ >= 702
-@@ -125,3 +128,9 @@
+@@ -125,3 +128,9 @@ instance (Foldable f, Foldable g) => Foldable (Sum f g) where
  instance (Traversable f, Traversable g) => Traversable (Sum f g) where
      traverse f (InL x) = InL <$> traverse f x
      traverse f (InR y) = InR <$> traverse f y
@@ -508,10 +527,11 @@ diff -ur hackage-package-transformers-0.5.5.0/legacy/pre711/Data/Functor/Sum.hs 
 +    contramap f (InL xs) = InL (contramap f xs)
 +    contramap f (InR ys) = InR (contramap f ys)
 +#endif
-diff -ur hackage-package-transformers-0.5.5.0/transformers.cabal ghc-package-transformers-0.5.5.0/transformers.cabal
---- hackage-package-transformers-0.5.5.0/transformers.cabal	2017-10-04 23:58:48.000000000 +0800
-+++ ghc-package-transformers-0.5.5.0/transformers.cabal	2001-09-09 09:46:40.000000000 +0800
-@@ -9,7 +9,9 @@
+diff --git a/transformers.cabal b/transformers.cabal
+index 8583b12..b2e4fea 100644
+--- a/transformers.cabal
++++ b/transformers.cabal
+@@ -9,7 +9,9 @@ category:     Control
  synopsis:     Concrete functor and monad transformers
  description:
      A portable library of functor and monad transformers, inspired by
