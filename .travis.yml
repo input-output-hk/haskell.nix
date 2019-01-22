@@ -1,0 +1,26 @@
+language: nix
+matrix:
+  include:
+    - name: 18.09 macOS
+      env: CHANNEL=nixpkgs-18.09-darwin
+      os: osx
+    - name: NixOS 18.09
+      env: CHANNEL=nixos-18.09
+    - name: NixOS Unstable
+      env: CHANNEL=nixos-unstable
+
+sudo: required
+before_script:
+- sudo mount -o remount,exec,size=4G,mode=755 /run/user || true
+- sudo mkdir -p /etc/nix
+- echo "trusted-users = root $USER" | sudo tee -a /etc/nix/nix.conf
+- sudo launchctl kickstart -k system/org.nixos.nix-daemon || true
+
+script:
+- nix-env -if https://github.com/cachix/cachix/tarball/master --extra-substituters https://cachix.cachix.org --trusted-public-keys 'cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cachix.cachix.org-1:eWNHQldwUO7G2VkjpnjDbWwy4KQ/HNxht7H4SSoMckM='
+- cachix use nix-tools
+- nix-build
+  -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/${CHANNEL}.tar.gz
+  test/default.nix
+  --cores 0
+  -j2
