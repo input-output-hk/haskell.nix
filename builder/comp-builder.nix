@@ -44,10 +44,10 @@ let
     in map ({val,...}: val) closure;
 
   exactDep = pdbArg: p: ''
-    if id=$(${ghc.targetPrefix}ghc-pkg ${pdbArg} field ${p} id --simple-output); then
+    if id=$(${ghc.targetPrefix}ghc-pkg -v0 ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
     fi
-    if ver=$(${ghc.targetPrefix}ghc-pkg ${pdbArg} field ${p} version --simple-output); then
+    if ver=$(${ghc.targetPrefix}ghc-pkg -v0 ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
     fi
@@ -55,7 +55,7 @@ let
 
   configFiles = runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out
-    ${ghc.targetPrefix}ghc-pkg init $out/package.conf.d
+    ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs;
@@ -67,11 +67,11 @@ let
     # Note: we need to use --global-package-db with ghc-pkg to prevent it
     #       from looking into the implicit global package db when registering the package.
     ${lib.concatMapStringsSep "\n" (p: ''
-      ${ghc.targetPrefix}ghc-pkg describe ${p} | ${ghc.targetPrefix}ghc-pkg --force --global-package-db $out/package.conf.d register - || true
+      ${ghc.targetPrefix}ghc-pkg -v0 describe ${p} | ${ghc.targetPrefix}ghc-pkg -v0 --force --global-package-db $out/package.conf.d register - || true
     '') nonReinstallablePkgs}
 
     ${lib.concatMapStringsSep "\n" (p: ''
-      ${ghc.targetPrefix}ghc-pkg --package-db ${p}/package.conf.d dump | ${ghc.targetPrefix}ghc-pkg --force --package-db $out/package.conf.d register -
+      ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${p}/package.conf.d dump | ${ghc.targetPrefix}ghc-pkg -v0 --force --package-db $out/package.conf.d register -
     '') flatDepends}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
@@ -115,9 +115,9 @@ let
       sed -i "s,dynamic-library-dirs: .*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    ${ghc.targetPrefix}ghc-pkg --package-db $out/package.conf.d recache
+    ${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d recache
   '' + ''
-    ${ghc.targetPrefix}ghc-pkg --package-db $out/package.conf.d check
+    ${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d check
   '');
 
   finalConfigureFlags = lib.concatStringsSep " " (
@@ -215,8 +215,8 @@ in stdenv.mkDerivation ({
     $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
     ${lib.optionalString (haskellLib.isLibrary componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
-      ${ghc.targetPrefix}ghc-pkg init $out/package.conf.d
-      ${ghc.targetPrefix}ghc-pkg --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+      ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
+      ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
     ${lib.optionalString (componentId.ctype == "test") ''
       mkdir -p $out/${name}
