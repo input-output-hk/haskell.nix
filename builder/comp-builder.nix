@@ -159,7 +159,11 @@ in stdenv.mkDerivation ({
   meta = {
     homepage = package.homepage;
     description = package.synopsis;
-    license = (import ../lib/cabal-licenses.nix lib).${package.license};
+    license =
+      let
+        license-map = import ../lib/cabal-licenses.nix lib;
+      in license-map.${package.license} or
+        (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
   };
 
   CABAL_CONFIG = configFiles + /cabal.config;
