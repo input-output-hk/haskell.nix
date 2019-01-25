@@ -7,7 +7,7 @@
 with stdenv.lib;
 
 let
-  pkgSet = haskell.mkNewPkgSet {
+  pkgSet = haskell.mkPkgSet {
     inherit pkgs;
     pkg-def = import ./plan.nix;
     pkg-def-overlays = [
@@ -35,8 +35,11 @@ in
 
       # fixme: linux-specific
       printf "checking that executable is dynamically linked to system libraries... " >& 2
+    '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
       ldd $exe | grep libpthread
-
+    '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+      otool -L $exe |grep .dylib
+    '' + ''
       touch $out
     '';
 

@@ -6,7 +6,7 @@
 with stdenv.lib;
 
 let
-  pkgSet = haskell.mkNewPkgSet {
+  pkgSet = haskell.mkPkgSet {
     inherit pkgs;
     pkg-def = import ./plan.nix;
     pkg-def-overlays = [
@@ -33,16 +33,25 @@ in
 
       # fixme: linux-specific
       printf "checking that executable is dynamically linked to system libraries... " >& 2
-      ldd "$exe" | grep libpthread
-
+    '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
+      ldd $exe | grep libpthread
+    '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+      otool -L $exe | grep "libSystem.B"
+    '' + ''
       # fixme: posix-specific
       printf "checking that dynamic library is produced... " >& 2
+    '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
       sofile=$(find "${packages.project.components.library}" | grep -e '\.so$')
+    '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+      sofile=$(find "${packages.project.components.library}" | grep -e '\.dylib$')
+    '' + ''
       echo "$sofile"
-
-      printf "checking that dynamic library is dynamically linked to base... " >& 2
-      ldd "$sofile" | grep libHSbase
-
+      printf "checking that dynamic library is dynamically linked to prim... " >& 2
+    '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
+      ldd $sofile | grep libHSghc-prim
+    '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+      otool -L $sofile | grep libHSghc-prim
+    '' + ''
       touch $out
     '';
 
