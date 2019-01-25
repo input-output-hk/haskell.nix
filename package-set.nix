@@ -1,138 +1,88 @@
-{ pkg-def
-, pkgs    ? import <nixpkgs> {}
-, hackage ? import <hackage>
-, haskell ? import <haskell> }:
+let f = { hackage, pkgs, pkg-def, pkg-def-overlays ? [], modules ? [] }: let
+  buildModules = f { inherit hackage pkg-def pkg-def-overlays modules; pkgs = pkgs.buildPackages; };
+in pkgs.lib.evalModules {
+  modules = modules ++ [
+    ({ lib, ... }: {
+      # Provide all modules with haskellLib, pkgs, and pkgconfPkgs arguments
+      _module.args = {
+        # this is *not* the hasekllLib from nixpkgs; it is rather our own
+        # library from haskell.nix
+        haskellLib = let hl = import ./lib { inherit lib; haskellLib = hl; }; in hl;
 
-{ extraDeps ? hsPkgs: {} }:
-let
+        # The package descriptions depend on pkgs, which are used to resolve system package dependencies
+        # as well as pkgconfPkgs, which are used to resolve pkgconfig name to nixpkgs names.  We simply
+        # augment the existing pkgs set with the specific mappings:
+        pkgs = pkgs // (import ./lib/system-nixpkgs-map.nix pkgs);
+        pkgconfPkgs = pkgs // (import ./lib/pkgconf-nixpkgs-map.nix pkgs);
 
-  # packages that we must never try to reinstall.
-  nonReinstallablePkgs = [ "rts" "ghc" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                           "array" "deepseq" "pretty" "ghc-boot-th" "template-haskell"];
+        inherit buildModules;
+      };
 
-  hackagePkgs = with pkgs.lib;
-                let shippedPkgs = filterAttrs (n: _: builtins.elem n nonReinstallablePkgs)
-                                   (mapAttrs (name: version: { ${version} = { revisions = { default = null; }; }; })
-                                     (pkg-def {}).compiler.packages);
-                in recursiveUpdate hackage shippedPkgs;
+      # Set the hackage DB for modules/hackage.nix
+      hackage.db = hackage;
 
-  # We may depend on packages shipped with ghc, or need to rebuild them.
-  ghcPackages = pkgs.lib.mapAttrs (name: version: hackagePkgs.${name}.${version}
-                                  ) (pkg-def {}).compiler.packages;
+      # Set the plan for modules/plan.nix
+      plan.pkg-def = hackage: with builtins;
+        # The desugar reason.
+        #
+        # it is quite combersome to write
+        # (hackage: { packages.x.revision = hackage...;
+        #             packages.y.revision = import ./foo.nix; })
+        # where we'd rather write:
+        # (hackage: { x = hackage...; })
+        # or
+        # { y = ./foo.nix; }
+        # As such the desugarer desugars this short hand syntax.
+        let desugar = overlay:
+          let
+            isPath  = x: builtins.typeOf x == "path";
+            # rewrite
+            #   { ... }
+            # into
+            #   { package = { ... }; }
+            inject-packages = o: if o ? "packages" then o else { packages = o; };
+            # rewrite
+            #   x = pkg;
+            # into
+            #   x.revision = pkg;
+            inject-revision = pkg: if pkg ? "revision" then pkg else { revision = pkg; };
+            # rewrite
+            #   x.revision = ./some/path;
+            # into
+            #   x.revision = import ./some/path;
+            expand-paths = pkg: if !(isPath pkg.revision) then pkg else { revision = import pkg.revision; };
+          # apply injection and expansion to the "packages" in overlay.
+          in lib.mapAttrs (k: v: if k != "packages"
+                              then v
+                              else lib.mapAttrs (_: pkg: (expand-paths (inject-revision pkg))) v)
+                                                (inject-packages overlay);
+        # fold any potential `pkg-def-overlays`
+        # onto the `pkg-def`.
+        #
+        # This means you can have a base definition (e.g. stackage)
+        # and augment it with custom packages to your liking.
+        in foldl' lib.recursiveUpdate
+            (pkg-def hackage)
+            (map (p: desugar (if builtins.isFunction p then p hackage else p)) pkg-def-overlays)
+      ;
 
-  # Thus the final package set in our augmented (extrDeps) lts set is the following:
-  ltsPkgs = ghcPackages
-         // (pkg-def hackagePkgs).packages
-         // extraDeps hackagePkgs;
+    })
 
-  driver = haskell.compat.driver;
-  host-map = haskell.compat.host-map;
+    # Supplies metadata
+    ./modules/cabal.nix
 
-  # compiler this lts set is built against.
-  compiler = pkgs.haskell.packages.${(pkg-def {}).compiler.nix-name};
+    # Converts config.packages into config.hsPkgs
+    # Replace this with compat-driver.nix to use nixpkgs haskell build infra
+    ./modules/component-driver.nix
 
-  # This is a tiny bit better than doJailbreak.
-  #
-  # We essentially *know* the dependencies, and with the
-  # full cabal file representation, we also know all the
-  # flags.  As such we can sidestep the solver.
-  #
-  # Pros:
-  #  - no need for doJailbreak
-  #    - no need for jailbreak-cabal to be built with
-  #      Cabal2 if the cabal file requires it.
-  #  - no reliance on --allow-newer, which only made
-  #    a very short lived appearance in Cabal.
-  #    (Cabal-2.0.0.2 -- Cabal-2.2.0.0)
-  #
-  # Cons:
-  #  - automatic flag resolution won't happen and will
-  #    have to be hard coded.
-  #
-  # Ideally we'd just inspect the haskell*Depends fields
-  # we feed the builder. However because we null out the
-  # lirbaries ghc ships (e.g. base, ghc, ...) this would
-  # result in an incomplete --dependency=<name>=<name>-<version>
-  # set and not lead to the desired outcome.
-  #
-  # If we could still have base, etc. not nulled, but
-  # produce some virtual derivation, that might allow us
-  # to just use the haskell*Depends fields to extract the
-  # name and version for each dependency.
-  #
-  # Ref: https://github.com/haskell/cabal/issues/3163#issuecomment-185833150
-  # ---
-  # ghc-pkg should be ${ghcCommand}-pkg; and --package-db
-  # should better be --${packageDbFlag}; but we don't have
-  # those variables in scope.
-  doExactConfig = pkgs: pkg: let targetPrefix = with pkgs.stdenv; lib.optionalString
-    (hostPlatform != buildPlatform)
-    "${hostPlatform.config}-";
+    # Converts config.hackage.db to config.hackage.configs
+    ./modules/hackage.nix
 
-  in pkgs.haskell.lib.overrideCabal pkg (drv: {
-    # TODO: need to run `ghc-pkg field <pkg> id` over all `--dependency`
-    #       values.  Should we encode the `id` in the nix-pkg as well?
-    preConfigure = (drv.preConfigure or "") + ''
-    configureFlags+=" --exact-configuration"
-    globalPackages=$(${targetPrefix}ghc-pkg list --global --simple-output)
-    localPackages=$(${targetPrefix}ghc-pkg --package-db="$packageConfDir" list --simple-output)
-    for pkg in $globalPackages; do
-      pkgName=''${pkg%-*}
-      if [ "$pkgName" != "rts" ]; then
-        if [[ " ${pkgs.lib.concatStringsSep " " nonReinstallablePkgs} " =~ " $pkgName " ]]; then
-            configureFlags+=" --dependency="''${pkg%-*}=$pkg
-        fi
-      fi
-    done
-    for pkg in $localPackages; do
-      configureFlags+=" --dependency="''${pkg%-*}=$pkg
-    done
-    #echo "<<< <<< <<<"
-    #echo ''${configureFlags}
-    configureFlags=$(for flag in ''${configureFlags};do case "X''${flag}" in
-          X--dependency=*)
-            pkgId=$(${targetPrefix}ghc-pkg --package-db="$packageConfDir" field ''${flag##*=} id || ${targetPrefix}ghc-pkg --global field ''${flag##*=} id)
-            echo ''${flag%=*}=$(echo $pkgId | awk -F' ' '{ print $2 }')
-            ;;
-          *) echo ''${flag};;
-          esac; done)
-    #echo "--- --- ---"
-    #echo ''${configureFlags}
-    #echo ">>> >>> >>>"
-'';
-  });
+    # Converts config.hackage.configs and pkg-def to config.packages
+    ./modules/plan.nix
 
-  toGenericPackage = stackPkgs: args: name: path:
-  let path' = pkgs.lib.traceVal path.revision.outPath            # either a fixed revision from, say plan.nix
-#              or path.revisions.default.outPath   # a package which doesn't have a revision specified; assume we want the default.
-             or path.revision
-             or path;                            # or a direct path
-  in
-    if path' == null then null else
-    let expr = driver {
-             cabalexpr = import path';
-             pkgs = pkgs // { haskellPackages = stackPkgs; };
-             lib = pkgs.lib;
-             inherit (host-map pkgs.stdenv) os arch;
-             version = compiler.ghc.version; };
-     # Use `callPackage` from the `compiler` here, to get the
-     # right compiler.
-     in compiler.callPackage expr args;
-
-in let stackPackages = pkgs: self:
-       (let p = (pkgs.lib.mapAttrs (toGenericPackage self {}) ltsPkgs);
-         # for all packages do the `exactConfig` logic. That is, we
-         # *know* that that our package-db contains only a single valid
-         # set of proper packages. So we can sidestep cabals solver.
-         in (pkgs.lib.mapAttrs (_: v: if v == null
-                                      then null
-                                      else doExactConfig pkgs v) p)
-            // (with pkgs.haskell.lib;
-            { doctest = null;
-              hsc2hs = null;
-              buildPackages = pkgs.buildPackages.haskellPackages; }));
-   in compiler.override {
-      initialPackages = { pkgs, stdenv, callPackage }: self: (stackPackages pkgs self);
-      configurationCommon = { ... }: self: super: {};
-      compilerConfig = self: super: {};
-   }
+    # Configuration that applies to all plans
+    ./modules/configuration-nix.nix
+  ];
+};
+in f

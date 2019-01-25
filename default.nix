@@ -14,18 +14,18 @@ let
                     else v)
              (pkg-def hackage);
 in
-hackage: let haskell = {
+hackage: let haskell = rec {
   # ghc hackage patches.
   # these are patches that turn hackage packages into the same as the ones
   # ghc ships with the supposedly same version. See GHC Track Issue: 16199
   ghcHackagePatches = import ./patches;
 
-  compat = import ./compat hackage;
-  mkPkgSet = pkgs: pkg-def: import ./package-set.nix { inherit pkgs hackage haskell; pkg-def = strip-pkg-def pkgs pkg-def; };
-  # The *new* pkg set is one that build components.
-  # This also uses the module system for much greater extensibility.
-  # To make extend and override things, pass a modules argument to new-package-set.nix
-  mkNewPkgSet
+  compat = import ./compat.nix;
+
+  mkPkgSet
     = { pkgs, pkg-def, pkg-def-overlays ? [], modules ? [] }@args:
-      import ./new-package-set.nix (args // { inherit hackage; pkg-def = strip-pkg-def pkgs pkg-def; });
+      import ./package-set.nix (args // { inherit hackage; pkg-def = strip-pkg-def pkgs pkg-def; });
+
+  mkNewPkgSet = args: builtins.trace "DEPRECATED: use mkPkgSet instead of mkNewPkgSet" (mkPkgSet args);
+
 }; in haskell
