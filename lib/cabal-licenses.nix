@@ -9,7 +9,6 @@ lib: with lib.licenses;
   "GPL-2.0-only"  = gpl2;
   "GPL-3.0-only"  = gpl3;
   "Apache-2.0"    = asl20;
-  "(BSD-3-Clause OR Apache-2.0)" = bsd3OrAsl20;
   # Generic
   LicenseRef-Apache = "Apache";
   LicenseRef-GPL = "GPL";
