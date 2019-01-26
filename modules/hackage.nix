@@ -46,16 +46,16 @@ let
                 revision = rev.revNum;
                 revisionSha256 = rev.sha256;
               } // import rev modArgs;
-              f = rev: acc: acc // {
+              f = rev: {
                 # If there's a collision (e.g. a revision was
                 # reverted), pick the one with the smaller
                 # revNum. They're identical, but if the smaller one is
                 # r0 then we don't have to download a cabal file.
-                ${rev.sha256} = if lib.hasAttr rev.sha256 acc && acc.${rev.sha256}.revNum < rev.revNum
-                  then acc.${rev.sha256}
-                  else rev;
+                name = rev.sha256;
+                value = rev;
               };
-              contentAddressedRevs = lib.foldr f {} (builtins.attrValues version.revisions);
+              sortedRevisions = builtins.sort (a: b: a.revNum < b.revNum) (builtins.attrValues version.revisions);
+              contentAddressedRevs = builtins.listToAttrs (map f sortedRevisions);
             in lib.mapAttrs (_: rev2Config) (version.revisions // contentAddressedRevs);
         }));
 
