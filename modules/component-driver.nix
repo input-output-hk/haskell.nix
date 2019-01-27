@@ -16,7 +16,7 @@ in
 
   config.nonReinstallablePkgs =
     [ "rts" "ghc" "ghc-prim" "integer-gmp" "integer-simple" "base"
-    "array" "deepseq" "pretty" "ghc-boot-th" "template-haskell" ];
+    "array" "deepseq" "pretty" "ghc-boot-th" "template-haskell" "ghc-heap" ];
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
