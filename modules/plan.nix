@@ -47,7 +47,7 @@ with types;
     };
   };
 
-  config = let module = config.plan.pkg-def config.hackage.configs; in {
+  config = let module = config.plan.pkg-def; in {
     inherit (module) compiler;
     packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
 

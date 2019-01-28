@@ -2,7 +2,7 @@ let f = { hackage, pkgs, pkg-def, pkg-def-overlays ? [], modules ? [] }: let
   buildModules = f { inherit hackage pkg-def pkg-def-overlays modules; pkgs = pkgs.buildPackages; };
 in pkgs.lib.evalModules {
   modules = modules ++ [
-    ({ lib, ... }: {
+    ({ config, lib, ... }: {
       # Provide all modules with haskellLib, pkgs, and pkgconfPkgs arguments
       _module.args = {
         # this is *not* the hasekllLib from nixpkgs; it is rather our own
@@ -22,7 +22,7 @@ in pkgs.lib.evalModules {
       hackage.db = hackage;
 
       # Set the plan for modules/plan.nix
-      plan.pkg-def = hackage: with builtins;
+      plan.pkg-def = with builtins;
         # The desugar reason.
         #
         # it is quite combersome to write
@@ -33,26 +33,25 @@ in pkgs.lib.evalModules {
         # or
         # { y = ./foo.nix; }
         # As such the desugarer desugars this short hand syntax.
-        let desugar = overlay:
-          let
-            isPath  = x: builtins.typeOf x == "path";
-            # rewrite
-            #   { ... }
-            # into
-            #   { package = { ... }; }
-            inject-packages = o: if o ? "packages" then o else { packages = o; };
-            # rewrite
-            #   x = pkg;
-            # into
-            #   x.revision = pkg;
-            inject-revision = pkg: if pkg ? "revision" then pkg else { revision = pkg; };
-            # rewrite
-            #   x.revision = ./some/path;
-            # into
-            #   x.revision = import ./some/path;
-            expand-paths = pkg: if !(isPath pkg.revision) then pkg else { revision = import pkg.revision; };
+        let
+          isPath  = x: builtins.typeOf x == "path";
+          # rewrite
+          #   { ... }
+          # into
+          #   { package = { ... }; }
+          inject-packages = o: if o ? "packages" then o else { packages = o; };
+          # rewrite
+          #   x = pkg;
+          # into
+          #   x.revision = pkg;
+          inject-revision = pkg: if pkg ? "revision" then pkg else { revision = pkg; };
+          # rewrite
+          #   x.revision = ./some/path;
+          # into
+          #   x.revision = import ./some/path;
+          expand-paths = pkg: if !(isPath pkg.revision) then pkg else { revision = import pkg.revision; };
           # apply injection and expansion to the "packages" in overlay.
-          in lib.mapAttrs (k: v: if k != "packages"
+          desugar = overlay: lib.mapAttrs (k: v: if k != "packages"
                               then v
                               else lib.mapAttrs (_: pkg: (expand-paths (inject-revision pkg))) v)
                                                 (inject-packages overlay);
@@ -62,8 +61,8 @@ in pkgs.lib.evalModules {
         # This means you can have a base definition (e.g. stackage)
         # and augment it with custom packages to your liking.
         in foldl' lib.recursiveUpdate
-            (pkg-def hackage)
-            (map (p: desugar (if builtins.isFunction p then p hackage else p)) pkg-def-overlays)
+            (pkg-def config.hackage.configs)
+            (map (p: desugar (if builtins.isFunction p then p config.hackage.configs else p)) pkg-def-overlays)
       ;
 
     })
