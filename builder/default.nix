@@ -1,5 +1,8 @@
 { pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, writeText, runCommand, pkgconfig, nonReinstallablePkgs }:
 
+let
+  comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs; };
+in
 { flags
 , package
 , components
@@ -38,7 +41,7 @@ let
     main = defaultMain
   '';
   defaultSetup = buildPackages.runCommand "default-Setup" { nativeBuildInputs = [buildGHC]; } ''
-    cat ${defaultSetupSrc} > Setup.hs
+    cp ${defaultSetupSrc} Setup.hs
     mkdir -p $out/bin
     ${buildGHC.targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
   '';
@@ -66,8 +69,6 @@ let
         install ./Setup $out/bin/Setup
       '';
     };
-
-  comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs; };
 
   buildComp = componentId: component: comp-builder {
     inherit componentId component package name src flags setup cabalFile patches revision

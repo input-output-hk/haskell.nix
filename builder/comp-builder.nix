@@ -1,6 +1,8 @@
 { stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs }:
 
-{ componentId
+let
+  crossFlags = map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"];
+in { componentId
 , component
 , package
 , name
@@ -66,13 +68,13 @@ let
     # Copy over the nonReinstallablePkgs from the global package db.
     # Note: we need to use --global-package-db with ghc-pkg to prevent it
     #       from looking into the implicit global package db when registering the package.
-    ${lib.concatMapStringsSep "\n" (p: ''
-      ${ghc.targetPrefix}ghc-pkg -v0 describe ${p} | ${ghc.targetPrefix}ghc-pkg -v0 --force --global-package-db $out/package.conf.d register - || true
-    '') nonReinstallablePkgs}
+    for pkg in ${toString nonReinstallablePkgs}; do
+      ${ghc.targetPrefix}ghc-pkg -v0 describe ''${pkg} | ${ghc.targetPrefix}ghc-pkg -v0 --force --global-package-db $out/package.conf.d register - || true
+    done
 
-    ${lib.concatMapStringsSep "\n" (p: ''
-      ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${p}/package.conf.d dump | ${ghc.targetPrefix}ghc-pkg -v0 --force --package-db $out/package.conf.d register -
-    '') flatDepends}
+    for pkg in ${toString flatDepends}; do
+      ${ghc.targetPrefix}ghc-pkg -v0 --package-db ''${pkg}/package.conf.d dump | ${ghc.targetPrefix}ghc-pkg -v0 --force --package-db $out/package.conf.d register -
+    done
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
     ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
@@ -140,7 +142,7 @@ let
     ] ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
       ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
-        map (arg: "--hsc2hs-option=" + arg) ["--cross-compile" "--via-asm"]
+        crossFlags
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
   );

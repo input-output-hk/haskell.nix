@@ -22,7 +22,7 @@ in pkgs.lib.evalModules {
       hackage.db = hackage;
 
       # Set the plan for modules/plan.nix
-      plan.pkg-def = with builtins;
+      plan.pkg-def =
         # The desugar reason.
         #
         # it is quite combersome to write
@@ -60,7 +60,7 @@ in pkgs.lib.evalModules {
         #
         # This means you can have a base definition (e.g. stackage)
         # and augment it with custom packages to your liking.
-        in foldl' lib.recursiveUpdate
+        in lib.foldl' lib.recursiveUpdate
             (pkg-def config.hackage.configs)
             (map (p: desugar (if builtins.isFunction p then p config.hackage.configs else p)) pkg-def-overlays)
       ;

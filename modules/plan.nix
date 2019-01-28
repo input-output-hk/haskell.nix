@@ -12,10 +12,10 @@
 
 { lib, config, pkgs, pkgconfPkgs, ... }:
 
-with lib;
-with types;
-
-{
+let
+  inherit (lib) mkOption mapAttrs filterAttrs mkDefault;
+  inherit (lib.types) attrsOf submodule str unspecified;
+in {
   options = {
     packages = mkOption {
       type = attrsOf (submodule {
@@ -49,12 +49,12 @@ with types;
 
   config = let module = config.plan.pkg-def; in {
     inherit (module) compiler;
-    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
+    packages = mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
 
       let m = if revision == null
               then (abort "${name} has no revision!")
               else revision modArgs;
-      in m // { flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or {}); }
-    ) (lib.filterAttrs (n: v: v == null || v.revision != null ) module.packages);
+      in m // { flags = mapAttrs (_: mkDefault) (m.flags // revArgs.flags or {}); }
+    ) (filterAttrs (n: v: v == null || v.revision != null ) module.packages);
   };
 }
