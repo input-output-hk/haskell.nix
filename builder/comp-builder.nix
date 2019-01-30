@@ -17,7 +17,7 @@
 , preCheck ? null, postCheck ? null
 , preInstall ? null, postInstall ? null
 
-, doCheck ? component.doCheck || componentId.ctype == "test"
+, doCheck ? component.doCheck || haskellLib.isTest componentId
 , doCrossCheck ? component.doCrossCheck || false
 , dontPatchELF ? true
 , dontStrip ? true
@@ -27,7 +27,9 @@
 }:
 
 let
-  fullName = "${name}-${componentId.ctype}-${componentId.cname}";
+  fullName = if haskellLib.isAll componentId
+    then "${name}-all"
+    else "${name}-${componentId.ctype}-${componentId.cname}";
 
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
     echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
@@ -122,7 +124,7 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
-      "${componentId.ctype}:${componentId.cname}"
+      "${haskellLib.componentTarget componentId}"
       "$(cat ${configFiles}/configure-flags)"
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
@@ -217,12 +219,12 @@ in stdenv.mkDerivation ({
   installPhase = ''
     runHook preInstall
     $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
-    ${lib.optionalString (haskellLib.isLibrary componentId) ''
+    ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
       ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
-    ${lib.optionalString (componentId.ctype == "test") ''
+    ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}
       if [ -f "dist/build/${componentId.cname}/${componentId.cname}" ]; then
         cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/

@@ -173,6 +173,15 @@ in {
         type = attrsOf (componentType false);
         default = {};
       };
+      all = mkOption {
+        type = componentType false;
+        default = let
+          componentTypes = [ "library" "sublibs" "foreignlibs" "exes" "tests" "benchmarks" ];
+        in {
+          depends = mkMerge (map (c: config.components.${c}.depends or []) componentTypes);
+        };
+        defaultText = "The merged dependencies of all other components";
+      };
     };
 
     name = mkOption {
