@@ -1,0 +1,39 @@
+#! /usr/bin/env nix-shell
+#! nix-shell -i bash -p bash jq nix
+
+set -euo pipefail
+
+NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
+
+cd $(dirname $0)
+
+printf "*** Running the nix-build tests...\n" >& 2
+nix-build $NIX_BUILD_ARGS --no-out-link --keep-going ./default.nix
+echo >& 2
+
+printf "*** Running the unit tests... " >& 2
+res=$(nix-instantiate --eval --json --strict ./default.nix -A unit)
+num_failed=$(jq length <<< "$res")
+if [ $num_failed -eq 0 ]; then
+  printf "PASSED\n" >& 2
+else
+  printf "$num_failed FAILED\n" >& 2
+  jq . <<< "$res"
+  exit 1
+fi
+
+printf "*** Checking that a nix-shell works for runghc...\n" >& 2
+nix-shell $NIX_BUILD_ARGS \
+    --pure ./default.nix \
+    -A with-packages.test-shell \
+    --run 'runghc with-packages/Point.hs'
+echo >& 2
+
+printf "*** Checking that a nix-shell works for cabal...\n" >& 2
+nix-shell $NIX_BUILD_ARGS \
+    --pure ./default.nix \
+    -A with-packages.test-shell \
+    --run 'echo CABAL_CONFIG=$CABAL_CONFIG && type -p ghc && cd with-packages && rm -rf dist-newstyle .ghc-environment* && cabal new-build'
+echo >& 2
+
+printf "\n*** Finished successfully\n" >& 2
