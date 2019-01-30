@@ -13,9 +13,15 @@ let
   # The new Haskell infra applied to nix representation of Hackage
   haskell = import ../. hackage;
 
+  haskellLib = let hl = import ../lib { inherit lib; haskellLib = hl; }; in hl;
+
 in {
   cabal-simple = callPackage ./cabal-simple { inherit haskell; };
   cabal-22 = callPackage ./cabal-22 { inherit haskell; };
+
+  # Run unit tests with: nix-instantiate --eval --strict -A unit
+  # An empty list means success.
+  unit = callPackage ./unit.nix { inherit haskellLib; };
 }
 
 ## possible test cases
