@@ -47,14 +47,16 @@ let
                 revisionSha256 = rev.sha256;
               } // import rev modArgs;
               f = rev: {
-                # If there's a collision (e.g. a revision was
-                # reverted), pick the one with the smaller
-                # revNum. They're identical, but if the smaller one is
-                # r0 then we don't have to download a cabal file.
                 name = rev.sha256;
                 value = rev;
               };
               sortedRevisions = builtins.sort (a: b: a.revNum < b.revNum) (builtins.attrValues version.revisions);
+              # if you give listToAttrs duplicate keys, the 1st one wins (but
+              # the internal array for the set will be larger then it needs to
+              # be).  This implicitly means if there were collisions in the
+              # revsisions (e.g. a version was reverted), we pick the one with
+              # the samller revNum.  They are identical, but if the smaller one
+              # is r0 then we don't have to download a cabal file.
               contentAddressedRevs = builtins.listToAttrs (map f sortedRevisions);
             in lib.mapAttrs (_: rev2Config) (version.revisions // contentAddressedRevs);
         }));
