@@ -1,9 +1,4 @@
 * haskell.nix
 
-This repository contains all cabal expressions from
-[[http://hackage.org][hackage.org]] as nix expressions.  Periodically
-updated to stay in sync.
-
-It is supposed to be used with [[https://github.com/input-output-hk/nix-tools][nix-tools]].
-Please see [[https://github.com/input-output-hk/nix-tools][nix-tools]] for more details and
-how to use these expressions.
+This repository contains the runtime system for [[https://github.com/input-output-hk/nix-tools][nix-tools]].
+Please see [[https://github.com/input-output-hk/nix-tools][nix-tools]] for more details.
