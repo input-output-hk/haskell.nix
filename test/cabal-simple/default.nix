@@ -33,13 +33,18 @@ in
       printf "checking whether executable runs... " >& 2
       $exe
 
-      # fixme: linux-specific
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
       ldd $exe | grep libpthread
     '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
       otool -L $exe |grep .dylib
     '' + ''
+
+      printf "Checking that \"all\" component has the programs... " >& 2
+      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple"
+      test -f "$all_exe"
+      echo "$all_exe" >& 2
+
       touch $out
     '';
 
