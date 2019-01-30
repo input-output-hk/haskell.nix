@@ -6,7 +6,16 @@ let
     ghc = config.ghc.package;
     buildGHC = buildModules.config.ghc.package;
     inherit (config) nonReinstallablePkgs;
+    inherit withPackage;
   };
+
+  withPackage = import ../builder/with-package-wrapper.nix {
+    inherit lib;
+    inherit (pkgs) stdenv runCommand makeWrapper;
+    inherit (pkgs.xorg) lndir;
+    ghc = config.ghc.package;
+  };
+
 in
 
 {

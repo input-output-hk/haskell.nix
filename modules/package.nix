@@ -270,6 +270,10 @@ in {
       type = nullOr string;
       default = null;
     };
+    shellHook = mkOption {
+      type = nullOr string;
+      default = null;
+    };
     doCheck = mkOption {
       type = bool;
       default = false;
