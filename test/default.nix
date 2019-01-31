@@ -6,8 +6,8 @@ let
   # all packages from hackage as nix expressions
   hackage = import (fetchFromGitHub { owner  = "angerman";
                                       repo   = "hackage.nix";
-                                      rev    = "66c28064da46525711722b75b4adb2ac878897d3";
-                                      sha256 = "12ffzzjgirwzha3ngxbniccgn19406iryxspq19kgi4kz9lz6bpr";
+                                      rev    = "5223a45e08b1b0d738fdd292b39e49f39f21536f";
+                                      sha256 = "09r662kn2qs444fmqni9jamaxnrk9jrg6whqmxbwhfgd5vy3yynq";
                                       name   = "hackage-exprs-source"; });
 
   # The new Haskell infra applied to nix representation of Hackage
