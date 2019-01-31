@@ -21,6 +21,14 @@ let
       {
         packages.transformers-compat.components.library.doExactConfig = true;
       }
+
+      # vary component config for tests
+      {
+        packages.test-with-packages.components = {
+          all.doExactConfig = false;    # the default
+          library.doExactConfig = true; # not the default
+        };
+      }
     ];
   };
 
@@ -43,8 +51,10 @@ in
       # test with-packages
 
       printf "checking that the 'all' component works... " >& 2
-      echo ${package.components.all}
-      # echo >& 2
+      echo ${package.components.all} >& 2
+
+      printf "checking that the 'library' component works... " >& 2
+      echo ${package.components.library} >& 2
 
       printf "checking that the package env has the dependencies... " >& 2
       ${package.components.all.env}/bin/runghc ${./Point.hs}
@@ -65,4 +75,7 @@ in
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
   test-shell = addCabalInstall packages.test-with-packages.components.all;
+
+  # A variant of test-shell with the component option doExactConfig enabled
+  test-shell-dec = addCabalInstall packages.test-with-packages.components.library;
 }

@@ -36,4 +36,11 @@ nix-shell $NIX_BUILD_ARGS \
     --run 'echo CABAL_CONFIG=$CABAL_CONFIG && type -p ghc && cd with-packages && rm -rf dist-newstyle .ghc-environment* && cabal new-build'
 echo >& 2
 
+printf "*** Checking that a nix-shell works for cabal (doExactConfig component)...\n" >& 2
+nix-shell $NIX_BUILD_ARGS \
+    --pure ./default.nix \
+    -A with-packages.test-shell-dec \
+    --run 'echo CABAL_CONFIG=$CABAL_CONFIG && echo GHC_ENVIRONMENT=$GHC_ENVIRONMENT && cd with-packages && rm -rf dist-newstyle .ghc-environment* && cabal new-build'
+echo >& 2
+
 printf "\n*** Finished successfully\n" >& 2
