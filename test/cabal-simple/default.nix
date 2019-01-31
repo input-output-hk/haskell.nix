@@ -49,7 +49,7 @@ in
     '';
 
     meta.platforms = platforms.all;
-} // { inherit (packages) cabal-simple; }
+} // { inherit (packages) cabal-simple; inherit pkgSet; }
 
 ## steps to generate local files
 # 1. cabal-to-nix cabal-simple.cabal > cabal-simple.nix

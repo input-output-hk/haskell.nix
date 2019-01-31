@@ -25,11 +25,20 @@
     };
     components = {
       "library" = {
-        depends = [ (hsPkgs.base) ];
+        depends = [
+          (hsPkgs.base)
+          (hsPkgs.extra)
+          (hsPkgs.safe)
+          (hsPkgs.aeson)
+        ];
       };
       exes = {
         "cabal-simple" = {
-          depends = [ (hsPkgs.base) ];
+          depends = [
+            (hsPkgs.base)
+            (hsPkgs.extra)
+            (hsPkgs.optparse-applicative)
+          ];
         };
       };
     };
