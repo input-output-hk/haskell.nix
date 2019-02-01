@@ -175,18 +175,20 @@ in {
         type = attrsOf (componentType {});
         default = {};
       };
+      # Try merging component options by setting the default to mkMerge [...].
+      # This does not work.
       all = let
-        subComponentsDepends = sub: concatLists
-            (mapAttrsToList (_: c: c.depends or []) config.components.${sub} or {});
-        default = {
-          depends = config.components.library.depends ++
-            concatMap subComponentsDepends haskellLib.subComponentTypes;
-        };
+        subComponents = sub: attrValues (config.components.${sub} or {});
+        default = mkMerge ([ config.components.library ] ++
+          concatMap subComponents haskellLib.subComponentTypes);
       in mkOption {
-        type = componentType default;
+        type = componentType {};
         inherit default;
-        defaultText = "The merged dependencies of all other components";
+        defaultText = "The merged options of all other components";
       };
+      # all = mkOption {
+      #   type = componentType {};
+      # };
     };
 
     name = mkOption {

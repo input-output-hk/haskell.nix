@@ -39,16 +39,32 @@ let
     buildInputs = (oldAttrs.buildInputs or []) ++ [ pkgs.cabal-install ];
   });
 
+
+  package = packages.test-with-packages;
+  inherit (package.components) library;
+
+  pkgId = p: "${p.identifier.name}-${p.identifier.version}";
+  showDepends = component: concatMapStringsSep " " pkgId component.depends;
+
 in
   stdenv.mkDerivation {
     name = "with-packages-test";
+    libraryDepends = showDepends pkgSet.config.packages.test-with-packages.components.library;
+    allDepends = showDepends pkgSet.config.packages.test-with-packages.components.all;
 
-    buildCommand = let
-      package = packages.test-with-packages;
-      inherit (package.components) library;
-    in ''
+    buildCommand = ''
       ########################################################################
       # test with-packages
+
+      printf "checking merging of the 'all' component depends ... " >& 2
+      if [ -n "$libraryDepends" -a "$libraryDepends" = "$allDepends" ]; then
+        echo "PASS" >& 2
+      else
+        echo "FAIL" >& 2
+        echo "libraryDepends = $libraryDepends"
+        echo "allDepends = $allDepends"
+        exit 1
+      fi
 
       printf "checking that the 'all' component works... " >& 2
       echo ${package.components.all} >& 2
@@ -62,7 +78,7 @@ in
 
       printf "checking that components.library.env has the dependencies... " >& 2
       ${library.env}/bin/runghc ${./Point.hs}
-      # echo >& 2
+      echo >& 2
 
       touch $out
     '';

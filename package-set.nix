@@ -71,6 +71,8 @@ in pkgs.lib.evalModules {
     # Supplies metadata
     ./modules/cabal.nix
 
+    ./modules/all-component.nix
+
     # Converts config.packages into config.hsPkgs
     # Replace this with compat-driver.nix to use nixpkgs haskell build infra
     ./modules/component-driver.nix
