@@ -31,7 +31,6 @@ in
       printf "checking whether executable runs... " >& 2
       "$exe"
 
-      # fixme: linux-specific
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
       ldd $exe | grep libpthread

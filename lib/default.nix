@@ -3,6 +3,8 @@
 with haskellLib;
 
 {
+  # Within the package components, these are the attribute names of
+  # nested attrsets.
   subComponentTypes = [
     "sublibs"
     "foreignlibs"
@@ -66,13 +68,25 @@ with haskellLib;
   applyComponents = f: config:
     let
       comps = config.components;
-      libComp = lib.mapAttrs (cname: f {ctype="lib"; cname=config.package.identifier.name;}) (removeAttrs comps subComponentTypes);
+      applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
+      applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype}; };
+      applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
+      libComp = lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
       subComps = lib.mapAttrs
-        (ctype: lib.mapAttrs (cname: f {inherit cname; ctype=componentPrefix.${ctype};}))
+        (ctype: lib.mapAttrs (applySubComp ctype))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);
-    in subComps // libComp;
+      allComp = { all = applyAllComp comps.all; };
+    in subComps // libComp // allComp;
 
   isLibrary = componentId: componentId.ctype == "lib";
+  isAll = componentId: componentId.ctype == "all";
+  isTest = componentId: componentId.ctype == "test";
+
+  # Format a componentId as it should appear as a target on the
+  # command line of the setup script.
+  componentTarget = componentId:
+    if componentId.ctype == "all" then ""
+    else "${componentId.ctype}:${componentId.cname}";
 
   # Avoid pkgs.callPackage for now. It does a lot of nonsense with OOP
   # style programming that we should avoid until we know we want it.

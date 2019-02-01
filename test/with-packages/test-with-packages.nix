@@ -8,12 +8,12 @@
   {
     flags = {};
     package = {
-      specVersion = "1.10";
+      specVersion = "2.2";
       identifier = {
-        name = "cabal-simple";
+        name = "test-with-packages";
         version = "0.1.0.0";
       };
-      license = "LicenseRef-PublicDomain";
+      license = "NONE";
       copyright = "";
       maintainer = "rodney.lorrimar@iohk.io";
       author = "Rodney Lorrimar";
@@ -27,19 +27,8 @@
       "library" = {
         depends = [
           (hsPkgs.base)
-          (hsPkgs.extra)
-          (hsPkgs.safe)
-          (hsPkgs.aeson)
+          (hsPkgs.lens)
         ];
-      };
-      exes = {
-        "cabal-simple" = {
-          depends = [
-            (hsPkgs.base)
-            (hsPkgs.extra)
-            (hsPkgs.optparse-applicative)
-          ];
-        };
       };
     };
   } // rec {

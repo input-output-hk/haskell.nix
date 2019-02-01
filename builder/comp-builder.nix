@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, withPackage }:
 
 { componentId
 , component
@@ -16,8 +16,9 @@
 , preBuild ? null, postBuild ? null
 , preCheck ? null, postCheck ? null
 , preInstall ? null, postInstall ? null
+, shellHook ? null
 
-, doCheck ? component.doCheck || componentId.ctype == "test"
+, doCheck ? component.doCheck || haskellLib.isTest componentId
 , doCrossCheck ? component.doCrossCheck || false
 , dontPatchELF ? true
 , dontStrip ? true
@@ -27,7 +28,9 @@
 }:
 
 let
-  fullName = "${name}-${componentId.ctype}-${componentId.cname}";
+  fullName = if haskellLib.isAll componentId
+    then "${name}-all"
+    else "${name}-${componentId.ctype}-${componentId.cname}";
 
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
     echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
@@ -44,18 +47,30 @@ let
     in map ({val,...}: val) closure;
 
   exactDep = pdbArg: p: ''
-    if id=$(${ghc.targetPrefix}ghc-pkg -v0 ${pdbArg} field ${p} id --simple-output); then
+    if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
     fi
-    if ver=$(${ghc.targetPrefix}ghc-pkg -v0 ${pdbArg} field ${p} version --simple-output); then
+    if ver=$(target-pkg ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
     fi
   '';
 
+  envDep = pdbArg: p: ''
+    if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
+      echo "package-id $id" >> $out/ghc-environment
+    fi
+  '';
+
   configFiles = runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out
-    ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
+
+    # Calls ghc-pkg for the target platform
+    target-pkg() {
+      ${ghc.targetPrefix}ghc-pkg "$@"
+    }
+
+    target-pkg init $out/package.conf.d
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs;
@@ -67,17 +82,25 @@ let
     # Note: we need to use --global-package-db with ghc-pkg to prevent it
     #       from looking into the implicit global package db when registering the package.
     ${lib.concatMapStringsSep "\n" (p: ''
-      ${ghc.targetPrefix}ghc-pkg -v0 describe ${p} | ${ghc.targetPrefix}ghc-pkg -v0 --force --global-package-db $out/package.conf.d register - || true
+      target-pkg describe ${p} | target-pkg --force --global-package-db $out/package.conf.d register - || true
     '') nonReinstallablePkgs}
 
     ${lib.concatMapStringsSep "\n" (p: ''
-      ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${p}/package.conf.d dump | ${ghc.targetPrefix}ghc-pkg -v0 --force --package-db $out/package.conf.d register -
+      target-pkg --package-db ${p}/package.conf.d dump | target-pkg --force --package-db $out/package.conf.d register -
     '') flatDepends}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
     ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
 
     echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
+
+    # Provide a GHC environment file
+    cat > $out/ghc-environment <<EOF
+    clear-package-db
+    package-db $out/package.conf.d
+    EOF
+    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
+    ${lib.concatMapStringsSep "\n" (envDep "") (lib.remove "ghc" nonReinstallablePkgs)}
 
   '' + lib.optionalString component.doExactConfig ''
     echo "--exact-configuration" >> $out/configure-flags
@@ -115,14 +138,14 @@ let
       sed -i "s,dynamic-library-dirs: .*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    ${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d recache
+    target-pkg --package-db $out/package.conf.d recache
   '' + ''
-    ${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d check
+    target-pkg --package-db $out/package.conf.d check
   '');
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
-      "${componentId.ctype}:${componentId.cname}"
+      "${haskellLib.componentTarget componentId}"
       "$(cat ${configFiles}/configure-flags)"
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
@@ -145,6 +168,16 @@ let
       ++ component.configureFlags
   );
 
+  executableToolDepends = lib.concatMap (c: if c.isHaskell or false
+      then builtins.attrValues (c.components.exes or {})
+      else [c]) component.build-tools;
+
+  # Unfortunately, we need to wrap ghc commands for cabal builds to
+  # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
+  shellWrappers = withPackage {
+    inherit package configFiles;
+  };
+
 in stdenv.mkDerivation ({
   name = fullName;
 
@@ -154,6 +187,7 @@ in stdenv.mkDerivation ({
     inherit (package) identifier;
     config = component;
     inherit configFiles;
+    env = shellWrappers;
   };
 
   meta = {
@@ -167,6 +201,7 @@ in stdenv.mkDerivation ({
   };
 
   CABAL_CONFIG = configFiles + /cabal.config;
+  GHC_ENVIRONMENT = configFiles + /ghc-environment;
   LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
   LC_ALL = "en_US.UTF-8";
 
@@ -179,9 +214,7 @@ in stdenv.mkDerivation ({
   nativeBuildInputs =
     [ghc]
     ++ lib.optional (component.pkgconfig != []) pkgconfig
-    ++ lib.concatMap (c: if c.isHaskell or false
-      then builtins.attrValues (c.components.exes or {})
-      else [c]) component.build-tools;
+    ++ executableToolDepends;
 
   SETUP_HS = setup + /bin/Setup;
 
@@ -217,12 +250,12 @@ in stdenv.mkDerivation ({
   installPhase = ''
     runHook preInstall
     $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
-    ${lib.optionalString (haskellLib.isLibrary componentId) ''
+    ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
       ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
     ''}
-    ${lib.optionalString (componentId.ctype == "test") ''
+    ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}
       if [ -f "dist/build/${componentId.cname}/${componentId.cname}" ]; then
         cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
@@ -232,6 +265,11 @@ in stdenv.mkDerivation ({
       fi
     ''}
     runHook postInstall
+  '';
+
+  shellHook = ''
+    export PATH="${shellWrappers}/bin:$PATH"
+    ${toString shellHook}
   '';
 }
 # patches can (if they like) depend on the version and revision of the package.

@@ -19,6 +19,8 @@ with lib;
 with types;
 
 let
+  haskellLib = let hl = import ../lib { inherit lib; haskellLib = hl; }; in hl;
+
   # This is just like listOf, except that it filters out all null elements.
   listOfFilteringNulls = elemType: listOf elemType // {
     # Mostly copied from nixpkgs/lib/types.nix
@@ -97,11 +99,11 @@ in {
     };
 
     components = let
-      componentType = check: submodule {
+      componentType = defaults: submodule {
         options = {
           depends = mkOption {
             type = listOfFilteringNulls unspecified;
-            default = [];
+            default = defaults.depends or [];
           };
           libs = mkOption {
             type = listOfFilteringNulls (nullOr package);
@@ -141,7 +143,7 @@ in {
           };
           doCheck = mkOption {
             type = bool;
-            default = check;
+            default = defaults.doCheck or false;
           };
           doCrossCheck = mkOption {
             type = bool;
@@ -151,27 +153,39 @@ in {
       };
     in {
       library = mkOption {
-        type = componentType false;
+        type = componentType {};
       };
       sublibs = mkOption {
-        type = attrsOf (componentType false);
+        type = attrsOf (componentType {});
         default = {};
       };
       foreignlibs = mkOption {
-        type = attrsOf (componentType false);
+        type = attrsOf (componentType {});
         default = {};
       };
       exes = mkOption {
-        type = attrsOf (componentType false);
+        type = attrsOf (componentType {});
         default = {};
       };
       tests = mkOption {
-        type = attrsOf (componentType config.doCheck);
+        type = attrsOf (componentType { inherit (config) doCheck; });
         default = {};
       };
       benchmarks = mkOption {
-        type = attrsOf (componentType false);
+        type = attrsOf (componentType {});
         default = {};
+      };
+      all = let
+        subComponentsDepends = sub: concatLists
+            (mapAttrsToList (_: c: c.depends or []) config.components.${sub} or {});
+        default = {
+          depends = config.components.library.depends ++
+            concatMap subComponentsDepends haskellLib.subComponentTypes;
+        };
+      in mkOption {
+        type = componentType default;
+        inherit default;
+        defaultText = "The merged dependencies of all other components";
       };
     };
 
@@ -258,6 +272,10 @@ in {
       default = null;
     };
     postInstall = mkOption {
+      type = nullOr string;
+      default = null;
+    };
+    shellHook = mkOption {
       type = nullOr string;
       default = null;
     };
