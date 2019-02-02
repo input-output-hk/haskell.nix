@@ -13,14 +13,12 @@
 #    tests = { "..." = { depends = ... }; ... };
 #  };
 
-{ lib, config, pkgs, ... }:
+{ lib, config, pkgs, haskellLib, ... }:
 
 with lib;
 with types;
 
 let
-  haskellLib = let hl = import ../lib { inherit lib; haskellLib = hl; }; in hl;
-
   # This is just like listOf, except that it filters out all null elements.
   listOfFilteringNulls = elemType: listOf elemType // {
     # Mostly copied from nixpkgs/lib/types.nix
@@ -175,17 +173,9 @@ in {
         type = attrsOf (componentType {});
         default = {};
       };
-      all = let
-        subComponentsDepends = sub: concatLists
-            (mapAttrsToList (_: c: c.depends or []) config.components.${sub} or {});
-        default = {
-          depends = config.components.library.depends ++
-            concatMap subComponentsDepends haskellLib.subComponentTypes;
-        };
-      in mkOption {
-        type = componentType default;
-        inherit default;
-        defaultText = "The merged dependencies of all other components";
+      all = mkOption {
+        type = componentType {};
+        description = "The merged dependencies of all other components";
       };
     };
 
@@ -289,4 +279,6 @@ in {
       default = false;
     };
   };
+
+  config.components.all = lib.mkMerge (haskellLib.getAllComponents config);
 }
