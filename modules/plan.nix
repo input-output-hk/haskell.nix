@@ -10,7 +10,7 @@
 #                packages = { "bytestring" = "a.b.c.d"; ... }; };
 # }
 
-{ lib, config, pkgs, pkgconfPkgs, ... }:
+{ lib, config, pkgs, pkgconfPkgs, haskellLib, ... }:
 
 with lib;
 with types;
@@ -21,7 +21,7 @@ with types;
       type = attrsOf (submodule {
         imports = [./package.nix];
         _module.args = {
-          inherit pkgs pkgconfPkgs;
+          inherit pkgs pkgconfPkgs haskellLib;
           inherit (config) hsPkgs;
           inherit (config.cabal) system compiler;
         };
