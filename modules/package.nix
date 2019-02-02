@@ -284,5 +284,15 @@ in {
     };
   };
 
+  # This has one quirk. Manually setting options on the all component
+  # will be considered a conflict. This is almost always fine; most
+  # settings should be modified in either the package options, or an
+  # individual component's options. When this isn't sufficient,
+  # mkForce is a reasonable workaround.
+  #
+  # An alternative solution to mkForce for many of the options where
+  # this is relevant would be to switch from the bool type to
+  # something like an anyBool type, which would merge definitions by
+  # returning true if any is true.
   config.components.all = lib.mkMerge (haskellLib.getAllComponents config);
 }
