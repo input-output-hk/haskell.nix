@@ -97,11 +97,11 @@ in {
     };
 
     components = let
-      componentType = defaults: submodule {
+      componentType = submodule {
         options = {
           depends = mkOption {
             type = listOfFilteringNulls unspecified;
-            default = defaults.depends or [];
+            default = [];
           };
           libs = mkOption {
             type = listOfFilteringNulls (nullOr package);
@@ -137,11 +137,11 @@ in {
           };
           doExactConfig = mkOption {
             type = bool;
-            default = false;
+            default = config.doExactConfig;
           };
           doCheck = mkOption {
             type = bool;
-            default = defaults.doCheck or false;
+            default = config.doCheck;
           };
           doCrossCheck = mkOption {
             type = bool;
@@ -151,30 +151,30 @@ in {
       };
     in {
       library = mkOption {
-        type = componentType {};
+        type = componentType;
       };
       sublibs = mkOption {
-        type = attrsOf (componentType {});
+        type = attrsOf componentType;
         default = {};
       };
       foreignlibs = mkOption {
-        type = attrsOf (componentType {});
+        type = attrsOf componentType;
         default = {};
       };
       exes = mkOption {
-        type = attrsOf (componentType {});
+        type = attrsOf componentType;
         default = {};
       };
       tests = mkOption {
-        type = attrsOf (componentType { inherit (config) doCheck; });
+        type = attrsOf componentType;
         default = {};
       };
       benchmarks = mkOption {
-        type = attrsOf (componentType {});
+        type = attrsOf componentType;
         default = {};
       };
       all = mkOption {
-        type = componentType {};
+        type = componentType;
         description = "The merged dependencies of all other components";
       };
     };
@@ -268,6 +268,10 @@ in {
     shellHook = mkOption {
       type = nullOr string;
       default = null;
+    };
+    doExactConfig = mkOption {
+      type = bool;
+      default = false;
     };
     doCheck = mkOption {
       type = bool;
