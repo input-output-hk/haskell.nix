@@ -2,11 +2,16 @@
 { pkgs
 , haskell
 , stdenv
+, util
 }:
 
 with stdenv.lib;
 
 let
+  ## steps to generate local files
+  # 1. cabal-to-nix cabal-simple.cabal > cabal-simple.nix
+  # 2. cabal new-build
+  # 3. plan-to-nix ./dist-newstyle/cache/plan.json > plan.nix
   pkgSet = haskell.mkPkgSet {
     inherit pkgs;
     pkg-def = import ./plan.nix;
@@ -49,9 +54,14 @@ in
     '';
 
     meta.platforms = platforms.all;
-} // { inherit (packages) cabal-simple; inherit pkgSet; }
 
-## steps to generate local files
-# 1. cabal-to-nix cabal-simple.cabal > cabal-simple.nix
-# 2. cabal new-build
-# 3. plan-to-nix ./dist-newstyle/cache/plan.json > plan.nix
+    passthru = {
+      inherit (packages) cabal-simple;
+      inherit pkgSet;
+
+      # Used for testing externally with nix-shell (../tests.sh).
+      # This just adds cabal-install to the existing shells.
+      test-shell = util.addCabalInstall packages.cabal-simple.components.all;
+
+    };
+}
