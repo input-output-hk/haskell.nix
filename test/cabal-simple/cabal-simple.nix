@@ -36,6 +36,7 @@
         "cabal-simple" = {
           depends = [
             (hsPkgs.base)
+            (hsPkgs.cabal-simple)
             (hsPkgs.extra)
             (hsPkgs.optparse-applicative)
           ];

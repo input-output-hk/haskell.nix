@@ -15,10 +15,12 @@ let
 
   haskellLib = let hl = import ../lib { inherit lib; haskellLib = hl; }; in hl;
 
+  util = callPackage ./util.nix {};
+
 in {
-  cabal-simple = callPackage ./cabal-simple { inherit haskell; };
+  cabal-simple = callPackage ./cabal-simple { inherit haskell util; };
   cabal-22 = callPackage ./cabal-22 { inherit haskell; };
-  with-packages = callPackage ./with-packages { inherit haskell; };
+  with-packages = callPackage ./with-packages { inherit haskell util; };
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit
   # An empty list means success.
