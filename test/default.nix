@@ -3,29 +3,21 @@
 with pkgs;
 
 let
-  # all packages from hackage as nix expressions
-  hackage = import (fetchFromGitHub { owner  = "angerman";
-                                      repo   = "hackage.nix";
-                                      rev    = "5223a45e08b1b0d738fdd292b39e49f39f21536f";
-                                      sha256 = "09r662kn2qs444fmqni9jamaxnrk9jrg6whqmxbwhfgd5vy3yynq";
-                                      name   = "hackage-exprs-source"; });
 
   # The new Haskell infra applied to nix representation of Hackage
-  haskell = import ../. hackage;
-
-  haskellLib = let hl = import ../lib { inherit lib; haskellLib = hl; }; in hl;
+  haskell = pkgs.callPackage ../. { };
 
   util = callPackage ./util.nix {};
 
 in {
-  cabal-simple = callPackage ./cabal-simple { inherit haskell util; };
-  cabal-22 = callPackage ./cabal-22 { inherit haskell; };
-  with-packages = callPackage ./with-packages { inherit haskell util; };
-  builder-haddock = callPackage ./builder-haddock { inherit haskell; };
+  cabal-simple = callPackage ./cabal-simple { inherit (haskell) mkPkgSet; inherit util; };
+  cabal-22 = callPackage ./cabal-22 { inherit (haskell) mkPkgSet; };
+  with-packages = callPackage ./with-packages { inherit (haskell) mkPkgSet; inherit util; };
+  builder-haddock = callPackage ./builder-haddock { inherit (haskell) mkPkgSet; };
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit
   # An empty list means success.
-  unit = callPackage ./unit.nix { inherit haskellLib; };
+  unit = callPackage ./unit.nix { inherit (haskell) haskellLib; };
 }
 
 ## possible test cases

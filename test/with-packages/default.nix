@@ -1,15 +1,10 @@
-{ pkgs
-, haskell
-, stdenv
-, util
-}:
+{ stdenv, util, mkPkgSet }:
 
 with stdenv.lib;
 with util;
 
 let
-  pkgSet = haskell.mkPkgSet {
-    inherit pkgs;
+  pkgSet = mkPkgSet {
     # generated with:
     #   cabal new-build
     #   plan-to-nix dist-newstyle/cache/plan.json > plan.nix 

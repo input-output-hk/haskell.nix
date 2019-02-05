@@ -1,9 +1,5 @@
 # Test a package set
-{ pkgs
-, haskell
-, stdenv
-, util
-}:
+{ stdenv, util, mkPkgSet }:
 
 with stdenv.lib;
 
@@ -12,8 +8,7 @@ let
   # 1. cabal-to-nix cabal-simple.cabal > cabal-simple.nix
   # 2. cabal new-build
   # 3. plan-to-nix ./dist-newstyle/cache/plan.json > plan.nix
-  pkgSet = haskell.mkPkgSet {
-    inherit pkgs;
+  pkgSet = mkPkgSet {
     pkg-def = import ./plan.nix;
     pkg-def-overlays = [
       { cabal-simple = ./cabal-simple.nix;
@@ -45,9 +40,9 @@ in
       $exe
 
       printf "checking that executable is dynamically linked to system libraries... " >& 2
-    '' + pkgs.lib.optionalString pkgs.stdenv.isLinux ''
+    '' + optionalString stdenv.isLinux ''
       ldd $exe | grep libpthread
-    '' + pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+    '' + optionalString stdenv.isDarwin ''
       otool -L $exe |grep .dylib
     '' + ''
 
@@ -68,6 +63,5 @@ in
       # Used for testing externally with nix-shell (../tests.sh).
       # This just adds cabal-install to the existing shells.
       test-shell = util.addCabalInstall packages.cabal-simple.components.all;
-
     };
 }
