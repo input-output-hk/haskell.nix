@@ -74,7 +74,7 @@ Finally we string this together and produce a package set:
 
 ```nix
 let
-  my-pkgs = import ./nix/pkgs.nix;
+  my-pkgs = import ./nix/pkgs.nix { inherit stackage; };
 
   pkgSet = haskell.mkPkgSet {
     inherit pkgs;
