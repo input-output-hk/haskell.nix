@@ -2,3 +2,5 @@
 
 This repository contains the runtime system for [[https://github.com/input-output-hk/nix-tools][nix-tools]].
 Please see [[https://github.com/input-output-hk/nix-tools][nix-tools]] for more details.
+
+[[https://travis-ci.org/input-output-hk/haskell.nix][https://travis-ci.org/input-output-hk/haskell.nix.svg?branch=master]]
