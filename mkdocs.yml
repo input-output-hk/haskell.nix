@@ -1,0 +1,25 @@
+# You can use mkdocs from nix, by running the following:
+#
+#   nix-shell -p '[ mkdocs ]'
+#
+# that should pop you into a shell, where you can then
+# run
+#
+#   mkdocs serve
+#
+# and point your browser to localhost:8000
+#
+site_name: haskell.nix - alt .\ infra
+theme: readthedocs
+site_url: null
+repo_url: https://github.com/input-output-hk/haskell.nix
+
+# this is called `nav` in more recent mkdocs versions. Mine
+# right now is 0.17.5
+pages:
+  - 'Introduction': index.md
+  - 'Architecture': architecture.md
+  - 'User Guide': user-guide.md
+  - 'User Guide (Stack)': user-guide-stack.md
+  - 'User Guide (Cabal)': user-guide-cabal.md
+  - 'Removing withPackage wrapper': removing-with-package-wrapper.md
