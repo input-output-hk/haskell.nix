@@ -20,7 +20,7 @@ hackage: let haskell = rec {
   # ghc ships with the supposedly same version. See GHC Track Issue: 16199
   ghcHackagePatches = import ./patches;
 
-  compat = import ./compat.nix;
+  compat = import ./lib/compat.nix;
 
   mkPkgSet
     = { pkgs, pkg-def, pkg-def-overlays ? [], modules ? [] }@args:
