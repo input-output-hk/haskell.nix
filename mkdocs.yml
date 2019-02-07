@@ -1,6 +1,6 @@
 # You can use mkdocs from nix, by running the following:
 #
-#   nix-shell -p '[ mkdocs ]'
+#   nix-shell -p mkdocs
 #
 # that should pop you into a shell, where you can then
 # run
