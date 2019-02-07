@@ -9,7 +9,7 @@
 #
 # and point your browser to localhost:8000
 #
-site_name: haskell.nix - alt .\ infra
+site_name: Alternative Haskell Infrastructure for Nixpkgs
 theme: readthedocs
 site_url: null
 repo_url: https://github.com/input-output-hk/haskell.nix
