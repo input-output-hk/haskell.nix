@@ -102,7 +102,6 @@ let
 
     # Provide a GHC environment file
     cat > $out/ghc-environment <<EOF
-    clear-package-db
     package-db $out/package.conf.d
     EOF
     ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
