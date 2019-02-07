@@ -46,16 +46,16 @@ let
   hackage = import (overrideWith "hackage"
                     (pkgs.fetchFromGitHub { owner  = "input-output-hk";
                                             repo   = "hackage.nix";
-                                            rev    = "1bee48237cb87d9ad6432a9ddb7777f858674400";
-                                            sha256 = "0sllxmffrcvcq63wlvz64s0i0ls2249vwix645899k6xh159z5pj";
+                                            rev    = "3180384b563ec7c7b46bca86b3ace0f32d04cde8";
+                                            sha256 = "19ndkn8pivli9plwq0wnx1cj126l89yk7jw9a0dj51ic3b2qhlb2";
                                             name   = "hackage-exprs-source"; }))
                    ;
   # a different haskell infrastructure
   haskell = import (overrideWith "haskell"
                     (pkgs.fetchFromGitHub { owner  = "input-output-hk";
                                             repo   = "haskell.nix";
-                                            rev    = "dae8025469d94e739aa52f23685bcd87840c72e3";
-                                            sha256 = "0bj577aj2v7yl6d1l6rinp0bbn4k9m8k4jd46m4hspqaisfd58hg";
+                                            rev    = "73f733ba8bbd11443dda713d1a2d4b7c50a5d408";
+                                            sha256 = "1p2srrxw2lac5krrg35waa251by98r2miwyg6zac9glpg2vmq3ip";
                                             name   = "haskell-lib-source"; }))
                    hackage;
 
@@ -63,8 +63,8 @@ let
   stackage = import (overrideWith "stackage"
                      (pkgs.fetchFromGitHub { owner  = "input-output-hk";
                                              repo   = "stackage.nix";
-                                             rev    = "5ccfc7662469843768a5c4924d91faafbe5824e1";
-                                             sha256 = "1zwasyscqn4751i10165imwj4715hh5arwmccqkpvpn9bnb6c5ck";
+                                             rev    = "2615a4e6b1651215ee400e62fcdcb195062a3d35";
+                                             sha256 = "08c8lb8x047hndwm1cb2zxixnjmrswfp5y18xp1v79cjqlva0qj6";
                                              name   = "stackage-snapshot-source"; }))
                    ;
 in
