@@ -2,7 +2,7 @@
 
 Here we will look into how to generate the `pkgs.nix` file for a
 `cabal.project` project.  For the full integration please see the [User
-Guide](./user-guide)
+Guide](/user-guide)
 
 ## Using `plan-to-nix`
 
@@ -61,5 +61,5 @@ let plan = import ./plan.nix; in
 }
 ```
 
-*If you came here from the [User Guide](./user-guide), go back and
+*If you came here from the [User Guide](/user-guide), go back and
  complete the setup.*

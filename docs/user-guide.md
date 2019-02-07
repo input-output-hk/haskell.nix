@@ -1,7 +1,7 @@
 # User Guide
 
 So you want to use `haskell.nix` with your stack or cabal project. The
-general appraoch will be to pick the right tool from `nix-tools` and
+general	approach will be to pick the right tool from `nix-tools` and
 produce a `pkgs.nix` expressions.  Getting a copy of the haskell.nix,
 hackage.nix (and potentially stackage.nix) source will then equip us
 to produce derivations that we can `nix build`.
@@ -36,7 +36,7 @@ Next we will use this to import `haskell.nix`, `hackage.nix` and
 `stackage.nix` (if we use a stack project).
 
 **NOTE**: update the `rev` and `sha256` values to the recent ones as
-  found on github.  Especially `hackage.nix` and `stackage.nix` will
+  found on GitHub.  Especially `hackage.nix` and `stackage.nix` will
   evolve with package release on hackage and stackage releases
   respectively.
 

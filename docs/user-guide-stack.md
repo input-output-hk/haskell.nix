@@ -2,7 +2,7 @@
 
 Here we will look into how to generate the `pkgs.nix` file for a
 `stack.yaml` project.  For the full integration please see the [User
-Guide](./user-guide)
+Guide](/user-guide)
 
 ## Using `stack-to-nix`
 
@@ -31,7 +31,7 @@ This will produce a `nix/.stack-pkgs.nix` file that looks like the following:
 ```
 
 This file contains the stackage resolver, as well as an overlay of
-packages.  The overlay specifies which extra-deps (here: clock-0.1.1)
+packages.  The overlay specifies which `extra-deps` (here: clock-0.1.1)
 we wanted to overlay over the stackage snapshot, and what local
 packages we want (here: my-package).
 
@@ -45,5 +45,5 @@ let stack-pkgs = import ./.stack-pkgs.nix; in
 }
 ```
 
-*If you came here from the [User Guide](./user-guide), go back and
+*If you came here from the [User Guide](/user-guide), go back and
  complete the setup.*
