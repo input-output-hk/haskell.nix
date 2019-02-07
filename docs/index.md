@@ -10,7 +10,7 @@ good questions.  And it boils down to the following reasons for us to
 embark on a new infrastructure:
 
 - first class support for cross compilation
-- first calss support for package sets
+- first class support for package sets
 - component level control when building packages
 - reduction of `dontCheck` for cyclic dependencies
 - reducing build times by building libraries and tests in parallel
