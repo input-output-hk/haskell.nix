@@ -74,6 +74,7 @@ Finally we string this together and produce a package set:
 
 ```nix
 let
+  # Import the file you will create in the stack-to-nix or cabal-to-nix step.
   my-pkgs = import ./nix/pkgs.nix { inherit stackage; };
 
   pkgSet = haskell.mkPkgSet {
