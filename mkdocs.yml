@@ -19,7 +19,11 @@ repo_url: https://github.com/input-output-hk/haskell.nix
 pages:
   - 'Introduction': index.md
   - 'Architecture': architecture.md
-  - 'User Guide': user-guide.md
-  - 'User Guide (Stack)': user-guide-stack.md
-  - 'User Guide (Cabal)': user-guide-cabal.md
-  - 'Removing withPackage wrapper': removing-with-package-wrapper.md
+  - 'User Guide':
+    - 'General': user-guide.md
+    - 'Stack Projects': user-guide-stack.md
+    - 'Cabal Proejcts': user-guide-cabal.md
+  - 'Templates / Abstraction':
+    - 'IOHKs nix library': iohk-nix.md
+  - 'Dev Notes':
+    - 'Removing withPackage wrapper': removing-with-package-wrapper.md

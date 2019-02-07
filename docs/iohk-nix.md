@@ -1,3 +1,11 @@
+# IOHK's nix tooling
+
+## [iohk-nix](https://github.com/input-output-hk/iohk-nix)
+
+iohk-nix is IOHK's shared nix library.  It provides some templates to
+make working with haskell.nix trivial but is non-essential to use
+haskell.nix infrastructure.
+
 lib.nix
 ```nix
 let

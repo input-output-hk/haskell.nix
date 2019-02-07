@@ -4,6 +4,28 @@ There are multiple components that play a part in the haskell.nix
 infrastructure.  These are `nix-tools`, `haskell.nix`, `hackage.nix`,
 and `stackage.nix`.
 
+```no-highlight
+                                             .-------------.     .-------------.
+.- nix-tools ------.                         | haskell.nix |  .- | hackage.nix |
+| .--------------. |   .----------------.    '-------------'  |  '-------------'
+| | stack-to-nix |---> | stack-pkgs.nix |-.         |         |         |
+| '--------------' |   '----------------' |         v         |         v
+| .-------------.  |   .----------.       '--> .----------. <-'  .--------------.
+| | plan-to-nix |----> | plan.nix |------.---> | pkgs.nix | <--- | stackage.nix |
+| '-------------'  |   '----------'      |     '----------'      '--------------'
+| .--------------. |   .--------------.  |          |
+| | cabal-to-nix |---> | $package.nix |--'          v
+| '--------------' |   '--------------'       .-------------.
+'------------------'                          | default.nix |
+                                              '-------------'
+											        |
+													v
+	                                          .-------------.
+											  | release.nix |
+											  '-------------'
+```
+haskell.nix diagram
+
 ## [nix-tools](https://github.com/input-output-hk/nix-tools)
 
 nix-tools is a Haskell package that provides the following tools:
@@ -40,9 +62,3 @@ stackage.nix is similar to hackage.nix but provides all stackage
 snapshots (lts, and nightly) as nix expressions.  It naturally depends
 on hackage.nix to resolve package names, versions and revisions to the
 repsective packages from hackage.nix.
-
-## [iohk-nix](https://github.com/input-output-hk/iohk-nix)
-
-iohk-nix is IOHK's shared nix library.  It provides some templates to
-make working with haskell.nix trivial but is non-essential to use
-haskell.nix infrastructure.

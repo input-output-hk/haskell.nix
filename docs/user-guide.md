@@ -12,6 +12,9 @@ The general structure will be the same for haskell.nix, independent of
 the use of stack or cabal.  Let us assume for now that we have
 generated a `pkgs.nix` expression in `nix`.
 
+- [Generating a `pkgs.nix` for a stack project](/user-guide-stack)
+- [Generating a `pkgs.nix` for a cabal project](/user-guide-cabal)
+
 ## default.nix
 
 We will start with defining a helper function in our `default.nix`

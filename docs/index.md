@@ -1,6 +1,7 @@
 # haskell.nix
 
-haskell.nix is an alternative Haskell infrastructure for nix.
+haskell.nix is an alternative Haskell infrastructure for nixpkgs. See
+[Nixpkgs current Users' Guide to Haskell Infrastructure](https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure) for comparison.
 
 ## Motivation
 
@@ -14,7 +15,7 @@ embark on a new infrastructure:
 - component level control when building packages
 - reduction of `dontCheck` for cyclic dependencies
 - reducing build times by building libraries and tests in parallel
-- moving more logic into nix
+- more logic encoded in nix expressions
 - decoupling of Haskell and nixpkgs
 
 ### cross compilation
