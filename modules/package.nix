@@ -175,6 +175,11 @@ in {
       };
       all = mkOption {
         type = componentType;
+        apply = all: all // {
+          # TODO: Should this check for the entire component
+          # definition to match, rather than just the identifier?
+          depends = builtins.filter (p: p.identifier != config.package.identifier) all.depends;
+        };
         description = "The merged dependencies of all other components";
       };
     };
