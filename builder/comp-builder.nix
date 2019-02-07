@@ -43,15 +43,11 @@ let
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
   '';
 
-  componentDepends = if haskellLib.isAll componentId
-    then lib.filter (p: p.identifier.name != componentId.cname) component.depends
-    else component.depends;
-
   flatDepends =
     let
       makePairs = map (p: rec { key="${val}"; val=p.components.library; });
       closure = builtins.genericClosure {
-        startSet = makePairs componentDepends;
+        startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;
       };
     in map ({val,...}: val) closure;
@@ -109,7 +105,7 @@ let
     clear-package-db
     package-db $out/package.conf.d
     EOF
-    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) componentDepends}
+    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
     ${lib.concatMapStringsSep "\n" (envDep "") (lib.remove "ghc" nonReinstallablePkgs)}
 
   '' + lib.optionalString component.doExactConfig ''
@@ -117,7 +113,7 @@ let
     echo "allow-newer: ${package.identifier.name}:*" >> $out/cabal.config
     echo "allow-older: ${package.identifier.name}:*" >> $out/cabal.config
 
-    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) componentDepends}
+    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
     ${lib.concatMapStringsSep "\n" (exactDep "") nonReinstallablePkgs}
 
   ''
