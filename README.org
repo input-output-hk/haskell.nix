@@ -1,6 +1,34 @@
-* haskell.nix
-
-This repository contains the runtime system for [[https://github.com/input-output-hk/nix-tools][nix-tools]].
-Please see [[https://github.com/input-output-hk/nix-tools][nix-tools]] for more details.
+* Alternative Haskell Infrastructure for Nixpkgs
 
 [[https://travis-ci.org/input-output-hk/haskell.nix][https://travis-ci.org/input-output-hk/haskell.nix.svg?branch=master]]
+
+=haskell.nix= is an experimental new builder for Haskell packages.
+
+It works by automatically translating your Cabal or Stack project and
+its dependencies into Nix code. Most of your dependencies are already
+translated, so you generally won't have too much generated code.
+
+For full documentation, see https://input-output-hk.github.io/haskell.nix
+
+** Quickstart
+
+This will download and build =nix-tools=.
+
+#+begin_src sh
+nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools -o nt
+./nt/bin/cabal-to-nix --help
+#+end_src
+
+** Related repos
+
+The =haskell.nix= repository contains the runtime system for building
+Haskell packages in Nix. It depends on other repos, which are:
+
+- [[https://github.com/input-output-hk/nix-tools][nix-tools]] — provides the programs for generating Nix expressions from
+  Haskell projects.
+
+- [[https://github.com/input-output-hk/hackage.nix][hackage.nix]] — the latest contents of the [[https://hackage.haskell.org/][Hackage]] databases,
+  converted to Nix expressions.
+
+- [[https://github.com/input-output-hk/stackage.nix][stackage.nix]] — all of the [[https://www.stackage.org/][Stackage]] snapshots, converted to Nix
+  expressions.
