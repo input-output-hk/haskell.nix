@@ -77,6 +77,12 @@ let
         modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
       };
 
+    # Programs for generating Nix expressions from Cabal and Stack
+    # files.
+    nix-tools = self.callPackage ./nix-tools {
+      inherit fetchExternal;
+    };
+
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
     inherit hackage stackage;
