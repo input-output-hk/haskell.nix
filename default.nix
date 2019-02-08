@@ -86,6 +86,11 @@ let
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
     inherit hackage stackage;
+
+    # Scripts for keeping Hackage and Stackage up to date.
+    maintainer-scripts = {
+      update-hackage = self.callPackage ./scripts/update-hackage.nix {};
+    };
   });
 
 in
