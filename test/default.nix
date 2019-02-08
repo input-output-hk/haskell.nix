@@ -14,6 +14,7 @@ in {
   cabal-22 = callPackage ./cabal-22 { inherit (haskell) mkPkgSet; };
   with-packages = callPackage ./with-packages { inherit (haskell) mkPkgSet; inherit util; };
   builder-haddock = callPackage ./builder-haddock { inherit (haskell) mkPkgSet; };
+  stack-simple = callPackage ./stack-simple { inherit (haskell) mkStackPkgSet; };
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit
   # An empty list means success.
