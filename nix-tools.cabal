@@ -1,7 +1,7 @@
 name:                nix-tools
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            cabal/stack to nix translation tools
+description:         A set of tools to aid in trating stack and cabal projects into nix expressions.
 license:             BSD3
 license-file:        LICENSE
 author:              Moritz Angermann
