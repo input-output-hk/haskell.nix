@@ -90,6 +90,7 @@ let
     # Scripts for keeping Hackage and Stackage up to date.
     maintainer-scripts = {
       update-hackage = self.callPackage ./scripts/update-hackage.nix {};
+      update-stackage = self.callPackage ./scripts/update-stackage.nix {};
     };
   });
 
