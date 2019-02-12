@@ -124,6 +124,12 @@ executable lts-to-nix
 executable stack-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
+  other-modules:       Stack2nix
+                     , Stack2nix.Cache
+                     , Stack2nix.CLI
+                     , Stack2nix.External.Resolve
+                     , Stack2nix.Project
+                     , Stack2nix.Stack
   build-depends:       base >=4.11 && <4.13
                      , nix-tools
                      , transformers
