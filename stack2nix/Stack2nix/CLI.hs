@@ -10,20 +10,21 @@ import Data.Semigroup ((<>))
 --------------------------------------------------------------------------------
 -- CLI Arguments
 data Args = Args
-  { outputPath :: FilePath
-  , stackFile  :: FilePath
+  { argOutputDir :: FilePath
+  , argStackYaml :: FilePath
+  , argCacheFile :: FilePath
   } deriving Show
 
 -- Argument Parser
 args :: Parser Args
 args = Args
-  <$> strOption ( long "output" <> short 'o' <> metavar "DIR" <> value "." <> help "Generate output in DIR" )
-  <*> argument str ( metavar "stack.yaml" )
-
+  <$> strOption ( long "output" <> short 'o' <> metavar "DIR" <> help "Generate output in DIR" )
+  <*> strOption ( long "stack-yaml" <> value "stack.yaml" <> showDefault <> metavar "FILE" <> help "Override project stack.yaml" )
+  <*> strOption ( long "cache" <> value ".stack-to-nix.cache" <> showDefault <> metavar "FILE" <> help "Dependency cache file" )
 
 parseStack2nixArgs :: IO Args
 parseStack2nixArgs = execParser opts
   where opts = info (args <**> helper)
           ( fullDesc
-         <> progDesc "Generate a nix expression from a stack.yaml file"
+         <> progDesc "Generate a Nix expression for a Haskell package using Stack"
          <> header "stack-to-nix - a stack to nix converter" )

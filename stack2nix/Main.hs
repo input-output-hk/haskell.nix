@@ -1,12 +1,7 @@
-{-# LANGUAGE RecordWildCards   #-}
 module Main where
 
-import Nix.Pretty (prettyNix)
-
-import Stack2nix
-import Stack2nix.CLI
-
---------------------------------------------------------------------------------
+import Stack2nix (doStack2nix)
+import Stack2nix.CLI (parseStack2nixArgs)
 
 main :: IO ()
-main = print . prettyNix =<< stackexpr =<< parseStack2nixArgs
+main = parseStack2nixArgs >>= doStack2nix

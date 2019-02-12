@@ -1,8 +1,9 @@
 {-# LANGUAGE LambdaCase, RecordWildCards, OverloadedStrings #-}
 
 module Stack2nix
-  ( stack2nix
+  ( doStack2nix
   , stackexpr
+  , stack2nix
   ) where
 
 import qualified Data.Text as T
@@ -11,9 +12,10 @@ import Data.String (fromString)
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (unless, forM)
+import Extra (unlessM)
 
 import System.FilePath ((<.>), (</>), takeDirectory, dropFileName)
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getCurrentDirectory)
 import System.IO (IOMode(..), openFile, hClose)
 import Data.Yaml (decodeFileEither)
 
@@ -37,9 +39,18 @@ import Stack2nix.Project
 import Stack2nix.Stack (Stack(..), Dependency(..), Location(..))
 import Stack2nix.External.Resolve
 
+doStack2nix :: Args -> IO ()
+doStack2nix args = do
+  let pkgsNix = argOutputDir args </> "pkgs.nix"
+      defaultNix = argOutputDir args </> "default.nix"
+  pkgs <- stackexpr args
+  writeDoc pkgsNix (prettyNix pkgs)
+  unlessM (doesFileExist defaultNix) $ do
+    writeFile defaultNix defaultNixContents
+
 stackexpr :: Args -> IO NExpr
 stackexpr args =
-  do evalue <- decodeFileEither (stackFile args)
+  do evalue <- decodeFileEither (argStackYaml args)
      case evalue of
        Left e -> error (show e)
        Right value -> stack2nix args
@@ -103,11 +114,11 @@ packages2nix args (Stack _ _ pkgs) =
   do cwd <- getCurrentDirectory
      fmap (mkNonRecSet . concat) . forM pkgs $ \case
        (LocalPath folder) ->
-         do cabalFiles <- findCabalFiles (dropFileName (stackFile args) </> folder)
+         do cabalFiles <- findCabalFiles (dropFileName (argStackYaml args) </> folder)
             forM cabalFiles $ \cabalFile ->
               let pkg = cabalFilePkgName cabalFile
-                  nix = ".stack.nix" </> pkg <.> "nix"
-                  nixFile = outputPath args </> nix
+                  nix = pkg <.> "nix"
+                  nixFile = argOutputDir args </> nix
                   src = Just . C2N.Path $ relPath </> ".." </> folder
               in do createDirectoryIfMissing True (takeDirectory nixFile)
                     writeDoc nixFile =<<
@@ -115,7 +126,7 @@ packages2nix args (Stack _ _ pkgs) =
                     return $ fromString pkg $= mkPath False nix
        (DVCS (Git url rev) subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
-         do cacheHits <- liftIO $ cacheHits cacheFile url rev subdir
+         do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
             case cacheHits of
               [] -> do
                 fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
@@ -126,7 +137,7 @@ packages2nix args (Stack _ _ pkgs) =
                 forM hits $ \( pkg, nix ) -> do
                   return $ fromString pkg $= mkPath False nix
        _ -> return []
-  where relPath = shortRelativePath (outputPath args) (dropFileName (stackFile args))
+  where relPath = shortRelativePath (argOutputDir args) (dropFileName (argStackYaml args))
         cabalFromPath
           :: String    -- URL
           -> String    -- Revision
@@ -140,16 +151,30 @@ packages2nix args (Stack _ _ pkgs) =
           return $ \sha256 ->
             forM cabalFiles $ \cabalFile -> do
             let pkg = cabalFilePkgName cabalFile
-                nix = ".stack.nix" </> pkg <.> "nix"
-                nixFile = outputPath args </> nix
+                nix = pkg <.> "nix"
+                nixFile = argOutputDir args </> nix
                 subdir' = if subdir == "." then Nothing
                           else Just subdir
                 src = Just $ C2N.Git url rev (Just sha256) subdir'
             createDirectoryIfMissing True (takeDirectory nixFile)
             writeDoc nixFile =<<
               prettyNix <$> cabal2nix src cabalFile
-            liftIO $ appendCache cacheFile url rev subdir sha256 pkg nix
+            liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
 
-cacheFile :: FilePath
-cacheFile = ".stack-to-nix.cache"
+defaultNixContents :: String
+defaultNixContents = unlines
+  [  "{ pkgs ? import <nixpkgs> {} }:"
+  , ""
+  , "let"
+  , "  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; };"
+  , ""
+  , "  pkgSet = haskell.mkStackPkgSet {"
+  , "    stack-pkgs = import ./pkgs.nix;"
+  , "    pkg-def-overlays = [];"
+  , "    modules = [];"
+  , "  };"
+  , ""
+  , "in"
+  , "  pkgSet.config.hsPkgs"
+  ]
