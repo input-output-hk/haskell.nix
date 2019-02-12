@@ -19,7 +19,13 @@ let
       { cabal-simple = ./cabal-simple.nix;
       }
     ];
-    modules = [ ];
+    modules = [
+     {
+       # Package has no exposed modules which causes
+       #   haddock: No input file(s)
+       packages.cabal-simple.doHaddock = false;
+     }
+    ];
   };
 
   packages = pkgSet.config.hsPkgs;
@@ -56,8 +62,8 @@ in
     meta.platforms = platforms.all;
 
     passthru = {
-      inherit (packages) cabal-simple;
-      inherit pkgSet;
+      # Used for debugging with nix repl
+      inherit pkgSet packages;
 
       # Used for testing externally with nix-shell (../tests.sh).
       # This just adds cabal-install to the existing shells.
