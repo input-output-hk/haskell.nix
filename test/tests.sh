@@ -7,6 +7,10 @@ NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
 
 cd $(dirname $0)
 
+printf "*** Cleaning package build directories..." >& 2
+rm -rvf */cabal.project.local */.ghc.environment* */dist */dist-newstyle */.stack-work
+echo >& 2
+
 printf "*** Running the nix-build tests...\n" >& 2
 nix-build $NIX_BUILD_ARGS --no-out-link --keep-going ./default.nix
 echo >& 2
@@ -33,21 +37,21 @@ printf "*** Checking that a nix-shell works for cabal...\n" >& 2
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
     -A with-packages.test-shell \
-    --run 'echo CABAL_CONFIG=$CABAL_CONFIG && type -p ghc && cd with-packages && rm -rf dist-newstyle .ghc-environment* && cabal new-build'
+    --run 'echo CABAL_CONFIG=$CABAL_CONFIG && type -p ghc && cd with-packages && cabal new-build'
 echo >& 2
 
 printf "*** Checking that a nix-shell works for cabal (doExactConfig component)...\n" >& 2
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
     -A with-packages.test-shell-dec \
-    --run 'echo CABAL_CONFIG=$CABAL_CONFIG && echo GHC_ENVIRONMENT=$GHC_ENVIRONMENT && cd with-packages && rm -rf dist-newstyle .ghc-environment* && cabal new-build'
+    --run 'echo CABAL_CONFIG=$CABAL_CONFIG && echo GHC_ENVIRONMENT=$GHC_ENVIRONMENT && cd with-packages && cabal new-build'
 echo >& 2
 
 printf "*** Checking that a nix-shell works for a multi-target project...\n" >& 2
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
     -A cabal-simple.test-shell \
-    --run 'cd cabal-simple && rm -rf dist-newstyle .ghc-environment* && cabal new-build'
+    --run 'cd cabal-simple && cabal new-build'
 echo >& 2
 
 printf "\n*** Finished successfully\n" >& 2
