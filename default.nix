@@ -97,6 +97,9 @@ let
       update-hackage = self.callPackage ./scripts/update-hackage.nix {};
       update-stackage = self.callPackage ./scripts/update-stackage.nix {};
     };
+
+    callCabalToNix = self.callPackage ./call-cabal-to-nix.nix {};
+
   });
 
 in
