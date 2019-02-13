@@ -1,4 +1,9 @@
 { pkgs ? import <nixpkgs> {}
+
+# You can provide different pins for hackage.nix and stackage.nix if required.
+# It's also possible to override these sources with NIX_PATH.
+, hackageSourceJSON ? ./hackage-src.json
+, stackageSourceJSON ? ./stackage-src.json
 }:
 
 let
@@ -31,14 +36,14 @@ let
   # All packages from Hackage as Nix expressions
   hackage = import (fetchExternal {
     name     = "hackage-exprs-source";
-    specJSON = ./hackage-src.json;
+    specJSON = hackageSourceJSON;
     override = "hackage";
   });
 
   # The set of all Stackage snapshots
   stackage = import (fetchExternal {
     name     = "stackage-snapshot-source";
-    specJSON = ./stackage-src.json;
+    specJSON = stackageSourceJSON;
     override = "stackage";
   });
 
