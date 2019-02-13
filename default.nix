@@ -14,8 +14,8 @@ in
 , haskell ? import (overrideWith "haskell"
                      (pkgs.fetchFromGitHub { owner  = "input-output-hk";
                                              repo   = "haskell.nix";
-                                             rev    = "ed1dbc01f98411894f6613c62818f14b02fb6679";
-                                             sha256 = "0kbj4kb9rlvjb4afpcisz9zlk5z3h7frkwggfwri1q5683fapkgv";
+                                             rev    = "7446d044a0db6acdd3d13c1d933ec1ed6da9a606";
+                                             sha256 = "11zsf22r98xxr0wj38mm9ig9gsgk5c3wf0xcsxfbf7xxyg4v22iv";
                                              name   = "haskell-lib-source"; }))
                    { inherit pkgs; }
 }:
