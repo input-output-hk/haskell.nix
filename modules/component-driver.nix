@@ -11,8 +11,8 @@ let
 
   withPackage = import ../builder/with-package-wrapper.nix {
     inherit lib;
-    inherit (pkgs) stdenv runCommand makeWrapper;
-    inherit (pkgs.xorg) lndir;
+    inherit (pkgs.buildPackages) stdenv runCommand makeWrapper;
+    inherit (pkgs.buildPackages.xorg) lndir;
     ghc = config.ghc.package;
   };
 
