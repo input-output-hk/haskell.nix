@@ -82,6 +82,23 @@ let
         modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
       };
 
+    # Create a Haskell package set based on a Cabal configuration.
+    mkCabalProjectPkgSet =
+      { plan-pkgs  # Path to the output of plan-to-nix
+      , pkg-def-overlays ? []
+      , modules ? []
+      }@args:
+
+      let
+        pkg-def = plan-pkgs.pkgs;
+        # The compiler referenced in the stack config
+        compiler = (plan-pkgs.overlay hackage).compiler or (pkg-def hackage).compiler;
+      in self.mkPkgSet {
+        inherit pkg-def;
+        pkg-def-overlays = [ plan-pkgs.overlay ] ++ pkg-def-overlays;
+        modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
+      };
+
     # Programs for generating Nix expressions from Cabal and Stack
     # files.
     nix-tools = self.callPackage ./nix-tools {
