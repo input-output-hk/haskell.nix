@@ -11,6 +11,7 @@ let
 
 in {
   cabal-simple = callPackage ./cabal-simple { inherit (haskell) mkPkgSet; inherit util; };
+  cabal-sublib = callPackage ./cabal-sublib { inherit (haskell) mkPkgSet; inherit util; };
   cabal-22 = callPackage ./cabal-22 { inherit (haskell) mkPkgSet; };
   with-packages = callPackage ./with-packages { inherit (haskell) mkPkgSet; inherit util; };
   builder-haddock = callPackage ./builder-haddock { inherit (haskell) mkPkgSet; };
