@@ -8,7 +8,7 @@ It works by automatically translating your Cabal or Stack project and
 its dependencies into Nix code. Most of your dependencies are already
 translated, so you generally won't have too much generated code.
 
-For full documentation, see the =docs= folder. They should be up soon on https://input-output-hk.github.io/haskell.nix.
+For full documentation, see the =docs= folder.
 
 ** Quickstart
 
