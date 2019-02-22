@@ -294,13 +294,23 @@ stdenv.mkDerivation ({
   '';
 
   # Note: Cabal does *not* copy test executables during the `install` phase.
+  #
+  # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
+  #         folder isntead of a file for the configuration.  Therfore if the result is a folder,
+  #         we need to register each and every element of that folder.
   installPhase = ''
     runHook preInstall
     $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
     ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-      ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+      if [ -d "${name}.conf" ]; then
+        for pkg in ${name}.conf/*; do
+          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register "$pkg"
+        done
+      else
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+      fi
     ''}
     ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}

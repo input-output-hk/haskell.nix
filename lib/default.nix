@@ -31,7 +31,7 @@ with haskellLib;
 
   componentPrefix = {
     # Are all of these right?
-    sublibs = "sublib";
+    sublibs = "lib";
     foreignlibs = "foreignlib";
     exes = "exe";
     tests = "test";
