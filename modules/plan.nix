@@ -53,7 +53,7 @@ with types;
 
       let m = if revision == null
               then (abort "${name} has no revision!")
-              else revision (modArgs // { hsPkgs = hsPkgs // (mapAttrs (l: _: hsPkgs.${name}.components.${l})); });
+              else revision (modArgs // { hsPkgs = hsPkgs // (mapAttrs (l: _: hsPkgs.${name}.components.sublibs.${l}) (m.components.sublibs or {})); });
       in
         m // { flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or {}); }
     ) (lib.filterAttrs (n: v: v == null || v.revision != null ) module.packages);

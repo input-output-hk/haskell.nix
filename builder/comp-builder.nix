@@ -45,7 +45,7 @@ let
 
   flatDepends =
     let
-      makePairs = map (p: rec { key="${val}"; val=p.components.library; });
+      makePairs = map (p: rec { key="${val}"; val=(p.components.library or p); });
       closure = builtins.genericClosure {
         startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;
@@ -104,7 +104,7 @@ let
     cat > $out/ghc-environment <<EOF
     package-db $out/package.conf.d
     EOF
-    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
+    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library or p}/package.conf.d" p.identifier.name) component.depends}
     ${lib.concatMapStringsSep "\n" (envDep "") (lib.remove "ghc" nonReinstallablePkgs)}
 
   '' + lib.optionalString component.doExactConfig ''
