@@ -119,8 +119,8 @@ packages2nix args (Stack _ _ pkgs) =
               let pkg = cabalFilePkgName cabalFile
                   nix = pkg <.> "nix"
                   nixFile = argOutputDir args </> nix
-                  src = Just . C2N.Path $ relPath </> ".." </> folder
               in do createDirectoryIfMissing True (takeDirectory nixFile)
+                  src = Just . C2N.Path $ relPath </> folder
                     writeDoc nixFile =<<
                       prettyNix <$> cabal2nix src cabalFile
                     return $ fromString pkg $= mkPath False nix
