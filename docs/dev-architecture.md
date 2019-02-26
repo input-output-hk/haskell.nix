@@ -21,10 +21,10 @@ These packages will look similar to the following:
   package = { ... };
   components = {
     "library" = { depends = [ ... ]; };
-	exes = { "..." = { depends = [ ... ]; }; ... };
-	sublibs = { "..." = { depends = [ ... ]; }; ... };
-	tests = { "..." = { depends = [ ... ]; }; ... };
-	benchmarks = { "..." = { depends = [ ... ]; }; ... };
+    exes = { "..." = { depends = [ ... ]; }; ... };
+    sublibs = { "..." = { depends = [ ... ]; }; ... };
+    tests = { "..." = { depends = [ ... ]; }; ... };
+    benchmarks = { "..." = { depends = [ ... ]; }; ... };
   };
 };
 ```
@@ -48,12 +48,12 @@ hackage:
   };
   compiler = {
     version = "8.4.4";
-	nix-name = "ghc844";
-	packages = {
-	  "binary" = "0.8.5.1";
-	  ...
-    };
-  };
+      nix-name = "ghc844";
+      packages = {
+        "binary" = "0.8.5.1";
+	...
+      };
+   };
 }
 ```
 
