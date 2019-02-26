@@ -11,7 +11,7 @@ Guide](/user-guide)
  involved than for a corresponding stack project*.
 
 With [nix-tools](https://github.com/input-output-hk/nix-tools) in
-`PATH`, we can simply run the following command on a stack project:
+`PATH`, we can simply run the following command on a cabal package:
 
 ```bash
 # make sure the cabal project is configured (the plan.json file is generated)
