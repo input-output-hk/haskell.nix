@@ -135,6 +135,8 @@ data Location
 -- Parsers for package indices
 sha256Suffix :: ReadP r Sha256
 sha256Suffix = string "@sha256:" *> many1 (satisfy (`elem` (['0'..'9']++['a'..'z']++['A'..'Z'])))
+                                 -- Stack supports optional cabal file size after revision's SHA value,
+                                 -- we parse it but it doesn't get used
                                  <* optional (char ',' <* many1 (satisfy isDigit))
 
 revSuffix :: ReadP r CabalRev
