@@ -10,10 +10,10 @@ With [nix-tools](https://github.com/input-output-hk/nix-tools) in
 `PATH`, we can simply run the following command on a stack project:
 
 ```bash
-stack-to-nix -o nix stack.yaml > nix/.stack-pkgs.nix
+stack-to-nix -o nix --stack-yaml stack.yaml
 ```
 
-This will produce a `nix/.stack-pkgs.nix` file that looks like the following:
+This will produce a `nix/pkgs.nix` file that looks like the following:
 ```nix
 {
   resolver = "lts-12.17";
@@ -23,7 +23,7 @@ This will produce a `nix/.stack-pkgs.nix` file that looks like the following:
         "o-clock" = hackage.o-clock."0.1.1".revisions.default;
         ...
       } // {
-        my-package = ./.stack.nix/my-package.nix;
+        my-package = ./my-package.nix;
         ...
       };
     };
@@ -35,15 +35,26 @@ packages.  The overlay specifies which `extra-deps` (here: clock-0.1.1)
 we wanted to overlay over the stackage snapshot, and what local
 packages we want (here: my-package).
 
-We will then create the following `nix/pkgs.nix` file:
+We will then create the following `nix/default.nix` file:
 
 ```nix
-let stack-pkgs = import ./.stack-pkgs.nix; in
-{ stackage, ... }:
-{ pkg-def = stackage.${stack-pkgs.resolver};
-  inherit (stack-pkgs) overlay;
-}
+{ pkgs ? import <nixpkgs> {} }:
+
+let
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; };
+
+  pkgSet = haskell.mkStackPkgSet {
+    stack-pkgs = import ./pkgs.nix;
+    pkg-def-overlays = [];
+    modules = [];
+  };
+
+in
+  pkgSet.config.hsPkgs
 ```
+
+This generated file is a template, so you can customize it as
+necessary.
 
 *If you came here from the [User Guide](/user-guide), go back and
  complete the setup.*
