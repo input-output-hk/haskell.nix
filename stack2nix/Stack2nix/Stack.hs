@@ -91,9 +91,14 @@ type Resolver = String
 type Name     = String
 type Compiler = String
 type Sha256   = String
-type CabalRev = Int    -- cabal revision 0,1,2,...
+newtype CabalRev = CabalRev Int -- cabal revision 0,1,2,...
+ deriving (Show)
 type URL      = String -- Git/Hg/... URL
 type Rev      = String -- Git revision
+
+instance Text CabalRev where
+  disp (CabalRev rev) = "r" <> disp rev
+  parse = char 'r' *> (CabalRev <$> parse)
 
 --------------------------------------------------------------------------------
 -- Data Types
@@ -140,7 +145,7 @@ sha256Suffix = string "@sha256:" *> many1 (satisfy (`elem` (['0'..'9']++['a'..'z
                                  <* optional (char ',' <* many1 (satisfy isDigit))
 
 revSuffix :: ReadP r CabalRev
-revSuffix = string "@rev:" *> (read <$> many1 (satisfy (`elem` ['0'..'9'])))
+revSuffix = string "@rev:" *> (CabalRev . read <$> many1 (satisfy (`elem` ['0'..'9'])))
 
 suffix :: ReadP r (Maybe (Either Sha256 CabalRev))
 suffix = option Nothing (Just <$> (Left <$> sha256Suffix) +++ (Right <$> revSuffix))
