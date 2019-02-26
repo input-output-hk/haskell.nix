@@ -1,3 +1,5 @@
+#+STARTUP: showall hidestars
+
 * ~nix-tools~
 
 ~nix-tools~ is a set of haskell to nix tools to integrate haskell
@@ -22,4 +24,29 @@ into a ~nix~ expression and then doing the lifting in nix.
 
 * QuickStart
 
-/This section needs to be updated, as it is horribly out of date/
+View the [[https://input-output-hk.github.io/haskell.nix/][haskell.nix documentation]] for instructions on how to get
+started with your own project.
+
+* Building
+
+To build all of the ~nix-tools~ using Nix:
+
+#+begin_example
+nix-build -A nix-tools-all-execs
+./result/bin/stack-to-nix --help
+#+end_example
+
+If you are making changes to the Haskell code, then build the Cabal
+project with:
+
+#+begin_example
+cabal new-build
+#+end_example
+
+* Project Roadmap
+
+Under the [[https://github.com/input-output-hk/haskell.nix][haskell.nix]]
+umbrella there are a few [[https://github.com/input-output-hk/haskell.nix/projects][GitHub Projects]]
+for tracking completion of the project goals. If you would like to
+follow or contribute to this effort then that would be a good place to
+start.
