@@ -31,7 +31,7 @@ This will produce a `nix/.stack-pkgs.nix` file that looks like the following:
 ```
 
 This file contains the stackage resolver, as well as an overlay of
-packages.  The overlay specifies which `extra-deps` (here: clock-0.1.1)
+packages.  The overlay specifies which `extra-deps` (here: o-clock-0.1.1)
 we wanted to overlay over the stackage snapshot, and what local
 packages we want (here: my-package).
 
