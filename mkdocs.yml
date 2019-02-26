@@ -26,4 +26,6 @@ pages:
   - 'Templates / Abstraction':
     - 'IOHKs nix library': iohk-nix.md
   - 'Dev Notes':
+    - 'Architecture': dev-architecture.md
     - 'Removing withPackage wrapper': removing-with-package-wrapper.md
+    - 'Maintainer Scripts': maintainer-scripts.md
