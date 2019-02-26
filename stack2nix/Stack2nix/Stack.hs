@@ -15,6 +15,7 @@ module Stack2nix.Stack
   , StackSnapshot(..)
   ) where
 
+import Data.Char (isDigit)
 import Data.List (isSuffixOf)
 import qualified Data.Text as T
 import Data.Aeson
@@ -134,6 +135,7 @@ data Location
 -- Parsers for package indices
 sha256Suffix :: ReadP r Sha256
 sha256Suffix = string "@sha256:" *> many1 (satisfy (`elem` (['0'..'9']++['a'..'z']++['A'..'Z'])))
+                                 <* optional (char ',' <* many1 (satisfy isDigit))
 
 revSuffix :: ReadP r CabalRev
 revSuffix = string "@rev:" *> (read <$> many1 (satisfy (`elem` ['0'..'9'])))
