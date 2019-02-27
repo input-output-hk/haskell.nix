@@ -35,41 +35,23 @@ let
 in
 ```
 
-Next we will use this to import `haskell.nix`, `hackage.nix` and
-`stackage.nix` (if we use a stack project).
+Next we will use this to import `haskell.nix`.
 
 **NOTE**: update the `rev` and `sha256` values to the recent ones as
-  found on GitHub.  Especially `hackage.nix` and `stackage.nix` will
-  evolve with package release on hackage and stackage releases
+  found on GitHub.  Especially `haskell.hackage` and `haskell.stackage`
+  will evolve with package release on hackage and stackage releases
   respectively.
 
 ```nix
 let
-  # all packages from hackage as nix expressions
-  hackage = import (overrideWith "hackage"
-                    (pkgs.fetchFromGitHub { owner  = "input-output-hk";
-                                            repo   = "hackage.nix";
-                                            rev    = "3180384b563ec7c7b46bca86b3ace0f32d04cde8";
-                                            sha256 = "19ndkn8pivli9plwq0wnx1cj126l89yk7jw9a0dj51ic3b2qhlb2";
-                                            name   = "hackage-exprs-source"; }))
-                   ;
-  # a different haskell infrastructure
-  haskell = import (overrideWith "haskell"
-                    (pkgs.fetchFromGitHub { owner  = "input-output-hk";
-                                            repo   = "haskell.nix";
-                                            rev    = "73f733ba8bbd11443dda713d1a2d4b7c50a5d408";
-                                            sha256 = "1p2srrxw2lac5krrg35waa251by98r2miwyg6zac9glpg2vmq3ip";
-                                            name   = "haskell-lib-source"; }))
-                   hackage;
-
-  # the set of all stackage snapshots
-  stackage = import (overrideWith "stackage"
-                     (pkgs.fetchFromGitHub { owner  = "input-output-hk";
-                                             repo   = "stackage.nix";
-                                             rev    = "2615a4e6b1651215ee400e62fcdcb195062a3d35";
-                                             sha256 = "08c8lb8x047hndwm1cb2zxixnjmrswfp5y18xp1v79cjqlva0qj6";
-                                             name   = "stackage-snapshot-source"; }))
-                   ;
+  haskellLib = pkgs.fetchFromGitHub {
+    owner  = "input-output-hk";
+    repo   = "haskell.nix";
+    rev    = "5180ae9d78756509c81b98b8e6d974e350b15752";
+    sha256 = "0fbnnvymdp2qb09wlqy6ga8wsyhglx607cjdfg510s1gs756v9yx";
+    name   = "haskell-lib-source";
+  };
+  haskell = import (overrideWith "haskell" haskellLib) { inherit pkgs; };
 in
 ```
 
@@ -78,10 +60,17 @@ Finally we string this together and produce a package set:
 ```nix
 let
   # Import the file you will create in the stack-to-nix or cabal-to-nix step.
-  my-pkgs = import ./nix/pkgs.nix { inherit stackage; };
+  my-pkgs = import ./nix/pkgs.nix;
 
+  # Stack projects use the mkStackPkgSet helper function
+  pkgSet = haskell.mkStackPkgSet {
+    stack-pkgs = my-pkgs;
+    pkg-def-overlays = [];
+    modules = [];
+  };
+
+  # Cabal projects use mkPkgSet
   pkgSet = haskell.mkPkgSet {
-    inherit pkgs;
     pkg-def = my-pkgs.pkg-def;
     pkg-def-overlays = [
       # this overlay will provide additional packages
