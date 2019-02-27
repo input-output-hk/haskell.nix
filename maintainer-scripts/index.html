@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Maintainer Scripts - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Maintainer Scripts";
+    var mkdocs_page_input_path = "maintainer-scripts.md";
+    var mkdocs_page_url = "/maintainer-scripts/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../user-guide/">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-stack/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-cabal/">Cabal Proejcts</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Maintainer Scripts</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#updating-hackage-and-stackage-nix-expressions">Updating Hackage and Stackage Nix expressions</a></li>
+    
+
+    </ul>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Dev Notes &raquo;</li>
+        
+      
+    
+    <li>Maintainer Scripts</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/maintainer-scripts.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="updating-hackage-and-stackage-nix-expressions">Updating Hackage and Stackage Nix expressions</h1>
+<p>The <a href="https://github.com/input-output-hk/hackage.nix"><code>hackage.nix</code></a>
+and <a href="https://github.com/input-output-hk/stackage.nix"><code>stackage.nix</code></a>
+repos and corresponding files <code>hackage-src.json</code> and
+<code>stackage-src.json</code> will be regularly and automatically updated using
+scripts in this repo.</p>
+<p>To run the updater scripts manually, use:</p>
+<pre><code>nix-build -A maintainer-scripts.update-hackage -o update-hackage.sh
+./update-hackage.sh
+
+nix-build -A maintainer-scripts.update-stackage -o update-stackage.sh
+./update-stackage.sh
+</code></pre>
+<p>The scripts will clone the repo, generate the latest data, then
+attempt to push back to the repo and update the source JSON file.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../removing-with-package-wrapper/" class="btn btn-neutral" title="Removing withPackage wrapper"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../removing-with-package-wrapper/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
+
+</body>
+</html>

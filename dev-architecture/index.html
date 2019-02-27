@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Architecture - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Architecture";
+    var mkdocs_page_input_path = "dev-architecture.md";
+    var mkdocs_page_url = "/dev-architecture/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../user-guide/">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-stack/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-cabal/">Cabal Proejcts</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class=" current">
+                    
+    <a class="current" href="./">Architecture</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#developer-architecture-overview">Developer Architecture Overview</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#packages">Packages</a></li>
+        
+            <li><a class="toctree-l4" href="#plans">Plans</a></li>
+        
+            <li><a class="toctree-l4" href="#package-sets-of-derivations">Package Sets (of derivations)</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Dev Notes &raquo;</li>
+        
+      
+    
+    <li>Architecture</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/dev-architecture.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="developer-architecture-overview">Developer Architecture Overview</h1>
+<p>This shall give a sufficiently good overview over the haskell.nix
+ideas, such that a new developer can navigate around without too
+much trouble.</p>
+<h2 id="packages">Packages</h2>
+<p><code>haskell.nix</code> is centered around packages (haskell package
+descriptions as nix-expressions). These are generated by
+<code>cabal-to-nix</code> from the <code>nix-tools</code> package. <code>stack-to-nix</code> and
+<code>plan-to-nix</code> will delegate the transformation of cabal packages to
+nix expressions to the same code that <code>cabal-to-nix</code> uses.</p>
+<p>These packages will look similar to the following:</p>
+<pre><code class="nix">{ system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
+{
+  flags = {};
+  package = { ... };
+  components = {
+    &quot;library&quot; = { depends = [ ... ]; };
+    exes = { &quot;...&quot; = { depends = [ ... ]; }; ... };
+    sublibs = { &quot;...&quot; = { depends = [ ... ]; }; ... };
+    tests = { &quot;...&quot; = { depends = [ ... ]; }; ... };
+    benchmarks = { &quot;...&quot; = { depends = [ ... ]; }; ... };
+  };
+};
+</code></pre>
+
+<p>The exact specification can be found in <code>modules/package.nix</code>.</p>
+<h2 id="plans">Plans</h2>
+<p>Packages (unless specified directly in the <code>packages</code> attribute of the
+module) usually come from a plan. A plan is either a Stackage snapshot
+(nightly or LTS) or a build plan as produced by <code>cabal</code>.</p>
+<p>Plan files usually look like the following:</p>
+<pre><code class="nix">hackage:
+{
+  packages = {
+    &quot;$pkg&quot;.revision = hackage.$pkg.$version.revisions.default;
+    &quot;$pkg&quot;.flags = { flag1 = true; flag2 = false; ... };
+    ...
+  };
+  compiler = {
+    version = &quot;8.4.4&quot;;
+      nix-name = &quot;ghc844&quot;;
+      packages = {
+        &quot;binary&quot; = &quot;0.8.5.1&quot;;
+    ...
+      };
+   };
+}
+</code></pre>
+
+<p>This provides enough information about the compiler, what packages the
+compiler ships with and the packages we want to use in our plan.</p>
+<p>This revision and flag information will be inlined into a list of
+packages in <code>config.packages</code> in <code>modules/plan.nix</code>.  Thus
+<code>config.packages</code> will only contains packages as described in the
+previous section.</p>
+<h2 id="package-sets-of-derivations">Package Sets (of derivations)</h2>
+<p>We finally tie this all together in <code>package-set.nix</code> where we use
+<code>modules/component-driver.nix</code> to produce the derivations for each
+packages component to produce the final <code>config.hsPkgs</code> value.</p>
+<p>There is also a <code>modules/compat-driver.nix</code> that should produce the
+same packageset to be used with the stock haskell infrastructure in
+nixpkgs (<em>This has undergone substantially less testing</em>).</p>
+<h3 id="component-builder">Component builder</h3>
+<p>To prevent depending on mutliple instances of the same libraries, the
+component builder will try to build every package from scratch and
+rely as little as possible on packages that are shipped with the GHC
+distribution. The exceptions are packages that are known to not be
+reinstallable. See <code>config.nonReinstallablePkgs</code>.</p>
+<p>The component builder can be found in <code>modules/component-driver.nix</code>
+and <code>builder/default.nix</code>. The component-driver will ensure that we do
+not try to rebuild non-reinstallable packages, and call the
+<code>builder/default.nix</code> on each package in <code>config.packages</code> to produce
+<code>config.hsPkgs</code>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../removing-with-package-wrapper/" class="btn btn-neutral float-right" title="Removing withPackage wrapper">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../iohk-nix/" class="btn btn-neutral" title="IOHKs nix library"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../iohk-nix/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../removing-with-package-wrapper/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
+
+</body>
+</html>

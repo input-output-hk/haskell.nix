@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>IOHKs nix library - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "IOHKs nix library";
+    var mkdocs_page_input_path = "iohk-nix.md";
+    var mkdocs_page_url = "/iohk-nix/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../user-guide/">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-stack/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-cabal/">Cabal Proejcts</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class=" current">
+                    
+    <a class="current" href="./">IOHKs nix library</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#iohks-nix-tooling">IOHK's nix tooling</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#iohk-nix">iohk-nix</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Templates / Abstraction &raquo;</li>
+        
+      
+    
+    <li>IOHKs nix library</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/iohk-nix.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="iohks-nix-tooling">IOHK's nix tooling</h1>
+<h2 id="iohk-nix"><a href="https://github.com/input-output-hk/iohk-nix">iohk-nix</a></h2>
+<p>iohk-nix is IOHK's shared nix library.  It provides some templates to
+make working with haskell.nix trivial but is non-essential to use
+haskell.nix infrastructure.</p>
+<p>lib.nix</p>
+<pre><code class="nix">let
+  # iohk-nix can be overridden for debugging purposes by setting
+  # NIX_PATH=iohk_nix=/path/to/iohk-nix
+  iohkNix = import (
+    let try = builtins.tryEval &lt;iohk_nix&gt;;
+    in if try.success
+    then builtins.trace &quot;using host &lt;iohk_nix&gt;&quot; try.value
+    else
+      let
+        spec = builtins.fromJSON (builtins.readFile ./iohk-nix.json);
+      in builtins.fetchTarball {
+        url = &quot;${spec.url}/archive/${spec.rev}.tar.gz&quot;;
+        inherit (spec) sha256;
+      }) {};
+
+  pkgs = iohkNix.pkgs;
+  lib = pkgs.lib;
+in lib // { inherit iohkNix pkgs; inherit (iohkNix) nix-tools; }
+</code></pre>
+
+<p>iohk-nix.json</p>
+<pre><code class="json">{
+  &quot;url&quot;: &quot;https://github.com/input-output-hk/iohk-nix&quot;,
+  &quot;rev&quot;: &quot;c92f0119ef5814b0ed1f445c2fdcf8894e326294&quot;,
+  &quot;sha256&quot;: &quot;05r90x6x3yp1nb66rkc4n0i8q15c634rrdsr2zvb118s3sdcmmrm&quot;,
+  &quot;fetchSubmodules&quot;: false
+}
+</code></pre>
+
+<p>nix/pkgs.nix</p>
+<pre><code>{ pkgs ? import &lt;nixpkgs&gt; {}
+, iohk-overlay ? {}
+, iohk-module ? {}
+, haskell
+, hackage
+, stackage
+, ...
+}:
+let
+  # our packages
+  stack-pkgs = import ./.stack-pkgs.nix;
+
+  # packages which will require TH and thus
+  # will need -fexternal-interpreter treatment
+  # when cross compiling.
+  th-packages = [
+    &quot;hedgehog&quot; &quot;cardano-crypto-wrapper&quot;
+    &quot;cardano-crypto-test&quot; &quot;cardano-chain&quot;
+    &quot;small-steps&quot; &quot;cs-ledger&quot; ];
+
+  # Build the packageset with module support.
+  # We can essentially override anything in the modules
+  # section.
+  #
+  #  packages.cbors.patches = [ ./one.patch ];
+  #  packages.cbors.flags.optimize-gmp = false;
+  #
+  compiler = (stack-pkgs.overlay hackage).compiler.nix-name;
+  pkgSet = haskell.mkNewPkgSet {
+    inherit pkgs;
+    pkg-def = stackage.${stack-pkgs.resolver};
+    # The overlay allows extension or restriction of the set of
+    # packages we are interested in. By using the stack-pkgs.overlay
+    # we restrict our package set to the ones provided in stack.yaml.
+    pkg-def-overlays = [
+      stack-pkgs.overlay
+      iohk-overlay.${compiler}
+    ];
+    # package customizations
+    modules = [
+      # This module will ensure that we get the necessary
+      # patches ontop of GHC packages that for which the
+      # ones that GHC ships are not identical to the ones
+      # we find on hackage. These patches will make sure
+      # they are identical by augmenting the packages on
+      # hackage to match those that ship with ghc.
+      haskell.ghcHackagePatches.${compiler}
+
+      # the iohk-module will supply us with the necessary
+      # cross compilation plumbing to make Template Haskell
+      # work when cross compiling.  For now we need to
+      # list the packages that require template haskell
+      # explicity here.
+      (iohk-module { nixpkgs = pkgs;
+                     inherit th-packages; })
+    ];
+  };
+in
+  pkgSet.config.hsPkgs // { _config = pkgSet.config; }
+</code></pre>
+
+<p>default.nix</p>
+<pre><code>let
+  localLib = import ./lib.nix;
+in
+# This file needs to export a function that takes
+# the arguments it is passed and forwards them to
+# the default-nix template from iohk-nix. This is
+# important so that the release.nix file can properly
+# parameterize this file when targetting different
+# hosts.
+{ ... }@args:
+# We will instantiate the defaul-nix template with the
+# nix/pkgs.nix file...
+localLib.nix-tools.default-nix ./nix/pkgs.nix args
+# ... and add a few custom packages as well.
+// { }
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../dev-architecture/" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../user-guide-cabal/" class="btn btn-neutral" title="Cabal Proejcts"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../user-guide-cabal/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../dev-architecture/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
+
+</body>
+</html>

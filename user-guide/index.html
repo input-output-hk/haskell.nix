@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>General - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "General";
+    var mkdocs_page_input_path = "user-guide.md";
+    var mkdocs_page_url = "/user-guide/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class=" current">
+                    
+    <a class="current" href="./">General</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#user-guide">User Guide</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#setup">Setup</a></li>
+        
+            <li><a class="toctree-l4" href="#defaultnix">default.nix</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-stack/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide-cabal/">Cabal Proejcts</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>User Guide &raquo;</li>
+        
+      
+    
+    <li>General</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="user-guide">User Guide</h1>
+<p>So you want to use <code>haskell.nix</code> with your stack or cabal project. The
+general approach will be to pick the right tool from <code>nix-tools</code> and
+produce a <code>pkgs.nix</code> expressions.  Getting a copy of the haskell.nix,
+hackage.nix (and potentially stackage.nix) source will then equip us
+to produce derivations that we can <code>nix build</code>.</p>
+<h2 id="setup">Setup</h2>
+<p>The general structure will be the same for haskell.nix, independent of
+the use of stack or cabal.  Let us assume for now that we have
+generated a <code>pkgs.nix</code> expression in <code>nix</code>.</p>
+<ul>
+<li><a href="../user-guide-stack">Generating a <code>pkgs.nix</code> for a stack project</a></li>
+<li><a href="../user-guide-cabal">Generating a <code>pkgs.nix</code> for a cabal project</a></li>
+</ul>
+<h2 id="defaultnix">default.nix</h2>
+<p>We will start with defining a helper function in our <code>default.nix</code>
+that will allow us to override the source imports with <code>-I
+haskell=/path/to/haskell.nix</code> in case we need it.</p>
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {}
+}:
+let
+  overrideWith = override: default:
+   let
+     try = builtins.tryEval (builtins.findFile builtins.nixPath override);
+   in if try.success then
+     builtins.trace &quot;using search host &lt;${override}&gt;&quot; try.value
+   else
+     default;
+in
+</code></pre>
+
+<p>Next we will use this to import <code>haskell.nix</code>, <code>hackage.nix</code> and
+<code>stackage.nix</code> (if we use a stack project).</p>
+<p><strong>NOTE</strong>: update the <code>rev</code> and <code>sha256</code> values to the recent ones as
+  found on GitHub.  Especially <code>hackage.nix</code> and <code>stackage.nix</code> will
+  evolve with package release on hackage and stackage releases
+  respectively.</p>
+<pre><code class="nix">let
+  # all packages from hackage as nix expressions
+  hackage = import (overrideWith &quot;hackage&quot;
+                    (pkgs.fetchFromGitHub { owner  = &quot;input-output-hk&quot;;
+                                            repo   = &quot;hackage.nix&quot;;
+                                            rev    = &quot;3180384b563ec7c7b46bca86b3ace0f32d04cde8&quot;;
+                                            sha256 = &quot;19ndkn8pivli9plwq0wnx1cj126l89yk7jw9a0dj51ic3b2qhlb2&quot;;
+                                            name   = &quot;hackage-exprs-source&quot;; }))
+                   ;
+  # a different haskell infrastructure
+  haskell = import (overrideWith &quot;haskell&quot;
+                    (pkgs.fetchFromGitHub { owner  = &quot;input-output-hk&quot;;
+                                            repo   = &quot;haskell.nix&quot;;
+                                            rev    = &quot;73f733ba8bbd11443dda713d1a2d4b7c50a5d408&quot;;
+                                            sha256 = &quot;1p2srrxw2lac5krrg35waa251by98r2miwyg6zac9glpg2vmq3ip&quot;;
+                                            name   = &quot;haskell-lib-source&quot;; }))
+                   hackage;
+
+  # the set of all stackage snapshots
+  stackage = import (overrideWith &quot;stackage&quot;
+                     (pkgs.fetchFromGitHub { owner  = &quot;input-output-hk&quot;;
+                                             repo   = &quot;stackage.nix&quot;;
+                                             rev    = &quot;2615a4e6b1651215ee400e62fcdcb195062a3d35&quot;;
+                                             sha256 = &quot;08c8lb8x047hndwm1cb2zxixnjmrswfp5y18xp1v79cjqlva0qj6&quot;;
+                                             name   = &quot;stackage-snapshot-source&quot;; }))
+                   ;
+in
+</code></pre>
+
+<p>Finally we string this together and produce a package set:</p>
+<pre><code class="nix">let
+  # Import the file you will create in the stack-to-nix or cabal-to-nix step.
+  my-pkgs = import ./nix/pkgs.nix { inherit stackage; };
+
+  pkgSet = haskell.mkPkgSet {
+    inherit pkgs;
+    pkg-def = my-pkgs.pkg-def;
+    pkg-def-overlays = [
+      # this overlay will provide additional packages
+      # ontop of the package set.  E.g. extra-deps
+      # for stack packages. or local packages for
+      # cabal.projects
+      my-pkgs.overlay
+    ];
+    modules = [
+      # specific package overrides would go here
+      # example:
+      #  packages.cbors.patches = [ ./one.patch ];
+      #  packages.cbors.flags.optimize-gmp = false;
+    ];
+  };
+
+in pkgSet.config.hsPkgs // { _config = pkgSet.config; }
+</code></pre>
+
+<p>With this setup you can then start building the components of
+interest:</p>
+<pre><code class="bash">nix build -f default.nix $pkg.components.library
+</code></pre>
+
+<p>to build the library for <code>$pkg</code> or</p>
+<pre><code class="bash">nix build -f default.nix $pkg.components.exes.$exe
+</code></pre>
+
+<p>to build a specific executable. The same holds for test suites and benchmarks.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../user-guide-stack/" class="btn btn-neutral float-right" title="Stack Projects">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../architecture/" class="btn btn-neutral" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../architecture/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../user-guide-stack/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/require.js"></script>
+      <script src="../search/search.js"></script>
+
+</body>
+</html>
