@@ -187,7 +187,9 @@ let
   # the target dir for haddock documentation
   docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
 
-  doHaddock' = doHaddock && (haskellLib.isLibrary componentId);
+  doHaddock' = doHaddock 
+    && (haskellLib.isLibrary componentId)
+    && stdenv.hostPlatform == stdenv.buildPlatform;
 
 in stdenv.lib.fix (drv:
 
