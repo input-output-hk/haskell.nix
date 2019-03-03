@@ -221,7 +221,6 @@ stdenv.mkDerivation ({
   };
 
   CABAL_CONFIG = configFiles + /cabal.config;
-  GHC_ENVIRONMENT = configFiles + /ghc-environment;
   LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
   LC_ALL = "en_US.UTF-8";
 
@@ -232,7 +231,7 @@ stdenv.mkDerivation ({
     ++ component.pkgconfig;
 
   nativeBuildInputs =
-    [ghc buildPackages.removeReferencesTo]
+    [shellWrappers buildPackages.removeReferencesTo]
     ++ lib.optional (component.pkgconfig != []) pkgconfig
     ++ executableToolDepends;
 
