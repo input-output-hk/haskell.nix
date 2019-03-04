@@ -55,7 +55,7 @@ let
     # and Nix expressions representing cabal packages (cabal-to-nix).
     mkPkgSet =
       { pkg-def  # Base package set. Either from stackage (via stack-to-nix) or from a cabal projects plan file (via plan-to-nix)
-      , pkg-def-overlays ? [] # Additional packages to augment the Base package set `pkg-def` with.
+      , pkg-def-extras ? [] # Additional packages to augment the Base package set `pkg-def` with.
       , modules ? []
       }@args:
 
@@ -67,7 +67,7 @@ let
     # Create a Haskell package set based on a Stack configuration.
     mkStackPkgSet =
       { stack-pkgs  # Path to the output of stack-to-nix
-      , pkg-def-overlays ? []
+      , pkg-def-extras ? []
       , modules ? []
       }@args:
 
@@ -78,14 +78,14 @@ let
         compiler = (stack-pkgs.overlay hackage).compiler or (pkg-def hackage).compiler;
       in self.mkPkgSet {
         inherit pkg-def;
-        pkg-def-overlays = [ stack-pkgs.overlay ] ++ pkg-def-overlays;
+        pkg-def-extras = [ stack-pkgs.overlay ] ++ pkg-def-extras;
         modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
       };
 
     # Create a Haskell package set based on a Cabal configuration.
     mkCabalProjectPkgSet =
       { plan-pkgs  # Path to the output of plan-to-nix
-      , pkg-def-overlays ? []
+      , pkg-def-extras ? []
       , modules ? []
       }@args:
 
@@ -95,7 +95,7 @@ let
         compiler = (plan-pkgs.overlay hackage).compiler or (pkg-def hackage).compiler;
       in self.mkPkgSet {
         inherit pkg-def;
-        pkg-def-overlays = [ plan-pkgs.overlay ] ++ pkg-def-overlays;
+        pkg-def-extras = [ plan-pkgs.overlay ] ++ pkg-def-extras;
         modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
       };
 

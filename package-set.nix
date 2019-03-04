@@ -1,5 +1,5 @@
-let f = { hackage, pkgs, pkg-def, pkg-def-overlays ? [], modules ? [] }: let
-  buildModules = f { inherit hackage pkg-def pkg-def-overlays modules; pkgs = pkgs.buildPackages; };
+let f = { hackage, pkgs, pkg-def, pkg-def-extras ? [], modules ? [] }: let
+  buildModules = f { inherit hackage pkg-def pkg-def-extras modules; pkgs = pkgs.buildPackages; };
 in pkgs.lib.evalModules {
   modules = modules ++ [
     ({ lib, ... }: {
@@ -56,14 +56,14 @@ in pkgs.lib.evalModules {
                               then v
                               else lib.mapAttrs (_: pkg: (expand-paths (inject-revision pkg))) v)
                                                 (inject-packages overlay);
-        # fold any potential `pkg-def-overlays`
+        # fold any potential `pkg-def-extras`
         # onto the `pkg-def`.
         #
         # This means you can have a base definition (e.g. stackage)
         # and augment it with custom packages to your liking.
         in foldl' lib.recursiveUpdate
             (pkg-def hackage)
-            (map (p: desugar (if builtins.isFunction p then p hackage else p)) pkg-def-overlays)
+            (map (p: desugar (if builtins.isFunction p then p hackage else p)) pkg-def-extras)
       ;
 
     })

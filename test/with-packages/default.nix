@@ -10,7 +10,7 @@ let
     #   plan-to-nix dist-newstyle/cache/plan.json > plan.nix 
     #   cabal-to-nix test-with-packages.cabal > test-with-packages.nix 
     pkg-def = import ./plan.nix;
-    pkg-def-overlays = [
+    pkg-def-extras = [
       { test-with-packages = ./test-with-packages.nix; }
     ];
     modules = [

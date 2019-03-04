@@ -9,7 +9,7 @@ let
     #   plan-to-nix dist-newstyle/cache/plan.json > plan.nix
     #   cabal-to-nix test-haddock.cabal > test-haddock.nix
     pkg-def = import ./plan.nix;
-    pkg-def-overlays = [
+    pkg-def-extras = [
       { test-haddock = ./test-haddock.nix; }
     ];
     modules = [

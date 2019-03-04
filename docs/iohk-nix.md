@@ -74,7 +74,7 @@ let
     # The overlay allows extension or restriction of the set of
     # packages we are interested in. By using the stack-pkgs.overlay
     # we restrict our package set to the ones provided in stack.yaml.
-    pkg-def-overlays = [
+    pkg-def-extras = [
       stack-pkgs.overlay
       iohk-overlay.${compiler}
     ];
