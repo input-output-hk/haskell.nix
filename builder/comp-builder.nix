@@ -9,6 +9,7 @@
 , flags
 , revision
 , cabalFile
+, cabal-generator
 , patches ? []
 
 , preUnpack ? null, postUnpack ? null
@@ -242,6 +243,10 @@ stdenv.mkDerivation ({
 
   prePatch = lib.optionalString (cabalFile != null) ''
     cat ${cabalFile} > ${package.identifier.name}.cabal
+  '';
+
+  postPatch = lib.optionalString (cabal-generator == "hpack") ''
+    hpack
   '';
 
   configurePhase = ''
