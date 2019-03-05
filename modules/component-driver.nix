@@ -5,9 +5,8 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     buildGHC = buildModules.config.ghc.package;
-    inherit (config) nonReinstallablePkgs;
+     inherit (config) nonReinstallablePkgs hsPkgs;
     inherit withPackage;
-    inherit (config) hsPkgs;
   };
 
   withPackage = import ../builder/with-package-wrapper.nix {

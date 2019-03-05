@@ -243,9 +243,9 @@ stdenv.mkDerivation ({
 
   prePatch = if (cabalFile != null)
      then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
-     else if (cabal-generator == "hpack")
-         then ''${hsPkgs.hpack.components.exes.hpack}/bin/hpack''
-         else "";
+     else lib.optionalString (cabal-generator == "hpack") ''
+       ${hsPkgs.hpack.components.exes.hpack}/bin/hpack
+     '';
 
   configurePhase = ''
     runHook preConfigure
