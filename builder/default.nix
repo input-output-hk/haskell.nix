@@ -1,8 +1,9 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, writeText, runCommand, pkgconfig, nonReinstallablePkgs, withPackage }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, writeText, runCommand, pkgconfig, nonReinstallablePkgs, withPackage, hsPkgs }:
 
 { flags
 , package
 , components
+, cabal-generator
 
 , name
 , sha256
@@ -71,10 +72,10 @@ let
       '';
     };
 
-  comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs withPackage; };
+  comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs withPackage hsPkgs; };
 
   buildComp = componentId: component: comp-builder {
-    inherit componentId component package name src flags setup cabalFile patches revision
+    inherit componentId component package name src flags setup cabalFile cabal-generator patches revision
             preUnpack postUnpack preConfigure postConfigure
             preBuild postBuild preCheck postCheck
             preInstall postInstall preHaddock postHaddock

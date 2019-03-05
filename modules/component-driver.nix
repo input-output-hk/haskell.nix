@@ -7,6 +7,7 @@ let
     buildGHC = buildModules.config.ghc.package;
     inherit (config) nonReinstallablePkgs;
     inherit withPackage;
+    inherit (config) hsPkgs;
   };
 
   withPackage = import ../builder/with-package-wrapper.nix {

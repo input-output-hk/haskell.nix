@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, withPackage }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, withPackage, hsPkgs }:
 
 { componentId
 , component
@@ -9,6 +9,7 @@
 , flags
 , revision
 , cabalFile
+, cabal-generator
 , patches ? []
 
 , preUnpack ? null, postUnpack ? null
@@ -240,9 +241,11 @@ stdenv.mkDerivation ({
   # Phases
   preInstallPhases = lib.optional doHaddock' "haddockPhase";
 
-  prePatch = lib.optionalString (cabalFile != null) ''
-    cat ${cabalFile} > ${package.identifier.name}.cabal
-  '';
+  prePatch = if (cabalFile != null)
+     then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
+     else if (cabal-generator == "hpack")
+         then ''${hsPkgs.hpack.components.exes.hpack}/bin/hpack''
+         else "";
 
   configurePhase = ''
     runHook preConfigure
