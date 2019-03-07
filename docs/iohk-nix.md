@@ -71,7 +71,7 @@ let
   pkgSet = haskell.mkNewPkgSet {
     inherit pkgs;
     pkg-def = stackage.${stack-pkgs.resolver};
-    # The overlay allows extension or restriction of the set of
+    # The extras allow extension or restriction of the set of
     # packages we are interested in. By using the stack-pkgs.overlay
     # we restrict our package set to the ones provided in stack.yaml.
     pkg-def-extras = [
