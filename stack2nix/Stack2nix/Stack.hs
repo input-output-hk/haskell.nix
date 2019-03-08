@@ -165,7 +165,7 @@ instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
     <$> s .: "resolver"
     <*> s .:? "compiler" .!= Nothing
-    <*> ((<>) <$> s .:? "packages"   .!= []
+    <*> ((<>) <$> s .:? "packages"   .!= [LocalPath "."]
               <*> s .:? "extra-deps" .!= [])
 
 instance FromJSON StackSnapshot where
