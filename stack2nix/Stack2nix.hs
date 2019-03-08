@@ -114,7 +114,7 @@ packages2nix args (Stack _ _ pkgs) =
   do cwd <- getCurrentDirectory
      fmap (mkNonRecSet . concat) . forM pkgs $ \case
        (LocalPath folder) ->
-         do cabalFiles <- findCabalFiles (dropFileName (argStackYaml args) </> folder)
+         do cabalFiles <- findCabalFiles (argHpackUse args) (dropFileName (argStackYaml args) </> folder)
             forM cabalFiles $ \cabalFile ->
               let pkg = cabalFilePkgName cabalFile
                   nix = pkg <.> "nix"
@@ -147,7 +147,7 @@ packages2nix args (Stack _ _ pkgs) =
         cabalFromPath url rev subdir path = do
           d <- liftIO $ doesDirectoryExist path
           unless d $ fail ("not a directory: " ++ path)
-          cabalFiles <- liftIO $ findCabalFiles path
+          cabalFiles <- liftIO $ findCabalFiles (argHpackUse args) path
           return $ \sha256 ->
             forM cabalFiles $ \cabalFile -> do
             let pkg = cabalFilePkgName cabalFile
