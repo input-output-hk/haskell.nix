@@ -1,0 +1,3 @@
+https://github.com/ElvishJerricco/hackage-db.git 84ca9fc75ad45a71880e938e0d93ea4bde05f5bd . 0y3kw1hrxhsqmyx59sxba8npj4ya8dpgjljc21gkgdvdy9628q4c hackage-db .plan.nix/hackage-db.nix
+https://github.com/haskell-nix/hnix.git 617d0867ab96c8f97b02c4524bd948d9f114005e . 037kxj9wirynmavlp7d0k19a5xrhj117hlh3yia12xj6v828b99z hnix .plan.nix/hnix.nix
+https://github.com/galenhuntington/haskell-src-meta.git 109ee29d5fd0f4e23fdd2f80eb122d66341b64a9 . 08qw6y9br6fy3qkwl9v2kp38msprsq9v1ssym0fsnj2jm0vbnfrx haskell-src-meta .plan.nix/haskell-src-meta.nix
