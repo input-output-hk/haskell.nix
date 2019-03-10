@@ -49,7 +49,6 @@ file as follows:
 
 ```nix
 let plan = import ./plan.nix; in
-{ ... }:
 { pkg-def = plan;
   overlay =
     { local-package-a = ./local-package-a.nix;
