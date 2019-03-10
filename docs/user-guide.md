@@ -6,6 +6,20 @@ produce a `pkgs.nix` expressions.  Getting a copy of the haskell.nix,
 hackage.nix (and potentially stackage.nix) source will then equip us
 to produce derivations that we can `nix build`.
 
+## Installing `nix-tools`
+
+To build the latest `nix-tools` and store the result at `./nt`, run:
+
+```bash
+nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools --out-link nt
+```
+
+If you would like to then install `nix-tools` into your profile, run:
+
+```bash
+nix-env -i ./nt
+```
+
 ## Setup
 
 The general structure will be the same for haskell.nix, independent of
