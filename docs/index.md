@@ -50,9 +50,9 @@ tricky to do.  This also leads to the cyclic dependencies issue.
 
 ### cyclic dependencies
 
-Because the Haskell builder in `nixpkgs` exposes packages at the
-package level, if packages mutually depend on each other through tests
-and libraries, lead to cyclic dependencies that nix can't resolve.  By
+The Haskell builder in `nixpkgs` exposes packages at the
+package level. If packages mutually depend on each other through tests
+and libraries, this leads to cyclic dependencies that nix can't resolve. By
 exposing the components to nix as separate derivations this will only
 occur if you have mutually dependent components.
 
@@ -73,17 +73,17 @@ the optimum.
 
 ### more logic in nix
 
-The `cabal2nix` tool has a resolver that resolved system dependencies
-and licenses to values in `nixpkgs`.  This logic end up being a simple
-dictionary lookup and can be a simple nix expression.  This also
+The `cabal2nix` tool has a resolver that resolves system dependencies
+and licenses to values in `nixpkgs`.  This logic ends up being a simple
+dictionary lookup and therefore can be a simple nix expression. This also
 offloads some of the work the cabal to nix translation tool needs to
 do into nix, and as such if changes are necessary (or needed to be
 performed ad hoc) there is no need to rebuild the conversion tool and
 subsequently mark every derived expression as out of date.
 
-### decoupleing
+### decoupling
 
-Finally by treating Haskell.nix and nixpkgs as separate entities we
+Finally, by treating Haskell.nix and nixpkgs as separate entities we
 can decouple the Haskell packages and infrastructure from the nixpkgs
 package set, and rely on it to provide us with system packages while
 staying up to date with Haskell packages from hackage while retaining

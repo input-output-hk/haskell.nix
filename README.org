@@ -1,3 +1,5 @@
+#+STARTUP: showall hidestars
+
 * Alternative Haskell Infrastructure for Nixpkgs
 
 [[https://travis-ci.org/input-output-hk/haskell.nix][https://travis-ci.org/input-output-hk/haskell.nix.svg?branch=master]]
@@ -8,7 +10,7 @@ It works by automatically translating your Cabal or Stack project and
 its dependencies into Nix code. Most of your dependencies are already
 translated, so you generally won't have too much generated code.
 
-For the full documentation, see https://input-output-hk.github.io/haskell.nix/.
+For the documentation, see https://input-output-hk.github.io/haskell.nix/.
 
 ** Quickstart
 
@@ -32,3 +34,8 @@ Haskell packages in Nix. It depends on other repos, which are:
 
 - [[https://github.com/input-output-hk/stackage.nix][stackage.nix]] — all of the [[https://www.stackage.org/][Stackage]] snapshots, converted to Nix
   expressions.
+
+** IRC Channel
+
+Join the [[https://www.irccloud.com/invite?channel=%23nix-tools&hostname=irc.freenode.net&port=6697&ssl=1][#nix-tools]] channel on irc.freenode.net to get help or discuss
+the development of =haskell.nix= and =nix-tools=.
