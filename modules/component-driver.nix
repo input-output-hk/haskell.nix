@@ -23,9 +23,27 @@ in
     type = lib.types.listOf lib.types.str;
   };
 
+  # Dependencies
+  # 
+  #              .--------.           .------------------.
+  #              | pretty | < ------- | template-haskell |
+  #              '--------'           '------------------'
+  #                   v                          |
+  #              .---------.     .-------.       |
+  #              | deepseq | - > | array |       |     
+  #              '---------'     '-------'       v 
+  #                    v            v         .-------------.
+  # .----------.  .----------.  .------.   .- | ghc-boot-th |
+  # | ghc-heap |  | ghc-prim |  | base |< -'  '-------------'
+  # '----------'  '----------'  '------'  .----------------.
+  #       |          v           |  |     | integer-simple |
+  #       |       .-----.        |  '-- > |-------or-------|
+  #       '---- > | rts | < -----'        | integer-gmp    |
+  #               '-----'                 '----------------'
+
   config.nonReinstallablePkgs =
-    [ "rts" "ghc" "ghc-prim" "integer-gmp" "integer-simple" "base"
-    "array" "deepseq" "pretty" "ghc-boot-th" "template-haskell" "ghc-heap" ];
+    [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+      "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell" ];
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;

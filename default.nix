@@ -13,7 +13,10 @@ let
   # up much later on hackage; but are not installable
   # anyway. Therefore we just strip them out of the
   # pkg-def's packages.
-  boot-pkgs = [ "rts" "ghc" "ghci" "ghc-boot" "ghc-boot-th"
+  #
+  # Note: these will need to be provided by alternative
+  #       means outside of hackage.
+  boot-pkgs = [ "rts" "ghc" "ghc-boot-th" "ghc-boot" "ghci"
                 "ghc-heap" # since ghc 8.6.
               ];
   strip-pkg-def = pkgs: pkg-def: hackage: with pkgs.lib;
