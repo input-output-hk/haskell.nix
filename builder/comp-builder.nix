@@ -46,7 +46,7 @@ let
 
   flatDepends =
     let
-      makePairs = map (p: rec { key="${val}"; val=p.components.library; });
+      makePairs = map (p: rec { key="${val}"; val=(p.components.library or p); });
       closure = builtins.genericClosure {
         startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;
@@ -105,7 +105,7 @@ let
     cat > $out/ghc-environment <<EOF
     package-db $out/package.conf.d
     EOF
-    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
+    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library or p}/package.conf.d" p.identifier.name) component.depends}
     ${lib.concatMapStringsSep "\n" (envDep "") (lib.remove "ghc" nonReinstallablePkgs)}
 
   '' + lib.optionalString component.doExactConfig ''
@@ -299,13 +299,23 @@ stdenv.mkDerivation ({
   '';
 
   # Note: Cabal does *not* copy test executables during the `install` phase.
+  #
+  # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
+  #         folder isntead of a file for the configuration.  Therfore if the result is a folder,
+  #         we need to register each and every element of that folder.
   installPhase = ''
     runHook preInstall
     $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
     ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-      ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+      if [ -d "${name}.conf" ]; then
+        for pkg in ${name}.conf/*; do
+          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register "$pkg"
+        done
+      else
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+      fi
     ''}
     ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}
