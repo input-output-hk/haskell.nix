@@ -44,7 +44,7 @@ with haskellLib;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype}; };
       applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
-      libComp = lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
+      libComp = if comps.library == null then {} else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
       subComps = lib.mapAttrs
         (ctype: lib.mapAttrs (applySubComp ctype))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);

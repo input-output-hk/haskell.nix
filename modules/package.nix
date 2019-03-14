@@ -160,7 +160,8 @@ in {
       };
     in {
       library = mkOption {
-        type = componentType;
+        type = nullOr componentType;
+        default = null;
       };
       sublibs = mkOption {
         type = attrsOf componentType;
