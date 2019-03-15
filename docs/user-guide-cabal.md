@@ -50,7 +50,7 @@ file as follows:
 ```nix
 let plan = import ./plan.nix; in
 { pkg-def = plan;
-  overlay =
+  extras =
     { local-package-a = ./local-package-a.nix;
       local-package-b = ./local-package-b.nix;
       source-import-a = ./source-import-a.nix;

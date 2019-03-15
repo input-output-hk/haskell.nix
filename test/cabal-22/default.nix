@@ -5,7 +5,7 @@ with stdenv.lib;
 let
   pkgSet = mkPkgSet {
     pkg-def = import ./plan.nix;
-    pkg-def-overlays = [
+    pkg-def-extras = [
       { project = ./project.nix; }
     ];
     modules = [ ];

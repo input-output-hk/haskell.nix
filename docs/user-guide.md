@@ -86,12 +86,12 @@ let
   # Cabal projects use mkPkgSet
   pkgSet = haskell.mkPkgSet {
     pkg-def = my-pkgs.pkg-def;
-    pkg-def-overlays = [
-      # this overlay will provide additional packages
+    pkg-def-extras = [
+      # these extras will provide additional packages
       # ontop of the package set.  E.g. extra-deps
       # for stack packages. or local packages for
       # cabal.projects
-      my-pkgs.overlay
+      my-pkgs.extras
     ];
     modules = [
       # specific package overrides would go here
