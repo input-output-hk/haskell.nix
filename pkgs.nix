@@ -10,8 +10,8 @@ let
 
   pkgSet = mkPkgSet {
     pkg-def = plan.pkgs;
-    pkg-def-overlays = [
-      plan.overlay
+    pkg-def-extras = [
+      plan.extras
     ];
     modules = [
       # specific package overrides would go here

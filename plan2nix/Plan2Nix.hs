@@ -75,11 +75,11 @@ writeDoc file doc =
      hClose handle
 
 plan2nix :: Args -> Plan -> IO NExpr
-plan2nix args (Plan { packages, overlays, compilerVersion, compilerPackages }) = do
+plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = do
   -- TODO: this is an aweful hack and expects plan-to-nix to be
   -- called from the toplevel project directory.
   cwd <- getCurrentDirectory
-  overlay <- fmap (mkNonRecSet  . concat) . forM (Map.toList overlays) $ \case
+  extras <- fmap (mkNonRecSet  . concat) . forM (Map.toList extras) $ \case
     (name, Just (Package v r flags (Just (LocalPath folder)))) ->
       do cabalFiles <- findCabalFiles folder
          forM cabalFiles $ \cabalFile ->
@@ -114,7 +114,7 @@ plan2nix args (Plan { packages, overlays, compilerVersion, compilerPackages }) =
         , "packages" $= mkNonRecSet (fmap (uncurry bind') $ Map.toList $ mapKeys quoted compilerPackages)
         ]
       ]))
-    , "overlay" $= ("hackage" ==> mkNonRecSet [ "packages" $= overlay ])
+    , "extras" $= ("hackage" ==> mkNonRecSet [ "packages" $= extras ])
     ]
  where
   quotedPackages = mapKeys quoted packages
@@ -157,7 +157,7 @@ plan2nix args (Plan { packages, overlays, compilerVersion, compilerPackages }) =
             return $ fromString pkg $= mkPath False nix
 
 value2plan :: Value -> Plan
-value2plan plan = Plan { packages, overlays, compilerVersion, compilerPackages }
+value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
  where
   packages = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
                                               , pkg ^. key "style" . _String) of
@@ -187,10 +187,10 @@ value2plan plan = Plan { packages, overlays, compilerVersion, compilerPackages }
       }
     _ -> Nothing
 
-  overlays = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
-                                                          , pkg ^. key "style" . _String
-                                                          , pkg ^. key "pkg-src" . key "type" . _String
-                                                          , pkg ^. key "pkg-src" . _Object) of
+  extras = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
+                                                        , pkg ^. key "style" . _String
+                                                        , pkg ^. key "pkg-src" . key "type" . _String
+                                                        , pkg ^. key "pkg-src" . _Object) of
     (_, "local", "local", _) -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
@@ -227,7 +227,7 @@ defaultNixContents = unlines $
   , ""
   , "  pkgSet = haskell.mkCabalProjectPkgSet {"
   , "    plan-pkgs = import ./pkgs.nix;"
-  , "    pkg-def-overlays = [];"
+  , "    pkg-def-extras = [];"
   , "    modules = [];"
   , "  };"
   , ""

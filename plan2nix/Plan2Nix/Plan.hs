@@ -28,7 +28,7 @@ data Location
 
 data Plan = Plan
   { packages :: HashMap Text (Maybe Package)
-  , overlays :: HashMap Text (Maybe Package)
+  , extras :: HashMap Text (Maybe Package)
   , compilerVersion :: Text
   , compilerPackages :: HashMap Text (Maybe Version)
   } deriving (Show)

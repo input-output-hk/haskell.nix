@@ -67,7 +67,7 @@ stack2nix args stack@(Stack resolver compiler _) =
          _config_     = mkSym "config"
      packages <- packages2nix args stack
      return . mkNonRecSet $
-       [ "overlay" $= ("hackage" ==> mkNonRecSet
+       [ "extras" $= ("hackage" ==> mkNonRecSet
                      ([ "packages" $= (extraDeps $// packages) ]
                    ++ [ "compiler.version" $= fromString (quoted ver)
                       | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
@@ -171,7 +171,7 @@ defaultNixContents = unlines
   , ""
   , "  pkgSet = haskell.mkStackPkgSet {"
   , "    stack-pkgs = import ./pkgs.nix;"
-  , "    pkg-def-overlays = [];"
+  , "    pkg-def-extras = [];"
   , "    modules = [];"
   , "  };"
   , ""
