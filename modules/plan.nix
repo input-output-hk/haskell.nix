@@ -17,15 +17,19 @@ with types;
 
 {
   options = {
+    setupBuildFlags = mkOption {
+      type = listOf str;
+      default = [];
+    };
+
     packages = mkOption {
-      type = attrsOf (submodule {
-        imports = [./package.nix];
-        _module.args = {
+      type =
+        let mod_args = {
           inherit pkgs pkgconfPkgs haskellLib;
           inherit (config) hsPkgs;
           inherit (config.cabal) system compiler;
-        };
-      });
+        }; in
+          attrsOf (submodule (import ./package.nix config mod_args));
     };
 
     compiler = {
