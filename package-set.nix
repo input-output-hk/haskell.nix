@@ -33,7 +33,7 @@ in pkgs.lib.evalModules {
         # or
         # { y = ./foo.nix; }
         # As such the desugarer desugars this short hand syntax.
-        let desugar = overlay:
+        let desugar = extras:
           let
             isPath  = x: builtins.typeOf x == "path";
             # rewrite
@@ -51,11 +51,11 @@ in pkgs.lib.evalModules {
             # into
             #   x.revision = import ./some/path;
             expand-paths = pkg: if !(isPath pkg.revision) then pkg else { revision = import pkg.revision; };
-          # apply injection and expansion to the "packages" in overlay.
+          # apply injection and expansion to the "packages" in extras.
           in lib.mapAttrs (k: v: if k != "packages"
                               then v
                               else lib.mapAttrs (_: pkg: (expand-paths (inject-revision pkg))) v)
-                                                (inject-packages overlay);
+                                                (inject-packages extras);
         # fold any potential `pkg-def-extras`
         # onto the `pkg-def`.
         #

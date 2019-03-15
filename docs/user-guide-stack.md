@@ -17,7 +17,7 @@ This will produce a `nix/pkgs.nix` file that looks like the following:
 ```nix
 {
   resolver = "lts-12.17";
-  overlay = hackage:
+  extras = hackage:
     {
       packages = {
         "o-clock" = hackage.o-clock."0.1.1".revisions.default;
@@ -30,9 +30,9 @@ This will produce a `nix/pkgs.nix` file that looks like the following:
 }
 ```
 
-This file contains the stackage resolver, as well as an overlay of
-packages.  The overlay specifies which `extra-deps` (here: o-clock-0.1.1)
-we wanted to overlay over the stackage snapshot, and what local
+This file contains the stackage resolver, as well as set of extra
+packages.  The extras specifies which `extra-deps` (here: o-clock-0.1.1)
+we wanted to add over the stackage snapshot, and what local
 packages we want (here: my-package).
 
 *If you came here from the [User Guide](/user-guide), go back and

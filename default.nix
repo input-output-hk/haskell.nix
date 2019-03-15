@@ -75,10 +75,10 @@ let
         # The Stackage release referenced in the stack config
         pkg-def = stackage.${stack-pkgs.resolver};
         # The compiler referenced in the stack config
-        compiler = (stack-pkgs.overlay hackage).compiler or (pkg-def hackage).compiler;
+        compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
       in self.mkPkgSet {
         inherit pkg-def;
-        pkg-def-extras = [ stack-pkgs.overlay ] ++ pkg-def-extras;
+        pkg-def-extras = [ stack-pkgs.extras ] ++ pkg-def-extras;
         modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
       };
 
@@ -92,10 +92,10 @@ let
       let
         pkg-def = plan-pkgs.pkgs;
         # The compiler referenced in the stack config
-        compiler = (plan-pkgs.overlay hackage).compiler or (pkg-def hackage).compiler;
+        compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
       in self.mkPkgSet {
         inherit pkg-def;
-        pkg-def-extras = [ plan-pkgs.overlay ] ++ pkg-def-extras;
+        pkg-def-extras = [ plan-pkgs.extras ] ++ pkg-def-extras;
         modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
       };
 

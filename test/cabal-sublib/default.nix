@@ -10,7 +10,7 @@ let
   # 3. plan-to-nix ./dist-newstyle/cache/plan.json > plan.nix
   pkgSet = mkPkgSet {
     pkg-def = import ./plan.nix;
-    pkg-def-overlays = [
+    pkg-def-extras = [
       { cabal-sublib = ./cabal-sublib.nix;
       }
     ];

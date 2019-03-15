@@ -41,7 +41,7 @@ iohk-nix.json
 nix/pkgs.nix
 ```
 { pkgs ? import <nixpkgs> {}
-, iohk-overlay ? {}
+, iohk-extras ? {}
 , iohk-module ? {}
 , haskell
 , hackage
@@ -67,16 +67,16 @@ let
   #  packages.cbors.patches = [ ./one.patch ];
   #  packages.cbors.flags.optimize-gmp = false;
   #
-  compiler = (stack-pkgs.overlay hackage).compiler.nix-name;
+  compiler = (stack-pkgs.extras hackage).compiler.nix-name;
   pkgSet = haskell.mkNewPkgSet {
     inherit pkgs;
     pkg-def = stackage.${stack-pkgs.resolver};
-    # The extras allow extension or restriction of the set of
-    # packages we are interested in. By using the stack-pkgs.overlay
+    # These extras allow extension or restriction of the set of
+    # packages we are interested in. By using the stack-pkgs.extras
     # we restrict our package set to the ones provided in stack.yaml.
     pkg-def-extras = [
-      stack-pkgs.overlay
-      iohk-overlay.${compiler}
+      stack-pkgs.extras
+      iohk-extras.${compiler}
     ];
     # package customizations
     modules = [
