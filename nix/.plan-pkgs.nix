@@ -369,7 +369,7 @@
           };
         };
       };
-  overlay = hackage:
+  extras = hackage:
     {
       packages = {
         nix-tools = ./.plan.nix/nix-tools.nix;
