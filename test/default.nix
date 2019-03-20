@@ -1,12 +1,10 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? import <nixpkgs> { }
+, haskell ? pkgs.callPackage ../. { }
+}:
 
 with pkgs;
 
 let
-
-  # The new Haskell infra applied to nix representation of Hackage
-  haskell = pkgs.callPackage ../. { };
-
   util = callPackage ./util.nix {};
 
 in {

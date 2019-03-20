@@ -1,0 +1,9 @@
+env:
+  NIX_PATH: "nixpkgs=channel:nixos-18.09"
+  NIX_BUILD_ARGS: "--cores 0 --max-jobs 2"
+
+steps:
+  - label: 'Run tests'
+    command: "NIX_PATH=nixpkgs=channel:nixos-18.09 ./test/tests.sh"
+    agents:
+      system: x86_64-linux
