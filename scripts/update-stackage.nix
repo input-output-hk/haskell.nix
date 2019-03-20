@@ -1,4 +1,4 @@
-{ stdenv, writeScript, coreutils, glibc, git, nix-tools, cabal-install, nix-prefetch-git }@args:
+{ stdenv, writeScript, coreutils, glibc, git, openssh, nix-tools, cabal-install, nix-prefetch-git }@args:
 
 import ./update-external.nix args {
   name = "stackage";
