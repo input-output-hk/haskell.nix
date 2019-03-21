@@ -15,30 +15,25 @@ import ./update-external.nix args {
       git clone git@github.com:input-output-hk/stackage.nix.git
       cd stackage.nix
       git submodule update --init
+      git submodule foreach git pull origin master
     fi
 
     echo "Running lts-to-nix for all snapshots..."
 
-    # update them all in parallel...
-    N=$(getconf _NPROCESSORS_ONLN)
     for lts in {lts-haskell,stackage-nightly}/*.yaml
     do
-        lts-to-nix $lts > $(basename ''${lts%.yaml}.nix) &
-        while [[ $(jobs -r -p | wc -l) -gt $N ]]; do
-        # can't use `wait -n` on older bash versions.
-        # e.g. what ships with macOS High Sierra
-        sleep 1;
-        done
+      if [[ ! -f $(basename ''${lts%.yaml}.nix) ]]; then
+        lts-to-nix $lts > $(basename ''${lts%.yaml}.nix)
+      fi
     done
-    wait
-
+    
     # update nightlies
     echo "{" > nightlies.nix;
     for a in nightly-*.nix; do echo "  \"''${a%%.nix}\" = import ./$a;" >> nightlies.nix; done;
     echo "}" >> nightlies.nix
     # update lts
     echo "{" > ltss.nix;
-    for a in lts-*.nix; do echo "  \"''${a%%.nix}\" = import ./$a;" >> ltss.nix; done;
+    for a in $(ls lts-*.nix | sort -Vtx -k 1,1); do echo "  \"''${a%%.nix}\" = import ./$a;" >> ltss.nix; done;
     echo "}" >> ltss.nix
   '';
 }
