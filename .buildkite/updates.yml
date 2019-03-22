@@ -4,6 +4,8 @@ steps:
       - nix-build -I nixpkgs=channel:nixos-18.09 -A maintainer-scripts.update-hackage -o update-hackage.sh
       - echo "+++ Updating hackage.nix"
       - ./update-hackage.sh
+    artifact_paths:
+      - "hackage-src.json"
     agents:
       system: x86_64-linux
 
@@ -12,5 +14,16 @@ steps:
       - nix-build -I nixpkgs=channel:nixos-18.09 -A maintainer-scripts.update-stackage -o update-stackage.sh
       - echo "+++ Updating stackage.nix"
       - ./update-stackage.sh
+    artifact_paths:
+      - "stackage-src.json"
     agents:
       system: x86_64-linux
+
+  - wait: ~
+    continue_on_failure: true
+
+  - label: 'Update pins'
+    command:
+      - 'buildkite-agent artifact download "*.json" .'
+      - nix-build -A maintainer-scripts.update-pins -o update-pins.sh
+      - ./update-pins.sh
