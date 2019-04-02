@@ -103,6 +103,13 @@
         "directory".revision = (((hackage."directory")."1.3.3.0").revisions).default;
         "yaml".revision = (((hackage."yaml")."0.11.0.0").revisions).default;
         "transformers-compat".revision = (((hackage."transformers-compat")."0.6.2").revisions).default;
+        "transformers-compat".flags.five = false;
+        "transformers-compat".flags.generic-deriving = true;
+        "transformers-compat".flags.two = false;
+        "transformers-compat".flags.five-three = true;
+        "transformers-compat".flags.mtl = true;
+        "transformers-compat".flags.four = false;
+        "transformers-compat".flags.three = false;
         "hpack".revision = (((hackage."hpack")."0.31.2").revisions).default;
         "template-haskell".revision = (((hackage."template-haskell")."2.14.0.0").revisions).default;
         "mono-traversable".revision = (((hackage."mono-traversable")."1.0.11.0").revisions).default;
@@ -111,6 +118,7 @@
         "primitive".revision = (((hackage."primitive")."0.6.4.0").revisions).default;
         "profunctors".revision = (((hackage."profunctors")."5.3").revisions).default;
         "time-locale-compat".revision = (((hackage."time-locale-compat")."0.1.1.5").revisions).default;
+	"time-locale-compat".flags.old-locale = false;
         "safe".revision = (((hackage."safe")."0.3.17").revisions).default;
         "blaze-builder".revision = (((hackage."blaze-builder")."0.4.1.0").revisions).default;
         "base-compat".revision = (((hackage."base-compat")."0.10.5").revisions).default;
