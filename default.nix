@@ -116,6 +116,7 @@ let
     maintainer-scripts = {
       update-hackage = self.callPackage ./scripts/update-hackage.nix {};
       update-stackage = self.callPackage ./scripts/update-stackage.nix {};
+      update-pins = self.callPackage ./scripts/update-pins.nix {};
     };
   });
 

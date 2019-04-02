@@ -19,26 +19,18 @@ in
 
     ${script}
 
+    source ${./git.env}
+
     echo "Committing changes..."
-    export GIT_COMMITTER_NAME="IOHK"
-    export GIT_COMMITTER_EMAIL="devops+nix-tools@iohk.io"
-    export GIT_AUTHOR_NAME="$GIT_COMMITTER_NAME"
-    export GIT_AUTHOR_EMAIL="$GIT_COMMITTER_EMAIL"
     git add .
-    git commit --allow-empty --message "Automatic update for $(date)"
+    check_staged
+    git commit --message "Automatic update for $(date)"
 
-    rev=$(git rev-parse HEAD)
-
-    if [ -e ${sshKey} ]
-    then
-      echo "Authenticating using SSH with ${sshKey}"
-      export GIT_SSH_COMMAND="ssh -i ${sshKey} -F /dev/null"
-    else
-      echo "There is no SSH key at ${sshKey}"
-      echo "Git push may not work."
-    fi
+    use_ssh_key ${sshKey}
 
     git push ${repoSSH}
+
+    rev=$(git rev-parse HEAD)
 
     cd ..
 
