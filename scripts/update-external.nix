@@ -6,7 +6,7 @@
 with stdenv.lib;
 
 let
-  repoHTTPS = "https://github.com/input-output-hk/${name}.nix.git";
+  repoHTTPS = "https://github.com/input-output-hk/${name}.nix";
   repoSSH = "git@github.com:input-output-hk/${name}.nix.git";
   sshKey = "/run/keys/buildkite-${name}-ssh-private";
 in
