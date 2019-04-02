@@ -29,15 +29,7 @@ started with your own project.
 
 * Building
 
-To build all of the ~nix-tools~ using Nix:
-
-#+begin_example
-nix-build -A nix-tools-all-execs
-./result/bin/stack-to-nix --help
-#+end_example
-
-If you are making changes to the Haskell code, then build the Cabal
-project with:
+To build all of the ~nix-tools~ using Cabal:
 
 #+begin_example
 cabal new-build
