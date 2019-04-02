@@ -106,9 +106,7 @@ let
 
     # Programs for generating Nix expressions from Cabal and Stack
     # files.
-    nix-tools = self.callPackage ./nix-tools {
-      inherit fetchExternal;
-    };
+    nix-tools = self.callPackage ./nix-tools {};
 
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.

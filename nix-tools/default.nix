@@ -1,13 +1,14 @@
-{ symlinkJoin, fetchExternal, mkPkgSet }:
+{ symlinkJoin, mkCabalProjectPkgSet }:
 
 let
-  src = fetchExternal {
-    name     = "nix-tools-src";
-    specJSON = ./nix-tools-src.json;
-    override = "nix-tools";
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
+    pkg-def-extras = [];
+    modules = [];
   };
 
-  hsPkgs = import (src + "/pkgs.nix") { inherit mkPkgSet; };
+  hsPkgs = pkgSet.config.hsPkgs;
+
 in
   symlinkJoin {
     name = "nix-tools";
