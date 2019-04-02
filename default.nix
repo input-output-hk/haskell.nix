@@ -1,4 +1,6 @@
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import nixpkgs {}
+# Use a pinned nixpkgs rather than the one on NIX_PATH
+, nixpkgs ? ./nixpkgs
 
 # You can provide different pins for hackage.nix and stackage.nix if required.
 # It's also possible to override these sources with NIX_PATH.
@@ -104,9 +106,7 @@ let
 
     # Programs for generating Nix expressions from Cabal and Stack
     # files.
-    nix-tools = self.callPackage ./nix-tools {
-      inherit fetchExternal;
-    };
+    nix-tools = self.callPackage ./nix-tools { inherit fetchExternal; };
 
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.

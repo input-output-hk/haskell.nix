@@ -1,4 +1,4 @@
-{ symlinkJoin, fetchExternal, mkPkgSet }:
+{ symlinkJoin, fetchExternal, mkCabalProjectPkgSet }:
 
 let
   src = fetchExternal {
@@ -7,7 +7,24 @@ let
     override = "nix-tools";
   };
 
-  hsPkgs = import (src + "/pkgs.nix") { inherit mkPkgSet; };
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
+    pkg-def-extras = [];
+    modules = [
+      {
+        packages.transformers-compat.components.library.doExactConfig = true;
+        packages.time-compat.components.library.doExactConfig = true;
+        packages.time-locale-compat.components.library.doExactConfig = true;
+      }
+
+      {
+        packages.nix-tools.src = src;
+      }
+    ];
+  };
+
+  hsPkgs = pkgSet.config.hsPkgs;
+
 in
   symlinkJoin {
     name = "nix-tools";

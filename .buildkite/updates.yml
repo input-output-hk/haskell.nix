@@ -1,7 +1,7 @@
 steps:
   - label: 'Update hackage.nix'
     command:
-      - nix-build -I nixpkgs=channel:nixos-18.09 -A maintainer-scripts.update-hackage -o update-hackage.sh
+      - nix-build -A maintainer-scripts.update-hackage -o update-hackage.sh
       - echo "+++ Updating hackage.nix"
       - ./update-hackage.sh
     artifact_paths:
@@ -11,7 +11,7 @@ steps:
 
   - label: 'Update stackage.nix'
     command:
-      - nix-build -I nixpkgs=channel:nixos-18.09 -A maintainer-scripts.update-stackage -o update-stackage.sh
+      - nix-build -A maintainer-scripts.update-stackage -o update-stackage.sh
       - echo "+++ Updating stackage.nix"
       - ./update-stackage.sh
     artifact_paths:
