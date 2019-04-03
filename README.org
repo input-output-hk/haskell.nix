@@ -38,5 +38,5 @@ Haskell packages in Nix. It depends on other repos, which are:
 
 ** IRC Channel
 
-Join the [[https://www.irccloud.com/invite?channel=%23nix-tools&hostname=irc.freenode.net&port=6697&ssl=1][#nix-tools]] channel on irc.freenode.net to get help or discuss
+Join the [[https://www.irccloud.com/invite?channel=%23haskell.nix&hostname=irc.freenode.net&port=6697&ssl=1][#haskell.nix]] channel on [[https://freenode.net/][irc.freenode.net]] to get help or discuss
 the development of =haskell.nix= and =nix-tools=.
