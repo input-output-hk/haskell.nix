@@ -22,5 +22,7 @@ in
 
     use_ssh_key ${sshKey}
 
-    git push ${repo}
+    if [ "$BUILDKITE_BRANCH" = master ]; then
+      git push ${repo} HEAD:master
+    fi
   ''
