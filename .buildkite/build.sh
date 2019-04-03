@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell --pure -i bash -p nix cabal-install ghc nix-prefetch-scripts
+#! nix-shell -I "nixpkgs=channel:nixos-19.03" --pure -i bash -p nix cabal-install ghc nix-prefetch-scripts git
 
 export NIX_PATH="nixpkgs=channel:nixos-19.03"
 
@@ -10,7 +10,7 @@ set -euo pipefail
 rm -f .nix-tools.cache
 
 echo "+++ Cabal configure"
-cabal new-update
+cabal new-update hackage.haskell.org,2019-03-15T00:00:00Z
 cabal new-configure
 
 echo
@@ -28,6 +28,10 @@ echo "There are no tests -- https://github.com/input-output-hk/haskell.nix/issue
 
 echo
 echo "+++ Run plan-to-nix again"
+
+# This file can interfere with the build.
+# https://github.com/input-output-hk/haskell.nix/issues/57
+rm -f .nix-tools.cache
 
 nix build -f nix1 nix-tools.components.exes.plan-to-nix
 ./result/bin/plan-to-nix --output nix2 --plan-json dist-newstyle/cache/plan.json
