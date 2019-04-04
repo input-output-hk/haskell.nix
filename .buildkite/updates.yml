@@ -27,3 +27,5 @@ steps:
       - 'buildkite-agent artifact download "*.json" .'
       - nix-build -A maintainer-scripts.update-pins -o update-pins.sh
       - ./update-pins.sh
+    agents:
+      system: x86_64-linux
