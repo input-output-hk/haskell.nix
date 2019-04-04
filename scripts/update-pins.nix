@@ -4,7 +4,7 @@ with stdenv.lib;
 
 let
   repo = "git@github.com:input-output-hk/haskell.nix.git";
-  sshKey = "/run/keys/buildkite-haskell-nix-ssh-private";
+  sshKey = "/run/keys/buildkite-haskell-dot-nix-ssh-private";
 in
   writeScript "update-pins.sh" ''
     #!${stdenv.shell}
