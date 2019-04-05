@@ -157,7 +157,7 @@ let
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ] ++ lib.optionals (!stdenv.targetPlatform.isGhcjs)
+    ] ++ lib.optionals (stdenv.cc != null)
     [ # CC
       "--with-gcc=${stdenv.cc.targetPrefix}cc"
       # BINTOOLS
