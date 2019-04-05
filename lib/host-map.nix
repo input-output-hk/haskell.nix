@@ -1,4 +1,13 @@
-stdenv: with stdenv.hostPlatform; {
+stdenv:
+# set a few default values so we don't depend on what's exported from
+# hostPlatform from whatever nixpkgs set we are working against.
+with { isLinux = false; isWindows = false; isDarwin = false; isFreeBSD = false;
+       isOpenBSD = false; isNetBSD = false; isiOS = false; isAndroid = false;
+       isGhcjs = false; isAsterius = false; isHurd = false;
+       isx86 = false; isPowerPC = false; isAarch32 = false; isAarch64 = false;
+       isMips = false; isWasm = false; isJavaScript = false;
+       is32bit = false; is64bit = false; };
+with stdenv.hostPlatform; {
   os = if isLinux   then "Linux"   else
        if isWindows then "Windows" else
        if isDarwin     then "Osx"     else
