@@ -14,6 +14,7 @@ with stdenv.hostPlatform; {
        if isFreeBSD then "Freebsd" else
        if isOpenBSD then "Openbsd" else
        if isNetBSD  then "Netbsd"  else
+       if isHurd    then "Hurd"    else
        if isiOS     then "Ios"     else
        if isAndroid then "Android" else
        if isGhcjs   then "Ghcjs"   else
