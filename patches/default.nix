@@ -6,5 +6,5 @@
   ghc861 = import ./ghc861;
   ghc862 = import ./ghc862;
   ghc863 = import ./ghc863;
-  ghc864 = import ./ghc863;
+  ghc864 = import ./ghc864;
 }
