@@ -52,14 +52,6 @@ let
   # our packages
   stack-pkgs = import ./.stack-pkgs.nix;
 
-  # packages which will require TH and thus
-  # will need -fexternal-interpreter treatment
-  # when cross compiling.
-  th-packages = [
-    "hedgehog" "cardano-crypto-wrapper"
-    "cardano-crypto-test" "cardano-chain"
-    "small-steps" "cs-ledger" ];
-
   # Build the packageset with module support.
   # We can essentially override anything in the modules
   # section.
@@ -93,8 +85,7 @@ let
       # work when cross compiling.  For now we need to
       # list the packages that require template haskell
       # explicity here.
-      (iohk-module { nixpkgs = pkgs;
-                     inherit th-packages; })
+      iohk-module
     ];
   };
 in
