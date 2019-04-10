@@ -216,7 +216,7 @@ instance ToNixExpr SysDependency where
   toNix = (@.) (mkSym pkgs) . quoted . fromString . unSysDependency
 
 instance ToNixExpr PkgconfigDependency where
-  toNix (PkgconfigDependency name _versionRange)= (@.) (mkSym pkgconfPkgs) . fromString . unPkgconfigName $ name
+  toNix (PkgconfigDependency name _versionRange)= (@.) (mkSym pkgconfPkgs) . quoted . fromString . unPkgconfigName $ name
 
 instance ToNixExpr ExeDependency where
   toNix (ExeDependency pkgName _unqualCompName _versionRange) = mkSym . fromString . show . pretty $ pkgName
