@@ -77,6 +77,11 @@ with types;
       buildType = mkOption {
         type = str;
       };
+
+      setup-depends = mkOption {
+        type = listOfFilteringNulls unspecified;
+        default = [];
+      };
     };
 
     components = let

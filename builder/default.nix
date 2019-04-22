@@ -50,26 +50,13 @@ let
 
   setup = if package.buildType == "Simple"
     then defaultSetup
-    else stdenv.mkDerivation {
-      name = "${name}-setup";
-      nativeBuildInputs = [buildGHC];
-      inherit src;
-      phases = ["unpackPhase" "buildPhase" "installPhase"];
-      buildPhase = ''
-        for f in Setup.hs Setup.lhs; do
-          if [ -f $f ]; then
-            echo Compiling package $f
-            ghc $f --make -o ./Setup
-            setup=$(pwd)/Setup
-          fi
-        done
-        [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
-      '';
-
-      installPhase = ''
-        mkdir -p $out/bin
-        install ./Setup $out/bin/Setup
-      '';
+    else haskellLib.weakCallPackage pkgs ./setup-builder.nix {
+      ghc = buildGHC;
+      setup-depends = package.setup-depends;
+      hsPkgs = hsPkgs.buildPackages;
+      inherit haskellLib nonReinstallablePkgs withPackage
+              package name src flags pkgconfig
+              ;
     };
 
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs withPackage hsPkgs; };
