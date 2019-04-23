@@ -19,6 +19,8 @@ let
       };
     in map ({val,...}: val) closure;
 
+  includeGhcPackage = lib.any (p: p.identifier.name == "ghc") setup-depends;
+
   configFiles = runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out
 
@@ -91,7 +93,8 @@ stdenv.mkDerivation {
     for f in Setup.hs Setup.lhs; do
       if [ -f $f ]; then
         echo Compiling package $f
-        ghc $f --make -o ./Setup
+        ghc $f '' + (if includeGhcPackage then "-package ghc " else "")
+            + ''--make -o ./Setup
         setup=$(pwd)/Setup
       fi
     done
