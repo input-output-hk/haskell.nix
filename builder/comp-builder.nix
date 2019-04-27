@@ -164,8 +164,8 @@ let
       "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
       "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       # other flags
-      "--enable-executable-stripping"
-      "--enable-library-stripping"
+      (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
+      (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
     ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
