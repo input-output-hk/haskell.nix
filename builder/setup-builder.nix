@@ -94,7 +94,7 @@ stdenv.mkDerivation {
       if [ -f $f ]; then
         echo Compiling package $f
         ghc $f '' + (if includeGhcPackage then "-package ghc " else "")
-            + ''--make -o ./Setup
+            + ''-package-db ${configFiles}/package.conf.d --make -o ./Setup
         setup=$(pwd)/Setup
       fi
     done
