@@ -52,7 +52,7 @@ let
     override = "stackage";
   });
 
-  packages = pkgs: self: ({
+  packages = pkgs: self: (rec {
     inherit pkgs; # Make pkgs available via callPackage
 
     # Packages built to run on the build platform, not the host platform
