@@ -52,7 +52,12 @@ let
     override = "stackage";
   });
 
-  packages = self: ({
+  packages = pkgs: self: ({
+    inherit pkgs; # Make pkgs available via callPackage
+
+    # Packages built to run on the build platform, not the host platform
+    buildPackages = pkgs.lib.makeScope pkgs.newScope (packages pkgs.buildPackages);
+
     # Utility functions for working with the component builder.
     haskellLib = let hl = import ./lib { inherit (pkgs) lib; haskellLib = hl; }; in hl;
 
@@ -109,6 +114,9 @@ let
     # files.
     nix-tools = self.callPackage ./nix-tools { inherit fetchExternal; };
 
+    # Function to call stackToNix
+    callStackToNix = buildPackages.callPackage ./call-stack-to-nix.nix {};
+
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
     inherit hackage stackage;
@@ -122,4 +130,4 @@ let
   });
 
 in
-  pkgs.lib.makeScope pkgs.newScope packages
+  pkgs.lib.makeScope pkgs.newScope (packages pkgs)
