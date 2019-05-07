@@ -6,7 +6,7 @@ with stdenv.lib;
 let
   ## steps to generate local files
   # 1. cabal-to-nix cabal-sublib.cabal > cabal-sublib.nix
-  # 2. cabal new-build
+  # 2. nix-shell -p haskell.compiler.ghc844 --run "cabal new-configure --with-compiler ghc-8.4.4 --constraint 'transformers == 0.5.6.2' --constraint 'process == 1.6.5.0'"
   # 3. plan-to-nix ./dist-newstyle/cache/plan.json > plan.nix
   pkgSet = mkPkgSet {
     pkg-def = import ./plan.nix;
