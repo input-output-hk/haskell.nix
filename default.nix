@@ -6,6 +6,8 @@
 # It's also possible to override these sources with NIX_PATH.
 , hackageSourceJSON ? ./hackage-src.json
 , stackageSourceJSON ? ./stackage-src.json
+, hackageIndexState ? null
+, recentNixpkgs ? import <nixpkgs> {}
 }:
 
 let
@@ -38,12 +40,24 @@ let
   # overridden with NIX_PATH.
   fetchExternal = import ./lib/fetch-external.nix;
 
+  hackageIndex = import ./lib/hackageIndex.nix {
+    inherit (pkgs) runCommand;
+    inherit (recentNixpkgs) cabal-install;
+    indexState = hackageIndexState;
+  };
+  
   # All packages from Hackage as Nix expressions
-  hackage = import (fetchExternal {
-    name     = "hackage-exprs-source";
-    specJSON = hackageSourceJSON;
-    override = "hackage";
-  });
+  hackage = if hackageIndexState == null
+    then import (fetchExternal {
+        name     = "hackage-exprs-source";
+        specJSON = hackageSourceJSON;
+        override = "hackage";
+      })
+    else import (import ./lib/callHackageToNix.nix {
+        inherit (pkgs) runCommand;
+        inherit (import ./. {}) nix-tools;
+        inherit hackageIndex;
+      });
 
   # The set of all Stackage snapshots
   stackage = import (fetchExternal {
@@ -117,6 +131,19 @@ let
       update-hackage = self.callPackage ./scripts/update-hackage.nix {};
       update-stackage = self.callPackage ./scripts/update-stackage.nix {};
       update-pins = self.callPackage ./scripts/update-pins.nix {};
+    };
+
+    # Make this handy overridable fetch function available.
+    inherit fetchExternal;
+
+    # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
+    # Resulting nix files are added to nix-plan subdirectory.
+    cabalProjectToNix = import ./lib/cabalProjectToNix.nix {
+      inherit pkgs hackageIndex;
+      inherit (pkgs) runCommand;
+      inherit (recentNixpkgs) cabal-install ghc;
+      inherit (recentNixpkgs.haskellPackages) hpack;
+      inherit (import ./. {}) nix-tools;
     };
   });
 
