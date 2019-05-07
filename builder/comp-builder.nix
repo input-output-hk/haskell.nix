@@ -229,7 +229,7 @@ stdenv.mkDerivation ({
 
   buildInputs = component.libs
     ++ component.frameworks
-    ++ component.pkgconfig;
+    ++ builtins.concatLists component.pkgconfig;
 
   nativeBuildInputs =
     [ghc buildPackages.removeReferencesTo]
