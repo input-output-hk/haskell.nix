@@ -1,10 +1,10 @@
-{ stdenv, mkPkgSet }:
+{ stdenv, mkCabalProjectPkgSet }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkPkgSet {
-    pkg-def = import ./plan.nix;
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
     pkg-def-extras = [
       { project = ./project.nix; }
     ];

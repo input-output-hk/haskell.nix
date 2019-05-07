@@ -1,15 +1,11 @@
-{ stdenv, util, mkPkgSet }:
+{ stdenv, util, mkCabalProjectPkgSet }:
 
 with stdenv.lib;
 with util;
 
 let
-  pkgSet = mkPkgSet {
-    # generated with:
-    #   nix-shell -p haskell.compiler.ghc844 --run "cabal new-configure --with-compiler ghc-8.4.4 --constraint 'transformers == 0.5.6.2' --constraint 'process == 1.6.5.0'"
-    #   plan-to-nix dist-newstyle/cache/plan.json > plan.nix 
-    #   cabal-to-nix test-with-packages.cabal > test-with-packages.nix 
-    pkg-def = import ./plan.nix;
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
     pkg-def-extras = [
       { test-with-packages = ./test-with-packages.nix; }
     ];
