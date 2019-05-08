@@ -73,6 +73,11 @@ let
             type = bool;
             default = (def.doHaddock or true);
           };
+          shellHook = mkOption {
+            description = "Hook to run when entering a shell";
+            type = string;
+            default = (def.shellHook or "");
+          };
   };
   packageOptions = def: componentOptions def // {
     preUnpack = mkOption {
