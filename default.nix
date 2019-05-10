@@ -81,10 +81,11 @@ let
         pkg-def = stackage.${stack-pkgs.resolver};
         # The compiler referenced in the stack config
         compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
+        patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
       in self.mkPkgSet {
         inherit pkg-def;
         pkg-def-extras = [ stack-pkgs.extras ] ++ pkg-def-extras;
-        modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
+        modules = [ patchesModule ] ++ modules;
       };
 
     # Create a Haskell package set based on a Cabal configuration.
