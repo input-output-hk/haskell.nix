@@ -36,6 +36,9 @@ in runCommand "${ghc.name}-with-${package.identifier.name}" {
     # ...and replace package database with the one from target package config.
     rm -rf ${libDir}
     mkdir -p ${libDir}
+    # ... yet retain the lib/.../bin directory. This contains `unlit' and friends.
+    ${lndir}/bin/lndir -silent ${ghc}/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
+
     ln -s ${configFiles}/package.conf.d ${packageCfgDir}
 
     # Wrap compiler executables with correct env variables.
