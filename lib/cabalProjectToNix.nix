@@ -4,10 +4,12 @@
 {src} :
 let
   cabalFiles =
-    builtins.filterSource (path: type:
-      type == "directory" ||
-      pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ])
-      src;
+    pkgs.lib.cleanSourceWith {
+      inherit src;
+      filter = path: type:
+        type == "directory" ||
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
+    };
   plan = runCommand "plan" {
     buildInputs = [ ghc hpack ];
   } ''
