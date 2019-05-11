@@ -141,7 +141,9 @@ let
     cabalProjectToNix = import ./lib/cabalProjectToNix.nix {
       inherit pkgs hackageIndex;
       inherit (pkgs) runCommand;
-      inherit (recentNixpkgs) cabal-install ghc;
+      # TODO avoid hardcoding the GHC version
+      ghc = recentNixpkgs.haskell.compiler.ghc864;
+      inherit (recentNixpkgs) cabal-install;
       inherit (recentNixpkgs.haskellPackages) hpack;
       inherit (import ./. {}) nix-tools;
     };
