@@ -1,12 +1,16 @@
-# This is a simplified version of the ghcWithPackages wrapper in
-# nixpkgs, adapted to work with the package database of a single
-# component.
+# The ghcForComponent function wraps ghc so that it is configured with
+# the package database of all dependencies of a given component.
+# It has been adapted from the ghcWithPackages wrapper in nixpkgs.
+#
+# This wrapper exists so that nix-shells for components will have a
+# GHC automatically configured with the dependencies in the package
+# database.
+
 { lib, stdenv, ghc, runCommand, lndir, makeWrapper
 }:
 
-{ package
-, configFiles
-, postBuild ? ""
+{ componentName  # Full derivation name of the component
+, configFiles    # The component's "config" derivation
 }:
 
 let
@@ -18,12 +22,11 @@ let
   docDir         = "$out/share/doc/ghc/html";
   packageCfgDir  = "${libDir}/package.conf.d";
 
-in runCommand "${ghc.name}-for-${package.identifier.name}" {
+in runCommand "${componentName}-${ghc.name}" {
   preferLocalBuild = true;
   passthru = {
     inherit (ghc) version meta;
     baseGhc = ghc;
-    inherit package;
   };
 } (
   ''

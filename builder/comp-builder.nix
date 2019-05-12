@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, withPackage, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, ghcForComponent, hsPkgs }:
 
 { componentId
 , component
@@ -181,8 +181,9 @@ let
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
-  shellWrappers = withPackage {
-    inherit package configFiles;
+  shellWrappers = ghcForComponent {
+    componentName = fullName;
+    inherit configFiles;
   };
 
   # the target dir for haddock documentation
