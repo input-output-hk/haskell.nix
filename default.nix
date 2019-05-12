@@ -88,6 +88,20 @@ let
         modules = [ patchesModule ] ++ modules;
       };
 
+    # Create a package set based on a Stackage snapshot.
+    mkStackSnapshotPkgSet =
+      { resolver # name of the snapshot, e.g. lts-13.18
+      , pkg-def-extras ? []
+      , modules ? []
+      }@args:
+      self.mkStackPkgSet {
+        stack-pkgs = {
+          extras = _: {};
+          inherit resolver;
+        };
+        inherit pkg-def-extras modules;
+      };
+
     # Create a Haskell package set based on a Cabal configuration.
     mkCabalProjectPkgSet =
       { plan-pkgs  # Path to the output of plan-to-nix
