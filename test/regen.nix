@@ -57,4 +57,9 @@ writeScript "regen-tests.sh" ''
   cd stack-simple
   stack-to-nix -o .
   cd ..
+
+  cd shell-for
+  cabal_configure
+  plan-to-nix -o . --plan-json dist-newstyle/cache/plan.json --cabal-project cabal.project
+  cd ..
 ''

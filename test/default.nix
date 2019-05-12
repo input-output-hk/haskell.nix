@@ -17,6 +17,7 @@ in {
   builder-haddock = haskell.callPackage ./builder-haddock {};
   stack-simple = haskell.callPackage ./stack-simple {};
   snapshots = haskell.callPackage ./snapshots {};
+  shell-for = haskell.callPackage ./shell-for {};
   callStackToNix = haskell.callPackage ./callStackToNix {};
   callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
 
