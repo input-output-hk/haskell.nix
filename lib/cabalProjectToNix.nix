@@ -1,7 +1,5 @@
-{ pkgs, runCommand, nix-tools, cabal-install
-, hackageIndex, ghc, hpack
-} :
-{src} :
+{ mkHackageIndex, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack }:
+{ hackageIndexState, src }:
 let
   cabalFiles =
     builtins.filterSource (path: type:
@@ -16,7 +14,7 @@ let
     cp -r ${cabalFiles}/* .
     chmod +w -R .
     find . -name package.yaml -exec hpack "{}" \;
-    HOME=${hackageIndex} ${cabal-install}/bin/cabal new-configure
+    HOME=${mkHackageIndex hackageIndexState} ${cabal-install}/bin/cabal new-configure
     HOME=$out ${nix-tools}/bin/plan-to-nix --plan-json dist-newstyle/cache/plan.json -o nix-plan
     cp -r nix-plan $out
   '';
