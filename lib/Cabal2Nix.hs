@@ -11,6 +11,7 @@ import Distribution.Pretty (pretty)
 import Data.Char (toUpper)
 import System.FilePath
 import Data.ByteString (ByteString)
+import Data.Maybe (catMaybes)
 
 import Distribution.Types.CondTree
 import Distribution.Types.Library
@@ -23,16 +24,17 @@ import Distribution.Types.PkgconfigDependency
 import Distribution.Types.PkgconfigName
 import Distribution.Types.VersionRange
 import Distribution.Compiler
-import Distribution.Types.PackageName (PackageName)
-import Distribution.Simple.BuildToolDepends (getAllToolDependencies)
+import Distribution.Types.PackageName (PackageName, mkPackageName)
+import Distribution.Simple.BuildToolDepends (desugarBuildTool)
 
-import Data.String (fromString)
+import Data.String (fromString, IsString)
 
 -- import Distribution.Types.GenericPackageDescription
 -- import Distribution.Types.PackageDescription
 import Distribution.Types.PackageId
 --import Distribution.Types.Condition
 import Distribution.Types.UnqualComponentName
+import Data.List.NonEmpty (NonEmpty(..))
 import Nix.Expr
 import Data.Fix(Fix(..))
 import Data.Text (Text)
@@ -44,7 +46,7 @@ data Src
   | Git String String (Maybe String) (Maybe String)
   deriving Show
 
-pkgs, hsPkgs, flags :: Text
+pkgs, hsPkgs, pkgconfPkgs, flags :: Text
 pkgs   = "pkgs"
 hsPkgs = "hsPkgs"
 pkgconfPkgs = "pkgconfPkgs"
@@ -76,11 +78,11 @@ genExtra Hpack = mkNonRecSet [ "cabal-generator" $= mkStr "hpack" ]
 
 cabal2nix :: Maybe Src -> CabalFile -> IO NExpr
 cabal2nix src = \case
-  (OnDisk path) -> fmap (gpd2nix src Nothing)
-    $ readGenericPackageDescription normal path
-  (InMemory gen _ body) -> fmap (gpd2nix src (genExtra <$> gen))
-    $ case (runParseResult (parseGenericPackageDescription body)) of
-        (_, Left (_, err)) -> (error ("Failed to parse in-memory cabal file: " ++ show err))
+  (OnDisk path) -> gpd2nix src Nothing
+    <$> readGenericPackageDescription normal path
+  (InMemory gen _ body) -> gpd2nix src (genExtra <$> gen)
+    <$> case runParseResult (parseGenericPackageDescription body) of
+        (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
         (_, Right desc) -> pure desc
 
 gpd2nix :: Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
@@ -118,7 +120,7 @@ shakeTree :: (Foldable t, Foldable f) => CondTree v (t c) (f a) -> Maybe (CondTr
 shakeTree (CondNode d c bs) = case (null d, null bs') of
                                 (True, True) -> Nothing
                                 _            -> Just (CondNode d c bs')
-  where bs' = [b | Just b <- shakeBranch <$> bs ]
+  where bs' = catMaybes (shakeBranch <$> bs)
 
 shakeBranch :: (Foldable t, Foldable f) => CondBranch v (t c) (f a) -> Maybe (CondBranch v (t c) (f a))
 shakeBranch (CondBranch c t f) = case (shakeTree t, f >>= shakeTree) of
@@ -129,7 +131,7 @@ shakeBranch (CondBranch c t f) = case (shakeTree t, f >>= shakeTree) of
 --- String helper
 transformFst :: (Char -> Char) -> String -> String
 transformFst _ [] = []
-transformFst f (x:xs) = (f x):xs
+transformFst f (x:xs) = f x : xs
 capitalize :: String -> String
 capitalize = transformFst toUpper
 
@@ -165,21 +167,23 @@ instance ToNixExpr PackageIdentifier where
                             , "version" $= mkStr (fromString (show (disp (pkgVersion ident))))]
 
 instance ToNixExpr PackageDescription where
-  toNix pd = mkNonRecSet [ "specVersion" $= mkStr (fromString (show (disp (specVersion pd))))
-                         , "identifier"  $= toNix (package pd)
-                         , "license"     $= mkStr (fromString (show (pretty (license pd))))
+  toNix pd = mkNonRecSet $ [ "specVersion" $= mkStr (fromString (show (disp (specVersion pd))))
+                           , "identifier"  $= toNix (package pd)
+                           , "license"     $= mkStr (fromString (show (pretty (license pd))))
 
-                         , "copyright"   $= mkStr (fromString (copyright pd))
-                         , "maintainer"  $= mkStr (fromString (maintainer pd))
-                         , "author"      $= mkStr (fromString (author pd))
+                           , "copyright"   $= mkStr (fromString (copyright pd))
+                           , "maintainer"  $= mkStr (fromString (maintainer pd))
+                           , "author"      $= mkStr (fromString (author pd))
 
-                         , "homepage"    $= mkStr (fromString (homepage pd))
-                         , "url"         $= mkStr (fromString (pkgUrl pd))
+                           , "homepage"    $= mkStr (fromString (homepage pd))
+                           , "url"         $= mkStr (fromString (pkgUrl pd))
 
-                         , "synopsis"    $= mkStr (fromString (synopsis pd))
-                         , "description" $= mkStr (fromString (description pd))
+                           , "synopsis"    $= mkStr (fromString (synopsis pd))
+                           , "description" $= mkStr (fromString (description pd))
 
-                         , "buildType"   $= mkStr (fromString (show (pretty (buildType pd)))) ]
+                           , "buildType"   $= mkStr (fromString (show (pretty (buildType pd))))
+                           ] ++
+                           [ "setup-depends" $= toNix (BuildToolDependency . depPkgName <$> deps) | Just deps <- [setupDepends <$> setupBuildInfo pd ]]
 
 newtype SysDependency = SysDependency { unSysDependency :: String } deriving (Show, Eq, Ord)
 newtype BuildToolDependency = BuildToolDependency { unBuildToolDependency :: PackageName } deriving (Show, Eq, Ord)
@@ -188,10 +192,11 @@ mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
 instance ToNixExpr GenericPackageDescription where
-  toNix gpd = mkNonRecSet $ [ "flags"      $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
-                            , "package"    $= (toNix (packageDescription gpd))
-                            , "components" $= components ]
-    where packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd
+  toNix gpd = mkNonRecSet [ "flags"         $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
+                          , "package"       $= toNix (packageDescription gpd)
+                          , "components"    $= components ]
+    where _packageName :: IsString a => a
+          _packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd
           component unQualName comp
             = quoted name $=
                       mkNonRecSet ([ "depends"    $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++
@@ -200,7 +205,12 @@ instance ToNixExpr GenericPackageDescription where
                                    [ "pkgconfig"  $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
                                    [ "build-tools"$= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ])
               where name = fromString $ unUnqualComponentName unQualName
-                    toolDeps bi = [ BuildToolDependency pkg | ExeDependency pkg _ _ <- getAllToolDependencies (packageDescription gpd) bi ]
+                    toolDeps = getToolDependencies (packageDescription gpd)
+                    toBuildToolDep (ExeDependency pkg _ _) = BuildToolDependency pkg
+                    getToolDependencies pkg bi =
+                           map toBuildToolDep (buildToolDepends bi)
+                        <> map (\led -> maybe (guess led) toBuildToolDep $ desugarBuildTool pkg led) (buildTools bi)
+                    guess (LegacyExeDependency n _) = BuildToolDependency (mkPackageName n)
           components = mkNonRecSet $
             [ component "library" lib | Just lib <- [condLibrary gpd] ] ++
             (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condSubLibraries gpd ]) ++
@@ -219,10 +229,17 @@ instance ToNixExpr PkgconfigDependency where
   toNix (PkgconfigDependency name _versionRange)= (@.) (mkSym pkgconfPkgs) . quoted . fromString . unPkgconfigName $ name
 
 instance ToNixExpr ExeDependency where
-  toNix (ExeDependency pkgName _unqualCompName _versionRange) = mkSym . fromString . show . pretty $ pkgName
+  toNix (ExeDependency pkgName' _unqualCompName _versionRange) = mkSym . fromString . show . pretty $ pkgName'
 
 instance ToNixExpr BuildToolDependency where
-  toNix (BuildToolDependency pkgName) = mkSym hsPkgs @. "buildPackages" @. (fromString . show . pretty $ pkgName)
+  toNix (BuildToolDependency pkgName') =
+      -- TODO once https://github.com/haskell-nix/hnix/issues/52
+      -- is reolved use something like:
+      -- [nix| hsPkgs.buildPackages.$((pkgName)) or pkgs.buildPackages.$((pkgName)) ]
+      Fix $ NSelect (mkSym hsPkgs) buildPackagesDotName
+        (Just . Fix $ NSelect (mkSym pkgs) buildPackagesDotName Nothing)
+    where
+      buildPackagesDotName = StaticKey "buildPackages" :| [StaticKey (fromString . show . pretty $ pkgName')]
 
 instance ToNixExpr LegacyExeDependency where
   toNix (LegacyExeDependency name _versionRange) = mkSym hsPkgs @. fromString name
@@ -237,22 +254,22 @@ instance ToNixExpr ConfVar where
   toNix (OS os) = mkSym "system" @. (fromString . ("is" ++) . capitalize . show . pretty $ os)
   toNix (Arch arch) = mkSym "system" @. (fromString . ("is" ++) . capitalize . show . pretty $ arch)
   toNix (Flag flag) = mkSym flags @. (fromString . show . pretty $ flag)
-  toNix (Impl flavour range) = toNix flavour $&& toNix range
+  toNix (Impl flavour range) = toNix flavour $&& toNix (projectVersionRange range)
 
 instance ToNixExpr CompilerFlavor where
   toNix flavour = mkSym "compiler" @. (fromString . ("is" ++) . capitalize . show . pretty $ flavour)
 
-instance ToNixExpr VersionRange where
-  toNix AnyVersion              = mkBool True
-  toNix (ThisVersion       ver) = mkSym "compiler" @. "version" @. "eq" @@ mkStr (fromString (show (disp ver)))
-  toNix (LaterVersion      ver) = mkSym "compiler" @. "version" @. "gt" @@ mkStr (fromString (show (disp ver)))
-  toNix (OrLaterVersion    ver) = mkSym "compiler" @. "version" @. "ge" @@ mkStr (fromString (show (disp ver)))
-  toNix (EarlierVersion    ver) = mkSym "compiler" @. "version" @. "lt" @@ mkStr (fromString (show (disp ver)))
-  toNix (OrEarlierVersion  ver) = mkSym "compiler" @. "version" @. "le" @@ mkStr (fromString (show (disp ver)))
-  toNix (WildcardVersion   ver) = mkBool False
---  toNix (MajorBoundVersion ver) = mkSym "compiler" @. "version" @. "eq" @@ mkStr (fromString (show (disp ver)))
-  toNix (IntersectVersionRanges v1 v2) = toNix v1 $&& toNix v2
-  toNix x = error $ "ToNixExpr VersionRange for `" ++ (show x) ++ "` not implemented!"
+instance ToNixExpr (VersionRangeF VersionRange) where
+  toNix AnyVersionF              = mkBool True
+  toNix (ThisVersionF       ver) = mkSym "compiler" @. "version" @. "eq" @@ mkStr (fromString (show (disp ver)))
+  toNix (LaterVersionF      ver) = mkSym "compiler" @. "version" @. "gt" @@ mkStr (fromString (show (disp ver)))
+  toNix (OrLaterVersionF    ver) = mkSym "compiler" @. "version" @. "ge" @@ mkStr (fromString (show (disp ver)))
+  toNix (EarlierVersionF    ver) = mkSym "compiler" @. "version" @. "lt" @@ mkStr (fromString (show (disp ver)))
+  toNix (OrEarlierVersionF  ver) = mkSym "compiler" @. "version" @. "le" @@ mkStr (fromString (show (disp ver)))
+  toNix (WildcardVersionF  _ver) = mkBool False
+--  toNix (MajorBoundVersionF ver) = mkSym "compiler" @. "version" @. "eq" @@ mkStr (fromString (show (disp ver)))
+  toNix (IntersectVersionRangesF v1 v2) = toNix (projectVersionRange v1) $&& toNix (projectVersionRange v2)
+  toNix x = error $ "ToNixExpr VersionRange for `" ++ show x ++ "` not implemented!"
 
 instance ToNixExpr a => ToNixExpr (Condition a) where
   toNix (Var a) = toNix a
