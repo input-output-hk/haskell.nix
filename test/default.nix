@@ -15,6 +15,7 @@ in {
   with-packages = haskell.callPackage ./with-packages { inherit util; };
   builder-haddock = haskell.callPackage ./builder-haddock {};
   stack-simple = haskell.callPackage ./stack-simple {};
+  callStackToNix = haskell.callPackage ./callStackToNix {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit
   # An empty list means success.
