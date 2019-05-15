@@ -56,7 +56,7 @@ let
     inherit pkgs; # Make pkgs available via callPackage
 
     # Packages built to run on the build platform, not the host platform
-    buildPackages = pkgs.lib.makeScope pkgs.newScope (packages pkgs.buildPackages);
+    buildPackages = pkgs.buildPackages.lib.makeScope pkgs.buildPackages.newScope (packages pkgs.buildPackages);
 
     # Utility functions for working with the component builder.
     haskellLib = let hl = import ./lib { inherit (pkgs) lib; haskellLib = hl; }; in hl;
