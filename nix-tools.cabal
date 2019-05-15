@@ -168,3 +168,16 @@ executable stack-to-nix
                      , http-types
   hs-source-dirs:      stack2nix
   default-language:    Haskell2010
+
+executable truncate-index
+  ghc-options:         -Wall
+  main-is:             Main.hs
+  -- other-modules:
+  build-depends:       base
+                     , optparse-applicative
+                     , zlib
+                     , tar
+                     , bytestring
+                     , time
+  hs-source-dirs:      truncate-index
+  default-language:    Haskell2010
