@@ -75,7 +75,7 @@ let
           };
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
-            type = string;
+            type = unspecified; # Can be either a string or a function
             default = (def.shellHook or "");
           };
   };
@@ -127,10 +127,6 @@ let
     postHaddock = mkOption {
       type = nullOr string;
       default = (def.postHaddock or null);
-    };
-    shellHook = mkOption {
-      type = nullOr string;
-      default = (def.shellHook or null);
     };
   };
 
