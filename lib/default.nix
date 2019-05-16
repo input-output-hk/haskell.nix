@@ -78,6 +78,6 @@ with haskellLib;
   #
   weakCallPackage = scope: f: args:
     let f' = if lib.isFunction f then f else import f;
-        args' = scope // args;
-    in f' (builtins.intersectAttrs (builtins.functionArgs f') args');
+        args' = (builtins.intersectAttrs (builtins.functionArgs f') scope) // args;
+    in f' args';
 }
