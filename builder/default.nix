@@ -54,7 +54,7 @@ let
       ghc = buildGHC;
       setup-depends = package.setup-depends;
       hsPkgs = hsPkgs.buildPackages;
-      inherit haskellLib nonReinstallablePkgs withPackage
+      inherit haskellLib nonReinstallablePkgs
               package name src flags pkgconfig
               ;
     };

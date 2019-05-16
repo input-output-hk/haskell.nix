@@ -1,5 +1,5 @@
 { stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand
-, haskellLib, nonReinstallablePkgs, withPackage, hsPkgs, setup-depends
+, haskellLib, nonReinstallablePkgs, hsPkgs, setup-depends
 , package, name, src, flags }:
 
 let
