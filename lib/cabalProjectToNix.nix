@@ -1,5 +1,6 @@
 { mkHackageIndex, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack }:
-{ hackageIndexState, src, ghc ? ghc }:
+let defaultGhc = ghc;
+in { hackageIndexState, src, ghc ? defaultGhc }:
 let
   cabalFiles =
     builtins.filterSource (path: type:
