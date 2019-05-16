@@ -157,13 +157,14 @@ let
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-      # CC
+    ] ++ lib.optionals (stdenv.cc != null)
+    [ # CC
       "--with-gcc=${stdenv.cc.targetPrefix}cc"
       # BINTOOLS
       "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
       "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
       "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
-      # other flags
+    ] ++ [ # other flags
       (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
       (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
     ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
