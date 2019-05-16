@@ -1,14 +1,10 @@
-{ mkPkgSet, stdenv }:
+{ mkCabalProjectPkgSet, stdenv }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkPkgSet {
-    # generated with:
-    #   cabal new-build
-    #   plan-to-nix dist-newstyle/cache/plan.json > plan.nix
-    #   cabal-to-nix test-haddock.cabal > test-haddock.nix
-    pkg-def = import ./plan.nix;
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
     pkg-def-extras = [
       { test-haddock = ./test-haddock.nix; }
     ];

@@ -1,0 +1,18 @@
+diff --git a/hpc.cabal b/hpc.cabal
+index 7e77973..ba676a7 100644
+--- a/hpc.cabal
++++ b/hpc.cabal
+@@ -35,9 +35,9 @@ Library
+         Trace.Hpc.Reflect
+ 
+     Build-Depends:
+-        base       >= 4.4.1 && < 4.10,
+-        containers >= 0.4.1 && < 0.6,
+-        directory  >= 1.1   && < 1.3,
++        base       >= 4.4.1 && < 4.13,
++        containers >= 0.4.1 && < 0.7,
++        directory  >= 1.1   && < 1.4,
+         filepath   >= 1     && < 1.5,
+-        time       >= 1.2   && < 1.7
++        time       >= 1.2   && < 1.9
+     ghc-options: -Wall

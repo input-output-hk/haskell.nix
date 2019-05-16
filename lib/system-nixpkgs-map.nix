@@ -27,6 +27,8 @@ pkgs:
      Imlib2 = pkgs.imlib2;
      asound = pkgs.alsaLib;
      ffi = null;
+     bz2 = pkgs.bzip2;
+     util = pkgs.utillinux;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;

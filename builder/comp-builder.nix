@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, withPackage, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, ghcForComponent, hsPkgs }:
 
 { componentId
 , component
@@ -165,8 +165,8 @@ let
       "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
       "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
     ] ++ [ # other flags
-      "--enable-executable-stripping"
-      "--enable-library-stripping"
+      (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
+      (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
     ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
@@ -182,14 +182,15 @@ let
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
-  shellWrappers = withPackage {
-    inherit package configFiles;
+  shellWrappers = ghcForComponent {
+    componentName = fullName;
+    inherit configFiles;
   };
 
   # the target dir for haddock documentation
   docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
 
-  doHaddock' = doHaddock 
+  doHaddock' = doHaddock
     && (haskellLib.isLibrary componentId)
     && stdenv.hostPlatform == stdenv.buildPlatform;
 
@@ -222,7 +223,6 @@ stdenv.mkDerivation ({
   };
 
   CABAL_CONFIG = configFiles + /cabal.config;
-  GHC_ENVIRONMENT = configFiles + /ghc-environment;
   LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
   LC_ALL = "en_US.UTF-8";
 
@@ -233,7 +233,7 @@ stdenv.mkDerivation ({
     ++ component.pkgconfig;
 
   nativeBuildInputs =
-    [ghc buildPackages.removeReferencesTo]
+    [shellWrappers buildPackages.removeReferencesTo]
     ++ lib.optional (component.pkgconfig != []) pkgconfig
     ++ executableToolDepends;
 

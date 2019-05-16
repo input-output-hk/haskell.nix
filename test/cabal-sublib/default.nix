@@ -1,15 +1,11 @@
 # Test a package set
-{ stdenv, util, mkPkgSet }:
+{ stdenv, util, mkCabalProjectPkgSet }:
 
 with stdenv.lib;
 
 let
-  ## steps to generate local files
-  # 1. cabal-to-nix cabal-sublib.cabal > cabal-sublib.nix
-  # 2. cabal new-build
-  # 3. plan-to-nix ./dist-newstyle/cache/plan.json > plan.nix
-  pkgSet = mkPkgSet {
-    pkg-def = import ./plan.nix;
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
     pkg-def-extras = [
       { cabal-sublib = ./cabal-sublib.nix;
       }

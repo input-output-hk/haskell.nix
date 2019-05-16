@@ -1,15 +1,11 @@
-{ stdenv, util, mkPkgSet }:
+{ stdenv, util, mkCabalProjectPkgSet }:
 
 with stdenv.lib;
 with util;
 
 let
-  pkgSet = mkPkgSet {
-    # generated with:
-    #   cabal new-build
-    #   plan-to-nix dist-newstyle/cache/plan.json > plan.nix 
-    #   cabal-to-nix test-with-packages.cabal > test-with-packages.nix 
-    pkg-def = import ./plan.nix;
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
     pkg-def-extras = [
       { test-with-packages = ./test-with-packages.nix; }
     ];

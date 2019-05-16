@@ -6,10 +6,10 @@ let
     ghc = config.ghc.package;
     buildGHC = buildModules.config.ghc.package;
     inherit (config) nonReinstallablePkgs hsPkgs;
-    inherit withPackage;
+    inherit ghcForComponent;
   };
 
-  withPackage = import ../builder/with-package-wrapper.nix {
+  ghcForComponent = import ../builder/ghc-for-component-wrapper.nix {
     inherit lib;
     inherit (pkgs.buildPackages) stdenv runCommand makeWrapper;
     inherit (pkgs.buildPackages.xorg) lndir;

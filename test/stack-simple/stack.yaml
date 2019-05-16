@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-13.6
+resolver: lts-13.18
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,8 +37,13 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
-# extra-deps: []
-
+extra-deps:
+  # Work around http://hackage.haskell.org/package/transformers-0.5.5.0/transformers.cabal
+  # This is the version of transformers which ships with GHC-8.6.4
+  - transformers-0.5.6.2
+  # ghc-8.6.4 ships with process-1.6.5.0, not 1.6.3.0 as stackage claims. 1.6.3.0 isn't even compatible with
+  # base 4.12 that ghc ships.
+  - process-1.6.5.0
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
