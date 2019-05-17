@@ -1,6 +1,6 @@
 { buildPackages, lib, stdenv, ghcForComponent, makeConfigFiles, hsPkgs }:
 
-{ packages, withHoogle ? true } @ args:
+{ packages, buildInputs ? [], withHoogle ? true } @ args:
 
 let
   selected = packages hsPkgs;
@@ -29,7 +29,7 @@ in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
-    buildInputs = systemInputs ++ mkDrvArgs.buildInputs or [];
+    buildInputs = buildInputs ++ systemInputs ++ mkDrvArgs.buildInputs or [];
     nativeBuildInputs = [ ghcEnv ] ++ nativeBuildInputs ++ mkDrvArgs.nativeBuildInputs or [];
     phases = ["installPhase"];
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
