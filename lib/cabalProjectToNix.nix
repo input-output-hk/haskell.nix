@@ -1,6 +1,7 @@
 { mkHackageIndex, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack }:
 let defaultGhc = ghc;
-in { hackageIndexState, src, ghc ? defaultGhc }:
+    defaultCabalInstall = cabal-install;
+in { hackageIndexState, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
 let
   cabalFiles =
     pkgs.lib.cleanSourceWith {
