@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, writeText, runCommand, pkgconfig, nonReinstallablePkgs, withPackage, hsPkgs }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, writeText, runCommand, pkgconfig, nonReinstallablePkgs, ghcForComponent, hsPkgs }:
 
 { flags
 , package
@@ -72,7 +72,7 @@ let
       '';
     };
 
-  comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs withPackage hsPkgs; };
+  comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix { inherit ghc haskellLib nonReinstallablePkgs ghcForComponent hsPkgs; };
 
   buildComp = componentId: component: comp-builder {
     inherit componentId component package name src flags setup cabalFile cabal-generator patches revision
