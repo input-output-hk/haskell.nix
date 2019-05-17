@@ -10,25 +10,31 @@ let
   ## packageComponentsOfType :: Package -> Type String -> [Component]
   packageComponentsOfType = pkg: type:
     (optionals (hasAttr type pkg.components) (lib.mapAttrsToList (n: c: c) pkg.components."${type}"));
-  ## packageComponentsOfType :: Package -> [Component]
+  ## packageComponents :: Package -> [Component]
   packageComponents = pkg:
     optionals (hasAttr "library" pkg.components) [ pkg.components.library ]
     ++ concatMap (packageComponentsOfType pkg) ["sublibs" "exes" "foreignlibs" "tests" "benchmarks"];
+  ## packageLibComponents :: Package -> [Component]
+  packageLibComponents = pkg:
+    optionals (hasAttr "library" pkg.components) [ pkg.components.library ]
+    ++ concatMap (packageComponentsOfType pkg) ["sublibs"];
+  ## packageHasLib :: Package -> Bool
+  packageHasLib = p: hasAttr "library" p.components;
   ## packageKeyComponent :: Package -> Component
   packageKeyComponent = pkg:
-    let comps = packageComponents pkg;
+    let comps = packageLibComponents pkg;
         first = elemAt comps 0;
         r     = if length comps == 0
                 then throw "No components in package ${pkg.identifier.name}."
                 else first; in
     r;
-  ## flatDepends :: Component -> [Package]
-  flatDepends =
+  ## flatLibDepends :: Component -> [Package]
+  flatLibDepends =
     component:
     let
       makePairs = map (p: rec { key="${val.name}"; val=packageKeyComponent p; });
       closure = builtins.genericClosure {
-        startSet = makePairs component.depends;
+        startSet = makePairs (filter packageHasLib component.depends);
         operator = {val,...}: makePairs val.config.depends;
       };
     in map ({val,...}: val) closure;
@@ -76,7 +82,7 @@ in { identifier, component, fullName, flags ? {} }:
 
     ${lib.concatMapStringsSep "\n" (p: ''
       target-pkg --package-db ${p}/package.conf.d dump | target-pkg --force --package-db $out/package.conf.d register -
-    '') (flatDepends component)}
+    '') (flatLibDepends component)}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
     ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
@@ -87,7 +93,8 @@ in { identifier, component, fullName, flags ? {} }:
     cat > $out/ghc-environment <<EOF
     package-db $out/package.conf.d
     EOF
-    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${packageKeyComponent p}/package.conf.d" p.identifier.name) component.depends}
+    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${packageKeyComponent p}/package.conf.d" p.identifier.name)
+                                   (filter packageHasLib component.depends)}
     ${lib.concatMapStringsSep "\n" (envDep "") (lib.remove "ghc" nonReinstallablePkgs)}
 
   '' + lib.optionalString component.doExactConfig ''
@@ -95,7 +102,8 @@ in { identifier, component, fullName, flags ? {} }:
     echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
     echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
 
-    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
+    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name)
+                                   (filter packageHasLib component.depends)}
     ${lib.concatMapStringsSep "\n" (exactDep "") nonReinstallablePkgs}
 
   ''
