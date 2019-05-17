@@ -18,7 +18,7 @@
 , preCheck ? null, postCheck ? null
 , preInstall ? null, postInstall ? null
 , preHaddock ? null, postHaddock ? null
-, shellHook ? null
+, shellHook ? ""
 
 , doCheck ? component.doCheck || haskellLib.isTest componentId
 , doCrossCheck ? component.doCrossCheck || false
@@ -187,6 +187,11 @@ let
     inherit configFiles;
   };
 
+  # In order to let shell hooks make package-specific things like Hoogle databases
+  shellHookApplied = if builtins.isString shellHook then shellHook else
+                     if builtins.isFunction shellHook then shellHook { inherit package shellWrappers; }
+                     else abort "shellHook should be a string or a function";
+
   # the target dir for haddock documentation
   docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
 
@@ -332,7 +337,7 @@ stdenv.mkDerivation ({
 
   shellHook = ''
     export PATH="${shellWrappers}/bin:$PATH"
-    ${toString shellHook}
+    ${shellHookApplied}
   '';
 }
 # patches can (if they like) depend on the version and revision of the package.

@@ -73,6 +73,11 @@ let
             type = bool;
             default = (def.doHaddock or true);
           };
+          shellHook = mkOption {
+            description = "Hook to run when entering a shell";
+            type = unspecified; # Can be either a string or a function
+            default = (def.shellHook or "");
+          };
   };
   packageOptions = def: componentOptions def // {
     preUnpack = mkOption {
@@ -122,10 +127,6 @@ let
     postHaddock = mkOption {
       type = nullOr string;
       default = (def.postHaddock or null);
-    };
-    shellHook = mkOption {
-      type = nullOr string;
-      default = (def.shellHook or null);
     };
   };
 

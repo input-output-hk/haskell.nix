@@ -5,7 +5,7 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     buildGHC = buildModules.config.ghc.package;
-    inherit (config) nonReinstallablePkgs hsPkgs;
+    inherit (config) nonReinstallablePkgs hsPkgs shellHook;
     inherit ghcForComponent;
   };
 
