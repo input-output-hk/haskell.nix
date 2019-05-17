@@ -12,7 +12,7 @@ rm -rvf */cabal.project.local */.ghc.environment* */dist */dist-newstyle */.stac
 echo >& 2
 
 printf "*** Running the nix-build tests...\n" >& 2
-nix-build $NIX_BUILD_ARGS --no-out-link --keep-going ./default.nix
+nix build $NIX_BUILD_ARGS --no-link --keep-going -f ./default.nix
 echo >& 2
 
 printf "*** Running the unit tests... " >& 2
