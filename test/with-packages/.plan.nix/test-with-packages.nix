@@ -17,4 +17,4 @@
     components = {
       "library" = { depends = [ (hsPkgs.base) (hsPkgs.lens) ]; };
       };
-    } // rec { src = (pkgs.lib).mkDefault ./.; }
+    } // rec { src = (pkgs.lib).mkDefault ../.; }

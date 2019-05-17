@@ -1,15 +1,16 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet }:
+{ stdenv, util, mkPkgSet }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    pkg-def-extras = [
-      { cabal-simple = ./cabal-simple.nix;
-      }
-    ];
+  ## steps to generate local files
+  # 1. cabal new-build
+  # 2. plan-to-nix -o .
+  pkgs = import ./pkgs.nix;
+  pkgSet = mkPkgSet {
+    pkg-def = pkgs.pkgs;
+    pkg-def-extras = [ pkgs.extras ];
     modules = [
      {
        # Package has no exposed modules which causes

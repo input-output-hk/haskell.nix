@@ -18,7 +18,7 @@ library
   -- exposed-modules:
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >=4.11 && <4.12
+  build-depends:       base
                      , extra
                      , safe
                      , aeson
@@ -29,7 +29,7 @@ executable cabal-simple
   main-is:             Main.hs
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >=4.11 && <4.12
+  build-depends:       base
                      , cabal-simple
                      , extra
                      , optparse-applicative

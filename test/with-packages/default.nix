@@ -1,14 +1,16 @@
-{ stdenv, util, mkCabalProjectPkgSet }:
+{ stdenv, util, mkPkgSet }:
 
 with stdenv.lib;
 with util;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    pkg-def-extras = [
-      { test-with-packages = ./test-with-packages.nix; }
-    ];
+  pkgs = import ./pkgs.nix;
+  pkgSet = mkPkgSet {
+    # generated with:
+    #   cabal new-build
+    #   plan-to-nix -o .
+    pkg-def = pkgs.pkgs;
+    pkg-def-extras = [ pkgs.extras ];
     modules = [
       # overrides to fix the build
       {
