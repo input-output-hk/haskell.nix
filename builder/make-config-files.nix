@@ -7,32 +7,13 @@ let
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
   '';
 
-  ## packageComponentsOfType :: Package -> Type String -> [Component]
-  packageComponentsOfType = pkg: type:
-    (optionals (hasAttr type pkg.components) (lib.mapAttrsToList (n: c: c) pkg.components."${type}"));
-  ## packageComponents :: Package -> [Component]
-  packageComponents = pkg:
-    optionals (hasAttr "library" pkg.components) [ pkg.components.library ]
-    ++ concatMap (packageComponentsOfType pkg) ["sublibs" "exes" "foreignlibs" "tests" "benchmarks"];
-  ## packageLibComponents :: Package -> [Component]
-  packageLibComponents = pkg:
-    optionals (hasAttr "library" pkg.components) [ pkg.components.library ]
-    ++ concatMap (packageComponentsOfType pkg) ["sublibs"];
   ## packageHasLib :: Package -> Bool
   packageHasLib = p: hasAttr "library" p.components;
-  ## packageKeyComponent :: Package -> Component
-  packageKeyComponent = pkg:
-    let comps = packageLibComponents pkg;
-        first = elemAt comps 0;
-        r     = if length comps == 0
-                then throw "No components in package ${pkg.identifier.name}."
-                else first; in
-    r;
   ## flatLibDepends :: Component -> [Package]
   flatLibDepends =
     component:
     let
-      makePairs = map (p: rec { key="${val.name}"; val=packageKeyComponent p; });
+      makePairs = map (p: rec { key="${val.name}"; val=p.components.library; });
       closure = builtins.genericClosure {
         startSet = makePairs (filter packageHasLib component.depends);
         operator = {val,...}: makePairs val.config.depends;
@@ -93,7 +74,7 @@ in { identifier, component, fullName, flags ? {} }:
     cat > $out/ghc-environment <<EOF
     package-db $out/package.conf.d
     EOF
-    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${packageKeyComponent p}/package.conf.d" p.identifier.name)
+    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name)
                                    (filter packageHasLib component.depends)}
     ${lib.concatMapStringsSep "\n" (envDep "") (lib.remove "ghc" nonReinstallablePkgs)}
 
