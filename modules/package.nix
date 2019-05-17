@@ -96,7 +96,7 @@ with types;
             default = [];
           };
           pkgconfig = mkOption {
-            type = listOfFilteringNulls package;
+            type = listOf (listOfFilteringNulls package);
             default = [];
           };
           build-tools = mkOption {

@@ -235,7 +235,7 @@ stdenv.mkDerivation ({
 
   buildInputs = component.libs
     ++ component.frameworks
-    ++ component.pkgconfig;
+    ++ builtins.concatLists component.pkgconfig;
 
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]
