@@ -52,12 +52,7 @@ let
     override = "stackage";
   });
 
-  packages = pkgs: self: (rec {
-    inherit pkgs; # Make pkgs available via callPackage
-
-    # Packages built to run on the build platform, not the host platform
-    buildPackages = pkgs.buildPackages.lib.makeScope pkgs.buildPackages.newScope (packages pkgs.buildPackages);
-
+  packages = self: ({
     # Utility functions for working with the component builder.
     haskellLib = let hl = import ./lib { inherit (pkgs) lib; haskellLib = hl; }; in hl;
 
@@ -111,11 +106,12 @@ let
       };
 
     # Programs for generating Nix expressions from Cabal and Stack
-    # files.
-    nix-tools = self.callPackage ./nix-tools { inherit fetchExternal; };
+    # files. We need to make sure we build this from the buildPackages,
+    # we never want to actually cross compile nix-tools on it's own.
+    nix-tools = pkgs.buildPackages.callPackage ./nix-tools { inherit fetchExternal; inherit (self) mkCabalProjectPkgSet; };
 
     # Function to call stackToNix
-    callStackToNix = buildPackages.callPackage ./call-stack-to-nix.nix {};
+    callStackToNix = self.callPackage ./call-stack-to-nix.nix {};
 
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
@@ -130,4 +126,4 @@ let
   });
 
 in
-  pkgs.lib.makeScope pkgs.newScope (packages pkgs)
+  pkgs.lib.makeScope pkgs.newScope packages
