@@ -38,6 +38,11 @@ let
   # overridden with NIX_PATH.
   fetchExternal = import ./lib/fetch-external.nix;
 
+  mkHackageIndex = indexState: import ./lib/hackageIndex.nix {
+    inherit (pkgs) runCommand cabal-install;
+    inherit indexState;
+  };
+
   # All packages from Hackage as Nix expressions
   hackage = import (fetchExternal {
     name     = "hackage-exprs-source";
@@ -126,6 +131,20 @@ let
       update-hackage = self.callPackage ./scripts/update-hackage.nix {};
       update-stackage = self.callPackage ./scripts/update-stackage.nix {};
       update-pins = self.callPackage ./scripts/update-pins.nix {};
+    };
+
+    # Make this handy overridable fetch function available.
+    inherit fetchExternal;
+
+    # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
+    # Resulting nix files are added to nix-plan subdirectory.
+    callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
+      inherit mkHackageIndex;
+      inherit pkgs;
+      inherit (pkgs) runCommand cabal-install ghc;
+      inherit (pkgs.haskellPackages) hpack;
+      inherit (self) nix-tools;
+      inherit (pkgs) symlinkJoin;
     };
   });
 
