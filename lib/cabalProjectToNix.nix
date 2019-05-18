@@ -20,6 +20,10 @@ let
     cd $tmp
     cp -r ${cabalFiles}/* .
     chmod +w -R .
+    # warning: this may not generate the proper cabal file.
+    # hpack allows globbing, and turns that into module lists
+    # without the source available (we cleaneSourceWith'd it),
+    # this may not produce the right result.
     find . -name package.yaml -exec hpack "{}" \;
     HOME=${mkHackageIndex hackageIndexState} cabal new-configure
 
@@ -33,7 +37,10 @@ let
     #
     # This is also important as `plan-to-nix` will look for the .cabal files when generating
     # the relevant `pkgs.nix` file with the local .cabal expressions.
-    rsync -a --prune-empty-dirs --include '*/' --include '*.cabal' --exclude '*' $tmp/ $out/
+    rsync -a --prune-empty-dirs \
+          --include '*/' --include '*.cabal' --include 'package.yaml' \
+          --exclude '*' \
+          $tmp/ $out/
 
     # make sure the path's in the plan.json are relative to $out instead of $tmp
     # this is necessary so that plan-to-nix relative path logic can work.
