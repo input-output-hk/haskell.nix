@@ -140,6 +140,7 @@ let
       inherit (pkgs) runCommand cabal-install ghc;
       inherit (pkgs.haskellPackages) hpack;
       inherit (self) nix-tools;
+      inherit (pkgs) symlinkJoin;
     };
   });
 
