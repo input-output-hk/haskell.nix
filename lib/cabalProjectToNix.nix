@@ -14,14 +14,14 @@ let
          # cabal-install versions before 2.4 will generate insufficient plan information.
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
          else runCommand "plan" {
-    buildInputs = [ ghc hpack ];
+    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync ];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
     cp -r ${cabalFiles}/* .
     chmod +w -R .
     find . -name package.yaml -exec hpack "{}" \;
-    HOME=${mkHackageIndex hackageIndexState} ${cabal-install}/bin/cabal new-configure
+    HOME=${mkHackageIndex hackageIndexState} cabal new-configure
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
@@ -33,7 +33,7 @@ let
     #
     # This is also important as `plan-to-nix` will look for the .cabal files when generating
     # the relevant `pkgs.nix` file with the local .cabal expressions.
-    ${pkgs.rsync}/bin/rsync -a --prune-empty-dirs --include '*/' --include '*.cabal' --exclude '*' $tmp/ $out/
+    rsync -a --prune-empty-dirs --include '*/' --include '*.cabal' --exclude '*' $tmp/ $out/
 
     # make sure the path's in the plan.json are relative to $out instead of $tmp
     # this is necessary so that plan-to-nix relative path logic can work.
@@ -41,15 +41,15 @@ let
 
     # run `plan-to-nix` in $out.  This should produce files right there with the
     # proper relative paths.
-    (cd $out && ${nix-tools}/bin/plan-to-nix --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
+    (cd $out && plan-to-nix --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
   '';
 in
-  runCommand "plan-and-src" {} ''
+  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.xorg.lndir pkgs.rsync ]; } ''
     mkdir $out
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-    ${pkgs.xorg.lndir}/bin/lndir -silent "${src}" "$out"
-    ${pkgs.rsync}/bin/rsync -a ${plan}/ $out/
+    lndir -silent "${src}" "$out"
+    rsync -a ${plan}/ $out/
   ''
