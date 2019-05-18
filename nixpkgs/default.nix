@@ -1,7 +1,6 @@
 let
-  fetchFromGitHub = { owner, repo, rev, sha256, ... }:
-    builtins.fetchTarball {
-      inherit sha256;
-      url = "https://github.com/${owner}/${repo}/archive/${rev}.tar.gz";
-    };
-in import (fetchFromGitHub (builtins.fromJSON (builtins.readFile ./github.json)))
+  fetch = jsonFile:
+    with builtins;
+    let spec = fromJSON (readFile jsonFile);
+    in fetchTarball { inherit (spec) sha256; url = "${spec.url}/archive/${spec.rev}.tar.gz"; };
+in import (fetch ./github.json)

@@ -1,6 +1,7 @@
 {
-  "owner": "NixOS",
-  "repo": "nixpkgs",
-  "rev": "43ba99fa0354421dace7072ea4639d14bbb94f50",
-  "sha256": "124w60i6rwj91l0vlz6vklmk82mbw7v30rqqs17rj6wqn57948wx"
+  "url": "https://github.com/nixos/nixpkgs",
+  "rev": "db85ded4aae63508934dc42064c7fbff16e0ec21",
+  "date": "2019-05-17T15:35:26+02:00",
+  "sha256": "0b91n0s5zaamxh9842ns11s40678sv4pbpxaxdqnrnkrkp8pn9gy",
+  "fetchSubmodules": false
 }
