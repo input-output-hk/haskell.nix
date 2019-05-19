@@ -144,6 +144,16 @@
             (hsPkgs.http-types)
             ];
           };
+        "truncate-index" = {
+          depends = [
+            (hsPkgs.base)
+            (hsPkgs.optparse-applicative)
+            (hsPkgs.zlib)
+            (hsPkgs.tar)
+            (hsPkgs.bytestring)
+            (hsPkgs.time)
+            ];
+          };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault .././../.; }
+    } // rec { src = (pkgs.lib).mkDefault ../.; }
