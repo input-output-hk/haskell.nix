@@ -71,9 +71,11 @@ let
       ++ component.configureFlags
   );
 
-  executableToolDepends = lib.concatMap (c: if c.isHaskell or false
+  executableToolDepends =
+    (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) component.build-tools;
+      else [c]) component.build-tools) ++
+    lib.optional (component.pkgconfig != []) pkgconfig;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
@@ -104,7 +106,7 @@ stdenv.mkDerivation ({
   passthru = {
     inherit (package) identifier;
     config = component;
-    inherit configFiles;
+    inherit configFiles executableToolDepends;
     env = shellWrappers;
 
     # The directory containing the haddock documentation.
@@ -134,7 +136,6 @@ stdenv.mkDerivation ({
 
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]
-    ++ lib.optional (component.pkgconfig != []) pkgconfig
     ++ executableToolDepends;
 
   SETUP_HS = setup + /bin/Setup;

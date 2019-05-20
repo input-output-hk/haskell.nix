@@ -1,17 +1,33 @@
-{ lib, stdenv, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs }:
+{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs }:
 
 { packages, withHoogle ? true, ... } @ args:
 
 let
   selected = packages hsPkgs;
+  selectedConfigs = map (p: p.components.all.config) selected;
+
   name = if lib.length selected == 1
     then "ghc-shell-for-${(lib.head selected).name}"
     else "ghc-shell-for-packages";
+
+  # If `packages = [ a b ]` and `a` depends on `b`, don't build `b`,
+  # because cabal will end up ignoring that built version, assuming
+  # new-style commands.
+  packageInputs = lib.filter
+    (input: lib.all (cfg: input.identifier != cfg.identifier) selected)
+    (lib.concatMap (cfg: cfg.depends) selectedConfigs);
+
+  # Add the system libraries and build tools of the selected haskell
+  # packages to the shell.
+  systemInputs = lib.concatMap (p: p.components.all.buildInputs) selected;
+  nativeBuildInputs = lib.concatMap (p: p.components.all.executableToolDepends) selected;
+
+  # Set up a "dummy" component to use with ghcForComponent.
   configFiles = makeConfigFiles {
     fullName = args.name or name;
     identifier.name = name;
     component = {
-      depends = selected;
+      depends = packageInputs;
       libs = [];
       frameworks = [];
       doExactConfig = false;
@@ -22,10 +38,6 @@ let
     inherit configFiles;
   };
   mkDrvArgs = builtins.removeAttrs args ["packages" "withHoogle"];
-
-  # fixme: check if systemInputs and nativeBuildInputs are necessary
-  systemInputs = [];
-  nativeBuildInputs = [];
 in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
