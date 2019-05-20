@@ -1,4 +1,4 @@
-{ buildPackages, lib, stdenv, ghcForComponent, makeConfigFiles, hsPkgs }:
+{ lib, stdenv, glibcLocales, ghcForComponent, makeConfigFiles, hsPkgs }:
 
 { packages, withHoogle ? true, ... } @ args:
 
@@ -7,18 +7,19 @@ let
   name = if lib.length selected == 1
     then "ghc-shell-for-${(lib.head selected).name}"
     else "ghc-shell-for-packages";
+  configFiles = makeConfigFiles {
+    fullName = args.name or name;
+    identifier.name = name;
+    component = {
+      depends = selected;
+      libs = [];
+      frameworks = [];
+      doExactConfig = false;
+    };
+  };
   ghcEnv = ghcForComponent {
     componentName = name;
-    configFiles = makeConfigFiles {
-      fullName = args.name or name;
-      identifier.name = name;
-      component = {
-        depends = selected;
-        libs = [];
-        frameworks = [];
-        doExactConfig = false;
-      };
-    };
+    inherit configFiles;
   };
   mkDrvArgs = builtins.removeAttrs args ["packages" "withHoogle"];
 
@@ -34,7 +35,8 @@ in
     phases = ["installPhase"];
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
     LANG = "en_US.UTF-8";
-    LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${buildPackages.glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
+    CABAL_CONFIG = "${configFiles}/cabal.config";
 
     passthru.ghc = ghcEnv;
   })
