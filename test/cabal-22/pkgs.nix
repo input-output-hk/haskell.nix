@@ -19,5 +19,5 @@
         };
       };
   extras = hackage:
-    { packages = {}; };
+    { packages = { project = ./.plan.nix/project.nix; }; };
   }
