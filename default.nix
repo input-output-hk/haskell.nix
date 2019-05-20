@@ -38,11 +38,6 @@ let
   # overridden with NIX_PATH.
   fetchExternal = import ./lib/fetch-external.nix;
 
-  mkHackageIndex = indexState: import ./lib/hackageIndex.nix {
-    inherit (pkgs) runCommand cabal-install;
-    inherit indexState;
-  };
-
   # All packages from Hackage as Nix expressions
   hackage = import (fetchExternal {
     name     = "hackage-exprs-source";
@@ -132,10 +127,34 @@ let
     # Make this handy overridable fetch function available.
     inherit fetchExternal;
 
+    hackageTarball = { index-state, sha256 }:
+      let index = builtins.fetchurl https://hackage.haskell.org/01-index.tar.gz;
+      in pkgs.runCommand "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}" { outputHashAlgo = "sha256"; outputHash = sha256; }
+      ''
+      ${self.nix-tools}/bin/truncate-index -o $out -i ${index} -s ${index-state}
+      '';
+
+    mkLocalHackageRepo = import ./mk-local-hackage-repo { inherit (self) hackageTarball; inherit pkgs; };
+
+    dotCabal = { index-state, sha256 }@args:
+      pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ pkgs.cabal-install ]; } ''
+        mkdir -p $out/.cabal
+        cat <<EOF > $out/.cabal/config
+        repository cached
+          url: file:${self.mkLocalHackageRepo args}
+          secure: True
+          root-keys:
+          key-threshold: 0
+        EOF
+        mkdir -p $out/.cabal/packages/cached
+        HOME=$out cabal new-update cached
+      '';
+
+
     # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
     # Resulting nix files are added to nix-plan subdirectory.
     callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
-      inherit mkHackageIndex;
+      inherit (self) dotCabal;
       inherit pkgs;
       inherit (pkgs) runCommand cabal-install ghc;
       inherit (pkgs.haskellPackages) hpack;

@@ -1,0 +1,17 @@
+{
+  "signatures": [],
+  "signed": {
+    "_type": "Timestamp",
+    "expires": "@expires@",
+    "meta": {
+      "<repo>/snapshot.json": {
+        "hashes": {
+          "md5": "@snapshot_md5@",
+          "sha256": "@snapshot_sha256@"
+        },
+        "length": @snapshot_length@
+      }
+    },
+    "version": 1
+  }
+}

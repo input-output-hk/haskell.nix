@@ -1,7 +1,7 @@
-{ mkHackageIndex, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin }:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { hackageIndexState, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+in { index-state, index-sha256 ? import ./index-state-hashes.nix index-state, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
 let
   cabalFiles =
     pkgs.lib.cleanSourceWith {
@@ -14,7 +14,7 @@ let
          # cabal-install versions before 2.4 will generate insufficient plan information.
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
          else runCommand "plan" {
-    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync ];
+    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
@@ -25,7 +25,7 @@ let
     # without the source available (we cleaneSourceWith'd it),
     # this may not produce the right result.
     find . -name package.yaml -exec hpack "{}" \;
-    HOME=${mkHackageIndex hackageIndexState} cabal new-configure
+    HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
