@@ -13,7 +13,7 @@ let
   packages = pkgSet.config.hsPkgs;
 in
   stdenv.mkDerivation {
-    name = "callStackToNix-test";
+    name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
       exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"
