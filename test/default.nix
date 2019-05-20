@@ -17,8 +17,7 @@ in {
   stack-simple = haskell.callPackage ./stack-simple {};
   callStackToNix = haskell.callPackage ./callStackToNix {};
 
-  # Disabled -- doesn't work in a sandboxed build
-  # callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
+  callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit
   # An empty list means success.
