@@ -5,10 +5,6 @@ with stdenv.lib;
 let
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = import ./pkgs.nix;
-    pkg-def-extras = [
-      { project = ./project.nix; }
-    ];
-    modules = [ ];
   };
 
   packages = pkgSet.config.hsPkgs;

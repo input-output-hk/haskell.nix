@@ -3,7 +3,7 @@
     flags = {};
     package = {
       specVersion = "2.2";
-      identifier = { name = "test-with-packages"; version = "0.1.0.0"; };
+      identifier = { name = "test-haddock"; version = "0.1.0.0"; };
       license = "NONE";
       copyright = "";
       maintainer = "rodney.lorrimar@iohk.io";
@@ -14,7 +14,5 @@
       description = "";
       buildType = "Simple";
       };
-    components = {
-      "library" = { depends = [ (hsPkgs.base) (hsPkgs.lens) ]; };
-      };
+    components = { "library" = { depends = [ (hsPkgs.base) (hsPkgs.stm) ]; }; };
     } // rec { src = (pkgs.lib).mkDefault ../.; }

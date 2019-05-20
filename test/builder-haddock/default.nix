@@ -5,9 +5,6 @@ with stdenv.lib;
 let
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = import ./pkgs.nix;
-    pkg-def-extras = [
-      { test-haddock = ./test-haddock.nix; }
-    ];
     modules = [
       # overrides to fix the build
       {

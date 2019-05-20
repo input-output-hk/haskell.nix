@@ -16,7 +16,9 @@ in {
   builder-haddock = haskell.callPackage ./builder-haddock {};
   stack-simple = haskell.callPackage ./stack-simple {};
   callStackToNix = haskell.callPackage ./callStackToNix {};
-  callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
+
+  # Disabled -- doesn't work in a sandboxed build
+  # callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit
   # An empty list means success.
