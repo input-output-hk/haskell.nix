@@ -54,9 +54,25 @@ let
     mv $out/pkgs.nix $out/default.nix
   '';
 in
-  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.xorg.lndir pkgs.rsync ]; } ''
+  # TODO: We really want this (symlinks) instead of copying the source over each and
+  #       every time.  However this will not work with sandboxed builds.  They won't
+  #       have access to `plan` or `src` paths.  So while they will see all the
+  #       links, they won't be able to read any of them.
+  #
+  #       We should be able to fix this if we propagaed the build inputs properly.
+  #       As we are `import`ing the produced nix-path here, we seem to be losing the
+  #       dependencies though.
+  #
+  #       I guess the end-result is that ifd's don't work well with symlinks.
+  #
+  # symlinkJoin {
+  #   name = "plan-and-src";
+  #   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
+  #   buildInputs = [ plan src ];
+  # }
+  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
     mkdir $out
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-    lndir -silent "${src}" "$out"
+    rsync -a "${src}/" "$out/"
     rsync -a ${plan}/ $out/
   ''
