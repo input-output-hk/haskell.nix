@@ -68,7 +68,7 @@ in
   pkgs.symlinkJoin {
     name = "plan-and-src";
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-    buildInputs = [ plan src ];
+    paths = [ plan src ];
   }
   # runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
   #   mkdir $out
