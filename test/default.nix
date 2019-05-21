@@ -1,4 +1,5 @@
-{ pkgs ? import nixpkgs {}
+{ system ? builtins.currentSystem
+, pkgs ? import nixpkgs { inherit system; }
 , nixpkgs ? ../nixpkgs
 , haskell ? pkgs.callPackage ../. { }
 }:
