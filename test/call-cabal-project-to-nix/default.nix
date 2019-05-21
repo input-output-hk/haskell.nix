@@ -5,7 +5,7 @@ with stdenv.lib;
 let
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = import (callCabalProjectToNix {
-      hackageIndexState = "2019-04-24T21:34:04Z";
+      index-state = "2019-04-30T00:00:00Z";
       # reuse the cabal-simple test project
       src = ../cabal-simple;
     });
@@ -13,7 +13,7 @@ let
   packages = pkgSet.config.hsPkgs;
 in
   stdenv.mkDerivation {
-    name = "callStackToNix-test";
+    name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
       exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"

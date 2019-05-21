@@ -1,7 +1,7 @@
-{ mkHackageIndex, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin }:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { hackageIndexState, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+in { index-state, index-sha256 ? import ./index-state-hashes.nix index-state, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
 let
   cabalFiles =
     pkgs.lib.cleanSourceWith {
@@ -14,7 +14,7 @@ let
          # cabal-install versions before 2.4 will generate insufficient plan information.
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
          else runCommand "plan" {
-    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync ];
+    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
@@ -25,7 +25,7 @@ let
     # without the source available (we cleaneSourceWith'd it),
     # this may not produce the right result.
     find . -name package.yaml -exec hpack "{}" \;
-    HOME=${mkHackageIndex hackageIndexState} cabal new-configure
+    HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
@@ -54,9 +54,25 @@ let
     mv $out/pkgs.nix $out/default.nix
   '';
 in
-  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.xorg.lndir pkgs.rsync ]; } ''
+  # TODO: We really want this (symlinks) instead of copying the source over each and
+  #       every time.  However this will not work with sandboxed builds.  They won't
+  #       have access to `plan` or `src` paths.  So while they will see all the
+  #       links, they won't be able to read any of them.
+  #
+  #       We should be able to fix this if we propagaed the build inputs properly.
+  #       As we are `import`ing the produced nix-path here, we seem to be losing the
+  #       dependencies though.
+  #
+  #       I guess the end-result is that ifd's don't work well with symlinks.
+  #
+  # symlinkJoin {
+  #   name = "plan-and-src";
+  #   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
+  #   buildInputs = [ plan src ];
+  # }
+  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
     mkdir $out
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-    lndir -silent "${src}" "$out"
+    rsync -a "${src}/" "$out/"
     rsync -a ${plan}/ $out/
   ''

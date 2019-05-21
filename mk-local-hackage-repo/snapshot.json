@@ -1,0 +1,31 @@
+{
+  "signatures": [],
+  "signed": {
+    "_type": "Snapshot",
+    "expires": "@expires@",
+    "meta": {
+      "<repo>/01-index.tar.gz": {
+        "hashes": {
+          "md5": "@index_md5@",
+          "sha256": "@index_sha256@"
+        },
+        "length": @index_length@
+      },
+      "<repo>/root.json": {
+        "hashes": {
+          "md5": "@root_md5@",
+          "sha256": "@root_sha256@"
+        },
+        "length": @root_length@
+      },
+      "<repo>/mirrors.json": {
+        "hashes": {
+          "md5": "@mirrors_md5@",
+          "sha256": "@mirrors_sha256@"
+        },
+        "length": @mirrors_length@
+      }
+    },
+    "version": 1
+  }
+}

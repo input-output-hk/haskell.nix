@@ -1,0 +1,34 @@
+{
+  "signatures": [],
+  "signed": {
+    "_type": "Root",
+    "expires": "@expires@",
+    "keys": {
+    },
+    "roles": {
+      "mirrors": {
+        "keyids": [ ],
+        "threshold": 0
+      },
+      "root": {
+        "keyids": [ ],
+        "threshold": 0
+      },
+      "snapshot": {
+        "keyids": [ ],
+        "threshold": 0
+      },
+      "targets": {
+        "keyids": [
+        ],
+        "threshold": 0
+      },
+      "timestamp": {
+        "keyids": [
+        ],
+        "threshold": 0
+      }
+    },
+    "version": 1
+  }
+}
