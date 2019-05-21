@@ -65,7 +65,7 @@ in
   #
   #       I guess the end-result is that ifd's don't work well with symlinks.
   #
-  symlinkJoin {
+  pkgs.symlinkJoin {
     name = "plan-and-src";
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
     buildInputs = [ plan src ];
