@@ -30,7 +30,7 @@ pkgs:
      bz2 = pkgs.bzip2;
      util = pkgs.utillinux;
      magic = pkgs.file;
-     pq = pkgs.postgresql.lib; # just the lib output because we don't want all of postgres
+     pq = pkgs.postgresql;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
