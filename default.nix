@@ -38,6 +38,7 @@ let
   # overridden with NIX_PATH.
   fetchExternal = import ./lib/fetch-external.nix;
 
+  # Function for cleaning haskell source directories pulled from iohk-nix
   cleanSourceHaskell = pkgs.callPackage ./lib/clean-source-haskell.nix {};
 
   # All packages from Hackage as Nix expressions
