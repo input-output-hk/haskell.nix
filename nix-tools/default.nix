@@ -1,11 +1,11 @@
-{ symlinkJoin, fetchExternal, mkCabalProjectPkgSet }:
+{ symlinkJoin, fetchExternal, cleanSourceHaskell, mkCabalProjectPkgSet }:
 
 let
-  src = fetchExternal {
+  src = cleanSourceHaskell (fetchExternal {
     name     = "nix-tools-src";
     specJSON = ./nix-tools-src.json;
     override = "nix-tools";
-  };
+  });
 
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = import ./pkgs.nix;

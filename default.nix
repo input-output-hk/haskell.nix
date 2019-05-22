@@ -38,6 +38,9 @@ let
   # overridden with NIX_PATH.
   fetchExternal = import ./lib/fetch-external.nix;
 
+  # Function for cleaning haskell source directories pulled from iohk-nix
+  cleanSourceHaskell = pkgs.callPackage ./lib/clean-source-haskell.nix {};
+
   # All packages from Hackage as Nix expressions
   hackage = import (fetchExternal {
     name     = "hackage-exprs-source";
@@ -108,7 +111,7 @@ let
     # Programs for generating Nix expressions from Cabal and Stack
     # files. We need to make sure we build this from the buildPackages,
     # we never want to actually cross compile nix-tools on it's own.
-    nix-tools = pkgs.buildPackages.callPackage ./nix-tools { inherit fetchExternal; inherit (self) mkCabalProjectPkgSet; };
+    nix-tools = pkgs.buildPackages.callPackage ./nix-tools { inherit fetchExternal cleanSourceHaskell; inherit (self) mkCabalProjectPkgSet; };
 
     # Function to call stackToNix
     callStackToNix = self.callPackage ./call-stack-to-nix.nix {};
@@ -126,6 +129,9 @@ let
 
     # Make this handy overridable fetch function available.
     inherit fetchExternal;
+
+    # Function for cleaning haskell source diretories.
+    inherit cleanSourceHaskell;
 
     # Produce a fixed output derivation from a moving target (hackage index tarball)
     hackageTarball = { index-state, sha256 }:
