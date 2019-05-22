@@ -135,6 +135,7 @@ let
 
     # Produce a fixed output derivation from a moving target (hackage index tarball)
     hackageTarball = { index-state, sha256 }:
+      assert sha256 != null;
       pkgs.fetchurl {
         name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
         url = "https://hackage.haskell.org/01-index.tar.gz";
