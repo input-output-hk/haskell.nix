@@ -1,8 +1,14 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { index-state, index-sha256 ? (import ./index-state-hashes.nix).${index-state} or throw "no hash for ${index-state}", src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
-assert index-sha256 != null;
+in { index-state, index-sha256 ? (import ./index-state-hashes.nix).${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+
+# better error message than just assert failed.
+assert (if index-sha256 == null then throw "provided sha256 for index-state ${index-state} is null!" else true);
+# cabal-install versions before 2.4 will generate insufficient plan information.
+assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
+         then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
+         else true);
 let
   cabalFiles =
     pkgs.lib.cleanSourceWith {
@@ -11,10 +17,7 @@ let
         type == "directory" ||
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
-  plan = if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
-         # cabal-install versions before 2.4 will generate insufficient plan information.
-         then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
-         else runCommand "plan" {
+  plan = runCommand "plan" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
     tmp=$(mktemp -d)
