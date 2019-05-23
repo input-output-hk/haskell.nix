@@ -135,20 +135,16 @@ let
 
     # Produce a fixed output derivation from a moving target (hackage index tarball)
     hackageTarball = { index-state, sha256 }:
-      pkgs.runCommand "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}" {
-        nativeBuildInputs = [ pkgs.curl ];
+      assert sha256 != null;
+      pkgs.fetchurl {
+        name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
+        url = "https://hackage.haskell.org/01-index.tar.gz";
+        downloadToTemp = true;
+        postFetch = "${self.nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+
         outputHashAlgo = "sha256";
         outputHash = sha256;
-        # We'll use fetchurl's result in an env var ...
-        HACKAGE_INDEX = builtins.fetchurl "https://hackage.haskell.org/01-index.tar.gz";
-        # ... and mark that impure.  That way we can
-        # ensure the sore path stays the same and doesn't
-        # depend on the fetchurl result path.
-        impureEnvVars = [ "HACKAGE_INDEX" ];
-      }
-      ''
-      ${self.nix-tools}/bin/truncate-index -o $out -i $HACKAGE_INDEX -s ${index-state}
-      '';
+      };
 
     mkLocalHackageRepo = import ./mk-local-hackage-repo { inherit (self) hackageTarball; inherit pkgs; };
 
