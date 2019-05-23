@@ -169,9 +169,11 @@ let
     cat ${./lib/index-state-hashes.nix} | head -n -1 >> $out
     for d in $(seq -f '%.f' $(date -u +%s -d $start) 86400 $(date -u +%s)) ; do
       dt=$(date -u +%Y-%m-%d -d @$d)
-      ''${truncate} -o ''${dt}-01-index.tar.gz -i ${builtins.fetchurl "https://hackage.haskell.org/01-index.tar.gz"} -s "''${dt}T00:00:00Z"
-      sha256=$(${pkgs.nix}/bin/nix-hash --flat --type sha256 ''${dt}-01-index.tar.gz)
-      echo "  \"''${dt}T00:00:00Z\" = \"''${sha256}\";" >> $out
+      if [[ "''${dt}T00:00:00Z" != "$start" ]]; then
+        ''${truncate} -o ''${dt}-01-index.tar.gz -i ${builtins.fetchurl "https://hackage.haskell.org/01-index.tar.gz"} -s "''${dt}T00:00:00Z"
+        sha256=$(${pkgs.nix}/bin/nix-hash --flat --type sha256 ''${dt}-01-index.tar.gz)
+        echo "  \"''${dt}T00:00:00Z\" = \"''${sha256}\";" >> $out
+      fi
     done
     echo '}' >> $out
     '';
