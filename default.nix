@@ -1,7 +1,8 @@
-{ pkgs ? import nixpkgs {}
+{ pkgs ? import nixpkgs nixpkgsArgs
 # Use a pinned nixpkgs rather than the one on NIX_PATH
 , nixpkgs ? ./nixpkgs
-
+# Provide args to the nixpkgs instantiation.
+, nixpkgsArgs ? {}
 # You can provide different pins for hackage.nix and stackage.nix if required.
 # It's also possible to override these sources with NIX_PATH.
 , hackageSourceJSON ? ./hackage-src.json
@@ -135,20 +136,16 @@ let
 
     # Produce a fixed output derivation from a moving target (hackage index tarball)
     hackageTarball = { index-state, sha256 }:
-      pkgs.runCommand "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}" {
-        nativeBuildInputs = [ pkgs.curl ];
+      assert sha256 != null;
+      pkgs.fetchurl {
+        name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
+        url = "https://hackage.haskell.org/01-index.tar.gz";
+        downloadToTemp = true;
+        postFetch = "${self.nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+
         outputHashAlgo = "sha256";
         outputHash = sha256;
-        # We'll use fetchurl's result in an env var ...
-        HACKAGE_INDEX = builtins.fetchurl "https://hackage.haskell.org/01-index.tar.gz";
-        # ... and mark that impure.  That way we can
-        # ensure the sore path stays the same and doesn't
-        # depend on the fetchurl result path.
-        impureEnvVars = [ "HACKAGE_INDEX" ];
-      }
-      ''
-      ${self.nix-tools}/bin/truncate-index -o $out -i $HACKAGE_INDEX -s ${index-state}
-      '';
+      };
 
     mkLocalHackageRepo = import ./mk-local-hackage-repo { inherit (self) hackageTarball; inherit pkgs; };
 
@@ -166,6 +163,20 @@ let
         HOME=$out cabal new-update cached
       '';
 
+    generateHackageIndexStateHashes = pkgs.runCommand "index-state-hashes" {} ''
+    truncate=${self.nix-tools}/bin/truncate-index
+    start=${let ls = builtins.attrNames (import ./lib/index-state-hashes.nix); in builtins.elemAt ls (builtins.length ls - 1)}
+    cat ${./lib/index-state-hashes.nix} | head -n -1 >> $out
+    for d in $(seq -f '%.f' $(date -u +%s -d $start) 86400 $(date -u +%s)) ; do
+      dt=$(date -u +%Y-%m-%d -d @$d)
+      if [[ "''${dt}T00:00:00Z" != "$start" ]]; then
+        ''${truncate} -o ''${dt}-01-index.tar.gz -i ${builtins.fetchurl "https://hackage.haskell.org/01-index.tar.gz"} -s "''${dt}T00:00:00Z"
+        sha256=$(${pkgs.nix}/bin/nix-hash --flat --type sha256 ''${dt}-01-index.tar.gz)
+        echo "  \"''${dt}T00:00:00Z\" = \"''${sha256}\";" >> $out
+      fi
+    done
+    echo '}' >> $out
+    '';
 
     # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
     # Resulting nix files are added to nix-plan subdirectory.
