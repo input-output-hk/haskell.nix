@@ -27,9 +27,13 @@ toEpochTime = floor . utcTimeToPOSIXSeconds
 -- | Filter Haskell Index
 filterHaskellIndex :: FilePath -> String -> FilePath -> IO ()
 filterHaskellIndex orig indexState out =
-  BS.writeFile out . GZip.compress . Tar.write . f . Tar.read . GZip.decompress =<< BS.readFile orig
+  BS.writeFile out . nukeHeaderOS . GZip.compress . Tar.write . f . Tar.read . GZip.decompress =<< BS.readFile orig
   where f = filter ((<= ts) . Tar.entryTime) . toList
         ts = toEpochTime . fromJust . parseIndexState $ indexState
+        -- gzip headers containt he OS, but we want a stable hash.
+        -- 0xff is unknown OS. http://www.zlib.org/rfc-gzip.html
+        nukeHeaderOS :: BS.ByteString -> BS.ByteString
+        nukeHeaderOS bs = BS.take 9 bs <> BS.singleton 0xff <> BS.drop 10 bs
 
 -- | Convert @Entries e@ to a list while throwing an error on failure.
 toList :: Show e => Entries e -> [Entry]
