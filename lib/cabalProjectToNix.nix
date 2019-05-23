@@ -1,7 +1,7 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { index-state, index-sha256 ? import ./index-state-hashes.nix index-state, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+in { index-state, index-sha256 ? (import ./index-state-hashes.nix).${index-state} or throw "no hash for ${index-state}", src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
 assert index-sha256 != null;
 let
   cabalFiles =
