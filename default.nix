@@ -176,7 +176,7 @@ let
     # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
     # Resulting nix files are added to nix-plan subdirectory.
     callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
-      index-state-hashes = indexStateHashesPath;
+      index-state-hashes = import indexStateHashesPath;
       inherit (self) dotCabal;
       inherit pkgs;
       inherit (pkgs) runCommand cabal-install ghc;
