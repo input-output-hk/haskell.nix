@@ -1,4 +1,4 @@
-{ stdenv, writeScript, coreutils, glibc, git, openssh, nix-tools, cabal-install, nix-prefetch-git }@args:
+{ stdenv, writeScript, coreutils, glibc, git, openssh, nix-tools, cabal-install, nix-prefetch-git, update-index-state-hashes }@args:
 
 import ./update-external.nix args {
   name = "hackage";
@@ -19,6 +19,10 @@ import ./update-external.nix args {
     echo "Running hackage-to-nix..."
 
     hackage-to-nix hackage.nix
+
+    echo "Running update-index-state-hashes..."
+
+    ${update-index-state-hashes}/bin/update-index-state-hashes > ./index-state-hashes.nix
 
     cd hackage.nix
   '';
