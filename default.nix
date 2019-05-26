@@ -183,10 +183,9 @@ let
     callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
       inherit (self) dotCabal;
       inherit pkgs;
-      inherit (pkgs) runCommand cabal-install ghc;
+      inherit (pkgs) runCommand cabal-install ghc symlinkJoin cacert nix nix-prefetch-git;
       inherit (pkgs.haskellPackages) hpack;
       inherit (self) nix-tools;
-      inherit (pkgs) symlinkJoin;
     };
   });
 
