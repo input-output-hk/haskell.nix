@@ -1,4 +1,4 @@
-{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs }:
+{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib }:
 
 { packages, withHoogle ? true, ... } @ args:
 
@@ -23,27 +23,47 @@ let
   nativeBuildInputs = lib.concatMap (p: p.components.all.executableToolDepends) selected;
 
   # Set up a "dummy" component to use with ghcForComponent.
+  component = {
+    depends = packageInputs;
+    libs = [];
+    frameworks = [];
+    doExactConfig = false;
+  };
   configFiles = makeConfigFiles {
     fullName = args.name or name;
     identifier.name = name;
-    component = {
-      depends = packageInputs;
-      libs = [];
-      frameworks = [];
-      doExactConfig = false;
-    };
+    inherit component;
   };
   ghcEnv = ghcForComponent {
     componentName = name;
     inherit configFiles;
   };
+
+  hoogleIndex = let
+    # Get the doc package for a component, and add attributes that
+    # hoogle.nix expects.
+    docPackage = p: lib.getOutput "doc" p // {
+      pname = p.identifier.name;
+      haddockDir = lib.const p.haddockDir;
+    };
+  in hoogleLocal {
+    packages = map docPackage (haskellLib.flatLibDepends component);
+
+    # Need to add hoogle to hsPkgs.
+    # inherit (hsPkgs) hoogle;
+  };
+
   mkDrvArgs = builtins.removeAttrs args ["packages" "withHoogle"];
 in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
-    buildInputs = systemInputs ++ mkDrvArgs.buildInputs or [];
-    nativeBuildInputs = [ ghcEnv ] ++ nativeBuildInputs ++ mkDrvArgs.nativeBuildInputs or [];
+    buildInputs = systemInputs
+      ++ mkDrvArgs.buildInputs or []
+      ++ lib.optional withHoogle hoogleIndex;
+    nativeBuildInputs = [ ghcEnv ]
+      ++ nativeBuildInputs
+      ++ mkDrvArgs.nativeBuildInputs or [];
     phases = ["installPhase"];
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
     LANG = "en_US.UTF-8";
