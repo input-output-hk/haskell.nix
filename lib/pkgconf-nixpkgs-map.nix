@@ -13,6 +13,7 @@ pkgs:
     "b2"                                 = [ pkgs."libb2" ];
     "bz2"                                = [ pkgs."bzip2" ];
     "c++"                                = []; # What is that?
+    "cairo-1.0"                          = [ pkgs."cairo" ];
     "cairo-gobject"                      = [ pkgs."cairo" ];
     "cairo-pdf"                          = [ pkgs."cairo" ];
     "cairo-ps"                           = [ pkgs."cairo" ];

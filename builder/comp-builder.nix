@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, writeText, runCommand, haskellLib, nonReinstallablePkgs, ghcForComponent, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection, writeText, runCommand, haskellLib, nonReinstallablePkgs, ghcForComponent, hsPkgs }:
 
 { componentId
 , component
@@ -235,7 +235,8 @@ stdenv.mkDerivation ({
 
   buildInputs = component.libs
     ++ component.frameworks
-    ++ builtins.concatLists component.pkgconfig;
+    ++ builtins.concatLists component.pkgconfig
+    ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
 
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]
