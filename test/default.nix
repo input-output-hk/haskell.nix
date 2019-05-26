@@ -16,8 +16,8 @@ in {
   with-packages = haskell.callPackage ./with-packages { inherit util; };
   builder-haddock = haskell.callPackage ./builder-haddock {};
   stack-simple = haskell.callPackage ./stack-simple {};
-  snapshots = haskell.callPackage ./snapshots {};
   shell-for = haskell.callPackage ./shell-for {};
+  snapshots = haskell.callPackage ./snapshots {};
   callStackToNix = haskell.callPackage ./callStackToNix {};
   callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
 
