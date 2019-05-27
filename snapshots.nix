@@ -35,9 +35,23 @@ let
           };
         };
       };
+
+      # Add hsc2hs to the snapshot. This is a build tool for many
+      # packages. Stackage does not include it in the snapshots
+      # because it is expected that hsc2hs comes with ghc.
+      fix-hsc2hs = {
+        extra = hackage: {
+          packages = {
+            "hsc2hs" = (((hackage.hsc2hs)."0.68.4").revisions).default;
+          };
+        };
+      };
     };
+
+    applyFix = name: fix: optional ((fix.predicate or (const true)) name) fix.extra;
+
   in
-    name: concatLists (mapAttrsToList (_: fix: optional (fix.predicate name) fix.extra) fixes);
+    name: concatLists (mapAttrsToList (_: applyFix name) fixes);
 
 in
   mapAttrs mkSnapshot stackage
