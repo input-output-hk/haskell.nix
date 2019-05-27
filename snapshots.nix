@@ -1,3 +1,11 @@
+# This provides a package set for each snapshot in Stackage.
+#
+# It allows you to use a bare snapshot without having to invoke
+# mkStackPkgSet with a stack.yaml project.
+#
+# A particular package in a snapshot would be accessed with:
+#   snapshots."lts-13.18".conduit
+
 { lib, mkPkgSet, stackage }:
 
 with lib;
@@ -12,9 +20,9 @@ let
   # the half-open version interval [start, end).
   ltsInRange = start: end: name: let
     components = splitString "-" name;
-    version = last components;
+    version = concatStringsSep "-" (drop 1 components);
   in
-    assert length components == 2;
+    assert length components >= 2;
     head components == "lts"
     && versionAtLeast version start
     && versionOlder version end;
