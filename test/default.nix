@@ -18,8 +18,8 @@ in {
   stack-simple = haskell.callPackage ./stack-simple {};
   snapshots = haskell.callPackage ./snapshots {};
   shell-for = haskell.callPackage ./shell-for {};
-  callStackToNix = haskell.callPackage ./callStackToNix {};
-  callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
+  # callStackToNix = haskell.callPackage ./callStackToNix {};
+  # callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit
   # An empty list means success.
