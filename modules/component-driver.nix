@@ -1,19 +1,10 @@
 { config, pkgs, lib, haskellLib, buildModules, ... }:
 let
-  # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
-  new-builder = haskellLib.weakCallPackage pkgs ../builder {
+  builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
     buildGHC = buildModules.config.ghc.package;
     inherit (config) nonReinstallablePkgs hsPkgs;
-    inherit ghcForComponent;
-  };
-
-  ghcForComponent = import ../builder/ghc-for-component-wrapper.nix {
-    inherit lib;
-    inherit (pkgs.buildPackages) stdenv runCommand makeWrapper;
-    inherit (pkgs.buildPackages.xorg) lndir;
-    ghc = config.ghc.package;
   };
 
 in
@@ -49,8 +40,11 @@ in
     type = lib.types.unspecified;
   };
 
-  config.hsPkgs = { buildPackages = buildModules.config.hsPkgs; }
-    // lib.mapAttrs
-      (name: pkg: if pkg == null then null else new-builder pkg)
+  config.hsPkgs =
+    { inherit (builder) shellFor;
+      buildPackages = buildModules.config.hsPkgs;
+    } //
+    lib.mapAttrs
+      (name: pkg: if pkg == null then null else builder.build-package pkg)
       (config.packages // lib.genAttrs config.nonReinstallablePkgs (_: null));
 }
