@@ -20,6 +20,27 @@ let
     inherit ghc haskellLib nonReinstallablePkgs;
   };
 
+  hoogleLocal = let
+    nixpkgsHoogleLocal = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
+  in { packages ? [], hoogle ? pkgs.haskellPackages.hoogle }:
+    haskellLib.weakCallPackage pkgs nixpkgsHoogleLocal {
+      inherit packages hoogle;
+    };
+
+  # Same as haskellPackages.shellFor in nixpkgs.
+  shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {
+    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib;
+    inherit (buildPackages) glibcLocales;
+  };
+
+  # Same as haskellPackages.ghcWithPackages and ghcWithHoogle in nixpkgs.
+  withPackages = {withHoogle}: packages: shellFor {
+    name = ghc.name + "-with-packages";
+    packages = _: [];
+    additional = packages;
+    inherit withHoogle;
+  };
+
 in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
@@ -27,9 +48,8 @@ in {
     inherit haskellLib ghc buildGHC comp-builder nonReinstallablePkgs hsPkgs;
   };
 
-  # Same as haskellPackages.shellFor in nixpkgs.
-  shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {
-    inherit hsPkgs ghcForComponent makeConfigFiles;
-    inherit (buildPackages) glibcLocales;
-  };
+  inherit shellFor;
+
+  ghcWithPackages = withPackages { withHoogle = false; };
+  ghcWithHoogle = withPackages { withHoogle = true; };
 }
