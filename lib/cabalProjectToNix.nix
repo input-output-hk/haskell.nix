@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, nix, nix-prefetch-git }:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
 in { index-state, index-sha256 ? (import ./index-state-hashes.nix).${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
@@ -18,7 +18,7 @@ let
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
   plan = runCommand "plan" {
-    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git nix nix-prefetch-git ];
+    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync ];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
