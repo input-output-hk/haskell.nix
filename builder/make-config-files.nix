@@ -6,15 +6,6 @@ let
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
   '';
 
-  flatDepends = component:
-    let
-      makePairs = map (p: rec { key="${val}"; val=(p.components.library or p); });
-      closure = builtins.genericClosure {
-        startSet = makePairs component.depends;
-        operator = {val,...}: makePairs val.config.depends;
-      };
-    in map ({val,...}: val) closure;
-
   exactDep = pdbArg: p: ''
     if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
@@ -58,7 +49,7 @@ in { identifier, component, fullName, flags ? {} }:
 
     ${lib.concatMapStringsSep "\n" (p: ''
       target-pkg --package-db ${p}/package.conf.d dump | target-pkg --force --package-db $out/package.conf.d register -
-    '') (flatDepends component)}
+    '') (haskellLib.flatLibDepends component)}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
     ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
