@@ -115,6 +115,11 @@ let
         modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
       };
 
+    # Package sets for all stackage snapshots.
+    snapshots = self.callPackage ./snapshots.nix {};
+    # Pick a recent LTS snapshot to be our "default" package set.
+    haskellPackages = self.snapshots."lts-13.18";
+
     # Programs for generating Nix expressions from Cabal and Stack
     # files. We need to make sure we build this from the buildPackages,
     # we never want to actually cross compile nix-tools on it's own.
