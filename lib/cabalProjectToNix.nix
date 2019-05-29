@@ -81,4 +81,5 @@ in
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
     rsync -a "${src}/" "$out/"
     rsync -a ${plan}/ $out/
+    chmod +w $out
   ''
