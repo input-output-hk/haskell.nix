@@ -25,6 +25,15 @@ let
     buildInputs = [ cabal-install ];
   };
 
+  envPkga = pkgSet.config.hsPkgs.shellFor {
+    # Shell will provide the dependencies of pkga and pkgb, but not
+    # pkga and pkgb themselves.
+    packages = ps: with ps; [ pkga ];
+    # This adds cabal-install to the shell, which helps tests because
+    # they use a nix-shell --pure. Normally you would BYO cabal-install.
+    buildInputs = [ cabal-install ];
+  };
+
 in
   stdenv.mkDerivation {
     name = "shell-for-test";
@@ -47,6 +56,6 @@ in
       inherit pkgSet;
 
       # Used for testing externally with nix-shell (../tests.sh).
-      inherit env;
+      inherit env envPkga;
     };
 }

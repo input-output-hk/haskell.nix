@@ -54,11 +54,18 @@ nix-shell $NIX_BUILD_ARGS \
     --run 'cd cabal-simple && cabal new-build'
 echo >& 2
 
-printf "*** Checking shellFor works for a cabal project...\n" >& 2
+printf "*** Checking shellFor works for a cabal project, multiple packages...\n" >& 2
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
     -A shell-for.env \
     --run 'cd shell-for && cabal new-build all'
+echo >& 2
+
+printf "*** Checking shellFor works for a cabal project, single package...\n" >& 2
+nix-shell $NIX_BUILD_ARGS \
+    --pure ./default.nix \
+    -A shell-for.envPkga \
+    --run 'cd shell-for && cabal new-build pkga'
 echo >& 2
 
 printf "*** Checking shellFor has a working hoogle index...\n" >& 2
