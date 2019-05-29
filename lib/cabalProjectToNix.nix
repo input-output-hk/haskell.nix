@@ -79,4 +79,8 @@ in
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
     rsync -a "${src}/" "$out/"
     rsync -a ${plan}/ $out/
+    # Rsync will have made $out read only and that can cause problems when
+    # nix sandboxing is enabled (since it can prevent nix from moving the directory
+    # out of the chroot sandbox).
+    chmod +w $out
   ''
