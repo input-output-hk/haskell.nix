@@ -18,7 +18,7 @@ let
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
   plan = runCommand "plan" {
-    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync ];
+    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
