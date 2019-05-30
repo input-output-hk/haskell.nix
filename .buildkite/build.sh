@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -I "nixpkgs=channel:nixos-19.03" --pure -i bash -p nix cabal-install ghc nix-prefetch-scripts git
+#! nix-shell -I "nixpkgs=channel:nixos-19.03" --pure -i bash -p nix cabal-install ghc
 
 export NIX_PATH="nixpkgs=channel:nixos-19.03"
 index_state="2019-03-15T00:00:00Z"
@@ -27,6 +27,12 @@ nix build -f nix1 nix-tools.components.exes --no-link
 echo
 echo "+++ Run tests"
 echo "There are no tests -- https://github.com/input-output-hk/haskell.nix/issues/51"
+
+echo
+echo "+++ Add runtime dependencies to PATH"
+
+export PATH="$(nix build -f channel:nixos-19.03 --no-link nix-prefetch-scripts):$PATH"
+export PATH="$(nix build -f channel:nixos-19.03 --no-link git):$PATH"
 
 echo
 echo "+++ Run plan-to-nix again"
