@@ -31,8 +31,9 @@ echo "There are no tests -- https://github.com/input-output-hk/haskell.nix/issue
 echo
 echo "+++ Add runtime dependencies to PATH"
 
-export PATH="$(nix build -f channel:nixos-19.03 --no-link nix-prefetch-scripts):$PATH"
-export PATH="$(nix build -f channel:nixos-19.03 --no-link git):$PATH"
+nix build -f channel:nixos-19.03 nix-prefetch-scripts -o nix-prefetch-scripts
+nix build -f channel:nixos-19.03 git -o git
+export PATH="$PWD/nix-prefetch-scripts/bin:$PWD/git/bin:$PATH"
 
 echo
 echo "+++ Run plan-to-nix again"
