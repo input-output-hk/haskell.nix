@@ -16,7 +16,7 @@ nix build $NIX_BUILD_ARGS --no-link --keep-going -f ./default.nix
 echo >& 2
 
 printf "*** Running the unit tests... " >& 2
-res=$(nix-instantiate --eval --json --strict ./default.nix -A unit)
+res=$(nix-instantiate --eval --json --strict ./default.nix -A unit.tests)
 num_failed=$(jq length <<< "$res")
 if [ $num_failed -eq 0 ]; then
   printf "PASSED\n" >& 2

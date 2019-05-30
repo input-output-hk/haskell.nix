@@ -21,9 +21,13 @@ in {
   # callStackToNix = haskell.callPackage ./callStackToNix {};
   # callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
 
-  # Run unit tests with: nix-instantiate --eval --strict -A unit
+  # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
-  unit = haskell.callPackage ./unit.nix {};
+  unit = let
+    tests = haskell.callPackage ./unit.nix {};
+  in runCommand "unit-tests" { passthru = { inherit tests; }; }
+     (lib.concatMapStringsSep "\n" (t: "echo ${t.name} failed") tests +
+      (if builtins.length tests == 0 then "\ntouch $out" else "\nexit 1"));
 }
 
 ## more possible test cases
