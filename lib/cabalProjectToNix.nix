@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin }:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
 in { index-state, index-sha256 ? (import ./index-state-hashes.nix).${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
@@ -29,6 +29,8 @@ let
     # without the source available (we cleaneSourceWith'd it),
     # this may not produce the right result.
     find . -name package.yaml -exec hpack "{}" \;
+    export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
+    export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs

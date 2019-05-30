@@ -117,7 +117,11 @@ let
     # Programs for generating Nix expressions from Cabal and Stack
     # files. We need to make sure we build this from the buildPackages,
     # we never want to actually cross compile nix-tools on it's own.
-    nix-tools = pkgs.buildPackages.callPackage ./nix-tools { inherit fetchExternal cleanSourceHaskell; inherit (self) mkCabalProjectPkgSet; };
+    nix-tools = pkgs.buildPackages.callPackage ./nix-tools {
+      inherit fetchExternal cleanSourceHaskell;
+      inherit (pkgs.buildPackages.haskellPackages) hpack;
+      inherit (self) mkCabalProjectPkgSet;
+    };
 
     # Function to call stackToNix
     callStackToNix = self.callPackage ./call-stack-to-nix.nix {};
@@ -188,10 +192,9 @@ let
     callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
       inherit (self) dotCabal;
       inherit pkgs;
-      inherit (pkgs) runCommand cabal-install ghc;
+      inherit (pkgs) runCommand cabal-install ghc symlinkJoin cacert;
       inherit (pkgs.haskellPackages) hpack;
       inherit (self) nix-tools;
-      inherit (pkgs) symlinkJoin;
     };
   });
 
