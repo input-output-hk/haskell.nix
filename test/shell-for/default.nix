@@ -26,8 +26,7 @@ let
   };
 
   envPkga = pkgSet.config.hsPkgs.shellFor {
-    # Shell will provide the dependencies of pkga and pkgb, but not
-    # pkga and pkgb themselves.
+    # Shell will provide the dependencies of pkga
     packages = ps: with ps; [ pkga ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.

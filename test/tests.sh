@@ -65,7 +65,7 @@ printf "*** Checking shellFor works for a cabal project, single package...\n" >&
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
     -A shell-for.envPkga \
-    --run 'cd shell-for && cabal new-build pkga'
+    --run 'cd shell-for && cabal new-build --project=single.project all'
 echo >& 2
 
 printf "*** Checking shellFor has a working hoogle index...\n" >& 2
