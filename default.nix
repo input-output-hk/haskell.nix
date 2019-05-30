@@ -43,18 +43,20 @@ let
   cleanSourceHaskell = pkgs.callPackage ./lib/clean-source-haskell.nix {};
 
   # All packages from Hackage as Nix expressions
-  hackage = import (fetchExternal {
+  hackageSrc = fetchExternal {
     name     = "hackage-exprs-source";
     specJSON = hackageSourceJSON;
     override = "hackage";
-  });
+  };
+  hackage = import hackageSrc;
 
   # The set of all Stackage snapshots
-  stackage = import (fetchExternal {
+  stackageSrc = fetchExternal {
     name     = "stackage-snapshot-source";
     specJSON = stackageSourceJSON;
     override = "stackage";
-  });
+  };
+  stackage = import stackageSrc;
 
   packages = self: ({
     # Utility functions for working with the component builder.
@@ -192,6 +194,11 @@ let
       inherit (pkgs.haskellPackages) hpack;
       inherit (self) nix-tools;
       inherit (pkgs) symlinkJoin;
+    };
+
+    # References to the unpacked sources, for caching in a Hydra jobset.
+    source-pins = self.callPackage ./lib/make-source-pins.nix {
+      sources = [ hackageSrc stackageSrc pkgs.path ];
     };
   });
 
