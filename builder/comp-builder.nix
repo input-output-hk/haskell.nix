@@ -12,12 +12,12 @@
 , cabal-generator
 , patches ? []
 
-, preUnpack ? null, postUnpack ? null
-, preConfigure ? null, postConfigure ? null
-, preBuild ? null, postBuild ? null
-, preCheck ? null, postCheck ? null
-, preInstall ? null, postInstall ? null
-, preHaddock ? null, postHaddock ? null
+, preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
+, preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
+, preBuild ? component.preBuild , postBuild ? component.postBuild
+, preCheck ? component.preCheck , postCheck ? component.postCheck
+, preInstall ? component.preInstall , postInstall ? component.postInstall
+, preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
 
 , doCheck ? component.doCheck || haskellLib.isTest componentId
