@@ -12,6 +12,7 @@ import           Data.HashMap.Strict                      ( HashMap )
 import qualified Data.HashMap.Strict           as Map
 import           Data.Maybe                               ( mapMaybe
                                                           , isJust
+                                                          , fromMaybe
                                                           )
 import           Data.List.NonEmpty                       ( NonEmpty (..) )
 import qualified Data.Text                     as Text
@@ -201,7 +202,7 @@ value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
       , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
-      , packageSrc      = Just . flip DVCS ["."] $
+      , packageSrc      = Just . flip DVCS [ Text.unpack $ fromMaybe "." $ pkg ^? key "pkg-src" . key "source-repo" . key "subdir" . _String ] $
           Git ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "location" . _String )
               ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "tag" . _String )
       }
