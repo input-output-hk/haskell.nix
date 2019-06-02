@@ -25,7 +25,9 @@ in
     rev=$(git rev-parse --short HEAD)
 
     echo "Updating git index..."
+    git fetch origin
     git checkout gh-pages
+    git reset --hard origin/gh-pages
     GIT_WORK_TREE=$(pwd)/site git add -A
     check_staged
     echo "Committing changes..."
