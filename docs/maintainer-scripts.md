@@ -8,10 +8,10 @@ scripts in this repo.
 
 To run the updater scripts manually, use:
 
-    nix-build -A maintainer-scripts.update-hackage -o update-hackage.sh
+    nix-build build.nix -A maintainer-scripts.update-hackage -o update-hackage.sh
     ./update-hackage.sh
 
-    nix-build -A maintainer-scripts.update-stackage -o update-stackage.sh
+    nix-build build.nix -A maintainer-scripts.update-stackage -o update-stackage.sh
     ./update-stackage.sh
 
 The scripts will clone the repo, generate the latest data, then

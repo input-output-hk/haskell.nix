@@ -1,5 +1,4 @@
-{ system ? builtins.currentSystem
-, pkgs ? import nixpkgs { inherit system; }
+{ pkgs ? import nixpkgs { }
 , nixpkgs ? ../nixpkgs
 , haskell ? pkgs.callPackage ../. { }
 }:
@@ -9,7 +8,7 @@ with pkgs;
 let
   util = callPackage ./util.nix {};
 
-in {
+in pkgs.recurseIntoAttrs {
   cabal-simple = haskell.callPackage ./cabal-simple { inherit util; };
   cabal-sublib = haskell.callPackage ./cabal-sublib { inherit util; };
   cabal-22 = haskell.callPackage ./cabal-22 {};
