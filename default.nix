@@ -137,6 +137,7 @@ let
       update-hackage = self.callPackage ./scripts/update-hackage.nix {};
       update-stackage = self.callPackage ./scripts/update-stackage.nix {};
       update-pins = self.callPackage ./scripts/update-pins.nix {};
+      update-docs = self.callPackage ./scripts/update-docs.nix {};
     };
 
     # Make this handy overridable fetch function available.
