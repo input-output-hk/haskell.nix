@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Architecture - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>`overlay` to `extras` - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Architecture";
-    var mkdocs_page_input_path = "architecture.md";
+    var mkdocs_page_name = "`overlay` to `extras`";
+    var mkdocs_page_input_path = "migrations.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -53,27 +53,9 @@
     <a class="" href="..">Introduction</a>
 	    </li>
           
-            <li class="toctree-l1 current">
+            <li class="toctree-l1">
 		
-    <a class="current" href="./">Architecture</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#architecture">Architecture</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#nix-tools">nix-tools</a></li>
-        
-            <li><a class="toctree-l3" href="#haskellnix">haskell.nix</a></li>
-        
-            <li><a class="toctree-l3" href="#hackagenix">hackage.nix</a></li>
-        
-            <li><a class="toctree-l3" href="#stackagenix">stackage.nix</a></li>
-        
-        </ul>
-    
-
-    </ul>
+    <a class="" href="../architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -147,10 +129,10 @@
     
       
     
-    <li>Architecture</li>
+    <li>`overlay` to `extras`</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/architecture.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/migrations.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -160,77 +142,20 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="architecture">Architecture</h1>
-<p>There are multiple components that play a part in the haskell.nix
-infrastructure.  These are <code>nix-tools</code>, <code>haskell.nix</code>, <code>hackage.nix</code>,
-and <code>stackage.nix</code>.</p>
-<pre><code class="no-highlight">                                             .-------------.     .-------------.
-.- nix-tools ------.                         | haskell.nix |  .- | hackage.nix |
-| .--------------. |   .----------------.    '-------------'  |  '-------------'
-| | stack-to-nix |---&gt; | stack-pkgs.nix |-.         |         |         |
-| '--------------' |   '----------------' |         v         |         v
-| .-------------.  |   .----------.       '--&gt; .----------. &lt;-'  .--------------.
-| | plan-to-nix |----&gt; | plan.nix |------.---&gt; | pkgs.nix | &lt;--- | stackage.nix |
-| '-------------'  |   '----------'      |     '----------'      '--------------'
-| .--------------. |   .--------------.  |          |
-| | cabal-to-nix |---&gt; | $package.nix |--'          v
-| '--------------' |   '--------------'       .-------------.
-'------------------'                          | default.nix |
-                                              '-------------'
-                                                    |
-                                                    v
-                                              .-------------.
-                                              | release.nix |
-                                              '-------------'
-</code></pre>
-
-<p>haskell.nix diagram</p>
-<h2 id="nix-tools"><a href="https://github.com/input-output-hk/nix-tools">nix-tools</a></h2>
-<p>nix-tools is a Haskell package that provides the following tools:</p>
-<ul>
-<li>
-<p><code>cabal-to-nix</code>: a <code>.cabal</code> to <code>.nix</code> transformer that retains
-  conditional expressions.</p>
-</li>
-<li>
-<p><code>stack-to-nix</code>: a <code>stack.yaml</code> to <code>.nix</code> transformer that will read
-  in a <code>stack.yaml</code> expression an generate a <code>pkgs.nix</code> file suited for
-  use with <code>haskell.nix</code>.</p>
-</li>
-<li>
-<p><code>plan-to-nix</code>: a <code>plan.json</code> to <code>.nix</code> transformer that will read in
-  a <code>plan.json</code> file and generate a <code>pkgs.nix</code> file suited for use
-  with <code>haskell.nix</code>.</p>
-</li>
-</ul>
-<p>as well as a few other tools used to generate <code>hackage.nix</code> and <code>stackage.nix</code>.</p>
-<h2 id="haskellnix"><a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a></h2>
-<p>haskell.nix is the runtime system for this Haskell infrastructure.  It
-contains the component builder, as well as the system package and
-license mapping.  Without haskell.nix the expressions generated by
-either of the <code>nix-tools</code> tools make little sense on their own.</p>
-<h2 id="hackagenix"><a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a></h2>
-<p>hackage.nix provides all cabal expressions from hackage as nix
-expressions.  It is periodically updated to keep in sync with the set
-of packages available on hackage.</p>
-<h2 id="stackagenix"><a href="https://github.com/input-output-hk/stackage.nix">stackage.nix</a></h2>
-<p>stackage.nix is similar to hackage.nix but provides all stackage
-snapshots (lts, and nightly) as nix expressions.  It naturally depends
-on hackage.nix to resolve package names, versions and revisions to the
-repsective packages from hackage.nix.</p>
+                <h1 id="overlay-to-extras"><code>overlay</code> to <code>extras</code></h1>
+<p><code>overlay</code> was renamed to <code>extras</code> in #79 to prevent confusion between the notion of nix overlays.
+Therefore <code>plan-pkgs</code> and <code>stack-pkgs</code> as generated by <code>plan-to-nix</code> and <code>stack-to-nix</code> will
+expose <code>extras</code> instead of <code>overlay</code>. Similarly <code>mkStackPkgSet</code>, <code>mkPkgSet</code> and <code>mkCabalProjectPkgSet</code>
+take a <code>pkg-def-extras</code> instead of <code>pkg-def-overlay</code> argument.  If you are using <code>iohk-nix</code>, the
+<code>iohk-overlay</code> was parameter was renamed to <code>iohk-extras</code>.</p>
+<h1 id="drop-th-packages">Drop <code>th-packages</code></h1>
+<p>When using <code>iohk-nix</code> to facility cross compilation, we used to require explicit listing of packages
+that required <code>TemplateHaskell</code>, this was dropped in <a href="https://github.com/input-output-hk/iohk-nix/commit/da7c1edc31d24ff4a211b7dc2361c71af7c3bda4">iohk-nix@da7c1ed</a>, see #92.
+As such the <code>th-packages</code> and <code>nixpkgs</code> argument were dropped from the <code>iohk-module</code>.</p>
               
             </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../user-guide/" class="btn btn-neutral float-right" title="General">Next <span class="icon icon-circle-arrow-right"></span></a>
-      
-      
-        <a href=".." class="btn btn-neutral" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -256,10 +181,6 @@ repsective packages from hackage.nix.</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../user-guide/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

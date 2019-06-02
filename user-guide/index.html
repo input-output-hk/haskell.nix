@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "General";
     var mkdocs_page_input_path = "user-guide.md";
-    var mkdocs_page_url = "/user-guide/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -69,6 +70,8 @@
     <li class="toctree-l3"><a href="#user-guide">User Guide</a></li>
     
         <ul>
+        
+            <li><a class="toctree-l4" href="#installing-nix-tools">Installing nix-tools</a></li>
         
             <li><a class="toctree-l4" href="#setup">Setup</a></li>
         
@@ -165,13 +168,22 @@ general approach will be to pick the right tool from <code>nix-tools</code> and
 produce a <code>pkgs.nix</code> expressions.  Getting a copy of the haskell.nix,
 hackage.nix (and potentially stackage.nix) source will then equip us
 to produce derivations that we can <code>nix build</code>.</p>
+<h2 id="installing-nix-tools">Installing <code>nix-tools</code></h2>
+<p>To build the latest <code>nix-tools</code> and store the result at <code>./nt</code>, run:</p>
+<pre><code class="bash">nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools --out-link nt
+</code></pre>
+
+<p>If you would like to then install <code>nix-tools</code> into your profile, run:</p>
+<pre><code class="bash">nix-env -i ./nt
+</code></pre>
+
 <h2 id="setup">Setup</h2>
 <p>The general structure will be the same for haskell.nix, independent of
 the use of stack or cabal.  Let us assume for now that we have
 generated a <code>pkgs.nix</code> expression in <code>nix</code>.</p>
 <ul>
-<li><a href="../user-guide-stack">Generating a <code>pkgs.nix</code> for a stack project</a></li>
-<li><a href="../user-guide-cabal">Generating a <code>pkgs.nix</code> for a cabal project</a></li>
+<li><a href="/user-guide-stack">Generating a <code>pkgs.nix</code> for a stack project</a></li>
+<li><a href="/user-guide-cabal">Generating a <code>pkgs.nix</code> for a cabal project</a></li>
 </ul>
 <h2 id="defaultnix">default.nix</h2>
 <p>We will start with defining a helper function in our <code>default.nix</code>
@@ -190,55 +202,44 @@ let
 in
 </code></pre>
 
-<p>Next we will use this to import <code>haskell.nix</code>, <code>hackage.nix</code> and
-<code>stackage.nix</code> (if we use a stack project).</p>
+<p>Next we will use this to import <code>haskell.nix</code>.</p>
 <p><strong>NOTE</strong>: update the <code>rev</code> and <code>sha256</code> values to the recent ones as
-  found on GitHub.  Especially <code>hackage.nix</code> and <code>stackage.nix</code> will
-  evolve with package release on hackage and stackage releases
+  found on GitHub.  Especially <code>haskell.hackage</code> and <code>haskell.stackage</code>
+  will evolve with package release on hackage and stackage releases
   respectively.</p>
 <pre><code class="nix">let
-  # all packages from hackage as nix expressions
-  hackage = import (overrideWith &quot;hackage&quot;
-                    (pkgs.fetchFromGitHub { owner  = &quot;input-output-hk&quot;;
-                                            repo   = &quot;hackage.nix&quot;;
-                                            rev    = &quot;3180384b563ec7c7b46bca86b3ace0f32d04cde8&quot;;
-                                            sha256 = &quot;19ndkn8pivli9plwq0wnx1cj126l89yk7jw9a0dj51ic3b2qhlb2&quot;;
-                                            name   = &quot;hackage-exprs-source&quot;; }))
-                   ;
-  # a different haskell infrastructure
-  haskell = import (overrideWith &quot;haskell&quot;
-                    (pkgs.fetchFromGitHub { owner  = &quot;input-output-hk&quot;;
-                                            repo   = &quot;haskell.nix&quot;;
-                                            rev    = &quot;73f733ba8bbd11443dda713d1a2d4b7c50a5d408&quot;;
-                                            sha256 = &quot;1p2srrxw2lac5krrg35waa251by98r2miwyg6zac9glpg2vmq3ip&quot;;
-                                            name   = &quot;haskell-lib-source&quot;; }))
-                   hackage;
-
-  # the set of all stackage snapshots
-  stackage = import (overrideWith &quot;stackage&quot;
-                     (pkgs.fetchFromGitHub { owner  = &quot;input-output-hk&quot;;
-                                             repo   = &quot;stackage.nix&quot;;
-                                             rev    = &quot;2615a4e6b1651215ee400e62fcdcb195062a3d35&quot;;
-                                             sha256 = &quot;08c8lb8x047hndwm1cb2zxixnjmrswfp5y18xp1v79cjqlva0qj6&quot;;
-                                             name   = &quot;stackage-snapshot-source&quot;; }))
-                   ;
+  haskellLib = pkgs.fetchFromGitHub {
+    owner  = &quot;input-output-hk&quot;;
+    repo   = &quot;haskell.nix&quot;;
+    rev    = &quot;5180ae9d78756509c81b98b8e6d974e350b15752&quot;;
+    sha256 = &quot;0fbnnvymdp2qb09wlqy6ga8wsyhglx607cjdfg510s1gs756v9yx&quot;;
+    name   = &quot;haskell-lib-source&quot;;
+  };
+  haskell = import (overrideWith &quot;haskell&quot; haskellLib) { inherit pkgs; };
 in
 </code></pre>
 
 <p>Finally we string this together and produce a package set:</p>
 <pre><code class="nix">let
   # Import the file you will create in the stack-to-nix or cabal-to-nix step.
-  my-pkgs = import ./nix/pkgs.nix { inherit stackage; };
+  my-pkgs = import ./nix/pkgs.nix;
 
+  # Stack projects use the mkStackPkgSet helper function
+  pkgSet = haskell.mkStackPkgSet {
+    stack-pkgs = my-pkgs;
+    pkg-def-overlays = [];
+    modules = [];
+  };
+
+  # Cabal projects use mkPkgSet
   pkgSet = haskell.mkPkgSet {
-    inherit pkgs;
     pkg-def = my-pkgs.pkg-def;
-    pkg-def-overlays = [
-      # this overlay will provide additional packages
+    pkg-def-extras = [
+      # these extras will provide additional packages
       # ontop of the package set.  E.g. extra-deps
       # for stack packages. or local packages for
       # cabal.projects
-      my-pkgs.overlay
+      my-pkgs.extras
     ];
     modules = [
       # specific package overrides would go here
@@ -307,9 +308,8 @@ interest:</p>
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>

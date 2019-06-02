@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "IOHKs nix library";
     var mkdocs_page_input_path = "iohk-nix.md";
-    var mkdocs_page_url = "/iohk-nix/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -194,7 +195,7 @@ in lib // { inherit iohkNix pkgs; inherit (iohkNix) nix-tools; }
 
 <p>nix/pkgs.nix</p>
 <pre><code>{ pkgs ? import &lt;nixpkgs&gt; {}
-, iohk-overlay ? {}
+, iohk-extras ? {}
 , iohk-module ? {}
 , haskell
 , hackage
@@ -205,14 +206,6 @@ let
   # our packages
   stack-pkgs = import ./.stack-pkgs.nix;
 
-  # packages which will require TH and thus
-  # will need -fexternal-interpreter treatment
-  # when cross compiling.
-  th-packages = [
-    &quot;hedgehog&quot; &quot;cardano-crypto-wrapper&quot;
-    &quot;cardano-crypto-test&quot; &quot;cardano-chain&quot;
-    &quot;small-steps&quot; &quot;cs-ledger&quot; ];
-
   # Build the packageset with module support.
   # We can essentially override anything in the modules
   # section.
@@ -220,16 +213,16 @@ let
   #  packages.cbors.patches = [ ./one.patch ];
   #  packages.cbors.flags.optimize-gmp = false;
   #
-  compiler = (stack-pkgs.overlay hackage).compiler.nix-name;
+  compiler = (stack-pkgs.extras hackage).compiler.nix-name;
   pkgSet = haskell.mkNewPkgSet {
     inherit pkgs;
     pkg-def = stackage.${stack-pkgs.resolver};
-    # The overlay allows extension or restriction of the set of
-    # packages we are interested in. By using the stack-pkgs.overlay
+    # These extras allow extension or restriction of the set of
+    # packages we are interested in. By using the stack-pkgs.extras
     # we restrict our package set to the ones provided in stack.yaml.
-    pkg-def-overlays = [
-      stack-pkgs.overlay
-      iohk-overlay.${compiler}
+    pkg-def-extras = [
+      stack-pkgs.extras
+      iohk-extras.${compiler}
     ];
     # package customizations
     modules = [
@@ -246,8 +239,7 @@ let
       # work when cross compiling.  For now we need to
       # list the packages that require template haskell
       # explicity here.
-      (iohk-module { nixpkgs = pkgs;
-                     inherit th-packages; })
+      iohk-module
     ];
   };
 in
@@ -317,9 +309,8 @@ localLib.nix-tools.default-nix ./nix/pkgs.nix args
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>

@@ -13,18 +13,19 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Stack Projects";
     var mkdocs_page_input_path = "user-guide-stack.md";
-    var mkdocs_page_url = "/user-guide-stack/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -38,7 +39,7 @@
         <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
@@ -159,7 +160,7 @@
               
                 <h1 id="user-guide-stack-project">User Guide (stack project)</h1>
 <p>Here we will look into how to generate the <code>pkgs.nix</code> file for a
-<code>stack.yaml</code> project.  For the full integration please see the <a href="../user-guide">User
+<code>stack.yaml</code> project.  For the full integration please see the <a href="/user-guide">User
 Guide</a></p>
 <h2 id="using-stack-to-nix">Using <code>stack-to-nix</code></h2>
 <p>With <a href="https://github.com/input-output-hk/nix-tools">nix-tools</a> in
@@ -170,7 +171,7 @@ Guide</a></p>
 <p>This will produce a <code>nix/pkgs.nix</code> file that looks like the following:</p>
 <pre><code class="nix">{
   resolver = &quot;lts-12.17&quot;;
-  overlay = hackage:
+  extras = hackage:
     {
       packages = {
         &quot;o-clock&quot; = hackage.o-clock.&quot;0.1.1&quot;.revisions.default;
@@ -183,29 +184,11 @@ Guide</a></p>
 }
 </code></pre>
 
-<p>This file contains the stackage resolver, as well as an overlay of
-packages.  The overlay specifies which <code>extra-deps</code> (here: o-clock-0.1.1)
-we wanted to overlay over the stackage snapshot, and what local
+<p>This file contains the stackage resolver, as well as set of extra
+packages.  The extras specifies which <code>extra-deps</code> (here: o-clock-0.1.1)
+we wanted to add over the stackage snapshot, and what local
 packages we want (here: my-package).</p>
-<p>We will then create the following <code>nix/default.nix</code> file:</p>
-<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
-
-let
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; };
-
-  pkgSet = haskell.mkStackPkgSet {
-    stack-pkgs = import ./pkgs.nix;
-    pkg-def-overlays = [];
-    modules = [];
-  };
-
-in
-  pkgSet.config.hsPkgs
-</code></pre>
-
-<p>This generated file is a template, so you can customize it as
-necessary.</p>
-<p><em>If you came here from the <a href="../user-guide">User Guide</a>, go back and
+<p><em>If you came here from the <a href="/user-guide">User Guide</a>, go back and
  complete the setup.</em></p>
               
             </div>
@@ -253,9 +236,8 @@ necessary.</p>
     </span>
 </div>
     <script>var base_url = '..';</script>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>
