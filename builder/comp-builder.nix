@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
 
 { componentId
 , component
@@ -132,7 +132,10 @@ stdenv.mkDerivation ({
 
   buildInputs = component.libs
     ++ component.frameworks
-    ++ builtins.concatLists component.pkgconfig;
+    ++ builtins.concatLists component.pkgconfig
+    # Note: This is a hack until we can fix properly. See:
+    # https://github.com/haskell-gi/haskell-gi/issues/226
+    ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
 
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]
