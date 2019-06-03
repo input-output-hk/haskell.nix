@@ -34,8 +34,8 @@
 , hyperlinkSource ? true  # Link documentation to the source code
 
 # Profiling
-, enableLibraryProfiling ? builtins.trace "${componentId.cname} libProf: ${if component.enableLibraryProfiling then "Yes" else "No"}" component.enableLibraryProfiling
-, enableExecutableProfiling ? builtins.trace "${componentId.cname} execProf: ${if component.enableExecutableProfiling then "Yes" else "No"}" component.enableExecutableProfiling
+, enableLibraryProfiling ? component.enableLibraryProfiling
+, enableExecutableProfiling ? component.enableExecutableProfiling
 , profilingDetail ? component.profilingDetail
 }:
 
