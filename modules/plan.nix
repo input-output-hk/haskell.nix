@@ -78,6 +78,21 @@ let
             type = unspecified; # Can be either a string or a function
             default = (def.shellHook or "");
           };
+    enableLibraryProfiling = mkOption {
+      type = bool;
+      default = (def.enableLibraryProfiling or false);
+    };
+
+    enableExecutableProfiling = mkOption {
+      type = bool;
+      default = (def.enableExecutableProfiling or false);
+    };
+
+    profilingDetail = mkOption {
+      type = nullOr string;
+      default = (def.profilingDetail or "exported-functions");
+    };
+
   };
   packageOptions = def: componentOptions def // {
     preUnpack = mkOption {
@@ -137,6 +152,7 @@ in {
   # combined or replaced. We seed the package Options with an empty set forcing the
   # default values.
   options = (packageOptions {}) // {
+
     packages = mkOption {
       type =
         let mod_args = {
