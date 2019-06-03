@@ -1,7 +1,7 @@
 steps:
   - label: 'Update hackage.nix'
     command:
-      - nix-build -A maintainer-scripts.update-hackage -o update-hackage.sh
+      - nix-build build.nix -A maintainer-scripts.update-hackage -o update-hackage.sh
       - echo "+++ Updating hackage.nix"
       - ./update-hackage.sh
     artifact_paths:
@@ -11,7 +11,7 @@ steps:
 
   - label: 'Update stackage.nix'
     command:
-      - nix-build -A maintainer-scripts.update-stackage -o update-stackage.sh
+      - nix-build build.nix -A maintainer-scripts.update-stackage -o update-stackage.sh
       - echo "+++ Updating stackage.nix"
       - ./update-stackage.sh
     artifact_paths:
@@ -25,7 +25,7 @@ steps:
   - label: 'Update pins'
     command:
       - 'buildkite-agent artifact download "*.json" .'
-      - nix-build -A maintainer-scripts.update-pins -o update-pins.sh
+      - nix-build build.nix -A maintainer-scripts.update-pins -o update-pins.sh
       - ./update-pins.sh
     agents:
       system: x86_64-linux
