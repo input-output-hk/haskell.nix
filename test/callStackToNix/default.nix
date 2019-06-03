@@ -1,6 +1,4 @@
-{ stdenv, mkStackPkgSet, callStackToNix }:
-
-with stdenv.lib;
+{ runCommand, lib, mkStackPkgSet, callStackToNix }:
 
 let
   pkgSet = mkStackPkgSet {
@@ -12,22 +10,17 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in
-  stdenv.mkDerivation {
-    name = "callStackToNix-test";
-
-    buildCommand = ''
-      exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe"
-
-      printf "checking whether executable runs... " >& 2
-      $exe
-
-      touch $out
-    '';
-
-    meta.platforms = platforms.all;
-
+  runCommand "callStackToNix-test" {
+    meta.platforms = lib.platforms.all;
     passthru = {
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
     };
-  }
+  } ''
+    exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe"
+
+    printf "checking whether executable runs... " >& 2
+    $exe
+
+    touch $out
+  ''
