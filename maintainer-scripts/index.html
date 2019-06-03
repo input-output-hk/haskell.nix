@@ -159,10 +159,10 @@ repos and corresponding files <code>hackage-src.json</code> and
 <code>stackage-src.json</code> will be regularly and automatically updated using
 scripts in this repo.</p>
 <p>To run the updater scripts manually, use:</p>
-<pre><code>nix-build -A maintainer-scripts.update-hackage -o update-hackage.sh
+<pre><code>nix-build build.nix -A maintainer-scripts.update-hackage -o update-hackage.sh
 ./update-hackage.sh
 
-nix-build -A maintainer-scripts.update-stackage -o update-stackage.sh
+nix-build build.nix -A maintainer-scripts.update-stackage -o update-stackage.sh
 ./update-stackage.sh
 </code></pre>
 <p>The scripts will clone the repo, generate the latest data, then
