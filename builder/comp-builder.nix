@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
 
 { componentId
 , component
@@ -12,12 +12,12 @@
 , cabal-generator
 , patches ? []
 
-, preUnpack ? null, postUnpack ? null
-, preConfigure ? null, postConfigure ? null
-, preBuild ? null, postBuild ? null
-, preCheck ? null, postCheck ? null
-, preInstall ? null, postInstall ? null
-, preHaddock ? null, postHaddock ? null
+, preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
+, preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
+, preBuild ? component.preBuild , postBuild ? component.postBuild
+, preCheck ? component.preCheck , postCheck ? component.postCheck
+, preInstall ? component.preInstall , postInstall ? component.postInstall
+, preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
 
 , doCheck ? component.doCheck || haskellLib.isTest componentId
@@ -132,7 +132,10 @@ stdenv.mkDerivation ({
 
   buildInputs = component.libs
     ++ component.frameworks
-    ++ builtins.concatLists component.pkgconfig;
+    ++ builtins.concatLists component.pkgconfig
+    # Note: This is a hack until we can fix properly. See:
+    # https://github.com/haskell-gi/haskell-gi/issues/226
+    ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
 
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]

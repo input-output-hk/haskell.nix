@@ -16,7 +16,7 @@ nix build $NIX_BUILD_ARGS --no-link --keep-going -f ./default.nix
 echo >& 2
 
 printf "*** Running the unit tests... " >& 2
-res=$(nix-instantiate --eval --json --strict ./default.nix -A unit)
+res=$(nix-instantiate --eval --json --strict ./default.nix -A unit.tests)
 num_failed=$(jq length <<< "$res")
 if [ $num_failed -eq 0 ]; then
   printf "PASSED\n" >& 2
@@ -54,11 +54,25 @@ nix-shell $NIX_BUILD_ARGS \
     --run 'cd cabal-simple && cabal new-build'
 echo >& 2
 
-printf "*** Checking shellFor works for a cabal project...\n" >& 2
+printf "*** Checking shellFor works for a cabal project, multiple packages...\n" >& 2
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
     -A shell-for.env \
     --run 'cd shell-for && cabal new-build all'
+echo >& 2
+
+printf "*** Checking shellFor works for a cabal project, single package...\n" >& 2
+nix-shell $NIX_BUILD_ARGS \
+    --pure ./default.nix \
+    -A shell-for.envPkga \
+    --run 'cd shell-for && cabal new-build --project=single.project all'
+echo >& 2
+
+printf "*** Checking shellFor has a working hoogle index...\n" >& 2
+nix-shell $NIX_BUILD_ARGS \
+    --pure ./default.nix \
+    -A shell-for.env \
+    --run 'hoogle ConduitT | grep Data.Conduit'
 echo >& 2
 
 printf "\n*** Finished successfully\n" >& 2

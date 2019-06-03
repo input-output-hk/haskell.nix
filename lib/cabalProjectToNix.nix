@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, index-state-hashes }:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
 in { index-state, index-sha256 ? index-state-hashes.${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
@@ -29,6 +29,8 @@ let
     # without the source available (we cleaneSourceWith'd it),
     # this may not produce the right result.
     find . -name package.yaml -exec hpack "{}" \;
+    export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
+    export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
@@ -79,4 +81,8 @@ in
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
     rsync -a "${src}/" "$out/"
     rsync -a ${plan}/ $out/
+    # Rsync will have made $out read only and that can cause problems when
+    # nix sandboxing is enabled (since it can prevent nix from moving the directory
+    # out of the chroot sandbox).
+    chmod +w $out
   ''

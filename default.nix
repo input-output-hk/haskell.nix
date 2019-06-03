@@ -43,24 +43,24 @@ let
   cleanSourceHaskell = pkgs.callPackage ./lib/clean-source-haskell.nix {};
 
   # All packages from Hackage as Nix expressions
-  hackagePath = fetchExternal {
+  hackageSrc = fetchExternal {
     name     = "hackage-exprs-source";
     specJSON = hackageSourceJSON;
     override = "hackage";
   };
-  hackage = import hackagePath;
+  hackage = import hackageSrc;
 
   # Contains the hashes of the cabal 01-index.tar.gz for given
   # index states.  Starting from April 1st 2019.
-  indexStateHashesPath = hackagePath + "/index-state-hashes.nix";
+  indexStateHashesPath = hackageSrc + "/index-state-hashes.nix";
 
   # The set of all Stackage snapshots
-  stackagePath = fetchExternal {
+  stackageSrc = fetchExternal {
     name     = "stackage-snapshot-source";
     specJSON = stackageSourceJSON;
     override = "stackage";
   };
-  stackage = import stackagePath;
+  stackage = import stackageSrc;
 
   packages = self: ({
     # Utility functions for working with the component builder.
@@ -123,14 +123,18 @@ let
     # Programs for generating Nix expressions from Cabal and Stack
     # files. We need to make sure we build this from the buildPackages,
     # we never want to actually cross compile nix-tools on it's own.
-    nix-tools = pkgs.buildPackages.callPackage ./nix-tools { inherit fetchExternal cleanSourceHaskell; inherit (self) mkCabalProjectPkgSet; };
+    nix-tools = pkgs.buildPackages.callPackage ./nix-tools {
+      inherit fetchExternal cleanSourceHaskell;
+      inherit (pkgs.buildPackages.haskellPackages) hpack;
+      inherit (self) mkCabalProjectPkgSet;
+    };
 
     # Function to call stackToNix
     callStackToNix = self.callPackage ./call-stack-to-nix.nix {};
 
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
-    inherit hackagePath stackagePath;
+    inherit hackageSrc stackageSrc;
     inherit hackage stackage;
     inherit indexStateHashesPath;
 
@@ -184,10 +188,14 @@ let
       index-state-hashes = import indexStateHashesPath;
       inherit (self) dotCabal;
       inherit pkgs;
-      inherit (pkgs) runCommand cabal-install ghc;
+      inherit (pkgs) runCommand cabal-install ghc symlinkJoin cacert;
       inherit (pkgs.haskellPackages) hpack;
       inherit (self) nix-tools;
-      inherit (pkgs) symlinkJoin;
+    };
+
+    # References to the unpacked sources, for caching in a Hydra jobset.
+    source-pins = self.callPackage ./lib/make-source-pins.nix {
+      sources = [ hackageSrc stackageSrc pkgs.path ];
     };
   });
 
