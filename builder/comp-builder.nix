@@ -32,6 +32,11 @@
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
 , doHoogle ? true  # Also build a hoogle index
 , hyperlinkSource ? true  # Link documentation to the source code
+
+# Profiling
+, enableLibraryProfiling ? component.enableLibraryProfiling
+, enableExecutableProfiling ? component.enableExecutableProfiling
+, profilingDetail ? component.profilingDetail
 }:
 
 let
@@ -62,14 +67,17 @@ let
     ] ++ [ # other flags
       (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
       (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
+      (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )
+      (if enableExecutableProfiling then "--enable-executable-profiling" else "--disable-executable-profiling" )
     ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
+      ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
       ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
-  );
+    );
 
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
