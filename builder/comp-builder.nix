@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
 
 { componentId
 , component
