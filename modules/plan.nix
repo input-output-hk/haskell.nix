@@ -43,9 +43,9 @@ let
             type = listOfFilteringNulls str;
             default = (def.setupBuildFlags or []);
           };
-          setupTestFlags = mkOption {
+          testFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = (def.setupTestFlags or []);
+            default = (def.testFlags or []);
           };
           setupInstallFlags = mkOption {
             type = listOfFilteringNulls str;
@@ -122,6 +122,11 @@ let
     preCheck = mkOption {
       type = nullOr string;
       default = (def.preCheck or null);
+    };
+    # Wrapper for test executable run in checkPhase
+    testWrapper = mkOption {
+      type = string;
+      default = (def.testWrapper or "");
     };
     postCheck = mkOption {
       type = nullOr string;
