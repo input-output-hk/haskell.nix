@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>How to create a development environment - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "How to create a development environment";
+    var mkdocs_page_input_path = "user-guide/development.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../projects/">Creating Nix builds for your projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../stack-projects/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cabal-projects/">Cabal Projects</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">How to create a development environment</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#how-to-get-a-development-shell-for-a-package">How to get a development shell for a package</a></li>
+    
+
+    <li class="toctree-l3"><a href="#how-to-get-a-development-shell-for-a-multi-package-project">How to get a development shell for a multi-package project</a></li>
+    
+
+    <li class="toctree-l3"><a href="#how-to-get-an-ad-hoc-development-shell-including-certain-packages">How to get an ad-hoc development shell including certain packages</a></li>
+    
+
+    <li class="toctree-l3"><a href="#how-to-get-packages-from-a-certain-stackage-snapshot">How to get packages from a certain Stackage snapshot</a></li>
+    
+
+    <li class="toctree-l3"><a href="#emacs-ide-support">Emacs IDE support</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/library/">Haskell.nix Libary</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../changelog/">ChangeLog</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>User Guide &raquo;</li>
+        
+      
+    
+    <li>How to create a development environment</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/development.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p>Haskell.nix also provides reproducible development environments for
+your Haskell projects. These environments can contain not only GHC and
+your Haskell package dependencies, but also the required system
+libraries and build tools.</p>
+<p>Inside the development shell, you can run commands such as <code>ghc</code>,
+<code>ghci</code>, or <code>cabal new‑build</code>, and they will have all dependencies
+available.</p>
+<p>Every dependency will be cached in your Nix store. If you have set up
+Hydra CI, then your team can share pre-built dependencies.</p>
+<p>These examples assume that you have created your package set as
+described in <a href="../projects/">Creating Nix builds for your projects</a> and
+it exists in a file called <code>default.nix</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Old-style <code>cabal build</code> and <code>stack</code> builds are not (yet)
+supported. For example, <code>stack</code> will (by design) download and
+rebuild all dependencies, even though they are available in the
+shell. However, if you have a Stack project, you can generate the
+package set with Haskell.nix, then use <code>cabal new‑build</code> to work
+on it.</p>
+</div>
+<h2 id="how-to-get-a-development-shell-for-a-package">How to get a development shell for a package<a class="headerlink" href="#how-to-get-a-development-shell-for-a-package" title="Permanent link">&para;</a></h2>
+<p>Run a <code>nix‑shell</code> on <code>components.all</code> of your package. <code>all</code> is a
+synthetic component whose dependencies are the union of the
+dependencies of all components in the package. Therefore, you will be
+able to build the test suites because their dependencies will be
+included.</p>
+<pre><code class="nix"># shell.nix
+let
+  hsPkgs = import ./default.nix {};
+in
+  hsPkgs.my-package.components.all
+</code></pre>
+
+<h2 id="how-to-get-a-development-shell-for-a-multi-package-project">How to get a development shell for a multi-package project<a class="headerlink" href="#how-to-get-a-development-shell-for-a-multi-package-project" title="Permanent link">&para;</a></h2>
+<p>If you have a Cabal or Stack project with multiple packages
+(i.e. multiple <code>.cabal</code> files, not a single package with multiple
+components), then you will need a development environment that
+contains the <em>dependencies</em> of your packages, but not the packages
+themselves. This is what the <code>shellFor</code> function does.</p>
+<pre><code class="nix"># shell.nix
+{ pkgs ? import &lt;nixpkgs&gt; {} };
+
+let
+  hsPkgs = import ./default.nix { inherit pkgs; };
+in
+  hsPkgs.shellFor {
+    # Include only the *local* packages of your project.
+    packages = ps: with ps; [
+      pkga
+      pkgb
+    ];
+
+    # Builds a Hoogle documentation index of all dependencies,
+    # and provides a &quot;hoogle&quot; command to search the index.
+    withHoogle = true;
+
+    # You might want some extra tools in the shell (optional).
+    buildInputs = with pkgs.haskellPackages;
+      [ hlint stylish-haskell ghcid ];
+  }
+</code></pre>
+
+<h2 id="how-to-get-an-ad-hoc-development-shell-including-certain-packages">How to get an ad-hoc development shell including certain packages<a class="headerlink" href="#how-to-get-an-ad-hoc-development-shell-including-certain-packages" title="Permanent link">&para;</a></h2>
+<p>This creates a development environment with the given packages
+registered in the package database. The <code>ghcWithPackages</code> function
+operates on a Haskell.nix package set, and accepts an argument that
+selects packages from the larger package set.</p>
+<pre><code class="nix"># shell.nix
+let
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+in
+  haskell.haskellPackages.ghcWithPackages (ps: with ps;
+    [ lens conduit conduit-extra ])
+</code></pre>
+
+<p>If you need a Hoogle documentation index, use <code>ghcWithHoogle</code> in place
+of <code>ghcWithPackages</code>.</p>
+<h2 id="how-to-get-packages-from-a-certain-stackage-snapshot">How to get packages from a certain Stackage snapshot<a class="headerlink" href="#how-to-get-packages-from-a-certain-stackage-snapshot" title="Permanent link">&para;</a></h2>
+<p>Haskell.nix knows about every released Stackage snapshot. You can use
+it to build packages from a given snapshot, without setting up a full
+project.</p>
+<pre><code class="nix">let
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+in
+  haskell.snapshots.&quot;lts-13.18&quot;.alex.components.exes.alex
+</code></pre>
+
+<p>There are Haskell.nix package sets for every Stackage snaphot under
+<code>haskell.snapshots</code>.</p>
+<p>The alias <code>haskell.haskellPackages</code> corresponds to the package set for
+a recent LTS Haskell version.</p>
+<p>You can use <code>ghcWithPackages</code> on any of these package sets to quickly
+get a shell with some packages.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The build will not work if your Nixpkgs does not contain the version
+of GHC specified in the snapshot. Nixpkgs only carries the
+latest version of each recent release series, so many snapshots
+can't be built.</p>
+</div>
+<h2 id="emacs-ide-support">Emacs IDE support<a class="headerlink" href="#emacs-ide-support" title="Permanent link">&para;</a></h2>
+<p>Once you have a development shell, then you can begin configuring
+Emacs to use it. The way I do it is:</p>
+<ol>
+<li>
+<p>Run <a href="https://github.com/target/lorri">lorri watch</a> to continously
+   build the shell environment and maintain GC roots.</p>
+</li>
+<li>
+<p>Use <a href="https://github.com/wbolster/emacs-direnv">emacs‑direnv</a> to
+   push the development environment into Emacs.</p>
+</li>
+<li>
+<p>Use <a href="https://github.com/jyp/dante">Dante</a> for highlighting errors
+   and auto-completion. You must customize Dante to prevent it from
+   automatically using <code>nix‑shell</code> or <code>stack</code>. Trim <code>dante‑methods</code> to
+   just <code>new‑build</code> and <code>bare‑ghci</code>.</p>
+<p>You can also use <a href="https://www.gnu.org/software/emacs/manual/html_node/emacs/Directory-Variables.html"><code>.dir‑locals.el</code></a>
+for this. If your project has multiple targets, set <code>dante‑target</code>
+per-directory.</p>
+</li>
+<li>
+<p>For <a href="https://github.com/haskell/haskell-mode"><code>haskell‑mode</code></a>
+   interactive Haskell, set <code>haskell‑process‑type</code> to
+   <code>cabal‑new‑repl</code>.</p>
+</li>
+</ol>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../cross-compilation/" class="btn btn-neutral float-right" title="How to cross-compile your project">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../cabal-projects/" class="btn btn-neutral" title="Cabal Projects"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../cabal-projects/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../cross-compilation/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

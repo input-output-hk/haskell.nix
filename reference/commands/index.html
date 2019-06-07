@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Command-line tools - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Command-line tools";
+    var mkdocs_page_input_path = "reference/commands.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../user-guide/">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../user-guide/projects/">Creating Nix builds for your projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../user-guide/stack-projects/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../user-guide/cabal-projects/">Cabal Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../user-guide/development/">How to create a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../user-guide/cross-compilation/">How to cross-compile your project</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class=" current">
+                    
+    <a class="current" href="./">Command-line tools</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#stack-to-nix">stack-to-nix</a></li>
+    
+
+    <li class="toctree-l3"><a href="#plan-to-nix">plan-to-nix</a></li>
+    
+
+    <li class="toctree-l3"><a href="#cabal-to-nix">cabal-to-nix</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../library/">Haskell.nix Libary</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../modules/">Module options</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../changelog/">ChangeLog</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Reference &raquo;</li>
+        
+      
+    
+    <li>Command-line tools</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/reference/commands.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="stack-to-nix">stack-to-nix<a class="headerlink" href="#stack-to-nix" title="Permanent link">&para;</a></h1>
+<pre><code>stack-to-nix - a stack to nix converter
+
+Usage: stack-to-nix (-o|--output DIR) [--stack-yaml FILE]
+                    [--ignore-package-yaml] [--cache FILE]
+  Generate a Nix expression for a Haskell package using Stack
+
+Available options:
+  -o,--output DIR          Generate output in DIR
+  --stack-yaml FILE        Override project stack.yaml (default: &quot;stack.yaml&quot;)
+  --ignore-package-yaml    disable hpack run and use only cabal disregarding
+                           package.yaml existence
+  --cache FILE             Dependency cache
+                           file (default: &quot;.stack-to-nix.cache&quot;)
+  -h,--help                Show this help text
+</code></pre>
+
+<p>Use this for stack projects. If a <code>default.nix</code> does not exist in the
+output directory, it will create a basic one with a
+<a href="../../user-guide/stack-projects/"><code>mkStackPkgSet</code></a> function.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you find that there are missing files which should have been
+generated, remove <code>.stack-to-nix.cache</code>. (There's an open issue for
+this).</p>
+</div>
+<h1 id="plan-to-nix">plan-to-nix<a class="headerlink" href="#plan-to-nix" title="Permanent link">&para;</a></h1>
+<pre><code>plan-to-nix - a stack to nix converter
+
+Usage: plan-to-nix (-o|--output DIR) [--plan-json FILE] [--cabal-project FILE]
+                   [--cache FILE]
+  Generate a Nix expression for a Haskell package using Cabal
+
+Available options:
+  -o,--output DIR          Generate output in DIR
+  --plan-json FILE         Override plan.json
+                           location (default: &quot;dist-newstyle/cache/plan.json&quot;)
+  --cabal-project FILE     Override path to
+                           cabal.project (default: &quot;cabal.project&quot;)
+  --cache FILE             Dependency cache file (default: &quot;.nix-tools.cache&quot;)
+  -h,--help                Show this help text
+</code></pre>
+
+<p>Use this for Cabal new-build projects (even if you don't have a
+<code>cabal.project</code>). Before running, you need to create a plan. For more
+information, see <a href="../../user-guide/cabal-projects/">Cabal Projects</a> in the user
+guide.</p>
+<p>It will create a template <code>default.nix</code> in the output directory,
+unless that file already exists.</p>
+<p>Inside the output directory, there will be another directory
+<code>.plan.nix</code>, which contains Nix expressions for all local packages,
+generated by <code>cabal-to-nix</code>. The output file <code>pkgs.nix</code> refers to
+these files.</p>
+<p>Same note as above applies about the cache file.</p>
+<h1 id="cabal-to-nix">cabal-to-nix<a class="headerlink" href="#cabal-to-nix" title="Permanent link">&para;</a></h1>
+<pre><code>Usage: cabal-to-nix FILE.cabal
+</code></pre>
+
+<p>This writes (to stdout) a <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> Nix expression for the given
+cabal package.</p>
+<p>Normally, you do not need to run <code>cabal-to-nix</code> yourself. It is called
+by <code>stack-to-nix</code> and <code>plan-to-nix</code>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../library/" class="btn btn-neutral float-right" title="Haskell.nix Libary">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../../user-guide/cross-compilation/" class="btn btn-neutral" title="How to cross-compile your project"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../../user-guide/cross-compilation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../library/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

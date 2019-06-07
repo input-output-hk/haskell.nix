@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>IOHKs nix library - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>ChangeLog - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "IOHKs nix library";
-    var mkdocs_page_input_path = "iohk-nix.md";
+    var mkdocs_page_name = "ChangeLog";
+    var mkdocs_page_input_path = "changelog.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -112,21 +112,9 @@
 		
     <span class="caption-text">Templates / Abstraction</span>
     <ul class="subnav">
-                <li class=" current">
+                <li class="">
                     
-    <a class="current" href="./">IOHKs nix library</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#iohks-nix-tooling">IOHK's nix tooling</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l4" href="#iohk-nix">iohk-nix</a></li>
-        
-        </ul>
-    
-
-    </ul>
+    <a class="" href="../iohk-nix/">IOHKs nix library</a>
                 </li>
     </ul>
 	    </li>
@@ -150,9 +138,36 @@
     </ul>
 	    </li>
           
-            <li class="toctree-l1">
+            <li class="toctree-l1 current">
 		
-    <a class="" href="../changelog/">ChangeLog</a>
+    <a class="current" href="./">ChangeLog</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#june-7-2019">June 7, 2019</a></li>
+    
+
+    <li class="toctree-l2"><a href="#may-29-2019">May 29, 2019</a></li>
+    
+
+    <li class="toctree-l2"><a href="#may-28-2019">May 28, 2019</a></li>
+    
+
+    <li class="toctree-l2"><a href="#may-22-2019">May 22, 2019</a></li>
+    
+
+    <li class="toctree-l2"><a href="#may-21-2019">May 21, 2019</a></li>
+    
+
+    <li class="toctree-l2"><a href="#may-20-2019">May 20, 2019</a></li>
+    
+
+    <li class="toctree-l2"><a href="#may-17-2019">May 17, 2019</a></li>
+    
+
+    <li class="toctree-l2"><a href="#mar-15-2019">Mar 15, 2019</a></li>
+    
+
+    </ul>
 	    </li>
           
         </ul>
@@ -176,15 +191,11 @@
     <li><a href="..">Docs</a> &raquo;</li>
     
       
-        
-          <li>Templates / Abstraction &raquo;</li>
-        
-      
     
-    <li>IOHKs nix library</li>
+    <li>ChangeLog</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/iohk-nix.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/changelog.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -194,111 +205,64 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="iohks-nix-tooling">IOHK's nix tooling<a class="headerlink" href="#iohks-nix-tooling" title="Permanent link">&para;</a></h1>
-<h2 id="iohk-nix"><a href="https://github.com/input-output-hk/iohk-nix">iohk-nix</a><a class="headerlink" href="#iohk-nix" title="Permanent link">&para;</a></h2>
-<p>iohk-nix is IOHK's shared nix library.  It provides some templates to
-make working with haskell.nix trivial but is non-essential to use
-haskell.nix infrastructure.</p>
-<p>lib.nix</p>
-<pre><code class="nix">let
-  # iohk-nix can be overridden for debugging purposes by setting
-  # NIX_PATH=iohk_nix=/path/to/iohk-nix
-  iohkNix = import (
-    let try = builtins.tryEval &lt;iohk_nix&gt;;
-    in if try.success
-    then builtins.trace &quot;using host &lt;iohk_nix&gt;&quot; try.value
-    else
-      let
-        spec = builtins.fromJSON (builtins.readFile ./iohk-nix.json);
-      in builtins.fetchTarball {
-        url = &quot;${spec.url}/archive/${spec.rev}.tar.gz&quot;;
-        inherit (spec) sha256;
-      }) {};
-
-  pkgs = iohkNix.pkgs;
-  lib = pkgs.lib;
-in lib // { inherit iohkNix pkgs; inherit (iohkNix) nix-tools; }
-</code></pre>
-
-<p>iohk-nix.json</p>
-<pre><code class="json">{
-  &quot;url&quot;: &quot;https://github.com/input-output-hk/iohk-nix&quot;,
-  &quot;rev&quot;: &quot;c92f0119ef5814b0ed1f445c2fdcf8894e326294&quot;,
-  &quot;sha256&quot;: &quot;05r90x6x3yp1nb66rkc4n0i8q15c634rrdsr2zvb118s3sdcmmrm&quot;,
-  &quot;fetchSubmodules&quot;: false
-}
-</code></pre>
-
-<p>nix/pkgs.nix</p>
-<pre><code>{ pkgs ? import &lt;nixpkgs&gt; {}
-, iohk-extras ? {}
-, iohk-module ? {}
-, haskell
-, hackage
-, stackage
-, ...
-}:
-let
-  # our packages
-  stack-pkgs = import ./.stack-pkgs.nix;
-
-  # Build the packageset with module support.
-  # We can essentially override anything in the modules
-  # section.
-  #
-  #  packages.cbors.patches = [ ./one.patch ];
-  #  packages.cbors.flags.optimize-gmp = false;
-  #
-  compiler = (stack-pkgs.extras hackage).compiler.nix-name;
-  pkgSet = haskell.mkNewPkgSet {
-    inherit pkgs;
-    pkg-def = stackage.${stack-pkgs.resolver};
-    # These extras allow extension or restriction of the set of
-    # packages we are interested in. By using the stack-pkgs.extras
-    # we restrict our package set to the ones provided in stack.yaml.
-    pkg-def-extras = [
-      stack-pkgs.extras
-      iohk-extras.${compiler}
-    ];
-    # package customizations
-    modules = [
-      # This module will ensure that we get the necessary
-      # patches ontop of GHC packages that for which the
-      # ones that GHC ships are not identical to the ones
-      # we find on hackage. These patches will make sure
-      # they are identical by augmenting the packages on
-      # hackage to match those that ship with ghc.
-      haskell.ghcHackagePatches.${compiler}
-
-      # the iohk-module will supply us with the necessary
-      # cross compilation plumbing to make Template Haskell
-      # work when cross compiling.  For now we need to
-      # list the packages that require template haskell
-      # explicity here.
-      iohk-module
-    ];
-  };
-in
-  pkgSet.config.hsPkgs // { _config = pkgSet.config; }
-</code></pre>
-
-<p>default.nix</p>
-<pre><code>let
-  localLib = import ./lib.nix;
-in
-# This file needs to export a function that takes
-# the arguments it is passed and forwards them to
-# the default-nix template from iohk-nix. This is
-# important so that the release.nix file can properly
-# parameterize this file when targetting different
-# hosts.
-{ ... }@args:
-# We will instantiate the defaul-nix template with the
-# nix/pkgs.nix file...
-localLib.nix-tools.default-nix ./nix/pkgs.nix args
-# ... and add a few custom packages as well.
-// { }
-</code></pre>
+                <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
+that will impact users.</p>
+<h2 id="june-7-2019">June 7, 2019<a class="headerlink" href="#june-7-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Several additions to the <a href="https://input-output-hk.github.io/haskell.nix/">documentation</a>.<ul>
+<li>More information about getting nix-tools, Haskell.nix, pinning.</li>
+<li>Updates the stack-to-nix and cabal-to-nix guides.</li>
+<li>Adds a section on development environments.</li>
+<li>Adds a little information about cross compilation.</li>
+<li>Adds a (partially complete) reference section (command line manuals, library reference).</li>
+<li>Symlinks the changelog into the documentation pages.</li>
+</ul>
+</li>
+</ul>
+<h2 id="may-29-2019">May 29, 2019<a class="headerlink" href="#may-29-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added <code>shellFor</code> function to package set.</li>
+</ul>
+<h2 id="may-28-2019">May 28, 2019<a class="headerlink" href="#may-28-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added <code>snaphots</code> and <code>haskellPackages</code> attributes to the
+    Haskell.nix top-level.</li>
+</ul>
+<h2 id="may-22-2019">May 22, 2019<a class="headerlink" href="#may-22-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add the <code>cleanSourceHaskell</code> utility function to the Haskell.nix
+    top-level.</li>
+</ul>
+<h2 id="may-21-2019">May 21, 2019<a class="headerlink" href="#may-21-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add the <code>callCabalProjectToNix</code> function, which uses "import from
+    derivation" (IFD) so that nix-tools doesn't need to be run
+    manually.</li>
+<li>The <code>hackage.nix</code> update process has changed, so that Cabal index
+    state hashes are also included in the generated repo.</li>
+</ul>
+<h2 id="may-20-2019">May 20, 2019<a class="headerlink" href="#may-20-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Remove Travis CI in favour of Buildkite.</li>
+</ul>
+<h2 id="may-17-2019">May 17, 2019<a class="headerlink" href="#may-17-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add the <code>callStackToNix</code> function, which uses "import from
+    derivation" (IFD) so that <code>stack-to-nix</code> doesn't need to be run
+    manually.</li>
+</ul>
+<h2 id="mar-15-2019">Mar 15, 2019<a class="headerlink" href="#mar-15-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><code>overlays</code> was renamed to <code>extras</code> in
+    <a href="https://github.com/input-output-hk/haskell.nix/pull/79">#79</a>
+    to prevent confusion between the notion of Nix overlays.</p>
+<p>Therefore <code>plan-pkgs</code> and <code>stack-pkgs</code> as generated by <code>plan-to-nix</code> and <code>stack-to-nix</code> will
+expose <code>extras</code> instead of <code>overlay</code>. Similarly <code>mkStackPkgSet</code>, <code>mkPkgSet</code> and <code>mkCabalProjectPkgSet</code>
+take a <code>pkg-def-extras</code> instead of <code>pkg-def-overlay</code> argument.  If you are using <code>iohk-nix</code>, the
+<code>iohk-overlay</code> was parameter was renamed to <code>iohk-extras</code>.</p>
+</li>
+</ul>
               
             </div>
           </div>
@@ -306,10 +270,8 @@ localLib.nix-tools.default-nix ./nix/pkgs.nix args
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../dev-architecture/" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
       
-      
-        <a href="../reference/modules/" class="btn btn-neutral" title="Module options"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../maintainer-scripts/" class="btn btn-neutral" title="Maintainer Scripts"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -337,10 +299,8 @@ localLib.nix-tools.default-nix ./nix/pkgs.nix args
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../reference/modules/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../maintainer-scripts/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
-      
-        <span style="margin-left: 15px"><a href="../dev-architecture/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

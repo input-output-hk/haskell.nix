@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>How to cross-compile your project - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "How to cross-compile your project";
+    var mkdocs_page_input_path = "user-guide/cross-compilation.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../projects/">Creating Nix builds for your projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../stack-projects/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cabal-projects/">Cabal Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../development/">How to create a development environment</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">How to cross-compile your project</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#raspberry-pi-example">Raspberry Pi example</a></li>
+    
+
+    <li class="toctree-l3"><a href="#static-executables-with-musl-libc">Static executables with Musl libc</a></li>
+    
+
+    </ul>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/library/">Haskell.nix Libary</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../changelog/">ChangeLog</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>User Guide &raquo;</li>
+        
+      
+    
+    <li>How to cross-compile your project</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/cross-compilation.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p>Cross compilation of Haskell projects involves building a version of
+GHC that outputs code for the target platform, and providing builds of
+all library dependencies for that platform.</p>
+<p>First, understand how to cross-compile a normal package from
+Nixpkgs. Matthew Bauer's <a href="https://matthewbauer.us/blog/beginners-guide-to-cross.html">Beginners' guide to cross compilation in
+Nixpkgs</a> is a useful resource.</p>
+<p>Using an example from the guide, this builds GNU Hello for a Raspberry
+Pi:</p>
+<pre><code>nix build -f '&lt;nixpkgs&gt;' pkgsCross.raspberryPi.hello
+</code></pre>
+<p>We will use the same principle in <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> — replacing the normal
+package set <code>pkgs</code> with a cross-compiling package set
+<code>pkgsCross.raspberryPi</code>.</p>
+<h3 id="raspberry-pi-example">Raspberry Pi example<a class="headerlink" href="#raspberry-pi-example" title="Permanent link">&para;</a></h3>
+<p>This is an example of using <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> to build the <a href="https://hackage.haskell.org/package/bench">Bench</a>
+command-line utility, which is a Haskell program.</p>
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
+let
+  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
+  native = haskellNix { inherit pkgs; };
+in
+  native.haskellPackages.bench.components.exes.bench
+</code></pre>
+
+<p>Now switch the package set as in the previous example:</p>
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
+let
+  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
+  raspberryPi = haskellNix { pkgs = pkgs.pkgsCross.raspberryPi; };
+in
+  raspberryPi.haskellPackages.bench.components.exes.bench
+</code></pre>
+
+<p>You should be prepared for a long wait because it first needs to build
+GHC, before building all the Haskell dependencies of <a href="https://hackage.haskell.org/package/bench">Bench</a>. If all
+of these dependencies compiled successfully, I would be very surprised!</p>
+<p>To fix the build problems, you must add extra configuration to the
+package set. Your project will have a <a href="../../reference/library/#mkstackpkgset"><code>mkStackPkgSet</code></a> or
+<a href="../../reference/library/#mkcabalprojectpkgset"><code>mkCabalProjectPkgSet</code></a>. It is there where you must add
+<a href="../../reference/modules/">module options</a> for setting compiler flags and so on.</p>
+<h3 id="static-executables-with-musl-libc">Static executables with Musl libc<a class="headerlink" href="#static-executables-with-musl-libc" title="Permanent link">&para;</a></h3>
+<p>Another application of cross-compiling is to produce fully static
+binaries for Linux. For information about how to do that with the
+<a href="https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure">Nixpkgs Haskell infrastructure</a> (not <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>), see
+<a href="https://github.com/nh2/static-haskell-nix">nh2/static‑haskell‑nix</a>. Vaibhav Sagar's linked <a href="https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/">blog
+post</a> is also very informative.</p>
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
+let
+  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
+  musl64 = haskellNix { pkgs = pkgs.pkgsCross.musl64; };
+in
+  musl64.haskellPackages.bench.components.exes.bench
+</code></pre>
+
+<p>This example will build <a href="https://hackage.haskell.org/package/bench">Bench</a> linked against Musl libc. However
+the executable will still be dynamically linked. To get fully static
+executables you must add package overrides to:</p>
+<ol>
+<li>Disable dynamic linking</li>
+<li>Provide static versions of system libraries. (For more details, see
+   <a href="https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/">Vaibhav's article</a>).</li>
+</ol>
+<pre><code class="nix">{
+  packages.bench.components.exes.bench.configureFlags =
+    stdenv.lib.optionals stdenv.hostPlatform.isMusl [
+      &quot;--disable-executable-dynamic&quot;
+      &quot;--disable-shared&quot;
+      &quot;--ghc-option=-optl=-pthread&quot;
+      &quot;--ghc-option=-optl=-static&quot;
+      &quot;--ghc-option=-optl=-L${gmp6.override { withStatic = true; }}/lib&quot;
+      &quot;--ghc-option=-optl=-L${zlib.static}/lib&quot;
+    ];
+}
+</code></pre>
+
+<div class="admonition note">
+<p class="admonition-title">Licensing</p>
+<p>Note that if copyleft licensing your program is a problem for you,
+then you need to statically link with <code>integer-simple</code> rather than
+<code>integer-gmp</code>. However, at present, <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> does not provide
+an option for this.</p>
+</div>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../reference/commands/" class="btn btn-neutral float-right" title="Command-line tools">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../development/" class="btn btn-neutral" title="How to create a development environment"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../development/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../reference/commands/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

@@ -68,11 +68,42 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../user-guide-stack/">Stack Projects</a>
+    <a class="" href="../user-guide/projects/">Creating Nix builds for your projects</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../user-guide-cabal/">Cabal Proejcts</a>
+    <a class="" href="../user-guide/stack-projects/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide/cabal-projects/">Cabal Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide/development/">How to create a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../user-guide/cross-compilation/">How to cross-compile your project</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../reference/library/">Haskell.nix Libary</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../reference/modules/">Module options</a>
                 </li>
     </ul>
 	    </li>
@@ -125,6 +156,11 @@
     </ul>
 	    </li>
           
+            <li class="toctree-l1">
+		
+    <a class="" href="../changelog/">ChangeLog</a>
+	    </li>
+          
         </ul>
       </div>
       &nbsp;
@@ -164,7 +200,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="ghcwithpackages-wrapper-removal"><code>ghcWithPackages</code> wrapper removal</h1>
+                <h1 id="ghcwithpackages-wrapper-removal"><code>ghcWithPackages</code> wrapper removal<a class="headerlink" href="#ghcwithpackages-wrapper-removal" title="Permanent link">&para;</a></h1>
 <p>The current <a href="https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure">Nixpkgs Haskell infrastructure</a> and <code>haskell.nix</code> both
 provide a <code>ghcWithPackages</code> derivation which contains shell script
 wrappers that wrap <code>ghc</code> and <code>ghc-pkg</code>.</p>
@@ -176,22 +212,22 @@ package set and has all Haskell package dependencies available to it.</p>
 <p>We would like to remove the wrapper scripts, but it's currently not
 possible to configure all build tools using environment variables
 alone.</p>
-<h2 id="plain-ghc">Plain <code>ghc</code></h2>
+<h2 id="plain-ghc">Plain <code>ghc</code><a class="headerlink" href="#plain-ghc" title="Permanent link">&para;</a></h2>
 <p>When using <code>ghc</code> or <code>ghci</code> by itself, the <code>GHC_ENVIRONMENT</code> variable
 can point to a configuration file containing an exact package
 set. This works quite well.</p>
-<h2 id="ghc-pkg"><code>ghc-pkg</code></h2>
+<h2 id="ghc-pkg"><code>ghc-pkg</code><a class="headerlink" href="#ghc-pkg" title="Permanent link">&para;</a></h2>
 <p>The package tool <code>ghc-pkg</code> does not recognize <code>GHC_ENVIRONMENT</code>, but
 does recognize a <code>GHC_PACKAGE_PATH</code> pointing to a <code>package.conf.d</code>.</p>
 <p>This works well. However, the <code>cabal</code> command will refuse to start if
 <code>GHC_PACKAGE_PATH</code> is set.</p>
-<h2 id="setuphs"><code>Setup.hs</code></h2>
+<h2 id="setuphs"><code>Setup.hs</code><a class="headerlink" href="#setuphs" title="Permanent link">&para;</a></h2>
 <p>When invoking <code>Setup.hs configure</code>, the package database is provided
 with the <code>--package-db</code> argument and exact dependencies in the package
 set can be provided as <code>--dependency</code> arguments.</p>
 <p>The <code>haskell.nix</code> component builder uses <code>Setup.hs</code> with these
 command-line options to build Haskell packages.</p>
-<h2 id="cabal-new-build"><code>cabal new-build</code></h2>
+<h2 id="cabal-new-build"><code>cabal new-build</code><a class="headerlink" href="#cabal-new-build" title="Permanent link">&para;</a></h2>
 <p>Cabal-install will observe the <code>CABAL_CONFIG</code> environment variable,
 which points to a cabal config file. This config file can provide a
 <code>package-db</code> value, but it can't specify exact versions of packages.</p>

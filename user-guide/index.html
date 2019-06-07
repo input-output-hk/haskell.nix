@@ -73,9 +73,11 @@
         
             <li><a class="toctree-l4" href="#installing-nix-tools">Installing nix-tools</a></li>
         
-            <li><a class="toctree-l4" href="#setup">Setup</a></li>
+            <li><a class="toctree-l4" href="#getting-the-haskellnix-source-optional">Getting the Haskell.nix source (optional)</a></li>
         
-            <li><a class="toctree-l4" href="#defaultnix">default.nix</a></li>
+            <li><a class="toctree-l4" href="#importing-haskellnix-into-your-project">Importing Haskell.nix into your project</a></li>
+        
+            <li><a class="toctree-l4" href="#using-nix-repl">Using nix repl</a></li>
         
         </ul>
     
@@ -84,11 +86,42 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../user-guide-stack/">Stack Projects</a>
+    <a class="" href="projects/">Creating Nix builds for your projects</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../user-guide-cabal/">Cabal Proejcts</a>
+    <a class="" href="stack-projects/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="cabal-projects/">Cabal Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="development/">How to create a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="cross-compilation/">How to cross-compile your project</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../reference/library/">Haskell.nix Libary</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../reference/modules/">Module options</a>
                 </li>
     </ul>
 	    </li>
@@ -121,6 +154,11 @@
     <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
                 </li>
     </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../changelog/">ChangeLog</a>
 	    </li>
           
         </ul>
@@ -162,13 +200,13 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="user-guide">User Guide</h1>
-<p>So you want to use <code>haskell.nix</code> with your stack or cabal project. The
+                <h1 id="user-guide">User Guide<a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h1>
+<p>So you want to use <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> with your stack or cabal project. The
 general approach will be to pick the right tool from <code>nix-tools</code> and
-produce a <code>pkgs.nix</code> expressions.  Getting a copy of the haskell.nix,
-hackage.nix (and potentially stackage.nix) source will then equip us
-to produce derivations that we can <code>nix build</code>.</p>
-<h2 id="installing-nix-tools">Installing <code>nix-tools</code></h2>
+produce a <code>pkgs.nix</code> expression.  Getting a copy of the <code>nix-tools</code>
+(and potentially the <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> source), will then equip us to
+produce derivations that we can <code>nix build</code>.</p>
+<h2 id="installing-nix-tools">Installing <code>nix-tools</code><a class="headerlink" href="#installing-nix-tools" title="Permanent link">&para;</a></h2>
 <p>To build the latest <code>nix-tools</code> and store the result at <code>./nt</code>, run:</p>
 <pre><code class="bash">nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools --out-link nt
 </code></pre>
@@ -177,91 +215,115 @@ to produce derivations that we can <code>nix build</code>.</p>
 <pre><code class="bash">nix-env -i ./nt
 </code></pre>
 
-<h2 id="setup">Setup</h2>
-<p>The general structure will be the same for haskell.nix, independent of
-the use of stack or cabal.  Let us assume for now that we have
-generated a <code>pkgs.nix</code> expression in <code>nix</code>.</p>
-<ul>
-<li><a href="/user-guide-stack">Generating a <code>pkgs.nix</code> for a stack project</a></li>
-<li><a href="/user-guide-cabal">Generating a <code>pkgs.nix</code> for a cabal project</a></li>
-</ul>
-<h2 id="defaultnix">default.nix</h2>
-<p>We will start with defining a helper function in our <code>default.nix</code>
-that will allow us to override the source imports with <code>-I
-haskell=/path/to/haskell.nix</code> in case we need it.</p>
-<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {}
-}:
+<h2 id="getting-the-haskellnix-source-optional">Getting the <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> source (optional)<a class="headerlink" href="#getting-the-haskellnix-source-optional" title="Permanent link">&para;</a></h2>
+<p>The <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> and <code>nix-tools</code> source will be useful if you would
+like to contribute improvements, or read the source code to fully
+understand something that the documentation doesn't cover.</p>
+<pre><code class="bash">git clone https://github.com/input-output-hk/nix-tools
+git clone https://github.com/input-output-hk/haskell.nix
+cd haskell.nix
+nix build -f . nix-tools --out-link nt
+</code></pre>
+
+<h2 id="importing-haskellnix-into-your-project">Importing <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> into your project<a class="headerlink" href="#importing-haskellnix-into-your-project" title="Permanent link">&para;</a></h2>
+<p>The easiest way to get a hold of <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> is with
+<a href="https://nixos.org/nix/manual/#ssec-builtins"><code>fetchTarball</code></a>.</p>
+<pre><code class="nix">import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+</code></pre>
+
+<p>If you have your own <code>pkgs</code> variable, pass it to <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> to
+prevent double-evaluation of the Nixpkgs collection.</p>
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
+
+import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; }
+</code></pre>
+
+<h3 id="pinning-the-haskellnix-version">Pinning the <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> version<a class="headerlink" href="#pinning-the-haskellnix-version" title="Permanent link">&para;</a></h3>
+<p>For simplicity's sake we will use <code>fetchTarball</code> for the examples in
+this documentation. This will always get the latest version, and is
+similar to an auto-updating Nix channel.</p>
+<p>However, in your own project, you may wish to pin <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> (as
+you would pin Nixpkgs). This will make your builds reproducable, more
+predictable, and faster (because the fixed version is cached).</p>
+<p>One way of doing this is to use <code>nix-prefetch-git</code> to get a JSON file
+with a revision and SHA-256 hash of <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>.</p>
+<pre><code>$ nix-prefetch-git --quiet https://github.com/input-output-hk/haskell.nix | tee haskell-nix-src.json
+{
+  &quot;url&quot;: &quot;https://github.com/input-output-hk/haskell.nix&quot;,
+  &quot;rev&quot;: &quot;f1a94a4c82a2ab999a67c3b84269da78d89f0075&quot;,
+  &quot;date&quot;: &quot;2019-06-05T01:06:12+00:00&quot;,
+  &quot;sha256&quot;: &quot;0ggxsppjlb6q6a83y12cwgrdnqnw1s128rpibgzs5p1966bdfqla&quot;,
+  &quot;fetchSubmodules&quot;: false
+}
+</code></pre>
+
+<p>(The <code>tee</code> command is just to show you the result.)
+Use the following expression to import that version:</p>
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
+
 let
-  overrideWith = override: default:
-   let
-     try = builtins.tryEval (builtins.findFile builtins.nixPath override);
-   in if try.success then
-     builtins.trace &quot;using search host &lt;${override}&gt;&quot; try.value
-   else
-     default;
+  spec = builtins.fromJSON (builtins.readFile ./haskell-nix-src.json);
+  haskell-nix-src = pkgs.fetchgit {
+    name = &quot;haskell-lib&quot;;
+    inherit (spec) url rev sha256 fetchSubmodules;
+  };
 in
+  import haskell-nix-src { inherit pkgs; }
 </code></pre>
 
-<p>Next we will use this to import <code>haskell.nix</code>.</p>
-<p><strong>NOTE</strong>: update the <code>rev</code> and <code>sha256</code> values to the recent ones as
-  found on GitHub.  Especially <code>haskell.hackage</code> and <code>haskell.stackage</code>
-  will evolve with package release on hackage and stackage releases
-  respectively.</p>
-<pre><code class="nix">let
-  haskellLib = pkgs.fetchFromGitHub {
-    owner  = &quot;input-output-hk&quot;;
-    repo   = &quot;haskell.nix&quot;;
-    rev    = &quot;5180ae9d78756509c81b98b8e6d974e350b15752&quot;;
-    sha256 = &quot;0fbnnvymdp2qb09wlqy6ga8wsyhglx607cjdfg510s1gs756v9yx&quot;;
-    name   = &quot;haskell-lib-source&quot;;
-  };
-  haskell = import (overrideWith &quot;haskell&quot; haskellLib) { inherit pkgs; };
-in
+<p>There are other possible schemes for pinning. See
+<a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/fetch-external.nix"><code>haskell.nix/lib/fetch-external.nix</code></a>,
+the <a href="https://github.com/nmattia/niv">niv</a> tool, or the Nix Flakes
+proposal.</p>
+<h3 id="overriding-the-hackage-version">Overriding the Hackage version<a class="headerlink" href="#overriding-the-hackage-version" title="Permanent link">&para;</a></h3>
+<p>Sometimes you might want to use a chosen version of Haskell.nix with a
+recent update of Hackage or Stackage. This can be done with JSON pins:</p>
+<pre><code class="bash">nix-prefetch-git https://github.com/input-output-hk/hackage.nix | tee hackage-src.json
+nix-prefetch-git https://github.com/input-output-hk/stackage.nix | tee stackage-src.json
 </code></pre>
 
-<p>Finally we string this together and produce a package set:</p>
-<pre><code class="nix">let
-  # Import the file you will create in the stack-to-nix or cabal-to-nix step.
-  my-pkgs = import ./nix/pkgs.nix;
+<p>The resulting JSON files will correspond to the latest revision of
+<a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> and <a href="https://github.com/input-output-hk/stackage.nix">stackage.nix</a>. See
+<a href="../architecture/">Architecture</a> for more information about how
+these Git repositories correspond to the actual Hackage and Stackage.</p>
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
 
-  # Stack projects use the mkStackPkgSet helper function
-  pkgSet = haskell.mkStackPkgSet {
-    stack-pkgs = my-pkgs;
-    pkg-def-overlays = [];
-    modules = [];
-  };
-
-  # Cabal projects use mkPkgSet
-  pkgSet = haskell.mkPkgSet {
-    pkg-def = my-pkgs.pkg-def;
-    pkg-def-extras = [
-      # these extras will provide additional packages
-      # ontop of the package set.  E.g. extra-deps
-      # for stack packages. or local packages for
-      # cabal.projects
-      my-pkgs.extras
-    ];
-    modules = [
-      # specific package overrides would go here
-      # example:
-      #  packages.cbors.patches = [ ./one.patch ];
-      #  packages.cbors.flags.optimize-gmp = false;
-    ];
-  };
-
-in pkgSet.config.hsPkgs // { _config = pkgSet.config; }
+import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
+  inherit pkgs;
+  hackageSourceJSON = ./hackage-src.json;
+  stackageSourceJSON = ./stackage-src.json; 
+}
 </code></pre>
 
-<p>With this setup you can then start building the components of
-interest:</p>
-<pre><code class="bash">nix build -f default.nix $pkg.components.library
+<h2 id="using-nix-repl">Using <code>nix repl</code><a class="headerlink" href="#using-nix-repl" title="Permanent link">&para;</a></h2>
+<p>It's sometimes useful to load <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> in the REPL to explore
+attrsets and try examples. </p>
+<pre><code># example.nix
+{ pkgs ? import &lt;nixpkgs&gt; {} }:
+rec {
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; };
+  pkgNames = pkgs.lib.attrNames haskell.snapshots.&quot;lts-13.18&quot;;
+}
 </code></pre>
 
-<p>to build the library for <code>$pkg</code> or</p>
-<pre><code class="bash">nix build -f default.nix $pkg.components.exes.$exe
+<p>Load the example file:</p>
+<pre><code>$ nix repl '&lt;nixpkgs&gt;' example.nix
+Welcome to Nix version 2.3pre6631_e58a7144. Type :? for help.
+
+Loading '&lt;nixpkgs&gt;'...
+Added 10403 variables.
+
+Loading 'example2.nix'...
+Added 2 variables.
+
+nix-repl&gt; lib.take 5 pkgNames
+[ &quot;ALUT&quot; &quot;ANum&quot; &quot;Allure&quot; &quot;Boolean&quot; &quot;BoundedChan&quot; ]
+
+nix-repl&gt; 
 </code></pre>
 
-<p>to build a specific executable. The same holds for test suites and benchmarks.</p>
+<p>Now that you have <code>nix-tools</code> and are able to import <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>,
+you can continue to the next chapter.</p>
               
             </div>
           </div>
@@ -269,7 +331,7 @@ interest:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../user-guide-stack/" class="btn btn-neutral float-right" title="Stack Projects">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="projects/" class="btn btn-neutral float-right" title="Creating Nix builds for your projects">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../architecture/" class="btn btn-neutral" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -303,7 +365,7 @@ interest:</p>
         <span><a href="../architecture/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../user-guide-stack/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="projects/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
