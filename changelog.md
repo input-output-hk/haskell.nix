@@ -1,8 +1,14 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## June 6, 2019
-  * Substantial additions to the [documentation](https://input-output-hk.github.io/haskell.nix/).
+## June 7, 2019
+  * Several additions to the [documentation](https://input-output-hk.github.io/haskell.nix/).
+    * More information about getting nix-tools, Haskell.nix, pinning.
+    * Updates the stack-to-nix and cabal-to-nix guides.
+    * Adds a section on development environments.
+    * Adds a little information about cross compilation.
+    * Adds a (partially complete) reference section (command line manuals, library reference).
+    * Symlinks the changelog into the documentation pages.
 
 ## May 29, 2019
   * Added `shellFor` function to package set.

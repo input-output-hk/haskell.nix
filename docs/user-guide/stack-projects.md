@@ -29,6 +29,28 @@ This will produce a `pkgs.nix` file that looks like the following:
 ```
 
 This file contains the stackage resolver, as well as set of extra
-packages.  The extras specifies which `extra-deps` (here: o-clock-0.1.1)
-we wanted to add over the stackage snapshot, and what local
-packages we want (here: `my-package`).
+packages.  The extras specifies which `extra-deps` (here:
+`o-clock-0.1.1`) we wanted to add over the stackage snapshot, and what
+local packages we want (here: `my-package`).
+
+## Creating the package set
+
+Import the generated `pkgs.nix` and pass to
+[`mkStackPkgSet`](../reference/library.md#mkstackpkgset) to
+instantiate a package set.
+
+```nix
+# default.nix
+let
+  # Import the Haskell.nix library,
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+
+  # Instantiate a package set using the generated file.
+  pkgSet = haskell.mkStackPkgSet {
+    stack-pkgs = import ./pkgs.nix;
+    pkg-def-overlays = [];
+    modules = [];
+  };
+in
+  pkgSet.config.hsPkgs
+```

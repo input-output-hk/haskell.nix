@@ -58,3 +58,25 @@ It has converted Cabal's build plan into a Nix expression that selects
 dependencies from `hackage.nix`. All local packages in the project are
 generated with `cabal-to-nix` and added to the package set
 description.
+
+## Creating the package set
+
+Import the generated `pkgs.nix` and pass to
+[`mkCabalPkgSet`](../reference/library.md#mkcabalprojectpkgset) to
+instantiate a package set.
+
+```nix
+# default.nix
+let
+  # Import the Haskell.nix library,
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+
+  # Instantiate a package set using the generated file.
+  pkgSet = haskell.mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
+    pkg-def-extras = [];
+    modules = [];
+  };
+in
+  pkgSet.config.hsPkgs
+```

@@ -29,8 +29,12 @@ pages:
     - 'Creating Nix builds for your projects': user-guide/projects.md
     - 'Stack Projects': user-guide/stack-projects.md
     - 'Cabal Projects': user-guide/cabal-projects.md
-    - 'Setting package options': user-guide/options.md
     - 'How to create a development environment': user-guide/development.md
+    - 'How to cross-compile your project': user-guide/cross-compilation.md
+  - 'Reference':
+    - 'Command-line tools': reference/commands.md
+    - 'Haskell.nix Libary': reference/library.md
+    - 'Module options': reference/modules.md
   - 'Templates / Abstraction':
     - 'IOHKs nix library': iohk-nix.md
   - 'Dev Notes':
