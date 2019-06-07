@@ -104,6 +104,9 @@ let
     && (haskellLib.isLibrary componentId)
     && stdenv.hostPlatform == stdenv.buildPlatform;
 
+  testExecutable = "dist/build/${componentId.cname}/${componentId.cname}"
+    + lib.optionalString stdenv.hostPlatform.isWindows ".exe";
+
 in stdenv.lib.fix (drv:
 
 stdenv.mkDerivation ({
@@ -179,9 +182,9 @@ stdenv.mkDerivation ({
 
   checkPhase = ''
     runHook preCheck
-    $SETUP_HS test ${lib.concatStringsSep " " component.setupTestFlags}
-    mkdir -p $out/${name}
-    cp dist/test/*.log $out/${name}/
+
+    ${component.testWrapper} ${testExecutable} ${lib.concatStringsSep " " component.testFlags}
+
     runHook postCheck
   '';
 
