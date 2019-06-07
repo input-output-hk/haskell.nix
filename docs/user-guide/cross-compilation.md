@@ -47,10 +47,16 @@ You should be prepared for a long wait because it first needs to build
 GHC, before building all the Haskell dependencies of [Bench][]. If all
 of these dependencies compiled successfully, I would be very surprised!
 
+!!! hint
+    The above example won't build, but you can try and see, if you like.
+    It will fail on [clock-0.7.2](http://hackage.haskell.org/package/clock-0.7.2),
+    which needs a patch to build.
+
 To fix the build problems, you must add extra configuration to the
 package set. Your project will have a [`mkStackPkgSet`](../reference/library.md#mkstackpkgset) or
 [`mkCabalProjectPkgSet`](../reference/library.md#mkcabalprojectpkgset). It is there where you must add
-[module options](../reference/modules.md) for setting compiler flags and so on.
+[module options](../reference/modules.md) for setting compiler flags, adding patches, and so on.
+
 
 ### Static executables with Musl libc
 
@@ -97,6 +103,55 @@ executables you must add package overrides to:
     then you need to statically link with `integer-simple` rather than
     `integer-gmp`. However, at present, [Haskell.nix][] does not provide
     an option for this.
+
+
+### How to cross-compile your project
+
+Set up your project Haskell package set.
+
+```
+# default.nix
+{ pkgs ? import <nixpkgs> {}
+let
+  # Import the Haskell.nix library,
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
+    inherit pkgs;
+  };
+
+  # Instantiate a package set using the generated file.
+  pkgSet = haskell.mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
+    pkg-def-extras = [];
+    modules = [
+      {
+        # You will need to put build fixes here.
+      }
+    ];
+  };
+in
+  pkgSet.config.hsPkgs
+```
+
+Apply that package set to the Nixpkgs cross package sets that you are
+interested in.
+
+```
+# release.nix
+let
+  project = import ./default.nix;
+  pkgs = import <nixpkgs> {};
+  native = import project { inherit pkgs; };
+  crossRasperryPi = import project { pkgs = pkgs.pkgsCross.raspberryPi; };
+in {
+  my-project-native = native.my-project.components.exes.my-project;
+  my-project-rasberry-pi = crossRaspberryPi.my-project.components.exes.my-project;
+}
+```
+
+Try to build it, and apply fixes to the `modules` list, until there
+are no errors left.
+
+
 
 [nh2]: https://github.com/nh2/static-haskell-nix
 [vaibhav]: https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/

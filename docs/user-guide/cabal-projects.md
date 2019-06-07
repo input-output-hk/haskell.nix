@@ -8,9 +8,11 @@ dependencies of your package(s).
 
 ## Generating `plan.json`
 
-To get a plan, you need Cabal and GHC. See the [Nixpkgs
-Manual](https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler)
-for information about how to choose a specific compiler version.
+To get a plan, you need Cabal and GHC. See the [How to install a
+compiler section of the Nixpkgs Manual][compiler] for information
+about how to choose a specific compiler version.
+
+[compiler]: https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler
 
 For this example, we will run a `nix-shell` with the default GHC
 version for Nixpkgs.
@@ -22,6 +24,12 @@ nix-shell -p haskellPackages.cabal-install haskellPackages.ghc \
 
 If all goes well, you should now have the file
 `dist-newstyle/cache/plan.json`.
+
+!!! tip "Specifying the GHC version"
+    To use a specific compiler version, replace `haskellPackages.ghc`
+    with something like `haskell.compiler.ghc865`. The given compiler
+    must exist in your Nixpkgs version, of course. See also the
+    [Nixpkgs Manual][compiler].
 
 ## Using `plan-to-nix`
 
