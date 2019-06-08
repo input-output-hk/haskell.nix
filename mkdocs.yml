@@ -13,6 +13,11 @@ site_name: Alternative Haskell Infrastructure for Nixpkgs
 theme: readthedocs
 site_url: null
 repo_url: https://github.com/input-output-hk/haskell.nix
+permalink: true
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
 
 # this is called `nav` in more recent mkdocs versions. Mine
 # right now is 0.17.5
@@ -21,11 +26,19 @@ pages:
   - 'Architecture': architecture.md
   - 'User Guide':
     - 'General': user-guide.md
-    - 'Stack Projects': user-guide-stack.md
-    - 'Cabal Proejcts': user-guide-cabal.md
+    - 'Creating Nix builds for your projects': user-guide/projects.md
+    - 'Stack Projects': user-guide/stack-projects.md
+    - 'Cabal Projects': user-guide/cabal-projects.md
+    - 'How to create a development environment': user-guide/development.md
+    - 'How to cross-compile your project': user-guide/cross-compilation.md
+  - 'Reference':
+    - 'Command-line tools': reference/commands.md
+    - 'Haskell.nix Libary': reference/library.md
+    - 'Module options': reference/modules.md
   - 'Templates / Abstraction':
     - 'IOHKs nix library': iohk-nix.md
   - 'Dev Notes':
     - 'Architecture': dev-architecture.md
     - 'Removing withPackage wrapper': removing-with-package-wrapper.md
     - 'Maintainer Scripts': maintainer-scripts.md
+  - 'ChangeLog': changelog.md

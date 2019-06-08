@@ -1,7 +1,11 @@
 # haskell.nix
 
 haskell.nix is an alternative Haskell infrastructure for nixpkgs. See
-[Nixpkgs current Users' Guide to Haskell Infrastructure](https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure) for comparison.
+[Nixpkgs current Users' Guide to Haskell Infrastructure][nixpkgs] for
+comparison.
+
+[nixpkgs]: https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure
+[issues]: https://github.com/input-output-hk/haskell.nix/issues
 
 ## Motivation
 

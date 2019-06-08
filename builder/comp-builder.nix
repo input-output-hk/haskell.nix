@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
 
 { componentId
 , component
@@ -12,12 +12,12 @@
 , cabal-generator
 , patches ? []
 
-, preUnpack ? null, postUnpack ? null
-, preConfigure ? null, postConfigure ? null
-, preBuild ? null, postBuild ? null
-, preCheck ? null, postCheck ? null
-, preInstall ? null, postInstall ? null
-, preHaddock ? null, postHaddock ? null
+, preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
+, preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
+, preBuild ? component.preBuild , postBuild ? component.postBuild
+, preCheck ? component.preCheck , postCheck ? component.postCheck
+, preInstall ? component.preInstall , postInstall ? component.postInstall
+, preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
 
 , doCheck ? component.doCheck || haskellLib.isTest componentId
@@ -32,6 +32,11 @@
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
 , doHoogle ? true  # Also build a hoogle index
 , hyperlinkSource ? true  # Link documentation to the source code
+
+# Profiling
+, enableLibraryProfiling ? component.enableLibraryProfiling
+, enableExecutableProfiling ? component.enableExecutableProfiling
+, profilingDetail ? component.profilingDetail
 }:
 
 let
@@ -62,14 +67,17 @@ let
     ] ++ [ # other flags
       (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
       (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
+      (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )
+      (if enableExecutableProfiling then "--enable-executable-profiling" else "--disable-executable-profiling" )
     ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
+      ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
       ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
-  );
+    );
 
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
@@ -95,6 +103,9 @@ let
   doHaddock' = doHaddock
     && (haskellLib.isLibrary componentId)
     && stdenv.hostPlatform == stdenv.buildPlatform;
+
+  testExecutable = "dist/build/${componentId.cname}/${componentId.cname}"
+    + lib.optionalString stdenv.hostPlatform.isWindows ".exe";
 
 in stdenv.lib.fix (drv:
 
@@ -132,7 +143,10 @@ stdenv.mkDerivation ({
 
   buildInputs = component.libs
     ++ component.frameworks
-    ++ builtins.concatLists component.pkgconfig;
+    ++ builtins.concatLists component.pkgconfig
+    # Note: This is a hack until we can fix properly. See:
+    # https://github.com/haskell-gi/haskell-gi/issues/226
+    ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
 
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]
@@ -168,9 +182,9 @@ stdenv.mkDerivation ({
 
   checkPhase = ''
     runHook preCheck
-    $SETUP_HS test ${lib.concatStringsSep " " component.setupTestFlags}
-    mkdir -p $out/${name}
-    cp dist/test/*.log $out/${name}/
+
+    ${component.testWrapper} ${testExecutable} ${lib.concatStringsSep " " component.testFlags}
+
     runHook postCheck
   '';
 

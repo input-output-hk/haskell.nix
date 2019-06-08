@@ -6,7 +6,7 @@ let
   src = cleanSourceHaskell (fetchExternal {
     name     = "nix-tools-src";
     specJSON = ./nix-tools-src.json;
-    override = "nix-tools";
+    override = "nix-tools-src";
   });
 
   pkgSet = mkCabalProjectPkgSet {

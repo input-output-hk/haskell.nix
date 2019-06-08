@@ -87,7 +87,7 @@ with types;
     components = let
       componentType = submodule {
         # add the shared componentOptions
-        options = (componentOptions config) // {
+        options = (packageOptions config) // {
           depends = mkOption {
             type = listOfFilteringNulls unspecified;
             default = [];

@@ -1,10 +1,12 @@
 # User Guide
 
-So you want to use `haskell.nix` with your stack or cabal project. The
-general	approach will be to pick the right tool from `nix-tools` and
-produce a `pkgs.nix` expressions.  Getting a copy of the haskell.nix,
-hackage.nix (and potentially stackage.nix) source will then equip us
-to produce derivations that we can `nix build`.
+So you want to use [Haskell.nix][] with your stack or cabal project. The
+general approach will be to pick the right tool from `nix-tools` and
+produce a `pkgs.nix` expression.  Getting a copy of the `nix-tools`
+(and potentially the [Haskell.nix][] source), will then equip us to
+produce derivations that we can `nix build`.
+
+[haskell.nix]: https://github.com/input-output-hk/haskell.nix
 
 ## Installing `nix-tools`
 
@@ -20,101 +22,141 @@ If you would like to then install `nix-tools` into your profile, run:
 nix-env -i ./nt
 ```
 
-## Setup
+## Getting the [Haskell.nix][] source (optional)
 
-The general structure will be the same for haskell.nix, independent of
-the use of stack or cabal.  Let us assume for now that we have
-generated a `pkgs.nix` expression in `nix`.
-
-- [Generating a `pkgs.nix` for a stack project](/user-guide-stack)
-- [Generating a `pkgs.nix` for a cabal project](/user-guide-cabal)
-
-## default.nix
-
-We will start with defining a helper function in our `default.nix`
-that will allow us to override the source imports with `-I
-haskell=/path/to/haskell.nix` in case we need it.
-
-```nix
-{ pkgs ? import <nixpkgs> {}
-}:
-let
-  overrideWith = override: default:
-   let
-     try = builtins.tryEval (builtins.findFile builtins.nixPath override);
-   in if try.success then
-     builtins.trace "using search host <${override}>" try.value
-   else
-     default;
-in
-```
-
-Next we will use this to import `haskell.nix`.
-
-**NOTE**: update the `rev` and `sha256` values to the recent ones as
-  found on GitHub.  Especially `haskell.hackage` and `haskell.stackage`
-  will evolve with package release on hackage and stackage releases
-  respectively.
-
-```nix
-let
-  haskellLib = pkgs.fetchFromGitHub {
-    owner  = "input-output-hk";
-    repo   = "haskell.nix";
-    rev    = "5180ae9d78756509c81b98b8e6d974e350b15752";
-    sha256 = "0fbnnvymdp2qb09wlqy6ga8wsyhglx607cjdfg510s1gs756v9yx";
-    name   = "haskell-lib-source";
-  };
-  haskell = import (overrideWith "haskell" haskellLib) { inherit pkgs; };
-in
-```
-
-Finally we string this together and produce a package set:
-
-```nix
-let
-  # Import the file you will create in the stack-to-nix or cabal-to-nix step.
-  my-pkgs = import ./nix/pkgs.nix;
-
-  # Stack projects use the mkStackPkgSet helper function
-  pkgSet = haskell.mkStackPkgSet {
-    stack-pkgs = my-pkgs;
-    pkg-def-overlays = [];
-    modules = [];
-  };
-
-  # Cabal projects use mkPkgSet
-  pkgSet = haskell.mkPkgSet {
-    pkg-def = my-pkgs.pkg-def;
-    pkg-def-extras = [
-      # these extras will provide additional packages
-      # ontop of the package set.  E.g. extra-deps
-      # for stack packages. or local packages for
-      # cabal.projects
-      my-pkgs.extras
-    ];
-    modules = [
-      # specific package overrides would go here
-      # example:
-      #  packages.cbors.patches = [ ./one.patch ];
-      #  packages.cbors.flags.optimize-gmp = false;
-    ];
-  };
-
-in pkgSet.config.hsPkgs // { _config = pkgSet.config; }
-```
-
-With this setup you can then start building the components of
-interest:
+The [Haskell.nix][] and `nix-tools` source will be useful if you would
+like to contribute improvements, or read the source code to fully
+understand something that the documentation doesn't cover.
 
 ```bash
-nix build -f default.nix $pkg.components.library
+git clone https://github.com/input-output-hk/nix-tools
+git clone https://github.com/input-output-hk/haskell.nix
+cd haskell.nix
+nix build -f . nix-tools --out-link nt
 ```
 
-to build the library for `$pkg` or
+## Importing [Haskell.nix][] into your project
+
+The easiest way to get a hold of [Haskell.nix][] is with
+[`fetchTarball`](https://nixos.org/nix/manual/#ssec-builtins).
+
+```nix
+import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+```
+
+If you have your own `pkgs` variable, pass it to [Haskell.nix][] to
+prevent double-evaluation of the Nixpkgs collection.
+
+```nix
+{ pkgs ? import <nixpkgs> {} }:
+
+import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; }
+```
+
+### Pinning the [Haskell.nix][] version
+
+For simplicity's sake we will use `fetchTarball` for the examples in
+this documentation. This will always get the latest version, and is
+similar to an auto-updating Nix channel.
+
+However, in your own project, you may wish to pin [Haskell.nix][] (as
+you would pin Nixpkgs). This will make your builds reproducable, more
+predictable, and faster (because the fixed version is cached).
+
+One way of doing this is to use `nix-prefetch-git` to get a JSON file
+with a revision and SHA-256 hash of [Haskell.nix][].
+
+```
+$ nix-prefetch-git --quiet https://github.com/input-output-hk/haskell.nix | tee haskell-nix-src.json
+{
+  "url": "https://github.com/input-output-hk/haskell.nix",
+  "rev": "f1a94a4c82a2ab999a67c3b84269da78d89f0075",
+  "date": "2019-06-05T01:06:12+00:00",
+  "sha256": "0ggxsppjlb6q6a83y12cwgrdnqnw1s128rpibgzs5p1966bdfqla",
+  "fetchSubmodules": false
+}
+```
+
+(The `tee` command is just to show you the result.)
+Use the following expression to import that version:
+
+```nix
+{ pkgs ? import <nixpkgs> {} }:
+
+let
+  spec = builtins.fromJSON (builtins.readFile ./haskell-nix-src.json);
+  haskell-nix-src = pkgs.fetchgit {
+    name = "haskell-lib";
+    inherit (spec) url rev sha256 fetchSubmodules;
+  };
+in
+  import haskell-nix-src { inherit pkgs; }
+```
+
+There are other possible schemes for pinning. See
+[`haskell.nix/lib/fetch-external.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/fetch-external.nix),
+the [niv](https://github.com/nmattia/niv) tool, or the Nix Flakes
+proposal.
+
+### Overriding the Hackage version
+
+Sometimes you might want to use a chosen version of Haskell.nix with a
+recent update of Hackage or Stackage. This can be done with JSON pins:
 
 ```bash
-nix build -f default.nix $pkg.components.exes.$exe
+nix-prefetch-git https://github.com/input-output-hk/hackage.nix | tee hackage-src.json
+nix-prefetch-git https://github.com/input-output-hk/stackage.nix | tee stackage-src.json
 ```
 
-to build a specific executable. The same holds for test suites and benchmarks.
+The resulting JSON files will correspond to the latest revision of
+[hackage.nix][] and [stackage.nix][]. See
+[Architecture](architecture.md) for more information about how
+these Git repositories correspond to the actual Hackage and Stackage.
+
+[hackage.nix]: https://github.com/input-output-hk/hackage.nix
+[stackage.nix]: https://github.com/input-output-hk/stackage.nix
+
+```nix
+{ pkgs ? import <nixpkgs> {} }:
+
+import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
+  inherit pkgs;
+  hackageSourceJSON = ./hackage-src.json;
+  stackageSourceJSON = ./stackage-src.json; 
+}
+```
+
+## Using `nix repl`
+
+It's sometimes useful to load [Haskell.nix][] in the REPL to explore
+attrsets and try examples. 
+
+```
+# example.nix
+{ pkgs ? import <nixpkgs> {} }:
+rec {
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; };
+  pkgNames = pkgs.lib.attrNames haskell.snapshots."lts-13.18";
+}
+```
+
+Load the example file:
+
+```
+$ nix repl '<nixpkgs>' example.nix
+Welcome to Nix version 2.3pre6631_e58a7144. Type :? for help.
+
+Loading '<nixpkgs>'...
+Added 10403 variables.
+
+Loading 'example2.nix'...
+Added 2 variables.
+
+nix-repl> lib.take 5 pkgNames
+[ "ALUT" "ANum" "Allure" "Boolean" "BoundedChan" ]
+
+nix-repl> 
+```
+
+Now that you have `nix-tools` and are able to import [Haskell.nix][],
+you can continue to the next chapter.

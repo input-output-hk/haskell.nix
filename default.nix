@@ -43,18 +43,24 @@ let
   cleanSourceHaskell = pkgs.callPackage ./lib/clean-source-haskell.nix {};
 
   # All packages from Hackage as Nix expressions
-  hackage = import (fetchExternal {
+  hackageSrc = fetchExternal {
     name     = "hackage-exprs-source";
     specJSON = hackageSourceJSON;
     override = "hackage";
-  });
+  };
+  hackage = import hackageSrc;
+
+  # Contains the hashes of the cabal 01-index.tar.gz for given
+  # index states.  Starting from April 1st 2019.
+  indexStateHashesPath = hackageSrc + "/index-state-hashes.nix";
 
   # The set of all Stackage snapshots
-  stackage = import (fetchExternal {
+  stackageSrc = fetchExternal {
     name     = "stackage-snapshot-source";
     specJSON = stackageSourceJSON;
     override = "stackage";
-  });
+  };
+  stackage = import stackageSrc;
 
   packages = self: ({
     # Utility functions for working with the component builder.
@@ -128,14 +134,9 @@ let
 
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
+    inherit hackageSrc stackageSrc;
     inherit hackage stackage;
-
-    # Scripts for keeping Hackage and Stackage up to date.
-    maintainer-scripts = {
-      update-hackage = self.callPackage ./scripts/update-hackage.nix {};
-      update-stackage = self.callPackage ./scripts/update-stackage.nix {};
-      update-pins = self.callPackage ./scripts/update-pins.nix {};
-    };
+    inherit indexStateHashesPath;
 
     # Make this handy overridable fetch function available.
     inherit fetchExternal;
@@ -172,29 +173,22 @@ let
         HOME=$out cabal new-update cached
       '';
 
-    generateHackageIndexStateHashes = pkgs.runCommand "index-state-hashes" {} ''
-    truncate=${self.nix-tools}/bin/truncate-index
-    start=${let ls = builtins.attrNames (import ./lib/index-state-hashes.nix); in builtins.elemAt ls (builtins.length ls - 1)}
-    cat ${./lib/index-state-hashes.nix} | head -n -1 >> $out
-    for d in $(seq -f '%.f' $(date -u +%s -d $start) 86400 $(date -u +%s)) ; do
-      dt=$(date -u +%Y-%m-%d -d @$d)
-      if [[ "''${dt}T00:00:00Z" != "$start" ]]; then
-        ''${truncate} -o ''${dt}-01-index.tar.gz -i ${builtins.fetchurl "https://hackage.haskell.org/01-index.tar.gz"} -s "''${dt}T00:00:00Z"
-        sha256=$(${pkgs.nix}/bin/nix-hash --flat --type sha256 ''${dt}-01-index.tar.gz)
-        echo "  \"''${dt}T00:00:00Z\" = \"''${sha256}\";" >> $out
-      fi
-    done
-    echo '}' >> $out
-    '';
+    update-index-state-hashes = self.callPackage ./scripts/update-index-state-hashes.nix {};
 
     # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
     # Resulting nix files are added to nix-plan subdirectory.
     callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
+      index-state-hashes = import indexStateHashesPath;
       inherit (self) dotCabal;
       inherit pkgs;
       inherit (pkgs) runCommand cabal-install ghc symlinkJoin cacert;
       inherit (pkgs.haskellPackages) hpack;
       inherit (self) nix-tools;
+    };
+
+    # References to the unpacked sources, for caching in a Hydra jobset.
+    source-pins = self.callPackage ./lib/make-source-pins.nix {
+      sources = [ hackageSrc stackageSrc pkgs.path ];
     };
   });
 

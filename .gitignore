@@ -1,3 +1,9 @@
+# The output of "mkdocs build"
+/site/
+
+# Nix build results
+result*
+/nt
 
 # Created by https://www.gitignore.io/api/haskell,emacs,vim
 

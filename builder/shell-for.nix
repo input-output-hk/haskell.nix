@@ -7,7 +7,7 @@ let
   selectedConfigs = map (p: p.components.all.config) selected;
 
   name = if lib.length selected == 1
-    then "ghc-shell-for-${(lib.head selected).name}"
+    then "ghc-shell-for-${(lib.head selected).identifier.name}"
     else "ghc-shell-for-packages";
 
   # If `packages = [ a b ]` and `a` depends on `b`, don't build `b`,

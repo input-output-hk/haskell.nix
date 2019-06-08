@@ -1,7 +1,7 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert }:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { index-state, index-sha256 ? (import ./index-state-hashes.nix).${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+in { index-state, index-sha256 ? index-state-hashes.${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
 
 # better error message than just assert failed.
 assert (if index-sha256 == null then throw "provided sha256 for index-state ${index-state} is null!" else true);

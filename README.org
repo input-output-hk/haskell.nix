@@ -18,7 +18,7 @@ This will download and build =nix-tools=.
 
 #+begin_src sh
 nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools -o nt
-./nt/bin/cabal-to-nix
+./nt/bin/stack-to-nix
 #+end_src
 
 ** Related repos
