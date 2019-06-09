@@ -20,6 +20,7 @@ in pkgs.recurseIntoAttrs {
   shell-for = haskell.callPackage ./shell-for {};
   # callStackToNix = haskell.callPackage ./callStackToNix {};
   # callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
+  cabal-source-repo = haskell.callPackage ./cabal-source-repo {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
