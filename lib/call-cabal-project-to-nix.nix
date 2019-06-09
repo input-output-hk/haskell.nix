@@ -80,7 +80,7 @@ let
   
   plan = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
-  } ''
+  } (''
     tmp=$(mktemp -d)
     cd $tmp
     cp -r ${cabalFiles}/* .
@@ -135,7 +135,7 @@ let
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
-  '';
+  '');
 in
   # TODO: We really want this (symlinks) instead of copying the source over each and
   #       every time.  However this will not work with sandboxed builds.  They won't
