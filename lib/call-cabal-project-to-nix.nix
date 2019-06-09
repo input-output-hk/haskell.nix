@@ -62,19 +62,21 @@ let
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map parseBlock (pkgs.lib.lists.drop 1 blocks);
       sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
-    in
-      pkgs.lib.strings.concatStringsSep "\n" (
+    in {
+      otherText = pkgs.lib.strings.concatStringsSep "\n" (
         initialText
-        ++ (builtins.map (x: x.otherText) repoBlocks)
-        ++ ["packages:"] # Why not `optional-packages`?  See https://github.com/haskell/cabal/issues/5444
-        ++ builtins.map (repoPath: "  " + repoPath) sourceRepos);
+        ++ (builtins.map (x: x.otherText) repoBlocks));
+      inherit sourceRepos;
+    };
+
+  fixedProject = replaceSoureRepos
+    (if cabalProject != null
+      then cabalProject
+      else builtins.readFile (cabalFiles + "/cabal.project"));
 
   # Deal with source-repository-packages in a way that will work on
   # hydra build agents (as long as a sha256 is included).
-  fixedProjectFile = pkgs.writeText "cabal.project" (replaceSoureRepos
-    (if cabalProject != null
-      then cabalProject
-      else builtins.readFile (cabalFiles + "/cabal.project")));
+  fixedProjectFile = pkgs.writeText "cabal.project" fixedProject.otherText;
   
   plan = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
@@ -84,6 +86,19 @@ let
     cp -r ${cabalFiles}/* .
     chmod +w -R .
     cp -f ${fixedProjectFile} ./cabal.project
+    chmod +w -R ./cabal.project
+    echo "packages:" >> ./cabal.project
+    mkdir -p ./.source-repository-packages
+  '' +
+    ( pkgs.lib.strings.concatStrings (
+        pkgs.lib.lists.zipListsWith (n: f: ''
+          cp -r ${f} ./.source-repository-packages/${builtins.toString n}
+          echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
+        '')
+          (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
+          fixedProject.sourceRepos
+      )
+    ) + ''
     # warning: this may not generate the proper cabal file.
     # hpack allows globbing, and turns that into module lists
     # without the source available (we cleaneSourceWith'd it),
