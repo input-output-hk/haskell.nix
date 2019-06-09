@@ -1,7 +1,8 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { index-state, index-sha256 ? index-state-hashes.${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+in { index-state, index-sha256 ? index-state-hashes.${index-state} or null, src, ghc ? defaultGhc,
+  cabal-install ? defaultCabalInstall, cabalProject ? null }:
 
 # better error message than just assert failed.
 assert (if index-sha256 == null then throw "provided sha256 for index-state ${index-state} is null!" else true);
@@ -70,8 +71,10 @@ let
 
   # Deal with source-repository-packages in a way that will work on
   # hydra build agents (as long as a sha256 is included).
-  fixedProjectFile = pkgs.writeText "cabal.project" (
-  	replaceSoureRepos (builtins.readFile (cabalFiles + "/cabal.project")));
+  fixedProjectFile = pkgs.writeText "cabal.project" (replaceSoureRepos
+    (if cabalProject != null
+      then cabalProject
+      else builtins.readFile (cabalFiles + "/cabal.project")));
   
   plan = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
