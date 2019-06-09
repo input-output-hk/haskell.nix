@@ -1,7 +1,8 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { index-state ? null, index-sha256 ? null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+in { index-state ? null, index-sha256 ? null, src, ghc ? defaultGhc,
+  cabal-install ? defaultCabalInstall, cabalProject ? null }:
 
 # cabal-install versions before 2.4 will generate insufficient plan information.
 assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
@@ -20,7 +21,9 @@ let
   index-state-found = if index-state != null then index-state
     else
       let
-        rawCabalProject = builtins.readFile (cabalFiles + "/cabal.project");
+        rawCabalProject = if cabalProject != null
+          then cabalProject
+          else builtins.readFile (cabalFiles + "/cabal.project");
         indexState = pkgs.lib.lists.concatLists (
           pkgs.lib.lists.filter (l: l != null)
             (builtins.map (l: builtins.match "^index-state: *(.*)" l)
