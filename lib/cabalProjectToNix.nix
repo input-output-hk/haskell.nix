@@ -1,10 +1,8 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
-in { index-state, index-sha256 ? index-state-hashes.${index-state} or null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
+in { index-state ? null, index-sha256 ? null, src, ghc ? defaultGhc, cabal-install ? defaultCabalInstall }:
 
-# better error message than just assert failed.
-assert (if index-sha256 == null then throw "provided sha256 for index-state ${index-state} is null!" else true);
 # cabal-install versions before 2.4 will generate insufficient plan information.
 assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
@@ -17,6 +15,31 @@ let
         type == "directory" ||
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
+
+  # Look for a index-state: field in the cabal.project file
+  index-state-found = if index-state != null then index-state
+    else
+      let
+        rawCabalProject = builtins.readFile (cabalFiles + "/cabal.project");
+        indexState = pkgs.lib.lists.concatLists (
+          pkgs.lib.lists.filter (l: l != null)
+            (builtins.map (l: builtins.match "^index-state: *(.*)" l)
+              (pkgs.lib.splitString "\n" rawCabalProject)));
+      in
+        pkgs.lib.lists.head (indexState ++ [ null ]);
+
+  # Lookup hash for the index state we found
+  index-sha256-found = if index-sha256 != null
+    then index-sha256
+    else index-state-hashes.${index-state-found} or null;
+
+in
+  assert (if index-state-found == null
+    then throw "No index state passed and none found in cabal.project" else true);
+  assert (if index-sha256-found == null
+    then throw "provided sha256 for index-state ${index-state-found} is null!" else true);
+
+let
   plan = runCommand "plan" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
@@ -31,7 +54,9 @@ let
     find . -name package.yaml -exec hpack "{}" \;
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
-    HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure
+    HOME=${dotCabal {
+      index-state = index-state-found;
+      sha256 = index-sha256-found; }} cabal new-configure
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
