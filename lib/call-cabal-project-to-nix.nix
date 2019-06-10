@@ -92,7 +92,11 @@ let
   '' +
     ( pkgs.lib.strings.concatStrings (
         pkgs.lib.lists.zipListsWith (n: f: ''
-          cp -r ${f} ./.source-repository-packages/${builtins.toString n}
+          mkdir -p ./.source-repository-packages/${builtins.toString n}
+          rsync -a --prune-empty-dirs \
+            --include '*/' --include '*.cabal' --include 'package.yaml' \
+            --exclude '*' \
+             "${f}/" "./.source-repository-packages/${builtins.toString n}/"
           echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
         '')
           (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
@@ -153,13 +157,23 @@ in
   #   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
   #   buildInputs = [ plan src ];
   # }
-  runCommand "plan-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
+  runCommand "plan-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } (''
     mkdir $out
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
     rsync -a "${src}/" "$out/"
     rsync -a ${plan}/ $out/
+  '' +
+    ( pkgs.lib.strings.concatStrings (
+        pkgs.lib.lists.zipListsWith (n: f: ''
+          mkdir -p $out/.source-repository-packages/${builtins.toString n}
+          rsync -a "${f}/" "$out/.source-repository-packages/${builtins.toString n}/"
+        '')
+          (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
+          fixedProject.sourceRepos
+      )
+    ) + ''
     # Rsync will have made $out read only and that can cause problems when
     # nix sandboxing is enabled (since it can prevent nix from moving the directory
     # out of the chroot sandbox).
     chmod +w $out
-  ''
+  '')
