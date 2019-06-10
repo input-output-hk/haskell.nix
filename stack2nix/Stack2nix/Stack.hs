@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Stack2nix.Stack
   ( Resolver
@@ -20,6 +21,7 @@ import Data.List (isSuffixOf)
 import qualified Data.Text as T
 import Data.Aeson
 import Control.Applicative ((<|>))
+import Data.Monoid (mempty)
 
 import Distribution.Types.PackageName
 import Distribution.Types.PackageId
@@ -27,6 +29,7 @@ import Distribution.Compat.ReadP hiding (Parser)
 import Distribution.Text
 import Distribution.Types.Version (nullVersion)
 
+import qualified Data.HashMap.Strict as HM
 
 --------------------------------------------------------------------------------
 -- The stack.yaml file
@@ -113,8 +116,11 @@ data Dependency
   -- | Archive ...
   deriving (Show)
 
+-- flags are { pkg -> { flag -> bool } }
+type PackageFlags = HM.HashMap T.Text (HM.HashMap T.Text Bool)
+
 data Stack
-  = Stack Resolver (Maybe Compiler) [Dependency]
+  = Stack Resolver (Maybe Compiler) [Dependency] PackageFlags
   deriving (Show)
 
 -- stack supports custom snapshots
@@ -125,7 +131,7 @@ data StackSnapshot
     (Maybe Compiler)          -- possible compiler override for the snapshot
     Name                      -- name
     [Dependency]              -- packages
-    -- [Package -> [Flag]]    -- flags
+    PackageFlags              -- flags
     -- [PackageName]          -- drop-packages
     -- [PackageName -> Bool]  -- hidden
     -- [package -> [Opt]]     -- ghc-options
@@ -167,6 +173,7 @@ instance FromJSON Stack where
     <*> s .:? "compiler" .!= Nothing
     <*> ((<>) <$> s .:? "packages"   .!= [LocalPath "."]
               <*> s .:? "extra-deps" .!= [])
+    <*> s .:? "flags" .!= mempty
 
 instance FromJSON StackSnapshot where
   parseJSON = withObject "Snapshot" $ \s -> Snapshot
@@ -174,6 +181,7 @@ instance FromJSON StackSnapshot where
     <*> s .:? "compiler" .!= Nothing
     <*> s .: "name"
     <*> s .:? "packages" .!= []
+    <*> s .:? "flags" .!= mempty
 
 instance FromJSON Dependency where
   -- Note: we will parse foo-X.Y.Z as a package.

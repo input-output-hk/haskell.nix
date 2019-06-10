@@ -166,6 +166,7 @@ executable stack-to-nix
                      , http-client-tls
                      , http-client
                      , http-types
+                     , unordered-containers
   hs-source-dirs:      stack2nix
   default-language:    Haskell2010
 

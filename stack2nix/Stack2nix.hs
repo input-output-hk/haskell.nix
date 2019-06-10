@@ -39,6 +39,9 @@ import Stack2nix.Project
 import Stack2nix.Stack (Stack(..), Dependency(..), Location(..))
 import Stack2nix.External.Resolve
 
+import qualified Data.HashMap.Strict as HM
+
+
 doStack2nix :: Args -> IO ()
 doStack2nix args = do
   let pkgsNix = argOutputDir args </> "pkgs.nix"
@@ -57,8 +60,9 @@ stackexpr args =
                       =<< resolveSnapshot value
 
 stack2nix :: Args -> Stack -> IO NExpr
-stack2nix args stack@(Stack resolver compiler _) =
+stack2nix args stack@(Stack resolver compiler _ _) =
   do let extraDeps = extraDeps2nix stack
+         flags     = flags2nix stack
      let _f_          = mkSym "f"
          _import_     = mkSym "import"
          _mkForce_    = mkSym "mkForce"
@@ -68,7 +72,7 @@ stack2nix args stack@(Stack resolver compiler _) =
      packages <- packages2nix args stack
      return . mkNonRecSet $
        [ "extras" $= ("hackage" ==> mkNonRecSet
-                     ([ "packages" $= (extraDeps $// packages) ]
+                     ([ "packages" $= (extraDeps $// packages $// flags) ]
                    ++ [ "compiler.version" $= fromString (quoted ver)
                       | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
                    ++ [ "compiler.nix-name" $= fromString (quoted name)
@@ -87,7 +91,7 @@ stack2nix args stack@(Stack resolver compiler _) =
 --   { name.revision = hackage.name.version.revisions.default; }
 --
 extraDeps2nix :: Stack -> NExpr
-extraDeps2nix (Stack _ _ pkgs) =
+extraDeps2nix (Stack _ _ pkgs _) =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
   in mkNonRecSet $ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
                    | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
@@ -100,6 +104,18 @@ extraDeps2nix (Stack _ _ pkgs) =
         toText :: Text a => a -> T.Text
         toText = fromString . show . disp
 
+-- | Converts 'PackageFlags' into @{ packageName = { flagA = BOOL; flagB = BOOL; }; }@
+flags2nix :: Stack -> NExpr
+flags2nix (Stack _ _ _ pkgFlags) =
+  mkNonRecSet [ quoted pkgName $= mkNonRecSet [ quoted flag $= mkBool val
+                                              | (flag, val) <- HM.toList flags
+                                              ]
+              | (pkgName, flags) <- HM.toList pkgFlags
+              ]
+  where
+    toText :: Text a => a -> T.Text
+    toText = fromString . show . disp
+
 
 writeDoc :: FilePath -> Doc ann -> IO ()
 writeDoc file doc =
@@ -110,7 +126,7 @@ writeDoc file doc =
 
 -- makeRelativeToCurrentDirectory
 packages2nix :: Args -> Stack-> IO NExpr
-packages2nix args (Stack _ _ pkgs) =
+packages2nix args (Stack _ _ pkgs _) =
   do cwd <- getCurrentDirectory
      fmap (mkNonRecSet . concat) . forM pkgs $ \case
        (LocalPath folder) ->
