@@ -6,7 +6,7 @@ First, understand how to cross-compile a normal package from
 Nixpkgs. Matthew Bauer's [Beginners' guide to cross compilation in
 Nixpkgs][bauer] is a useful resource.
 
-[bauer]: https://matthewbauer.us/blog/beginners-guide-to-cross.html 
+[bauer]: https://matthewbauer.us/blog/beginners-guide-to-cross.html
 
 
 Using an example from the guide, this builds GNU Hello for a Raspberry
@@ -47,18 +47,24 @@ You should be prepared for a long wait because it first needs to build
 GHC, before building all the Haskell dependencies of [Bench][]. If all
 of these dependencies compiled successfully, I would be very surprised!
 
+!!! hint
+    The above example won't build, but you can try and see, if you like.
+    It will fail on [clock-0.7.2](http://hackage.haskell.org/package/clock-0.7.2),
+    which needs a patch to build.
+
 To fix the build problems, you must add extra configuration to the
 package set. Your project will have a [`mkStackPkgSet`](../reference/library.md#mkstackpkgset) or
 [`mkCabalProjectPkgSet`](../reference/library.md#mkcabalprojectpkgset). It is there where you must add
-[module options](../reference/modules.md) for setting compiler flags and so on.
+[module options](../reference/modules.md) for setting compiler flags, adding patches, and so on.
+
 
 ### Static executables with Musl libc
 
 Another application of cross-compiling is to produce fully static
 binaries for Linux. For information about how to do that with the
 [Nixpkgs Haskell infrastructure][nixpkgs] (not [Haskell.nix][]), see
-[nh2/static‑haskell‑nix][nh2]. Vaibhav Sagar's linked [blog
-post][vaibhav] is also very informative.
+[nh2/static‑haskell‑nix][nh2]. Vaibhav Sagar's linked
+[blog post][vaibhav] is also very informative.
 
 
 ```nix
@@ -97,6 +103,76 @@ executables you must add package overrides to:
     then you need to statically link with `integer-simple` rather than
     `integer-gmp`. However, at present, [Haskell.nix][] does not provide
     an option for this.
+
+
+### How to cross-compile your project
+
+Set up your project Haskell package set.
+
+```nix
+# default.nix
+{ pkgs ? import <nixpkgs> {}
+let
+  # Import the Haskell.nix library,
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
+    inherit pkgs;
+  };
+
+  # Instantiate a package set using the generated file.
+  pkgSet = haskell.mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
+    pkg-def-extras = [];
+    modules = [
+      {
+        # You will need to put build fixes here.
+      }
+    ];
+  };
+in
+  pkgSet.config.hsPkgs
+```
+
+Apply that package set to the Nixpkgs cross package sets that you are
+interested in.
+
+We are going to expand the `pkgs.pkgsCross` shortcut to be more
+explicit.
+
+```nix
+let
+  pkgs = import <nixpkgs> {}
+in {
+  shortcut = pkgs.pkgsCross.SYSTEM;
+  actual = import <nixpkgs> { crossSystem = pkgs.lib.systems.examples.SYSTEM; };
+}
+```
+
+In the above example, for any `SYSTEM`, `shortcut` and `actual` are
+the same package set.
+
+```nix
+# release.nix
+let
+  myProject = import ./default.nix;
+
+  pkgsNative = import <nixpkgs> {};
+  pkgsRaspberryPi = import <nixpkgs> {
+    crossSystem = pkgsNative.lib.systems.examples.raspberryPi;
+  };
+
+  native = myProject { pkgs = pkgsNative; };
+  crossRaspberryPi = myProject { pkgs = pkgsRaspberryPi; };
+
+in {
+  my-project-native = native.my-project.components.exes.my-project;
+  my-project-raspberry-pi = crossRaspberryPi.my-project.components.exes.my-project;
+}
+```
+
+Try to build it, and apply fixes to the `modules` list, until there
+are no errors left.
+
+
 
 [nh2]: https://github.com/nh2/static-haskell-nix
 [vaibhav]: https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/

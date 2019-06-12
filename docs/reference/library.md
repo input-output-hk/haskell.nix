@@ -4,6 +4,10 @@ what you get when importing [Haskell.nix][]. It might be helpful to
 load the library in the [Nix REPL](../user-guide.md#using-nix-repl) to
 test things.
 
+ * [Types](#types) — the kinds of data that you will encounter working with [Haskell.nix][].
+ * [Top-level attributes](#top-level-attributes) — Functions and derivations defined in the Haskell.nix attrset.
+ * [Package-set functions](#package-set-functions) — Helper functions defined on the `hsPkgs` package set.
+
 # Types
 
 ## Package Set
