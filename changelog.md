@@ -1,8 +1,12 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## June 12, 2019
+  * Updated [nix-tools][]. This fixes subdirs on source repos with
+    `cabal.project` and adds support for `stack.yaml` flags.
+
 ## June 7, 2019
-  * Several additions to the [documentation](https://input-output-hk.github.io/haskell.nix/).
+  * Several additions to the [documentation][].
     * More information about getting nix-tools, Haskell.nix, pinning.
     * Updates the stack-to-nix and cabal-to-nix guides.
     * Adds a section on development environments.
@@ -45,3 +49,6 @@ that will impact users.
     expose `extras` instead of `overlay`. Similarly `mkStackPkgSet`, `mkPkgSet` and `mkCabalProjectPkgSet`
     take a `pkg-def-extras` instead of `pkg-def-overlay` argument.  If you are using `iohk-nix`, the
     `iohk-overlay` was parameter was renamed to `iohk-extras`.
+
+[documentation]: https://input-output-hk.github.io/haskell.nix/
+[nix-tools]: https://github.com/input-output-hk/nix-tools
