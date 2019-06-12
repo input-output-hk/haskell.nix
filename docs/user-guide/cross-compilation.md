@@ -6,7 +6,7 @@ First, understand how to cross-compile a normal package from
 Nixpkgs. Matthew Bauer's [Beginners' guide to cross compilation in
 Nixpkgs][bauer] is a useful resource.
 
-[bauer]: https://matthewbauer.us/blog/beginners-guide-to-cross.html 
+[bauer]: https://matthewbauer.us/blog/beginners-guide-to-cross.html
 
 
 Using an example from the guide, this builds GNU Hello for a Raspberry
@@ -63,8 +63,8 @@ package set. Your project will have a [`mkStackPkgSet`](../reference/library.md#
 Another application of cross-compiling is to produce fully static
 binaries for Linux. For information about how to do that with the
 [Nixpkgs Haskell infrastructure][nixpkgs] (not [Haskell.nix][]), see
-[nh2/static‑haskell‑nix][nh2]. Vaibhav Sagar's linked [blog
-post][vaibhav] is also very informative.
+[nh2/static‑haskell‑nix][nh2]. Vaibhav Sagar's linked
+[blog post][vaibhav] is also very informative.
 
 
 ```nix
@@ -109,7 +109,7 @@ executables you must add package overrides to:
 
 Set up your project Haskell package set.
 
-```
+```nix
 # default.nix
 { pkgs ? import <nixpkgs> {}
 let
@@ -135,16 +135,37 @@ in
 Apply that package set to the Nixpkgs cross package sets that you are
 interested in.
 
+We are going to expand the `pkgs.pkgsCross` shortcut to be more
+explicit.
+
+```nix
+let
+  pkgs = import <nixpkgs> {}
+in {
+  shortcut = pkgs.pkgsCross.SYSTEM;
+  actual = import <nixpkgs> { crossSystem = pkgs.lib.systems.examples.SYSTEM; };
+}
 ```
+
+In the above example, for any `SYSTEM`, `shortcut` and `actual` are
+the same package set.
+
+```nix
 # release.nix
 let
-  project = import ./default.nix;
-  pkgs = import <nixpkgs> {};
-  native = import project { inherit pkgs; };
-  crossRasperryPi = import project { pkgs = pkgs.pkgsCross.raspberryPi; };
+  myProject = import ./default.nix;
+
+  pkgsNative = import <nixpkgs> {};
+  pkgsRaspberryPi = import <nixpkgs> {
+    crossSystem = pkgsNative.lib.systems.examples.raspberryPi;
+  };
+
+  native = myProject { pkgs = pkgsNative; };
+  crossRaspberryPi = myProject { pkgs = pkgsRaspberryPi; };
+
 in {
   my-project-native = native.my-project.components.exes.my-project;
-  my-project-rasberry-pi = crossRaspberryPi.my-project.components.exes.my-project;
+  my-project-raspberry-pi = crossRaspberryPi.my-project.components.exes.my-project;
 }
 ```
 
