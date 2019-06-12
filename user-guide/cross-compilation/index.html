@@ -93,6 +93,9 @@
     <li class="toctree-l3"><a href="#static-executables-with-musl-libc">Static executables with Musl libc</a></li>
     
 
+    <li class="toctree-l3"><a href="#how-to-cross-compile-your-project">How to cross-compile your project</a></li>
+    
+
     </ul>
                 </li>
     </ul>
@@ -134,15 +137,19 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../dev-architecture/">Architecture</a>
+    <a class="" href="../../dev/dev-architecture/">Architecture</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../maintainer-scripts/">Maintainer Scripts</a>
+    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
     </ul>
 	    </li>
@@ -227,16 +234,22 @@ in
 <p>You should be prepared for a long wait because it first needs to build
 GHC, before building all the Haskell dependencies of <a href="https://hackage.haskell.org/package/bench">Bench</a>. If all
 of these dependencies compiled successfully, I would be very surprised!</p>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>The above example won't build, but you can try and see, if you like.
+It will fail on <a href="http://hackage.haskell.org/package/clock-0.7.2">clock-0.7.2</a>,
+which needs a patch to build.</p>
+</div>
 <p>To fix the build problems, you must add extra configuration to the
 package set. Your project will have a <a href="../../reference/library/#mkstackpkgset"><code>mkStackPkgSet</code></a> or
 <a href="../../reference/library/#mkcabalprojectpkgset"><code>mkCabalProjectPkgSet</code></a>. It is there where you must add
-<a href="../../reference/modules/">module options</a> for setting compiler flags and so on.</p>
+<a href="../../reference/modules/">module options</a> for setting compiler flags, adding patches, and so on.</p>
 <h3 id="static-executables-with-musl-libc">Static executables with Musl libc<a class="headerlink" href="#static-executables-with-musl-libc" title="Permanent link">&para;</a></h3>
 <p>Another application of cross-compiling is to produce fully static
 binaries for Linux. For information about how to do that with the
 <a href="https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure">Nixpkgs Haskell infrastructure</a> (not <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>), see
-<a href="https://github.com/nh2/static-haskell-nix">nh2/static‑haskell‑nix</a>. Vaibhav Sagar's linked <a href="https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/">blog
-post</a> is also very informative.</p>
+<a href="https://github.com/nh2/static-haskell-nix">nh2/static‑haskell‑nix</a>. Vaibhav Sagar's linked
+<a href="https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/">blog post</a> is also very informative.</p>
 <pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; {} }:
 let
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
@@ -273,6 +286,64 @@ then you need to statically link with <code>integer-simple</code> rather than
 <code>integer-gmp</code>. However, at present, <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> does not provide
 an option for this.</p>
 </div>
+<h3 id="how-to-cross-compile-your-project">How to cross-compile your project<a class="headerlink" href="#how-to-cross-compile-your-project" title="Permanent link">&para;</a></h3>
+<p>Set up your project Haskell package set.</p>
+<pre><code class="nix"># default.nix
+{ pkgs ? import &lt;nixpkgs&gt; {}
+let
+  # Import the Haskell.nix library,
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
+    inherit pkgs;
+  };
+
+  # Instantiate a package set using the generated file.
+  pkgSet = haskell.mkCabalProjectPkgSet {
+    plan-pkgs = import ./pkgs.nix;
+    pkg-def-extras = [];
+    modules = [
+      {
+        # You will need to put build fixes here.
+      }
+    ];
+  };
+in
+  pkgSet.config.hsPkgs
+</code></pre>
+
+<p>Apply that package set to the Nixpkgs cross package sets that you are
+interested in.</p>
+<p>We are going to expand the <code>pkgs.pkgsCross</code> shortcut to be more
+explicit.</p>
+<pre><code class="nix">let
+  pkgs = import &lt;nixpkgs&gt; {}
+in {
+  shortcut = pkgs.pkgsCross.SYSTEM;
+  actual = import &lt;nixpkgs&gt; { crossSystem = pkgs.lib.systems.examples.SYSTEM; };
+}
+</code></pre>
+
+<p>In the above example, for any <code>SYSTEM</code>, <code>shortcut</code> and <code>actual</code> are
+the same package set.</p>
+<pre><code class="nix"># release.nix
+let
+  myProject = import ./default.nix;
+
+  pkgsNative = import &lt;nixpkgs&gt; {};
+  pkgsRaspberryPi = import &lt;nixpkgs&gt; {
+    crossSystem = pkgsNative.lib.systems.examples.raspberryPi;
+  };
+
+  native = myProject { pkgs = pkgsNative; };
+  crossRaspberryPi = myProject { pkgs = pkgsRaspberryPi; };
+
+in {
+  my-project-native = native.my-project.components.exes.my-project;
+  my-project-raspberry-pi = crossRaspberryPi.my-project.components.exes.my-project;
+}
+</code></pre>
+
+<p>Try to build it, and apply fixes to the <code>modules</code> list, until there
+are no errors left.</p>
               
             </div>
           </div>

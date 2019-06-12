@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Creating Nix builds for your projects - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Nixpkgs Pin - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Creating Nix builds for your projects";
-    var mkdocs_page_input_path = "user-guide/projects.md";
+    var mkdocs_page_name = "Nixpkgs Pin";
+    var mkdocs_page_input_path = "dev/nixpkgs-pin.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -64,33 +64,27 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../">General</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">Creating Nix builds for your projects</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#how-to-create-nix-builds-for-your-own-private-haskell-packages">How to create Nix builds for your own private Haskell packages</a></li>
-    
-
-    </ul>
+    <a class="" href="../../user-guide/">General</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../stack-projects/">Stack Projects</a>
+    <a class="" href="../../user-guide/projects/">Creating Nix builds for your projects</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cabal-projects/">Cabal Projects</a>
+    <a class="" href="../../user-guide/stack-projects/">Stack Projects</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../development/">How to create a development environment</a>
+    <a class="" href="../../user-guide/cabal-projects/">Cabal Projects</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../../user-guide/development/">How to create a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../user-guide/cross-compilation/">How to cross-compile your project</a>
                 </li>
     </ul>
 	    </li>
@@ -131,19 +125,25 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../dev/dev-architecture/">Architecture</a>
+    <a class="" href="../dev-architecture/">Architecture</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
                 </li>
-                <li class="">
+                <li class=" current">
                     
-    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
+    <a class="current" href="./">Nixpkgs Pin</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#haskellnix-nixpkgs-pin">Haskell.nix Nixpkgs Pin</a></li>
+    
+
+    </ul>
                 </li>
     </ul>
 	    </li>
@@ -175,14 +175,14 @@
     
       
         
-          <li>User Guide &raquo;</li>
+          <li>Dev Notes &raquo;</li>
         
       
     
-    <li>Creating Nix builds for your projects</li>
+    <li>Nixpkgs Pin</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/projects.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/dev/nixpkgs-pin.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -192,60 +192,22 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="how-to-create-nix-builds-for-your-own-private-haskell-packages">How to create Nix builds for your own private Haskell packages<a class="headerlink" href="#how-to-create-nix-builds-for-your-own-private-haskell-packages" title="Permanent link">&para;</a></h1>
-<p>The general structure will be the same, independent of the use of
-Stack or Cabal.</p>
-<p>Let us assume for now that we have already generated a <code>pkgs.nix</code>
-expression. The following file then produces a package set:</p>
-<pre><code class="nix"># default.nix
-let
-  # Import the Haskell.nix library,
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-
-  # Import the file you will create in the stack-to-nix or cabal-to-nix step.
-  my-pkgs = import ./pkgs.nix;
-
-  # Stack projects use this:
-  pkgSet = haskell.mkStackPkgSet {
-    stack-pkgs = my-pkgs;
-    pkg-def-overlays = [
-      # these extras will provide additional packages
-      # ontop of the package set.  E.g. extra-deps
-      # for stack packages. or local packages for
-      # cabal.projects
-    ];
-    modules = [
-      # specific package overrides would go here
-      # example:
-      #  packages.cbors.patches = [ ./one.patch ];
-      #  packages.cbors.flags.optimize-gmp = false;
-    ];
-  };
-
-  # Cabal projects use this:
-  pkgSet = haskell.mkCabalProjectPkgSet {
-    plan-pkgs = my-pkgs;
-    pkg-def-extras = [];
-    modules = [];
-  };
-
-in pkgSet.config.hsPkgs // { _config = pkgSet.config; }
+                <h1 id="haskellnix-nixpkgs-pin">Haskell.nix Nixpkgs Pin<a class="headerlink" href="#haskellnix-nixpkgs-pin" title="Permanent link">&para;</a></h1>
+<p>Haskell.nix contains a Nixpkgs pin in
+<a href="https://github.com/input-output-hk/haskell.nix/blob/master/nixpkgs/github.json"><code>nixpkgs/github.json</code></a>.
+This is the version of Nixpkgs used for builds of <code>nix-tools</code> and
+running the tests.</p>
+<p>Users should pass their own version of Nixpkgs to Haskell.nix,
+although things might not work for them if their Nixpkgs version is
+too different.</p>
+<p>We aim to keep this pin somewhere on the channel of the <strong>NixOS latest
+stable release</strong>. That is currently 19.03. So:</p>
+<pre><code>nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixos-19.03
 </code></pre>
 
-<p>With this setup you can then start building the components of
-interest:</p>
-<pre><code class="bash">nix build -f default.nix $pkg.components.library
-</code></pre>
-
-<p>to build the library for <code>$pkg</code> or</p>
-<pre><code class="bash">nix build -f default.nix $pkg.components.exes.$exe
-</code></pre>
-
-<p>to build a specific executable. The same holds for test suites and benchmarks.</p>
-<ul>
-<li><a href="../stack-projects/">Generating a <code>pkgs.nix</code> for a Stack project</a></li>
-<li><a href="../cabal-projects/">Generating a <code>pkgs.nix</code> for a Cabal project</a></li>
-</ul>
+<p>Keep the URL in <code>github.json</code> pointing at
+<a href="https://github.com/NixOS/nixpkgs">https://github.com/NixOS/nixpkgs</a>. Case matters because the Hydra
+trusted URL whitelist is case-sensitive.</p>
               
             </div>
           </div>
@@ -253,10 +215,10 @@ interest:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../stack-projects/" class="btn btn-neutral float-right" title="Stack Projects">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../changelog/" class="btn btn-neutral float-right" title="ChangeLog">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../" class="btn btn-neutral" title="General"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../maintainer-scripts/" class="btn btn-neutral" title="Maintainer Scripts"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -284,10 +246,10 @@ interest:</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../maintainer-scripts/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../stack-projects/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../changelog/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

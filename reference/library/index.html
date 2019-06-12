@@ -197,15 +197,19 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../dev-architecture/">Architecture</a>
+    <a class="" href="../../dev/dev-architecture/">Architecture</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../maintainer-scripts/">Maintainer Scripts</a>
+    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
     </ul>
 	    </li>
@@ -259,6 +263,11 @@ package sets from their Nix expression descriptions. The library is
 what you get when importing <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>. It might be helpful to
 load the library in the <a href="../../user-guide/#using-nix-repl">Nix REPL</a> to
 test things.</p>
+<ul>
+<li><a href="#types">Types</a> — the kinds of data that you will encounter working with <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>.</li>
+<li><a href="#top-level-attributes">Top-level attributes</a> — Functions and derivations defined in the Haskell.nix attrset.</li>
+<li><a href="#package-set-functions">Package-set functions</a> — Helper functions defined on the <code>hsPkgs</code> package set.</li>
+</ul>
 <h1 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h1>
 <h2 id="package-set">Package Set<a class="headerlink" href="#package-set" title="Permanent link">&para;</a></h2>
 <p>The result of <code>mkPkgSet</code>. This is an application of the NixOS module

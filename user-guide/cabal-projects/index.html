@@ -137,15 +137,19 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../dev-architecture/">Architecture</a>
+    <a class="" href="../../dev/dev-architecture/">Architecture</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../maintainer-scripts/">Maintainer Scripts</a>
+    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
     </ul>
 	    </li>
@@ -201,9 +205,9 @@ page</a>.</p>
 because you need to let Cabal calculate a build plan for the
 dependencies of your package(s).</p>
 <h2 id="generating-planjson">Generating <code>plan.json</code><a class="headerlink" href="#generating-planjson" title="Permanent link">&para;</a></h2>
-<p>To get a plan, you need Cabal and GHC. See the <a href="https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler">Nixpkgs
-Manual</a>
-for information about how to choose a specific compiler version.</p>
+<p>To get a plan, you need Cabal and GHC. See the <a href="https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler">How to install a
+compiler section of the Nixpkgs Manual</a> for information
+about how to choose a specific compiler version.</p>
 <p>For this example, we will run a <code>nix-shell</code> with the default GHC
 version for Nixpkgs.</p>
 <pre><code class="bash">nix-shell -p haskellPackages.cabal-install haskellPackages.ghc \
@@ -212,6 +216,13 @@ version for Nixpkgs.</p>
 
 <p>If all goes well, you should now have the file
 <code>dist-newstyle/cache/plan.json</code>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Specifying the GHC version</p>
+<p>To use a specific compiler version, replace <code>haskellPackages.ghc</code>
+with something like <code>haskell.compiler.ghc865</code>. The given compiler
+must exist in your Nixpkgs version, of course. See also the
+<a href="https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler">Nixpkgs Manual</a>.</p>
+</div>
 <h2 id="using-plan-to-nix">Using <code>plan-to-nix</code><a class="headerlink" href="#using-plan-to-nix" title="Permanent link">&para;</a></h2>
 <p>With <a href="../">nix-tools installed</a>, we can then run the
 following command on a Cabal project and its build plan. Omit the
