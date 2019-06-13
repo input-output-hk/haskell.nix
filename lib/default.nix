@@ -55,6 +55,7 @@ with haskellLib;
   isLibrary = componentId: componentId.ctype == "lib";
   isAll = componentId: componentId.ctype == "all";
   isTest = componentId: componentId.ctype == "test";
+  isBenchmark = componentId: componentId.ctype == "bench";
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.

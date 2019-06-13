@@ -233,7 +233,7 @@ stdenv.mkDerivation ({
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
       fi
     ''}
-    ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isAll componentId) ''
+    ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}
       if [ -f "dist/build/${componentId.cname}/${componentId.cname}" ]; then
         cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
