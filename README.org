@@ -3,6 +3,7 @@
 * Alternative Haskell Infrastructure for Nixpkgs
 
 [[https://buildkite.com/input-output-hk/haskell-dot-nix][https://badge.buildkite.com/d453edcd29bd2f8f3f3b32c9b7d6777a33773d9671c37a6ccc.svg?branch=master]]
+[[https://buildkite.com/input-output-hk/haskell-dot-nix-nightly-updates][https://img.shields.io/buildkite/c8d5a20d3ff0f440f82adb9190b43c16c91e5e47e8adfa867a/master.svg?label=nightly%20updates]]
 
 =haskell.nix= is an experimental new builder for Haskell packages.
 
