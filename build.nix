@@ -26,5 +26,6 @@ in {
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = haskell.callPackage ./scripts/update-docs.nix {};
     check-hydra = haskell.callPackage ./scripts/check-hydra.nix {};
+    check-closure-size = haskell.callPackage ./scripts/check-closure-size.nix {};
   };
 }
