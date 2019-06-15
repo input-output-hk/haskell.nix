@@ -323,14 +323,22 @@ system.</p>
 </tbody>
 </table>
 <h2 id="haskell-package-description">Haskell Package description<a class="headerlink" href="#haskell-package-description" title="Permanent link">&para;</a></h2>
-<p>Options for building a package. (todo: more info)</p>
+<p>The <em>Haskell package descriptions</em> are values of the
+<code>pkgSet.config.packages</code> attrset. These are not derivations, but just
+the configuration for building an individual package. The
+configuration options are described under <code>packages.&lt;name&gt;</code> in <a href="../modules/">Module
+options</a>.</p>
 <h2 id="component-description">Component description<a class="headerlink" href="#component-description" title="Permanent link">&para;</a></h2>
-<p>Options for building a component. (todo: more info)</p>
+<p>The <em>component descriptions</em> are values of the
+<code>pkgSet.config.packages.&lt;package&gt;.components</code> attrset. These are not
+derivations, but just the configuration for building an individual
+component. The configuration options are described under
+<code>packages.&lt;name&gt;.components.*</code> in <a href="../modules/">Module options</a>.</p>
 <h2 id="haskell-package">Haskell Package<a class="headerlink" href="#haskell-package" title="Permanent link">&para;</a></h2>
-<p>A derivation which has a <code>components</code> attribute. This derivation is
-actually just for the package <code>Setup.hs</code> script, and isn't very
-interesting. To actually use the package, look within the components
-structure.</p>
+<p>In <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>, a <em>Haskell package</em> is a derivation which has a
+<code>components</code> attribute. This derivation is actually just for the
+package <code>Setup.hs</code> script, and isn't very interesting. To actually use
+the package, look within the components structure.</p>
 <pre><code>components = {
   library = COMPONENT;
   exes = { NAME = COMPONENT; };
@@ -341,10 +349,67 @@ structure.</p>
 </code></pre>
 
 <h2 id="component">Component<a class="headerlink" href="#component" title="Permanent link">&para;</a></h2>
+<p>In <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>, a <em>component</em> is a derivation corresponding to a
+<a href="https://www.haskell.org/cabal/users-guide/developing-packages.html">Cabal component</a>
+of a package.</p>
+<p><a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> also defines a special <code>all</code> component, which is the
+union of all components in the package.</p>
 <h2 id="identifier">Identifier<a class="headerlink" href="#identifier" title="Permanent link">&para;</a></h2>
 <p>A package identifier is an attrset pair of <code>name</code> and <code>version</code>.</p>
 <h2 id="extras">Extras<a class="headerlink" href="#extras" title="Permanent link">&para;</a></h2>
+<p>Extras allow adding more packages to the package set. These will be
+functions taking a single parameter <code>hackage</code>. They should return an
+attrset of package descriptions.</p>
 <h2 id="modules">Modules<a class="headerlink" href="#modules" title="Permanent link">&para;</a></h2>
+<p>Modules are the primary method of configuring building of the package
+set. They are either:</p>
+<ol>
+<li>an attrset containing <a href="./options.md">option declarations</a>, or</li>
+<li>a function that returns an attrset containing option declarations.</li>
+</ol>
+<p>If using the function form of a module, the following named parameters
+will be passed to it:</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>haskellLib</code></td>
+<td>attrset</td>
+<td>The <a href="#haskelllib">haskellLib</a> utility functions.</td>
+</tr>
+<tr>
+<td><code>pkgs</code></td>
+<td></td>
+<td>The Nixpkgs collection.</td>
+</tr>
+<tr>
+<td><code>pkgconfPkgs</code></td>
+<td></td>
+<td>A mapping of cabal build-depends names to Nixpkgs packages. (TODO: more information about this)</td>
+</tr>
+<tr>
+<td><code>buildModules</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>options</code></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <h1 id="top-level-attributes">Top-level attributes<a class="headerlink" href="#top-level-attributes" title="Permanent link">&para;</a></h1>
 <h2 id="mkstackpkgset">mkStackPkgSet<a class="headerlink" href="#mkstackpkgset" title="Permanent link">&para;</a></h2>
 <p>Creates a <a href="#package-set">package set</a> based on the <code>pkgs.nix</code> output
@@ -421,7 +486,10 @@ of <code>plan-to-nix</code>.</p>
 <h2 id="snapshots">snapshots<a class="headerlink" href="#snapshots" title="Permanent link">&para;</a></h2>
 <p>This is an attrset of <code>hsPkgs</code> packages from Stackage.</p>
 <h2 id="haskellpackages">haskellPackages<a class="headerlink" href="#haskellpackages" title="Permanent link">&para;</a></h2>
-<p>A <code>hsPkgs</code> package set</p>
+<p>A <code>hsPkgs</code> package set, which is one of the recent LTS Haskell
+releases from <a href="#snapshots"><code>snapshots</code></a>.</p>
+<p>The chosen LTS is updated occasionally in <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>, though a
+manual process.</p>
 <h2 id="nix-tools">nix-tools<a class="headerlink" href="#nix-tools" title="Permanent link">&para;</a></h2>
 <p>A derivation containing the <code>nix-tools</code> <a href="../commands/">command-line tools</a>.</p>
 <h2 id="callstacktonix">callStackToNix<a class="headerlink" href="#callstacktonix" title="Permanent link">&para;</a></h2>
@@ -431,12 +499,15 @@ of <code>plan-to-nix</code>.</p>
 <h2 id="fetchexternal">fetchExternal<a class="headerlink" href="#fetchexternal" title="Permanent link">&para;</a></h2>
 <h2 id="cleansourcehaskell">cleanSourceHaskell<a class="headerlink" href="#cleansourcehaskell" title="Permanent link">&para;</a></h2>
 <h2 id="haskelllib">haskellLib<a class="headerlink" href="#haskelllib" title="Permanent link">&para;</a></h2>
+<p>Assorted functions for operating on <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> data. This is
+distinct from <code>pkgs.haskell.lib</code> in the current Nixpkgs Haskell
+Infrastructure.</p>
 <h1 id="package-set-functions">Package-set functions<a class="headerlink" href="#package-set-functions" title="Permanent link">&para;</a></h1>
 <p>These functions exist within the <code>hsPkgs</code> package set.</p>
 <h2 id="shellfor">shellFor<a class="headerlink" href="#shellfor" title="Permanent link">&para;</a></h2>
 <p>Create a <code>nix-shell</code> <a href="../../user-guide/development/">development
-environment</a> <em>for</em> developing one or
-more packages.</p>
+environment</a> for developing one or more
+packages.</p>
 <pre><code>shellFor =
     { packages, withHoogle ? true, ...}: ...
 </code></pre>
@@ -469,7 +540,19 @@ more packages.</p>
 </table>
 <p><strong>Return value</strong>: a derivation</p>
 <h2 id="ghcwithpackages">ghcWithPackages<a class="headerlink" href="#ghcwithpackages" title="Permanent link">&para;</a></h2>
+<p>Creates a <code>nix-shell</code> <a href="../../user-guide/development/">development
+environment</a> including the given
+packages selected from this package set.</p>
+<p><strong>Parameter</strong>: a package selection function.</p>
+<p><strong>Return value</strong>: a derivation</p>
+<p><strong>Example</strong>:</p>
+<pre><code>haskell.haskellPackages.ghcWithPackages (ps: with ps; [ lens conduit ])
+</code></pre>
+
 <h2 id="ghcwithhoogle">ghcWithHoogle<a class="headerlink" href="#ghcwithhoogle" title="Permanent link">&para;</a></h2>
+<p>The same as <code>ghcWithPackages</code>, except, a <code>hoogle</code> command with a
+Hoogle documentation index of the packages will be included in the
+shell.</p>
               
             </div>
           </div>
