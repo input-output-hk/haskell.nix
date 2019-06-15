@@ -38,5 +38,6 @@ in {
       };
     };
     check-hydra = haskell.callPackage ./scripts/check-hydra.nix {};
+    check-closure-size = haskell.callPackage ./scripts/check-closure-size.nix {};
   };
 }

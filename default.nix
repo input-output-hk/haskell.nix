@@ -125,7 +125,8 @@ let
     # we never want to actually cross compile nix-tools on it's own.
     nix-tools = pkgs.buildPackages.callPackage ./nix-tools {
       inherit fetchExternal cleanSourceHaskell;
-      inherit (pkgs.buildPackages.haskellPackages) hpack;
+      hpack = pkgs.buildPackages.haskell.lib.justStaticExecutables
+        (pkgs.buildPackages.haskellPackages.hpack);
       inherit (self) mkCabalProjectPkgSet;
     };
 
