@@ -15,6 +15,5 @@ steps:
     command:
       - nix-build build.nix -A maintainer-scripts.update-docs -o update-docs.sh
       - ./update-docs.sh
-    branches: master
     agents:
       system: x86_64-linux
