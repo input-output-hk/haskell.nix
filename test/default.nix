@@ -12,7 +12,7 @@ in pkgs.recurseIntoAttrs {
   cabal-simple = haskell.callPackage ./cabal-simple { inherit util; };
   cabal-simple-prof = haskell.callPackage ./cabal-simple-prof { inherit util; };
   cabal-sublib = haskell.callPackage ./cabal-sublib { inherit util; };
-  cabal-22 = haskell.callPackage ./cabal-22 {};
+  cabal-22 = haskell.callPackage ./cabal-22 { inherit util; };
   with-packages = haskell.callPackage ./with-packages { inherit util; };
   builder-haddock = haskell.callPackage ./builder-haddock {};
   stack-simple = haskell.callPackage ./stack-simple {};
