@@ -14,6 +14,10 @@ about how to choose a specific compiler version.
 
 [compiler]: https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler
 
+!!! note "Cabal version"
+    The minimum Cabal version is 2.4. This version is available
+    in the NixOS 19.03 release.
+
 For this example, we will run a `nix-shell` with the default GHC
 version for Nixpkgs.
 

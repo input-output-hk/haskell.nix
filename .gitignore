@@ -1,5 +1,6 @@
 # The output of "mkdocs build"
 /site/
+docs/reference/modules.md
 
 # Nix build results
 result*

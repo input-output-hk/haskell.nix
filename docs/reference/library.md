@@ -42,18 +42,27 @@ system.
 
 ## Haskell Package description
 
-Options for building a package. (todo: more info)
+The _Haskell package descriptions_ are values of the
+`pkgSet.config.packages` attrset. These are not derivations, but just
+the configuration for building an individual package. The
+configuration options are described under `packages.<name>` in [Module
+options](./modules.md).
 
 ## Component description
 
-Options for building a component. (todo: more info)
+The _component descriptions_ are values of the
+`pkgSet.config.packages.<package>.components` attrset. These are not
+derivations, but just the configuration for building an individual
+component. The configuration options are described under
+`packages.<name>.components.*` in [Module options](./modules.md).
+
 
 ## Haskell Package
 
-A derivation which has a `components` attribute. This derivation is
-actually just for the package `Setup.hs` script, and isn't very
-interesting. To actually use the package, look within the components
-structure.
+In [Haskell.nix][], a _Haskell package_ is a derivation which has a
+`components` attribute. This derivation is actually just for the
+package `Setup.hs` script, and isn't very interesting. To actually use
+the package, look within the components structure.
 
 ```
 components = {
@@ -67,13 +76,43 @@ components = {
   
 ## Component
 
+In [Haskell.nix][], a _component_ is a derivation corresponding to a
+[Cabal component](https://www.haskell.org/cabal/users-guide/developing-packages.html)
+of a package.
+
+[Haskell.nix][] also defines a special `all` component, which is the
+union of all components in the package.
+
 ## Identifier
 
 A package identifier is an attrset pair of `name` and `version`.
 
 ## Extras
 
+Extras allow adding more packages to the package set. These will be
+functions taking a single parameter `hackage`. They should return an
+attrset of package descriptions.
+
 ## Modules
+
+Modules are the primary method of configuring building of the package
+set. They are either:
+
+1. an attrset containing [option declarations](./options.md), or
+2. a function that returns an attrset containing option declarations.
+
+If using the function form of a module, the following named parameters
+will be passed to it:
+
+| Argument         | Type | Description         | 
+|------------------|------|---------------------|
+| `haskellLib`     | attrset | The [haskellLib](#haskelllib) utility functions. |
+| `pkgs` | | The Nixpkgs collection. |
+| `pkgconfPkgs` | | A mapping of cabal build-depends names to Nixpkgs packages. (TODO: more information about this) |
+| `buildModules` | | |
+| `config` | | |
+| `options` | | |
+
 
 # Top-level attributes
 
@@ -126,7 +165,11 @@ This is an attrset of `hsPkgs` packages from Stackage.
 
 ## haskellPackages
 
-A `hsPkgs` package set
+A `hsPkgs` package set, which is one of the recent LTS Haskell
+releases from [`snapshots`](#snapshots).
+
+The chosen LTS is updated occasionally in [Haskell.nix][], though a
+manual process.
 
 ## nix-tools
 
@@ -145,6 +188,10 @@ A derivation containing the `nix-tools` [command-line tools](commands.md).
 
 ## haskellLib
 
+Assorted functions for operating on [Haskell.nix][] data. This is
+distinct from `pkgs.haskell.lib` in the current Nixpkgs Haskell
+Infrastructure.
+
 # Package-set functions
 
 These functions exist within the `hsPkgs` package set.
@@ -152,8 +199,8 @@ These functions exist within the `hsPkgs` package set.
 ## shellFor
 
 Create a `nix-shell` [development
-environment](../user-guide/development.md) *for* developing one or
-more packages.
+environment](../user-guide/development.md) for developing one or more
+packages.
 
 ```
 shellFor =
@@ -171,7 +218,24 @@ shellFor =
 
 ## ghcWithPackages
 
+Creates a `nix-shell` [development
+environment](../user-guide/development.md) including the given
+packages selected from this package set.
+
+**Parameter**: a package selection function.
+
+**Return value**: a derivation
+
+**Example**:
+
+```
+haskell.haskellPackages.ghcWithPackages (ps: with ps; [ lens conduit ])
+```
+
 ## ghcWithHoogle
 
+The same as `ghcWithPackages`, except, a `hoogle` command with a
+Hoogle documentation index of the packages will be included in the
+shell.
 
 [haskell.nix]: https://github.com/input-output-hk/haskell.nix
