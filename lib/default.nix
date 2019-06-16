@@ -19,6 +19,7 @@ with haskellLib;
   foldComponents = tys: f: z: conf:
     let
       comps = conf.components or {};
+      # ensure that comps.library exists and is not null.
       libComp = acc: if (comps.library or null) != null then f comps.library acc else acc;
       subComps = acc:
         lib.foldr
