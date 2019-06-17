@@ -17,13 +17,17 @@ let
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
 
+  # Using origSrc bypasses any cleanSourceWith so that it will work when
+  # access to the store is restricted.  If origSrc was already in the store
+  # you can pass the project in as a string.
+  rawCabalProject = if cabalProject != null
+    then cabalProject
+    else builtins.readFile (cabalFiles.origSrc + "/cabal.project");
+
   # Look for a index-state: field in the cabal.project file
   index-state-found = if index-state != null then index-state
     else
       let
-        rawCabalProject = if cabalProject != null
-          then cabalProject
-          else builtins.readFile (cabalFiles + "/cabal.project");
         indexState = pkgs.lib.lists.concatLists (
           pkgs.lib.lists.filter (l: l != null)
             (builtins.map (l: builtins.match "^index-state: *(.*)" l)
