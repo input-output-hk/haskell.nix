@@ -17,6 +17,13 @@ let
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
 
+  # Using origSrc bypasses any cleanSourceWith so that it will work when
+  # access to the store is restricted.  If origSrc was already in the store
+  # you can pass the project in as a string.
+  rawCabalProject = if cabalProject != null
+    then cabalProject
+    else builtins.readFile (cabalFiles.origSrc + "/cabal.project");
+
   # Look for a index-state: field in the cabal.project file
   index-state-found = if index-state != null then index-state
     else
@@ -93,10 +100,7 @@ let
       inherit sourceRepos;
     };
 
-  fixedProject = replaceSoureRepos
-    (if cabalProject != null
-      then cabalProject
-      else builtins.readFile (cabalFiles + "/cabal.project"));
+  fixedProject = replaceSoureRepos rawCabalProject;
 
   # Deal with source-repository-packages in a way that will work on
   # hydra build agents (as long as a sha256 is included).
