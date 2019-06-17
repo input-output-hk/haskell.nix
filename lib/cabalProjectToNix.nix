@@ -28,9 +28,6 @@ let
   index-state-found = if index-state != null then index-state
     else
       let
-        rawCabalProject = if cabalProject != null
-          then cabalProject
-          else builtins.readFile (cabalFiles + "/cabal.project");
         indexState = pkgs.lib.lists.concatLists (
           pkgs.lib.lists.filter (l: l != null)
             (builtins.map (l: builtins.match "^index-state: *(.*)" l)
