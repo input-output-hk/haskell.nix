@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, runCommand, pkgconfig, comp-builder, nonReinstallablePkgs, hsPkgs }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, runCommand, comp-builder, setup-builder }:
 
 
 { flags
@@ -38,13 +38,9 @@ let
 
   setup = if package.buildType == "Simple"
     then defaultSetup
-    else haskellLib.weakCallPackage pkgs ./setup-builder.nix {
-      ghc = buildGHC;
+    else setup-builder {
       setup-depends = package.setup-depends;
-      hsPkgs = hsPkgs.buildPackages;
-      inherit haskellLib nonReinstallablePkgs
-              package name src flags pkgconfig
-              ;
+      inherit package name src flags;
     };
 
   buildComp = componentId: component: comp-builder {

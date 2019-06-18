@@ -6,6 +6,12 @@ let
     inherit ghc haskellLib makeConfigFiles ghcForComponent hsPkgs;
   };
 
+  setup-builder = haskellLib.weakCallPackage pkgs ./setup-builder.nix {
+    ghc = buildGHC;
+    hsPkgs = hsPkgs.buildPackages;
+    inherit haskellLib nonReinstallablePkgs makeConfigFiles;
+  };
+
   # Wraps GHC to provide dependencies in a way that works for both the
   # component builder and for nix-shells.
   ghcForComponent = import ./ghc-for-component-wrapper.nix {
@@ -45,7 +51,7 @@ in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
   build-package = haskellLib.weakCallPackage pkgs ./hspkg-builder.nix {
-    inherit haskellLib ghc buildGHC comp-builder nonReinstallablePkgs hsPkgs;
+    inherit haskellLib ghc buildGHC comp-builder setup-builder;
   };
 
   inherit shellFor;
