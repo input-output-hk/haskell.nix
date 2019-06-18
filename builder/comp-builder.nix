@@ -104,8 +104,8 @@ let
     && (haskellLib.isLibrary componentId)
     && stdenv.hostPlatform == stdenv.buildPlatform;
 
-  testExecutable = "dist/build/${componentId.cname}/${componentId.cname}"
-    + lib.optionalString stdenv.hostPlatform.isWindows ".exe";
+  exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
+  testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
 
 in stdenv.lib.fix (drv:
 
@@ -235,11 +235,8 @@ stdenv.mkDerivation ({
     ''}
     ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}
-      if [ -f "dist/build/${componentId.cname}/${componentId.cname}" ]; then
-        cp dist/build/${componentId.cname}/${componentId.cname} $out/${name}/
-      fi
-      if [ -f "dist/build/${componentId.cname}/${componentId.cname}.exe" ]; then
-        cp dist/build/${componentId.cname}/${componentId.cname}.exe $out/${name}/
+      if [ -f ${testExecutable} ]; then
+        cp ${testExecutable} $out/${name}/
       fi
     ''}
     runHook postInstall
