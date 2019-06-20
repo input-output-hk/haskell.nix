@@ -245,7 +245,7 @@ components), then you will need a development environment that
 contains the <em>dependencies</em> of your packages, but not the packages
 themselves. This is what the <code>shellFor</code> function does.</p>
 <pre><code class="nix"># shell.nix
-{ pkgs ? import &lt;nixpkgs&gt; {} };
+{ pkgs ? import &lt;nixpkgs&gt; {} }:
 
 let
   hsPkgs = import ./default.nix { inherit pkgs; };
