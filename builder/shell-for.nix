@@ -1,9 +1,10 @@
 { lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib }:
 
-{ packages, withHoogle ? true, ... } @ args:
+{ packages, additional ? _: [], withHoogle ? true, ... } @ args:
 
 let
   selected = packages hsPkgs;
+  additionalSelected = additional hsPkgs;
   selectedConfigs = map (p: p.components.all.config) selected;
 
   name = if lib.length selected == 1
@@ -15,7 +16,7 @@ let
   # new-style commands.
   packageInputs = lib.filter
     (input: lib.all (cfg: input.identifier != cfg.identifier) selected)
-    (lib.concatMap (cfg: cfg.depends) selectedConfigs);
+    (lib.concatMap (cfg: cfg.depends) selectedConfigs ++ additionalSelected);
 
   # Add the system libraries and build tools of the selected haskell
   # packages to the shell.
@@ -53,7 +54,7 @@ let
     # inherit (hsPkgs) hoogle;
   };
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "withHoogle"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle"];
 in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;

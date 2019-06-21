@@ -1,6 +1,14 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## June 21, 2019
+ * Add `ghcWithPackages` and `ghcWithHoogle` to hsPkgs ([documentation](https://input-output-hk.github.io/haskell.nix/reference/library/#package-set-functions).
+ * Benchmark components can now build successfully.
+ * Reduced the closure bloat of nix-tools, and added closure size limit to CI.
+ * Added more reference documentation and set up auto-generated
+   documentation for [Module Options](https://input-output-hk.github.io/haskell.nix/reference/modules/).
+ * Miscellaneous bug fixes.
+
 ## June 7, 2019
   * Several additions to the [documentation](https://input-output-hk.github.io/haskell.nix/).
     * More information about getting nix-tools, Haskell.nix, pinning.
