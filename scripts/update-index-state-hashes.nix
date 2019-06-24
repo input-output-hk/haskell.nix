@@ -37,6 +37,6 @@ writeShellScriptBin "update-index-state-hashes" ''
       fi
     done
     
-    # emit the finall closing brace.
+    # emit the final closing brace.
     echo '}'
     ''

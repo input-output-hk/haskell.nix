@@ -13,6 +13,7 @@ import ./update-external.nix
       git clone git@github.com:input-output-hk/hackage.nix.git
     fi
 
+    set -x
     # Make sure the hackage index is recent.
     echo "Updating local hackage index..."
     cabal update
@@ -23,8 +24,8 @@ import ./update-external.nix
 
     echo "Running update-index-state-hashes..."
 
-    ${update-index-state-hashes}/bin/update-index-state-hashes > ./index-state-hashes.nix
-
     cd hackage.nix
+
+    ${update-index-state-hashes}/bin/update-index-state-hashes > index-state-hashes.nix
   '';
 }
