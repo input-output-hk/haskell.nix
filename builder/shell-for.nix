@@ -71,5 +71,7 @@ in
     LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
     CABAL_CONFIG = "${configFiles}/cabal.config";
 
-    passthru.ghc = ghcEnv;
+    passthru = (mkDrvArgs.passthru or {}) // {
+      ghc = ghcEnv;
+    };
   })

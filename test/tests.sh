@@ -75,4 +75,8 @@ nix-shell $NIX_BUILD_ARGS \
     --run 'hoogle ConduitT | grep Data.Conduit'
 echo >& 2
 
+printf "*** Checking the maintainer scripts...\n" >& 2
+nix build $NIX_BUILD_ARGS --no-link --keep-going -f ../build.nix maintainer-scripts
+echo >& 2
+
 printf "\n*** Finished successfully\n" >& 2

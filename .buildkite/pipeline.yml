@@ -11,10 +11,17 @@ steps:
     agents:
       system: x86_64-linux
 
+  - label: 'Check closure size'
+    command:
+      - nix-build build.nix -A maintainer-scripts.check-closure-size -o check-closure-size.sh
+      - echo "+++ Closure size (MB)"
+      - ./check-closure-size.sh
+    agents:
+      system: x86_64-linux
+
   - label: 'Update docs'
     command:
       - nix-build build.nix -A maintainer-scripts.update-docs -o update-docs.sh
       - ./update-docs.sh
-    branches: master
     agents:
       system: x86_64-linux

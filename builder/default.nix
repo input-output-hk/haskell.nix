@@ -34,12 +34,12 @@ let
   };
 
   # Same as haskellPackages.ghcWithPackages and ghcWithHoogle in nixpkgs.
-  withPackages = {withHoogle}: packages: shellFor {
+  withPackages = {withHoogle}: packages: (shellFor {
     name = ghc.name + "-with-packages";
     packages = _: [];
     additional = packages;
     inherit withHoogle;
-  };
+  }).ghc;
 
 in {
   # Build a Haskell package from its config.

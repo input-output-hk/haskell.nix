@@ -1,5 +1,5 @@
 { lib, symlinkJoin, makeWrapper
-, hpack, git, nix, nix-prefetch-scripts
+, hpack, git, nix, nix-prefetch-git
 , fetchExternal, cleanSourceHaskell, mkCabalProjectPkgSet }:
 
 let
@@ -27,7 +27,7 @@ let
 
   hsPkgs = pkgSet.config.hsPkgs;
 
-  tools = [ hpack git nix nix-prefetch-scripts ];
+  tools = [ hpack git nix nix-prefetch-git ];
 in
   symlinkJoin {
     name = "nix-tools";

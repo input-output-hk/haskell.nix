@@ -1,6 +1,7 @@
 { stdenv, writeScript, coreutils, glibc, git, openssh, nix-tools, cabal-install, nix-prefetch-git, update-index-state-hashes }@args:
 
-import ./update-external.nix args {
+import ./update-external.nix
+(removeAttrs args ["update-index-state-hashes"]) {
   name = "hackage";
   script = ''
     # Clone or update the Hackage Nix expressions repo.

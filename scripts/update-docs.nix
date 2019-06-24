@@ -1,4 +1,5 @@
-{ stdenv, writeScript, coreutils, glibc, git, openssh, gnused, mkdocs }:
+{ stdenv, writeScript, coreutils, glibc, git, openssh, gnused, mkdocs
+, generatedOptions }:
 
 with stdenv.lib;
 
@@ -15,6 +16,13 @@ in
 
     source ${./git.env}
 
+    rev=$(git rev-parse --short HEAD)
+    cd $(git rev-parse --show-toplevel)
+
+    echo "Preprocessing..."
+    cat docs/reference/modules-preamble.md ${generatedOptions} |
+      sed -e "s,$PWD/\?,," > docs/reference/modules.md
+
     echo "Building..."
     rm -rf site
     mkdocs build
@@ -22,7 +30,7 @@ in
     sed -i -e '/Build Date/d' site/index.html
     sed -i -e '/lastmod/d' site/sitemap.xml
     rm -f site/sitemap.xml.gz
-    rev=$(git rev-parse --short HEAD)
+    rm docs/reference/modules.md
 
     echo "Updating git index..."
     git fetch origin

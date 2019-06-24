@@ -19,7 +19,8 @@ with haskellLib;
   foldComponents = tys: f: z: conf:
     let
       comps = conf.components or {};
-      libComp = acc: if comps ? library then f comps.library acc else acc;
+      # ensure that comps.library exists and is not null.
+      libComp = acc: if (comps.library or null) != null then f comps.library acc else acc;
       subComps = acc:
         lib.foldr
           (ty: acc': foldrAttrVals f acc' (comps.${ty} or {}))
@@ -54,6 +55,7 @@ with haskellLib;
   isLibrary = componentId: componentId.ctype == "lib";
   isAll = componentId: componentId.ctype == "all";
   isTest = componentId: componentId.ctype == "test";
+  isBenchmark = componentId: componentId.ctype == "bench";
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
