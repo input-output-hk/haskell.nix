@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeConfigFiles }:
+{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeConfigFiles }:
 
 { setup-depends, package, name, src, flags }:
 
