@@ -1,6 +1,6 @@
 ### Haskell infrastructure test cases
 
-To build the test cases, run from this directory:
+To build the test cases, run from the `test` directory:
 
     nix-build --no-out-link default.nix
 
