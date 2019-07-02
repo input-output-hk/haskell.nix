@@ -34,18 +34,6 @@ in
       printf "checking whether executable runs with profiling... " >& 2
       $exe +RTS -p -h
 
-      printf "checking that executable is dynamically linked to system libraries... " >& 2
-    '' + optionalString stdenv.isLinux ''
-      ldd $exe | grep libpthread
-    '' + optionalString stdenv.isDarwin ''
-      otool -L $exe |grep .dylib
-    '' + ''
-
-      printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple"
-      test -f "$all_exe"
-      echo "$all_exe" >& 2
-
       touch $out
     '';
 

@@ -25,7 +25,7 @@ in
 
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString stdenv.isLinux ''
-      ldd $exe | grep libpthread
+      ldd $exe | grep libgmp
     '' + optionalString stdenv.isDarwin ''
       otool -L $exe | grep "libSystem.B"
     '' + ''
@@ -37,12 +37,13 @@ in
       sofile=$(find "${packages.project.components.library}" | grep -e '\.dylib$')
     '' + ''
       echo "$sofile"
+    '' + optionalString (!stdenv.hostPlatform.isMusl) (''
       printf "checking that dynamic library is dynamically linked to prim... " >& 2
     '' + optionalString stdenv.isLinux ''
       ldd $sofile | grep libHSghc-prim
     '' + optionalString stdenv.isDarwin ''
       otool -L $sofile | grep libHSghc-prim
-    '' + ''
+    '') + ''
       touch $out
     '';
 

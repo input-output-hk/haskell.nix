@@ -6,5 +6,5 @@
         "process" = (((hackage.process)."1.6.5.0").revisions).default;
         } // { stack-simple = ./stack-simple.nix; };
       };
-  resolver = "lts-13.18";
+  resolver = "lts-13.26";
   }

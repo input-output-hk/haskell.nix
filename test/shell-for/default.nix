@@ -50,6 +50,8 @@ in
     '';
 
     meta.platforms = platforms.all;
+    meta.disabled = stdenv.hostPlatform.isMusl;
+
     passthru = {
       # Used for debugging with nix repl
       inherit pkgSet;

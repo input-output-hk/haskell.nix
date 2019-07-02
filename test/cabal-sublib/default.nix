@@ -33,7 +33,7 @@ in
 
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString stdenv.isLinux ''
-      ldd $exe | grep libpthread
+      ldd $exe | grep libgmp
     '' + optionalString stdenv.isDarwin ''
       otool -L $exe |grep .dylib
     '' + ''

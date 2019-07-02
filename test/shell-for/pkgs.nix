@@ -39,8 +39,8 @@
         "deepseq".revision = (((hackage."deepseq")."1.4.3.0").revisions).default;
         "random".revision = (((hackage."random")."1.1").revisions).default;
         "optparse-applicative".revision = (((hackage."optparse-applicative")."0.14.3.0").revisions).default;
-        "network".revision = (((hackage."network")."3.1.0.0").revisions).default;
-        "async".revision = (((hackage."async")."2.2.1").revisions).default;
+        "network".revision = (((hackage."network")."3.1.0.1").revisions).default;
+        "async".revision = (((hackage."async")."2.2.2").revisions).default;
         "async".flags.bench = false;
         "conduit".revision = (((hackage."conduit")."1.3.1.1").revisions).default;
         "semigroups".revision = (((hackage."semigroups")."0.19").revisions).default;
@@ -102,14 +102,14 @@
         "reflection".revision = (((hackage."reflection")."2.1.4").revisions).default;
         "reflection".flags.slow = false;
         "reflection".flags.template-haskell = true;
-        "streaming-commons".revision = (((hackage."streaming-commons")."0.2.1.0").revisions).default;
+        "streaming-commons".revision = (((hackage."streaming-commons")."0.2.1.1").revisions).default;
         "streaming-commons".flags.use-bytestring-builder = false;
         "bytestring".revision = (((hackage."bytestring")."0.10.8.2").revisions).default;
         "ansi-wl-pprint".revision = (((hackage."ansi-wl-pprint")."0.6.9").revisions).default;
         "ansi-wl-pprint".flags.example = false;
-        "StateVar".revision = (((hackage."StateVar")."1.1.1.1").revisions).default;
-        "typed-process".revision = (((hackage."typed-process")."0.2.4.0").revisions).default;
-        "contravariant".revision = (((hackage."contravariant")."1.5.1").revisions).default;
+        "StateVar".revision = (((hackage."StateVar")."1.2").revisions).default;
+        "typed-process".revision = (((hackage."typed-process")."0.2.5.0").revisions).default;
+        "contravariant".revision = (((hackage."contravariant")."1.5.2").revisions).default;
         "contravariant".flags.semigroups = true;
         "contravariant".flags.tagged = true;
         "contravariant".flags.statevar = true;
@@ -131,7 +131,7 @@
         "vector-algorithms".flags.bench = true;
         "vector-algorithms".flags.properties = true;
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;
-        "hashable".revision = (((hackage."hashable")."1.2.7.0").revisions).default;
+        "hashable".revision = (((hackage."hashable")."1.3.0.0").revisions).default;
         "hashable".flags.sse2 = true;
         "hashable".flags.integer-gmp = true;
         "hashable".flags.sse41 = false;
@@ -151,7 +151,7 @@
         "base-orphans".revision = (((hackage."base-orphans")."0.8.1").revisions).default;
         "th-abstraction".revision = (((hackage."th-abstraction")."0.3.1.0").revisions).default;
         "array".revision = (((hackage."array")."0.5.2.0").revisions).default;
-        "conduit-extra".revision = (((hackage."conduit-extra")."1.3.1.1").revisions).default;
+        "conduit-extra".revision = (((hackage."conduit-extra")."1.3.3").revisions).default;
         "integer-gmp".revision = (((hackage."integer-gmp")."1.0.2.0").revisions).default;
         };
       compiler = {

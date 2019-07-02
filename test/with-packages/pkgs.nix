@@ -81,8 +81,8 @@
         "reflection".flags.slow = false;
         "reflection".flags.template-haskell = true;
         "bytestring".revision = (((hackage."bytestring")."0.10.8.2").revisions).default;
-        "StateVar".revision = (((hackage."StateVar")."1.1.1.1").revisions).default;
-        "contravariant".revision = (((hackage."contravariant")."1.5.1").revisions).default;
+        "StateVar".revision = (((hackage."StateVar")."1.2").revisions).default;
+        "contravariant".revision = (((hackage."contravariant")."1.5.2").revisions).default;
         "contravariant".flags.semigroups = true;
         "contravariant".flags.tagged = true;
         "contravariant".flags.statevar = true;
@@ -97,7 +97,7 @@
         "comonad".flags.containers = true;
         "time".revision = (((hackage."time")."1.8.0.2").revisions).default;
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;
-        "hashable".revision = (((hackage."hashable")."1.2.7.0").revisions).default;
+        "hashable".revision = (((hackage."hashable")."1.3.0.0").revisions).default;
         "hashable".flags.sse2 = true;
         "hashable".flags.integer-gmp = true;
         "hashable".flags.sse41 = false;

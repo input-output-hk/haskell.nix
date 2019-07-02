@@ -118,7 +118,7 @@ let
     # Package sets for all stackage snapshots.
     snapshots = self.callPackage ./snapshots.nix {};
     # Pick a recent LTS snapshot to be our "default" package set.
-    haskellPackages = self.snapshots."lts-13.18";
+    haskellPackages = self.snapshots."lts-13.26";
 
     # Programs for generating Nix expressions from Cabal and Stack
     # files. We need to make sure we build this from the buildPackages,
