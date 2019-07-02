@@ -1,4 +1,4 @@
-{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeConfigFiles }:
+{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
 
 { setup-depends, package, name, src, flags }:
 
@@ -7,7 +7,7 @@ let
 
   includeGhcPackage = lib.any (p: p.identifier.name == "ghc") setup-depends;
 
-  configFiles = makeConfigFiles {
+  configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
     inherit fullName flags;
     component = {
