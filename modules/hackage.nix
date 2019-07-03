@@ -66,7 +66,12 @@ in {
     # this should allow us to use `config` overrides
     # in the nixpkgs setup, and properly override the
     # complier as needed.
-    default = pkgs.buildPackages.haskell.compiler.${config.compiler.nix-name};
+    default = pkgs.buildPackages.haskell.compiler.${config.compiler.nix-name} or (throw ''
+      This version of Nixpkgs does not contain GHC ${config.compiler.version} 
+      (or it is not present at attribute '${config.compiler.nix-name})').
+      Either switch to a version of Nixpkgs which does have this version, or use a version
+      of GHC which the current version of Nixpkgs contains.
+    '');
     defaultText = "pkgs.buildPackages.haskell.compiler.\${config.compiler.nix-name}";
   };
 
