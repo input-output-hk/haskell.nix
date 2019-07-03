@@ -112,10 +112,11 @@ let
         pkg-def = plan-pkgs.pkgs;
         # The compiler referenced in the stack config
         compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
+        patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
       in self.mkPkgSet {
         inherit pkg-def;
         pkg-def-extras = [ plan-pkgs.extras ] ++ pkg-def-extras;
-        modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
+        modules = [ patchesModule ] ++ modules;
       };
 
     # Package sets for all stackage snapshots.
