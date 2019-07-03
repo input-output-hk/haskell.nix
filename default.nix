@@ -88,7 +88,10 @@ let
 
       let
         # The Stackage release referenced in the stack config
-        pkg-def = stackage.${stack-pkgs.resolver};
+        pkg-def = stackage.${stack-pkgs.resolver} or (throw ''
+          This version of stackage.nix does not know about the Stackage resolver ${stack-pkgs.resolver}.
+          You may need to update haskell.nix to one that includes a newer stackage.nix.
+        '');
         # The compiler referenced in the stack config
         compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
         patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
