@@ -43,7 +43,7 @@ with haskellLib;
     let
       comps = config.components;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
-      applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype}; };
+      applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
       applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
       libComp = if comps.library == null then {} else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
       subComps = lib.mapAttrs
