@@ -88,7 +88,10 @@ let
 
       let
         # The Stackage release referenced in the stack config
-        pkg-def = stackage.${stack-pkgs.resolver};
+        pkg-def = stackage.${stack-pkgs.resolver} or (throw ''
+          This version of stackage.nix does not know about the Stackage resolver ${stack-pkgs.resolver}.
+          You may need to update haskell.nix to one that includes a newer stackage.nix.
+        '');
         # The compiler referenced in the stack config
         compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
         patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
@@ -109,16 +112,17 @@ let
         pkg-def = plan-pkgs.pkgs;
         # The compiler referenced in the stack config
         compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
+        patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
       in self.mkPkgSet {
         inherit pkg-def;
         pkg-def-extras = [ plan-pkgs.extras ] ++ pkg-def-extras;
-        modules = [ ghcHackagePatches.${compiler.nix-name} ] ++ modules;
+        modules = [ patchesModule ] ++ modules;
       };
 
     # Package sets for all stackage snapshots.
     snapshots = self.callPackage ./snapshots.nix {};
     # Pick a recent LTS snapshot to be our "default" package set.
-    haskellPackages = self.snapshots."lts-13.18";
+    haskellPackages = self.snapshots."lts-13.26";
 
     # Programs for generating Nix expressions from Cabal and Stack
     # files. We need to make sure we build this from the buildPackages,

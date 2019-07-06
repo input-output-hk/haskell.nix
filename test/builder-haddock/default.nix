@@ -39,7 +39,7 @@ in
       ########################################################################
       # test haddock
 
-      doc="${toString library.doc}"
+      doc="${toString library.doc or null}"
       docDir="${toString library.haddockDir}"
 
       # exeDoc="$ disabled {toString packages.test-haddock.components.exes.test-haddock.doc}"
@@ -78,4 +78,5 @@ in
     '';
 
     meta.platforms = platforms.all;
+    meta.disabled = stdenv.hostPlatform.isMusl;
 } // { inherit packages pkgSet; }
