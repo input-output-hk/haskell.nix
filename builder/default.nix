@@ -9,7 +9,7 @@ let
   setup-builder = haskellLib.weakCallPackage pkgs ./setup-builder.nix {
     ghc = buildGHC;
     hsPkgs = hsPkgs.buildPackages;
-    inherit haskellLib nonReinstallablePkgs makeConfigFiles;
+    inherit haskellLib nonReinstallablePkgs makeSetupConfigFiles;
   };
 
   # Wraps GHC to provide dependencies in a way that works for both the
@@ -25,6 +25,12 @@ let
   makeConfigFiles = haskellLib.weakCallPackage pkgs ./make-config-files.nix {
     inherit ghc haskellLib nonReinstallablePkgs;
   };
+  # When building setup depends we need to use the build systems GHC and Packages
+  makeSetupConfigFiles = haskellLib.weakCallPackage buildPackages ./make-config-files.nix {
+    inherit haskellLib nonReinstallablePkgs;
+    ghc = buildGHC;
+  };
+
 
   hoogleLocal = let
     nixpkgsHoogleLocal = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
