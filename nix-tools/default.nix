@@ -1,4 +1,4 @@
-{ lib, symlinkJoin, makeWrapper
+{ pkgs, lib, symlinkJoin, makeWrapper
 , hpack, git, nix, nix-prefetch-git
 , fetchExternal, cleanSourceHaskell, mkCabalProjectPkgSet }:
 
@@ -8,6 +8,11 @@ let
     specJSON = ./nix-tools-src.json;
     override = "nix-tools-src";
   });
+  cabalPatch = pkgs.fetchpatch {
+    url = "https://patch-diff.githubusercontent.com/raw/haskell/cabal/pull/6055.diff";
+    sha256 = "145g7s3z9q8d18pxgyngvixgsm6gmwh1rgkzkhacy4krqiq0qyvx";
+    stripLen = 1;
+  };
 
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = import ./pkgs.nix;
@@ -22,6 +27,12 @@ let
       {
         packages.nix-tools.src = src;
       }
+
+      ({ config, ...}: {
+        packages = {
+          Cabal.patches = [ cabalPatch ];
+        };
+      })
     ];
   };
 
