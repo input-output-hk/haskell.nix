@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeConfigFiles }:
+{ stdenv, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeConfigFiles, lib }:
 
 { setup-depends, package, name, src, flags }:
 
@@ -16,7 +16,7 @@ let
       frameworks = [];
       doExactConfig = false;
     };
-  }; 
+  };
 
 in
  stdenv.lib.fix (drv:

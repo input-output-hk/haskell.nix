@@ -9,7 +9,7 @@ let
   setup-builder = haskellLib.weakCallPackage pkgs ./setup-builder.nix {
     ghc = buildGHC;
     hsPkgs = hsPkgs.buildPackages;
-    inherit haskellLib nonReinstallablePkgs makeConfigFiles;
+    inherit haskellLib nonReinstallablePkgs makeConfigFiles lib;
   };
 
   # Wraps GHC to provide dependencies in a way that works for both the
