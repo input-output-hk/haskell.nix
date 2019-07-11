@@ -1,5 +1,6 @@
 # Maps of system pkg refenreces from
 # cabal file to nixpkgs pkgs.
+# See ../docs/dev/pkg-map.md
 pkgs:
 # fetchgit should always come from the buildPackages
 # if it comes from the targetPackages we won't even
