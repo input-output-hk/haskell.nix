@@ -82,6 +82,41 @@ with types;
         type = listOfFilteringNulls unspecified;
         default = [];
       };
+
+      detailLevel = mkOption {
+        type = str;
+        default = "MinimalDetails";
+      };
+
+      licenseFiles = mkOption {
+        type = listOfFilteringNulls unspecified;
+        default = [];
+      };
+
+      dataDir = mkOption {
+        type = str;
+        default = "";
+      };
+
+      dataFiles = mkOption {
+        type = listOfFilteringNulls unspecified;
+        default = [];
+      };
+
+      extraSrcFiles = mkOption {
+        type = listOfFilteringNulls unspecified;
+        default = [];
+      };
+
+      extraTmpFiles = mkOption {
+        type = listOfFilteringNulls unspecified;
+        default = [];
+      };
+
+      extraDocFiles = mkOption {
+        type = listOfFilteringNulls unspecified;
+        default = [];
+      };
     };
 
     components = let
@@ -105,6 +140,46 @@ with types;
             default = [];
           };
           build-tools = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          modules = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          asmSources = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          cmmSources = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          cSources = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          cxxSources = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          jsSources = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          hsSourceDirs = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          includeDirs = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          includes = mkOption {
+            type = listOfFilteringNulls unspecified;
+            default = [];
+          };
+          mainPath = mkOption {
             type = listOfFilteringNulls unspecified;
             default = [];
           };

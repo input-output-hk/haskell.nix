@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }:
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
 in { index-state ? null, index-sha256 ? null, src, ghc ? defaultGhc,
@@ -10,11 +10,11 @@ assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
          else true);
 let
   cabalFiles =
-    pkgs.lib.cleanSourceWith {
+    haskellLib.cleanSourceWith {
       inherit src;
       filter = path: type:
         type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".freeze" ".cabal" "package.yaml" ];
     };
 
   # Using origSrc bypasses any cleanSourceWith so that it will work when
@@ -22,7 +22,7 @@ let
   # you can pass the project in as a string.
   rawCabalProject = if cabalProject != null
     then cabalProject
-    else builtins.readFile (cabalFiles.origSrc + "/cabal.project");
+    else builtins.readFile (cabalFiles.origSrcSubDir + "/cabal.project");
 
   # Look for a index-state: field in the cabal.project file
   index-state-found = if index-state != null then index-state
@@ -52,11 +52,11 @@ let
     in { fst = pkgs.lib.lists.take n list; snd = pkgs.lib.lists.drop n list; };
 
   # Parse lines of a source-repository-package block
-  parseBlockLines = blockLines: builtins.listToAttrs (builtins.map (s:
+  parseBlockLines = blockLines: builtins.listToAttrs (builtins.concatMap (s:
     let pair = builtins.match " *([^:]*): *(.*)" s;
-    in pkgs.lib.attrsets.nameValuePair
+    in pkgs.lib.optional (pair != null) (pkgs.lib.attrsets.nameValuePair
           (builtins.head pair)
-          (builtins.elemAt pair 1)) blockLines);
+          (builtins.elemAt pair 1))) blockLines);
 
   fetchRepo = repo: (pkgs.fetchgit {
     url = repo.location;
@@ -75,7 +75,7 @@ let
       if attrs."--sha256" or "" == ""
         then {
           sourceRepo = [];
-          otherText = block;
+          otherText = "\nsource-repository-package\n" + block;
         }
         else {
           sourceRepo = [ (fetchRepo attrs) ];
@@ -103,7 +103,7 @@ let
   # hydra build agents (as long as a sha256 is included).
   fixedProjectFile = pkgs.writeText "cabal.project" fixedProject.otherText;
   
-  plan = runCommand "plan" {
+  plan-nix = runCommand "plan" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } (''
     tmp=$(mktemp -d)
@@ -137,7 +137,8 @@ let
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
       index-state = index-state-found;
-      sha256 = index-sha256-found; }} cabal new-configure \
+      sha256 = index-sha256-found;
+      inherit cabal-install; }} cabal new-configure \
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
 
@@ -162,45 +163,32 @@ let
 
     # run `plan-to-nix` in $out.  This should produce files right there with the
     # proper relative paths.
-    (cd $out && plan-to-nix --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
+    (cd $out && plan-to-nix --full --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
   '');
+  plan = import "${plan-nix}";
 in
-  # TODO: We really want this (symlinks) instead of copying the source over each and
-  #       every time.  However this will not work with sandboxed builds.  They won't
-  #       have access to `plan` or `src` paths.  So while they will see all the
-  #       links, they won't be able to read any of them.
-  #
-  #       We should be able to fix this if we propagaed the build inputs properly.
-  #       As we are `import`ing the produced nix-path here, we seem to be losing the
-  #       dependencies though.
-  #
-  #       I guess the end-result is that ifd's don't work well with symlinks.
-  #
-  # symlinkJoin {
-  #   name = "plan-and-src";
-  #   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-  #   buildInputs = [ plan src ];
-  # }
-  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.rsync ]; } (''
-    mkdir $out
-    # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-    rsync -a "${src}/" "$out/"
-    rsync -a ${plan}/ $out/
-  '' +
-    ( pkgs.lib.strings.concatStrings (
-        pkgs.lib.lists.zipListsWith (n: f: ''
-          mkdir -p $out/.source-repository-packages/${builtins.toString n}
-          rsync -a "${f}/" "$out/.source-repository-packages/${builtins.toString n}/"
-        '')
-          (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
-          fixedProject.sourceRepos
-      )
-    ) + ''
-    # Rsync will have made $out read only and that can cause problems when
-    # nix sandboxing is enabled (since it can prevent nix from moving the directory
-    # out of the chroot sandbox).
-    chmod +w $out
-  '')
+  plan // {
+    extras = hackage: let old = (plan.extras hackage).packages; in {
+      packages = pkgs.lib.attrsets.mapAttrs (name: value:
+        {...}@args:
+          let oldPkg = import value args;
+              oldSrc = toString oldPkg.src.content;
+              srcRepoPrefix = toString plan-nix + "/.source-repository-packages/";
+              packageSrc = if pkgs.lib.strings.hasPrefix srcRepoPrefix oldSrc
+                then
+                  pkgs.lib.lists.elemAt fixedProject.sourceRepos (
+                  	pkgs.lib.strings.toInt (pkgs.lib.strings.removePrefix srcRepoPrefix oldSrc))
+                else
+                  haskellLib.cleanSourceWith {
+                    inherit src;
+                    subDir = pkgs.lib.strings.replaceStrings
+                      [(toString plan-nix + "/")] [""] oldSrc;
+                  };
+          in oldPkg // {
+            src = (pkgs.lib).mkDefault packageSrc;
+          }) old;
+    };
+  }
