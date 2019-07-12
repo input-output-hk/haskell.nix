@@ -62,7 +62,13 @@ let
   };
   stackage = import stackageSrc;
 
-  packages = self: ({
+  packages = pkgs: self: (rec {
+    inherit pkgs; # Make pkgs available (it is the underlying nixpkgs)
+
+     # Packages built to run on the build platform, not the host platform
+    buildPackages = pkgs.buildPackages.lib.makeScope pkgs.buildPackages.newScope
+      (packages pkgs.buildPackages);
+
     # Utility functions for working with the component builder.
     haskellLib = let hl = import ./lib { inherit (pkgs) lib; haskellLib = hl; }; in hl;
 
@@ -127,15 +133,16 @@ let
     # Programs for generating Nix expressions from Cabal and Stack
     # files. We need to make sure we build this from the buildPackages,
     # we never want to actually cross compile nix-tools on it's own.
-    nix-tools = pkgs.buildPackages.callPackage ./nix-tools {
+    nix-tools-cross-compiled = pkgs.callPackage ./nix-tools {
       inherit fetchExternal cleanSourceHaskell;
-      hpack = pkgs.buildPackages.haskell.lib.justStaticExecutables
-        (pkgs.buildPackages.haskellPackages.hpack);
+      hpack = pkgs.haskell.lib.justStaticExecutables
+        (pkgs.haskellPackages.hpack);
       inherit (self) mkCabalProjectPkgSet;
     };
+    nix-tools = buildPackages.nix-tools-cross-compiled;
 
     # Function to call stackToNix
-    callStackToNix = self.callPackage ./call-stack-to-nix.nix {};
+    callStackToNix = buildPackages.callPackage ./call-stack-to-nix.nix {};
 
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
@@ -184,11 +191,11 @@ let
     # Resulting nix files are added to nix-plan subdirectory.
     callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
       index-state-hashes = import indexStateHashesPath;
-      inherit (self) dotCabal;
-      inherit pkgs;
-      inherit (pkgs) runCommand cabal-install ghc symlinkJoin cacert;
-      inherit (pkgs.haskellPackages) hpack;
-      inherit (self) nix-tools;
+      inherit (buildPackages) dotCabal;
+      pkgs = buildPackages.pkgs; # buildPackages;
+      inherit (buildPackages.pkgs.haskellPackages) hpack;
+      inherit (buildPackages.pkgs) runCommand cabal-install ghc symlinkJoin cacert;
+      inherit (buildPackages) nix-tools;
     };
 
     # References to the unpacked sources, for caching in a Hydra jobset.
@@ -198,4 +205,4 @@ let
   });
 
 in
-  pkgs.lib.makeScope pkgs.newScope packages
+  pkgs.lib.makeScope pkgs.newScope (packages pkgs)

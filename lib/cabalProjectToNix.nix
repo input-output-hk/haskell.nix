@@ -137,7 +137,9 @@ let
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
       index-state = index-state-found;
-      sha256 = index-sha256-found; }} cabal new-configure
+      sha256 = index-sha256-found; }} cabal new-configure \
+        --with-ghc=${ghc.targetPrefix}ghc \
+        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
