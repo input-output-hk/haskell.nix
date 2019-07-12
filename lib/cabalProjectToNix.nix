@@ -31,7 +31,9 @@ let
     find . -name package.yaml -exec hpack "{}" \;
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
-    HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure
+    HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure \
+        --with-ghc=${ghc.targetPrefix}ghc \
+        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
