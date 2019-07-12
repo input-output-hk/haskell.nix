@@ -44,7 +44,7 @@ in
       cp ${./pkgb/src}/*.hs .
 
       printf "checking that the shell env has the dependencies...\n" >& 2
-      ${env.ghc}/bin/runghc conduit.hs
+      ${env.ghc}/bin/runghc conduit-test.hs
 
       touch $out
     '';
