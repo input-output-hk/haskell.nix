@@ -169,26 +169,25 @@ let
     mv $out/pkgs.nix $out/default.nix
   '');
   plan = import "${plan-nix}";
-in
-  plan // {
+in {
+  nix = plan-nix;
+  pkgs = plan // {
     extras = hackage: let old = (plan.extras hackage).packages; in {
       packages = pkgs.lib.attrsets.mapAttrs (name: value:
         {...}@args:
           let oldPkg = import value args;
-              oldSrc = toString oldPkg.src.content;
-              srcRepoPrefix = toString plan-nix + "/.source-repository-packages/";
-              packageSrc = if pkgs.lib.strings.hasPrefix srcRepoPrefix oldSrc
+              subDir = pkgs.lib.strings.removePrefix "/" (
+                pkgs.lib.strings.removePrefix (toString plan-nix)
+                  (toString oldPkg.src.content));
+              srcRepoPrefix = ".source-repository-packages/";
+              packageSrc = if pkgs.lib.strings.hasPrefix srcRepoPrefix subDir
                 then
                   pkgs.lib.lists.elemAt fixedProject.sourceRepos (
-                  	pkgs.lib.strings.toInt (pkgs.lib.strings.removePrefix srcRepoPrefix oldSrc))
-                else
-                  haskellLib.cleanSourceWith {
-                    inherit src;
-                    subDir = pkgs.lib.strings.replaceStrings
-                      [(toString plan-nix + "/")] [""] oldSrc;
-                  };
+                  	pkgs.lib.strings.toInt (pkgs.lib.strings.removePrefix srcRepoPrefix subDir))
+                else haskellLib.cleanSourceWith { inherit src subDir; };
           in oldPkg // {
             src = (pkgs.lib).mkDefault packageSrc;
           }) old;
     };
-  }
+  };
+}
