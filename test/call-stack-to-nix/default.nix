@@ -4,9 +4,9 @@ with stdenv.lib;
 
 let
   pkgSet = mkStackPkgSet {
-    stack-pkgs = builtins.trace "Calling callStackToNix!" (import (callStackToNix {
+    stack-pkgs = import (callStackToNix {
       src = ../stack-simple;
-    }));
+    });
     pkg-def-extras = [];
     modules = [];
   };
