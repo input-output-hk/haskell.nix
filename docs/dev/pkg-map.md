@@ -28,6 +28,11 @@ nixpkgs.overlays = [
 ];
 ```
 
+### Haskell component/package configuration
+
+This is not implemented yet, tracked by issue
+[#198](https://github.com/input-output-hk/haskell.nix/issues/198).
+
 ### Mapping in Haskell.nix
 
 Alternatively, if the name is commonly used, an alias can be added to
@@ -35,3 +40,7 @@ the Haskell.nix sources, so that it's solved for all users.
 
 * [`lib/pkgconf-nixpkgs-map.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/pkgconf-nixpkgs-map.nix) - for `pkgconfig-depends`
 * [`lib/system-nixpkgs-map.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/system-nixpkgs-map.nix) - for `build-tool-depends`, `frameworks`, `extra-libraries`, etc.
+
+!!! tip "Open a PR"
+    Please go ahead and open a [pull request](https://github.com/input-output-hk/haskell.nix/pulls)
+    to improve the package mappings.
