@@ -146,9 +146,6 @@ let
     nix-tools = buildPackages.nix-tools-cross-compiled;
     # TODO perhaps there is a cleaner way to get a suitable nix-tools.
 
-    # Function to call stackToNix
-    callStackToNix = buildPackages.callPackage ./call-stack-to-nix.nix {};
-
     # Snapshots of Hackage and Stackage, converted to Nix expressions,
     # regularly updated.
     inherit hackageSrc stackageSrc;
@@ -192,9 +189,16 @@ let
 
     update-index-state-hashes = self.callPackage ./scripts/update-index-state-hashes.nix {};
 
+    # Function to call stackToNix
+    callStackToNix = import ./lib/call-stack-to-nix.nix {
+      pkgs = buildPackages.pkgs;
+      inherit (buildPackages.pkgs) runCommand;
+      inherit (buildPackages) nix-tools;
+    };
+
     # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
     # Resulting nix files are added to nix-plan subdirectory.
-    callCabalProjectToNix = import ./lib/cabalProjectToNix.nix {
+    callCabalProjectToNix = import ./lib/call-cabal-project-to-nix.nix {
       index-state-hashes = import indexStateHashesPath;
       inherit (buildPackages) dotCabal;
       pkgs = buildPackages.pkgs; # buildPackages;

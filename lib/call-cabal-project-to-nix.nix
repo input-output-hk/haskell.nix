@@ -17,7 +17,7 @@ let
         type == "directory" ||
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
-  plan = runCommand "plan" {
+  plan = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
     tmp=$(mktemp -d)
@@ -78,7 +78,7 @@ in
   #   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
   #   buildInputs = [ plan src ];
   # }
-  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
+  runCommand "plan-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
     mkdir $out
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
     rsync -a "${src}/" "$out/"

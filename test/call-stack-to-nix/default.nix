@@ -4,13 +4,13 @@ with stdenv.lib;
 
 let
   pkgSet = mkStackPkgSet {
-    stack-pkgs = callStackToNix { src = ./.; };
+    stack-pkgs = builtins.trace "Calling callStackToNix!" (import (callStackToNix {
+      src = ../stack-simple;
+    }));
     pkg-def-extras = [];
     modules = [];
   };
-
   packages = pkgSet.config.hsPkgs;
-
 in
   stdenv.mkDerivation {
     name = "callStackToNix-test";
