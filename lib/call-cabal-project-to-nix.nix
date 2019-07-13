@@ -17,7 +17,7 @@ let
         type == "directory" ||
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
     };
-  plan = runCommand "plan" {
+  plan = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
     tmp=$(mktemp -d)
@@ -31,7 +31,9 @@ let
     find . -name package.yaml -exec hpack "{}" \;
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
-    HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure
+    HOME=${dotCabal { inherit index-state; sha256 = index-sha256; }} cabal new-configure \
+        --with-ghc=${ghc.targetPrefix}ghc \
+        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
 
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
@@ -76,7 +78,7 @@ in
   #   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
   #   buildInputs = [ plan src ];
   # }
-  runCommand "plan-and-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
+  runCommand "plan-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
     mkdir $out
     # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
     rsync -a "${src}/" "$out/"
