@@ -1,4 +1,5 @@
 # pkgconfig entries to nixpkgs map
+# See ../docs/dev/pkg-map.md
 pkgs:
   pkgs.lib.mapAttrs (name: value: [ value ]) pkgs //
   {

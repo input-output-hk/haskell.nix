@@ -39,8 +39,9 @@ pages:
     - 'IOHKs nix library': iohk-nix.md
   - 'Dev Notes':
     - 'Architecture': dev/dev-architecture.md
-    - 'Removing withPackage wrapper': dev/removing-with-package-wrapper.md
     - 'Maintainer Scripts': dev/maintainer-scripts.md
+    - 'Mapping non-Haskell dependencies to Nixpkgs': dev/pkg-map.md
     - 'Nixpkgs Pin': dev/nixpkgs-pin.md
+    - 'Removing withPackage wrapper': dev/removing-with-package-wrapper.md
     - 'Test Suite': dev/tests.md
   - 'ChangeLog': changelog.md

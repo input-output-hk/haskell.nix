@@ -142,6 +142,7 @@
             (hsPkgs.http-client-tls)
             (hsPkgs.http-client)
             (hsPkgs.http-types)
+            (hsPkgs.unordered-containers)
             ];
           };
         "truncate-index" = {
