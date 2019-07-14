@@ -16,7 +16,7 @@ let
       frameworks = [];
       doExactConfig = false;
     };
-  }; 
+  };
 
 in
  stdenv.lib.fix (drv:

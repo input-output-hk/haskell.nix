@@ -40,6 +40,8 @@
 }:
 
 let
+  cleanSrc = haskellLib.cleanCabalComponent package component src;
+
   fullName = if haskellLib.isAll componentId
     then "${name}-all"
     else "${name}-${componentId.ctype}-${componentId.cname}";
@@ -112,7 +114,9 @@ in stdenv.lib.fix (drv:
 stdenv.mkDerivation ({
   name = fullName;
 
-  inherit src doCheck doCrossCheck dontPatchELF dontStrip;
+  src = cleanSrc;
+
+  inherit doCheck doCrossCheck dontPatchELF dontStrip;
 
   passthru = {
     inherit (package) identifier;
