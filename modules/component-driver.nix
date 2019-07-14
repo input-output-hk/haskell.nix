@@ -13,8 +13,13 @@ in
   options.nonReinstallablePkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;
   };
+  options.reinstallableLibGhc = lib.mkOption {
+    type = lib.types.bool;
+    default = false;
+    description = "Is lib:ghc reinstallable?";
+  };
 
-  # Dependencies
+  # Dependencies (with reinstallable-lib:ghc)
   # 
   #              .--------.           .------------------.
   #              | pretty | < ------- | template-haskell |
@@ -31,10 +36,13 @@ in
   #       |       .-----.        |  '-- > |-------or-------|
   #       '---- > | rts | < -----'        | integer-gmp    |
   #               '-----'                 '----------------'
+  #
+  # without reinstallable-lib:ghc, this is significantly larger.
 
   config.nonReinstallablePkgs =
     [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-      "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell" ];
+      "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell" ]
+    ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
