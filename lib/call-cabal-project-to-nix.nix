@@ -34,11 +34,11 @@ let
     in { fst = pkgs.lib.lists.take n list; snd = pkgs.lib.lists.drop n list; };
 
   # Parse lines of a source-repository-package block
-  parseBlockLines = blockLines: builtins.listToAttrs (builtins.map (s:
+  parseBlockLines = blockLines: builtins.listToAttrs (builtins.concatMap (s:
     let pair = builtins.match " *([^:]*): *(.*)" s;
-    in pkgs.lib.attrsets.nameValuePair
+    in pkgs.lib.optional (pair != null) (pkgs.lib.attrsets.nameValuePair
           (builtins.head pair)
-          (builtins.elemAt pair 1)) blockLines);
+          (builtins.elemAt pair 1))) blockLines);
 
   fetchRepo = repo: (pkgs.fetchgit {
     url = repo.location;
@@ -57,7 +57,7 @@ let
       if attrs."--sha256" or "" == ""
         then {
           sourceRepo = [];
-          otherText = block;
+          otherText = "\nsource-repository-package\n" + block;
         }
         else {
           sourceRepo = [ (fetchRepo attrs) ];
