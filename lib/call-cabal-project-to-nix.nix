@@ -24,7 +24,10 @@ let
   # you can pass the project in as a string.
   rawCabalProject = if cabalProject != null
     then cabalProject
-    else builtins.readFile (cabalFiles.origSrc + "/cabal.project");
+    else
+      if ((builtins.readDir cabalFiles.origSrc)."cabal.project" or "") == "regular"
+        then builtins.readFile (cabalFiles.origSrc + "/cabal.project")
+        else null;
 
   span = pred: list:
     let n = pkgs.lib.lists.foldr (x: acc: if pred x then acc + 1 else 0) 0 list;
@@ -61,6 +64,8 @@ let
           otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
         };
 
+  # Deal with source-repository-packages in a way that will work on
+  # hydra build agents (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
   # packages: block containing nix sotre paths of the fetched repos.
   replaceSoureRepos = projectFile:
@@ -69,19 +74,40 @@ let
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map parseBlock (pkgs.lib.lists.drop 1 blocks);
       sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
-    in {
-      otherText = pkgs.lib.strings.concatStringsSep "\n" (
+      otherText = pkgs.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
-        ++ (builtins.map (x: x.otherText) repoBlocks));
+        ++ (builtins.map (x: x.otherText) repoBlocks)));
+    in {
       inherit sourceRepos;
+      makeFixedProjectFile = ''
+        cp -f ${otherText} ./cabal.project
+        chmod +w -R ./cabal.project
+        echo "packages:" >> ./cabal.project
+        mkdir -p ./.source-repository-packages
+      '' +
+        ( pkgs.lib.strings.concatStrings (
+            pkgs.lib.lists.zipListsWith (n: f: ''
+              mkdir -p ./.source-repository-packages/${builtins.toString n}
+              rsync -a --prune-empty-dirs \
+                --include '*/' --include '*.cabal' --include 'package.yaml' \
+                --exclude '*' \
+                 "${f}/" "./.source-repository-packages/${builtins.toString n}/"
+              echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
+            '')
+              (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
+              sourceRepos
+          )
+        );
     };
 
-  fixedProject = replaceSoureRepos rawCabalProject;
+  fixedProject =
+    if rawCabalProject == null
+      then {
+        sourceRepos = [];
+        makeFixedProjectFile = "";
+      }
+      else replaceSoureRepos rawCabalProject;
 
-  # Deal with source-repository-packages in a way that will work on
-  # hydra build agents (as long as a sha256 is included).
-  fixedProjectFile = pkgs.writeText "cabal.project" fixedProject.otherText;
-  
   plan = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } (''
@@ -89,24 +115,7 @@ let
     cd $tmp
     cp -r ${cabalFiles}/* .
     chmod +w -R .
-    cp -f ${fixedProjectFile} ./cabal.project
-    chmod +w -R ./cabal.project
-    echo "packages:" >> ./cabal.project
-    mkdir -p ./.source-repository-packages
-  '' +
-    ( pkgs.lib.strings.concatStrings (
-        pkgs.lib.lists.zipListsWith (n: f: ''
-          mkdir -p ./.source-repository-packages/${builtins.toString n}
-          rsync -a --prune-empty-dirs \
-            --include '*/' --include '*.cabal' --include 'package.yaml' \
-            --exclude '*' \
-             "${f}/" "./.source-repository-packages/${builtins.toString n}/"
-          echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
-        '')
-          (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
-          fixedProject.sourceRepos
-      )
-    ) + ''
+    ${fixedProject.makeFixedProjectFile}
     # warning: this may not generate the proper cabal file.
     # hpack allows globbing, and turns that into module lists
     # without the source available (we cleaneSourceWith'd it),
