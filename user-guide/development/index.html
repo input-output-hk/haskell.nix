@@ -89,6 +89,9 @@
     <li class="toctree-l3"><a href="#how-to-get-a-development-shell-for-a-multi-package-project">How to get a development shell for a multi-package project</a></li>
     
 
+    <li class="toctree-l3"><a href="#how-to-get-a-local-hoogle-index">How to get a local Hoogle index</a></li>
+    
+
     <li class="toctree-l3"><a href="#how-to-get-an-ad-hoc-development-shell-including-certain-packages">How to get an ad-hoc development shell including certain packages</a></li>
     
 
@@ -275,6 +278,20 @@ in
   }
 </code></pre>
 
+<h2 id="how-to-get-a-local-hoogle-index">How to get a local Hoogle index<a class="headerlink" href="#how-to-get-a-local-hoogle-index" title="Permanent link">&para;</a></h2>
+<p>If you need a local Hoogle for all the dependencies of your project create this file</p>
+<pre><code class="nix"># shell-hoogle.nix
+let
+  hsPkgs = import ./default.nix {};
+in
+  hsPkgs.shellFor {
+      packages = ps: [ps.my-package];
+      withHoogle = true;
+  }
+</code></pre>
+
+<p>and  run <code>nix-shell shell-hoogle.nix --run "hoogle server --local"</code>.
+This will open a local Hoogle server at <code>http://127.0.0.1:8080</code>.</p>
 <h2 id="how-to-get-an-ad-hoc-development-shell-including-certain-packages">How to get an ad-hoc development shell including certain packages<a class="headerlink" href="#how-to-get-an-ad-hoc-development-shell-including-certain-packages" title="Permanent link">&para;</a></h2>
 <p>This creates a development environment with the given packages
 registered in the package database. The <code>ghcWithPackages</code> function
