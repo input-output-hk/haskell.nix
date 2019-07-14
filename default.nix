@@ -211,6 +211,35 @@ let
     source-pins = self.callPackage ./lib/make-source-pins.nix {
       sources = [ hackageSrc stackageSrc pkgs.path ];
     };
+
+    # Utility
+    stackage-lts-set = lts:
+      assert (if !(pkgs.lib.hasPrefix "lts-" lts || pkgs.lib.hasPrefix "nightly-" lts) then throw "argument to stackage-lts-set needs to start with either lts- or nightly-!" else true);
+      let src = buildPackages.pkgs.runCommand "stackage-${lts}-set-src" { nativeBuildInputs = [ buildPackages.nix-tools ]; } ''
+        mkdir -p $out
+        echo "resolver: ${lts}" > $out/stack.yaml
+        '';
+      in let stack-pkgs = import (callStackToNix { inherit src; });
+      in let pkg-set = mkStackPkgSet { inherit stack-pkgs; };
+      in pkg-set.config.hsPkgs;
+
+    hackage-package =
+      { name
+      , version
+      , index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
+      }:
+      let tarball = pkgs.fetchurl {
+        url = "mirror://hackage/${name}-${version}.tar.gz";
+        inherit (hackage.${name}.${version}) sha256; };
+      in let src = buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
+        tmp=$(mktemp -d)
+        cd $tmp
+        tar xzf ${tarball}
+        mv "${name}-${version}" $out
+        '';
+      in let plan-pkgs = import (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
+      in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
+      in pkg-set.config.hsPkgs.${name};
   });
 
 in
