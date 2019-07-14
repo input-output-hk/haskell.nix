@@ -68,7 +68,7 @@ in { identifier, component, fullName, flags ? {} }:
     echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
     echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
 
-    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
+    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library or p}/package.conf.d" p.identifier.name) component.depends}
     ${lib.concatMapStringsSep "\n" (exactDep "") nonReinstallablePkgs}
 
   ''
