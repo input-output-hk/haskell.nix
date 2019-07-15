@@ -213,11 +213,38 @@
             <div class="section">
               
                 <h1 id="user-guide">User Guide<a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h1>
+<p><a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> can be use for two different use cases:</p>
+<ol>
+<li>to build a specific package from hackage or a <a href="https://stackage.org">stackage</a> lts or nightly set.</li>
+</ol>
+<p>To build a package, say <a href="https://hackage.haskell.org/package/lens">lens</a>, from a stackage snapshot, say <a href="https://www.stackage.org/lts-13.28">lts-13.28</a>,
+   you could run
+   <code>bash
+   nix build '(with import ./. {}; snapshots."lts-13.28").lens.components.library'</code>
+   which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the lens package as fixed
+   by the <a href="https://www.stackage.org/lts-13.28">lts-13.28</a> stackage snapshot.</p>
+<p>To build any package from hackage, say <a href="https://hackage.haskell.org/package/lens">lens</a>, in version, say 4.17.1, you
+   could run
+   <code>bash
+   nix build '(with import ./. {}; (hackage-package { name = "lens"; version = "4.17.1"; })).components.library'</code>
+   which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package
+   from hackage.  The dependencies would be solved against the most recent 
+   <a href="https://github.com/input-output-hk/hackage.nix/blob/master/index-state-hashes.nix">hackage-index-state</a> that comes via the <a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> pin with your
+   <a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a> checkout.  A specific one can be specified as well:
+   <code>bash
+   nix build '(with import ./. {}; (hackage-package { name = "lens"; version = "4.17.1"; index-state = "2019-07-14T00:00:00Z"; })).components.library'</code>
+   which would use the hackage index as of <code>2019-07-14T00:00:00Z</code> to produce a build plan
+   for the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package.</p>
+<ol>
+<li>
+<p>to build a stack or cabal project.</p>
 <p>So you want to use <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> with your stack or cabal project. The
 general approach will be to pick the right tool from <code>nix-tools</code> and
 produce a <code>pkgs.nix</code> expression.  Getting a copy of the <code>nix-tools</code>
 (and potentially the <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> source), will then equip us to
 produce derivations that we can <code>nix build</code>.</p>
+</li>
+</ol>
 <h2 id="installing-nix-tools">Installing <code>nix-tools</code><a class="headerlink" href="#installing-nix-tools" title="Permanent link">&para;</a></h2>
 <p>To build the latest <code>nix-tools</code> and store the result at <code>./nt</code>, run:</p>
 <pre><code class="bash">nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools --out-link nt
