@@ -212,17 +212,13 @@ let
       sources = [ hackageSrc stackageSrc pkgs.path ];
     };
 
-    # Utility
-    stackage-lts-set = lts:
-      assert (if !(pkgs.lib.hasPrefix "lts-" lts || pkgs.lib.hasPrefix "nightly-" lts) then throw "argument to stackage-lts-set needs to start with either lts- or nightly-!" else true);
-      let src = buildPackages.pkgs.runCommand "stackage-${lts}-set-src" { nativeBuildInputs = [ buildPackages.nix-tools ]; } ''
-        mkdir -p $out
-        echo "resolver: ${lts}" > $out/stack.yaml
-        '';
-      in let stack-pkgs = import (callStackToNix { inherit src; });
-      in let pkg-set = mkStackPkgSet { inherit stack-pkgs; };
-      in pkg-set.config.hsPkgs;
-
+    # Build a specific package (name, version) against a given index-stage
+    # from hackage.  This is useful if you want to build an executable from
+    # a given package.
+    # NB: If no explicit index-state is provided the most recent one from
+    # the index-state-hashes is used.  This guarantees reproducability wrt
+    # to the haskell.nix revision.  If reproducability beyond haskell.nix
+    # is required, a specific index-state should be provided!
     hackage-package =
       { name
       , version
