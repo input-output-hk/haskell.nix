@@ -9,7 +9,12 @@ let
   exactDep = pdbArg: p: ''
     if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
-    fi
+    elif id=$(target-pkg ${pdbArg} field "z-${p}-z-*" id --simple-output); then
+      name=$(target-pkg ${pdbArg} field "z-${p}-z-*" name --simple-output)
+      # so we are dealing with a sublib. As we build sublibs separately, the above
+      # query should be safe.
+      echo "--dependency=''${name#z-${p}-z-}=$id" >> $out/configure-flags
+    fi     
     if ver=$(target-pkg ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
