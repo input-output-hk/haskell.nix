@@ -211,6 +211,31 @@ let
     source-pins = self.callPackage ./lib/make-source-pins.nix {
       sources = [ hackageSrc stackageSrc pkgs.path ];
     };
+
+    # Build a specific package (name, version) against a given index-stage
+    # from hackage.  This is useful if you want to build an executable from
+    # a given package.
+    # NB: If no explicit index-state is provided the most recent one from
+    # the index-state-hashes is used.  This guarantees reproducability wrt
+    # to the haskell.nix revision.  If reproducability beyond haskell.nix
+    # is required, a specific index-state should be provided!
+    hackage-package =
+      { name
+      , version
+      , index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
+      }:
+      let tarball = pkgs.fetchurl {
+        url = "mirror://hackage/${name}-${version}.tar.gz";
+        inherit (hackage.${name}.${version}) sha256; };
+      in let src = buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
+        tmp=$(mktemp -d)
+        cd $tmp
+        tar xzf ${tarball}
+        mv "${name}-${version}" $out
+        '';
+      in let plan-pkgs = import (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
+      in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
+      in pkg-set.config.hsPkgs.${name};
   });
 
 in

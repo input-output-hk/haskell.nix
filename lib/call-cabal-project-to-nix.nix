@@ -10,19 +10,20 @@ assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
          else true);
 let
-  cabalFiles =
-    pkgs.lib.cleanSourceWith {
-      inherit src;
+  maybeCleanedSource =
+    if pkgs.lib.canCleanSource src
+    then pkgs.lib.cleanSourceWith {
+      src = builtins.trace "src = ${src};" src;
       filter = path: type:
         type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ];
-    };
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ]; }
+    else  src;
   plan = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
-    cp -r ${cabalFiles}/* .
+    cp -r ${maybeCleanedSource}/* .
     chmod +w -R .
     # warning: this may not generate the proper cabal file.
     # hpack allows globbing, and turns that into module lists
