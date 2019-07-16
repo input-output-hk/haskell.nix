@@ -6,6 +6,20 @@ let
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
   '';
 
+  # This is a bit of a hack.  So we'll have a slightly longer explaination here:
+  # exactDep will pass --exact-configuration to the `SETUP_HS confiugre` command.
+  # This requires us to pass --dependency={dep name}={pkg id}.  The dependency
+  # name will usually be the name of the package `p`, which we can locate in the
+  # package-db, passed in via `pdbArg`.  Thus querying the package-db for the
+  # id field for package `p`, will unsually provide is with the right value.  Sublibs
+  # need a bit of special handling:
+  #
+  # - Sublibs: if the dependency is a sublibrary of a package, we need to use
+  #            the sublibrary's name for the dep name, and lookup the sublibraries
+  #            pkg id for z-{pkg name}-z-{sublib name}.  As we do not provide the
+  #            sublib name to exactDep, as we don't have access to it at the call-site,
+  #            we resort to a bit of globbing, which (as pkg db's should contain only
+  #            a single package) work.
   exactDep = pdbArg: p: ''
     if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
