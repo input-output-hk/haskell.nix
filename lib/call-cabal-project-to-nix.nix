@@ -93,8 +93,8 @@ let
           otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
         };
 
-  # Deal with source-repository-packages in a way that will work on
-  # hydra build agents (as long as a sha256 is included).
+  # Deal with source-repository-packages in a way that will work in
+  # restricted-eval mode (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
   # packages: block containing nix sotre paths of the fetched repos.
   replaceSoureRepos = projectFile:
