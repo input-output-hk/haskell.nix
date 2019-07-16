@@ -104,7 +104,9 @@ let
       in self.mkPkgSet {
         inherit pkg-def;
         pkg-def-extras = [ stack-pkgs.extras ] ++ pkg-def-extras;
-        modules = [ patchesModule ] ++ modules;
+        # set doExactConfig = true. The stackage set should be consistent
+        # and we should trust stackage here!
+        modules = [ { doExactConfig = true; } patchesModule ] ++ modules;
       };
 
     # Create a Haskell package set based on a Cabal configuration.
@@ -122,7 +124,9 @@ let
       in self.mkPkgSet {
         inherit pkg-def;
         pkg-def-extras = [ plan-pkgs.extras ] ++ pkg-def-extras;
-        modules = [ patchesModule ] ++ modules;
+        # set doExactConfig = true, as we trust cabals resolution for
+        # the plan.
+        modules = [ { doExactConfig = true; } patchesModule ] ++ modules;
       };
 
     # Package sets for all stackage snapshots.
