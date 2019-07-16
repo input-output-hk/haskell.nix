@@ -36,8 +36,11 @@ let
     inherit component;
   };
   ghcEnv = ghcForComponent {
-    componentName = name;
     inherit configFiles;
+    componentName = name;
+    postInstall = lib.optionalString withHoogle ''
+      ln -s ${hoogleIndex}/bin/hoogle $out/bin
+    '';
   };
 
   hoogleIndex = let
