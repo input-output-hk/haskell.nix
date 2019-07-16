@@ -26,8 +26,7 @@ let
     else builtins.readFile ((maybeCleanedSource.origSrc or maybeCleanedSource) + "/cabal.project");
 
   # Look for a index-state: field in the cabal.project file
-  index-state-found = if index-state != null then index-state
-    else
+  parseIndexState = rawCabalProject:
       let
         indexState = pkgs.lib.lists.concatLists (
           pkgs.lib.lists.filter (l: l != null)
@@ -35,6 +34,10 @@ let
               (pkgs.lib.splitString "\n" rawCabalProject)));
       in
         pkgs.lib.lists.head (indexState ++ [ null ]);
+
+  index-state-found = if index-state != null
+    then index-state
+    else parseIndexState rawCabalProject;
 
   # Lookup hash for the index state we found
   index-sha256-found = if index-sha256 != null
