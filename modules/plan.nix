@@ -71,9 +71,7 @@ let
           doHaddock = mkOption {
             description = "Enable building of the Haddock documentation from the annotated Haskell source code.";
             type = bool;
-            # default to false for performance. Don't build haddocks unless 
-            # requested.
-            default = (def.doHaddock or false);
+            default = (def.doHaddock or true);
           };
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
