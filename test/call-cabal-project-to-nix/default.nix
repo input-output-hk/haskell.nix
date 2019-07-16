@@ -8,6 +8,8 @@ let
       index-state = "2019-04-30T00:00:00Z";
       # reuse the cabal-simple test project
       src = ../cabal-simple;
+      # Hydra currently has issues reading from files in the store
+      cabalProject = builtins.readFile ../cabal-simple/cabal.project;
     });
   };
   packages = pkgSet.config.hsPkgs;
