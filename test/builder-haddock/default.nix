@@ -13,7 +13,6 @@ let
 
       {
         # Add a hook to the haddock phase
-        packages.test-haddock.doHaddock = true;
         packages.test-haddock.postHaddock = ''
           echo "==="
           echo "This is the postHaddock hook. The files are:"
