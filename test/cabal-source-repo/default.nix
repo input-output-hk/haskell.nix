@@ -7,7 +7,7 @@ let
     plan-pkgs = import (callCabalProjectToNix {
       index-state = "2019-04-30T00:00:00Z";
       # reuse the cabal-simple test project
-      src = ../cabal-simple;
+      src = ./.;
     });
   };
   packages = pkgSet.config.hsPkgs;
@@ -16,7 +16,7 @@ in
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"
+      exe="${packages.use-cabal-simple.components.exes.use-cabal-simple}/bin/use-cabal-simple"
 
       printf "checking whether executable runs... " >& 2
       $exe
