@@ -3,26 +3,36 @@
 { setup-depends, package, name, src, flags }:
 
 let
+  component = {
+    depends = setup-depends;
+    libs = [];
+    frameworks = [];
+    doExactConfig = false;
+    hsSourceDirs = [];
+    includeDirs = [];
+    asmSources = [];
+    cSources = [];
+    cmmSources = [];
+    cxxSources = [];
+    jsSources = [];
+    extraSrcFiles = [ "Setup.hs" "Setup.lhs" ];
+  };
+  cleanSrc = haskellLib.cleanCabalComponent package component src;
+
   fullName = "${name}-setup";
 
   includeGhcPackage = lib.any (p: p.identifier.name == "ghc") setup-depends;
 
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
-    inherit fullName flags;
-    component = {
-      depends = setup-depends;
-      libs = [];
-      frameworks = [];
-      doExactConfig = false;
-    };
-  }; 
+    inherit fullName flags component;
+  };
 
 in
  stdenv.lib.fix (drv:
     stdenv.mkDerivation {
       name = "${fullName}";
-      inherit src;
+      src = cleanSrc;
       nativeBuildInputs = [ghc];
 
       CABAL_CONFIG = configFiles + /cabal.config;

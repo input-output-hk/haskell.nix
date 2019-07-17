@@ -177,12 +177,13 @@ let
 
     mkLocalHackageRepo = import ./mk-local-hackage-repo { inherit (self) hackageTarball; inherit pkgs; };
 
-    dotCabal = { index-state, sha256 }@args:
-      pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ pkgs.cabal-install ]; } ''
+    dotCabal = { index-state, sha256, cabal-install ? pkgs.cabal-install }@args:
+      pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
         mkdir -p $out/.cabal
         cat <<EOF > $out/.cabal/config
         repository cached
-          url: file:${self.mkLocalHackageRepo args}
+          url: file:${self.mkLocalHackageRepo
+            (pkgs.lib.attrsets.filterAttrs (n: v: n != "cabal-install") args)}
           secure: True
           root-keys:
           key-threshold: 0
@@ -204,8 +205,8 @@ let
     # Resulting nix files are added to nix-plan subdirectory.
     callCabalProjectToNix = import ./lib/call-cabal-project-to-nix.nix {
       index-state-hashes = import indexStateHashesPath;
-      inherit (buildPackages) dotCabal;
-      pkgs = buildPackages.pkgs; # buildPackages;
+      inherit (buildPackages) dotCabal haskellLib;
+      pkgs = buildPackages.pkgs;
       inherit (buildPackages.pkgs.haskellPackages) hpack;
       inherit (buildPackages.pkgs) runCommand cabal-install ghc symlinkJoin cacert;
       inherit (buildPackages) nix-tools;
