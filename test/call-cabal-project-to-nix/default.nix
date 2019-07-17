@@ -4,11 +4,11 @@ with stdenv.lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import (callCabalProjectToNix {
+    plan-pkgs = (callCabalProjectToNix {
       index-state = "2019-04-30T00:00:00Z";
       # reuse the cabal-simple test project
       src = ../cabal-simple;
-    });
+    }).pkgs;
   };
   packages = pkgSet.config.hsPkgs;
 in
