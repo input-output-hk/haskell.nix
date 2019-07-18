@@ -8,7 +8,11 @@ let
     libs = [];
     frameworks = [];
     doExactConfig = false;
-    hsSourceDirs = [];
+    # We have to set hsSourceDirs or cleanCabalComponent will
+    # include everything (and as a result all the components of
+    # the package will depend on eveything in the package).
+    # TODO find a better way
+    hsSourceDirs = ["setup-src"];
     includeDirs = [];
     asmSources = [];
     cSources = [];

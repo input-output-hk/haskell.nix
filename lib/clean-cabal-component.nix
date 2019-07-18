@@ -15,7 +15,6 @@ let
   normalizeRelativeDir = dir:
     let p = normalizeRelativePath dir;
     in if p == "" then "" else p + "/";
-  # globMatch = pat: s: builtins.match ()
 in
   if srcStr' == null || package.detailLevel != "FullDetails"
     then src
@@ -60,8 +59,11 @@ in
           let
             srcStrLen = lib.strings.stringLength srcStr;
             rPath = lib.strings.substring (srcStrLen + 1) (lib.strings.stringLength path - srcStrLen - 1) path;
+            # This is a handy way to find out why different files are included
+            # traceReason = reason: v: if v then builtins.trace (rPath + " : " + reason) true else false;
+            traceReason = reason: v: v
           in
-            # Directories we need
+            traceReason "directory is needed" (
               lib.any (d: lib.strings.hasPrefix (rPath + "/") d) (
                    dirsNeeded
                 ++ package.extraSrcFiles
@@ -69,22 +71,15 @@ in
                 ++ package.extraDocFiles
                 ++ builtins.map (f:
                   dataDir + (if dataDir == "" then "" else "/") + f) package.dataFiles
-                ++ otherSourceFiles)
-            # Project files
-            || lib.strings.hasSuffix ".cabal" rPath
-            || rPath == "package.yaml"
-            # Data Files
-            || (lib.strings.hasPrefix dataDir rPath
+                ++ otherSourceFiles))
+            || traceReason "cabal package definition" (lib.strings.hasSuffix ".cabal" rPath)
+            || traceReason "hpack package defintion" (rPath == "package.yaml")
+            || traceReason "data file" (lib.strings.hasPrefix dataDir rPath
               && dataFileMatch rPath)
-            # Haskell Source Files
-            || lib.any (d: lib.strings.hasPrefix d rPath) hsSourceDirs
-            || lib.any (d: lib.strings.hasPrefix d rPath) includeDirs
-            # License Files
-            || licenseMatch rPath
-            # Extra Source Files
-            || extraSrcMatch rPath
-            # Extra Doc Files
-            || extraDocMatch rPath
-            # Other source files
-            || lib.any (f: f == rPath) otherSourceFiles;
+            || traceReason "haskell source dir" (lib.any (d: lib.strings.hasPrefix d rPath) hsSourceDirs)
+            || traceReason "include dir" (lib.any (d: lib.strings.hasPrefix d rPath) includeDirs)
+            || traceReason "license file" (licenseMatch rPath)
+            || traceReason "extra source file" (extraSrcMatch rPath)
+            || traceReason "extra doc file" (extraDocMatch rPath)
+            || traceReason "other source file" (lib.any (f: f == rPath) otherSourceFiles);
       }
