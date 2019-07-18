@@ -238,7 +238,7 @@ let
         tar xzf ${tarball}
         mv "${name}-${version}" $out
         '';
-      in let plan-pkgs = import (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
+      in let plan-pkgs = (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; }).pkgs;
       in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
       in pkg-set.config.hsPkgs.${name};
   });
