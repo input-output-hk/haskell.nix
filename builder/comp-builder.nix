@@ -40,7 +40,10 @@
 }:
 
 let
-  cleanSrc = haskellLib.cleanCabalComponent package component src;
+  # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
+  cleanSrc = if cabal-generator == "hpack"
+    then builtins.trace ("Cleaning component source not supported for hpack package : " + name) src
+    else haskellLib.cleanCabalComponent package component src;
 
   fullName = if haskellLib.isAll componentId
     then "${name}-all"
