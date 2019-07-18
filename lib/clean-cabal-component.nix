@@ -61,7 +61,7 @@ in
             rPath = lib.strings.substring (srcStrLen + 1) (lib.strings.stringLength path - srcStrLen - 1) path;
             # This is a handy way to find out why different files are included
             # traceReason = reason: v: if v then builtins.trace (rPath + " : " + reason) true else false;
-            traceReason = reason: v: v
+            traceReason = reason: v: v;
           in
             traceReason "directory is needed" (
               lib.any (d: lib.strings.hasPrefix (rPath + "/") d) (
