@@ -1,0 +1,13 @@
+diff --git a/utils/ghc-pkg/Main.hs b/utils/ghc-pkg/Main.hs
+index 69137eb4e4..d7411a7c75 100644
+--- a/utils/ghc-pkg/Main.hs
++++ b/utils/ghc-pkg/Main.hs
+@@ -1834,7 +1834,7 @@ liftIO k = V (k >>= \a -> return (a,[],[]))
+ reportValidateErrors :: Verbosity -> [ValidateError] -> [ValidateWarning]
+                      -> String -> Maybe Force -> IO Bool
+ reportValidateErrors verbosity es ws prefix mb_force = do
+-  mapM_ (warn . (prefix++)) ws
++  when (verbosity >= Normal) $ mapM_ (warn . (prefix++)) ws
+   oks <- mapM report es
+   return (and oks)
+   where

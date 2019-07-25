@@ -1,0 +1,210 @@
+From 01060db6d19c08d37e03675944339fe1ff598546 Mon Sep 17 00:00:00 2001
+From: Michael Peyton Jones <me@michaelpj.com>
+Date: Wed, 13 Mar 2019 11:46:56 +0000
+Subject: [PATCH] Visibility: handle multiple units with the same name
+
+Fixes #16228. The included test case is adapted from the reproduction in
+the issue, and fails without this patch.
+
+------
+
+We compute an initial visilibity mapping for units based on what is
+present in the package databases. To seed this, we compute a set of all
+the package configs to add visibilities for.
+
+However, this set was keyed off the unit's *package name*. This is
+correct, since we compare packages across databases by version. However,
+we would only ever consider a single, most-preferable unit from the
+database in which it was found.
+
+The effect of this was that only one of the libraries in a Cabal package
+would be added to this initial set. This would cause attempts to use
+modules from the omitted libraries to fail, claiming that the package
+was hidden (even though `ghc-pkg` would correctly show it as visible).
+
+The solution is simple: consider all units that are equi-preferable
+with the most-preferable unit.
+
+------
+
+Why wasn't this bug apparent to all people trying to use sub-libraries
+in Cabal? The answer is that Cabal explicitly passes `-package` and
+`-package-id` flags for all the packages it wants to use, rather than
+relying on the state of the package database. So this bug only really
+affects people who are trying to use package databases produced by Cabal
+outside of Cabal itself.
+
+One particular example of this is the way that the
+Nixpkgs Haskell infrastructure provides wrapped GHCs: typically these
+are equipped with a package database containing all the needed
+package dependencies, and the user is not expected to pass
+`-package` flags explicitly.
+---
+ compiler/main/Packages.hs                     | 29 ++++++++++++++-----
+ testsuite/tests/cabal/cabal10/Makefile        | 21 ++++++++++++++
+ testsuite/tests/cabal/cabal10/Setup.hs        |  2 ++
+ testsuite/tests/cabal/cabal10/Use.hs          |  3 ++
+ testsuite/tests/cabal/cabal10/all.T           |  9 ++++++
+ testsuite/tests/cabal/cabal10/cabal10.stdout  |  1 +
+ .../tests/cabal/cabal10/internal-lib.cabal    | 13 +++++++++
+ testsuite/tests/cabal/cabal10/src/TestLib.hs  |  1 +
+ 8 files changed, 72 insertions(+), 7 deletions(-)
+ create mode 100644 testsuite/tests/cabal/cabal10/Makefile
+ create mode 100644 testsuite/tests/cabal/cabal10/Setup.hs
+ create mode 100644 testsuite/tests/cabal/cabal10/Use.hs
+ create mode 100644 testsuite/tests/cabal/cabal10/all.T
+ create mode 100644 testsuite/tests/cabal/cabal10/cabal10.stdout
+ create mode 100644 testsuite/tests/cabal/cabal10/internal-lib.cabal
+ create mode 100644 testsuite/tests/cabal/cabal10/src/TestLib.hs
+
+diff --git a/compiler/main/Packages.hs b/compiler/main/Packages.hs
+index 44258de70c..47e4481ed8 100644
+--- a/compiler/main/Packages.hs
++++ b/compiler/main/Packages.hs
+@@ -1458,21 +1458,36 @@ mkPackageState dflags dbs preload0 = do
+   --
+   -- Calculate the initial set of packages, prior to any package flags.
+   -- This set contains the latest version of all valid (not unusable) packages,
+-  -- or is empty if we have -hide-all-packages
++  -- or is empty if we have -hide-all-packages.
++  --
++  -- Then create an initial visibility map with default visibilities for all
++  -- exposed, definite units.
+   --
+   let preferLater pkg pkg' =
+         case compareByPreference prec_map pkg pkg' of
+             GT -> pkg
+             _  -> pkg'
+-      calcInitial m pkg = addToUDFM_C preferLater m (fsPackageName pkg) pkg
+-      initial = if gopt Opt_HideAllPackages dflags
++      -- Inter-database comparisons are keyed by package name. Consequently we
++      -- key this map by the package name, storing a representative "winning" package
++      -- by preference.
++      addIfMorePreferable m pkg = addToUDFM_C preferLater m (fsPackageName pkg) pkg
++      maximallyPreferableReps = if gopt Opt_HideAllPackages dflags
+                     then emptyUDFM
+-                    else foldl' calcInitial emptyUDFM pkgs1
+-      vis_map1 = foldUDFM (\p vm ->
++                    else foldl' addIfMorePreferable emptyUDFM pkgs1
++      maximallyPreferable p =
++        case lookupUDFM maximallyPreferableReps (fsPackageName p) of
++          Nothing -> False
++          Just p' -> compareByPreference prec_map p p' == EQ
++      vis_map1 = foldl' (\vm p ->
+                             -- Note: we NEVER expose indefinite packages by
+                             -- default, because it's almost assuredly not
+                             -- what you want (no mix-in linking has occurred).
+-                            if exposed p && unitIdIsDefinite (packageConfigId p)
++                            -- Note: we consider all units that are equally
++                            -- preferable to the maximally preferable unit
++                            -- with that package name. This means we include
++                            -- other units in the same package in the same db,
++                            -- see #16228.
++                            if exposed p && unitIdIsDefinite (packageConfigId p) && maximallyPreferable p
+                                then Map.insert (packageConfigId p)
+                                                UnitVisibility {
+                                                  uv_expose_all = True,
+@@ -1483,7 +1498,7 @@ mkPackageState dflags dbs preload0 = do
+                                                }
+                                                vm
+                                else vm)
+-                         Map.empty initial
++                         Map.empty pkgs1
+ 
+   --
+   -- Compute a visibility map according to the command-line flags (-package,
+diff --git a/testsuite/tests/cabal/cabal10/Makefile b/testsuite/tests/cabal/cabal10/Makefile
+new file mode 100644
+index 0000000000..b59c964db4
+--- /dev/null
++++ b/testsuite/tests/cabal/cabal10/Makefile
+@@ -0,0 +1,21 @@
++TOP=../../..
++include $(TOP)/mk/boilerplate.mk
++include $(TOP)/mk/test.mk
++
++SETUP = ./Setup -v0
++
++# This test is for packages in internal libraries
++
++cabal10: clean
++	$(MAKE) clean
++	'$(TEST_HC)' $(TEST_HC_OPTS) -v0 --make Setup
++	$(SETUP) clean
++	$(SETUP) configure $(CABAL_MINIMAL_BUILD) --with-ghc='$(TEST_HC)' --ghc-options='$(TEST_HC_OPTS)'
++	$(SETUP) build
++	'$(TEST_HC)' $(TEST_HC_OPTS) -package-db dist/package.conf.inplace Use.hs
++ifneq "$(CLEANUP)" ""
++	$(MAKE) clean
++endif
++
++clean :
++	$(RM) -r */dist Setup$(exeext) *.o *.hi
+diff --git a/testsuite/tests/cabal/cabal10/Setup.hs b/testsuite/tests/cabal/cabal10/Setup.hs
+new file mode 100644
+index 0000000000..9a994af677
+--- /dev/null
++++ b/testsuite/tests/cabal/cabal10/Setup.hs
+@@ -0,0 +1,2 @@
++import Distribution.Simple
++main = defaultMain
+diff --git a/testsuite/tests/cabal/cabal10/Use.hs b/testsuite/tests/cabal/cabal10/Use.hs
+new file mode 100644
+index 0000000000..b770515501
+--- /dev/null
++++ b/testsuite/tests/cabal/cabal10/Use.hs
+@@ -0,0 +1,3 @@
++module Use where
++
++import TestLib
+diff --git a/testsuite/tests/cabal/cabal10/all.T b/testsuite/tests/cabal/cabal10/all.T
+new file mode 100644
+index 0000000000..778637d948
+--- /dev/null
++++ b/testsuite/tests/cabal/cabal10/all.T
+@@ -0,0 +1,9 @@
++if config.cleanup:
++   cleanup = 'CLEANUP=1'
++else:
++   cleanup = 'CLEANUP=0'
++
++test('cabal10',
++     extra_files(['Use.hs', 'Setup.hs', 'src/', 'internal-lib.cabal']),
++     run_command,
++     ['$MAKE -s --no-print-directory cabal10 ' + cleanup])
+diff --git a/testsuite/tests/cabal/cabal10/cabal10.stdout b/testsuite/tests/cabal/cabal10/cabal10.stdout
+new file mode 100644
+index 0000000000..b7ea26c0d1
+--- /dev/null
++++ b/testsuite/tests/cabal/cabal10/cabal10.stdout
+@@ -0,0 +1 @@
++[1 of 1] Compiling Use              ( Use.hs, Use.o )
+diff --git a/testsuite/tests/cabal/cabal10/internal-lib.cabal b/testsuite/tests/cabal/cabal10/internal-lib.cabal
+new file mode 100644
+index 0000000000..27e8ded0bf
+--- /dev/null
++++ b/testsuite/tests/cabal/cabal10/internal-lib.cabal
+@@ -0,0 +1,13 @@
++name:                internal-lib
++version:             0.1.0.0
++license:             BSD3
++build-type:          Simple
++cabal-version:       >=2.0
++
++library
++  hs-source-dirs:      src
++  exposed-modules:     TestLib
++  build-depends:       base
++  default-language:    Haskell2010
++
++library sublib
+diff --git a/testsuite/tests/cabal/cabal10/src/TestLib.hs b/testsuite/tests/cabal/cabal10/src/TestLib.hs
+new file mode 100644
+index 0000000000..c031432cb1
+--- /dev/null
++++ b/testsuite/tests/cabal/cabal10/src/TestLib.hs
+@@ -0,0 +1 @@
++module TestLib where
+-- 
+2.19.2
+
