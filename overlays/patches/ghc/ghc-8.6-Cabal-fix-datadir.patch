@@ -1,0 +1,21 @@
+Submodule libraries/Cabal contains modified content
+diff --git a/libraries/Cabal/Cabal/Distribution/Simple/Build/PathsModule.hs b/libraries/Cabal/Cabal/Distribution/Simple/Build/PathsModule.hs
+index 678ccbca3..ffa712e8a 100644
+--- a/libraries/Cabal/Cabal/Distribution/Simple/Build/PathsModule.hs
++++ b/libraries/Cabal/Cabal/Distribution/Simple/Build/PathsModule.hs
+@@ -192,10 +192,14 @@ generate pkg_descr lbi clbi =
+           bindir     = flat_bindir,
+           libdir     = flat_libdir,
+           dynlibdir  = flat_dynlibdir,
+-          datadir    = flat_datadir,
+           libexecdir = flat_libexecdir,
+           sysconfdir = flat_sysconfdir
+         } = absoluteComponentInstallDirs pkg_descr lbi cid NoCopyDest
++
++        InstallDirs {
++          datadir    = flat_datadir
++        } = absoluteInstallDirs pkg_descr lbi NoCopyDest
++
+         InstallDirs {
+           bindir     = flat_bindirrel,
+           libdir     = flat_libdirrel,

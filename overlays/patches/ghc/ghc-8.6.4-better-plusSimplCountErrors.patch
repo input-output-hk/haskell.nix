@@ -1,0 +1,26 @@
+diff --git a/compiler/simplCore/CoreMonad.hs b/compiler/simplCore/CoreMonad.hs
+index 683fb0434d..55f534fd8d 100644
+--- a/compiler/simplCore/CoreMonad.hs
++++ b/compiler/simplCore/CoreMonad.hs
+@@ -90,6 +90,7 @@ import qualified Data.Map.Strict as MapStrict
+ import Data.Word
+ import Control.Monad
+ import Control.Applicative ( Alternative(..) )
++import Panic (throwGhcException, GhcException (..))
+ 
+ import qualified Language.Haskell.TH as TH
+ 
+@@ -328,7 +329,12 @@ plusSimplCount sc1@(SimplCount { ticks = tks1, details = dts1 })
+              | otherwise       = sc2
+ 
+ plusSimplCount (VerySimplCount n) (VerySimplCount m) = VerySimplCount (n+m)
+-plusSimplCount _                  _                  = panic "plusSimplCount"
++plusSimplCount lhs                rhs                = throwGhcException $
++  PprProgramError "plusSimplCount" (vcat [ text "lhs"
++                                         , pprSimplCount lhs
++                                         , text "rhs"
++                                         , pprSimplCount rhs
++                                         ])
+        -- We use one or the other consistently
+ 
+ pprSimplCount (VerySimplCount n) = text "Total ticks:" <+> int n

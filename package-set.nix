@@ -2,7 +2,7 @@ let f = { hackage, pkgs, pkg-def, pkg-def-extras ? [], modules ? [] }: let
   buildModules = f { inherit hackage pkg-def pkg-def-extras modules; pkgs = pkgs.buildPackages; };
 in pkgs.lib.evalModules {
   modules = modules ++ [
-    ({ lib, ... }: {
+    ({ config, lib, ... }: {
       # Provide all modules with haskellLib, pkgs, and pkgconfPkgs arguments
       _module.args = {
         # this is *not* the hasekllLib from nixpkgs; it is rather our own
@@ -23,6 +23,21 @@ in pkgs.lib.evalModules {
 
       # Set the plan for modules/plan.nix
       plan.pkg-def = hackage: with builtins;
+        # pkg-def's may reference boot packages, but those
+        # are not guaranteed to be available on hackage, as
+        # it is a manual process.  They might eventually show
+        # up much later on hackage; but are not installable
+        # anyway. Therefore we just strip them out of the
+        # pkg-def's packages.
+        #
+        # Note: these will need to be provided by alternative
+        #       means outside of hackage.
+        let strip-pkg-def = pkg-def: hackage:
+          lib.mapAttrs (k: v: if k == "packages"
+                          then lib.filterAttrs (k: _: !(builtins.elem k config.bootPkgs)) v
+                          else v)
+                   (pkg-def hackage);
+        in let pkg-def' = strip-pkg-def pkg-def;
         # The desugar reason.
         #
         # it is quite combersome to write
@@ -33,7 +48,7 @@ in pkgs.lib.evalModules {
         # or
         # { y = ./foo.nix; }
         # As such the desugarer desugars this short hand syntax.
-        let desugar = extras:
+        in let desugar = extras:
           let
             isPath  = x: builtins.typeOf x == "path";
             # rewrite
@@ -62,7 +77,7 @@ in pkgs.lib.evalModules {
         # This means you can have a base definition (e.g. stackage)
         # and augment it with custom packages to your liking.
         in foldl' lib.recursiveUpdate
-            (pkg-def hackage)
+            (pkg-def' hackage)
             (map (p: desugar (if builtins.isFunction p then p hackage else p)) pkg-def-extras)
       ;
 
