@@ -1,7 +1,7 @@
 { pkgs ? import nixpkgs ({ config = config; overlays = overlays; } // nixpkgsArgs)
 # Use a pinned nixpkgs rather than the one on NIX_PATH
 , nixpkgs ? ./nixpkgs
-# default config we provide to nixpkgs. 
+# default config we provide to nixpkgs.
 , config ? import ./config.nix
 # default overlays
 , overlays ? import ./overlays
@@ -15,24 +15,6 @@
 }:
 
 let
-  # pkg-def's may reference boot packages, but those
-  # are not guaranteed to be available on hackage, as
-  # it is a manual process.  They might eventually show
-  # up much later on hackage; but are not installable
-  # anyway. Therefore we just strip them out of the
-  # pkg-def's packages.
-  #
-  # Note: these will need to be provided by alternative
-  #       means outside of hackage.
-  boot-pkgs = [ "rts" "ghc" "ghc-boot-th" "ghc-boot" "ghci"
-                "ghc-heap" # since ghc 8.6.
-              ];
-  strip-pkg-def = pkgs: pkg-def: hackage: with pkgs.lib;
-    mapAttrs (k: v: if k == "packages"
-                    then filterAttrs (k: _: !(builtins.elem k boot-pkgs)) v
-                    else v)
-             (pkg-def hackage);
-
   # ghc hackage patches.
   # these are patches that turn hackage packages into the same as the ones
   # ghc ships with the supposedly same version. See GHC Track Issue: 16199
@@ -86,8 +68,7 @@ let
       }@args:
 
       import ./package-set.nix (args // {
-        inherit hackage pkgs;
-        pkg-def = strip-pkg-def pkgs pkg-def;
+        inherit hackage pkgs pkg-def;
       });
 
     # Create a Haskell package set based on a Stack configuration.
@@ -242,9 +223,15 @@ let
         tar xzf ${tarball}
         mv "${name}-${version}" $out
         '';
-      in let plan-pkgs = import (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
+      in (cabalProject { inherit src index-state; }).${name};
+
+    cabalProject =
+      { src
+      , index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
+      }:
+      let plan-pkgs = import (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
       in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
-      in pkg-set.config.hsPkgs.${name};
+      in pkg-set.config.hsPkgs;
   });
 
 in

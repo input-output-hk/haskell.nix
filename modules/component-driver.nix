@@ -44,6 +44,15 @@ in
       "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell" ]
     ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
+  options.bootPkgs = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+  };
+
+  config.bootPkgs =  [
+     "rts" "ghc" "ghc-boot-th" "ghc-boot" "ghci"
+     "ghc-heap" # since ghc 8.6.
+  ];
+
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
   };
@@ -54,5 +63,5 @@ in
     } //
     lib.mapAttrs
       (name: pkg: if pkg == null then null else builder.build-package pkg)
-      (config.packages // lib.genAttrs config.nonReinstallablePkgs (_: null));
+      (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
 }
