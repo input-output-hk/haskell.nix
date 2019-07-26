@@ -1,4 +1,4 @@
-{ fetchurl, hackage, stdenv, ghc, zlib, src }:
+{ fetchurl, hackage, stdenv, ghc, zlib, src, version }:
 let dependencies =
  [ { name = "deepseq";           version = "1.4.3.0";   }
    { name = "binary";            version = "0.8.5.1";   }
@@ -34,6 +34,12 @@ let depPaths = builtins.map ({name, version}:
             inherit (hackage.${name}.${version}) sha256; }) dependencies;
 in stdenv.mkDerivation ({
   name = "cabal-install";
+
+  inherit version;
+
+  passthru = {
+      inherit version;
+  };
 
   nativeBuildInputs = [ ghc zlib ];
 
