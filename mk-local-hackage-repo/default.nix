@@ -15,7 +15,7 @@
 # reproducably.
 #
 { pkgs, hackageTarball }:
-{ index-state, sha256 }@args:
+{ index-state, sha256, ... }@args:
 let index = hackageTarball args; in
 pkgs.runCommand "hackage-repo-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ pkgs.nix ]; } ''
 mkdir -p $out

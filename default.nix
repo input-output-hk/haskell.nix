@@ -149,7 +149,7 @@ let
     inherit cleanSourceHaskell;
 
     # Produce a fixed output derivation from a moving target (hackage index tarball)
-    hackageTarball = { index-state, sha256 }:
+    hackageTarball = { index-state, sha256, ... }:
       assert sha256 != null;
       pkgs.fetchurl {
         name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
@@ -163,8 +163,8 @@ let
 
     mkLocalHackageRepo = import ./mk-local-hackage-repo { inherit (self) hackageTarball; inherit pkgs; };
 
-    dotCabal = { index-state, sha256 }@args:
-      pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ pkgs.cabal-install ]; } ''
+    dotCabal = { index-state, sha256, cabal-install }@args:
+      pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
         mkdir -p $out/.cabal
         cat <<EOF > $out/.cabal/config
         repository cached
@@ -213,7 +213,7 @@ let
       { name
       , version
       , index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
-      , ...}@args:
+      , ... }@args:
       let tarball = pkgs.fetchurl {
         url = "mirror://hackage/${name}-${version}.tar.gz";
         inherit (hackage.${name}.${version}) sha256; };
@@ -231,7 +231,9 @@ let
       let plan-pkgs = import (callCabalProjectToNix
                               (builtins.trace "Using index-state: ${index-state}"
                                (args // { inherit index-state; })));
-      in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
+      in let pkg-set = mkCabalProjectPkgSet (
+        { inherit plan-pkgs; } //
+        pkgs.lib.optionalAttrs (args ? ghc) { modules = [ { ghc.package = args.ghc; } ]; });
       in pkg-set.config.hsPkgs;
   });
 
