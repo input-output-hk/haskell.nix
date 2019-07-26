@@ -28,7 +28,7 @@ let
       # so we are dealing with a sublib. As we build sublibs separately, the above
       # query should be safe.
       echo "--dependency=''${name#z-${p}-z-}=$id" >> $out/configure-flags
-    fi     
+    fi
     if ver=$(target-pkg ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
@@ -111,7 +111,7 @@ in { identifier, component, fullName, flags ? {} }:
     local dynamicLinksDir="$out/lib/links"
     mkdir -p $dynamicLinksDir
     for d in $(grep dynamic-library-dirs "$out/package.conf.d/"*|awk '{print $2}'|sort -u); do
-      ln -s "$d/"*.dylib $dynamicLinksDir
+      ln -f -s "$d/"*.dylib $dynamicLinksDir
     done
     # Edit the local package DB to reference the links directory.
     for f in "$out/package.conf.d/"*.conf; do
