@@ -19,6 +19,7 @@ let
   ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
   ghcCommand     = "${ghc.targetPrefix}${ghcCommand'}";
   ghcCommandCaps = lib.toUpper ghcCommand';
+  libDirSrc      = "${ghc}/lib/${ghcCommand}-${ghc.version}";
   libDir         = "$out/lib/${ghcCommand}-${ghc.version}";
   docDir         = "$out/share/doc/ghc/html";
   packageCfgDir  = "${libDir}/package.conf.d";
@@ -35,9 +36,16 @@ in runCommand "${componentName}-${ghc.name}" {
 
     # Start with a ghc...
     mkdir -p $out/bin
-    ${lndir}/bin/lndir -silent ${ghc} $out
-    # ... remove all of the package directories
-    rm -rf ${libDir}/*/
+    ${lndir}/bin/lndir -silent ${ghc}/bin $out/bin
+    mkdir -p ${libDir}/include
+    ${lndir}/bin/lndir -silent ${libDirSrc}/include ${libDir}/include
+    ln -s \
+      ${libDirSrc}/llvm-passes \
+      ${libDirSrc}/llvm-targets \
+      ${libDirSrc}/platformConstants \
+      ${libDirSrc}/settings \
+      ${libDirSrc}/template-hsc.h \
+      ${libDir}
     # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
     ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
     # Replace the package database with the one from target package config.
