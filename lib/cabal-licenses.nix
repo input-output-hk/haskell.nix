@@ -13,6 +13,7 @@ lib: with lib.licenses;
   LicenseRef-Apache = "Apache";
   LicenseRef-GPL = "GPL";
   LicenseRef-LGPL = "LGPL";
+  LicenseRef-NCSA = ncsa;
   LicenseRef-PublicDomain = publicDomain;
   LicenseRef-OtherLicense = null;
   NONE = null;
