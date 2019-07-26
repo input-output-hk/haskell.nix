@@ -75,7 +75,7 @@ self: super: with super;
        && !lib.hasSuffix "Binary" name;
      overrideCompiler = compiler:
        (compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides;
-   in 
+   in
      lib.recursiveUpdate super.haskell {
        compiler = lib.mapAttrs (_name: overrideCompiler)
          (lib.filterAttrs (name: _value: needsPatches name) super.haskell.compiler);
