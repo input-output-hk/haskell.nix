@@ -213,7 +213,7 @@ let
       { name
       , version
       , index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
-      }:
+      , ...}@args:
       let tarball = pkgs.fetchurl {
         url = "mirror://hackage/${name}-${version}.tar.gz";
         inherit (hackage.${name}.${version}) sha256; };
@@ -223,13 +223,14 @@ let
         tar xzf ${tarball}
         mv "${name}-${version}" $out
         '';
-      in (cabalProject { inherit src index-state; }).${name};
+      in (cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; })).${name};
 
     cabalProject =
-      { src
-      , index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
-      }:
-      let plan-pkgs = import (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
+      { index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
+      , ... }@args:
+      let plan-pkgs = import (callCabalProjectToNix
+                              (builtins.trace "Using index-state: ${index-state}"
+                               (args // { inherit index-state; })));
       in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
       in pkg-set.config.hsPkgs;
   });

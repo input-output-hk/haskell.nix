@@ -2,7 +2,7 @@
 let defaultGhc = ghc;
     defaultCabalInstall = cabal-install;
 in { index-state ? null, index-sha256 ? null, src, ghc ? defaultGhc,
-  cabal-install ? defaultCabalInstall, cabalProject ? null }:
+     cabal-install ? defaultCabalInstall, cabalProject ? null }:
 
 # cabal-install versions before 2.4 will generate insufficient plan information.
 assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
@@ -81,7 +81,7 @@ let
   parseBlock = block:
     let
       x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
-      attrs = parseBlockLines x.fst;  
+      attrs = parseBlockLines x.fst;
     in
       if attrs."--sha256" or "" == ""
         then {
