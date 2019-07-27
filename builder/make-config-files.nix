@@ -102,6 +102,9 @@ in { identifier, component, fullName, flags ? {} }:
   #
   # TODO: Fix Cabal.
   # TODO: this is only needed if we do dynamic libraries.
+  #
+  # NOTE [ln -s -f]: we force link, as we may have dependencies that contain shared deps
+  #                  (e.g. libiconv), and thus we don't want to fail, but just link it again.
   + lib.optionalString stdenv.isDarwin ''
     # Work around a limit in the macOS Sierra linker on the number of paths
     # referenced by any one dynamic library:
