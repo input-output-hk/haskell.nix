@@ -157,7 +157,7 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
-      inherit cabal-install;
+      inherit cabal-install nix-tools;
       index-state = index-state-found;
       sha256 = index-sha256-found; }} cabal new-configure \
         --with-ghc=${ghc.targetPrefix}ghc \

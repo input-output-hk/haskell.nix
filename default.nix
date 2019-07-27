@@ -149,13 +149,13 @@ let
     inherit cleanSourceHaskell;
 
     # Produce a fixed output derivation from a moving target (hackage index tarball)
-    hackageTarball = { index-state, sha256, ... }:
+    hackageTarball = { index-state, sha256, nix-tools ? self.nix-tools, ... }:
       assert sha256 != null;
       pkgs.fetchurl {
         name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
         url = "https://hackage.haskell.org/01-index.tar.gz";
         downloadToTemp = true;
-        postFetch = "${self.nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+        postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
 
         outputHashAlgo = "sha256";
         outputHash = sha256;
@@ -163,7 +163,7 @@ let
 
     mkLocalHackageRepo = import ./mk-local-hackage-repo { inherit (self) hackageTarball; inherit pkgs; };
 
-    dotCabal = { index-state, sha256, cabal-install }@args:
+    dotCabal = { index-state, sha256, cabal-install, ... }@args:
       pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
         mkdir -p $out/.cabal
         cat <<EOF > $out/.cabal/config
