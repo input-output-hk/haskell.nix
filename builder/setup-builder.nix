@@ -45,7 +45,7 @@ in
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f
-            ghc $f '' + (if includeGhcPackage then "-package ghc " else "")
+            ghc $f -threaded '' + (if includeGhcPackage then "-package ghc " else "")
                 + ''-package-db ${configFiles}/package.conf.d --make -o ./Setup
             setup=$(pwd)/Setup
           fi
