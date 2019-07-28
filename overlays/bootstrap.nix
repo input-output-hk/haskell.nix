@@ -3,14 +3,52 @@ self: super: rec {
     haskell.compiler = {
         ghc865 = self.callPackage ../compiler/ghc {
             bootPkgs = with self.buildPackages; {
-                ghc = bootstrap.haskell.compiler.ghc844;
+                ghc = buildPackages.bootstrap.haskell.compiler.ghc844;
                 inherit (bootstrap.haskell.packages) alex happy hscolour;
             };
             sphinx = self.buildPackages.python3Packages.sphinx_1_7_9;
             buildLlvmPackages = self.buildPackages.llvmPackages_5;
             llvmPackages = self.llvmPackages_5;
+
+            ghc-version = "8.6.5";
+            src-spec = {
+                url = "https://downloads.haskell.org/~ghc/${ghc-version}/ghc-${ghc-version}-src.tar.xz";
+                sha256 = "0qg3zsmbk4rkwkc3jpas3zs74qaxmw4sp4v1mhsbj0a0dzls2jjd";
+            };
+            ghc-patches = [
+                (fetchpatch rec { # https://phabricator.haskell.org/D5123
+                    url = "http://tarballs.nixos.org/sha256/${sha256}";
+                    name = "D5123.diff";
+                    sha256 = "0nhqwdamf2y4gbwqxcgjxs0kqx23w9gv5kj0zv6450dq19rji82n";
+                })
+                (fetchpatch rec { # https://github.com/haskell/haddock/issues/900
+                    url = "https://patch-diff.githubusercontent.com/raw/haskell/haddock/pull/983.diff";
+                    name = "loadpluginsinmodules.diff";
+                    sha256 = "0bvvv0zsfq2581zsir97zfkggc1kkircbbajc2fz3b169ycpbha1";
+                    extraPrefix = "utils/haddock/";
+                    stripLen = 1;
+                })
+            ];
         };
     };
+
+    ghc = haskell.compiler.ghc865;
+    cabal-install = self.buildPackages.bootstrap.haskell.packages.cabal-install;
+
+    # see below
+    haskellPackages.hpack = null;
+
+    # WARN: The `import ../. {}` will prevent
+    #       any cross to work, as we will loose
+    #       the `config` value.
+    # As such the folloing sadly won't work :(
+    # haskellPackages = with import ../. {}; {
+    #     hpack = null;
+    #     hello = (hackage-package {
+    #         inherit (self) cabal-install;
+    #         name = "hello"; version = "1.0.0.2";
+    #     }).components.exes.hello;
+    # };
 
     # stub out lib stuff.
     haskell.lib = {
@@ -32,7 +70,9 @@ self: super: rec {
 
     # the bootstrap infra structure (pre-compiled ghc; bootstrapped cabal-install, ...)
     bootstrap = {
-        haskell = with import ../. {}; let ghc = bootstrap.haskell.compiler.ghc844; in {
+        # XXX: import ../. will throw away all other overlays, config values, ...
+        #      this is not ideal!
+        haskell = with import ../. {}; let ghc = self.buildPackages.bootstrap.haskell.compiler.ghc844; in {
             # get binary compilers for bootstrapping.  We'll put the eventual proper
             # compilers into the same place where nix expects them.
             compiler = import ../compiler/old-ghc-nix { pkgs = self; };
