@@ -138,7 +138,7 @@ packages2nix args (Stack _ _ pkgs _) =
                   src = Just . C2N.Path $ relPath </> folder
               in do createDirectoryIfMissing True (takeDirectory nixFile)
                     writeDoc nixFile =<<
-                      prettyNix <$> cabal2nix src cabalFile
+                      prettyNix <$> cabal2nix (argDetailLevel args) src cabalFile
                     return $ fromString pkg $= mkPath False nix
        (DVCS (Git url rev) subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
@@ -174,7 +174,7 @@ packages2nix args (Stack _ _ pkgs _) =
                 src = Just $ C2N.Git url rev (Just sha256) subdir'
             createDirectoryIfMissing True (takeDirectory nixFile)
             writeDoc nixFile =<<
-              prettyNix <$> cabal2nix src cabalFile
+              prettyNix <$> cabal2nix (argDetailLevel args) src cabalFile
             liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
 

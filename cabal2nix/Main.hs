@@ -48,10 +48,10 @@ main = getArgs >>= \case
             (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
             _ -> return ()
   [path,file] -> doesDirectoryExist file >>= \case
-    False -> print . prettyNix =<< cabal2nix (Just (Path path)) (OnDisk file)
+    False -> print . prettyNix =<< cabal2nix MinimalDetails (Just (Path path)) (OnDisk file)
     True  -> print . prettyNix =<< cabalexprs file
   [file] -> doesDirectoryExist file >>= \case
-    False -> print . prettyNix =<< cabal2nix (Just (Path ".")) (OnDisk file)
+    False -> print . prettyNix =<< cabal2nix MinimalDetails (Just (Path ".")) (OnDisk file)
     True  -> print . prettyNix =<< cabalexprs file
   _ -> putStrLn "call with cabalfile (Cabal2Nix file.cabal)."
 
@@ -72,7 +72,7 @@ cabalFromPath url rev subdir path = do
           subdir' = if subdir == "." then Nothing
                     else Just subdir
           src = Just $ Git url rev (Just sha256) subdir'
-      print . prettyNix =<< cabal2nix src cabalFile
+      print . prettyNix =<< cabal2nix MinimalDetails src cabalFile
 
 findCabalFiles :: FilePath -> IO [CabalFile]
 findCabalFiles path = doesFileExist (path </> Hpack.packageConfig) >>= \case
@@ -103,7 +103,7 @@ expr p pkg version = do
   doesFileExist (cabalFilePath cabal) >>= \case
     True ->
       do createDirectoryIfMissing True pkg'
-         writeDoc nix =<< prettyNix <$> cabal2nix Nothing cabal
+         writeDoc nix =<< prettyNix <$> cabal2nix MinimalDetails Nothing cabal
          pure $ version' $= mkRelPath nix
     False -> pure $ version' $= mkNull
 

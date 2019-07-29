@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Cabal2Nix (cabal2nix, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName) where
+module Cabal2Nix (cabal2nix, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName, CabalDetailLevel(..)) where
 
 import Distribution.PackageDescription.Parsec (readGenericPackageDescription, parseGenericPackageDescription, runParseResult)
 import Distribution.Verbosity (normal)
@@ -11,7 +11,7 @@ import Distribution.Pretty (pretty)
 import Data.Char (toUpper)
 import System.FilePath
 import Data.ByteString (ByteString)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, maybeToList)
 
 import Distribution.Types.CondTree
 import Distribution.Types.Library
@@ -26,6 +26,8 @@ import Distribution.Types.VersionRange
 import Distribution.Compiler
 import Distribution.Types.PackageName (PackageName, mkPackageName)
 import Distribution.Simple.BuildToolDepends (desugarBuildTool)
+import Distribution.ModuleName (ModuleName)
+import qualified Distribution.ModuleName as ModuleName
 
 import Data.String (fromString, IsString)
 
@@ -76,17 +78,19 @@ cabalFilePkgName = dropExtension . takeFileName . cabalFilePath
 genExtra :: CabalFileGenerator -> NExpr
 genExtra Hpack = mkNonRecSet [ "cabal-generator" $= mkStr "hpack" ]
 
-cabal2nix :: Maybe Src -> CabalFile -> IO NExpr
-cabal2nix src = \case
-  (OnDisk path) -> gpd2nix src Nothing
+data CabalDetailLevel = MinimalDetails | FullDetails deriving (Show, Eq)
+
+cabal2nix :: CabalDetailLevel -> Maybe Src -> CabalFile -> IO NExpr
+cabal2nix fileDetails src = \case
+  (OnDisk path) -> gpd2nix fileDetails src Nothing
     <$> readGenericPackageDescription normal path
-  (InMemory gen _ body) -> gpd2nix src (genExtra <$> gen)
+  (InMemory gen _ body) -> gpd2nix fileDetails src (genExtra <$> gen)
     <$> case runParseResult (parseGenericPackageDescription body) of
         (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
         (_, Right desc) -> pure desc
 
-gpd2nix :: Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
-gpd2nix src extra gpd = mkFunction args $ toNix gpd $//? (toNix <$> src) $//? extra
+gpd2nix :: CabalDetailLevel -> Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
+gpd2nix fileDetails src extra gpd = mkFunction args $ toNix' fileDetails gpd $//? (toNix <$> src) $//? extra
   where args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
@@ -96,22 +100,32 @@ gpd2nix src extra gpd = mkFunction args $ toNix gpd $//? (toNix <$> src) $//? ex
                           , (pkgconfPkgs, Nothing)]
                           True
 
-class HasBuildInfo a where
+class IsComponent a where
   getBuildInfo :: a -> BuildInfo
+  getMainPath :: a -> Maybe FilePath
+  getMainPath _ = Nothing
+  modules :: a -> [ModuleName]
+  modules = otherModules . getBuildInfo
 
-instance HasBuildInfo Library where
+instance IsComponent Library where
   getBuildInfo = libBuildInfo
+  modules a = otherModules (getBuildInfo a)
+      <> exposedModules a
+      <> signatures a
 
-instance HasBuildInfo ForeignLib where
+instance IsComponent ForeignLib where
   getBuildInfo = foreignLibBuildInfo
 
-instance HasBuildInfo Executable where
+instance IsComponent Executable where
   getBuildInfo = buildInfo
+  getMainPath Executable {modulePath = p} = Just p
 
-instance HasBuildInfo TestSuite where
+instance IsComponent TestSuite where
   getBuildInfo = testBuildInfo
+  getMainPath TestSuite {testInterface = (TestSuiteExeV10 _ p)} = Just p
+  getMainPath _ = Nothing
 
-instance HasBuildInfo Benchmark where
+instance IsComponent Benchmark where
   getBuildInfo = benchmarkBuildInfo
 
 --- Clean the Tree from empty nodes
@@ -140,6 +154,9 @@ capitalize = transformFst toUpper
 class ToNixExpr a where
   toNix :: a -> NExpr
 
+class ToNixExpr' a where
+  toNix' :: CabalDetailLevel -> a -> NExpr
+
 class ToNixBinding a where
   toNixBinding :: a -> Binding NExpr
 
@@ -166,24 +183,36 @@ instance ToNixExpr PackageIdentifier where
   toNix ident = mkNonRecSet [ "name"    $= mkStr (fromString (show (disp (pkgName ident))))
                             , "version" $= mkStr (fromString (show (disp (pkgVersion ident))))]
 
-instance ToNixExpr PackageDescription where
-  toNix pd = mkNonRecSet $ [ "specVersion" $= mkStr (fromString (show (disp (specVersion pd))))
-                           , "identifier"  $= toNix (package pd)
-                           , "license"     $= mkStr (fromString (show (pretty (license pd))))
+instance ToNixExpr' PackageDescription where
+  toNix' detailLevel pd = mkNonRecSet $
+    [ "specVersion" $= mkStr (fromString (show (disp (specVersion pd))))
+    , "identifier"  $= toNix (package pd)
+    , "license"     $= mkStr (fromString (show (pretty (license pd))))
 
-                           , "copyright"   $= mkStr (fromString (copyright pd))
-                           , "maintainer"  $= mkStr (fromString (maintainer pd))
-                           , "author"      $= mkStr (fromString (author pd))
+    , "copyright"   $= mkStr (fromString (copyright pd))
+    , "maintainer"  $= mkStr (fromString (maintainer pd))
+    , "author"      $= mkStr (fromString (author pd))
 
-                           , "homepage"    $= mkStr (fromString (homepage pd))
-                           , "url"         $= mkStr (fromString (pkgUrl pd))
+    , "homepage"    $= mkStr (fromString (homepage pd))
+    , "url"         $= mkStr (fromString (pkgUrl pd))
 
-                           , "synopsis"    $= mkStr (fromString (synopsis pd))
-                           , "description" $= mkStr (fromString (description pd))
+    , "synopsis"    $= mkStr (fromString (synopsis pd))
+    , "description" $= mkStr (fromString (description pd))
 
-                           , "buildType"   $= mkStr (fromString (show (pretty (buildType pd))))
-                           ] ++
-                           [ "setup-depends" $= toNix (BuildToolDependency . depPkgName <$> deps) | Just deps <- [setupDepends <$> setupBuildInfo pd ]]
+    , "buildType"   $= mkStr (fromString (show (pretty (buildType pd))))
+    ] ++
+    [ "setup-depends" $= toNix (BuildToolDependency . depPkgName <$> deps) | Just deps <- [setupDepends <$> setupBuildInfo pd ]] ++
+    if detailLevel == MinimalDetails
+      then []
+      else
+        [ "detailLevel"   $= mkStr (fromString (show detailLevel))
+        , "licenseFiles"  $= toNix (licenseFiles pd)
+        , "dataDir"       $= mkStr (fromString (dataDir pd))
+        , "dataFiles"     $= toNix (dataFiles pd)
+        , "extraSrcFiles" $= toNix (extraSrcFiles pd)
+        , "extraTmpFiles" $= toNix (extraTmpFiles pd)
+        , "extraDocFiles" $= toNix (extraDocFiles pd)
+        ]
 
 newtype SysDependency = SysDependency { unSysDependency :: String } deriving (Show, Eq, Ord)
 newtype BuildToolDependency = BuildToolDependency { unBuildToolDependency :: PackageName } deriving (Show, Eq, Ord)
@@ -191,19 +220,35 @@ newtype BuildToolDependency = BuildToolDependency { unBuildToolDependency :: Pac
 mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
-instance ToNixExpr GenericPackageDescription where
-  toNix gpd = mkNonRecSet [ "flags"         $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
-                          , "package"       $= toNix (packageDescription gpd)
+instance ToNixExpr' GenericPackageDescription where
+  toNix' detailLevel gpd = mkNonRecSet
+                          [ "flags"         $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
+                          , "package"       $= toNix' detailLevel (packageDescription gpd)
                           , "components"    $= components ]
     where _packageName :: IsString a => a
           _packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd
+          component :: IsComponent comp => UnqualComponentName -> CondTree ConfVar [Dependency] comp -> Binding NExpr
           component unQualName comp
             = quoted name $=
-                      mkNonRecSet ([ "depends"    $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++
-                                   [ "libs"       $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
-                                   [ "frameworks" $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
-                                   [ "pkgconfig"  $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
-                                   [ "build-tools"$= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ])
+                mkNonRecSet (
+                  [ "depends"      $= toNix deps | Just deps <- [shakeTree . fmap (         targetBuildDepends . getBuildInfo) $ comp ] ] ++
+                  [ "libs"         $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
+                  [ "frameworks"   $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
+                  [ "pkgconfig"    $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
+                  [ "build-tools"  $= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ] ++
+                  if detailLevel == MinimalDetails
+                    then []
+                    else
+                      [ "modules"      $= toNix mods | Just mods <- [shakeTree . fmap (fmap ModuleName.toFilePath . modules) $ comp ] ] ++
+                      [ "asmSources"   $= toNix src  | Just src  <- [shakeTree . fmap (asmSources   . getBuildInfo) $ comp ] ] ++
+                      [ "cmmSources"   $= toNix src  | Just src  <- [shakeTree . fmap (cmmSources   . getBuildInfo) $ comp ] ] ++
+                      [ "cSources"     $= toNix src  | Just src  <- [shakeTree . fmap (cSources     . getBuildInfo) $ comp ] ] ++
+                      [ "cxxSources"   $= toNix src  | Just src  <- [shakeTree . fmap (cxxSources   . getBuildInfo) $ comp ] ] ++
+                      [ "jsSources"    $= toNix src  | Just src  <- [shakeTree . fmap (jsSources    . getBuildInfo) $ comp ] ] ++
+                      [ "hsSourceDirs" $= toNix dir  | Just dir  <- [shakeTree . fmap (hsSourceDirs . getBuildInfo) $ comp ] ] ++
+                      [ "includeDirs"  $= toNix dir  | Just dir  <- [shakeTree . fmap (includeDirs  . getBuildInfo) $ comp] ] ++
+                      [ "includes"     $= toNix dir  | Just dir  <- [shakeTree . fmap (includes     . getBuildInfo) $ comp] ] ++
+                      [ "mainPath"     $= toNix p | Just p <- [shakeTree . fmap (maybeToList . getMainPath) $ comp] ])
               where name = fromString $ unUnqualComponentName unQualName
                     toolDeps = getToolDependencies (packageDescription gpd)
                     toBuildToolDep (ExeDependency pkg _ _) = BuildToolDependency pkg
@@ -292,3 +337,5 @@ instance (Foldable t, ToNixExpr (t a), ToNixExpr v, ToNixExpr c) => ToNixExpr (C
 
 instance ToNixBinding Flag where
   toNixBinding (MkFlag name _desc def _manual) = (fromString . show . pretty $ name) $= mkBool def
+
+
