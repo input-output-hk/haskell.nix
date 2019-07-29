@@ -10,18 +10,19 @@ self: super: rec {
             buildLlvmPackages = self.buildPackages.llvmPackages_5;
             llvmPackages = self.llvmPackages_5;
 
-            ghc-version = "8.6.5";
-            src-spec = {
-                url = "https://downloads.haskell.org/~ghc/${ghc-version}/ghc-${ghc-version}-src.tar.xz";
+            src-spec = rec {
+                version = "8.6.5";
+                url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
                 sha256 = "0qg3zsmbk4rkwkc3jpas3zs74qaxmw4sp4v1mhsbj0a0dzls2jjd";
             };
+
             ghc-patches = [
-                (fetchpatch rec { # https://phabricator.haskell.org/D5123
+                (self.fetchpatch rec { # https://phabricator.haskell.org/D5123
                     url = "http://tarballs.nixos.org/sha256/${sha256}";
                     name = "D5123.diff";
                     sha256 = "0nhqwdamf2y4gbwqxcgjxs0kqx23w9gv5kj0zv6450dq19rji82n";
                 })
-                (fetchpatch rec { # https://github.com/haskell/haddock/issues/900
+                (self.fetchpatch rec { # https://github.com/haskell/haddock/issues/900
                     url = "https://patch-diff.githubusercontent.com/raw/haskell/haddock/pull/983.diff";
                     name = "loadpluginsinmodules.diff";
                     sha256 = "0bvvv0zsfq2581zsir97zfkggc1kkircbbajc2fz3b169ycpbha1";

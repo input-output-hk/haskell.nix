@@ -44,7 +44,7 @@
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
-, ghc-version
+, ghc-version ? src-spec.version
 , src-spec
 , ghc-patches ? []
 }:
@@ -99,20 +99,22 @@ in stdenv.mkDerivation (rec {
   version = ghc-version;
   name = "${targetPrefix}ghc-${version}";
 
+  patches = ghc-patches;
+
     src = stdenv.mkDerivation (rec {
 
         inherit version
                 nativeBuildInputs buildInputs propagatedBuildInputs
                 strictDeps dontAddExtraLibs
-                depsBuildTarget depsTargetTarget depsTargetTargetPropagated;
+                depsBuildTarget depsTargetTarget depsTargetTargetPropagated
+                # by inheriting the patches, we can still allow override logic
+                # of patches to work at the `ghc` level, not just at the configured-src level.
+                patches postPatch
+                ;
 
         name = "${targetPrefix}ghc-${version}-configured-src";
 
-        src = fetchurl src-spec;
-
-        patches = ghc-patches;
-
-        postPatch = "patchShebangs .";
+        src = fetchurl { inherit (src-spec) url sha256; };
 
         # GHC is a bit confused on its cross terminology.
         preConfigure = ''
@@ -180,18 +182,44 @@ in stdenv.mkDerivation (rec {
             "--disable-large-address-space"
         ];
 
-        buildPhase = '''';
-
-        installPhase = ''
-            cp -fR $src $out;
-        '';
-
+        outputs = [ "out" ];
+        phases = [ "unpackPhase" "patchPhase" "configurePhase" "installPhase" ];
+        installPhase = "cp -r . $out";
     });
 
   # configure was run by configured-src already.
-  configurePhase = "";
+  phases = [ "unpackPhase" "buildPhase"
+             "checkPhase" "installPhase"
+             "fixupPhase"
+             "installCheckPhase"
+             "distPhase"
+             ];
+
+  # ghc hardcodes the TOP dir durcing config, this breaks when
+  # splitting the configured src from the the build process.
+  postUnpack = ''
+    (cd $sourceRoot
+     TOP=$(cat mk/config.mk|grep ^TOP|awk -F\  '{ print $3 }')
+     PREFIX=$(cat mk/install.mk|grep ^prefix|awk -F\  '{ print $3 }')
+
+     # these two are required
+     substituteInPlace mk/config.mk  --replace "$TOP" "$PWD" \
+                                     --replace "$PREFIX" "$out"
+
+     substituteInPlace mk/install.mk --replace "$TOP" "$PWD" \
+                                     --replace "$PREFIX" "$out"
+
+     # these two only for convencience.
+     substituteInPlace config.log    --replace "$TOP" "$PWD"\
+                                     --replace "$PREFIX" "$out"
+     substituteInPlace config.status --replace "$TOP" "$PWD"\
+                                     --replace "$PREFIX" "$out")
+
+
+  '';
 
   enableParallelBuilding = true;
+  postPatch = "patchShebangs .";
 
   outputs = [ "out" "doc" ];
 
