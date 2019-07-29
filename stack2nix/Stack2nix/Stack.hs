@@ -163,9 +163,17 @@ pkgIndex = PkgIndex <$> parse <*> suffix <* eof
 -- JSON/YAML destructors
 
 instance FromJSON Location where
-  parseJSON = withObject "Location" $ \l -> Git
-    <$> l .: "git"
-    <*> l .: "commit"
+  parseJSON = withObject "Location" $ \l ->
+    parseGitHub l <|> parseGit l
+    where
+      parseGit l = Git
+        <$> l .: "git"
+        <*> l .: "commit"
+      parseGitHub l = Git
+        <$> do gitHubUrl <$> l .: "github"
+        <*> l .: "commit"
+      gitHubUrl ownerRepo =
+        "https://github.com/" <> ownerRepo <> ".git"
 
 instance FromJSON Stack where
   parseJSON = withObject "Stack" $ \s -> Stack
