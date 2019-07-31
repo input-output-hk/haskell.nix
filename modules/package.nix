@@ -176,6 +176,10 @@ with types;
       type = listOf (either unspecified path);
       default = [];
     };
+    hardeningDisable = mkOption {
+      type = listOf string;
+      default = [];
+    };
   };
 
   # This has one quirk. Manually setting options on the all component

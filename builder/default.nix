@@ -57,7 +57,7 @@ in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
   build-package = haskellLib.weakCallPackage pkgs ./hspkg-builder.nix {
-    inherit haskellLib ghc buildGHC comp-builder setup-builder;
+    inherit haskellLib ghc buildGHC comp-builder setup-builder makeSetupConfigFiles;
   };
 
   inherit shellFor;

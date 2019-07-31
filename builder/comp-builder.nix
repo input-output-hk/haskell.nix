@@ -27,6 +27,7 @@
 
 , static ? stdenv.hostPlatform.isMusl
 , deadCodeElimination ? true
+, hardeningDisable ? []
 
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
@@ -112,7 +113,7 @@ in stdenv.lib.fix (drv:
 stdenv.mkDerivation ({
   name = fullName;
 
-  inherit src doCheck doCrossCheck dontPatchELF dontStrip;
+  inherit src doCheck doCrossCheck dontPatchELF dontStrip hardeningDisable;
 
   passthru = {
     inherit (package) identifier;
