@@ -11,6 +11,7 @@
 
 { componentName  # Full derivation name of the component
 , configFiles    # The component's "config" derivation
+, postInstall ? ""
 }:
 
 let
@@ -86,5 +87,7 @@ in runCommand "${componentName}-${ghc.name}" {
         makeWrapper ${ghc}/bin/$prg $out/bin/$prg --add-flags "--global-package-db=${packageCfgDir}"
       fi
     done
+
+    ${postInstall}
   ''
 )

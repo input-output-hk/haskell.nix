@@ -71,6 +71,25 @@ in
   }
 ```
 
+## How to get a local Hoogle index
+
+If you need a local Hoogle for all the dependencies of your project create this file
+
+```nix
+# shell-hoogle.nix
+let
+  hsPkgs = import ./default.nix {};
+in
+  hsPkgs.shellFor {
+      packages = ps: [ps.my-package];
+      withHoogle = true;
+  }
+```
+
+and  run `nix-shell shell-hoogle.nix --run "hoogle server --local"`.
+This will open a local Hoogle server at `http://127.0.0.1:8080`.
+
+
 ## How to get an ad-hoc development shell including certain packages
 
 This creates a development environment with the given packages

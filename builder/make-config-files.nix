@@ -6,10 +6,29 @@ let
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
   '';
 
+  # This is a bit of a hack.  So we'll have a slightly longer explaination here:
+  # exactDep will pass --exact-configuration to the `SETUP_HS confiugre` command.
+  # This requires us to pass --dependency={dep name}={pkg id}.  The dependency
+  # name will usually be the name of the package `p`, which we can locate in the
+  # package-db, passed in via `pdbArg`.  Thus querying the package-db for the
+  # id field for package `p`, will unsually provide is with the right value.  Sublibs
+  # need a bit of special handling:
+  #
+  # - Sublibs: if the dependency is a sublibrary of a package, we need to use
+  #            the sublibrary's name for the dep name, and lookup the sublibraries
+  #            pkg id for z-{pkg name}-z-{sublib name}.  As we do not provide the
+  #            sublib name to exactDep, as we don't have access to it at the call-site,
+  #            we resort to a bit of globbing, which (as pkg db's should contain only
+  #            a single package) work.
   exactDep = pdbArg: p: ''
     if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
-    fi
+    elif id=$(target-pkg ${pdbArg} field "z-${p}-z-*" id --simple-output); then
+      name=$(target-pkg ${pdbArg} field "z-${p}-z-*" name --simple-output)
+      # so we are dealing with a sublib. As we build sublibs separately, the above
+      # query should be safe.
+      echo "--dependency=''${name#z-${p}-z-}=$id" >> $out/configure-flags
+    fi     
     if ver=$(target-pkg ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
@@ -68,7 +87,7 @@ in { identifier, component, fullName, flags ? {} }:
     echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
     echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
 
-    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library}/package.conf.d" p.identifier.name) component.depends}
+    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library or p}/package.conf.d" p.identifier.name) component.depends}
     ${lib.concatMapStringsSep "\n" (exactDep "") nonReinstallablePkgs}
 
   ''
