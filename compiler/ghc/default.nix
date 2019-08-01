@@ -105,8 +105,8 @@ in stdenv.mkDerivation (rec {
 
         inherit version
                 nativeBuildInputs buildInputs propagatedBuildInputs
-                strictDeps dontAddExtraLibs
-                depsBuildTarget depsTargetTarget depsTargetTargetPropagated
+                depsBuildTarget
+                depsTargetTarget depsTargetTargetPropagated
                 # by inheriting the patches, we can still allow override logic
                 # of patches to work at the `ghc` level, not just at the configured-src level.
                 patches postPatch
@@ -251,7 +251,7 @@ in stdenv.mkDerivation (rec {
 
   # See #63511 - the only unstripped file is the debug rts which isn't meant to
   # be stripped.
-  dontStrip = true;
+  stripDebugList = [ "lib/${name}/bin" ];
 
   checkTarget = "test";
 

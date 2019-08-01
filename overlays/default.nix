@@ -1,4 +1,39 @@
 [
+    (import ./release-19.03.nix)
+    (self: super: super.lib.recursiveUpdate super {
+        lib.systems.examples = {
+            # Ghcjs
+            ghcjs = {
+                config = "js-unknown-none-ghcjs";
+                platform = {};
+            };
+            # Asterius
+            asterius32 = {
+                config = "wasm32-unknown-none-asterius";
+                platform = {};
+            };
+            asterius64 = {
+                config = "wasm64-unknown-none-asterius";
+                platform = {};
+            };
+        };
+        # gcc = if self.targetPlatform.isGhcjs then null else super.gcc;
+        lib.systems.parse = with self.lib.systems.parse; {
+            cpuTypes.js = cpuTypes.wasm32 // { name = "js"; family = "js"; };
+            kernels.ghcjs = kernels.none // { name = "ghcjs"; };
+            kernels.asterius = kernels.none // { name = "asterius"; };
+            mkSkeletonFromList = l: builtins.trace l (super.lib.systems.parse.mkSkeletonFromList l);
+            mkSystemFromString = s: builtins.trace s (super.lib.systems.parse.mkSystemFromString s);
+        };
+        lib.systems.inspect.patterns = with self.lib.systems.parse; {
+            isJavaScript = { cpu = cpuTypes.js; };
+            isWasm32     = { cpu = cpuTypes.wasm32; };
+            isWasm64     = { cpu = cpuTypes.wasm64; };
+            isGhcjs      = { kernel = kernels.ghcjs; };
+            isAsterius   = { kernel = kernels.asterius; };
+        };
+    })
+    #(import ./python.nix)
     (import ./bootstrap.nix)
     (import ./haskell.nix)
     (import ./windows.nix)

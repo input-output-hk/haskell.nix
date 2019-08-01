@@ -6,7 +6,7 @@ self: super: rec {
                 ghc = buildPackages.bootstrap.haskell.compiler.ghc844;
                 inherit (bootstrap.haskell.packages) alex happy hscolour;
             };
-            sphinx = self.buildPackages.python3Packages.sphinx_1_7_9;
+            sphinx = with self.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
             buildLlvmPackages = self.buildPackages.llvmPackages_5;
             llvmPackages = self.llvmPackages_5;
 
