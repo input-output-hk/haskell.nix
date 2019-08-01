@@ -121,6 +121,11 @@ in {
         type = listOfFilteringNulls unspecified;
         default = [];
       };
+
+      cleanHpack = mkOption {
+        type = bool;
+        default = false;
+      };
     };
 
     components = let
