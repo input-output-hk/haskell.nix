@@ -1,6 +1,8 @@
 let nixpkgs1903 = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/b978a94c8f9167fb86372ce1044a23f8df2edea0.tar.gz"; in
-(import nixpkgs1903 {}).recurseIntoAttrs {
+{
+    recurseForDerivations = true;
     "release-19.03" = {
+        recurseForDerivations = true;
         x86_64-linux = {
             hello = with (import ./. { nixpkgs = nixpkgs1903; system = "x86_64-linux"; });
                 (hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
