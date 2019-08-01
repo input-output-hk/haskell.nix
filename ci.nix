@@ -1,5 +1,5 @@
 let nixpkgs1903 = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/b978a94c8f9167fb86372ce1044a23f8df2edea0.tar.gz"; in
-{
+(import nixpkgs1903 {}).recurseIntoAttrs {
     "release-19.03" = {
         x86_64-linux = {
             hello = with (import ./. { nixpkgs = nixpkgs1903; system = "x86_64-linux"; });
