@@ -2,7 +2,7 @@ let nixpkgs1903 = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archiv
 with (import nixpkgs1903 {});
 let
     isDerivation = x: x ? "type" && x.type == "derivation";
-    recRecurseIntoAttrs = pred: x: if pred x then recurseIntoAttrs (lib.mapAttrs (_: v: recRecurseIntoAttrs v) x) else x;
+    recRecurseIntoAttrs = pred: x: if pred x then recurseIntoAttrs (lib.mapAttrs (_: v: recRecurseIntoAttrs pred v) x) else x;
 in recRecurseIntoAttrs (x: !isDerivation x) {
     "release-19.03" = {
        x86_64-linux = {
