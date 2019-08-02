@@ -8,7 +8,7 @@ self: super: {
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
         # here and be explicit about imports and dependencies.
-        callPackage = super.callPackageWith (self // self.haskell-nix);
+        callPackage = super.lib.callPackageWith (self // self.haskell-nix);
 
         # You can provide different pins for hackage.nix and stackage.nix if required.
         # It's also possible to override these sources with NIX_PATH.
@@ -118,9 +118,9 @@ self: super: {
         # files. This version of nix-tools may be cross compiled.
         # We probably never want to actually cross compile nix-tools on
         # it's own.
-        nix-tools-cross-compiled = import ../nix-tools {
+        nix-tools-cross-compiled = self.lib.makeOverridable (import ../nix-tools) {
             inherit (self) pkgs lib symlinkJoin makeWrapper
-                           hpack git nix nix-prefetch-git;
+                           git nix nix-prefetch-git;
             inherit (self.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
             hpack = self.haskell.lib.justStaticExecutables
                 (self.haskellPackages.hpack);
