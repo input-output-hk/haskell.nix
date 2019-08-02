@@ -1,5 +1,5 @@
 { pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? ../nixpkgs
+, nixpkgs ? ../.
 , haskell ? pkgs.haskell-nix
 , nixpkgsArgs ? { }
 }:
