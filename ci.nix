@@ -1,7 +1,7 @@
 let nixpkgs1903 = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/b978a94c8f9167fb86372ce1044a23f8df2edea0.tar.gz"; in
 with (import nixpkgs1903 {});
 let
-    recRecurseIntoAttrs = pred: x: if pred x then recurseIntoAttrs (lib.mapAttrs (_: v: recRecurseIntoAttrs pred v) x) else x;
+    recRecurseIntoAttrs = pred: x: if pred x then recurseIntoAttrs (lib.mapAttrs (n: v: if n == "buildPackages" then v else recRecurseIntoAttrs pred v) x) else x;
 in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     "release-19.03" = {
        x86_64-linux = {
