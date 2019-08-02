@@ -185,7 +185,7 @@ self: super: {
         # References to the unpacked sources, for caching in a Hydra jobset.
         source-pins = import ../lib/make-source-pins.nix {
             inherit (self) lib writeTextFile;
-            sources = [ hackageSrc stackageSrc pkgs.path ];
+            sources = [ hackageSrc stackageSrc self.path ];
         };
 
         # -- IFDs --
