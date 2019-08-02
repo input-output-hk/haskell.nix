@@ -16,7 +16,13 @@ recurseIntoAttrs {
         };
     };
     tests = recurseIntoAttrs {
-        x86_64-linux = recurseIntoAttrs (import ./test { system = "x86_64-linux"; });
-        x86_64-darwin = recurseIntoAttrs (import ./test { system = "x86_64-darwin"; });
+        x86_64-linux = recurseIntoAttrs (import ./test { nixpkgsArgs = { system = "x86_64-linux"; }; });
+        x86_64-darwin = recurseIntoAttrs (import ./test { nixpkgsArgs = { system = "x86_64-darwin"; }; });
+    };
+    stackage = recurseIntoAttrs {
+        x86_64-linux = recurseIntoAttrs (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
+            haskell-nix.snapshots."lts-13.29");
+        x86_64-darwin = recurseIntoAttrs (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
+            haskell-nix.snapshots."lts-13.29");
     };
 }
