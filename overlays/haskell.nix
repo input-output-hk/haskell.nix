@@ -1,83 +1,215 @@
-self: super: with super;
-  # sadly we need to patch GHC a bit.
-   let
-    ghcPkgOverrides = {
-        ghcFlavour = if super.stdenv.targetPlatform == super.stdenv.hostPlatform
-                     then "perf"
-                     else if super.stdenv.targetPlatform.isWindows
-                          then "perf-cross-ncg"
-                          else "perf-cross";
-        enableShared = super.stdenv.targetPlatform == super.stdenv.hostPlatform;
-        enableIntegerSimple = false;
-      };
-    ghcDrvOverrides = drv: let
-      # Returns true iff this derivation's version is strictly older than ver.
-      versionOlder = ver: builtins.compareVersions ver drv.version == 1;
-      # Returns true iff this derivation's verion is greater than or equal to ver.
-      versionAtLeast = ver: !versionOlder ver;
-    in {
-        dontStrip = true;
-        hardeningDisable = (drv.hardeningDisable or []) ++ [ "stackprotector" "format" ];
-        patches = (drv.patches or [])
-         # Patches for which we know they have been merged into a public release already
-         ++ lib.optional (versionAtLeast "8.4.4" && versionOlder "8.6")   ./patches/ghc/ghc-8.4.4-reinstallable-lib-ghc.patch
-         ++ lib.optional (versionOlder "8.6")                             ./patches/ghc/move-iserv-8.4.2.patch
-         ++ lib.optional (versionOlder "8.6")                             ./patches/ghc/hsc2hs-8.4.2.patch
-         ++ lib.optional (versionOlder "8.6")                             ./patches/ghc/various-8.4.2.patch
-         ++ lib.optional (versionOlder "8.6")                             ./patches/ghc/lowercase-8.4.2.patch
-         ++ lib.optional (versionOlder "8.6")                             ./patches/ghc/cabal-exe-ext-8.4.2.patch
-         ++ lib.optional (versionOlder "8.6")                             ./patches/ghc/ghc-8.4.3-Cabal2201-SMP-test-fix.patch
-         ++ lib.optional (versionOlder "8.6")                             ./patches/ghc/outputtable-assert-8.4.patch
-         ++ lib.optional (versionAtLeast "8.6" && versionOlder "8.6.4")   ./patches/ghc/MR148--T16104-GhcPlugins.patch
-         ++ lib.optional (versionOlder "8.6.4")                           ./patches/ghc/MR95--ghc-pkg-deadlock-fix.patch
+# The haskell.nix infrastructure
+#
+# for hygenic reasons we'll use haskell-nix as a prefix.
+# Using haskell.nix in nix is awkward as I needs to be quoted.
+self: super: {
+    haskell-nix = with self.haskell-nix; {
 
-         # Patches for which we only know a lower bound.
-         ++ lib.optional (versionAtLeast "8.6")                           ./patches/ghc/iserv-proxy-cleanup.patch                             # https://gitlab.haskell.org/ghc/ghc/merge_requests/250  -- merged; ghc-8.8.1
-         ++ lib.optional (versionAtLeast "8.2")                           ./patches/ghc/MR545--ghc-pkg-databases.patch                        # https://gitlab.haskell.org/ghc/ghc/merge_requests/545  -- merged; ghc-8.8.1
-         ++ lib.optional (versionAtLeast "8.6")                           ./patches/ghc/outputtable-assert-8.6.patch
-         ++ lib.optional (versionAtLeast "8.6")                           ./patches/ghc/mistuke-ghc-err_clean_up_error_handler-8ab1a89af89848f1713e6849f189de66c0ed7898.diff # this is part of Phyx- revamped io-manager.
-         ++ lib.optional (versionAtLeast "8.6.4")                         ./patches/ghc/ghc-8.6.4-reenable-th-qq-in-stage1.patch
-         ++ [
-          ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
-          ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
-          ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
-          ./patches/ghc/0001-Stop-the-linker-panic.patch                      # https://phabricator.haskell.org/D5012                  -- merged; ghc-8.8.1
-          ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
-          ./patches/ghc/ghc-8.4.3-Cabal2201-allow-test-wrapper.patch          # https://github.com/haskell/cabal/pulls/5995            -- merged; cabal-3.0.0 (ghc-8.8.1)
-          ./patches/ghc/ghc-8.4.3-Cabal2201-response-file-support.patch       # https://github.com/haskell/cabal/pulls/5996            -- merged; cabal-3.0.0 (ghc-8.8.1)
-          ./patches/ghc/ghc-8.6-Cabal-fix-datadir.patch                       # https://github.com/haskell/cabal/issues/5862
-          ./patches/ghc/MR196--ghc-pkg-shut-up.patch                          # https://gitlab.haskell.org/ghc/ghc/merge_requests/196  -- merged; ghc-8.8.1
-          ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
-         ]
+        # You can provide different pins for hackage.nix and stackage.nix if required.
+        # It's also possible to override these sources with NIX_PATH.
+        hackageSourceJSON = ../hackage-src.json;
+        stackageSourceJSON = ../stackage-src.json;
 
-         # Patches for specific ghc versions.
-         ++ lib.optional (drv.version == "8.6.3")                         ./patches/ghc/T16057--ghci-doa-on-windows.patch
-         ++ lib.optional (drv.version == "8.6.3")                         ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
-         ++ lib.optional (drv.version == "8.6.4")                         ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
-         ++ lib.optional (drv.version == "8.6.5")                         ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
-         ++ lib.optional (drv.version == "8.6.4")                         ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
-         ;
-        # Run autoconf again, because an .ac file may have been patched
-        postPatch = (drv.postPatch or "") + "\n" + "autoreconf";
-      };
-   in {
-   haskell = let
-     # These patches (ghcPkgOverrides and ghcDrvOverrides) only apply to vanilla source ghcs.
-     # Not ghcjs or binary distributions.
-     # We also ignore ghc82. And are only concerned with ghc84+
-     # we want to apply this only to non-ghcjs ones.
-     # As we do some ghc <- ghcjs mapping for ghcjs.
-     needsPatches = name:
-       !(super.stdenv.targetPlatform.isGhcjs or false)
-       && lib.hasPrefix "ghc" name
-       && !lib.hasPrefix "ghc82" name
-       && !lib.hasPrefix "ghcjs" name
-       && !lib.hasSuffix "Binary" name;
-     overrideCompiler = compiler:
-       (compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides;
-   in
-     lib.recursiveUpdate super.haskell {
-       compiler = lib.mapAttrs (_name: overrideCompiler)
-         (lib.filterAttrs (name: _value: needsPatches name) super.haskell.compiler);
-     };
-   }
+        # ghc hackage patches.
+        # these are patches that turn hackage packages into the same as the ones
+        # ghc ships with the supposedly same version. See GHC Track Issue: 16199
+        ghcHackagePatches = import ../patches;
+
+        compat = import ../lib/compat.nix;
+
+        # Utility function for downloading a pinned git repo, that can be
+        # overridden with NIX_PATH.
+        fetchExternal = import ../lib/fetch-external.nix;
+
+        # Function for cleaning haskell source directories pulled from iohk-nix
+        cleanSourceHaskell = self.callPackage ../lib/clean-source-haskell.nix {};
+
+        # All packages from Hackage as Nix expressions
+        hackageSrc = fetchExternal {
+            name     = "hackage-exprs-source";
+            specJSON = hackageSourceJSON;
+            override = "hackage";
+        };
+        hackage = import hackageSrc;
+
+        # Contains the hashes of the cabal 01-index.tar.gz for given
+        # index states.  Starting from April 1st 2019.
+        indexStateHashesPath = hackageSrc + "/index-state-hashes.nix";
+
+        # The set of all Stackage snapshots
+        stackageSrc = fetchExternal {
+            name     = "stackage-snapshot-source";
+            specJSON = stackageSourceJSON;
+            override = "stackage";
+        };
+
+        stackage = import stackageSrc;
+
+        # Utility functions for working with the component builder.
+        haskellLib = let hl = import ../lib { inherit (self) lib; haskellLib = hl; }; in hl;
+
+        # Create a Haskell package set based on a cabal build plan (plan-to-nix)
+        # and Nix expressions representing cabal packages (cabal-to-nix).
+        mkPkgSet =
+            { pkg-def  # Base package set. Either from stackage (via stack-to-nix) or from a cabal projects plan file (via plan-to-nix)
+            , pkg-def-extras ? [] # Additional packages to augment the Base package set `pkg-def` with.
+            , modules ? []
+            }@args:
+
+            import ../package-set.nix (args // {
+                pkgs = self;
+                inherit hackage pkg-def;
+            });
+
+        # Create a Haskell package set based on a Stack configuration.
+        mkStackPkgSet =
+            { stack-pkgs  # Path to the output of stack-to-nix
+            , pkg-def-extras ? []
+            , modules ? []
+            }@args:
+            let
+                # The Stackage release referenced in the stack config
+                pkg-def = stackage.${stack-pkgs.resolver} or (throw ''
+                This version of stackage.nix does not know about the Stackage resolver ${stack-pkgs.resolver}.
+                You may need to update haskell.nix to one that includes a newer stackage.nix.
+                '');
+                # The compiler referenced in the stack config
+                compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
+                patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
+            in self.mkPkgSet {
+                inherit pkg-def;
+                pkg-def-extras = [ stack-pkgs.extras ] ++ pkg-def-extras;
+                # set doExactConfig = true. The stackage set should be consistent
+                # and we should trust stackage here!
+                modules = [ { doExactConfig = true; } patchesModule ] ++ modules;
+            };
+
+        # Create a Haskell package set based on a Cabal configuration.
+        mkCabalProjectPkgSet =
+            { plan-pkgs  # Path to the output of plan-to-nix
+            , pkg-def-extras ? []
+            , modules ? []
+            }@args:
+
+            let
+                pkg-def = plan-pkgs.pkgs;
+                # The compiler referenced in the stack config
+                compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
+                patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
+            in mkPkgSet {
+                inherit pkg-def;
+                pkg-def-extras = [ plan-pkgs.extras ] ++ pkg-def-extras;
+                # set doExactConfig = true, as we trust cabals resolution for
+                # the plan.
+                modules = [ { doExactConfig = true; } patchesModule ] ++ modules;
+            };
+
+        # Package sets for all stackage snapshots.
+        snapshots = import ../snapshots.nix { inherit (self) lib; inherit mkPkgSet stackage; };
+        # Pick a recent LTS snapshot to be our "default" package set.
+        haskellPackages = snapshots."lts-13.26";
+
+        # Programs for generating Nix expressions from Cabal and Stack
+        # files. This version of nix-tools may be cross compiled.
+        # We probably never want to actually cross compile nix-tools on
+        # it's own.
+        nix-tools-cross-compiled = self.callPackage ../nix-tools {
+            inherit (self.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
+            hpack = self.haskell.lib.justStaticExecutables
+                (self.haskellPackages.hpack);
+        };
+        # While `nix-tools-cross-compiled` may be cross compiled,
+        # getting it from `buildPackages` we should get
+        # nix-tools suitable for running on the build system.
+        nix-tools = self.buildPackages.haskell-nix.nix-tools-cross-compiled;
+        # TODO perhaps there is a cleaner way to get a suitable nix-tools.
+
+            # Produce a fixed output derivation from a moving target (hackage index tarball)
+        hackageTarball = { index-state, sha256, nix-tools ? self.nix-tools, ... }:
+            assert sha256 != null;
+            self.fetchurl {
+                name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
+                url = "https://hackage.haskell.org/01-index.tar.gz";
+                downloadToTemp = true;
+                postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+
+                outputHashAlgo = "sha256";
+                outputHash = sha256;
+            };
+
+        mkLocalHackageRepo = import ../mk-local-hackage-repo { inherit hackageTarball; pkgs = self; };
+
+        dotCabal = { index-state, sha256, cabal-install, ... }@args:
+            self.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
+                mkdir -p $out/.cabal
+                cat <<EOF > $out/.cabal/config
+                repository cached
+                    url: file:${mkLocalHackageRepo args}
+                    secure: True
+                    root-keys:
+                    key-threshold: 0
+                EOF
+                mkdir -p $out/.cabal/packages/cached
+                HOME=$out cabal new-update cached
+            '';
+
+        update-index-state-hashes = self.callPackage ../scripts/update-index-state-hashes.nix {};
+
+        # Function to call stackToNix
+        callStackToNix = import ../lib/call-stack-to-nix.nix {
+            pkgs = self.buildPackages.pkgs;
+            inherit (self.buildPackages.pkgs) runCommand;
+            inherit (self.buildPackages.haskell-nix) nix-tools;
+        };
+
+        # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
+        # Resulting nix files are added to nix-plan subdirectory.
+        callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
+            index-state-hashes = import indexStateHashesPath;
+            inherit (self.buildPackages.haskell-nix) dotCabal nix-tools;
+            pkgs = self.buildPackages.pkgs; # buildPackages;
+            inherit (self.buildPackages.pkgs.haskellPackages) hpack;
+            inherit (self.buildPackages.pkgs) runCommand cabal-install ghc symlinkJoin cacert;
+        };
+
+        # References to the unpacked sources, for caching in a Hydra jobset.
+        source-pins = self.callPackage ../lib/make-source-pins.nix {
+            sources = [ hackageSrc stackageSrc pkgs.path ];
+        };
+
+        # -- IFDs --
+        # Build a specific package (name, version) against a given index-stage
+        # from hackage.  This is useful if you want to build an executable from
+        # a given package.
+        # NB: If no explicit index-state is provided the most recent one from
+        # the index-state-hashes is used.  This guarantees reproducability wrt
+        # to the haskell.nix revision.  If reproducability beyond haskell.nix
+        # is required, a specific index-state should be provided!
+        hackage-package =
+            { name
+            , version
+            , index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
+            , ... }@args:
+            let tarball = self.pkgs.fetchurl {
+                url = "mirror://hackage/${name}-${version}.tar.gz";
+                inherit (hackage.${name}.${version}) sha256; };
+            in let src = self.buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
+                tmp=$(mktemp -d)
+                cd $tmp
+                tar xzf ${tarball}
+                mv "${name}-${version}" $out
+                '';
+            in (cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; })).${name};
+
+        cabalProject =
+            { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
+            , ... }@args:
+            let plan-pkgs = import (callCabalProjectToNix
+                                    (builtins.trace "Using index-state: ${index-state}"
+                                     (args // { inherit index-state; })));
+            in let pkg-set = mkCabalProjectPkgSet (
+                { inherit plan-pkgs; } //
+                self.lib.optionalAttrs (args ? ghc) { modules = [ { ghc.package = args.ghc; } ]; });
+            in pkg-set.config.hsPkgs;
+    };
+}

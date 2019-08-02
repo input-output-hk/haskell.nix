@@ -1,6 +1,7 @@
-{ pkgs ? import nixpkgs { }
+{ pkgs ? import nixpkgs nixpkgsArgs
 , nixpkgs ? ../nixpkgs
-, haskell ? pkgs.callPackage ../. { }
+, haskell ? pkgs.haskell-nix
+, nixpkgsArgs ? { }
 }:
 
 with pkgs;

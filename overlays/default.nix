@@ -34,7 +34,8 @@
         };
     })
     #(import ./python.nix)
-    (import ./bootstrap.nix)
     (import ./haskell.nix)
+    (import ./bootstrap.nix)
+    (import ./ghc.nix)
     (import ./windows.nix)
 ]

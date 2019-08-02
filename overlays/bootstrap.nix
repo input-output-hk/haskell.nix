@@ -78,7 +78,7 @@ self: super: rec {
             # compilers into the same place where nix expects them.
             compiler = import ../compiler/old-ghc-nix { pkgs = self; };
 
-            packages = {
+            packages = with self.haskell-nix; {
                 # cabal has it's own bootstrap script which we'll use.
                 cabal-install = import ../compiler/bootstrap/cabal-install.nix {
                     inherit (self) fetchurl stdenv zlib;
@@ -92,10 +92,10 @@ self: super: rec {
 
                 # disable hpack support during bootstrap
                 hpack = null;
-                nix-tools = (callPackage ../nix-tools {
+                nix-tools = self.haskell-nix.nix-tools.override {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) hpack;
-                });
+                };
 
                 # now that we have nix-tools and hpack, we can just
                 # use `hackage-package` to build any package from

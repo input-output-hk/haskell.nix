@@ -4,15 +4,19 @@ recurseIntoAttrs {
     "release-19.03" = recurseIntoAttrs {
        x86_64-linux = recurseIntoAttrs {
             hello = with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
-                (hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
+                (haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
             x86_64-pc-mingw32-hello = with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; crossSystem = { config = "x86_64-pc-mingw32"; }; }; });
-                (hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
+                (haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
         };
         x86_64-darwin = recurseIntoAttrs {
             hello = with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
-                (hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
+                (haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
             x86_64-pc-mingw32-hello = with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; crossSystem = { config = "x86_64-pc-mingw32"; }; }; });
-                (hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
+                (haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
         };
+    };
+    tests = recurseIntoAttrs {
+        x86_64-linux = recurseIntoAttrs (import ./test { system = "x86_64-linux"; });
+        x86_64-darwin = recurseIntoAttrs (import ./test { system = "x86_64-darwin"; });
     };
 }
