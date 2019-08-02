@@ -5,6 +5,11 @@
 self: super: {
     haskell-nix = with self.haskell-nix; {
 
+        # We provide a `callPackage` function to consumers for
+        # convenience.  We will however refrain from using it
+        # here and be explicit about imports and dependencies.
+        callPackage = super.callPackageWith (self // self.haskell-nix);
+
         # You can provide different pins for hackage.nix and stackage.nix if required.
         # It's also possible to override these sources with NIX_PATH.
         hackageSourceJSON = ../hackage-src.json;
@@ -22,7 +27,7 @@ self: super: {
         fetchExternal = import ../lib/fetch-external.nix;
 
         # Function for cleaning haskell source directories pulled from iohk-nix
-        cleanSourceHaskell = self.callPackage ../lib/clean-source-haskell.nix {};
+        cleanSourceHaskell = import ../lib/clean-source-haskell.nix { pkgs = self; };
 
         # All packages from Hackage as Nix expressions
         hackageSrc = fetchExternal {
@@ -113,7 +118,9 @@ self: super: {
         # files. This version of nix-tools may be cross compiled.
         # We probably never want to actually cross compile nix-tools on
         # it's own.
-        nix-tools-cross-compiled = self.callPackage ../nix-tools {
+        nix-tools-cross-compiled = import ../nix-tools {
+            inherit (self) pkgs lib symlinkJoin makeWrapper
+                           hpack git nix nix-prefetch-git;
             inherit (self.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
             hpack = self.haskell.lib.justStaticExecutables
                 (self.haskellPackages.hpack);
@@ -153,7 +160,10 @@ self: super: {
                 HOME=$out cabal new-update cached
             '';
 
-        update-index-state-hashes = self.callPackage ../scripts/update-index-state-hashes.nix {};
+        update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
+            inherit (self.haskell-nix) indexStateHashesPath nix-tools;
+            inherit (self) coreutils nix writeShellScriptBin stdenv;
+        };
 
         # Function to call stackToNix
         callStackToNix = import ../lib/call-stack-to-nix.nix {
@@ -173,7 +183,8 @@ self: super: {
         };
 
         # References to the unpacked sources, for caching in a Hydra jobset.
-        source-pins = self.callPackage ../lib/make-source-pins.nix {
+        source-pins = import ../lib/make-source-pins.nix {
+            inherit (self) lib writeTextFile;
             sources = [ hackageSrc stackageSrc pkgs.path ];
         };
 
