@@ -24,8 +24,8 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
             haskell.compiler;
     };
     tests = {
-        x86_64-linux = (import ./test { nixpkgsArgs = { system = "x86_64-linux"; }; });
-        x86_64-darwin = (import ./test { nixpkgsArgs = { system = "x86_64-darwin"; }; });
+        x86_64-linux = (import ./test { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
+        x86_64-darwin = (import ./test { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
     };
     # Disable stackage until Monday Aug 4th.
     # We need a new agent re-deployed and the limit fo 10k evals lifted.
