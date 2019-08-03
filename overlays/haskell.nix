@@ -81,7 +81,7 @@ self: super: {
                 # The compiler referenced in the stack config
                 compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
-            in self.mkPkgSet {
+            in mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras ] ++ pkg-def-extras;
                 # set doExactConfig = true. The stackage set should be consistent
