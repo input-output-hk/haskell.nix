@@ -1,36 +1,115 @@
 self: super: rec {
     # Use this to disable the existing haskell infra structure for testing purposes
-    haskell.compiler = {
-        ghc865 = self.callPackage ../compiler/ghc {
-            bootPkgs = with self.buildPackages; {
+    haskell.compiler =
+        let bootPkgs = with self.buildPackages; {
                 ghc = buildPackages.bootstrap.haskell.compiler.ghc844;
                 inherit (bootstrap.haskell.packages) alex happy hscolour;
             };
             sphinx = with self.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
-            buildLlvmPackages = self.buildPackages.llvmPackages_5;
-            llvmPackages = self.llvmPackages_5;
-
-            src-spec = rec {
-                version = "8.6.5";
-                url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                sha256 = "0qg3zsmbk4rkwkc3jpas3zs74qaxmw4sp4v1mhsbj0a0dzls2jjd";
+            hsc2hs-align-conditionals-patch = self.fetchpatch {
+                url = "https://git.haskell.org/hsc2hs.git/patch/738f3666c878ee9e79c3d5e819ef8b3460288edf";
+                sha256 = "0plzsbfaq6vb1023lsarrjglwgr9chld4q3m99rcfzx0yx5mibp3";
+                extraPrefix = "utils/hsc2hs/";
+                stripLen = 1;
             };
+            D5123-patch = self.fetchpatch rec { # https://phabricator.haskell.org/D5123
+                url = "http://tarballs.nixos.org/sha256/${sha256}";
+                name = "D5123.diff";
+                sha256 = "0nhqwdamf2y4gbwqxcgjxs0kqx23w9gv5kj0zv6450dq19rji82n";
+            };
+            haddock-900-patch = self.fetchpatch rec { # https://github.com/haskell/haddock/issues/900
+                url = "https://patch-diff.githubusercontent.com/raw/haskell/haddock/pull/983.diff";
+                name = "loadpluginsinmodules.diff";
+                sha256 = "0bvvv0zsfq2581zsir97zfkggc1kkircbbajc2fz3b169ycpbha1";
+                extraPrefix = "utils/haddock/";
+                stripLen = 1;
+            };
+        in {
+            ghc844 = self.callPackage ../compiler/ghc {
+                inherit bootPkgs sphinx;
 
-            ghc-patches = [
-                (self.fetchpatch rec { # https://phabricator.haskell.org/D5123
-                    url = "http://tarballs.nixos.org/sha256/${sha256}";
-                    name = "D5123.diff";
-                    sha256 = "0nhqwdamf2y4gbwqxcgjxs0kqx23w9gv5kj0zv6450dq19rji82n";
-                })
-                (self.fetchpatch rec { # https://github.com/haskell/haddock/issues/900
-                    url = "https://patch-diff.githubusercontent.com/raw/haskell/haddock/pull/983.diff";
-                    name = "loadpluginsinmodules.diff";
-                    sha256 = "0bvvv0zsfq2581zsir97zfkggc1kkircbbajc2fz3b169ycpbha1";
-                    extraPrefix = "utils/haddock/";
-                    stripLen = 1;
-                })
-            ];
-        };
+                buildLlvmPackages = self.buildPackages.llvmPackages_5;
+                llvmPackages = self.llvmPackages_5;
+
+                src-spec = rec {
+                    version = "8.4.4";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "1ch4j2asg7pr52ai1hwzykxyj553wndg7wq93i47ql4fllspf48i";
+                };
+
+                ghc-patches = [ hsc2hs-align-conditionals-patch D5123-patch ]
+                            ++ lib.optional self.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
+            };
+            ghc861 = self.callPackage ../compiler/ghc {
+                inherit bootPkgs sphinx;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_5;
+                llvmPackages = self.llvmPackages_5;
+
+                src-spec = rec {
+                    version = "8.6.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "0dkh7idgrqr567fq94a0f5x3w0r4cm2ydn51nb5wfisw3rnw499c";
+                };
+
+                ghc-patches = [ D5123-patch ];
+            };
+            ghc862 = self.callPackage ../compiler/ghc {
+                inherit bootPkgs sphinx;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_5;
+                llvmPackages = self.llvmPackages_5;
+
+                src-spec = rec {
+                    version = "8.6.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "1mbn3n2ynmpfpb7jfnhpzzli31qqxqyi8ws71blws3i846fq3ana";
+                };
+
+                ghc-patches = [ D5123-patch ];
+            };
+            ghc863 = self.callPackage ../compiler/ghc {
+                inherit bootPkgs sphinx;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_5;
+                llvmPackages = self.llvmPackages_5;
+
+                src-spec = rec {
+                    version = "8.6.3";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "08vzq0dpg4a39bs61j6rq4z0n7jby5mc69h4m25xhd8rjyvkg7lz";
+                };
+
+                ghc-patches = [ D5123-patch ];
+            };
+            ghc864 = self.callPackage ../compiler/ghc {
+                inherit bootPkgs sphinx;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_5;
+                llvmPackages = self.llvmPackages_5;
+
+                src-spec = rec {
+                    version = "8.6.4";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "0fihs1sr0hpk67dn9cmrsav13kkcp9hz8ggdqcrs80rj8vj0fpav";
+                };
+
+                ghc-patches = [ D5123-patch ];
+            };
+            ghc865 = self.callPackage ../compiler/ghc {
+                inherit bootPkgs sphinx;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_5;
+                llvmPackages = self.llvmPackages_5;
+
+                src-spec = rec {
+                    version = "8.6.5";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "0qg3zsmbk4rkwkc3jpas3zs74qaxmw4sp4v1mhsbj0a0dzls2jjd";
+                };
+
+                ghc-patches = [ D5123-patch haddock-900-patch ];
+            };
     };
 
     ghc = haskell.compiler.ghc865;
