@@ -38,7 +38,7 @@ self: super: rec {
                 };
 
                 ghc-patches = [ hsc2hs-align-conditionals-patch D5123-patch ]
-                            ++ lib.optional self.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
+                            ++ self.lib.optional self.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
             };
             ghc861 = self.callPackage ../compiler/ghc {
                 inherit bootPkgs sphinx;

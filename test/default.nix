@@ -1,4 +1,4 @@
-{ pkgs ? import nixpkgs nixpkgsArgs
+{ pkgs ? import nixpkgs { inherit nixpkgsArgs; }
 , nixpkgs ? ../.
 , haskell ? pkgs.haskell-nix
 , nixpkgsArgs ? { }
