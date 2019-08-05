@@ -117,6 +117,7 @@ self: super: rec {
 
     # see below
     haskellPackages.hpack = null;
+    haskellPackages.hoogle = self.haskell-nix.haskellPackages.hoogle.components.exes.hoogle;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
@@ -152,12 +153,12 @@ self: super: rec {
     bootstrap = {
         # XXX: import ../. will throw away all other overlays, config values, ...
         #      this is not ideal!
-        haskell = with import ../. {}; let ghc = self.buildPackages.bootstrap.haskell.compiler.ghc844; in {
+        haskell = with self.haskell-nix; let ghc = self.buildPackages.bootstrap.haskell.compiler.ghc844; in {
             # get binary compilers for bootstrapping.  We'll put the eventual proper
             # compilers into the same place where nix expects them.
             compiler = import ../compiler/old-ghc-nix { pkgs = self; };
 
-            packages = with self.haskell-nix; {
+            packages = {
                 # cabal has it's own bootstrap script which we'll use.
                 cabal-install = import ../compiler/bootstrap/cabal-install.nix {
                     inherit (self) fetchurl stdenv zlib;
@@ -171,7 +172,7 @@ self: super: rec {
 
                 # disable hpack support during bootstrap
                 hpack = null;
-                nix-tools = self.haskell-nix.nix-tools.override {
+                nix-tools = nix-tools.override {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) hpack;
                 };

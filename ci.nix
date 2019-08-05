@@ -20,20 +20,17 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     haskell.compiler = {
         x86_64-linux = with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
             haskell.compiler;
-        x86_64-darwin = with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
-            haskell.compiler;
+        # x86_64-darwin = with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
+        #     haskell.compiler;
     };
     tests = {
         x86_64-linux = (import ./test { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
-        x86_64-darwin = (import ./test { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
+        # x86_64-darwin = (import ./test { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
     };
-    # Disable stackage until Monday Aug 4th.
-    # We need a new agent re-deployed and the limit fo 10k evals lifted.
-    #
-    # stackage = {
-    #     x86_64-linux = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
-    #         haskell-nix.snapshots."lts-13.29");
-    #     # x86_64-darwin = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
-    #     #     haskell-nix.snapshots."lts-13.29");
-    # };
+    stackage = {
+        x86_64-linux = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
+            haskell-nix.snapshots."lts-13.29");
+        # x86_64-darwin = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
+        #     haskell-nix.snapshots."lts-13.29");
+    };
 }
