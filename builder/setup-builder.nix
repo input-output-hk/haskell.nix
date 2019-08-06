@@ -1,6 +1,6 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
 
-{ setup-depends, package, name, src, flags }:
+{ setup-depends, package, name, src, flags, defaultSetupSrc }:
 
 let
   fullName = "${name}-setup";
@@ -16,7 +16,7 @@ let
       frameworks = [];
       doExactConfig = false;
     };
-  }; 
+  };
 
 in
  stdenv.lib.fix (drv:
@@ -28,6 +28,9 @@ in
       CABAL_CONFIG = configFiles + /cabal.config;
       phases = ["unpackPhase" "buildPhase" "installPhase"];
       buildPhase = ''
+        if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
+          cat ${defaultSetupSrc} > Setup.hs
+        fi
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f

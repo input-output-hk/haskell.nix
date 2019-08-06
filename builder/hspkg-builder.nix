@@ -36,11 +36,11 @@ let
     ${buildGHC.targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
   '';
 
-  setup = if package.buildType == "Simple"
+  setup = if package.buildType == "Simple" && package.setup-depends == []
     then defaultSetup
     else setup-builder {
       setup-depends = package.setup-depends;
-      inherit package name src flags;
+      inherit package name src flags defaultSetupSrc;
     };
 
   buildComp = componentId: component: comp-builder {
