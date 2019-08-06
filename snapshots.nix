@@ -11,10 +11,15 @@
 with lib;
 
 let
-  mkSnapshot = name: pkg-def: (mkPkgSet {
+  mkSnapshot = name: pkg-def: (let pkgSet = mkPkgSet {
     inherit pkg-def;
     pkg-def-extras = pkg-def-extras name;
-  }).config.hsPkgs;
+    modules = [
+      { packages.Cabal.patches = [ ./overlays/patches/Cabal/fix-data-dir.patch ]; }
+      { packages.alex.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
+      { packages.happy.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
+    ];
+  }; in pkgSet).config.hsPkgs;
 
   # Tests whether snapshot name is an LTS within
   # the half-open version interval [start, end).
