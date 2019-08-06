@@ -100,6 +100,9 @@ in stdenv.mkDerivation (rec {
   name = "${targetPrefix}ghc-${version}";
 
   patches = ghc-patches;
+  postPath = stdenv.lib.optionalString (ghc-patches != []) ''
+    autoreconf
+  '';
 
     src = stdenv.mkDerivation (rec {
 
@@ -107,8 +110,6 @@ in stdenv.mkDerivation (rec {
                 nativeBuildInputs buildInputs propagatedBuildInputs
                 depsBuildTarget
                 depsTargetTarget depsTargetTargetPropagated
-                # by inheriting the patches, we can still allow override logic
-                # of patches to work at the `ghc` level, not just at the configured-src level.
                 patches postPatch
                 ;
 
