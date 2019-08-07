@@ -32,9 +32,9 @@ let
     main = defaultMain
   '';
   defaultConfig = makeSetupConfigFiles {
-    inherit (package) identifier;
-    inherit (config) flags;
-    fullName = "${name}-setup";
+    identifier = { name="default-setup"; version = "1"; };
+    flags = {};
+    fullName = "default-setup";
     component = {
       depends = package.setup-depends;
       libs = [];
