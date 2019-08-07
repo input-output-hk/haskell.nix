@@ -1,6 +1,6 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
 
-{ setup-depends, package, name, src, flags }:
+{ setup-depends, package, name, src, flags, postUnpack }:
 
 let
   component = {
@@ -29,7 +29,13 @@ let
 
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
-    inherit fullName flags component;
+    inherit fullName flags;
+    component = {
+      depends = setup-depends;
+      libs = [];
+      frameworks = [];
+      doExactConfig = false;
+    };
   };
 
 in
@@ -57,4 +63,5 @@ in
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
       '';
-    })
+         inherit postUnpack;
+       })
