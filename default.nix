@@ -231,6 +231,8 @@ let
       , index-state ? builtins.trace "Using latest index state!"  pkgs.lib.last (builtins.attrNames (import indexStateHashesPath))
       , ghc ? null
       , cabal-install ? null
+      , pkg-def-extras ? []
+      , modules ? []
       }:
       let tarball = pkgs.fetchurl {
         url = "mirror://hackage/${name}-${version}.tar.gz";
@@ -241,9 +243,11 @@ let
         tar xzf ${tarball}
         mv "${name}-${version}" $out
         '';
-      in let plan-pkgs = (callCabalProjectToNix { inherit src ghc cabal-install; index-state = builtins.trace "Using index-state: ${index-state}" index-state; }).pkgs;
-      in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
-      in pkg-set.config.hsPkgs.${name};
+      in let plan = (callCabalProjectToNix { inherit src ghc cabal-install; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
+      in let plan-nix = plan.nix;
+      in let plan-pkgs = plan.pkgs;
+      in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs pkg-def-extras modules; };
+      in pkg-set.config.hsPkgs.${name} // { inherit plan-nix; inherit (pkg-set.config) hsPkgs; };
   });
 
 in
