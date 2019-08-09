@@ -37,6 +37,9 @@
 , enableLibraryProfiling ? component.enableLibraryProfiling
 , enableExecutableProfiling ? component.enableExecutableProfiling
 , profilingDetail ? component.profilingDetail
+
+# Data
+, enableSeparateDataOutput ? component.enableSeparateDataOutput
 }:
 
 let
@@ -69,7 +72,8 @@ let
       (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
       (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )
       (if enableExecutableProfiling then "--enable-executable-profiling" else "--disable-executable-profiling" )
-    ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
+    ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
+      ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
@@ -154,7 +158,9 @@ stdenv.mkDerivation ({
 
   SETUP_HS = setup + /bin/Setup;
 
-  outputs = ["out" ] ++ (lib.optional doHaddock' "doc");
+  outputs = ["out" ]
+    ++ (lib.optional enableSeparateDataOutput "data")
+    ++ (lib.optional doHaddock' "doc");
 
   # Phases
   preInstallPhases = lib.optional doHaddock' "haddockPhase";
@@ -233,12 +239,15 @@ stdenv.mkDerivation ({
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
       fi
     ''}
-    ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
+    ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}
       if [ -f ${testExecutable} ]; then
         cp ${testExecutable} $out/${name}/
       fi
-    ''}
+    '')
+    # In case `setup copy` did not creat this
+    + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
+    }
     runHook postInstall
   '';
 
