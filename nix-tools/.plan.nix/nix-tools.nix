@@ -1,4 +1,43 @@
-{ system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
+let
+  buildDepError = pkg:
+    builtins.throw ''
+      The Haskell package set does not contain the package: ${pkg} (build dependency).
+      
+      If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix.
+      '';
+  sysDepError = pkg:
+    builtins.throw ''
+      The Nixpkgs package set does not contain the package: ${pkg} (system dependency).
+      
+      You may need to augment the system package mapping in haskell.nix so that it can be found.
+      '';
+  pkgConfDepError = pkg:
+    builtins.throw ''
+      The pkg-conf packages does not contain the package: ${pkg} (pkg-conf dependency).
+      
+      You may need to augment the pkg-conf package mapping in haskell.nix so that it can be found.
+      '';
+  exeDepError = pkg:
+    builtins.throw ''
+      The local executable components do not include the component: ${pkg} (executable dependency).
+      '';
+  legacyExeDepError = pkg:
+    builtins.throw ''
+      The Haskell package set does not contain the package: ${pkg} (executable dependency).
+      
+      If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix.
+      '';
+  buildToolDepError = pkg:
+    builtins.throw ''
+      Neither the Haskell package set or the Nixpkgs package set contain the package: ${pkg} (build tool dependency).
+      
+      If this is a system dependency:
+      You may need to augment the system package mapping in haskell.nix so that it can be found.
+      
+      If this is a Haskell dependency:
+      If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix.
+      '';
+in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
   {
     flags = {};
     package = {
@@ -17,142 +56,142 @@
     components = {
       "library" = {
         depends = [
-          (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-          (hsPkgs."hnix" or (builtins.throw "The Haskell package set does not contain the package: hnix (build dependency)"))
-          (hsPkgs."aeson" or (builtins.throw "The Haskell package set does not contain the package: aeson (build dependency)"))
-          (hsPkgs."unordered-containers" or (builtins.throw "The Haskell package set does not contain the package: unordered-containers (build dependency)"))
-          (hsPkgs."process" or (builtins.throw "The Haskell package set does not contain the package: process (build dependency)"))
-          (hsPkgs."deepseq" or (builtins.throw "The Haskell package set does not contain the package: deepseq (build dependency)"))
-          (hsPkgs."transformers" or (builtins.throw "The Haskell package set does not contain the package: transformers (build dependency)"))
-          (hsPkgs."data-fix" or (builtins.throw "The Haskell package set does not contain the package: data-fix (build dependency)"))
-          (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
-          (hsPkgs."text" or (builtins.throw "The Haskell package set does not contain the package: text (build dependency)"))
-          (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
-          (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
-          (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
-          (hsPkgs."cryptohash-sha256" or (builtins.throw "The Haskell package set does not contain the package: cryptohash-sha256 (build dependency)"))
-          (hsPkgs."base16-bytestring" or (builtins.throw "The Haskell package set does not contain the package: base16-bytestring (build dependency)"))
-          (hsPkgs."hpack" or (builtins.throw "The Haskell package set does not contain the package: hpack (build dependency)"))
+          (hsPkgs."base" or (buildDepError "base"))
+          (hsPkgs."hnix" or (buildDepError "hnix"))
+          (hsPkgs."aeson" or (buildDepError "aeson"))
+          (hsPkgs."unordered-containers" or (buildDepError "unordered-containers"))
+          (hsPkgs."process" or (buildDepError "process"))
+          (hsPkgs."deepseq" or (buildDepError "deepseq"))
+          (hsPkgs."transformers" or (buildDepError "transformers"))
+          (hsPkgs."data-fix" or (buildDepError "data-fix"))
+          (hsPkgs."Cabal" or (buildDepError "Cabal"))
+          (hsPkgs."text" or (buildDepError "text"))
+          (hsPkgs."filepath" or (buildDepError "filepath"))
+          (hsPkgs."directory" or (buildDepError "directory"))
+          (hsPkgs."bytestring" or (buildDepError "bytestring"))
+          (hsPkgs."cryptohash-sha256" or (buildDepError "cryptohash-sha256"))
+          (hsPkgs."base16-bytestring" or (buildDepError "base16-bytestring"))
+          (hsPkgs."hpack" or (buildDepError "hpack"))
           ];
         };
       exes = {
         "cabal-to-nix" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."transformers" or (builtins.throw "The Haskell package set does not contain the package: transformers (build dependency)"))
-            (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
-            (hsPkgs."hpack" or (builtins.throw "The Haskell package set does not contain the package: hpack (build dependency)"))
-            (hsPkgs."hnix" or (builtins.throw "The Haskell package set does not contain the package: hnix (build dependency)"))
-            (hsPkgs."text" or (builtins.throw "The Haskell package set does not contain the package: text (build dependency)"))
-            (hsPkgs."nix-tools" or (builtins.throw "The Haskell package set does not contain the package: nix-tools (build dependency)"))
-            (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
-            (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
-            (hsPkgs."prettyprinter" or (builtins.throw "The Haskell package set does not contain the package: prettyprinter (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."transformers" or (buildDepError "transformers"))
+            (hsPkgs."bytestring" or (buildDepError "bytestring"))
+            (hsPkgs."hpack" or (buildDepError "hpack"))
+            (hsPkgs."hnix" or (buildDepError "hnix"))
+            (hsPkgs."text" or (buildDepError "text"))
+            (hsPkgs."nix-tools" or (buildDepError "nix-tools"))
+            (hsPkgs."filepath" or (buildDepError "filepath"))
+            (hsPkgs."directory" or (buildDepError "directory"))
+            (hsPkgs."prettyprinter" or (buildDepError "prettyprinter"))
             ];
           };
         "hashes-to-nix" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."hnix" or (builtins.throw "The Haskell package set does not contain the package: hnix (build dependency)"))
-            (hsPkgs."nix-tools" or (builtins.throw "The Haskell package set does not contain the package: nix-tools (build dependency)"))
-            (hsPkgs."data-fix" or (builtins.throw "The Haskell package set does not contain the package: data-fix (build dependency)"))
-            (hsPkgs."aeson" or (builtins.throw "The Haskell package set does not contain the package: aeson (build dependency)"))
-            (hsPkgs."microlens" or (builtins.throw "The Haskell package set does not contain the package: microlens (build dependency)"))
-            (hsPkgs."microlens-aeson" or (builtins.throw "The Haskell package set does not contain the package: microlens-aeson (build dependency)"))
-            (hsPkgs."text" or (builtins.throw "The Haskell package set does not contain the package: text (build dependency)"))
-            (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
-            (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."hnix" or (buildDepError "hnix"))
+            (hsPkgs."nix-tools" or (buildDepError "nix-tools"))
+            (hsPkgs."data-fix" or (buildDepError "data-fix"))
+            (hsPkgs."aeson" or (buildDepError "aeson"))
+            (hsPkgs."microlens" or (buildDepError "microlens"))
+            (hsPkgs."microlens-aeson" or (buildDepError "microlens-aeson"))
+            (hsPkgs."text" or (buildDepError "text"))
+            (hsPkgs."filepath" or (buildDepError "filepath"))
+            (hsPkgs."directory" or (buildDepError "directory"))
             ];
           };
         "plan-to-nix" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."nix-tools" or (builtins.throw "The Haskell package set does not contain the package: nix-tools (build dependency)"))
-            (hsPkgs."hnix" or (builtins.throw "The Haskell package set does not contain the package: hnix (build dependency)"))
-            (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
-            (hsPkgs."text" or (builtins.throw "The Haskell package set does not contain the package: text (build dependency)"))
-            (hsPkgs."hpack" or (builtins.throw "The Haskell package set does not contain the package: hpack (build dependency)"))
-            (hsPkgs."unordered-containers" or (builtins.throw "The Haskell package set does not contain the package: unordered-containers (build dependency)"))
-            (hsPkgs."vector" or (builtins.throw "The Haskell package set does not contain the package: vector (build dependency)"))
-            (hsPkgs."aeson" or (builtins.throw "The Haskell package set does not contain the package: aeson (build dependency)"))
-            (hsPkgs."microlens" or (builtins.throw "The Haskell package set does not contain the package: microlens (build dependency)"))
-            (hsPkgs."microlens-aeson" or (builtins.throw "The Haskell package set does not contain the package: microlens-aeson (build dependency)"))
-            (hsPkgs."optparse-applicative" or (builtins.throw "The Haskell package set does not contain the package: optparse-applicative (build dependency)"))
-            (hsPkgs."prettyprinter" or (builtins.throw "The Haskell package set does not contain the package: prettyprinter (build dependency)"))
-            (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
-            (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
-            (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
-            (hsPkgs."transformers" or (builtins.throw "The Haskell package set does not contain the package: transformers (build dependency)"))
-            (hsPkgs."extra" or (builtins.throw "The Haskell package set does not contain the package: extra (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."nix-tools" or (buildDepError "nix-tools"))
+            (hsPkgs."hnix" or (buildDepError "hnix"))
+            (hsPkgs."Cabal" or (buildDepError "Cabal"))
+            (hsPkgs."text" or (buildDepError "text"))
+            (hsPkgs."hpack" or (buildDepError "hpack"))
+            (hsPkgs."unordered-containers" or (buildDepError "unordered-containers"))
+            (hsPkgs."vector" or (buildDepError "vector"))
+            (hsPkgs."aeson" or (buildDepError "aeson"))
+            (hsPkgs."microlens" or (buildDepError "microlens"))
+            (hsPkgs."microlens-aeson" or (buildDepError "microlens-aeson"))
+            (hsPkgs."optparse-applicative" or (buildDepError "optparse-applicative"))
+            (hsPkgs."prettyprinter" or (buildDepError "prettyprinter"))
+            (hsPkgs."filepath" or (buildDepError "filepath"))
+            (hsPkgs."directory" or (buildDepError "directory"))
+            (hsPkgs."bytestring" or (buildDepError "bytestring"))
+            (hsPkgs."transformers" or (buildDepError "transformers"))
+            (hsPkgs."extra" or (buildDepError "extra"))
             ];
           };
         "hackage-to-nix" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."nix-tools" or (builtins.throw "The Haskell package set does not contain the package: nix-tools (build dependency)"))
-            (hsPkgs."hackage-db" or (builtins.throw "The Haskell package set does not contain the package: hackage-db (build dependency)"))
-            (hsPkgs."hnix" or (builtins.throw "The Haskell package set does not contain the package: hnix (build dependency)"))
-            (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
-            (hsPkgs."containers" or (builtins.throw "The Haskell package set does not contain the package: containers (build dependency)"))
-            (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
-            (hsPkgs."text" or (builtins.throw "The Haskell package set does not contain the package: text (build dependency)"))
-            (hsPkgs."cryptohash-sha256" or (builtins.throw "The Haskell package set does not contain the package: cryptohash-sha256 (build dependency)"))
-            (hsPkgs."base16-bytestring" or (builtins.throw "The Haskell package set does not contain the package: base16-bytestring (build dependency)"))
-            (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
-            (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
-            (hsPkgs."transformers" or (builtins.throw "The Haskell package set does not contain the package: transformers (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."nix-tools" or (buildDepError "nix-tools"))
+            (hsPkgs."hackage-db" or (buildDepError "hackage-db"))
+            (hsPkgs."hnix" or (buildDepError "hnix"))
+            (hsPkgs."Cabal" or (buildDepError "Cabal"))
+            (hsPkgs."containers" or (buildDepError "containers"))
+            (hsPkgs."bytestring" or (buildDepError "bytestring"))
+            (hsPkgs."text" or (buildDepError "text"))
+            (hsPkgs."cryptohash-sha256" or (buildDepError "cryptohash-sha256"))
+            (hsPkgs."base16-bytestring" or (buildDepError "base16-bytestring"))
+            (hsPkgs."filepath" or (buildDepError "filepath"))
+            (hsPkgs."directory" or (buildDepError "directory"))
+            (hsPkgs."transformers" or (buildDepError "transformers"))
             ];
           };
         "lts-to-nix" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."nix-tools" or (builtins.throw "The Haskell package set does not contain the package: nix-tools (build dependency)"))
-            (hsPkgs."hnix" or (builtins.throw "The Haskell package set does not contain the package: hnix (build dependency)"))
-            (hsPkgs."yaml" or (builtins.throw "The Haskell package set does not contain the package: yaml (build dependency)"))
-            (hsPkgs."aeson" or (builtins.throw "The Haskell package set does not contain the package: aeson (build dependency)"))
-            (hsPkgs."microlens" or (builtins.throw "The Haskell package set does not contain the package: microlens (build dependency)"))
-            (hsPkgs."microlens-aeson" or (builtins.throw "The Haskell package set does not contain the package: microlens-aeson (build dependency)"))
-            (hsPkgs."text" or (builtins.throw "The Haskell package set does not contain the package: text (build dependency)"))
-            (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
-            (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
-            (hsPkgs."unordered-containers" or (builtins.throw "The Haskell package set does not contain the package: unordered-containers (build dependency)"))
-            (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."nix-tools" or (buildDepError "nix-tools"))
+            (hsPkgs."hnix" or (buildDepError "hnix"))
+            (hsPkgs."yaml" or (buildDepError "yaml"))
+            (hsPkgs."aeson" or (buildDepError "aeson"))
+            (hsPkgs."microlens" or (buildDepError "microlens"))
+            (hsPkgs."microlens-aeson" or (buildDepError "microlens-aeson"))
+            (hsPkgs."text" or (buildDepError "text"))
+            (hsPkgs."filepath" or (buildDepError "filepath"))
+            (hsPkgs."directory" or (buildDepError "directory"))
+            (hsPkgs."unordered-containers" or (buildDepError "unordered-containers"))
+            (hsPkgs."Cabal" or (buildDepError "Cabal"))
             ];
           };
         "stack-to-nix" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."nix-tools" or (builtins.throw "The Haskell package set does not contain the package: nix-tools (build dependency)"))
-            (hsPkgs."transformers" or (builtins.throw "The Haskell package set does not contain the package: transformers (build dependency)"))
-            (hsPkgs."hnix" or (builtins.throw "The Haskell package set does not contain the package: hnix (build dependency)"))
-            (hsPkgs."yaml" or (builtins.throw "The Haskell package set does not contain the package: yaml (build dependency)"))
-            (hsPkgs."aeson" or (builtins.throw "The Haskell package set does not contain the package: aeson (build dependency)"))
-            (hsPkgs."microlens" or (builtins.throw "The Haskell package set does not contain the package: microlens (build dependency)"))
-            (hsPkgs."microlens-aeson" or (builtins.throw "The Haskell package set does not contain the package: microlens-aeson (build dependency)"))
-            (hsPkgs."text" or (builtins.throw "The Haskell package set does not contain the package: text (build dependency)"))
-            (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
-            (hsPkgs."vector" or (builtins.throw "The Haskell package set does not contain the package: vector (build dependency)"))
-            (hsPkgs."prettyprinter" or (builtins.throw "The Haskell package set does not contain the package: prettyprinter (build dependency)"))
-            (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
-            (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
-            (hsPkgs."extra" or (builtins.throw "The Haskell package set does not contain the package: extra (build dependency)"))
-            (hsPkgs."hpack" or (builtins.throw "The Haskell package set does not contain the package: hpack (build dependency)"))
-            (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
-            (hsPkgs."optparse-applicative" or (builtins.throw "The Haskell package set does not contain the package: optparse-applicative (build dependency)"))
-            (hsPkgs."http-client-tls" or (builtins.throw "The Haskell package set does not contain the package: http-client-tls (build dependency)"))
-            (hsPkgs."http-client" or (builtins.throw "The Haskell package set does not contain the package: http-client (build dependency)"))
-            (hsPkgs."http-types" or (builtins.throw "The Haskell package set does not contain the package: http-types (build dependency)"))
-            (hsPkgs."unordered-containers" or (builtins.throw "The Haskell package set does not contain the package: unordered-containers (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."nix-tools" or (buildDepError "nix-tools"))
+            (hsPkgs."transformers" or (buildDepError "transformers"))
+            (hsPkgs."hnix" or (buildDepError "hnix"))
+            (hsPkgs."yaml" or (buildDepError "yaml"))
+            (hsPkgs."aeson" or (buildDepError "aeson"))
+            (hsPkgs."microlens" or (buildDepError "microlens"))
+            (hsPkgs."microlens-aeson" or (buildDepError "microlens-aeson"))
+            (hsPkgs."text" or (buildDepError "text"))
+            (hsPkgs."Cabal" or (buildDepError "Cabal"))
+            (hsPkgs."vector" or (buildDepError "vector"))
+            (hsPkgs."prettyprinter" or (buildDepError "prettyprinter"))
+            (hsPkgs."directory" or (buildDepError "directory"))
+            (hsPkgs."filepath" or (buildDepError "filepath"))
+            (hsPkgs."extra" or (buildDepError "extra"))
+            (hsPkgs."hpack" or (buildDepError "hpack"))
+            (hsPkgs."bytestring" or (buildDepError "bytestring"))
+            (hsPkgs."optparse-applicative" or (buildDepError "optparse-applicative"))
+            (hsPkgs."http-client-tls" or (buildDepError "http-client-tls"))
+            (hsPkgs."http-client" or (buildDepError "http-client"))
+            (hsPkgs."http-types" or (buildDepError "http-types"))
+            (hsPkgs."unordered-containers" or (buildDepError "unordered-containers"))
             ];
           };
         "truncate-index" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."optparse-applicative" or (builtins.throw "The Haskell package set does not contain the package: optparse-applicative (build dependency)"))
-            (hsPkgs."zlib" or (builtins.throw "The Haskell package set does not contain the package: zlib (build dependency)"))
-            (hsPkgs."tar" or (builtins.throw "The Haskell package set does not contain the package: tar (build dependency)"))
-            (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
-            (hsPkgs."time" or (builtins.throw "The Haskell package set does not contain the package: time (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."optparse-applicative" or (buildDepError "optparse-applicative"))
+            (hsPkgs."zlib" or (buildDepError "zlib"))
+            (hsPkgs."tar" or (buildDepError "tar"))
+            (hsPkgs."bytestring" or (buildDepError "bytestring"))
+            (hsPkgs."time" or (buildDepError "time"))
             ];
           };
         };

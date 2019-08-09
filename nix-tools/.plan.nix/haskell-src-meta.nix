@@ -1,4 +1,43 @@
-{ system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
+let
+  buildDepError = pkg:
+    builtins.throw ''
+      The Haskell package set does not contain the package: ${pkg} (build dependency).
+      
+      If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix.
+      '';
+  sysDepError = pkg:
+    builtins.throw ''
+      The Nixpkgs package set does not contain the package: ${pkg} (system dependency).
+      
+      You may need to augment the system package mapping in haskell.nix so that it can be found.
+      '';
+  pkgConfDepError = pkg:
+    builtins.throw ''
+      The pkg-conf packages does not contain the package: ${pkg} (pkg-conf dependency).
+      
+      You may need to augment the pkg-conf package mapping in haskell.nix so that it can be found.
+      '';
+  exeDepError = pkg:
+    builtins.throw ''
+      The local executable components do not include the component: ${pkg} (executable dependency).
+      '';
+  legacyExeDepError = pkg:
+    builtins.throw ''
+      The Haskell package set does not contain the package: ${pkg} (executable dependency).
+      
+      If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix.
+      '';
+  buildToolDepError = pkg:
+    builtins.throw ''
+      Neither the Haskell package set or the Nixpkgs package set contain the package: ${pkg} (build tool dependency).
+      
+      If this is a system dependency:
+      You may need to augment the system package mapping in haskell.nix so that it can be found.
+      
+      If this is a Haskell dependency:
+      If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix.
+      '';
+in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
   {
     flags = {};
     package = {
@@ -17,31 +56,31 @@
     components = {
       "library" = {
         depends = [
-          (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-          (hsPkgs."haskell-src-exts" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-exts (build dependency)"))
-          (hsPkgs."pretty" or (builtins.throw "The Haskell package set does not contain the package: pretty (build dependency)"))
-          (hsPkgs."syb" or (builtins.throw "The Haskell package set does not contain the package: syb (build dependency)"))
-          (hsPkgs."template-haskell" or (builtins.throw "The Haskell package set does not contain the package: template-haskell (build dependency)"))
-          (hsPkgs."th-orphans" or (builtins.throw "The Haskell package set does not contain the package: th-orphans (build dependency)"))
-          ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "7.8") (hsPkgs."safe" or (builtins.throw "The Haskell package set does not contain the package: safe (build dependency)"));
+          (hsPkgs."base" or (buildDepError "base"))
+          (hsPkgs."haskell-src-exts" or (buildDepError "haskell-src-exts"))
+          (hsPkgs."pretty" or (buildDepError "pretty"))
+          (hsPkgs."syb" or (buildDepError "syb"))
+          (hsPkgs."template-haskell" or (buildDepError "template-haskell"))
+          (hsPkgs."th-orphans" or (buildDepError "th-orphans"))
+          ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "7.8") (hsPkgs."safe" or (buildDepError "safe"));
         };
       tests = {
         "unit" = {
           depends = [
-            (hsPkgs."HUnit" or (builtins.throw "The Haskell package set does not contain the package: HUnit (build dependency)"))
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."haskell-src-exts" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-exts (build dependency)"))
-            (hsPkgs."haskell-src-meta" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-meta (build dependency)"))
-            (hsPkgs."pretty" or (builtins.throw "The Haskell package set does not contain the package: pretty (build dependency)"))
-            (hsPkgs."template-haskell" or (builtins.throw "The Haskell package set does not contain the package: template-haskell (build dependency)"))
-            (hsPkgs."test-framework" or (builtins.throw "The Haskell package set does not contain the package: test-framework (build dependency)"))
-            (hsPkgs."test-framework-hunit" or (builtins.throw "The Haskell package set does not contain the package: test-framework-hunit (build dependency)"))
+            (hsPkgs."HUnit" or (buildDepError "HUnit"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."haskell-src-exts" or (buildDepError "haskell-src-exts"))
+            (hsPkgs."haskell-src-meta" or (buildDepError "haskell-src-meta"))
+            (hsPkgs."pretty" or (buildDepError "pretty"))
+            (hsPkgs."template-haskell" or (buildDepError "template-haskell"))
+            (hsPkgs."test-framework" or (buildDepError "test-framework"))
+            (hsPkgs."test-framework-hunit" or (buildDepError "test-framework-hunit"))
             ];
           };
         "splices" = {
           depends = [
-            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
-            (hsPkgs."haskell-src-meta" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-meta (build dependency)"))
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."haskell-src-meta" or (buildDepError "haskell-src-meta"))
             ];
           };
         };
