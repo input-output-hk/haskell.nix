@@ -17,43 +17,43 @@
     components = {
       "library" = {
         depends = [
-          (hsPkgs.base)
-          (hsPkgs.Cabal)
-          (hsPkgs.containers)
-          (hsPkgs.aeson)
-          (hsPkgs.bytestring)
-          (hsPkgs.directory)
-          (hsPkgs.filepath)
-          (hsPkgs.tar)
-          (hsPkgs.time)
-          (hsPkgs.utf8-string)
+          (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
+          (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
+          (hsPkgs."containers" or (builtins.throw "The Haskell package set does not contain the package: containers (build dependency)"))
+          (hsPkgs."aeson" or (builtins.throw "The Haskell package set does not contain the package: aeson (build dependency)"))
+          (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
+          (hsPkgs."directory" or (builtins.throw "The Haskell package set does not contain the package: directory (build dependency)"))
+          (hsPkgs."filepath" or (builtins.throw "The Haskell package set does not contain the package: filepath (build dependency)"))
+          (hsPkgs."tar" or (builtins.throw "The Haskell package set does not contain the package: tar (build dependency)"))
+          (hsPkgs."time" or (builtins.throw "The Haskell package set does not contain the package: time (build dependency)"))
+          (hsPkgs."utf8-string" or (builtins.throw "The Haskell package set does not contain the package: utf8-string (build dependency)"))
           ];
         };
       exes = {
         "list-known-versions" = {
           depends = (pkgs.lib).optionals (flags.install-examples) [
-            (hsPkgs.base)
-            (hsPkgs.Cabal)
-            (hsPkgs.containers)
-            (hsPkgs.hackage-db)
-            (hsPkgs.bytestring)
+            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
+            (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
+            (hsPkgs."containers" or (builtins.throw "The Haskell package set does not contain the package: containers (build dependency)"))
+            (hsPkgs."hackage-db" or (builtins.throw "The Haskell package set does not contain the package: hackage-db (build dependency)"))
+            (hsPkgs."bytestring" or (builtins.throw "The Haskell package set does not contain the package: bytestring (build dependency)"))
             ];
           };
         "show-meta-data" = {
           depends = (pkgs.lib).optionals (flags.install-examples) [
-            (hsPkgs.base)
-            (hsPkgs.Cabal)
-            (hsPkgs.containers)
-            (hsPkgs.hackage-db)
-            (hsPkgs.utf8-string)
+            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
+            (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
+            (hsPkgs."containers" or (builtins.throw "The Haskell package set does not contain the package: containers (build dependency)"))
+            (hsPkgs."hackage-db" or (builtins.throw "The Haskell package set does not contain the package: hackage-db (build dependency)"))
+            (hsPkgs."utf8-string" or (builtins.throw "The Haskell package set does not contain the package: utf8-string (build dependency)"))
             ];
           };
         "show-package-versions" = {
           depends = (pkgs.lib).optionals (flags.install-examples) [
-            (hsPkgs.base)
-            (hsPkgs.Cabal)
-            (hsPkgs.containers)
-            (hsPkgs.hackage-db)
+            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
+            (hsPkgs."Cabal" or (builtins.throw "The Haskell package set does not contain the package: Cabal (build dependency)"))
+            (hsPkgs."containers" or (builtins.throw "The Haskell package set does not contain the package: containers (build dependency)"))
+            (hsPkgs."hackage-db" or (builtins.throw "The Haskell package set does not contain the package: hackage-db (build dependency)"))
             ];
           };
         };

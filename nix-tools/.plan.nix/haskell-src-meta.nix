@@ -17,28 +17,33 @@
     components = {
       "library" = {
         depends = [
-          (hsPkgs.base)
-          (hsPkgs.haskell-src-exts)
-          (hsPkgs.pretty)
-          (hsPkgs.syb)
-          (hsPkgs.template-haskell)
-          (hsPkgs.th-orphans)
-          ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "7.8") (hsPkgs.safe);
+          (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
+          (hsPkgs."haskell-src-exts" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-exts (build dependency)"))
+          (hsPkgs."pretty" or (builtins.throw "The Haskell package set does not contain the package: pretty (build dependency)"))
+          (hsPkgs."syb" or (builtins.throw "The Haskell package set does not contain the package: syb (build dependency)"))
+          (hsPkgs."template-haskell" or (builtins.throw "The Haskell package set does not contain the package: template-haskell (build dependency)"))
+          (hsPkgs."th-orphans" or (builtins.throw "The Haskell package set does not contain the package: th-orphans (build dependency)"))
+          ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "7.8") (hsPkgs."safe" or (builtins.throw "The Haskell package set does not contain the package: safe (build dependency)"));
         };
       tests = {
         "unit" = {
           depends = [
-            (hsPkgs.HUnit)
-            (hsPkgs.base)
-            (hsPkgs.haskell-src-exts)
-            (hsPkgs.haskell-src-meta)
-            (hsPkgs.pretty)
-            (hsPkgs.template-haskell)
-            (hsPkgs.test-framework)
-            (hsPkgs.test-framework-hunit)
+            (hsPkgs."HUnit" or (builtins.throw "The Haskell package set does not contain the package: HUnit (build dependency)"))
+            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
+            (hsPkgs."haskell-src-exts" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-exts (build dependency)"))
+            (hsPkgs."haskell-src-meta" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-meta (build dependency)"))
+            (hsPkgs."pretty" or (builtins.throw "The Haskell package set does not contain the package: pretty (build dependency)"))
+            (hsPkgs."template-haskell" or (builtins.throw "The Haskell package set does not contain the package: template-haskell (build dependency)"))
+            (hsPkgs."test-framework" or (builtins.throw "The Haskell package set does not contain the package: test-framework (build dependency)"))
+            (hsPkgs."test-framework-hunit" or (builtins.throw "The Haskell package set does not contain the package: test-framework-hunit (build dependency)"))
             ];
           };
-        "splices" = { depends = [ (hsPkgs.base) (hsPkgs.haskell-src-meta) ]; };
+        "splices" = {
+          depends = [
+            (hsPkgs."base" or (builtins.throw "The Haskell package set does not contain the package: base (build dependency)"))
+            (hsPkgs."haskell-src-meta" or (builtins.throw "The Haskell package set does not contain the package: haskell-src-meta (build dependency)"))
+            ];
+          };
         };
       };
     } // {

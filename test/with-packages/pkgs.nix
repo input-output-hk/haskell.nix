@@ -4,7 +4,7 @@
       packages = {
         "void".revision = (((hackage."void")."0.7.3").revisions).default;
         "void".flags.safe = false;
-        "semigroupoids".revision = (((hackage."semigroupoids")."5.3.2").revisions).default;
+        "semigroupoids".revision = (((hackage."semigroupoids")."5.3.3").revisions).default;
         "semigroupoids".flags.comonad = true;
         "semigroupoids".flags.doctests = true;
         "semigroupoids".flags.unordered-containers = true;
@@ -12,11 +12,11 @@
         "semigroupoids".flags.tagged = true;
         "semigroupoids".flags.containers = true;
         "semigroupoids".flags.contravariant = true;
-        "free".revision = (((hackage."free")."5.1.1").revisions).default;
-        "exceptions".revision = (((hackage."exceptions")."0.10.2").revisions).default;
+        "free".revision = (((hackage."free")."5.1.2").revisions).default;
+        "exceptions".revision = (((hackage."exceptions")."0.10.3").revisions).default;
         "binary".revision = (((hackage."binary")."0.8.5.1").revisions).default;
         "ghc-prim".revision = (((hackage."ghc-prim")."0.5.2.0").revisions).default;
-        "bifunctors".revision = (((hackage."bifunctors")."5.5.4").revisions).default;
+        "bifunctors".revision = (((hackage."bifunctors")."5.5.5").revisions).default;
         "bifunctors".flags.semigroups = true;
         "bifunctors".flags.tagged = true;
         "stm".revision = (((hackage."stm")."2.4.5.1").revisions).default;
@@ -30,7 +30,7 @@
         "distributive".flags.tagged = true;
         "parallel".revision = (((hackage."parallel")."3.2.2.0").revisions).default;
         "deepseq".revision = (((hackage."deepseq")."1.4.3.0").revisions).default;
-        "semigroups".revision = (((hackage."semigroups")."0.19").revisions).default;
+        "semigroups".revision = (((hackage."semigroups")."0.19.1").revisions).default;
         "semigroups".flags.bytestring = true;
         "semigroups".flags.unordered-containers = true;
         "semigroups".flags.text = true;
@@ -58,7 +58,7 @@
         "vector".flags.internalchecks = false;
         "vector".flags.wall = false;
         "vector".flags.boundschecks = true;
-        "call-stack".revision = (((hackage."call-stack")."0.1.0").revisions).default;
+        "call-stack".revision = (((hackage."call-stack")."0.2.0").revisions).default;
         "primitive".revision = (((hackage."primitive")."0.7.0.0").revisions).default;
         "profunctors".revision = (((hackage."profunctors")."5.4").revisions).default;
         "tagged".revision = (((hackage."tagged")."0.8.6").revisions).default;
@@ -77,7 +77,7 @@
         "lens".flags.test-hunit = true;
         "lens".flags.safe = false;
         "containers".revision = (((hackage."containers")."0.5.11.0").revisions).default;
-        "reflection".revision = (((hackage."reflection")."2.1.4").revisions).default;
+        "reflection".revision = (((hackage."reflection")."2.1.5").revisions).default;
         "reflection".flags.slow = false;
         "reflection".flags.template-haskell = true;
         "bytestring".revision = (((hackage."bytestring")."0.10.8.2").revisions).default;
@@ -108,7 +108,7 @@
         "process".revision = (((hackage."process")."1.6.3.0").revisions).default;
         "kan-extensions".revision = (((hackage."kan-extensions")."5.2").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
-        "cabal-doctest".revision = (((hackage."cabal-doctest")."1.0.6").revisions).default;
+        "cabal-doctest".revision = (((hackage."cabal-doctest")."1.0.7").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.4.4").revisions).default;
         "base-orphans".revision = (((hackage."base-orphans")."0.8.1").revisions).default;
         "th-abstraction".revision = (((hackage."th-abstraction")."0.3.1.0").revisions).default;

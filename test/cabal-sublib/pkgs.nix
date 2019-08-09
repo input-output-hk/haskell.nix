@@ -4,7 +4,7 @@
       packages = {
         "binary".revision = (((hackage."binary")."0.8.5.1").revisions).default;
         "ghc-prim".revision = (((hackage."ghc-prim")."0.5.2.0").revisions).default;
-        "extra".revision = (((hackage."extra")."1.6.17").revisions).default;
+        "extra".revision = (((hackage."extra")."1.6.18").revisions).default;
         "stm".revision = (((hackage."stm")."2.4.5.1").revisions).default;
         "unix".revision = (((hackage."unix")."2.7.2.2").revisions).default;
         "rts".revision = (((hackage."rts")."1.0").revisions).default;
@@ -16,9 +16,9 @@
         "deepseq".revision = (((hackage."deepseq")."1.4.3.0").revisions).default;
         "random".revision = (((hackage."random")."1.1").revisions).default;
         "uuid-types".revision = (((hackage."uuid-types")."1.0.3").revisions).default;
-        "optparse-applicative".revision = (((hackage."optparse-applicative")."0.14.3.0").revisions).default;
-        "dlist".revision = (((hackage."dlist")."0.8.0.6").revisions).default;
-        "semigroups".revision = (((hackage."semigroups")."0.19").revisions).default;
+        "optparse-applicative".revision = (((hackage."optparse-applicative")."0.15.0.0").revisions).default;
+        "dlist".revision = (((hackage."dlist")."0.8.0.7").revisions).default;
+        "semigroups".revision = (((hackage."semigroups")."0.19.1").revisions).default;
         "semigroups".flags.bytestring = true;
         "semigroups".flags.unordered-containers = true;
         "semigroups".flags.text = true;
