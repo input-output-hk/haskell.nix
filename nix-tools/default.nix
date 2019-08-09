@@ -18,6 +18,8 @@ let
   };
 
   pkgSet = mkCabalProjectPkgSet {
+    # Regenerate with something like:
+    #   ../nt/bin/plan-to-nix -o . --plan-json ../../nix-tools/dist-newstyle/cache/plan.json
     plan-pkgs = import ./pkgs.nix;
     pkg-def-extras = [];
     modules = [
