@@ -6,8 +6,8 @@
  * see also `call-cabal-project-to-nix`!
  */
 { runCommand, nix-tools, pkgs }:
-{ src, stackYaml ? null }:
-let 
+{ src, stackYaml ? null, ... }:
+let
   stack = runCommand "stack-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git ];
   } ''
@@ -25,7 +25,7 @@ let
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
   '';
-in 
+in
 runCommand "stack-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
   mkdir $out
   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
@@ -33,6 +33,6 @@ runCommand "stack-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } 
   rsync -a ${stack}/ $out/
   # Rsync will have made $out read only and that can cause problems when
   # nix sandboxing is enabled (since it can prevent nix from moving the directory
-  # out of the chroot sandbox).  
+  # out of the chroot sandbox).
   chmod +w $out
 ''

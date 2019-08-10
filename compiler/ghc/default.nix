@@ -104,6 +104,10 @@ in stdenv.mkDerivation (rec {
     autoreconf
   '';
 
+    # for this to properly work (with inheritance of patches, postPatch, ...)
+    # this needs to be a function over the values we want to inherit and then called
+    # accordingly. Most trivial might be to just have args, and mash them into the
+    # attrset.
     src = stdenv.mkDerivation (rec {
 
         inherit version

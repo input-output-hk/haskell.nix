@@ -218,9 +218,21 @@ self: super: {
             let plan-pkgs = import (callCabalProjectToNix
                                     (builtins.trace "Using index-state: ${index-state}"
                                      (args // { inherit index-state; })));
-            in let pkg-set = mkCabalProjectPkgSet (
-                { inherit plan-pkgs; } //
-                self.lib.optionalAttrs (args ? ghc) { modules = [ { ghc.package = args.ghc; } ]; });
+            in let pkg-set = mkCabalProjectPkgSet
+                { inherit plan-pkgs;
+                  modules = (args.modules or [])
+                          ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                };
+            in pkg-set.config.hsPkgs;
+
+        stackProject =
+            { ... }@args:
+            let stack-pkgs = import (callStackToNix args);
+            in let pkg-set = mkStackPkgSet
+                { inherit stack-pkgs;
+                  modules = (args.modules or [])
+                          ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                };
             in pkg-set.config.hsPkgs;
     };
 }
