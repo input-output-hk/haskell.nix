@@ -159,7 +159,7 @@ self: super: rec {
                             ++ [ D5123-patch haddock-900-patch ];
             };
             ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
-                ghcjsSrcJson = ../compilers/ghcjs/ghcjs-src.json;
+                ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";
                 ghc = self.buildPackages.haskell.compiler.ghc865;
             };
