@@ -176,7 +176,7 @@ stdenv.mkDerivation ({
 
   buildPhase = ''
     runHook preBuild
-    $SETUP_HS build "${haskellLib.componentTarget componentId}" -j$NIX_BUILD_CORES ${lib.concatStringsSep " " component.setupBuildFlags}
+    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$NIX_BUILD_CORES ${lib.concatStringsSep " " component.setupBuildFlags}
     runHook postBuild
   '';
 
