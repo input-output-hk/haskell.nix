@@ -59,6 +59,13 @@ let
                 packages.ghcjs.flags = { no-wrapper-install = true; };
                 # packages.ghcjs.components.library.configureFlags = [ "-fno-wrapper-install" ];
             }
+            {
+                # we need ghc-boot in here for ghcjs.
+                nonReinstallablePkgs = [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+                                         "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+                                         "ghc-boot" "binary" "bytestring" "filepath" "directory" "containers"
+                                         "time" "unix" "Win32" ];
+            }
         ];
     }).ghcjs; # <- we are only interested in the `ghcjs` package.
 
