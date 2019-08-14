@@ -13,6 +13,7 @@ import Crypto.Hash.SHA256 (hash)
 import qualified Data.ByteString.Base16 as Base16
 
 import Data.List.NonEmpty (NonEmpty)
+import Data.Fix(Fix(..))
 import Nix.Expr
 
 listDirectories :: FilePath -> IO [FilePath]
@@ -22,6 +23,12 @@ listDirectories p =
 
 quoted :: (IsString a, Semigroup a) => a -> a
 quoted str = "\"" <> str <> "\""
+
+selectOr :: NExpr -> NAttrPath NExpr -> NExpr -> NExpr
+selectOr obj path alt = Fix (NSelect obj path (Just $ alt))
+
+mkThrow :: NExpr -> NExpr
+mkThrow msg = (mkSym "builtins" @. "throw") @@ msg
 
 sha256 :: String -> String
 sha256 = unpack . Base16.encode . hash . pack
