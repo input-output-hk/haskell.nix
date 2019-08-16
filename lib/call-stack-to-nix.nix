@@ -6,15 +6,20 @@
  * see also `call-cabal-project-to-nix`!
  */
 { runCommand, nix-tools, pkgs }:
-{ src, stackYaml ? null }:
+{ src, stackYaml ? null, ignorePackageYaml ? false }:
 let 
+  stackToNixArgs = builtins.concatStringsSep " " [
+    "--stack-yaml=${src}/${if stackYaml == null then "stack.yaml" else stackYaml}"
+    (if ignorePackageYaml then "--ignore-package-yaml" else "")
+    "-o ."
+  ];
   stack = runCommand "stack-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git ];
   } ''
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
 
-    (cd $out && stack-to-nix --stack-yaml=${src}/${if stackYaml == null then "stack.yaml" else stackYaml} -o .)
+    (cd $out && stack-to-nix ${stackToNixArgs})
 
     # We need to strip out any references to $src, as those won't
     # be accessable in restricted mode.
