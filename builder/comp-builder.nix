@@ -182,7 +182,8 @@ stdenv.mkDerivation ({
 
   buildPhase = ''
     runHook preBuild
-    $SETUP_HS build -j$NIX_BUILD_CORES ${lib.concatStringsSep " " component.setupBuildFlags}
+    # https://gitlab.haskell.org/ghc/ghc/issues/9221
+    $SETUP_HS build -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " component.setupBuildFlags}
     runHook postBuild
   '';
 
