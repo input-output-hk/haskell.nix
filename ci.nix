@@ -35,4 +35,5 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
         # x86_64-darwin = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
         #     haskell-nix.snapshots."lts-13.29");
     };
+
 }
