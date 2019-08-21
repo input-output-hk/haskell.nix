@@ -21,6 +21,7 @@ let
   #       means outside of hackage.
   boot-pkgs = [ "rts" "ghc" "ghc-boot-th" "ghc-boot" "ghci"
                 "ghc-heap" # since ghc 8.6.
+                "iserv" "libiserv" "iserv-proxy"
               ];
   strip-pkg-def = pkgs: pkg-def: hackage: with pkgs.lib;
     mapAttrs (k: v: if k == "packages"
