@@ -1,3 +1,7 @@
+# This is a replacement for the cleanSourceWith function in nixpkgs
+# https://github.com/NixOS/nixpkgs/blob/1d9d31a0eb8e8358830528538a391df52f6a075a/lib/sources.nix#L41
+# It adds a subDir argument in a way that allows descending into a subdirectory
+# to compose with cleaning the source with a filter.
 { lib }: rec {
   cleanSourceWith = { filter ? path: type: true, src, subDir ? "" }:
     let

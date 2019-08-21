@@ -184,7 +184,7 @@ let
         cat <<EOF > $out/.cabal/config
         repository cached
           url: file:${self.mkLocalHackageRepo
-            (pkgs.lib.attrsets.filterAttrs (n: v: n != "cabal-install") args)}
+            (pkgs.lib.attrsets.removeAttrs args ["cabal-install"])}
           secure: True
           root-keys:
           key-threshold: 0

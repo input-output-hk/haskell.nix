@@ -45,7 +45,7 @@
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   cleanSrc = if cabal-generator == "hpack" && !(package.cleanHpack or false)
-    then builtins.trace ("Cleaning component source not supported for hpack package : " + name) src
+    then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
     else haskellLib.cleanCabalComponent package component src;
 
   fullName = if haskellLib.isAll componentId
@@ -128,7 +128,7 @@ stdenv.mkDerivation ({
   passthru = {
     inherit (package) identifier;
     config = component;
-    inherit configFiles executableToolDepends;
+    inherit configFiles executableToolDepends cleanSrc;
     env = shellWrappers;
 
     # The directory containing the haddock documentation.

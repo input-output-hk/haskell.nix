@@ -39,6 +39,13 @@ in
       src = cleanSrc;
       nativeBuildInputs = [ghc];
 
+      passthru = {
+        inherit (package) identifier;
+        config = component;
+        inherit configFiles cleanSrc;
+        env = shellWrappers;
+      };
+
       CABAL_CONFIG = configFiles + /cabal.config;
       phases = ["unpackPhase" "buildPhase" "installPhase"];
       buildPhase = ''
