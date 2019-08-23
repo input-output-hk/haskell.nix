@@ -9,6 +9,7 @@
 { src, stackYaml ? null, ignorePackageYaml ? false }:
 let 
   stackToNixArgs = builtins.concatStringsSep " " [
+    "--full"
     "--stack-yaml=${src}/${if stackYaml == null then "stack.yaml" else stackYaml}"
     (if ignorePackageYaml then "--ignore-package-yaml" else "")
     "-o ."
@@ -30,14 +31,4 @@ let
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
   '';
-in 
-runCommand "stack-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } ''
-  mkdir $out
-  # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-  rsync -a "${src}/" "$out/"
-  rsync -a ${stack}/ $out/
-  # Rsync will have made $out read only and that can cause problems when
-  # nix sandboxing is enabled (since it can prevent nix from moving the directory
-  # out of the chroot sandbox).  
-  chmod +w $out
-''
+in { projectNix = stack; inherit src; sourceRepos = []; }

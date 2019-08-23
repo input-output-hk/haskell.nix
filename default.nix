@@ -213,6 +213,11 @@ let
       inherit (buildPackages) nix-tools;
     };
 
+    # Loads a plan and filters the package directories using cleanSourceWith
+    importAndFilterProject = import ./lib/import-and-filter-project.nix {
+      inherit pkgs haskellLib;
+    };
+
     # References to the unpacked sources, for caching in a Hydra jobset.
     source-pins = self.callPackage ./lib/make-source-pins.nix {
       sources = [ hackageSrc stackageSrc pkgs.path ];
