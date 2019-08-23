@@ -67,7 +67,7 @@ self: super: rec {
                 ++ self.lib.optional (version == "8.6.5")                             ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.4")                             ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ;
-        in {
+        in ({
             ghc844 = self.callPackage ../compiler/ghc {
                 inherit bootPkgs sphinx;
 
@@ -158,12 +158,28 @@ self: super: rec {
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
             };
-            ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
+        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs) {
+            ghc865 = let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";
                 ghc = self.buildPackages.haskell.compiler.ghc865;
-            };
-    };
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in self.runCommand "${targetPrefix}ghc-8.6.5" {
+                passthru = {
+                    inherit targetPrefix;
+                    version = "8.6.5";
+                };
+            } ''
+                mkdir -p $out/bin
+                cd $out/bin
+                ln -s ${ghcjs865}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${ghcjs865}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${ghcjs865}/bin/hsc2hs-ghcjs ${targetPrefix}hsc2hs
+                cd ..
+                mkdir lib
+                cd lib
+                cp -R ${ghcjs865}/lib/ghcjs-8.6.5 ${targetPrefix}ghc-8.6.5
+                '';
+        });
 
     ghc = haskell.compiler.ghc865;
     cabal-install = self.buildPackages.bootstrap.haskell.packages.cabal-install;
