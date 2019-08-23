@@ -1,4 +1,4 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, inportAndFilterProject }:
+{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
 
 with stdenv.lib;
 
