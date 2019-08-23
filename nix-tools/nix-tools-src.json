@@ -1,7 +1,7 @@
 {
   "url": "https://github.com/input-output-hk/nix-tools",
-  "rev": "a7370da8311bc0ece8a4efbf08befa605b796b0d",
+  "rev": "a9f227d9238102fb424157156712ef9b64413096",
   "date": "2019-07-18T12:21:16+12:00",
-  "sha256": "1innl7cq6dvmkmzn3rcqymvbzkrzr78g1a0438cvsik7m1yzyf3l",
+  "sha256": "19r5an3hrjn1a4mm2n0fhaa5b1fi975pyjcisbnrhwfajlqb362f",
   "fetchSubmodules": false
 }
