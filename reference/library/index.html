@@ -510,6 +510,56 @@ manual process.</p>
 <p>Assorted functions for operating on <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> data. This is
 distinct from <code>pkgs.haskell.lib</code> in the current Nixpkgs Haskell
 Infrastructure.</p>
+<h3 id="collectcomponents">collectComponents<a class="headerlink" href="#collectcomponents" title="Permanent link">&para;</a></h3>
+<p>Extracts a selection of components from a Haskell <a href="#package-set">package set</a>.</p>
+<p>This can be used to filter out all test suites or benchmarks of
+your project, so that they can be built in Hydra.</p>
+<pre><code>collectComponents =
+    group: packageSel: haskellPackages: ...
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>group</code></td>
+<td>String</td>
+<td>A <a href="#subComponentTypes">sub-component type</a>.</td>
+</tr>
+<tr>
+<td><code>packageSel</code></td>
+<td>A function <code>Package -&gt; Bool</code></td>
+<td>A predicate to filter packages with.</td>
+</tr>
+<tr>
+<td><code>haskellPackages</code></td>
+<td><a href="#package-set">Package set</a></td>
+<td>All packages in the build.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Return value</strong>: a recursive attrset mapping package names → component names → components.</p>
+<p><strong>Example</strong>:</p>
+<pre><code class="nix">tests = collectComponents &quot;tests&quot; (package: package.identifier.name == &quot;mypackage&quot;) hsPkgs;
+</code></pre>
+
+<p>Will result in moving derivations from <code>hsPkgs.mypackage.components.tests.unit-tests</code>
+to <code>tests.mypackage.unit-tests</code>.</p>
+<h4 id="subcomponenttypes">subComponentTypes<a class="headerlink" href="#subcomponenttypes" title="Permanent link">&para;</a></h4>
+<p>Sub-component types identify <a href="#component">components</a> and are one of:</p>
+<ul>
+<li><code>sublibs</code></li>
+<li><code>foreignlibs</code></li>
+<li><code>exes</code></li>
+<li><code>tests</code></li>
+<li><code>benchmarks</code></li>
+</ul>
 <h1 id="package-set-functions">Package-set functions<a class="headerlink" href="#package-set-functions" title="Permanent link">&para;</a></h1>
 <p>These functions exist within the <code>hsPkgs</code> package set.</p>
 <h2 id="shellfor">shellFor<a class="headerlink" href="#shellfor" title="Permanent link">&para;</a></h2>
