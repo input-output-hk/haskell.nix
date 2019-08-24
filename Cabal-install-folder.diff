@@ -1,0 +1,41 @@
+diff --git a/Distribution/Simple/GHC.hs b/Distribution/Simple/GHC.hs
+index 547776046..176e59111 100644
+--- a/Distribution/Simple/GHC.hs
++++ b/Distribution/Simple/GHC.hs
+@@ -1,6 +1,7 @@
+ {-# LANGUAGE FlexibleContexts #-}
+ {-# LANGUAGE RankNTypes #-}
+ {-# LANGUAGE TupleSections #-}
++{-# LANGUAGE LambdaCase #-}
+ {-# LANGUAGE CPP #-}
+
+ -----------------------------------------------------------------------------
+@@ -1755,13 +1756,27 @@ installExe verbosity lbi binDir buildPref
+   let exeName' = unUnqualComponentName $ exeName exe
+       exeFileName = exeTargetName (hostPlatform lbi) exe
+       fixedExeBaseName = progprefix ++ exeName' ++ progsuffix
+-      installBinary dest = do
++      exePath = buildPref </> exeName' </> exeFileName
++      installBinary dest = doesFileExist exePath >>= \case
++        True -> do
+           installExecutableFile verbosity
+             (buildPref </> exeName' </> exeFileName)
+             (dest <.> exeExtension (hostPlatform lbi))
+           when (stripExes lbi) $
+             Strip.stripExe verbosity (hostPlatform lbi) (withPrograms lbi)
+                            (dest <.> exeExtension (hostPlatform lbi))
++        False -> do
++          putStrLn "Hello!"
++          -- The executable exists but is not a simple file.
++          -- Deligate installation to the compiler
++          runDbProgram verbosity ghcProgram (withPrograms lbi) $
++            [ "--install-executable"
++            , buildPref </> exeName' </> exeFileName
++            , "-o", dest
++            ] ++
++            case (stripExes lbi, lookupProgram stripProgram $ withPrograms lbi) of
++             (True, Just strip) -> ["-strip-program", programPath strip]
++             _                  -> []
+   installBinary (binDir </> fixedExeBaseName)
+
+ -- |Install foreign library for GHC.

@@ -1,19 +1,21 @@
 [
     (import ./release-19.03.nix)
+    # This overlay does *not* work as expected.
+    # See https://github.com/NixOS/nixpkgs/issues/65589
     (self: super: super.lib.recursiveUpdate super {
         lib.systems.examples = {
             # Ghcjs
             ghcjs = {
-                config = "js-unknown-none-ghcjs";
+                config = "js-unknown-ghcjs";
                 platform = {};
             };
             # Asterius
             asterius32 = {
-                config = "wasm32-unknown-none-asterius";
+                config = "wasm32-unknown-asterius";
                 platform = {};
             };
             asterius64 = {
-                config = "wasm64-unknown-none-asterius";
+                config = "wasm64-unknown-asterius";
                 platform = {};
             };
         };
