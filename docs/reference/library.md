@@ -177,7 +177,46 @@ A derivation containing the `nix-tools` [command-line tools](commands.md).
 
 ## callStackToNix
 
+Runs `stack-to-nix` and produces the output needed for
+`importAndFilterProject`.
+
+**Example**:
+
+```nix
+  pkgSet = mkStackPkgSet {
+    stack-pkgs = (importAndFilterProject (callStackToNix {
+      src = ./.;
+    })).pkgs;
+    pkg-def-extras = [];
+    modules = [];
+  };
+```
+
+
 ## callCabalProjectToNix
+
+Runs `cabal new-configure` and `plan-to-nix` and produces the output
+needed for `importAndFilterProject`.
+
+**Example**:
+
+```nix
+  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = (importAndFilterProject (callCabalProjectToNix {
+      index-state = "2019-04-30T00:00:00Z";
+      src = ./.;
+    })).pkgs;
+```
+
+## importAndFilterProject
+
+Imports from a derivation created by `callStackToNix`
+or `callCabalProjectToNix`.
+
+**Return value**:
+
+* `pkgs` that can be used in `mkStackPkgSet` or `mkCabalProjectPkgSet`.
+* `nix` that can be made an output on Hydra to help avoid timeouts.
 
 ## hackage
 ## stackage

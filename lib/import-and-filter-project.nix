@@ -1,3 +1,6 @@
+# This function takes the output of `callCabalProjectToNix` or
+# `callStackToNix`.  It imports the projectNix that was produced
+# and combines it with the original source.
 { pkgs, haskellLib }:
 { projectNix, sourceRepos, src }:
 let
