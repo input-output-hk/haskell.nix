@@ -1,6 +1,9 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## August 9, 2019
+ * Add the [`haskellLib.collectComponents`](https://input-output-hk.github.io/haskell.nix/reference/library/#haskellLib) function.
+
 ## June 21, 2019
  * Add `ghcWithPackages` and `ghcWithHoogle` to hsPkgs ([documentation](https://input-output-hk.github.io/haskell.nix/reference/library/#package-set-functions).
  * Benchmark components can now build successfully.
