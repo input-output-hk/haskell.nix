@@ -9,7 +9,7 @@
 { src, stackYaml ? null, ... }:
 let
   stack = runCommand "stack-to-nix-pkgs" {
-    nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git ];
+    nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert ];
   } ''
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
