@@ -178,12 +178,13 @@ let
 
     mkLocalHackageRepo = import ./mk-local-hackage-repo { inherit (self) hackageTarball; inherit pkgs; };
 
-    dotCabal = { index-state, sha256 }@args:
-      pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ pkgs.cabal-install ]; } ''
+    dotCabal = { index-state, sha256, cabal-install ? pkgs.cabal-install }@args:
+      pkgs.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
         mkdir -p $out/.cabal
         cat <<EOF > $out/.cabal/config
         repository cached
-          url: file:${self.mkLocalHackageRepo args}
+          url: file:${self.mkLocalHackageRepo
+            (builtins.removeAttrs args ["cabal-install"])}
           secure: True
           root-keys:
           key-threshold: 0
@@ -205,11 +206,16 @@ let
     # Resulting nix files are added to nix-plan subdirectory.
     callCabalProjectToNix = import ./lib/call-cabal-project-to-nix.nix {
       index-state-hashes = import indexStateHashesPath;
-      inherit (buildPackages) dotCabal;
-      pkgs = buildPackages.pkgs; # buildPackages;
+      inherit (buildPackages) dotCabal haskellLib;
+      pkgs = buildPackages.pkgs;
       inherit (buildPackages.pkgs.haskellPackages) hpack;
       inherit (buildPackages.pkgs) runCommand cabal-install ghc symlinkJoin cacert;
       inherit (buildPackages) nix-tools;
+    };
+
+    # Loads a plan and filters the package directories using cleanSourceWith
+    importAndFilterProject = import ./lib/import-and-filter-project.nix {
+      inherit pkgs haskellLib;
     };
 
     # References to the unpacked sources, for caching in a Hydra jobset.
@@ -238,7 +244,7 @@ let
         tar xzf ${tarball}
         mv "${name}-${version}" $out
         '';
-      in let plan-pkgs = import (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; });
+      in let plan-pkgs = (callCabalProjectToNix { inherit src; index-state = builtins.trace "Using index-state: ${index-state}" index-state; }).pkgs;
       in let pkg-set = mkCabalProjectPkgSet { inherit plan-pkgs; };
       in pkg-set.config.hsPkgs.${name};
   });

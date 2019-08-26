@@ -112,4 +112,11 @@ with haskellLib;
     (mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
      (filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
     // { recurseForDerivations = true; };
+
+  # Replacement for lib.cleanSourceWith that has a subDir argument.
+  inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;
+  
+  # Use cleanSourceWith to filter just the files needed for a particular
+  # component of a package
+  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith; };
 }

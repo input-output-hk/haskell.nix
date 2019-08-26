@@ -1,14 +1,14 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix }:
+{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
 
 with stdenv.lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import (callCabalProjectToNix {
+    plan-pkgs = (importAndFilterProject (callCabalProjectToNix {
       index-state = "2019-04-30T00:00:00Z";
       # reuse the cabal-simple test project
       src = ./.;
-    });
+    })).pkgs;
   };
   packages = pkgSet.config.hsPkgs;
 in
