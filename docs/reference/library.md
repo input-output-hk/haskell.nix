@@ -213,10 +213,12 @@ needed for `importAndFilterProject`.
 Imports from a derivation created by `callStackToNix`
 or `callCabalProjectToNix`.
 
-**Return value**:
+The result is an attrset with the following values:
 
-* `pkgs` that can be used in `mkStackPkgSet` or `mkCabalProjectPkgSet`.
-* `nix` that can be made an output on Hydra to help avoid timeouts.
+| Attribute      | Type | Description                                         |
+|----------------|------|-----------------------------------------------------|
+| `pkgs` | attrset | that can be passed to `mkStackPkgSet` (as `stack-pkgs`) or `mkCabalProjectPkgSet` (as `plan-pkgs`). |
+| `nix` | | this can be built and cached so that the amount built in the evaluation phase is not too great (helps to avoid timeouts on Hydra). |
 
 ## hackage
 ## stackage
