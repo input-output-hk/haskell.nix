@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }@defaults:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }@defaults:
 { src
 , index-state   ? null
 , index-sha256  ? null
@@ -15,19 +15,19 @@ assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
          else true);
 let
   maybeCleanedSource =
-    if pkgs.lib.canCleanSource src
-    then pkgs.lib.cleanSourceWith {
+    if haskellLib.canCleanSource src
+    then haskellLib.cleanSourceWith {
       inherit src;
       filter = path: type:
         type == "directory" ||
         pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ]; }
     else src;
 
-  # Using origSrc bypasses any cleanSourceWith so that it will work when
+  # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
   # access to the store is restricted.  If origSrc was already in the store
   # you can pass the project in as a string.
   rawCabalProject =
-    let origSrcDir = maybeCleanedSource.origSrc or maybeCleanedSource;
+    let origSrcDir = maybeCleanedSource.origSrcSubDir or maybeCleanedSource;
     in if cabalProject != null
     then cabalProject
     else
@@ -142,7 +142,7 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
-  plan = runCommand "plan-to-nix-pkgs" {
+  plan-nix = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
   } (''
     tmp=$(mktemp -d)
@@ -185,45 +185,9 @@ let
 
     # run `plan-to-nix` in $out.  This should produce files right there with the
     # proper relative paths.
-    (cd $out && plan-to-nix --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
+    (cd $out && plan-to-nix --full --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
   '');
-in
-  # TODO: We really want this (symlinks) instead of copying the source over each and
-  #       every time.  However this will not work with sandboxed builds.  They won't
-  #       have access to `plan` or `src` paths.  So while they will see all the
-  #       links, they won't be able to read any of them.
-  #
-  #       We should be able to fix this if we propagaed the build inputs properly.
-  #       As we are `import`ing the produced nix-path here, we seem to be losing the
-  #       dependencies though.
-  #
-  #       I guess the end-result is that ifd's don't work well with symlinks.
-  #
-  # symlinkJoin {
-  #   name = "plan-and-src";
-  #   # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-  #   buildInputs = [ plan src ];
-  # }
-  runCommand "plan-to-nix-pkgs-with-src" { nativeBuildInputs = [ pkgs.rsync ]; } (''
-    mkdir $out
-    # todo: should we clean `src` to drop any .git, .nix, ... other irelevant files?
-    rsync -a "${src}/" "$out/"
-    rsync -a ${plan}/ $out/
-  '' +
-    ( pkgs.lib.strings.concatStrings (
-        pkgs.lib.lists.zipListsWith (n: f: ''
-          mkdir -p $out/.source-repository-packages/${builtins.toString n}
-          rsync -a "${f}/" "$out/.source-repository-packages/${builtins.toString n}/"
-        '')
-          (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
-          fixedProject.sourceRepos
-      )
-    ) + ''
-    # Rsync will have made $out read only and that can cause problems when
-    # nix sandboxing is enabled (since it can prevent nix from moving the directory
-    # out of the chroot sandbox).
-    chmod +w $out
-  '')
+in { projectNix = plan-nix; inherit src; inherit (fixedProject) sourceRepos; }

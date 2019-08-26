@@ -3,27 +3,47 @@
 { setup-depends, package, name, src, flags, defaultSetupSrc }:
 
 let
+  component = {
+    depends = setup-depends;
+    libs = [];
+    frameworks = [];
+    doExactConfig = false;
+    # We have to set hsSourceDirs or cleanCabalComponent will
+    # include everything (and as a result all the components of
+    # the package will depend on eveything in the package).
+    # TODO find a better way
+    hsSourceDirs = ["setup-src"];
+    includeDirs = [];
+    asmSources = [];
+    cSources = [];
+    cmmSources = [];
+    cxxSources = [];
+    jsSources = [];
+    extraSrcFiles = [ "Setup.hs" "Setup.lhs" ];
+  };
+  cleanSrc = haskellLib.cleanCabalComponent package component src;
+
   fullName = "${name}-setup";
 
   includeGhcPackage = lib.any (p: p.identifier.name == "ghc") setup-depends;
 
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
-    inherit fullName flags;
-    component = {
-      depends = setup-depends;
-      libs = [];
-      frameworks = [];
-      doExactConfig = false;
-    };
+    inherit fullName flags component;
   };
 
 in
  stdenv.lib.fix (drv:
     stdenv.mkDerivation {
       name = "${fullName}";
-      inherit src;
+      src = cleanSrc;
       nativeBuildInputs = [ghc];
+
+      passthru = {
+        inherit (package) identifier;
+        config = component;
+        inherit configFiles cleanSrc;
+      };
 
       CABAL_CONFIG = configFiles + /cabal.config;
       phases = ["unpackPhase" "buildPhase" "installPhase"];
@@ -34,7 +54,7 @@ in
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f
-            ghc $f '' + (if includeGhcPackage then "-package ghc " else "")
+            ghc $f -threaded '' + (if includeGhcPackage then "-package ghc " else "")
                 + ''-package-db ${configFiles}/package.conf.d --make -o ./Setup
             setup=$(pwd)/Setup
           fi

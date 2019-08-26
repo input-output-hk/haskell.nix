@@ -32,6 +32,7 @@ pkgs:
      util = pkgs.utillinux;
      magic = pkgs.file;
      pq = pkgs.postgresql;
+     iconv = pkgs.libiconv;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;

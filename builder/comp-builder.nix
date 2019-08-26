@@ -37,9 +37,17 @@
 , enableLibraryProfiling ? component.enableLibraryProfiling
 , enableExecutableProfiling ? component.enableExecutableProfiling
 , profilingDetail ? component.profilingDetail
+
+# Data
+, enableSeparateDataOutput ? component.enableSeparateDataOutput
 }:
 
 let
+  # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
+  cleanSrc = if cabal-generator == "hpack" && !(package.cleanHpack or false)
+    then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
+    else haskellLib.cleanCabalComponent package component src;
+
   fullName = if haskellLib.isAll componentId
     then "${name}-all"
     else "${name}-${componentId.ctype}-${componentId.cname}";
@@ -69,7 +77,8 @@ let
       (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
       (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )
       (if enableExecutableProfiling then "--enable-executable-profiling" else "--disable-executable-profiling" )
-    ] ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
+    ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
+      ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
       ++ lib.optional (static) "--enable-static"
@@ -112,12 +121,14 @@ in stdenv.lib.fix (drv:
 stdenv.mkDerivation ({
   name = fullName;
 
-  inherit src doCheck doCrossCheck dontPatchELF dontStrip;
+  src = cleanSrc;
+
+  inherit doCheck doCrossCheck dontPatchELF dontStrip;
 
   passthru = {
     inherit (package) identifier;
     config = component;
-    inherit configFiles executableToolDepends;
+    inherit configFiles executableToolDepends cleanSrc;
     env = shellWrappers;
 
     # The directory containing the haddock documentation.
@@ -154,7 +165,9 @@ stdenv.mkDerivation ({
 
   SETUP_HS = setup + /bin/Setup;
 
-  outputs = ["out" ] ++ (lib.optional doHaddock' "doc");
+  outputs = ["out" ]
+    ++ (lib.optional enableSeparateDataOutput "data")
+    ++ (lib.optional doHaddock' "doc");
 
   # Phases
   preInstallPhases = lib.optional doHaddock' "haddockPhase";
@@ -176,7 +189,8 @@ stdenv.mkDerivation ({
 
   buildPhase = ''
     runHook preBuild
-    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$NIX_BUILD_CORES ${lib.concatStringsSep " " component.setupBuildFlags}
+    # https://gitlab.haskell.org/ghc/ghc/issues/9221
+    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " component.setupBuildFlags}
     runHook postBuild
   '';
 
@@ -233,12 +247,15 @@ stdenv.mkDerivation ({
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
       fi
     ''}
-    ${lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
+    ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/${name}
       if [ -f ${testExecutable} ]; then
         cp ${testExecutable} $out/${name}/
       fi
-    ''}
+    '')
+    # In case `setup copy` did not creat this
+    + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
+    }
     runHook postInstall
   '';
 

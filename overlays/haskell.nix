@@ -180,6 +180,7 @@ self: super: {
             pkgs = self.buildPackages.pkgs; # buildPackages;
             inherit (self.buildPackages.pkgs.haskellPackages) hpack;
             inherit (self.buildPackages.pkgs) runCommand cabal-install ghc symlinkJoin cacert;
+            inherit haskellLib;
         };
 
         # References to the unpacked sources, for caching in a Hydra jobset.
@@ -212,12 +213,18 @@ self: super: {
                 '';
             in (cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; })).${name};
 
+        # Loads a plan and filters the package directories using cleanSourceWith
+        importAndFilterProject = import ../lib/import-and-filter-project.nix {
+          pkgs = self;
+          inherit haskellLib;
+        };
+
         cabalProject =
             { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
             , ... }@args:
-            let plan-pkgs = import (callCabalProjectToNix
+            let plan-pkgs = (importAndFilterProject (callCabalProjectToNix
                                     (builtins.trace "Using index-state: ${index-state}"
-                                     (args // { inherit index-state; })));
+                                     (args // { inherit index-state; })))).pkgs;
             in let pkg-set = mkCabalProjectPkgSet
                 { inherit plan-pkgs;
                   modules = (args.modules or [])
@@ -227,7 +234,7 @@ self: super: {
 
         stackProject =
             { ... }@args:
-            let stack-pkgs = import (callStackToNix args);
+            let stack-pkgs = (importAndFilterProject (callStackToNix args)).pkgs;
             in let pkg-set = mkStackPkgSet
                 { inherit stack-pkgs;
                   modules = (args.modules or [])

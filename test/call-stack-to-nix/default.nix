@@ -1,12 +1,12 @@
-{ stdenv, mkStackPkgSet, callStackToNix }:
+{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject }:
 
 with stdenv.lib;
 
 let
   pkgSet = mkStackPkgSet {
-    stack-pkgs = import (callStackToNix {
+    stack-pkgs = (importAndFilterProject (callStackToNix {
       src = ../stack-simple;
-    });
+    })).pkgs;
     pkg-def-extras = [];
     modules = [];
   };

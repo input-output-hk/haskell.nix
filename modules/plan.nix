@@ -83,6 +83,11 @@ let
       default = (def.enableLibraryProfiling or false);
     };
 
+    enableSeparateDataOutput = mkOption {
+      type = bool;
+      default = (def.enableSeparateDataOutput or false);
+    };
+
     enableExecutableProfiling = mkOption {
       type = bool;
       default = (def.enableExecutableProfiling or false);

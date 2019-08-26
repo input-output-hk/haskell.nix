@@ -158,7 +158,7 @@ self: super: rec {
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
             };
-        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs) {
+        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false) {
             ghc865 = let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";

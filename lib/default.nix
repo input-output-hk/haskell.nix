@@ -94,4 +94,29 @@ with haskellLib;
         operator = {val,...}: makePairs val.config.depends;
       };
     in map ({val,...}: val) closure;
+
+  # Extracts a selection of components from a Haskell package set.
+  #
+  # This can be used to filter out all test suites or benchmarks of
+  # your project, so that they can be built in Hydra.
+  #
+  # For example:
+  #
+  #    tests = collectComponents "tests" (package: package.identifier.name == "mypackage") hsPkgs;
+  #
+  # Will result in moving:
+  #   from: hsPkgs.mypackage.components.tests.unit-tests
+  #     to: tests.mypackage.unit-tests
+  #
+  collectComponents = group: packageSel: haskellPackages:
+    (mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
+     (filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
+    // { recurseForDerivations = true; };
+
+  # Replacement for lib.cleanSourceWith that has a subDir argument.
+  inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;
+  
+  # Use cleanSourceWith to filter just the files needed for a particular
+  # component of a package
+  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith; };
 }
