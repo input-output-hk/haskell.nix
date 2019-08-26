@@ -18,8 +18,8 @@ library
                      , Cabal2Nix.Util
                      , Cabal2Nix.Plan
                      , Distribution.Nixpkgs.Fetch
-  build-depends:       base >=4.11 && <4.13
-                     , hnix >= 0.5.0
+  build-depends:       base >=4 && <4.13
+                     , hnix
                      , aeson
                      , unordered-containers
                      , process
@@ -41,11 +41,11 @@ library
 executable cabal-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4.11 && <4.13
+  build-depends:       base >=4 && <4.13
                      , transformers
                      , bytestring
                      , hpack
-                     , hnix >= 0.5.0
+                     , hnix
                      , text
                      , nix-tools
                      , filepath
@@ -57,8 +57,8 @@ executable cabal-to-nix
 executable hashes-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4.11 && <4.13
-                     , hnix >= 0.5.0
+  build-depends:       base >=4 && <4.13
+                     , hnix
                      , nix-tools
                      , data-fix
                      , aeson
@@ -78,9 +78,9 @@ executable plan-to-nix
                      , Plan2Nix.CLI
                      , Plan2Nix.Project
                      , Plan2Nix.Plan
-  build-depends:       base >=4.11 && <4.13
+  build-depends:       base >=4 && <4.13
                      , nix-tools
-                     , hnix >= 0.5.0
+                     , hnix
                      , Cabal >= 2.4
                      , text
                      , hpack
@@ -102,7 +102,7 @@ executable plan-to-nix
 executable hackage-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4.11 && <4.13
+  build-depends:       base >=4 && <4.13
                      , nix-tools
                      , hackage-db
                      , hnix
@@ -121,9 +121,9 @@ executable hackage-to-nix
 executable lts-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4.11 && <4.13
+  build-depends:       base >=4 && <4.13
                      , nix-tools
-                     , hnix >= 0.5.0
+                     , hnix
                      , yaml
                      , aeson
                      , microlens
@@ -145,10 +145,10 @@ executable stack-to-nix
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
                      , Stack2nix.Stack
-  build-depends:       base >=4.11 && <4.13
+  build-depends:       base >=4 && <4.13
                      , nix-tools
                      , transformers
-                     , hnix >= 0.5.0
+                     , hnix
                      , yaml
                      , aeson
                      , microlens

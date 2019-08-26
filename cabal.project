@@ -3,8 +3,7 @@ packages: .
 -- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
 -- to work with the data-dir issues when building components.
 
-constraints: haskell-src-exts < 1.21
-           , pretty-show < 1.9
+constraints: hnix >= 0.6.1
 
 source-repository-package
     type: git
@@ -16,7 +15,3 @@ source-repository-package
     location: https://github.com/galenhuntington/haskell-src-meta.git
     tag: 109ee29d5fd0f4e23fdd2f80eb122d66341b64a9
 
-source-repository-package
-    type: git
-    location: https://github.com/haskell-nix/hnix.git
-    tag: 617d0867ab96c8f97b02c4524bd948d9f114005e

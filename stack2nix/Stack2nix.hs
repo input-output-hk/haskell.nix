@@ -61,8 +61,8 @@ stackexpr args =
 
 stack2nix :: Args -> Stack -> IO NExpr
 stack2nix args stack@(Stack resolver compiler _ _) =
-  do let extraDeps = extraDeps2nix stack
-         flags     = flags2nix stack
+  do let extraDeps    = extraDeps2nix stack
+         flags        = flags2nix stack
      let _f_          = mkSym "f"
          _import_     = mkSym "import"
          _mkForce_    = mkSym "mkForce"
@@ -72,12 +72,13 @@ stack2nix args stack@(Stack resolver compiler _ _) =
      packages <- packages2nix args stack
      return . mkNonRecSet $
        [ "extras" $= ("hackage" ==> mkNonRecSet
-                     ([ "packages" $= (extraDeps $// packages $// flags) ]
+                     ([ "packages" $= mkNonRecSet (extraDeps <> packages) ]
                    ++ [ "compiler.version" $= fromString (quoted ver)
                       | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
                    ++ [ "compiler.nix-name" $= fromString (quoted name)
                       | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]))
        , "resolver"  $= fromString (quoted resolver)
+       , "modules" $= mkList [ mkNonRecSet [ "packages" $= mkNonRecSet flags ] ]
        ] ++ [
          "compiler" $= fromString (quoted c) | (Just c) <- [compiler]
        ]
@@ -90,28 +91,30 @@ stack2nix args stack@(Stack resolver compiler _ _) =
 --
 --   { name.revision = hackage.name.version.revisions.default; }
 --
-extraDeps2nix :: Stack -> NExpr
+extraDeps2nix :: Stack -> [Binding NExpr]
 extraDeps2nix (Stack _ _ pkgs _) =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
-  in mkNonRecSet $ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
-                   | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
-                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. quoted (T.pack sha))
-                   | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
-                ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. toText revNo)
-                   | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
+  in [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
+     | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
+  ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. quoted (T.pack sha))
+     | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
+  ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. toText revNo)
+     | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse
         toText :: Text a => a -> T.Text
         toText = fromString . show . disp
 
 -- | Converts 'PackageFlags' into @{ packageName = { flagA = BOOL; flagB = BOOL; }; }@
-flags2nix :: Stack -> NExpr
+flags2nix :: Stack -> [Binding NExpr]
 flags2nix (Stack _ _ _ pkgFlags) =
-  mkNonRecSet [ quoted pkgName $= mkNonRecSet [ quoted flag $= mkBool val
-                                              | (flag, val) <- HM.toList flags
-                                              ]
-              | (pkgName, flags) <- HM.toList pkgFlags
-              ]
+  [ quoted pkgName $= mkNonRecSet
+    [ "flags" $= mkNonRecSet [ quoted flag $= mkBool val
+                             | (flag, val) <- HM.toList flags
+                             ]
+    ]
+  | (pkgName, flags) <- HM.toList pkgFlags
+  ]
   where
     toText :: Text a => a -> T.Text
     toText = fromString . show . disp
@@ -125,10 +128,10 @@ writeDoc file doc =
 
 
 -- makeRelativeToCurrentDirectory
-packages2nix :: Args -> Stack-> IO NExpr
+packages2nix :: Args -> Stack-> IO [Binding NExpr]
 packages2nix args (Stack _ _ pkgs _) =
   do cwd <- getCurrentDirectory
-     fmap (mkNonRecSet . concat) . forM pkgs $ \case
+     fmap concat . forM pkgs $ \case
        (LocalPath folder) ->
          do cabalFiles <- findCabalFiles (argHpackUse args) (dropFileName (argStackYaml args) </> folder)
             forM cabalFiles $ \cabalFile ->
