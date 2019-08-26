@@ -145,6 +145,8 @@
         
             <li><a class="toctree-l4" href="#callcabalprojecttonix">callCabalProjectToNix</a></li>
         
+            <li><a class="toctree-l4" href="#importandfilterproject">importAndFilterProject</a></li>
+        
             <li><a class="toctree-l4" href="#hackage">hackage</a></li>
         
             <li><a class="toctree-l4" href="#stackage">stackage</a></li>
@@ -501,7 +503,54 @@ manual process.</p>
 <h2 id="nix-tools">nix-tools<a class="headerlink" href="#nix-tools" title="Permanent link">&para;</a></h2>
 <p>A derivation containing the <code>nix-tools</code> <a href="../commands/">command-line tools</a>.</p>
 <h2 id="callstacktonix">callStackToNix<a class="headerlink" href="#callstacktonix" title="Permanent link">&para;</a></h2>
+<p>Runs <code>stack-to-nix</code> and produces the output needed for
+<code>importAndFilterProject</code>.</p>
+<p><strong>Example</strong>:</p>
+<pre><code class="nix">  pkgSet = mkStackPkgSet {
+    stack-pkgs = (importAndFilterProject (callStackToNix {
+      src = ./.;
+    })).pkgs;
+    pkg-def-extras = [];
+    modules = [];
+  };
+</code></pre>
+
 <h2 id="callcabalprojecttonix">callCabalProjectToNix<a class="headerlink" href="#callcabalprojecttonix" title="Permanent link">&para;</a></h2>
+<p>Runs <code>cabal new-configure</code> and <code>plan-to-nix</code> and produces the output
+needed for <code>importAndFilterProject</code>.</p>
+<p><strong>Example</strong>:</p>
+<pre><code class="nix">  pkgSet = mkCabalProjectPkgSet {
+    plan-pkgs = (importAndFilterProject (callCabalProjectToNix {
+      index-state = &quot;2019-04-30T00:00:00Z&quot;;
+      src = ./.;
+    })).pkgs;
+</code></pre>
+
+<h2 id="importandfilterproject">importAndFilterProject<a class="headerlink" href="#importandfilterproject" title="Permanent link">&para;</a></h2>
+<p>Imports from a derivation created by <code>callStackToNix</code>
+or <code>callCabalProjectToNix</code>.</p>
+<p>The result is an attrset with the following values:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pkgs</code></td>
+<td>attrset</td>
+<td>that can be passed to <code>mkStackPkgSet</code> (as <code>stack-pkgs</code>) or <code>mkCabalProjectPkgSet</code> (as <code>plan-pkgs</code>).</td>
+</tr>
+<tr>
+<td><code>nix</code></td>
+<td></td>
+<td>this can be built and cached so that the amount built in the evaluation phase is not too great (helps to avoid timeouts on Hydra).</td>
+</tr>
+</tbody>
+</table>
 <h2 id="hackage">hackage<a class="headerlink" href="#hackage" title="Permanent link">&para;</a></h2>
 <h2 id="stackage">stackage<a class="headerlink" href="#stackage" title="Permanent link">&para;</a></h2>
 <h2 id="fetchexternal">fetchExternal<a class="headerlink" href="#fetchexternal" title="Permanent link">&para;</a></h2>
