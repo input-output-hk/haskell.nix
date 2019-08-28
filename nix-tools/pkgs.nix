@@ -2,6 +2,11 @@
   pkgs = hackage:
     {
       packages = {
+        ### BEGIN hack hack
+        "cabal-doctest".revision = (((hackage."cabal-doctest")."1.0.6").revisions).default;
+        "happy".revision = (((hackage."happy")."1.19.10").revisions).default;
+        ### END hack hack
+
         "test-framework-hunit".revision = (((hackage."test-framework-hunit")."0.3.0.2").revisions).default;
         "test-framework-hunit".flags.base4 = true;
         "test-framework-hunit".flags.base3 = false;
