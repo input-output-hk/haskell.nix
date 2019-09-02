@@ -6,9 +6,10 @@ self: super:
    # .dll's from `bin` into `$out/lib`. Such that they
    # are trivially found.
    openssl = super.openssl.overrideAttrs (drv: {
-     postInstall = with super.stdenv; drv.postInstall + lib.optionalString hostPlatform.isWindows ''
-       cp $bin/bin/*.dll $out/lib/
-     '';
+    #  postInstall = with super.stdenv; drv.postInstall + lib.optionalString hostPlatform.isWindows ''
+    #    cp $bin/bin/*.dll $out/lib/
+    #  '';
+    postFixup = "";
    });
    mfpr = super.mfpr.overrideAttrs (drv: {
      configureFlags = with super.stdenv; (drv.configureFlags or []) ++ lib.optional hostPlatform.isWindows "--enable-static --disable-shared";
