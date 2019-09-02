@@ -83,10 +83,13 @@ self: super: {
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
             in mkPkgSet {
                 inherit pkg-def;
-                pkg-def-extras = [ stack-pkgs.extras ] ++ pkg-def-extras;
+                pkg-def-extras = [ stack-pkgs.extras ]
+                              ++ pkg-def-extras;
                 # set doExactConfig = true. The stackage set should be consistent
                 # and we should trust stackage here!
-                modules = [ { doExactConfig = true; } patchesModule ] ++ modules;
+                modules = [ { doExactConfig = true; } patchesModule ]
+                       ++ modules
+                       ++ stack-pkgs.modules;
             };
 
         # Create a Haskell package set based on a Cabal configuration.
@@ -230,6 +233,7 @@ self: super: {
             let stack-pkgs = import (callStackToNix args);
             in let pkg-set = mkStackPkgSet
                 { inherit stack-pkgs;
+                  pkg-def-extras = (args.pkg-def-extras or []);
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
