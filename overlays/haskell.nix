@@ -222,15 +222,16 @@ self: super: {
         cabalProject =
             { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
             , ... }@args:
-            let plan-pkgs = (importAndFilterProject (callCabalProjectToNix
+            let plan = (importAndFilterProject (callCabalProjectToNix
                                     (builtins.trace "Using index-state: ${index-state}"
-                                     (args // { inherit index-state; })))).pkgs;
+                                     (args // { inherit index-state; }))));
             in let pkg-set = mkCabalProjectPkgSet
-                { inherit plan-pkgs;
+                { plan-pkgs = plan.pkgs;
+                  pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in pkg-set.config.hsPkgs;
+            in pkg-set.config.hsPkgs // { plan-nix = plan.nix; };
 
         stackProject =
             { ... }@args:
