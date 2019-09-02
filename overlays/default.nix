@@ -40,4 +40,5 @@
     (import ./bootstrap.nix)
     (import ./ghc.nix)
     (import ./windows.nix)
+    (import ./boot-packages.nix)
 ]
