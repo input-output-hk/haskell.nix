@@ -5,6 +5,11 @@
 self: super: {
     haskell-nix = with self.haskell-nix; {
 
+        # Default modules, these will always be included.
+        # They are here to be overridden/added to by other
+        # overlays.
+        defaultModules = [];
+
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
         # here and be explicit about imports and dependencies.
@@ -62,6 +67,7 @@ self: super: {
             }@args:
 
             import ../package-set.nix (args // {
+                modules = defaultModules ++ modules;
                 pkgs = self;
                 inherit hackage pkg-def;
             });
@@ -83,7 +89,9 @@ self: super: {
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
             in mkPkgSet {
                 inherit pkg-def;
-                pkg-def-extras = [ stack-pkgs.extras ]
+                pkg-def-extras = [ stack-pkgs.extras
+                                   self.ghc-boot-packages.${compiler.nix-name}
+                                 ]
                               ++ pkg-def-extras;
                 # set doExactConfig = true. The stackage set should be consistent
                 # and we should trust stackage here!
