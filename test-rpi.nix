@@ -1,4 +1,4 @@
-with import ./. { nixpkgs = ../nixpkgs; nixpkgsArgs = { }; };
+with import ./. { nixpkgs = ../nixpkgs; nixpkgsArgs = { crossSystem = { config = "armv6l-unknown-linux-gnueabihf"; }; }; };
 let Cabal = buildPackages.haskell-nix.hackage-package {
     name = "Cabal"; version = "2.4.1.0";
     modules = [
