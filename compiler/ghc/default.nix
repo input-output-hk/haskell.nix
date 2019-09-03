@@ -8,6 +8,7 @@
 # build-tools
 , bootPkgs
 , autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx
+, autoreconfHook
 , bash
 
 , libiconv ? null, ncurses
@@ -95,29 +96,32 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
-in stdenv.mkDerivation (rec {
-  version = ghc-version;
-  name = "${targetPrefix}ghc-${version}";
+in let configured-src = stdenv.mkDerivation (rec {
 
-  patches = ghc-patches;
-  postPath = stdenv.lib.optionalString (ghc-patches != []) ''
-    autoreconf
-  '';
+        version = ghc-version;
 
-    # for this to properly work (with inheritance of patches, postPatch, ...)
-    # this needs to be a function over the values we want to inherit and then called
-    # accordingly. Most trivial might be to just have args, and mash them into the
-    # attrset.
-    src = stdenv.mkDerivation (rec {
+        patches = ghc-patches;
 
-        inherit version
-                nativeBuildInputs buildInputs propagatedBuildInputs
-                depsBuildTarget
-                depsTargetTarget depsTargetTargetPropagated
-                patches postPatch
-                ;
+        name = "${targetPrefix}ghc-${ghc-version}-configured-src";
 
-        name = "${targetPrefix}ghc-${version}-configured-src";
+
+  nativeBuildInputs = [
+    perl autoconf automake m4 python3 sphinx
+    ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
+  ] ++ stdenv.lib.optional (patches != []) autoreconfHook;
+
+  # For building runtime libs
+  depsBuildTarget = toolsForTarget;
+
+  buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
+
+  propagatedBuildInputs = [ targetPackages.stdenv.cc ]
+    ++ stdenv.lib.optional useLLVM llvmPackages.llvm;
+
+  depsTargetTarget = map stdenv.lib.getDev (libDeps targetPlatform);
+  depsTargetTargetPropagated = map (stdenv.lib.getOutput "out") (libDeps targetPlatform);
+
+  postPatch = "patchShebangs .";
 
         src = fetchurl { inherit (src-spec) url sha256; };
 
@@ -188,9 +192,23 @@ in stdenv.mkDerivation (rec {
         ];
 
         outputs = [ "out" ];
-        phases = [ "unpackPhase" "patchPhase" "configurePhase" "installPhase" ];
+        phases = [ "unpackPhase" "patchPhase" ]
+              ++ stdenv.lib.optional (ghc-patches != []) "autoreconfPhase"
+              ++ [ "configurePhase" "installPhase" ];
         installPhase = "cp -r . $out";
     });
+
+in stdenv.mkDerivation (rec {
+  version = ghc-version;
+  name = "${targetPrefix}ghc-${version}";
+
+  patches = ghc-patches;
+
+  # for this to properly work (with inheritance of patches, postPatch, ...)
+  # this needs to be a function over the values we want to inherit and then called
+  # accordingly. Most trivial might be to just have args, and mash them into the
+  # attrset.
+  src = configured-src;
 
   # configure was run by configured-src already.
   phases = [ "unpackPhase" "buildPhase"
@@ -237,7 +255,7 @@ in stdenv.mkDerivation (rec {
   nativeBuildInputs = [
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-  ];
+  ] ++ stdenv.lib.optional (patches != []) autoreconfHook;
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;
@@ -285,7 +303,7 @@ in stdenv.mkDerivation (rec {
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
 
-    configured-src = src;
+    configured-src = configured-src;
   };
 
   meta = {
