@@ -39,5 +39,6 @@
     (import ./haskell.nix)
     (import ./bootstrap.nix)
     (import ./ghc.nix)
+    (import ./ghc-packages.nix)
     (import ./windows.nix)
 ]
