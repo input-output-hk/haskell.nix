@@ -61,7 +61,7 @@ in
   };
 
   config.bootPkgs =  [
-     "rts" "ghc" "ghc-boot-th" "ghc-boot" "ghci"
+     "rts" "ghc" "ghc-boot-th" #"ghc-boot" # "ghci"
      "ghc-heap" # since ghc 8.6.
   ];
 
