@@ -1,8 +1,6 @@
 self: super:
 let
-  emptyDotCabal = self.runCommand "empty-dot-cabal" {
-      nativeBuildInputs = [ self.cabal-install ];
-    } ''
+  emptyDotCabal = self.runCommand "empty-dot-cabal" {} ''
       mkdir -p $out/.cabal
       cat <<EOF > $out/.cabal/config
       EOF
@@ -26,8 +24,9 @@ let
       cabal-to-nix *.cabal > $out
     '';
   };
-  importCabal = name: src: import (callCabal2Nix (
-    callCabalSdist name src));
+  importCabal = name: src:
+    let sdist = callCabalSdist name src;
+    in {...}@args: import (callCabal2Nix sdist) args // { src = sdist; };
 in {
   # note: we want the ghc-boot-packages from
   # the *buildPackages*, as we want them from the
