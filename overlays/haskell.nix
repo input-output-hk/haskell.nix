@@ -193,7 +193,7 @@ self: super: {
             index-state-hashes = import indexStateHashesPath;
             inherit (self.buildPackages.haskell-nix) dotCabal nix-tools haskellLib;
             pkgs = self.buildPackages.pkgs;
-            inherit (self.buildPackages.pkgs.haskellPackages) hpack;
+            inherit (self.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
             inherit (self.buildPackages.pkgs) runCommand cabal-install ghc symlinkJoin cacert;
         };
 
