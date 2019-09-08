@@ -61,9 +61,10 @@ in
   };
 
   config.bootPkgs =  [
-     "rts" "ghc" "ghc-boot-th" #"ghc-boot" # "ghci"
+     "rts" "ghc-boot-th" #"ghc-boot" # "ghci"
      "ghc-heap" # since ghc 8.6.
-  ];
+  ]
+    ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
