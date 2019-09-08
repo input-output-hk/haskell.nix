@@ -56,7 +56,7 @@ self: super: {
         stackage = import stackageSrc;
 
         # Utility functions for working with the component builder.
-        haskellLib = let hl = import ../lib { inherit (self) lib; haskellLib = hl; }; in hl;
+        haskellLib = let hl = import ../lib { inherit (self) lib runCommand git; haskellLib = hl; }; in hl;
 
         # Create a Haskell package set based on a cabal build plan (plan-to-nix)
         # and Nix expressions representing cabal packages (cabal-to-nix).

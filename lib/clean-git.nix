@@ -1,4 +1,6 @@
 # From https://github.com/NixOS/nix/issues/2944
+{ lib, runCommand, git, cleanSourceWith }:
+{ src }:
 
 # The function call
 #
@@ -49,47 +51,51 @@ let
   lines = s: filter (x : x != [] && x != "") (split "\n" s);
 in
 
-if builtins.pathExists ../.git
+if builtins.pathExists (toString src + "/.git")
 then
   let
-    nixpkgs = (import ./nixpkgs.nix).nixpkgs {};
-
     git_dir =
-      if builtins.pathExists ../.git/index
-      then ../.git
+      if builtins.pathExists (toString src + "/.git/index")
+      then (toString src + "/.git")
       else # likely a git worktree, so follow the indirection
         let
-          git_content = lines (readFile ./../.git);
+          git_content = lines (readFile (toString src + "/.git"));
           first_line = head git_content;
           prefix = "gitdir: ";
           ok = length git_content == 1 && has_prefix prefix first_line;
         in
           if ok
           then /. + remove_prefix prefix first_line
-          else abort "gitSource.nix: Cannot parse ${toString ./../.git}";
+          else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
+
+    gitFiles = cleanSourceWith {
+      inherit src;
+      filter = path: type:
+        type == "directory" ||
+        lib.any (i: (lib.hasSuffix i path)) [
+          ".gitmodules" ".git/config" ".git/index" ".git/HEAD" ".git/objects" ".git/refs" ] ||
+        (lib.hasInfix ".git/modules/" path &&
+          lib.any (i: (lib.hasSuffix i path)) [
+            "config" "index" "HEAD" "objects" "refs" ]);
+    };
 
     whitelist_file =
-      nixpkgs.runCommand "git-ls-files" {envVariable = true;} ''
-        cp ${git_dir + "/index"} index
-        echo "ref: refs/heads/master" > HEAD
-        mkdir objects refs
-        ${nixpkgs.git}/bin/git --git-dir . ls-files > $out
+      runCommand "git-ls-files" {envVariable = true;} ''
+        cd ${gitFiles}
+        ${git}/bin/git ls-files --recurse-submodules > $out
       '';
 
     whitelist = lines (readFile (whitelist_file.out));
 
-    filter = filter_from_list ../. whitelist;
+    filter = filter_from_list src whitelist;
   in
-    subdir: path {
-      name = baseNameOf (toString subdir);
-      path = if isString subdir then (../. + "/${subdir}") else subdir;
-      filter = filter;
+    cleanSourceWith {
+      inherit src filter;
     }
 
 else
-  trace "gitSource.nix: ${toString ../.} does not seem to be a git repository,\nassuming it is a clean checkout." (
-    subdir: path {
-      name = baseNameOf (toString subdir);
-      path = if isString subdir then (../. + "/${subdir}") else subdir;
+  trace "gitSource.nix: ${toString src} does not seem to be a git repository,\nassuming it is a clean checkout." (
+    cleanSourceWith {
+      inherit src;
     }
   )
