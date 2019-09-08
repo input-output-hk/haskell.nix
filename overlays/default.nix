@@ -41,5 +41,4 @@
     (import ./ghc.nix)
     (import ./ghc-packages.nix)
     (import ./windows.nix)
-    (import ./boot-packages.nix)
 ]
