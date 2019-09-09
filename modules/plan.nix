@@ -94,7 +94,7 @@ let
     };
 
     profilingDetail = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.profilingDetail or "exported-functions");
     };
 
@@ -105,52 +105,52 @@ let
       default = (def.preUnpack or null);
     };
     postUnpack = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.postUnpack or null);
     };
     preConfigure = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.preConfigure or null);
     };
     postConfigure = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.postConfigure or null);
     };
     preBuild = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.preBuild or null);
     };
     postBuild = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.postBuild or null);
     };
     preCheck = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.preCheck or null);
     };
     # Wrapper for test executable run in checkPhase
     testWrapper = mkOption {
-      type = string;
+      type = str;
       default = (def.testWrapper or "");
     };
     postCheck = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.postCheck or null);
     };
     preInstall = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.preInstall or null);
     };
     postInstall = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.postInstall or null);
     };
     preHaddock = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.preHaddock or null);
     };
     postHaddock = mkOption {
-      type = nullOr string;
+      type = nullOr str;
       default = (def.postHaddock or null);
     };
   };
