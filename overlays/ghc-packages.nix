@@ -26,13 +26,12 @@ let
       cabal-to-nix *.cabal > $out
     '';
   };
-  importCabal = name: src: builtins.trace (name + " " + toString src) (
+  importCabal = name: src:
+    # build the source dist
     let sdist = callCabalSdist name src;
-    in {...}@args:
-         let oldPkg = import (callCabal2Nix sdist) args;
-         in (oldPkg // { src = sdist; });
-  # importCabal = name: src: import (callCabal2Nix (
-  #   callCabalSdist name src));
+    # and generate the nix expression corresponding to the source dist
+    # but fixing the src to the sdist as well.
+    in args: (import (callCabal2Nix sdist) args) // { src = sdist; };
 in {
   # note: we want the ghc-boot-packages from
   # the *buildPackages*, as we want them from the
