@@ -1,3 +1,8 @@
+let
+  # Utility function for downloading a pinned git repo, that can be
+  # overridden with NIX_PATH.
+  fetchExternal = import ./lib/fetch-external.nix;
+in
 { pkgs ? import nixpkgs nixpkgsArgs
 # Use a pinned nixpkgs rather than the one on NIX_PATH
 , nixpkgs ? ./nixpkgs
@@ -7,6 +12,11 @@
 # It's also possible to override these sources with NIX_PATH.
 , hackageSourceJSON ? ./hackage-src.json
 , stackageSourceJSON ? ./stackage-src.json
+, hackageSrc ? fetchExternal {
+    name     = "hackage-exprs-source";
+    specJSON = hackageSourceJSON;
+    override = "hackage";
+  }
 }:
 
 let
@@ -36,19 +46,10 @@ let
 
   compat = import ./lib/compat.nix;
 
-  # Utility function for downloading a pinned git repo, that can be
-  # overridden with NIX_PATH.
-  fetchExternal = import ./lib/fetch-external.nix;
-
   # Function for cleaning haskell source directories pulled from iohk-nix
   cleanSourceHaskell = pkgs.callPackage ./lib/clean-source-haskell.nix {};
 
   # All packages from Hackage as Nix expressions
-  hackageSrc = fetchExternal {
-    name     = "hackage-exprs-source";
-    specJSON = hackageSourceJSON;
-    override = "hackage";
-  };
   hackage = import hackageSrc;
 
   # Contains the hashes of the cabal 01-index.tar.gz for given
