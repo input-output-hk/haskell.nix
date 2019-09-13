@@ -132,6 +132,10 @@ in {
       componentType = submodule {
         # add the shared componentOptions
         options = (packageOptions config) // {
+          buildable = mkOption {
+            type = bool;
+            default = true;
+          };
           depends = mkOption {
             type = listOfFilteringNulls unspecified;
             default = [];
