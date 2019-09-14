@@ -197,7 +197,7 @@ stdenv.mkDerivation ({
   checkPhase = ''
     runHook preCheck
 
-    ${component.testWrapper} ${testExecutable} ${lib.concatStringsSep " " component.testFlags}
+    ${if component.testWrapper == null then "" else component.testWrapper} ${testExecutable} ${lib.concatStringsSep " " component.testFlags}
 
     runHook postCheck
   '';

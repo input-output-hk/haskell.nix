@@ -130,8 +130,8 @@ let
     };
     # Wrapper for test executable run in checkPhase
     testWrapper = mkOption {
-      type = str;
-      default = (def.testWrapper or "");
+      type = nullOr str;
+      default = (def.testWrapper or null);
     };
     postCheck = mkOption {
       type = nullOr str;
