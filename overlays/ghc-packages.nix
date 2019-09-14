@@ -25,8 +25,11 @@ let
     '';
   };
   importCabal = name: src:
+    # build the source dist
     let sdist = callCabalSdist name src;
-    in {...}@args: import (callCabal2Nix sdist) args // { src = sdist; };
+    # and generate the nix expression corresponding to the source dist
+    # but fixing the src to the sdist as well.
+    in args: (import (callCabal2Nix sdist) args) // { src = sdist; };
 in {
   # note: we want the ghc-boot-packages from
   # the *buildPackages*, as we want them from the
