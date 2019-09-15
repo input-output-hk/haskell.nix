@@ -234,7 +234,7 @@ self: super: {
           inherit haskellLib;
         };
 
-        cabalProject =
+        cabalProject' =
             { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
             , ... }@args:
             let plan = (importAndFilterProject (callCabalProjectToNix
@@ -246,7 +246,10 @@ self: super: {
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in pkg-set.config.hsPkgs // { plan-nix = plan.nix; };
+            in { inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
+
+        cabalProject = args: let p = cabalProject' args;
+            in p.hsPkgs // { inherit (p) plan-nix; };
 
         stackProject =
             { ... }@args:
