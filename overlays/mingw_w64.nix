@@ -54,7 +54,7 @@ let
   '';
   testWrapper = lib.optionalString hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
 
-  preCheck = lib.optionalString hostPlatform.isWindows ''
+  preCheck = if hostPlatform.isWindows then ''
     echo "================================================================================"
     echo "RUNNING TESTS for $name via wine64"
     echo "================================================================================"
@@ -71,11 +71,11 @@ let
         find "$libdir" -iname '*.dll' -exec cp {} . \;
       fi
     done
-  '';
-  postCheck = lib.optionalString hostPlatform.isWindows ''
+  '' else null;
+  postCheck = if hostPlatform.isWindows then ''
     echo "================================================================================"
     echo "END RUNNING TESTS"
     echo "================================================================================"
-  '';
+  '' else null;
 
 in { inherit preCheck testWrapper postCheck setupBuildFlags; }
