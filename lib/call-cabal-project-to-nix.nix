@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes }@defaults:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }@defaults:
 { src
 , index-state   ? null
 , index-sha256  ? null

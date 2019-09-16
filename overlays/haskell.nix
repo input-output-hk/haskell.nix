@@ -233,7 +233,7 @@ self: super: {
                 '';
             in (cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; })).${name};
 
-        cabalProject =
+        cabalProject' =
             { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
             , ... }@args:
             let plan = (importAndFilterProject (callCabalProjectToNix
