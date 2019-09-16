@@ -1,8 +1,6 @@
 self: super:
 let
-  emptyDotCabal = self.runCommand "empty-dot-cabal" {
-      nativeBuildInputs = [ self.cabal-install ];
-    } ''
+  emptyDotCabal = self.runCommand "empty-dot-cabal" {} ''
       mkdir -p $out/.cabal
       cat <<EOF > $out/.cabal/config
       EOF

@@ -58,9 +58,9 @@ self: super: {
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
             inherit (self) lib runCommand;
-            inherit (self.buildPackages) git;
+            git = self.buildPackages.git;
             haskellLib = hl;
-        }; in hl;
+          }; in hl;
 
         # Create a Haskell package set based on a cabal build plan (plan-to-nix)
         # and Nix expressions representing cabal packages (cabal-to-nix).
@@ -199,8 +199,8 @@ self: super: {
 
         # Loads a plan and filters the package directories using cleanSourceWith
         importAndFilterProject = import ../lib/import-and-filter-project.nix {
-            inherit (self.buildPackages.haskell-nix) haskellLib;
-            pkgs = self.buildPackages.pkgs;
+          inherit (self.buildPackages.haskell-nix) haskellLib;
+          pkgs = self.buildPackages.pkgs;
         };
 
         # References to the unpacked sources, for caching in a Hydra jobset.
@@ -236,17 +236,16 @@ self: super: {
         cabalProject' =
             { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
             , ... }@args:
-            let plan = (importAndFilterProject
-                        (callCabalProjectToNix
-                         (builtins.trace "Using index-state: ${index-state}"
-                          (args // { inherit index-state; }))));
+            let plan = (importAndFilterProject (callCabalProjectToNix
+                                    (builtins.trace "Using index-state: ${index-state}"
+                                     (args // { inherit index-state; }))));
             in let pkg-set = mkCabalProjectPkgSet
                 { plan-pkgs = plan.pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in {inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
+            in { inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
 
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // { inherit (p) plan-nix; };

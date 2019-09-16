@@ -3,9 +3,8 @@ let
   fetch = jsonFile:
     with builtins;
     let spec = fromJSON (readFile jsonFile);
-    in fetchTarball {
+    in pkgs.fetchgit {
       name = "old-ghc-nix";
-      inherit (spec) sha256;
-      url = "${spec.url}/archive/${spec.rev}.tar.gz";
+      inherit (spec) sha256 url rev;
     };
 in import (fetch ./old-ghc-nix.json) { inherit pkgs; }
