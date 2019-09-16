@@ -1,4 +1,4 @@
-{ lib, haskellLib }:
+{ lib, haskellLib, runCommand, git }:
 
 with haskellLib;
 
@@ -28,7 +28,8 @@ with haskellLib;
           tys;
     in libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc:
+    lib.optional c.buildable c ++ acc) [];
 
   componentPrefix = {
     # Are all of these right?
@@ -45,9 +46,12 @@ with haskellLib;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
       applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
-      libComp = if comps.library == null then {} else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
+      buildableAttrs = lib.filterAttrs (n: comp: comp.buildable);
+      libComp = if comps.library == null || !comps.library.buildable
+        then {}
+        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
       subComps = lib.mapAttrs
-        (ctype: lib.mapAttrs (applySubComp ctype))
+        (ctype: attrs: lib.mapAttrs (applySubComp ctype) (buildableAttrs attrs))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);
       allComp = { all = applyAllComp comps.all; };
     in subComps // libComp // allComp;
@@ -119,4 +123,9 @@ with haskellLib;
   # Use cleanSourceWith to filter just the files needed for a particular
   # component of a package
   cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith; };
+
+  # Clean git directory based on `git ls-files --recurse-submodules`
+  cleanGit = import ./clean-git.nix {
+    inherit lib runCommand git cleanSourceWith;
+  };
 }

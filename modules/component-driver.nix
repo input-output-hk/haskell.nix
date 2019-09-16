@@ -54,16 +54,17 @@ in
       # ghcjs custom packages
       "ghcjs-prim" "ghcjs-th"
     ]
-    ++ lib.optional (!config.reinstallableLibGhc) "ghc";
+    ++ lib.optionals (!config.reinstallableLibGhc) [ "ghc" "ghc-boot" ];
 
   options.bootPkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;
   };
 
   config.bootPkgs =  [
-     "rts" "ghc" "ghc-boot-th"
+     "rts" "ghc-boot-th"
      "ghc-heap" # since ghc 8.6.
-  ];
+  ]
+    ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;

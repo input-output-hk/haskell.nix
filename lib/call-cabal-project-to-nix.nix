@@ -160,8 +160,7 @@ let
     HOME=${dotCabal {
       inherit cabal-install nix-tools;
       index-state = index-state-found;
-      sha256 = index-sha256-found;
-      inherit cabal-install; }} cabal new-configure \
+      sha256 = index-sha256-found; }} cabal new-configure \
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
 
