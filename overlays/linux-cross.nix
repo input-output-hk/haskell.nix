@@ -25,6 +25,7 @@ in
 , ...
 }:
 let
+
   # we want this to hold only for arm (32 and 64bit) for now.
   isLinuxCross = buildPlatform != hostPlatform && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64);
   qemuIservWrapper = writeScriptBin "iserv-wrapper" ''
@@ -53,7 +54,7 @@ let
     ${qemu}/bin/qemu-${qemuSuffix} $@*
     '';
   testFlags = lib.optionals isLinuxCross [ "--test-wrapper ${qemuTestWrapper}/bin/test-wrapper" ];
-  preCheck = lib.optionalString isLinuxCross ''
+  preCheck = lib.optional isLinuxCross ''
     echo "================================================================="
     echo "RUNNING TESTS for $name via qemu-${qemuSuffix}"
     echo "================================================================="
@@ -62,7 +63,7 @@ let
       find "$p" -iname '*.so*' -exec cp {} . \;
     done
   '';
-  postCheck = lib.optionalString isLinuxCross ''
+  postCheck = lib.optional isLinuxCross ''
     echo "================================================================="
     echo "END RUNNING TESTS"
     echo "================================================================="

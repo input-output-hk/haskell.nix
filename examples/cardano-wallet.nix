@@ -1,4 +1,4 @@
-with import ../. { nixpkgs = ../nixpkgs; nixpkgsArgs = { }; };
+with import ../. { nixpkgs = ../../nixpkgs; nixpkgsArgs = { }; };
 let Cabal = buildPackages.haskell-nix.hackage-package {
     name = "Cabal"; version = "2.4.1.0";
     modules = [
@@ -10,7 +10,7 @@ let Cabal = buildPackages.haskell-nix.hackage-package {
 #     modules = [
 #     	({config, ... }:{ packages.hello.package.setup-depends = [ Cabal ]; })
 #     ];}).cardano-wallet.components.all
-(let stack-pkgs = import ../cardano-wallet/flags-test/pkgs.nix;
+(let stack-pkgs = import ../../cardano-wallet/flags-test/pkgs.nix;
  in let pkg-set = haskell-nix.mkStackPkgSet
                 { inherit stack-pkgs;
                   pkg-def-extras = [(hackage: {
@@ -25,7 +25,7 @@ let Cabal = buildPackages.haskell-nix.hackage-package {
                     };
                   })];
                   modules = [
-                              { packages.Cabal.patches = [ ./overlays/patches/Cabal/fix-data-dir.patch ]; }
+                              { packages.Cabal.patches = [ ../overlays/patches/Cabal/fix-data-dir.patch ]; }
                               { packages.alex.package.setup-depends = [pkg-set.config.hsPkgs.Cabal]; }
                               { packages.happy.package.setup-depends = [pkg-set.config.hsPkgs.Cabal]; }
                             ];

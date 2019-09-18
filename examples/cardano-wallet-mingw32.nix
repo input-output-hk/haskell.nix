@@ -1,4 +1,4 @@
-with import ../. { nixpkgs = ../nixpkgs; nixpkgsArgs = { crossSystem = { config = "x86_64-pc-mingw32"; }; }; };
+with import ../. { nixpkgs = ../../nixpkgs; nixpkgsArgs = { crossSystem = { config = "x86_64-pc-mingw32"; }; }; };
 let Cabal = buildPackages.haskell-nix.hackage-package {
     name = "Cabal"; version = "2.4.1.0";
     modules = [
@@ -10,7 +10,7 @@ let Cabal = buildPackages.haskell-nix.hackage-package {
 #     modules = [
 #     	({config, ... }:{ packages.hello.package.setup-depends = [ Cabal ]; })
 #     ];}).cardano-wallet.components.all
-(let stack-pkgs = import ../cardano-wallet/flags-test/pkgs.nix;
+(let stack-pkgs = import ../../cardano-wallet/flags-test/pkgs.nix;
  in let pkg-set = haskell-nix.mkStackPkgSet
                 { inherit stack-pkgs;
                   pkg-def-extras = [(hackage: {

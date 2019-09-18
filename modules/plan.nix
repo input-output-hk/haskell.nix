@@ -125,19 +125,19 @@ let
       default = (def.postBuild or null);
     };
     preCheck = mkOption {
-      type = nullOr str;
-      default = (def.preCheck or null);
+      type = listOfFilteringNulls str;
+      default = (def.preCheck or []);
     };
     # Wrapper for test executable run in checkPhase
     testWrapper = mkOption {
-      type = nullOr str;
-      default = def.testWrapper or null;
+      type = listOfFilteringNulls str;
+      default = def.testWrapper or [];
       description = "A command to run for executing tests in checkPhase, which takes the original test command as its arguments.";
       example = "echo";
     };
     postCheck = mkOption {
-      type = nullOr str;
-      default = (def.postCheck or null);
+      type = listOfFilteringNulls str;
+      default = (def.postCheck or []);
     };
     preInstall = mkOption {
       type = nullOr str;

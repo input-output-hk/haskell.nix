@@ -56,7 +56,11 @@ self: super: {
         stackage = import stackageSrc;
 
         # Utility functions for working with the component builder.
-        haskellLib = let hl = import ../lib { inherit (self) lib; haskellLib = hl; }; in hl;
+        haskellLib = let hl = import ../lib {
+            inherit (self) lib runCommand;
+            inherit (self.buildPackages) git;
+            haskellLib = hl;
+        }; in hl;
 
         # Create a Haskell package set based on a cabal build plan (plan-to-nix)
         # and Nix expressions representing cabal packages (cabal-to-nix).
@@ -194,10 +198,10 @@ self: super: {
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
-    	  importAndFilterProject = import ../lib/import-and-filter-project.nix {
-    	      inherit (self.buildPackages.haskell-nix) haskellLib;
+        importAndFilterProject = import ../lib/import-and-filter-project.nix {
+            inherit (self.buildPackages.haskell-nix) haskellLib;
             pkgs = self.buildPackages.pkgs;
-   	    };
+        };
 
         # References to the unpacked sources, for caching in a Hydra jobset.
         source-pins = import ../lib/make-source-pins.nix {
@@ -229,22 +233,27 @@ self: super: {
                 '';
             in (cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; })).${name};
 
-        cabalProject =
+        cabalProject' =
             { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
             , ... }@args:
-            let plan-pkgs = import (callCabalProjectToNix
-                                    (builtins.trace "Using index-state: ${index-state}"
-                                     (args // { inherit index-state; })));
+            let plan = (importAndFilterProject
+                        (callCabalProjectToNix
+                         (builtins.trace "Using index-state: ${index-state}"
+                          (args // { inherit index-state; }))));
             in let pkg-set = mkCabalProjectPkgSet
-                { inherit plan-pkgs;
+                { plan-pkgs = plan.pkgs;
+                  pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in pkg-set.config.hsPkgs;
+            in {inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
+
+        cabalProject = args: let p = cabalProject' args;
+            in p.hsPkgs // { inherit (p) plan-nix; };
 
         stackProject =
             { ... }@args:
-            let stack-pkgs = import (callStackToNix args);
+            let stack-pkgs = (importAndFilterProject (callStackToNix args)).pkgs;
             in let pkg-set = mkStackPkgSet
                 { inherit stack-pkgs;
                   pkg-def-extras = (args.pkg-def-extras or []);
