@@ -113,8 +113,8 @@ with haskellLib;
   #     to: tests.mypackage.unit-tests
   #
   collectComponents = group: packageSel: haskellPackages:
-    (mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
-     (filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
+    (lib.mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
+     (lib.filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
     // { recurseForDerivations = true; };
 
   # Replacement for lib.cleanSourceWith that has a subDir argument.
