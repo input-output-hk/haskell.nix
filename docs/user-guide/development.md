@@ -45,7 +45,7 @@ If you have a Cabal or Stack project with multiple packages
 (i.e. multiple `.cabal` files, not a single package with multiple
 components), then you will need a development environment that
 contains the _dependencies_ of your packages, but not the packages
-themselves. This is what the `shellFor` function does.
+themselves. This is what the [`shellFor`][shellFor] function does.
 
 ```nix
 # shell.nix
@@ -70,6 +70,10 @@ in
       [ hlint stylish-haskell ghcid ];
   }
 ```
+
+See also: [Haskell.nix Library Reference: `shellFor`][shellFor]
+
+[shellFor]: ../reference/library.md#shellfor
 
 ## How to get a local Hoogle index
 
