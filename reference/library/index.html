@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Haskell.nix Libary - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Haskell.nix Library - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,7 +17,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Haskell.nix Libary";
+    var mkdocs_page_name = "Haskell.nix Library";
     var mkdocs_page_input_path = "reference/library.md";
     var mkdocs_page_url = null;
   </script>
@@ -99,7 +99,7 @@
                 </li>
                 <li class=" current">
                     
-    <a class="current" href="./">Haskell.nix Libary</a>
+    <a class="current" href="./">Haskell.nix Library</a>
     <ul class="subnav">
             
     <li class="toctree-l3"><a href="#types">Types</a></li>
@@ -255,7 +255,7 @@
         
       
     
-    <li>Haskell.nix Libary</li>
+    <li>Haskell.nix Library</li>
     <li class="wy-breadcrumbs-aside">
       
         <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/reference/library.md"
@@ -614,7 +614,7 @@ to <code>tests.mypackage.unit-tests</code>.</p>
 <h2 id="shellfor">shellFor<a class="headerlink" href="#shellfor" title="Permanent link">&para;</a></h2>
 <p>Create a <code>nix-shell</code> <a href="../../user-guide/development/">development
 environment</a> for developing one or more
-packages.</p>
+packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).</p>
 <pre><code>shellFor =
     { packages, withHoogle ? true, ...}: ...
 </code></pre>
@@ -646,6 +646,13 @@ packages.</p>
 </tbody>
 </table>
 <p><strong>Return value</strong>: a derivation</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>shellFor</code> will set the <code>CABAL_CONFIG</code> environment variable to disable
+remote package servers. This is a <a href="../../dev/removing-with-package-wrapper/">known
+limitation</a> which we would
+like to solve.</p>
+</div>
 <h2 id="ghcwithpackages">ghcWithPackages<a class="headerlink" href="#ghcwithpackages" title="Permanent link">&para;</a></h2>
 <p>Creates a <code>nix-shell</code> <a href="../../user-guide/development/">development
 environment</a> including the given

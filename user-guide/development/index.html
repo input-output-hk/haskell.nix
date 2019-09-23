@@ -120,7 +120,7 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../reference/library/">Haskell.nix Libary</a>
+    <a class="" href="../../reference/library/">Haskell.nix Library</a>
                 </li>
                 <li class="">
                     
@@ -254,7 +254,7 @@ in
 (i.e. multiple <code>.cabal</code> files, not a single package with multiple
 components), then you will need a development environment that
 contains the <em>dependencies</em> of your packages, but not the packages
-themselves. This is what the <code>shellFor</code> function does.</p>
+themselves. This is what the <a href="../../reference/library/#shellfor"><code>shellFor</code></a> function does.</p>
 <pre><code class="nix"># shell.nix
 { pkgs ? import &lt;nixpkgs&gt; {} }:
 
@@ -278,6 +278,7 @@ in
   }
 </code></pre>
 
+<p>See also: <a href="../../reference/library/#shellfor">Haskell.nix Library Reference: <code>shellFor</code></a></p>
 <h2 id="how-to-get-a-local-hoogle-index">How to get a local Hoogle index<a class="headerlink" href="#how-to-get-a-local-hoogle-index" title="Permanent link">&para;</a></h2>
 <p>If you need a local Hoogle for all the dependencies of your project create this file</p>
 <pre><code class="nix"># shell-hoogle.nix
