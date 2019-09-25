@@ -9,9 +9,11 @@ source-repository-package
     type: git
     location: https://github.com/ElvishJerricco/hackage-db.git
     tag: 84ca9fc75ad45a71880e938e0d93ea4bde05f5bd
+    --sha256: 0y3kw1hrxhsqmyx59sxba8npj4ya8dpgjljc21gkgdvdy9628q4c
 
 source-repository-package
     type: git
     location: https://github.com/galenhuntington/haskell-src-meta.git
     tag: 109ee29d5fd0f4e23fdd2f80eb122d66341b64a9
+    --sha256: 08qw6y9br6fy3qkwl9v2kp38msprsq9v1ssym0fsnj2jm0vbnfrx
 

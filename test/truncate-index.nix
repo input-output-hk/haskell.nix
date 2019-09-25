@@ -1,11 +1,12 @@
-{ pkgs ? import <nixpkgs> {}
+{ nixpkgs ? <nixpkgs>
 , nix-tools-path
 , index-state
 , hash
 }:
 
 rec {
-  hsPkgs = import nix-tools-path { inherit pkgs; };
+  pkgs = import nixpkgs {};
+  hsPkgs = import nix-tools-path { inherit nixpkgs; };
   index = builtins.fetchurl http://hackage.haskell.org/01-index.tar.gz;
   indexTruncated = pkgs.runCommand "00-index.tar.gz" {
     outputHashAlgo = "sha256";
