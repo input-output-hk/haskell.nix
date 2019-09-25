@@ -295,6 +295,7 @@ instance ToNixExpr' GenericPackageDescription where
                   [ "frameworks"   $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
                   [ "pkgconfig"    $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
                   [ "build-tools"  $= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ] ++
+                  [ "buildable"    $= boolTreeToNix (and <$> b) | Just b <- [shakeTree . fmap ((:[]) . buildable . getBuildInfo) $ comp ] ] ++
                   if detailLevel == MinimalDetails
                     then []
                     else
@@ -406,6 +407,19 @@ instance (Foldable t, ToNixExpr (t a), ToNixExpr v, ToNixExpr c) => ToNixExpr (C
   toNix (CondNode d _c []) = toNix d
   toNix (CondNode d _c bs) | null d = foldl1 ($++) (fmap toNix bs)
                            | otherwise = foldl ($++) (toNix d) (fmap toNix bs)
+
+boolBranchToNix :: (ToNixExpr v, ToNixExpr c) => CondBranch v c Bool -> NExpr
+boolBranchToNix (CondBranch _c t Nothing) | boolTreeToNix t == mkBool True = mkBool True
+boolBranchToNix (CondBranch c  t Nothing) = mkIf (toNix c) (boolTreeToNix t) (mkBool True)
+boolBranchToNix (CondBranch _c t (Just f)) | boolTreeToNix t == boolTreeToNix f = boolTreeToNix t
+boolBranchToNix (CondBranch c  t (Just f)) = mkIf (toNix c) (boolTreeToNix t) (boolTreeToNix f)
+
+boolTreeToNix :: (ToNixExpr v, ToNixExpr c) => CondTree v c Bool -> NExpr
+boolTreeToNix (CondNode False _c _bs) = mkBool False
+boolTreeToNix (CondNode True _c bs) =
+  case filter (/= mkBool True) (fmap boolBranchToNix bs) of
+    [] -> mkBool True
+    bs' -> foldl1 ($&&) bs'
 
 instance ToNixBinding Flag where
   toNixBinding (MkFlag name _desc def _manual) = (fromString . show . pretty $ name) $= mkBool def
