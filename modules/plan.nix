@@ -35,6 +35,10 @@ let
   };
 
   componentOptions = def: {
+         buildable = mkOption {
+            type = bool;
+            default = true;
+         };
          configureFlags = mkOption {
             type = listOfFilteringNulls str;
             default = (def.configureFlags or []);
