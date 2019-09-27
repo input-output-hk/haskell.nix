@@ -52,9 +52,9 @@ let
     set -euo pipefail
     WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag LC_ALL=en_US.UTF-8 WINEPREFIX=$TMP ${wine}/bin/wine64 $@
   '';
-  testWrapper = lib.optionalString hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
+  testWrapper = lib.optional hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
 
-  preCheck = if hostPlatform.isWindows then ''
+  preCheck = lib.optional hostPlatform.isWindows ''
     echo "================================================================================"
     echo "RUNNING TESTS for $name via wine64"
     echo "================================================================================"
@@ -71,11 +71,11 @@ let
         find "$libdir" -iname '*.dll' -exec cp {} . \;
       fi
     done
-  '' else null;
-  postCheck = if hostPlatform.isWindows then ''
+  '';
+  postCheck = lib.optional hostPlatform.isWindows ''
     echo "================================================================================"
     echo "END RUNNING TESTS"
     echo "================================================================================"
-  '' else null;
+  '';
 
 in { inherit preCheck testWrapper postCheck setupBuildFlags; }
