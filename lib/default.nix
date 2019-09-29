@@ -61,6 +61,11 @@ with haskellLib;
   isTest = componentId: componentId.ctype == "test";
   isBenchmark = componentId: componentId.ctype == "bench";
 
+  # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
+  # This is used to make the default `packages` list for `shellFor`.
+  isLocalPackage = p: p.isLocal or false;
+  selectLocalPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p) ps;
+
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
   componentTarget = componentId:

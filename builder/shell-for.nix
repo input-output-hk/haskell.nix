@@ -2,7 +2,7 @@
 
 { packages ? ps:
     let
-      selected = lib.filterAttrs (n: p: p != null && p.detailLevel or "" == "FullDetails") ps;
+      selected = haskellLib.selectLocalPackages ps;
     in
       builtins.trace ("Shell for " + toString (builtins.attrNames selected))
         (builtins.attrValues selected)

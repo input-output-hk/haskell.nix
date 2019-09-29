@@ -33,7 +33,16 @@ let
     buildInputs = [ cabal-install ];
   };
 
-in
+  envDefault = pkgSet.config.hsPkgs.shellFor {
+    # The default implementation of packages should use isLocal and the
+    # result should be the same as:
+    #   packages = ps: with ps; [ pkga pkgb ];
+    # This adds cabal-install to the shell, which helps tests because
+    # they use a nix-shell --pure. Normally you would BYO cabal-install.
+    buildInputs = [ cabal-install ];
+  };
+
+ in
   stdenv.mkDerivation {
     name = "shell-for-test";
 
@@ -46,6 +55,9 @@ in
       printf "checking that the shell env has the dependencies...\n" >& 2
       ${env.ghc}/bin/runghc conduit-test.hs
 
+      printf "checking that the shell envDefault has the dependencies...\n" >& 2
+      ${envDefault.ghc}/bin/runghc conduit-test.hs
+
       touch $out
     '';
 
@@ -57,6 +69,6 @@ in
       inherit pkgSet;
 
       # Used for testing externally with nix-shell (../tests.sh).
-      inherit env envPkga;
+      inherit env envPkga envDefault;
     };
 }

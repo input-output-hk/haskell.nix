@@ -126,6 +126,11 @@ in {
         type = bool;
         default = false;
       };
+
+      isLocal = mkOption {
+        type = bool;
+        default = false;
+      };
     };
 
     components = let
