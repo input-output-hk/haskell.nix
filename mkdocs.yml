@@ -33,7 +33,7 @@ pages:
     - 'How to cross-compile your project': user-guide/cross-compilation.md
   - 'Reference':
     - 'Command-line tools': reference/commands.md
-    - 'Haskell.nix Libary': reference/library.md
+    - 'Haskell.nix Library': reference/library.md
     - 'Module options': reference/modules.md
   - 'Templates / Abstraction':
     - 'IOHKs nix library': iohk-nix.md

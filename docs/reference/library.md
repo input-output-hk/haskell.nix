@@ -281,7 +281,7 @@ These functions exist within the `hsPkgs` package set.
 
 Create a `nix-shell` [development
 environment](../user-guide/development.md) for developing one or more
-packages.
+packages with `ghci` or `cabal v2-build` (but not Stack).
 
 ```
 shellFor =
@@ -296,6 +296,14 @@ shellFor =
 | `{ ... }` | Attrset | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
 
 **Return value**: a derivation
+
+!!! warning
+
+    `shellFor` will set the `CABAL_CONFIG` environment variable to disable
+    remote package servers. This is a [known
+    limitation](../dev/removing-with-package-wrapper.md) which we would
+    like to solve.
+
 
 ## ghcWithPackages
 

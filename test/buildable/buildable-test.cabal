@@ -1,0 +1,31 @@
+cabal-version:       >=1.10
+
+name:                buildable-test
+version:             0.1.0.0
+license:             PublicDomain
+author:              Hamish Mackenzie
+maintainer:          hamish.mackenzie@iohk.io
+build-type:          Simple
+
+flag exclude-broken
+  default: False
+  description: Turning this on should exclude the does-not-build2
+
+executable builds
+  main-is:             Main.hs
+  build-depends:       base
+  default-language:    Haskell2010
+
+executable does-not-build
+  buildable:           False
+  main-is:             Missing.hs
+  build-depends:       base
+  default-language:    Haskell2010
+
+executable does-not-build2
+  if flag( exclude-broken )
+    buildable:         False
+  main-is:             Missing.hs
+  build-depends:       base
+  default-language:    Haskell2010
+
