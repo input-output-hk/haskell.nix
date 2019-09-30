@@ -66,6 +66,7 @@ self: super: rec {
                 ++ self.lib.optional (version == "8.6.4")                             ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.5")                             ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.4")                             ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
+                ++ self.lib.optional (versionAtLeast "8.6.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ;
         in ({
             ghc844 = self.callPackage ../compiler/ghc {
