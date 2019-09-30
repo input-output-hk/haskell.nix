@@ -1,6 +1,6 @@
 builtins.mapAttrs (k: _v:
   let
-    pkgs = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/160ecb6fd7eaa203c4939f79cdc5b5e2b24dd71e.tar.gz") {
+    pkgs = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/57d58888d91f978fccd8648a05fe79dff71d2384.tar.gz") {
         nixpkgs = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/2255f292063ccbe184ff8f9b35ce475c04d5ae69.tar.gz";
         nixpkgsArgs = { system = k; };
       };
@@ -12,6 +12,7 @@ builtins.mapAttrs (k: _v:
   }
 ) {
   x86_64-linux = {};
+
 
   # Uncomment to test build on macOS too
   # x86_64-darwin = {};

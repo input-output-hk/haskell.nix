@@ -56,10 +56,10 @@ flags  = "flags"
 buildDepError, sysDepError, pkgConfDepError, exeDepError, legacyExeDepError, buildToolDepError :: Text
 buildDepError = "buildDepError"
 sysDepError = "sysDepError"
-pkgConfDepError = "pkgConfDepError" 
+pkgConfDepError = "pkgConfDepError"
 exeDepError = "exeDepError"
 legacyExeDepError = "legacyExeDepError"
-buildToolDepError = "buildToolDepError" 
+buildToolDepError = "buildToolDepError"
 
 ($//?) :: NExpr -> Maybe NExpr -> NExpr
 lhs $//? (Just e) = lhs $// e
@@ -87,17 +87,17 @@ genExtra Hpack = mkNonRecSet [ "cabal-generator" $= mkStr "hpack" ]
 
 data CabalDetailLevel = MinimalDetails | FullDetails deriving (Show, Eq)
 
-cabal2nix :: CabalDetailLevel -> Maybe Src -> CabalFile -> IO NExpr
-cabal2nix fileDetails src = \case
-  (OnDisk path) -> gpd2nix fileDetails src Nothing
+cabal2nix :: Bool -> CabalDetailLevel -> Maybe Src -> CabalFile -> IO NExpr
+cabal2nix isLocal fileDetails src = \case
+  (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing
     <$> readGenericPackageDescription normal path
-  (InMemory gen _ body) -> gpd2nix fileDetails src (genExtra <$> gen)
+  (InMemory gen _ body) -> gpd2nix isLocal fileDetails src (genExtra <$> gen)
     <$> case runParseResult (parseGenericPackageDescription body) of
         (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
         (_, Right desc) -> pure desc
 
-gpd2nix :: CabalDetailLevel -> Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
-gpd2nix fileDetails src extra gpd = mkLets errorFunctions $ mkFunction args $ toNix' fileDetails gpd $//? (toNix <$> src) $//? extra
+gpd2nix :: Bool -> CabalDetailLevel -> Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
+gpd2nix isLocal fileDetails src extra gpd = mkLets errorFunctions $ mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd $//? (toNix <$> src) $//? extra
   where args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
@@ -108,44 +108,44 @@ gpd2nix fileDetails src extra gpd = mkLets errorFunctions $ mkFunction args $ to
                           True
 
 errorFunctions :: [Binding NExpr]
-errorFunctions = 
-  [ buildDepError $= mkFunction "pkg" (mkThrow $ 
-      Fix $ NStr $ Indented 0 
-          [ Plain "The Haskell package set does not contain the package: " 
+errorFunctions =
+  [ buildDepError $= mkFunction "pkg" (mkThrow $
+      Fix $ NStr $ Indented 0
+          [ Plain "The Haskell package set does not contain the package: "
           , Antiquoted "pkg"
           , Plain " (build dependency).\n\n"
           , Plain haskellUpdateSnippet
           ])
-  , sysDepError $= mkFunction "pkg" (mkThrow $ 
-      Fix $ NStr $ Indented 0 
-          [ Plain "The Nixpkgs package set does not contain the package: " 
+  , sysDepError $= mkFunction "pkg" (mkThrow $
+      Fix $ NStr $ Indented 0
+          [ Plain "The Nixpkgs package set does not contain the package: "
           , Antiquoted "pkg"
           , Plain " (system dependency).\n\n"
           , Plain systemUpdateSnippet
           ])
-  , pkgConfDepError $= mkFunction "pkg" (mkThrow $ 
-      Fix $ NStr $ Indented 0 
-          [ Plain "The pkg-conf packages does not contain the package: " 
+  , pkgConfDepError $= mkFunction "pkg" (mkThrow $
+      Fix $ NStr $ Indented 0
+          [ Plain "The pkg-conf packages does not contain the package: "
           , Antiquoted "pkg"
           , Plain " (pkg-conf dependency).\n\n"
           , Plain "You may need to augment the pkg-conf package mapping in haskell.nix so that it can be found."
           ])
-  , exeDepError $= mkFunction "pkg" (mkThrow $ 
-      Fix $ NStr $ Indented 0 
-          [ Plain "The local executable components do not include the component: " 
+  , exeDepError $= mkFunction "pkg" (mkThrow $
+      Fix $ NStr $ Indented 0
+          [ Plain "The local executable components do not include the component: "
           , Antiquoted "pkg"
           , Plain " (executable dependency)."
           ])
-  , legacyExeDepError $= mkFunction "pkg" (mkThrow $ 
-      Fix $ NStr $ Indented 0 
-          [ Plain "The Haskell package set does not contain the package: " 
+  , legacyExeDepError $= mkFunction "pkg" (mkThrow $
+      Fix $ NStr $ Indented 0
+          [ Plain "The Haskell package set does not contain the package: "
           , Antiquoted "pkg"
           , Plain " (executable dependency).\n\n"
           , Plain haskellUpdateSnippet
           ])
-  , buildToolDepError $= mkFunction "pkg" (mkThrow $ 
-      Fix $ NStr $ Indented 0 
-          [ Plain "Neither the Haskell package set or the Nixpkgs package set contain the package: " 
+  , buildToolDepError $= mkFunction "pkg" (mkThrow $
+      Fix $ NStr $ Indented 0
+          [ Plain "Neither the Haskell package set or the Nixpkgs package set contain the package: "
           , Antiquoted "pkg"
           , Plain " (build tool dependency).\n\n"
           , Plain "If this is a system dependency:\n"
@@ -213,9 +213,6 @@ capitalize = transformFst toUpper
 class ToNixExpr a where
   toNix :: a -> NExpr
 
-class ToNixExpr' a where
-  toNix' :: CabalDetailLevel -> a -> NExpr
-
 class ToNixBinding a where
   toNixBinding :: a -> Binding NExpr
 
@@ -242,8 +239,8 @@ instance ToNixExpr PackageIdentifier where
   toNix ident = mkNonRecSet [ "name"    $= mkStr (fromString (show (disp (pkgName ident))))
                             , "version" $= mkStr (fromString (show (disp (pkgVersion ident))))]
 
-instance ToNixExpr' PackageDescription where
-  toNix' detailLevel pd = mkNonRecSet $
+toNixPackageDescription :: Bool -> CabalDetailLevel -> PackageDescription -> NExpr
+toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
     [ "specVersion" $= mkStr (fromString (show (disp (specVersion pd))))
     , "identifier"  $= toNix (package pd)
     , "license"     $= mkStr (fromString (show (pretty (license pd))))
@@ -259,6 +256,8 @@ instance ToNixExpr' PackageDescription where
     , "description" $= mkStr (fromString (description pd))
 
     , "buildType"   $= mkStr (fromString (show (pretty (buildType pd))))
+    ] ++
+    [ "isLocal"     $= mkBool True | isLocal
     ] ++
     [ "setup-depends" $= toNix (BuildToolDependency . depPkgName <$> deps) | Just deps <- [setupDepends <$> setupBuildInfo pd ]] ++
     if detailLevel == MinimalDetails
@@ -279,10 +278,10 @@ newtype BuildToolDependency = BuildToolDependency { unBuildToolDependency :: Pac
 mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
-instance ToNixExpr' GenericPackageDescription where
-  toNix' detailLevel gpd = mkNonRecSet
+toNixGenericPackageDescription :: Bool -> CabalDetailLevel -> GenericPackageDescription -> NExpr
+toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
                           [ "flags"         $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
-                          , "package"       $= toNix' detailLevel (packageDescription gpd)
+                          , "package"       $= toNixPackageDescription isLocal detailLevel (packageDescription gpd)
                           , "components"    $= components ]
     where _packageName :: IsString a => a
           _packageName = fromString . show . disp . pkgName . package . packageDescription $ gpd

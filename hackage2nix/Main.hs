@@ -56,7 +56,7 @@ main = do
   createDirectoryIfMissing False (out </> "hackage")
 
   for_ cabalFiles $ \(cabalFile, pname, path) -> do
-    gpd <- cabal2nix MinimalDetails Nothing $ InMemory Nothing pname $ BL.toStrict cabalFile
+    gpd <- cabal2nix False MinimalDetails Nothing $ InMemory Nothing pname $ BL.toStrict cabalFile
     writeFile (out </> path) $ show $ prettyNix gpd
 
 type GPDWriter = State (Seq (BL.ByteString, String, FilePath))
