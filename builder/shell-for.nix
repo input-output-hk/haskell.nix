@@ -1,6 +1,14 @@
 { lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib }:
 
-{ packages, additional ? _: [], withHoogle ? true, ... } @ args:
+{ packages ? ps:
+    let
+      selected = haskellLib.selectLocalPackages ps;
+    in
+      builtins.trace ("Shell for " + toString (builtins.attrNames selected))
+        (builtins.attrValues selected)
+, additional ? _: []
+, withHoogle ? true
+, ... } @ args:
 
 let
   selected = packages hsPkgs;
