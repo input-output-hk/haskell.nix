@@ -1,0 +1,286 @@
+* nixcon talk: naskell.nix
+
+haskell.nix is an alternative infrastructure to build haskell packages
+with nix.  And by extension within the nixpkgs ecosystem.  Nixpkgs
+does have a haskell infrastructure already in place that is used for
+all haskell packages provided by nixpkgs.  This talk will address the
+why and how haskell.nix came to be.
+
+** haskell package infrastrucure
+
+haskell uses a tool called cabal for package management.  Packages are
+annotated with cabal files which provide cabal with sufficient
+information to discover and solve for dependencies and instruct it how
+to build the package.
+
+** Haskell Package Structures
+
+Haskell packages have to provide a library. Can provide multiple named
+executables and named test-suites.  These are called components. A
+package can therefore have multiple components but must at least have
+one.  Recently sub-libraries and the ability to add named libraries
+have been added to cabal.  We will ignore named libraries for now.
+
+Packages can be build using either a command line too called
+cabal-install or a lower level plumbing approach using the Cabal
+library that comes with the haskell compiler called Setup.hs.
+
+*** The cabal-install appraoch
+
+To build a package with cabal, usually it is enough to call
+
+#+BEING_SRC
+cabal (new-)build
+#+END_SRC
+
+and cabal will solve and download the dependencies.  To figure out the
+dependencies it relies on some form index of the current globally
+known package universe.  This index is provided by a webservice called
+hackage, which is the central haskell package repository.
+
+Using cabal (new-)update will update the local index with the one from
+hackage.
+
+With the hackage index, cabal will then solve (against a given
+compiler version) for a package set to use as dependencies; and
+subsequently build the package.
+
+*** The Setup.hs approach
+
+The Glasgow Haskell Compiler (GHC), which is the predominant haskell
+compiler used in production, ships with the Cabal library.  This is
+important as it allows a package to be build without the cabal command
+line tool but with just a simple haskell module compiled against the
+Cabal library.  This is usually called Setup.hs and provided alongside
+the cabal file.  If not, it can be trivally created with
+
+#+BEING_SRC
+    import Distribution.Simple
+    main = defaultMain
+#+END_SRC
+
+Compiling and running this module will produce a very simple interface
+to build the cabal package.  It will not take care of downloading
+packages; these will have to be provided by the end user. It will
+however ensure that a valid dependency solution can be computed for
+the package to be build given the provided packages.
+
+** Lifecycle of a package being built with nixpkgs default builder
+
+Packages build within nixpkgs, are usually expected to follow the
+following steps:
+
+- download the sourcecode
+- apply any relevant patches
+- configure (if necessary)
+- build the package
+- test / run test suites (if available)
+
+** The existing haskell infrastructure in nixpkgs
+
+The haskell infrastructure that comes with nixpkgs follows this
+lifecycle pretty well; it builds all dependencies; uses the Setup.hs
+appraoch to build the package against it's dependencies, and then runs
+the testsuites, via the Setup.hs as well.  Then marks the package as
+successfully built.
+
+To achieve this, it uses a tool called cabal2nix, which takes a cabal
+file (the description of the package and it's dependencies) and
+translates it into nix.  Then nix can read the description and decide
+which dependencies are needed; depends on them and provide them to
+Setup.hs when building the package.
+
+We try to sidestep dependency resolution here by providing a curated
+package set with nixpkgs. Hence any package that is being built with
+nixpkgs will need to be built against this curated pkg set.
+
+NB.: for some packages the curated package set may contain multiple
+versions to satisfy otherwise unsatisfiable constraints.
+
+*** Benefits of the existing haskell infrastructure in nixpkgs
+
+- works well for the haskell packages nixpkgs wants to provide
+  By using a curated package set and the ghc compilers available in
+  nixpkgs the complexity of package/compiler matrix (and operating
+  system) is managable.  To provide nixos and nixpkgs
+  user with pre-build haskell packages (for tools like pandoc,
+  git-annex, hakyll, ...) this works really well.
+
+- is rather simple
+  Using only cabal2nix and a curated package set leaves the builder to
+  be relatively straight forward and involves little complexity in nix.
+
+- is part of nixpkgs
+  by being part of nixpkgs, it's tested on a daily basis by hydra when
+  ever anything touches the haskell infrastructure.  Be it compilers,
+  packages, changes to the curated package set, ...
+  It is also the infrastructure that's available to anyone using
+  nixpkgs right out of the gates.
+
+*** Drawbacks of the existing haskell infrastructure
+
+- it depends critically on the curated package set
+  whether or not it makes sense to have multiple package set ins
+  nixpkgs is debatable, for the purpose of providing haskell packages
+  with nixpkgs a curated package set makes sense!
+
+- it's tied to nixpkgs selection of compilers, any other version,
+  ... would need to be added through an overlay. Also the compiler
+  expressions in nixpkgs may change in unexpected ways when updating
+  nixpkgs.
+
+- cabal2nix flattens the conditionals
+  the cabal2nix tool will flatten the conditionals that cabal files
+  can have (operating system, architecture, ghc, ..., flags) at build
+  time. Hence if the cabal file was converted on a linux machine, it
+  will almost always miss the Windows branches, or might miss macOS
+  branches, hence overriding of expressions is needed to patch back in
+  existing library dependencies.  This makes cross compiling haskell
+  packages rather complicated.
+
+- cabal2nix hardcodes library name mappings
+  cabal2nix resolves system library dependencies of haskell packages
+  to their respective nixpgks pkgs within the cabal2nix tool. This
+  requires rebuilding the cabal2nix tool every time changes to this
+  mapping are necessary.
+
+- the existing infrastructure is package level based
+  we sequence building and testing of libraries; it leads to mutual
+  package cycles where the test-suite of one package depends on the
+  library of a third package, which again depends on the library of
+  the package that's being tested.  Thus often `dontCheck` is
+  required.
+
+** Why another haskell infrastructure?
+
+At IOHK we
+wanted to reduce our burden of having to deal with AppVeyor and
+windows CI pipelines. Everything we do in CI is nix-based and our
+build machines (linux and macOS) are all nix capable. Windows was
+not.  Hence we tried to make cross compilation initially work with the
+existing haskell infrastructure in nixpkgs.  Only after we had issues
+with the aforementioned drawbacks of the existing infrastructure too
+often did we try to solve the issue, but couldn't without
+fundamentally changing how haskell packages are built.
+
+We have a lot of haskell software with a large set of package
+dependencies.  Teams are free to use cabal or stack.  Thus we need to
+be able to build cabal and stack projects in CI. And stack projects
+across multiple LTSs; as different teams may use different LTSs.
+
+To solve the stack LTS issue we initially developed a tool called
+stack2nix which used cabal2nix to turn a stackage snapshot into a
+packageset with nixpkgs, but still retained the existing nixpkgs
+haskell builder.
+
+This didn't prove to be enough to get cross compilation working
+smoothly.  We also kept running into excessive CI turn around times.
+
+** The haskell.nix infrastructure
+
+The haskell.nix infrastructure was born out of necessity.  If we could
+have done without it, we would have!
+
+haskell.nix build packages at the component level. Thus if we only
+need the library of a package, we will only build that one
+library.
+
+And yes, this means we don't necessarily test the library we have
+built automatically.
+
+By building components, we don't have issues with dependency cycles as
+components can not depend mutually on each other.  However cabal2nix
+does not provide nix with sufficient information for components, hence
+we wrote a tool called cabal-to-nix, and a tool that translates
+stackage descriptions (stackage-to-nix), and one that translates all
+of hackage into nix (hackage-to-nix), as well as a tool to convert
+stack.yaml project descriptions into nix (stack-to-nix) and one to
+convert configured cabal projects (plan-to-nix).  All these tools are
+part of a suite called `nix-tools` and are essential to make
+haskell.nix work.
+
+The haskell.nix infrstructure is a lot more complex than the existing
+haskell infrastructure in nixpkgs, and the rest of this talk will try
+to explain haskell.nix by build an example package. But first let's
+try to contrast haskell.nix benefirts and drawbacks with those from
+the existing infrastrucutre.
+
+*** Benefits of haskell.nix
+
+- does not rely on a curated package set
+  haskell.nix can build almost any package for which either a stackage
+  set or plan.json (cabal project) can be computed.
+
+- has component level granularity
+  does not need `dontCheck` to break dependency cycles.
+
+- is faster (if given enough concurrency)
+  by having component level granularity, only components are build and
+  dependency can start building once the library components have been
+  built. Also doesn't build unnecessary executables if they are not
+  used.
+
+- retains full conditionals from cabal packages
+  allows us to configure the os/arch/flags when the package is
+  instantiated in nix.
+
+- does not hardcode library mappings
+  system lirbarys are mapped to nixpkgs through a simple attribute
+  set (same for licenses, ...).
+
+- comes with it's own set of compilers
+  has and will have a much wider range of compilers than those
+  provided by nixpkgs.
+
+- relies on nixpkgs only for system packages.
+
+- cross compilation
+  One of the primary motivations for haskell.nix was making cross
+  compilation trivial.
+
+*** Drawbacks of haskell.nix
+
+- does not have much caching
+  by not relying on a curated package set, caching of artifacts is
+  much harder.  Changes to flags will also invalidate whole dependency
+  trees.
+
+- is much more complex
+  requires nix to do a lot more work and can mean that evaluations
+  take a bit longer.
+
+- has component level granularity
+  produces many more derivations than the existing infrastructure
+  (3x+).
+
+
+** A word on `snack`
+
+There is another haskell build infrastructure I'm aware of. It's
+called snack and tries to give us module level derivations.
+haskell.nix sits somewhere in between the existing haskell
+infrastructure and snack. But certainly more towards the existing
+haskell infrastructure.  I remain excited to see what snack will
+provide us with!
+
+** haskell.nix example
+
+*** Hello World (package)
+
+*** cabal-to-nix description
+
+*** adding the haskell.nix overlay to nixpkgs
+
+*** building the package
+
+*** cross compiling to windows
+
+*** cross compiling to javascript
+
+*** cross compiling to arm (rpi)
+
+** Credits
+
+** Q&A
+
+** Thanks
