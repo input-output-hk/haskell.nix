@@ -1,4 +1,4 @@
-{ stdenv, mkCabalProjectPkgSet }:
+{ stdenv, mkCabalProjectPkgSet, util }:
 
 with stdenv.lib;
 
@@ -45,7 +45,17 @@ in
       otool -L $sofile | grep libHSghc-prim
     '') + ''
       touch $out
+
+      printf "checking whether benchmark runs... " >& 2
+      ${packages.project.components.benchmarks.project-bench}/*/project-bench
+
+      printf "checking whether tests run... " >& 2
+      ${packages.project.components.tests.unit}/*/unit
     '';
 
     meta.platforms = platforms.all;
-} // { inherit (packages) project; }
+    passthru = {
+      inherit (packages) project;
+      shell = util.addCabalInstall packages.project.components.all;
+    };
+  }
