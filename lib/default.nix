@@ -88,7 +88,14 @@ with haskellLib;
   ## flatLibDepends :: Component -> [Package]
   flatLibDepends = component:
     let
-      makePairs = map (p: rec { key="${val}"; val=(p.components.library or p); });
+      # this is a minor improvement over the "cannot coerce set to string"
+      # error.  It will now say:
+      #
+      # > The option `packages.Win32.package.identifier.name' is used but not defined.
+      #
+      # which indicates that the package.Win32 is missing and not defined.
+      getKey = x: if x ? "outPath" then "${x}" else (throw x.identifier.name);
+      makePairs = map (p: rec { key=getKey val; val=(p.components.library or p); });
       closure = builtins.genericClosure {
         startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;
