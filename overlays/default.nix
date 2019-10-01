@@ -42,4 +42,5 @@
     (import ./ghc-packages.nix)
     (import ./windows.nix)
     (import ./armv6l-linux.nix)
+    (import ./javascript.nix)
 ]

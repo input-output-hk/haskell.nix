@@ -12,7 +12,7 @@ pkgs:
      "c++" = null; # no libc++
      "stdc++" = null; "stdc++-6" = null;
      ssl = pkgs.openssl;
-     z = pkgs.zlib;
+     z = if pkgs.hostPlatform.isGhcjs then null else pkgs.zlib;
      pthread = null; # available by default
      GL = pkgs.libGL;
      GLU = pkgs.libGLU;
