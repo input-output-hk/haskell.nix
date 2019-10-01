@@ -15,7 +15,7 @@ let
     "-o ."
   ];
   stack = runCommand "stack-to-nix-pkgs" {
-    nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert ];
+    nativeBuildInputs = [ nix-tools pkgs.buildPackages.nix-prefetch-git pkgs.buildPackages.cacert ];
   } ''
     export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
