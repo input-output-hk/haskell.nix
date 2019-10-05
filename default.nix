@@ -107,7 +107,7 @@ let
         pkg-def-extras = [ stack-pkgs.extras ] ++ pkg-def-extras;
         # set doExactConfig = true. The stackage set should be consistent
         # and we should trust stackage here!
-        modules = [ { doExactConfig = true; } patchesModule ] ++ modules;
+        modules = [ { doExactConfig = true; } patchesModule ] ++ stack-pkgs.modules or [] ++ modules;
       };
 
     # Create a Haskell package set based on a Cabal configuration.
