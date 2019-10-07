@@ -41,7 +41,7 @@ it every time.
 ### package sets
 
 We often rely on either package sets as provided by stackage or
-computed by cabal.  `nixpkgs` provides it's own curated package set
+computed by cabal.  `nixpkgs` provides its own curated package set
 which might or might not work for the projects we work on.
 `stack2nix` tries to solve this issue, here we go one step further and
 provide the infrastructure to allow any form of package set.
@@ -62,13 +62,13 @@ occur if you have mutually dependent components.
 
 ### build times
 
-The Haskell builder in nixpkgs build package sequentially, first the
-library than the executables and finally the tests.  It then executes
+The Haskell builder in nixpkgs builds package sequentially, first the
+library then the executables and finally the tests.  It then executes
 the tests before the package is considered done.  The upshot of this
 is that packages are only considered done if the test-suites
 passed.  The downside is that if you have to compile multiple packages
 the likelihood of them failing is low, you have unnecessarily
-serialized you build.  In a more aggressive setting libraries could
+serialized your build.  In a more aggressive setting libraries could
 start building as early as their dependent libraries are built.  Of
 course they will have to be invalidated later should the test-suites
 of their dependencies fail, but this way we can make use of parallel
