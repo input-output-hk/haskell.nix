@@ -62,7 +62,7 @@ occur if you have mutually dependent components.
 
 ### build times
 
-The Haskell builder in nixpkgs builds package sequentially, first the
+The Haskell builder in nixpkgs builds a package sequentially, first the
 library then the executables and finally the tests.  It then executes
 the tests before the package is considered done.  The upshot of this
 is that packages are only considered done if the test-suites
