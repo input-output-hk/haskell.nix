@@ -1,6 +1,8 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
 
-{ setup-depends, package, name, src, flags, revision, patches, defaultSetupSrc }:
+{ setup-depends, package, name, src, flags, revision, patches, defaultSetupSrc
+, preUnpack ? null, postUnpack ? null
+}:
 
 let
   component = {
@@ -30,6 +32,9 @@ let
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
     inherit fullName flags component;
+  };
+  hooks = haskellLib.optionalHooks {
+    inherit preUnpack postUnpack;
   };
 
 in
@@ -66,5 +71,6 @@ in
         install ./Setup $out/bin/Setup
       '';
     }
-    // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
+    // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
+    // hooks
   ))
