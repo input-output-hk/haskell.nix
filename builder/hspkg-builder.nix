@@ -41,6 +41,7 @@ let
     else setup-builder {
       setup-depends = package.setup-depends;
       inherit package name src flags defaultSetupSrc;
+      inherit (config) preUnpack postUnpack;
     };
 
   buildComp = componentId: component: comp-builder {

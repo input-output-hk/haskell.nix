@@ -1,6 +1,8 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
 
-{ setup-depends, package, name, src, flags, defaultSetupSrc }:
+{ setup-depends, package, name, src, flags, defaultSetupSrc
+, preUnpack ? null, postUnpack ? null
+}:
 
 let
   component = {
@@ -31,10 +33,13 @@ let
     inherit (package) identifier;
     inherit fullName flags component;
   };
+  hooks = haskellLib.optionalHooks {
+    inherit preUnpack postUnpack;
+  };
 
 in
  stdenv.lib.fix (drv:
-    stdenv.mkDerivation {
+    stdenv.mkDerivation ({
       name = "${fullName}";
       src = cleanSrc;
       nativeBuildInputs = [ghc];
@@ -66,4 +71,5 @@ in
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
       '';
-    })
+    } // hooks)
+  )
