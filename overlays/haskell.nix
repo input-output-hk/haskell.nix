@@ -252,7 +252,7 @@ self: super: {
             in p.hsPkgs // {
               inherit (p) plan-nix;
               shells = {
-                ghc = (p.shellFor {}).overrideAttrs (oldAttrs: {
+                ghc = (p.hsPkgs.shellFor {}).overrideAttrs (oldAttrs: {
                   shellHook = (oldAttrs.shellHook or "") + ''
                     unset CABAL_CONFIG
                   '';
