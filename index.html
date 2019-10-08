@@ -236,7 +236,7 @@ to cache the <code>Setup.hs</code> for build-type simple and not have to rebuild
 it every time.</p>
 <h3 id="package-sets">package sets<a class="headerlink" href="#package-sets" title="Permanent link">&para;</a></h3>
 <p>We often rely on either package sets as provided by stackage or
-computed by cabal.  <code>nixpkgs</code> provides it's own curated package set
+computed by cabal.  <code>nixpkgs</code> provides its own curated package set
 which might or might not work for the projects we work on.
 <code>stack2nix</code> tries to solve this issue, here we go one step further and
 provide the infrastructure to allow any form of package set.</p>
@@ -251,13 +251,13 @@ and libraries, this leads to cyclic dependencies that nix can't resolve. By
 exposing the components to nix as separate derivations this will only
 occur if you have mutually dependent components.</p>
 <h3 id="build-times">build times<a class="headerlink" href="#build-times" title="Permanent link">&para;</a></h3>
-<p>The Haskell builder in nixpkgs build package sequentially, first the
-library than the executables and finally the tests.  It then executes
+<p>The Haskell builder in nixpkgs builds a package sequentially, first the
+library then the executables and finally the tests.  It then executes
 the tests before the package is considered done.  The upshot of this
 is that packages are only considered done if the test-suites
 passed.  The downside is that if you have to compile multiple packages
 the likelihood of them failing is low, you have unnecessarily
-serialized you build.  In a more aggressive setting libraries could
+serialized your build.  In a more aggressive setting libraries could
 start building as early as their dependent libraries are built.  Of
 course they will have to be invalidated later should the test-suites
 of their dependencies fail, but this way we can make use of parallel
