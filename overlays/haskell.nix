@@ -249,7 +249,16 @@ self: super: {
             in {inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
 
         cabalProject = args: let p = cabalProject' args;
-            in p.hsPkgs // { inherit (p) plan-nix; };
+            in p.hsPkgs // {
+              inherit (p) plan-nix;
+              shells = {
+                ghc = (p.shellFor {}).overrideAttrs (oldAttrs: {
+                  shellHook = (oldAttrs.shellHook or "") + ''
+                    unset CABAL_CONFIG
+                  '';
+                });
+              };
+            };
 
         stackProject =
             { ... }@args:
