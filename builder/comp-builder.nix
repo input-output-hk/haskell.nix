@@ -88,6 +88,8 @@ let
       ++ component.configureFlags
     );
 
+  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc-options="${package.ghcOptions}"'';
+
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
@@ -190,7 +192,7 @@ stdenv.mkDerivation ({
   buildPhase = ''
     runHook preBuild
     # https://gitlab.haskell.org/ghc/ghc/issues/9221
-    $SETUP_HS build -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " component.setupBuildFlags}
+    $SETUP_HS build -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (component.setupBuildFlags ++ setupGhcOptions)}
     runHook postBuild
   '';
 
@@ -211,7 +213,7 @@ stdenv.mkDerivation ({
       "--html" \
       ${lib.optionalString doHoogle "--hoogle"} \
       ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-      ${lib.concatStringsSep " " component.setupHaddockFlags}
+      ${lib.concatStringsSep " " (component.setupHaddockFlags ++ setupGhcOptions)}
 
     html="dist/doc/html/${componentId.cname}"
 
