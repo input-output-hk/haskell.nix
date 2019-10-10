@@ -9,7 +9,7 @@ let
   });
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = plan.pkgs;
-    modules = [ { packages.buildable-test.flags.exclude-broken = true; } ];
+    modules = [ { packages.buildable-test.flags.exclude-broken = mkOverride 10 true; } ];
   };
   packages = pkgSet.config.hsPkgs;
 in
