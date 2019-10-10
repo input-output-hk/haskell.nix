@@ -1,0 +1,8 @@
+resolver: lts-13.19
+
+packages:
+- .
+
+flags:
+  test-project-flags:
+    test-flag: true
