@@ -80,7 +80,7 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
   -- TODO: this is an aweful hack and expects plan-to-nix to be
   -- called from the toplevel project directory.
   cwd <- getCurrentDirectory
-  extras <- fmap (mkNonRecSet  . concat) . forM (Map.toList extras) $ \case
+  extrasNix <- fmap (mkNonRecSet  . concat) . forM (Map.toList extras) $ \case
     (name, Just (Package v r flags (Just (LocalPath folder)))) ->
       do cabalFiles <- findCabalFiles folder
          forM cabalFiles $ \cabalFile ->
@@ -105,6 +105,8 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
              forM hits $ \( pkg, nix ) -> do
                return $ fromString pkg $= mkPath False nix
     _ -> return []
+  let flags = concatMap (\case
+          (name, Just (Package v r flags _)) -> flags2nix name flags) $ Map.toList extras
 
   return $ mkNonRecSet [
     "pkgs" $= ("hackage" ==> mkNonRecSet (
@@ -115,7 +117,10 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
         , "packages" $= mkNonRecSet (fmap (uncurry bind') $ Map.toList $ mapKeys quoted compilerPackages)
         ]
       ]))
-    , "extras" $= ("hackage" ==> mkNonRecSet [ "packages" $= extras ])
+    , "extras" $= ("hackage" ==> mkNonRecSet [ "packages" $= extrasNix ])
+    , "modules" $= mkList [
+        mkNonRecSet [ "packages" $= mkNonRecSet flags ]
+      ]
     ]
  where
   quotedPackages = mapKeys quoted packages
@@ -156,6 +161,16 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
               prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
             liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
+
+-- | Converts the project flags for a package flags into @{ packageName = { flags = { flagA = BOOL; flagB = BOOL; }; }; }@
+flags2nix :: Text -> HashMap Text Bool -> [Binding NExpr]
+flags2nix pkgName pkgFlags =
+  [ quoted pkgName $= mkNonRecSet
+    [ "flags" $= mkNonRecSet [ quoted flag $= mkBool val
+                             | (flag, val) <- Map.toList pkgFlags
+                             ]
+    ]
+  ]
 
 value2plan :: Value -> Plan
 value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
