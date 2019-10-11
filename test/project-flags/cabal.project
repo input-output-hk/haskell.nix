@@ -1,0 +1,4 @@
+packages: .
+
+package test-project-flags
+  flags: +test-flag
