@@ -29,6 +29,8 @@ let
       # example:
       #  packages.cbors.patches = [ ./one.patch ];
       #  packages.cbors.flags.optimize-gmp = false;
+      # It may be better to set flags in stack.yaml instead (overrides will
+      # be included for them automatically by `stack-to-nix`).
     ];
   };
 
@@ -36,7 +38,17 @@ let
   pkgSet = haskell.mkCabalProjectPkgSet {
     plan-pkgs = my-pkgs;
     pkg-def-extras = [];
-    modules = [];
+    modules = [
+      # specific package overrides would go here
+      # example:
+      #  packages.cbors.patches = [ ./one.patch ];
+      # To override a flag you will need to use mkOverride to make
+      # it clear that you wish to replace the value found in the
+      # `plan.json` file (all the flags values are included there
+      # by `cabal`).
+      #  packages.cbors.flags.optimize-gmp = stdenv.lib.mkOverride 10 false;
+      # It may be better to set flags in `cabal.project` instead.
+    ];
   };
 
 in pkgSet.config.hsPkgs // { _config = pkgSet.config; }
