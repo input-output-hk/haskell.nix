@@ -24,6 +24,7 @@ in pkgs.recurseIntoAttrs {
   buildable = haskell.callPackage ./buildable {};
   project-flags-cabal = haskell.callPackage ./project-flags/cabal.nix {};
   project-flags-stack = haskell.callPackage ./project-flags/stack.nix {};
+  fully-static = haskell.callPackage ./fully-static { inherit (pkgs) buildPackages; };
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
