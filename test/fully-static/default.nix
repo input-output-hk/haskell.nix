@@ -6,10 +6,17 @@
 with stdenv.lib;
 
 let
+  # IFD stack-to-nix
+  stack-pkgs = (importAndFilterProject (callStackToNix {
+    src = ./.;
+  })).pkgs;
+
+  # Grab the compiler name from stack-to-nix output.
+  # compiler = (stack-pkgs.extras {}).compiler.nix-name;
+  compiler = "ghc865";  # fixme
+
   pkgSet = { gpl ? true }: mkStackPkgSet {
-    stack-pkgs = (importAndFilterProject (callStackToNix {
-      src = ./.;
-    })).pkgs;
+    inherit stack-pkgs;
     pkg-def-extras = [];
     modules = [
       # Musl libc fully static build
@@ -72,7 +79,7 @@ in
 
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit pkgSet buildPackages;
+      inherit pkgSet buildPackages stack-pkgs;
       pandoc-gmp = packagesGmp.pandoc.components.exes.pandoc;
       pandoc-integer-simple = packagesIntegerSimple.pandoc.components.exes.pandoc;
     };
