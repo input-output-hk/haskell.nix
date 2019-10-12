@@ -36,7 +36,7 @@ import Cabal2Nix.Util
 import Stack2nix.Cache (appendCache, cacheHits)
 import Stack2nix.CLI (Args(..))
 import Stack2nix.Project
-import Stack2nix.Stack (Stack(..), Dependency(..), Location(..))
+import Stack2nix.Stack (Stack(..), Dependency(..), Location(..), PackageFlags, GhcOptions)
 import Stack2nix.External.Resolve
 
 import qualified Data.HashMap.Strict as HM
@@ -60,16 +60,17 @@ stackexpr args =
                       =<< resolveSnapshot value
 
 stack2nix :: Args -> Stack -> IO NExpr
-stack2nix args stack@(Stack resolver compiler _ _) =
-  do let extraDeps    = extraDeps2nix stack
-         flags        = flags2nix stack
+stack2nix args stack@(Stack resolver compiler pkgs pkgFlags ghcOpts) =
+  do let extraDeps    = extraDeps2nix pkgs
+         flags        = flags2nix pkgFlags
+         ghcOptions   = ghcOptions2nix ghcOpts
      let _f_          = mkSym "f"
          _import_     = mkSym "import"
          _mkForce_    = mkSym "mkForce"
          _isFunction_ = mkSym "isFunction"
          _mapAttrs_   = mkSym "mapAttrs"
          _config_     = mkSym "config"
-     packages <- packages2nix args stack
+     packages <- packages2nix args pkgs
      return . mkNonRecSet $
        [ "extras" $= ("hackage" ==> mkNonRecSet
                      ([ "packages" $= mkNonRecSet (extraDeps <> packages) ]
@@ -78,7 +79,9 @@ stack2nix args stack@(Stack resolver compiler _ _) =
                    ++ [ "compiler.nix-name" $= fromString (quoted name)
                       | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]))
        , "resolver"  $= fromString (quoted resolver)
-       , "modules" $= mkList [ mkNonRecSet [ "packages" $= mkNonRecSet flags ] ]
+       , "modules" $= mkList [
+           mkNonRecSet [ "packages" $= mkNonRecSet flags ]
+         , mkNonRecSet [ "packages" $= mkNonRecSet ghcOptions ] ]
        ] ++ [
          "compiler" $= fromString (quoted c) | (Just c) <- [compiler]
        ]
@@ -91,8 +94,8 @@ stack2nix args stack@(Stack resolver compiler _ _) =
 --
 --   { name.revision = hackage.name.version.revisions.default; }
 --
-extraDeps2nix :: Stack -> [Binding NExpr]
-extraDeps2nix (Stack _ _ pkgs _) =
+extraDeps2nix :: [Dependency] -> [Binding NExpr]
+extraDeps2nix pkgs =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
   in [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
      | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
@@ -105,9 +108,9 @@ extraDeps2nix (Stack _ _ pkgs _) =
         toText :: Text a => a -> T.Text
         toText = fromString . show . disp
 
--- | Converts 'PackageFlags' into @{ packageName = { flagA = BOOL; flagB = BOOL; }; }@
-flags2nix :: Stack -> [Binding NExpr]
-flags2nix (Stack _ _ _ pkgFlags) =
+-- | Converts 'PackageFlags' into @{ packageName = { flags = { flagA = BOOL; flagB = BOOL; }; }; }@
+flags2nix :: PackageFlags -> [Binding NExpr]
+flags2nix pkgFlags =
   [ quoted pkgName $= mkNonRecSet
     [ "flags" $= mkNonRecSet [ quoted flag $= mkBool val
                              | (flag, val) <- HM.toList flags
@@ -115,10 +118,14 @@ flags2nix (Stack _ _ _ pkgFlags) =
     ]
   | (pkgName, flags) <- HM.toList pkgFlags
   ]
-  where
-    toText :: Text a => a -> T.Text
-    toText = fromString . show . disp
 
+-- | Converts 'GhcOptions' into @{ packageName = { ghcOptions = "..."; }; }@
+ghcOptions2nix :: GhcOptions -> [Binding NExpr]
+ghcOptions2nix ghcOptions =
+  [ quoted pkgName $= mkNonRecSet
+    [ "package" $= mkNonRecSet [ "ghcOptions" $= mkStr opts ] ]
+  | (pkgName, opts) <- HM.toList ghcOptions
+  ]
 
 writeDoc :: FilePath -> Doc ann -> IO ()
 writeDoc file doc =
@@ -128,8 +135,8 @@ writeDoc file doc =
 
 
 -- makeRelativeToCurrentDirectory
-packages2nix :: Args -> Stack-> IO [Binding NExpr]
-packages2nix args (Stack _ _ pkgs _) =
+packages2nix :: Args -> [Dependency] -> IO [Binding NExpr]
+packages2nix args pkgs =
   do cwd <- getCurrentDirectory
      fmap concat . forM pkgs $ \case
        (LocalPath folder) ->

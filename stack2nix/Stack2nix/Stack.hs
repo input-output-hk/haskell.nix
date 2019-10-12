@@ -10,10 +10,11 @@ module Stack2nix.Stack
   , URL
   , Rev
   , Stack(..)
-  , Compiler(..)
   , Dependency(..)
   , Location(..)
   , StackSnapshot(..)
+  , PackageFlags
+  , GhcOptions
   ) where
 
 import Data.Char (isDigit)
@@ -119,8 +120,10 @@ data Dependency
 -- flags are { pkg -> { flag -> bool } }
 type PackageFlags = HM.HashMap T.Text (HM.HashMap T.Text Bool)
 
+type GhcOptions = HM.HashMap T.Text T.Text
+
 data Stack
-  = Stack Resolver (Maybe Compiler) [Dependency] PackageFlags
+  = Stack Resolver (Maybe Compiler) [Dependency] PackageFlags GhcOptions
   deriving (Show)
 
 -- stack supports custom snapshots
@@ -134,7 +137,7 @@ data StackSnapshot
     PackageFlags              -- flags
     -- [PackageName]          -- drop-packages
     -- [PackageName -> Bool]  -- hidden
-    -- [package -> [Opt]]     -- ghc-options
+    GhcOptions                -- ghc-options
     deriving (Show)
 
 data Location
@@ -182,6 +185,7 @@ instance FromJSON Stack where
     <*> ((<>) <$> s .:? "packages"   .!= [LocalPath "."]
               <*> s .:? "extra-deps" .!= [])
     <*> s .:? "flags" .!= mempty
+    <*> s .:? "ghc-options" .!= mempty
 
 instance FromJSON StackSnapshot where
   parseJSON = withObject "Snapshot" $ \s -> Snapshot
@@ -190,6 +194,7 @@ instance FromJSON StackSnapshot where
     <*> s .: "name"
     <*> s .:? "packages" .!= []
     <*> s .:? "flags" .!= mempty
+    <*> s .:? "ghc-options" .!= mempty
 
 instance FromJSON Dependency where
   -- Note: we will parse foo-X.Y.Z as a package.

@@ -35,13 +35,14 @@ decodeURLEither url
 -- a file, resolve that file and merge the snapshot into the
 -- @Stack@ record.
 resolveSnapshot :: Stack -> IO Stack
-resolveSnapshot stack@(Stack resolver compiler pkgs flags)
+resolveSnapshot stack@(Stack resolver compiler pkgs flags ghcOptions)
   = if ".yaml" `isSuffixOf` resolver
     then do evalue <- if ("http://" `isPrefixOf` resolver) || ("https://" `isPrefixOf` resolver)
                       then decodeURLEither resolver
                       else decodeFileEither resolver
             case evalue of
               Left e -> error (show e)
-              Right (Snapshot resolver' compiler' _name pkgs' flags') ->
+              Right (Snapshot resolver' compiler' _name pkgs' flags' ghcOptions') ->
                 pure $ Stack resolver' (compiler' <|> compiler)  (pkgs <> pkgs') (flags <> flags')
+                    (ghcOptions <> ghcOptions')
     else pure stack
