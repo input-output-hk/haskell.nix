@@ -21,6 +21,8 @@ in pkgs.recurseIntoAttrs {
   callCabalProjectToNix = haskell-nix.callPackage ./call-cabal-project-to-nix {};
   cabal-source-repo = haskell-nix.callPackage ./cabal-source-repo {};
   buildable = haskell-nix.callPackage ./buildable {};
+  project-flags-cabal = haskell-nix.callPackage ./project-flags/cabal.nix {};
+  project-flags-stack = haskell-nix.callPackage ./project-flags/stack.nix {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.

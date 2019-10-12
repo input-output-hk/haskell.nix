@@ -121,7 +121,9 @@ self: super: {
                 pkg-def-extras = [ plan-pkgs.extras ] ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
                 # the plan.
-                modules = [ { doExactConfig = true; } patchesModule ] ++ modules;
+                modules = [ { doExactConfig = true; } patchesModule ]
+                       ++ modules
+                       ++ plan-pkgs.modules;
             };
 
         # Package sets for all stackage snapshots.

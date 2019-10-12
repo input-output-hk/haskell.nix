@@ -1,0 +1,28 @@
+cabal-version:       >=1.10
+name:                test-project-flags
+version:             0.1.0.0
+license:             PublicDomain
+author:              Hamish Mackenzie
+maintainer:          Hamish.Mackenzie@iohk.io
+build-type:          Simple
+
+flag test-flag
+  description: A flag that needs to be turned on
+  default: False
+
+library
+  build-depends:     base >=4.7 && <5
+  exposed-modules:   Lib
+  hs-source-dirs:    src
+  default-language:  Haskell2010
+  if flag(test-flag)
+    cpp-options: -DTEST_FLAG
+
+executable test-project-flags-exe
+  main-is:           Main.hs
+  build-depends:     base >=4.7 && <5, test-project-flags
+  hs-source-dirs:    app
+  ghc-options:       -threaded -rtsopts -with-rtsopts=-N
+  default-language:  Haskell2010
+  if flag(test-flag)
+    cpp-options: -DTEST_FLAG
