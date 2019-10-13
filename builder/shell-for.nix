@@ -25,7 +25,10 @@ let
   # new-style commands.
   packageInputs = lib.filter
     (input: lib.all (cfg: input.identifier != cfg.identifier) selected)
-    (lib.concatMap (cfg: cfg.depends) selectedConfigs ++ additionalSelected);
+    (lib.concatMap (cfg: cfg.depends) selectedConfigs
+    ++ additionalSelected
+    ++ lib.concatMap (cfg: cfg.setup.config.depends or []) selected
+    );
 
   # Add the system libraries and build tools of the selected haskell
   # packages to the shell.
