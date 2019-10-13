@@ -101,7 +101,7 @@ self: super: {
                 # and we should trust stackage here!
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
-                       ++ stack-pkgs.modules;
+                       ++ stack-pkgs.modules or [];
             };
 
         # Create a Haskell package set based on a Cabal configuration.
