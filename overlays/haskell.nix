@@ -123,7 +123,7 @@ self: super: {
                 # the plan.
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
-                       ++ plan-pkgs.modules;
+                       ++ plan-pkgs.modules or [];
             };
 
         # Package sets for all stackage snapshots.
