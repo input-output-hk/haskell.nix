@@ -1,0 +1,4 @@
+packages: .
+
+package test-ghc-options
+  ghc-options: -DTEST_GHC_OPTION
