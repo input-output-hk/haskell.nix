@@ -1,0 +1,6 @@
+resolver: lts-13.26
+
+extra-deps:
+  - pandoc-2.7.3
+  - hslua-module-system-0.2.1
+  - ipynb-0.1

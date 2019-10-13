@@ -24,6 +24,7 @@ in pkgs.recurseIntoAttrs {
   buildable = haskell.callPackage ./buildable {};
   project-flags-cabal = haskell.callPackage ./project-flags/cabal.nix {};
   project-flags-stack = haskell.callPackage ./project-flags/stack.nix {};
+  fully-static = haskell.callPackage ./fully-static { inherit (pkgs) buildPackages; };
   ghc-options-cabal = haskell.callPackage ./ghc-options/cabal.nix {};
   ghc-options-stack = haskell.callPackage ./ghc-options/stack.nix {};
 
