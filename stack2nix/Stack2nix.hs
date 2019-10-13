@@ -80,7 +80,7 @@ stack2nix args stack@(Stack resolver compiler pkgs pkgFlags ghcOpts) =
                       | (Just c) <- [compiler], let name = filter (`elem` ((['a'..'z']++['0'..'9']) :: [Char])) c]))
        , "resolver"  $= fromString (quoted resolver)
        , "modules" $= mkList [
-           mkNonRecSet [ "packages" $= mkNonRecSet flags ]
+           mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
          , mkNonRecSet [ "packages" $= mkNonRecSet ghcOptions ] ]
        ] ++ [
          "compiler" $= fromString (quoted c) | (Just c) <- [compiler]
@@ -112,7 +112,9 @@ extraDeps2nix pkgs =
 flags2nix :: PackageFlags -> [Binding NExpr]
 flags2nix pkgFlags =
   [ quoted pkgName $= mkNonRecSet
-    [ "flags" $= mkNonRecSet [ quoted flag $= mkBool val
+    -- `mkOverride 900` is used here so that the default values will be replaced (they are 1000).
+    -- Values without a priority are treated as 100 and will replace these ones.
+    [ "flags" $= mkNonRecSet [ quoted flag $= ("lib" @. "mkOverride" @@ mkInt 900 @@ mkBool val)
                              | (flag, val) <- HM.toList flags
                              ]
     ]

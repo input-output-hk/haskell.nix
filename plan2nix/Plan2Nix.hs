@@ -106,7 +106,8 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
                return $ fromString pkg $= mkPath False nix
     _ -> return []
   let flags = concatMap (\case
-          (name, Just (Package v r flags _)) -> flags2nix name flags) $ Map.toList extras
+          (name, Just (Package _v _r f _)) -> flags2nix name f
+          _ -> []) $ Map.toList extras
 
   return $ mkNonRecSet [
     "pkgs" $= ("hackage" ==> mkNonRecSet (
@@ -119,7 +120,7 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
       ]))
     , "extras" $= ("hackage" ==> mkNonRecSet [ "packages" $= extrasNix ])
     , "modules" $= mkList [
-        mkNonRecSet [ "packages" $= mkNonRecSet flags ]
+        mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
       ]
     ]
  where
@@ -166,7 +167,9 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
 flags2nix :: Text -> HashMap Text Bool -> [Binding NExpr]
 flags2nix pkgName pkgFlags =
   [ quoted pkgName $= mkNonRecSet
-    [ "flags" $= mkNonRecSet [ quoted flag $= mkBool val
+    -- `mkOverride 900` is used here so that the default values will be replaced (they are 1000).
+    -- Values without a priority are treated as 100 and will replace these ones.
+    [ "flags" $= mkNonRecSet [ quoted flag $= ("lib" @. "mkOverride" @@ mkInt 900 @@ mkBool val)
                              | (flag, val) <- Map.toList pkgFlags
                              ]
     ]
