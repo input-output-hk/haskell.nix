@@ -27,6 +27,7 @@ let
     modules = [
       # specific package overrides would go here
       # example:
+      #  packages.cbors.package.ghcOptions = "-Werror";
       #  packages.cbors.patches = [ ./one.patch ];
       #  packages.cbors.flags.optimize-gmp = false;
       # It may be better to set flags in stack.yaml instead (overrides will
@@ -41,6 +42,7 @@ let
     modules = [
       # specific package overrides would go here
       # example:
+      #  packages.cbors.package.ghcOptions = "-Werror";
       #  packages.cbors.patches = [ ./one.patch ];
       # To override a flag you will need to use mkOverride to make
       # it clear that you wish to replace the value found in the

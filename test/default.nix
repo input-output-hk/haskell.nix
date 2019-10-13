@@ -24,6 +24,8 @@ in pkgs.recurseIntoAttrs {
   buildable = haskell.callPackage ./buildable {};
   project-flags-cabal = haskell.callPackage ./project-flags/cabal.nix {};
   project-flags-stack = haskell.callPackage ./project-flags/stack.nix {};
+  ghc-options-cabal = haskell.callPackage ./ghc-options/cabal.nix {};
+  ghc-options-stack = haskell.callPackage ./ghc-options/stack.nix {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
