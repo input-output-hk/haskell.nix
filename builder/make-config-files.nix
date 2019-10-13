@@ -75,6 +75,9 @@ in { identifier, component, fullName, flags ? {} }:
 
     echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
 
+    # Provide a cabal config without remote package repositories
+    echo "write-ghc-environment-files: never" >> $out/cabal.config
+
     # Provide a GHC environment file
     cat > $out/ghc-environment <<EOF
     package-db $out/package.conf.d

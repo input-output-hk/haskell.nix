@@ -45,7 +45,6 @@ in
         inherit configFiles cleanSrc;
       };
 
-      CABAL_CONFIG = configFiles + /cabal.config;
       phases = ["unpackPhase" "buildPhase" "installPhase"];
       buildPhase = ''
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then

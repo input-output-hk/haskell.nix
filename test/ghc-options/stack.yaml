@@ -1,0 +1,7 @@
+resolver: lts-13.19
+
+packages:
+- .
+
+ghc-options:
+  test-ghc-options: -DTEST_GHC_OPTION

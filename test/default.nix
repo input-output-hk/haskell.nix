@@ -17,12 +17,16 @@ in pkgs.recurseIntoAttrs {
   stack-simple = haskell-nix.callPackage ./stack-simple {};
   snapshots = haskell-nix.callPackage ./snapshots {};
   shell-for = haskell-nix.callPackage ./shell-for {};
+  shell-for-setup-deps = haskell-nix.callPackage ./shell-for-setup-deps {};
   callStackToNix = haskell-nix.callPackage ./call-stack-to-nix {};
   callCabalProjectToNix = haskell-nix.callPackage ./call-cabal-project-to-nix {};
   cabal-source-repo = haskell-nix.callPackage ./cabal-source-repo {};
   buildable = haskell-nix.callPackage ./buildable {};
   project-flags-cabal = haskell-nix.callPackage ./project-flags/cabal.nix {};
   project-flags-stack = haskell-nix.callPackage ./project-flags/stack.nix {};
+  fully-static = haskell-nix.callPackage ./fully-static { inherit (pkgs) buildPackages; };
+  ghc-options-cabal = haskell-nix.callPackage ./ghc-options/cabal.nix {};
+  ghc-options-stack = haskell-nix.callPackage ./ghc-options/stack.nix {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
