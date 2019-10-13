@@ -18,6 +18,7 @@ in pkgs.recurseIntoAttrs {
   stack-simple = haskell.callPackage ./stack-simple {};
   snapshots = haskell.callPackage ./snapshots {};
   shell-for = haskell.callPackage ./shell-for {};
+  shell-for-setup-deps = haskell.callPackage ./shell-for-setup-deps {};
   callStackToNix = haskell.callPackage ./call-stack-to-nix {};
   callCabalProjectToNix = haskell.callPackage ./call-cabal-project-to-nix {};
   cabal-source-repo = haskell.callPackage ./cabal-source-repo {};
