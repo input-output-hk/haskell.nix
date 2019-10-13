@@ -285,7 +285,7 @@ packages with `ghci` or `cabal v2-build` (but not Stack).
 
 ```
 shellFor =
-    { packages, withHoogle ? true, ...}: ...
+    { packages, withHoogle ? true, exactDeps ? false, ...}: ...
 ```
 
 
@@ -293,16 +293,18 @@ shellFor =
 |----------------|------|---------------------|
 | `packages`     | Function | Package selection function. It takes a list of [Haskell packages](#haskell-package) and returns a subset of these packages. |
 | `withHoogle` | Boolean | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
+| `exactDeps` | Boolean | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |
 | `{ ... }` | Attrset | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
 
 **Return value**: a derivation
 
 !!! warning
 
-    `shellFor` will set the `CABAL_CONFIG` environment variable to disable
-    remote package servers. This is a [known
-    limitation](../dev/removing-with-package-wrapper.md) which we would
-    like to solve.
+    `exactDeps = true` will set the `CABAL_CONFIG` environment variable
+    to disable remote package servers. This is a
+    [known limitation](../dev/removing-with-package-wrapper.md)
+    which we would like to solve. Use `exactDeps = false` if this is a
+    problem.
 
 
 ## ghcWithPackages

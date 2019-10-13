@@ -1,6 +1,11 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## October 12, 2019
+ * [`shellFor`](https://input-output-hk.github.io/haskell.nix/reference/library/#shellfor) no longer sets `CABAL_CONFIG` by default.
+   This avoids surprising users, but means that Cabal may select a plan which is different to your Haskell.nix package set.
+   If you would like the old behaviour, use `shellFor { exactDeps = true; }`.
+
 ## August 9, 2019
  * Add the [`haskellLib.collectComponents`](https://input-output-hk.github.io/haskell.nix/reference/library/#haskellLib) function.
 

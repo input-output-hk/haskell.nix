@@ -148,7 +148,6 @@ stdenv.mkDerivation ({
         (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
   };
 
-  CABAL_CONFIG = configFiles + /cabal.config;
   LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
   LC_ALL = "en_US.UTF-8";
 

@@ -8,6 +8,7 @@
         (builtins.attrValues selected)
 , additional ? _: []
 , withHoogle ? true
+, exactDeps ? false
 , ... } @ args:
 
 let
@@ -80,9 +81,10 @@ in
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
     LANG = "en_US.UTF-8";
     LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
-    CABAL_CONFIG = "${configFiles}/cabal.config";
 
     passthru = (mkDrvArgs.passthru or {}) // {
       ghc = ghcEnv;
     };
+  } // lib.optionalAttrs exactDeps {
+    CABAL_CONFIG = "${configFiles}/cabal.config";
   })
