@@ -275,6 +275,10 @@ in
     # You might want some extra tools in the shell (optional).
     buildInputs = with pkgs.haskellPackages;
       [ hlint stylish-haskell ghcid ];
+
+    # Prevents cabal from choosing alternate plans, so that
+    # *all* dependencies are provided by Nix.
+    exactDeps = true;
   }
 </code></pre>
 

@@ -616,7 +616,7 @@ to <code>tests.mypackage.unit-tests</code>.</p>
 environment</a> for developing one or more
 packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).</p>
 <pre><code>shellFor =
-    { packages, withHoogle ? true, ...}: ...
+    { packages, withHoogle ? true, exactDeps ? false, ...}: ...
 </code></pre>
 
 <table>
@@ -639,6 +639,11 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <td>Whether to build a Hoogle documentation index and provide the <code>hoogle</code> command.</td>
 </tr>
 <tr>
+<td><code>exactDeps</code></td>
+<td>Boolean</td>
+<td>Prevents the Cabal solver from choosing any package dependency other than what are in the package set.</td>
+</tr>
+<tr>
 <td><code>{ ... }</code></td>
 <td>Attrset</td>
 <td>All the other arguments are passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a>.</td>
@@ -648,10 +653,11 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <p><strong>Return value</strong>: a derivation</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p><code>shellFor</code> will set the <code>CABAL_CONFIG</code> environment variable to disable
-remote package servers. This is a <a href="../../dev/removing-with-package-wrapper/">known
-limitation</a> which we would
-like to solve.</p>
+<p><code>exactDeps = true</code> will set the <code>CABAL_CONFIG</code> environment variable
+to disable remote package servers. This is a
+<a href="../../dev/removing-with-package-wrapper/">known limitation</a>
+which we would like to solve. Use <code>exactDeps = false</code> if this is a
+problem.</p>
 </div>
 <h2 id="ghcwithpackages">ghcWithPackages<a class="headerlink" href="#ghcwithpackages" title="Permanent link">&para;</a></h2>
 <p>Creates a <code>nix-shell</code> <a href="../../user-guide/development/">development

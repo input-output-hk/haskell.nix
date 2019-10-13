@@ -155,6 +155,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#october-12-2019">October 12, 2019</a></li>
+    
+
     <li class="toctree-l2"><a href="#august-9-2019">August 9, 2019</a></li>
     
 
@@ -225,6 +228,12 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="october-12-2019">October 12, 2019<a class="headerlink" href="#october-12-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://input-output-hk.github.io/haskell.nix/reference/library/#shellfor"><code>shellFor</code></a> no longer sets <code>CABAL_CONFIG</code> by default.
+   This avoids surprising users, but means that Cabal may select a plan which is different to your Haskell.nix package set.
+   If you would like the old behaviour, use <code>shellFor { exactDeps = true; }</code>.</li>
+</ul>
 <h2 id="august-9-2019">August 9, 2019<a class="headerlink" href="#august-9-2019" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Add the <a href="https://input-output-hk.github.io/haskell.nix/reference/library/#haskellLib"><code>haskellLib.collectComponents</code></a> function.</li>
