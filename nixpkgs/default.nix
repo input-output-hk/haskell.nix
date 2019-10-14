@@ -1,3 +1,4 @@
+# see ../docs/dev/nixpkgs-pin.md
 let
   fetch = jsonFile:
     with builtins;

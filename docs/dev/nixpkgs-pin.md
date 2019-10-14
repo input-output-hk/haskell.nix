@@ -10,10 +10,10 @@ although things might not work for them if their Nixpkgs version is
 too different.
 
 We aim to keep this pin somewhere on the channel of the **NixOS latest
-stable release**. That is currently 19.03. So:
+stable release**. That is currently 19.09. So:
 
 ```
-nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixos-19.03
+nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixos-19.09
 ```
 
 Keep the URL in `github.json` pointing at
