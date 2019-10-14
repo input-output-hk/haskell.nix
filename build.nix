@@ -3,8 +3,7 @@
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
 
-{ pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? ./nixpkgs
+{ nixpkgs ? ./nixpkgs
 # Provide args to the nixpkgs instantiation.
 , system ? builtins.currentSystem
 , crossSystem ? null
@@ -13,14 +12,14 @@
 }:
 
 let
-  haskell = import ./default.nix { inherit pkgs; };
+  haskell = import ./default.nix { inherit nixpkgs nixpkgsArgs; };
 
 in {
-  inherit (haskell) nix-tools source-pins;
-  tests = import ./test/default.nix { inherit haskell; };
+  inherit (haskell.haskell-nix) nix-tools source-pins;
+  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
-  maintainer-scripts = pkgs.dontRecurseIntoAttrs {
+  maintainer-scripts = haskell.pkgs.dontRecurseIntoAttrs {
     update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
@@ -29,7 +28,7 @@ in {
         # nixpkgs unstable changes "Option has no description" from an
         # error into a warning. That is quite helpful when hardly any
         # of our options are documented, thanks @oxij.
-        pkgs = import (pkgs.fetchFromGitHub {
+        pkgs = import (haskell.pkgs.fetchFromGitHub {
           owner = "NixOS";
           repo = "nixpkgs";
           rev = "4ab1c14714fc97a27655f3a6877386da3cb237bc";
