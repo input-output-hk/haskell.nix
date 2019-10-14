@@ -9,11 +9,15 @@ Users should pass their own version of Nixpkgs to Haskell.nix,
 although things might not work for them if their Nixpkgs version is
 too different.
 
-We aim to keep this pin somewhere on the channel of the **NixOS latest
-stable release**. That is currently 19.09. So:
+We aim to keep this pin somewhere on a channel of the **Nixpkgs latest
+stable release**. That is currently 19.09.
+
+We also execute tests on MacOS (darwin). The darwin channel is usually
+behind the NixOS channel. So we choose the `nixpkgs-19.09-darwin`
+channel:
 
 ```
-nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixos-19.09
+nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixpkgs-19.09-darwin
 ```
 
 Keep the URL in `github.json` pointing at
