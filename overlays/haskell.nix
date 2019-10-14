@@ -118,7 +118,10 @@ self: super: {
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
             in mkPkgSet {
                 inherit pkg-def;
-                pkg-def-extras = [ plan-pkgs.extras ] ++ pkg-def-extras;
+                pkg-def-extras = [ plan-pkgs.extras
+                                   self.ghc-boot-packages.${compiler.nix-name}
+                                 ]
+                             ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
                 # the plan.
                 modules = [ { doExactConfig = true; } patchesModule ]
