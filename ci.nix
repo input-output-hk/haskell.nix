@@ -29,11 +29,13 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     };
     # Needs agent redeploy
     #
-    stackage = {
-        x86_64-linux = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
-            haskell-nix.snapshots."lts-13.29");
-        # x86_64-darwin = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
-        #     haskell-nix.snapshots."lts-13.29");
-    };
+
+# Don't build (all of) stackage on linux for now.
+#    stackage = {
+#        x86_64-linux = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
+#            haskell-nix.snapshots."lts-13.29");
+#        # x86_64-darwin = (with (import ./. { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
+#        #     haskell-nix.snapshots."lts-13.29");
+#    };
 
 }
