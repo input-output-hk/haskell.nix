@@ -53,6 +53,13 @@ in
       "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
       # ghcjs custom packages
       "ghcjs-prim" "ghcjs-th"
+"ghc" "Cabal" "Win32" "array" "base" "binary" "bytestring" "containers" "deepseq"
+"directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+# "ghci" "haskeline"
+"hpc"
+"integer-gmp" "mtl" "parsec" "process" "template-haskell" "text" "time" "transformers"
+"unix" "xhtml"
+# "stm" "terminfo"
     ]
     ++ lib.optionals (!config.reinstallableLibGhc) [ "ghc" "ghc-boot" ];
 
