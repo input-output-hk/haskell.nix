@@ -7,7 +7,7 @@
    To build a package, say [lens][], from a stackage snapshot, say [lts-13.28][],
    you could run
    ```bash
-   nix build '(with import ./. {}; snapshots."lts-13.28").lens.components.library'
+   nix build '(with import ./. {}; haskell-nix.snapshots."lts-13.28").lens.components.library'
    ```
    which would build the [lens][] library component from the lens package as fixed
    by the [lts-13.28][] stackage snapshot.
@@ -15,14 +15,14 @@
    To build any package from hackage, say [lens][], in version, say 4.17.1, you
    could run
    ```bash
-   nix build '(with import ./. {}; (hackage-package { name = "lens"; version = "4.17.1"; })).components.library'
+   nix build '(with import ./. {}; (haskell-nix.hackage-package { name = "lens"; version = "4.17.1"; })).components.library'
    ```
    which would build the [lens][] library component from the [lens-4.17.1][] package
    from hackage.  The dependencies would be solved against the most recent 
    [hackage-index-state][] that comes via the [hackage.nix][] pin with your
    [haskell.nix][] checkout.  A specific one can be specified as well:
    ```bash
-   nix build '(with import ./. {}; (hackage-package { name = "lens"; version = "4.17.1"; index-state = "2019-07-14T00:00:00Z"; })).components.library'
+   nix build '(with import ./. {}; (haskell-nix.hackage-package { name = "lens"; version = "4.17.1"; index-state = "2019-07-14T00:00:00Z"; })).components.library'
    ```
    which would use the hackage index as of `2019-07-14T00:00:00Z` to produce a build plan
    for the [lens-4.17.1][] package.
@@ -49,7 +49,7 @@
 To build the latest `nix-tools` and store the result at `./nt`, run:
 
 ```bash
-nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools --out-link nt
+nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz haskell-nix.nix-tools --out-link nt
 ```
 
 If you would like to then install `nix-tools` into your profile, run:
@@ -68,10 +68,10 @@ understand something that the documentation doesn't cover.
 git clone https://github.com/input-output-hk/nix-tools
 git clone https://github.com/input-output-hk/haskell.nix
 cd haskell.nix
-nix build -f . nix-tools --out-link nt
+nix build -f . haskell-nix.nix-tools --out-link nt
 ```
 
-## Importing [Haskell.nix][] into your project
+## Using [Haskell.nix][] with your project
 
 The easiest way to get a hold of [Haskell.nix][] is with
 [`fetchTarball`](https://nixos.org/nix/manual/#ssec-builtins).
@@ -80,13 +80,82 @@ The easiest way to get a hold of [Haskell.nix][] is with
 import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
 ```
 
-If you have your own `pkgs` variable, pass it to [Haskell.nix][] to
-prevent double-evaluation of the Nixpkgs collection.
+If you wish to specify what version of `nixpkgs` to use, pass it to [Haskell.nix][] to
+prevent double-evaluation of the Nixpkgs collection.  You can also pass nixpkgs overlays to
+customize nixpkgs.
 
 ```nix
-{ pkgs ? import <nixpkgs> {} }:
+{ nixpkgs ? <nixpkgs>, overlays ? [] }:
 
-import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; }
+import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit nixpkgs overlays; }
+```
+
+### Using your cabal.project file
+
+If your project has a `cabal.project` you can add a `default.nix` like this:
+
+```nix
+{ pkgs ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+, haskellCompiler ? "ghc865"
+}:
+  pkgs.haskell-nix.cabalProject {
+    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+    ghc = pkgs.buildPackages.pkgs.haskell.compiler.${haskellCompiler};
+  }
+```
+
+Note: The `cleanGit` call will exclude any files not in the index file
+in the local `.git` directory.  This is extremely useful as it avoids
+unwanted builds (for instance when the contents of `dist-newstyle` are
+modified by cabal).
+
+You can build a component from your project with `nix-build` (in this
+case the `hello` executable in a `helloworld` package):
+
+```bash
+nix-build -A helloworld.components.exes.hello
+```
+
+For interactive development you can run:
+
+```bash
+nix-shell -A shellFor
+```
+
+The resulting shell will include all the dependencies of the local packages
+listed in your `cabal.project` file (but it will not build those local
+packages).
+
+Inside the shell use `cabal new-build` and `cabal new-repl` to work on the
+cabal project as you normally would.  They will use the packages provided
+by nix whenever possible.
+
+It is a good idea to add `write-ghc-environment-files: never` to your
+`cabal.project` file to prevent unwanted `.ghc.environment.*` files
+(they will prevent subsequent `nix-shell` invocations from working
+properly).
+
+Adding an `index-state` to your `cabal.project` can pin the plan used so that
+the same packages will be built each time (until you change the index-state
+or one of the constraints in your local `.cabal` files).
+
+### Using your stack.yaml file
+
+If your project has a `stack.yaml` you can add a `default.nix` like this:
+
+```nix
+{ pkgs ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+}:
+  pkgs.haskell-nix.stackProject {
+    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+  }
+```
+
+You can build a component from your project with `nix-build` (in this
+case the `hello` executable in a `helloworld` package):
+
+```bash
+nix-build -A helloworld.components.exes.hello
 ```
 
 ### Pinning the [Haskell.nix][] version
@@ -117,16 +186,16 @@ $ nix-prefetch-git --quiet https://github.com/input-output-hk/haskell.nix | tee 
 Use the following expression to import that version:
 
 ```nix
-{ pkgs ? import <nixpkgs> {} }:
+{ nixpkgs ? import <nixpkgs> {} }:
 
 let
   spec = builtins.fromJSON (builtins.readFile ./haskell-nix-src.json);
-  haskell-nix-src = pkgs.fetchgit {
+  haskell-nix-src = (import nixpkgs {}).fetchgit {
     name = "haskell-lib";
     inherit (spec) url rev sha256 fetchSubmodules;
   };
 in
-  import haskell-nix-src { inherit pkgs; }
+  import haskell-nix-src { inherit nixpkgs; }
 ```
 
 There are other possible schemes for pinning. See
@@ -169,10 +238,10 @@ attrsets and try examples.
 
 ```
 # example.nix
-{ pkgs ? import <nixpkgs> {} }:
+{ nixpkgs ? <nixpkgs> }:
 rec {
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit pkgs; };
-  pkgNames = pkgs.lib.attrNames haskell.snapshots."lts-13.18";
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) { inherit nixpkgs; };
+  pkgNames = haskell.pkgs.lib.attrNames haskell.haskell-nix.snapshots."lts-13.18";
 }
 ```
 
