@@ -256,13 +256,9 @@ self: super: {
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // {
               inherit (p) plan-nix;
-              shells = {
-                ghc = (p.hsPkgs.shellFor {}).overrideAttrs (oldAttrs: {
-                  shellHook = (oldAttrs.shellHook or "") + ''
-                    unset CABAL_CONFIG
-                  '';
-                });
-              };
+              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
+              # But we should encourage use of `nix-shell -A shellFor`
+              shells.ghc = p.hsPkgs.shellFor {};
             };
 
         stackProject =
