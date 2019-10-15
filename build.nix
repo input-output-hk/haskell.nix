@@ -8,11 +8,14 @@
 , system ? builtins.currentSystem
 , crossSystem ? null
 , config ? {}
-, nixpkgsArgs ? { inherit system crossSystem config; }
+, nixpkgsArgs ? { inherit system crossSystem; }
 }:
 
 let
-  haskell = import nixpkgs ((import nixpkgs {}).lib.recursiveUpdate (import ./default.nix) nixpkgsArgs);
+  haskellNixArgs = import ./default.nix;
+  haskell = import nixpkgs ({
+    config   = haskellNixArgs.config // config;
+    overlays = haskellNixArgs.overlays; } // nixpkgsArgs);
 
 in {
   inherit (haskell.haskell-nix) nix-tools source-pins;
