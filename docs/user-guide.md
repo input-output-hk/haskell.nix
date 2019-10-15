@@ -91,6 +91,17 @@ If your project has a `cabal.project` you can add a `default.nix` like this:
   pkgs.haskell-nix.cabalProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
     ghc = pkgs.buildPackages.pkgs.haskell.compiler.${haskellCompiler};
+    # pkg-def-extras = [
+    #   # Additional packages ontop of all those listed in `cabal.project`
+    # ];
+    # modules = [
+    #   # Specific package overrides would go here for example:
+    #   packages.cbors.package.ghcOptions = "-Werror";
+    #   packages.cbors.patches = [ ./one.patch ];
+    #   packages.cbors.flags.optimize-gmp = false;
+    #   # It may be better to set flags in `cabal.project` instead
+    #   # (`plan-to-nix` will include them as defaults).
+    # ];
   }
 ```
 
@@ -138,6 +149,17 @@ If your project has a `stack.yaml` you can add a `default.nix` like this:
 }:
   pkgs.haskell-nix.stackProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+    # pkg-def-extras = [
+    #   # Additional packages ontop of all those listed in `stack.yaml`
+    # ];
+    # modules = [
+    #   # Specific package overrides would go here for example:
+    #   packages.cbors.package.ghcOptions = "-Werror";
+    #   packages.cbors.patches = [ ./one.patch ];
+    #   packages.cbors.flags.optimize-gmp = false;
+    #   # It may be better to set flags in `stack.yaml` instead
+    #   # (`stack-to-nix` will include them as defaults).
+    # ];
   }
 ```
 
