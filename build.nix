@@ -7,12 +7,11 @@
 # Provide args to the nixpkgs instantiation.
 , system ? builtins.currentSystem
 , crossSystem ? null
-, config ? {}
-, nixpkgsArgs ? { inherit system crossSystem config; }
+, nixpkgsArgs ? { inherit system crossSystem; }
 }:
 
 let
-  haskell = import ./default.nix { inherit nixpkgs nixpkgsArgs; };
+  haskell = import nixpkgs ((import ./default.nix) // nixpkgsArgs );
 
 in {
   inherit (haskell.haskell-nix) nix-tools source-pins;
