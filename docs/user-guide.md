@@ -234,13 +234,16 @@ these Git repositories correspond to the actual Hackage and Stackage.
 [stackage.nix]: https://github.com/input-output-hk/stackage.nix
 
 ```nix
-{ pkgs ? import <nixpkgs> {} }:
-
-import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
-  inherit pkgs;
-  hackageSourceJSON = ./hackage-src.json;
-  stackageSourceJSON = ./stackage-src.json; 
-}
+{ pkgs ? import <nixpkgs> (haskellNixArgs // { overlays = haskellNixArgs.overlays ++ [
+  (self: super: {
+    haskell-nix = super.haskell-nix // {
+      hackageSourceJSON  = ./hackage-src.json;
+      stackageSourceJSON = ./stackage-src.json;
+    };
+  })]; })
+, haskellNixArgs ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)
+}:
+  pkgs
 ```
 
 ## Using `nix repl`
