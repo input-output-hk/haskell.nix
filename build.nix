@@ -16,7 +16,9 @@ let
   pkgs = import nixpkgs ({
     config   = haskellNixArgs.config // config;
     overlays = haskellNixArgs.overlays ++
-      [(self: super: { darcs = null; })]; } // nixpkgsArgs);
+      [(self: super: {
+        darcs = (self.haskell-nix.hackage-package { name = "darcs"; version = "2.14.2"; }).components.exes.darcs;
+      })]; } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
 in {
