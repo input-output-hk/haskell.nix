@@ -60,7 +60,7 @@ in rec {
   ghc-boot-packages = builtins.mapAttrs
     (name: value: builtins.mapAttrs
       (pkgName: dir: importCabal "${name}-${pkgName}" "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
-    self.haskell.compiler;
+    self.buildPackages.haskell.compiler;
 
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value: let package-locs = builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs; in
     self.writeTextFile {
@@ -69,13 +69,16 @@ in rec {
       text = ''
         packages: ${self.lib.concatStringsSep " " (self.lib.attrValues package-locs)}
         -- need this for libiserve as it doesn't build against 3.0 yet.
-        constraints: network < 3.0
+        constraints: network < 3.0,
+                     ghc +ghci,
+                     ghci +ghci,
+                     libiserv +network
       '';
-    }) self.haskell.compiler;
+    }) self.buildPackages.haskell.compiler;
 
   ghc-extra-packages = builtins.mapAttrs (name: proj: self.haskell-nix.cabalProject {
       src = proj;
-      ghc = self.haskell.compiler.${name};
+      ghc = self.buildPackages.haskell.compiler.${name};
     })
     ghc-extra-pkgs-cabal-projects;
 }

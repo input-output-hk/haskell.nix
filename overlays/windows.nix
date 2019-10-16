@@ -36,12 +36,16 @@ self: super:
           inherit (pkgs) gmp;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (config.hsPkgs.buildPackages.iserv-proxy.components.exes) iserv-proxy;
+#          inherit (config.hsPkgs.buildPackages.iserv-proxy.components.exes) iserv-proxy;
+          inherit (self.buildPackages.ghc-extra-packages.ghc865.iserv-proxy.components.exes) iserv-proxy;
+#          iserv-proxy = null;
           # remote-iserv however needs to come from the regular packages as it has to
           # run on the target host.
-          inherit (config.hsPkgs.remote-iserv.components.exes) remote-iserv;
+          inherit (self.ghc-extra-packages.ghc865.remote-iserv.components.exes) remote-iserv;
+#          remote-iserv = null;
+          # inherit (config.hsPkgs.remote-iserv.components.exes) remote-iserv;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
-          extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
+          # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
           # Therfore let's enable doCrossCheck here!
@@ -51,25 +55,25 @@ self: super:
         packages = {
           # This needs true, otherwise we miss most of the interesting
           # modules.
-          ghci.flags.ghci = true;
-          # I hope we can apply this globally.
-          ghc.flags.ghci = true;
+          # ghci.flags.ghci = true;
+          # # I hope we can apply this globally.
+          # ghc.flags.ghci = true;
 
-          # this needs to be true to expose module
-          #  Message.Remote
-          # as needed by libiserv.
-          libiserv.flags.network = true;
+          # # this needs to be true to expose module
+          # #  Message.Remote
+          # # as needed by libiserv.
+          # libiserv.flags.network = true;
 
-          # libiserv has a bit too restrictive boundaries.
-          # as such it won't build with newer network libraries.
-          # to avoid that we use doExactConfig, which forces cabal
-          # to forgoe its solver and just take the libraries it's
-          # provided with.
-          ghci.components.library.doExactConfig = true;
-          libiserv.components.library.doExactConfig = true;
-          # same for iserv-proxy
-          iserv-proxy.components.exes.iserv-proxy.doExactConfig = true;
-          remote-iserv.components.exes.remote-iserv.doExactConfig = true;
+          # # libiserv has a bit too restrictive boundaries.
+          # # as such it won't build with newer network libraries.
+          # # to avoid that we use doExactConfig, which forces cabal
+          # # to forgoe its solver and just take the libraries it's
+          # # provided with.
+          # ghci.components.library.doExactConfig = true;
+          # libiserv.components.library.doExactConfig = true;
+          # # same for iserv-proxy
+          # iserv-proxy.components.exes.iserv-proxy.doExactConfig = true;
+          # remote-iserv.components.exes.remote-iserv.doExactConfig = true;
 
           # This is a rather bad hack.  What we *really* would want is to make
           # sure remote-iserv has access to all the relevant libraries it needs.
@@ -81,13 +85,13 @@ self: super:
           # figuring out which libraries we need for the build (walking the
           # dependencies) and then placing them somewhere where wine+remote-iserv
           # will find them.
-          remote-iserv.postInstall = pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
-            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp ]; in ''
-            for p in ${lib.concatStringsSep " "extra-libs}; do
-              find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
-              find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
-            done
-          '');
+          # remote-iserv.postInstall = pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
+          #   let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp ]; in ''
+          #   for p in ${lib.concatStringsSep " "extra-libs}; do
+          #     find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
+          #     find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
+          #   done
+          # '');
 
           # Apply https://github.com/haskell/cabal/pull/6055
           # See also https://github.com/input-output-hk/iohk-nix/issues/136
@@ -131,6 +135,7 @@ self: super:
           ghci.setupBuildFlags = [];
           network.setupBuildFlags = [];
           unix.setupBuildFlags = [];
+
         }
         # Fix dependencies and case-sensitive filesystem builds for unix-time.
         // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isWindows {
