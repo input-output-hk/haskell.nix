@@ -13,16 +13,17 @@
 
 let
   haskellNixArgs = import ./default.nix;
-  haskell = import nixpkgs ({
+  pkgs = import nixpkgs ({
     config   = haskellNixArgs.config // config;
     overlays = haskellNixArgs.overlays; } // nixpkgsArgs);
+  haskell = pkgs.haskell-nix;
 
 in {
-  inherit (haskell.haskell-nix) nix-tools source-pins;
+  inherit (haskell) nix-tools source-pins;
   tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
-  maintainer-scripts = haskell.pkgs.dontRecurseIntoAttrs {
+  maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
@@ -31,7 +32,7 @@ in {
         # nixpkgs unstable changes "Option has no description" from an
         # error into a warning. That is quite helpful when hardly any
         # of our options are documented, thanks @oxij.
-        pkgs = import (haskell.pkgs.fetchFromGitHub {
+        pkgs = import (pkgs.fetchFromGitHub {
           owner = "NixOS";
           repo = "nixpkgs";
           rev = "4ab1c14714fc97a27655f3a6877386da3cb237bc";
