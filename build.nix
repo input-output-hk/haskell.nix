@@ -15,7 +15,8 @@ let
   haskellNixArgs = import ./default.nix;
   pkgs = import nixpkgs ({
     config   = haskellNixArgs.config // config;
-    overlays = haskellNixArgs.overlays; } // nixpkgsArgs);
+    overlays = haskellNixArgs.overlays ++
+      [(self: super: { darcs = null; })]; } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
 in {
