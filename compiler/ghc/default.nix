@@ -48,6 +48,9 @@
 , ghc-version ? src-spec.version
 , src-spec
 , ghc-patches ? []
+
+# extra values we want to have available as passthru values.
+, extra-passthru ? {}
 }:
 
 assert !enableIntegerSimple -> gmp != null;
@@ -307,7 +310,7 @@ in stdenv.mkDerivation (rec {
     haskellCompilerName = "ghc-${version}";
 
     configured-src = configured-src;
-  };
+  } // extra-passthru;
 
   meta = {
     homepage = http://haskell.org/ghc;

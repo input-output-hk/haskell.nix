@@ -69,6 +69,8 @@ self: super: rec {
                 ;
         in ({
             ghc844 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc844; };
+
                 inherit bootPkgs sphinx;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
@@ -85,6 +87,8 @@ self: super: rec {
                             ++ self.lib.optional self.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
             };
             ghc861 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc861; };
+
                 inherit bootPkgs sphinx;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
@@ -99,6 +103,8 @@ self: super: rec {
                 ghc-patches = [ D5123-patch ];
             };
             ghc862 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc862; };
+
                 inherit bootPkgs sphinx;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
@@ -114,6 +120,8 @@ self: super: rec {
                             ++ [ D5123-patch ];
             };
             ghc863 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc863; };
+
                 inherit bootPkgs sphinx;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
@@ -129,6 +137,8 @@ self: super: rec {
                             ++ [ D5123-patch ];
             };
             ghc864 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc864; };
+
                 inherit bootPkgs sphinx;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
@@ -144,6 +154,8 @@ self: super: rec {
                             ++ [ D5123-patch ];
             };
             ghc865 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc865; };
+
                 inherit bootPkgs sphinx;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;

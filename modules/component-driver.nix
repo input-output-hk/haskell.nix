@@ -3,7 +3,6 @@ let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
-    buildGHC = buildModules.config.ghc.package;
     inherit (config) nonReinstallablePkgs hsPkgs;
   };
 

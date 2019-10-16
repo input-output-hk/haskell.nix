@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, runCommand, comp-builder, setup-builder }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, fetchurl, runCommand, comp-builder, setup-builder }:
 
 
 { flags
@@ -30,10 +30,10 @@ let
     import Distribution.Simple
     main = defaultMain
   '';
-  defaultSetup = buildPackages.runCommand "default-Setup" { nativeBuildInputs = [buildGHC]; } ''
+  defaultSetup = buildPackages.runCommand "default-Setup" { nativeBuildInputs = [(ghc.passthru.buildGHC or ghc)]; } ''
     cat ${defaultSetupSrc} > Setup.hs
     mkdir -p $out/bin
-    ${buildGHC.targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
+    ${(ghc.passthru.buildGHC or ghc).targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
   '';
 
   setup = if package.buildType == "Simple" && package.setup-depends == []
