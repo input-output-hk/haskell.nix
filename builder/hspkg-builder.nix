@@ -40,7 +40,7 @@ let
     then defaultSetup
     else setup-builder {
       setup-depends = package.setup-depends;
-      inherit package name src flags defaultSetupSrc;
+      inherit package name src flags revision patches defaultSetupSrc;
     };
 
   buildComp = componentId: component: comp-builder {
