@@ -14,7 +14,7 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
             x86_64-pc-mingw32-hello = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
                 (haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
 
-            iserv-proxy = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; }));
+            iserv-proxy = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
                 (ghc-extra-packages.ghc865.iserv-proxy.components.exes).iserv-proxy;
 
             x86_64-pc-mingw32-iserv-proxy = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
