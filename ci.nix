@@ -51,6 +51,17 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
         x86_64-linux = (import ./test { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-linux"; }; });
         # x86_64-darwin = (import ./test { nixpkgs = nixpkgs1903; nixpkgsArgs = { system = "x86_64-darwin"; }; });
     };
+    examples = let
+        iohk-archive = name: hash: "https://github.com/input-output-hk/${name}/archive/${hash}.tar.gz";
+        cardano-wallet-src = builtins.fetchTarball (iohk-archive "cardano-wallet" "d525e85fe19a37d8b5648ac783ef35474be38bcc");
+    in {
+        "release-19.03" = {
+            x86_64-linux = {
+                cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
+                    (haskell-nix.stackProject { src = cardano-wallet-src; }).cardano-wallet.components;
+            };
+        };
+    };
     # Needs agent redeploy
     #
 
