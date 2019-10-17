@@ -17,7 +17,12 @@ let
     config   = haskellNixArgs.config // config;
     overlays = haskellNixArgs.overlays ++
       [(self: super: {
-        darcs = (self.haskell-nix.hackage-package { name = "darcs"; version = "2.14.2"; }).components.exes.darcs;
+        darcs = (self.haskell-nix.hackage-package {
+          name = "darcs";
+          version = "2.14.2";
+          # Apply the latest darcs.net Setup.hs patches
+          modules = [{packages.darcs.patches = [ ./patches/darcs-setup.patch ];}];
+        }).components.exes.darcs;
       })]; } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
