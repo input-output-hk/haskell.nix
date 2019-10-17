@@ -192,6 +192,36 @@ self: super: {
             inherit (self.buildPackages.haskell-nix) nix-tools;
         };
 
+        # given a source location call `cabal-to-nix` (from nix-tools) on it
+        # to produce the nix representation of it.
+        callCabalToNix = name: src:
+            self.buildPackages.pkgs.runCommand "${name}.nix" {
+                nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
+            } ''
+            cabal-to-nix "${src}" "${src}/${name}.cabal" > "$out"
+            '';
+
+        # Given a list of repos:
+        # [ { name = ...; url = ...; rev = ...; sha256 = ... } ]
+        # produce a cache file that can be used for
+        # stack-to-nix or plan-to-nix to prevent them
+        # from needing network access.
+        mkCacheFile = repos: let
+            fetchRepo = repo: (self.buildPackages.pkgs.fetchgit {
+                url = repo.url;
+                rev = repo.rev;
+                sha256 = repo.sha256;
+            }) + (if repo.subdir or "." == "." then "" else "/" + repo.subdir);
+
+            f = { name, url, rev, subdir ? ".", sha256 }@repo:
+                let nix-expr = self.buildPackages.haskell-nix.callCabalToNix name (fetchRepo repo);
+                in "${url} ${rev} ${subdir} ${sha256} ${name} ${nix-expr}";
+            in
+            self.buildPackages.pkgs.writeTextFile {
+                name = "cache-file";
+                text = self.buildPackages.lib.concatMapStringsSep "\n" f repos;
+            };
+
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
