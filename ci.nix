@@ -1,6 +1,6 @@
 # these are patched nixpkgs that include the following PRs:
 # - https://github.com/NixOS/nixpkgs/pull/71216
-#
+# - https://github.com/NixOS/nixpkgs/pull/68398
 let nixpkgs1903 = builtins.fetchTarball "https://github.com/input-output-hk/nixpkgs/archive/a8f81dc037a5977414a356dd068f2621b3c89b60.tar.gz";
 in with (import nixpkgs1903 {});
 let
