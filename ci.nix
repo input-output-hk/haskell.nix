@@ -58,7 +58,76 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
         "release-19.03" = {
             x86_64-linux = {
                 cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (haskell-nix.stackProject { src = cardano-wallet-src; }).cardano-wallet.components;
+                    (haskell-nix.stackProject rec {
+                        src = cardano-wallet-src;
+                        # wee need these, as they are referenced in the stack.yaml file; however we can't
+                        # fetch them at IFD time as they don't provide the sha256. Hence we use the cache-file
+                        # facility on stack-to-nix and pre-populate the cache file with the relevant hashes.
+                        cache = [
+                            { name = "cardano-crypto";
+                              url = "https://github.com/input-output-hk/cardano-crypto";
+                              rev = "3c5db489c71a4d70ee43f5f9b979fcde3c797f2a";
+                              sha256 = "0lss4x41m0ylhximqjc56ps0y3pag3x58wm480pzfa48lpk4gqpk"; }
+                            { name = "persistent-sqlite";
+                              url = "https://github.com/KtorZ/persistent";
+                              rev = "79f2ece07eafae005a703c8eda1bd2420b5e07b5";
+                              sha256 = "081bhdg52wn7vgxsgl4aimy73ccai05j64r24hwkdnjj4kz96lia";
+                              subdir = "persistent-sqlite"; }
+                            { name = "iohk-monitoring";
+                              url = "https://github.com/input-output-hk/iohk-monitoring-framework";
+                              rev = "bd31cd2f3922010ddb76bb869f29c4e63bb8001b";
+                              subdir = "iohk-monitoring";
+                              sha256 = "1dfk505qbpk6p3gcpxa31wmg98qvx9hlrxlf0khaj7hizf3b8b60"; }
+                            { name = "contra-tracer";
+                              url = "https://github.com/input-output-hk/iohk-monitoring-framework";
+                              rev = "bd31cd2f3922010ddb76bb869f29c4e63bb8001b";
+                              subdir = "contra-tracer";
+                              sha256 = "1dfk505qbpk6p3gcpxa31wmg98qvx9hlrxlf0khaj7hizf3b8b60"; }
+                        ];
+                        # This is needed due to some deficiencies in stackage snapshots.
+                        # maybe we should make this part of some `stack-default-pkg-def-extras`?
+                        # We have similar logic in the snapshots.nix file to deal with this in
+                        # snapshots.
+                        #
+                        # TODO: move this somewhere into stackProject
+                        pkg-def-extras = [
+                            (hackage: {
+                                packages = {
+                                    "transformers" = (((hackage.transformers)."0.5.6.2").revisions).default;
+                                    "process" = (((hackage.process)."1.6.5.0").revisions).default;
+                                };
+                            })
+                            (hackage: {
+                                packages = {
+                                    "hsc2hs" = (((hackage.hsc2hs)."0.68.4").revisions).default;
+                                };
+                            })
+                        ];
+                        modules = [
+                            # for each item in the `cache`, set
+                            #   packages.$name.src = fetchgit ...
+                            # and
+                            #   packages.$name.postUnpack = ...
+                            # if subdir is given.
+                            #
+                            # We need to do this, as cabal-to-nix will generate
+                            # src = /nix/store/... paths, and when we build the
+                            # package we won't have access to the /nix/store
+                            # path.  As such we regenerate the fetchgit command
+                            # we used in the first place, and thus have a proper
+                            # src value.
+                            #
+                            # TODO: this should be moved into `call-stack-to-nix`
+                            #       it should be automatic and not the burden of
+                            #       the end user to work around nix peculiarities.
+                            { packages = builtins.foldl' (x: y: x // y) {}
+                                (builtins.map ({ name, url, rev, sha256, subdir ? null }:
+                                    { ${name} = { src = fetchgit { inherit url rev sha256; }; }
+                                          // lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                                    }) cache);
+                            }
+                        ];
+                    }).cardano-wallet-jormungandr.components.all;
             };
         };
     };

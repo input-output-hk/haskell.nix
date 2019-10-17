@@ -189,7 +189,7 @@ self: super: {
         callStackToNix = import ../lib/call-stack-to-nix.nix {
             pkgs = self.buildPackages.pkgs;
             inherit (self.buildPackages.pkgs) runCommand;
-            inherit (self.buildPackages.haskell-nix) nix-tools;
+            inherit (self.buildPackages.haskell-nix) nix-tools mkCacheFile;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
