@@ -36,14 +36,10 @@ self: super:
           inherit (pkgs) gmp;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-#          inherit (config.hsPkgs.buildPackages.iserv-proxy.components.exes) iserv-proxy;
           inherit (self.buildPackages.ghc-extra-packages.ghc865.iserv-proxy.components.exes) iserv-proxy;
-#          iserv-proxy = null;
           # remote-iserv however needs to come from the regular packages as it has to
           # run on the target host.
           inherit (self.ghc-extra-packages.ghc865.remote-iserv.components.exes) remote-iserv;
-#          remote-iserv = null;
-          # inherit (config.hsPkgs.remote-iserv.components.exes) remote-iserv;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {
@@ -53,27 +49,6 @@ self: super:
         };
       in {
         packages = {
-          # This needs true, otherwise we miss most of the interesting
-          # modules.
-          # ghci.flags.ghci = true;
-          # # I hope we can apply this globally.
-          # ghc.flags.ghci = true;
-
-          # # this needs to be true to expose module
-          # #  Message.Remote
-          # # as needed by libiserv.
-          # libiserv.flags.network = true;
-
-          # # libiserv has a bit too restrictive boundaries.
-          # # as such it won't build with newer network libraries.
-          # # to avoid that we use doExactConfig, which forces cabal
-          # # to forgoe its solver and just take the libraries it's
-          # # provided with.
-          # ghci.components.library.doExactConfig = true;
-          # libiserv.components.library.doExactConfig = true;
-          # # same for iserv-proxy
-          # iserv-proxy.components.exes.iserv-proxy.doExactConfig = true;
-          # remote-iserv.components.exes.remote-iserv.doExactConfig = true;
 
           # This is a rather bad hack.  What we *really* would want is to make
           # sure remote-iserv has access to all the relevant libraries it needs.
@@ -85,13 +60,13 @@ self: super:
           # figuring out which libraries we need for the build (walking the
           # dependencies) and then placing them somewhere where wine+remote-iserv
           # will find them.
-          # remote-iserv.postInstall = pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
-          #   let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp ]; in ''
-          #   for p in ${lib.concatStringsSep " "extra-libs}; do
-          #     find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
-          #     find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
-          #   done
-          # '');
+          remote-iserv.postInstall = pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
+            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp ]; in ''
+            for p in ${lib.concatStringsSep " "extra-libs}; do
+              find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
+              find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
+            done
+          '');
 
           # Apply https://github.com/haskell/cabal/pull/6055
           # See also https://github.com/input-output-hk/iohk-nix/issues/136
@@ -108,7 +83,11 @@ self: super:
           # nix calles this package crypto
           cryptonite-openssl.patches = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.7" then ./patches/cryptonite-openssl-0.7.patch else null) ];
 
-          http-client.patches        = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.5.14" then ./patches/http-client-0.5.14.patch else null) ];
+          # this patch seems to be rather flaky and highly dependent on
+          # the network library. I think we might need to respin that in
+          # a better way that doesn't just delete some code, but makes
+          # the bounds checks stricter.
+          # http-client.patches        = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.5.14" then ./patches/http-client-0.5.14.patch else null) ];
 
           conduit.patches            = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if builtins.compareVersions version "1.3.1.1" < 0 then ./patches/conduit-1.3.0.2.patch else null) ];
           streaming-commons.patches  = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/streaming-commons-0.2.0.0.patch ];
