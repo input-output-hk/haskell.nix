@@ -53,11 +53,56 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     };
     examples = let
         iohk-archive = name: hash: "https://github.com/input-output-hk/${name}/archive/${hash}.tar.gz";
-        cardano-sl = rec {
+        cardano-sl-args = rec {
             src = builtins.fetchTarball (iohk-archive "cardano-sl" "1a792d7cd0f0c93a0f0c28f66372bce3c3808dbd");
+            pkgs = [
+                "cardano-sl-crypto-test"
+                "cardano-sl-crypto"
+                "cardano-sl-cluster"
+                "cardano-sl-infra"
+                "cardano-sl-infra-test"
+                "cardano-sl-tools"
+                "cardano-sl-tools-post-mortem"
+                "cardano-sl-core"
+                "cardano-sl-core-test"
+                "cardano-sl-util-test"
+                "cardano-sl-util"
+                "cardano-sl-script-runner"
+                "cardano-sl-auxx"
+                "cardano-sl-networking"
+                "cardano-sl-explorer"
+                "cardano-sl-chain-test"
+                "cardano-sl-chain"
+                "cardano-sl-mnemonic"
+                "cardano-sl-generator"
+                "cardano-sl-x509"
+                "cardano-sl-utxo"
+                "cardano-sl-node-ipc"
+                "cardano-wallet"
+                "cardano-sl"
+                "cardano-sl-db-test"
+                "cardano-sl-db"
+                "cardano-sl-faucet"
+                "cardano-sl-binary-test"
+                "cardano-sl-binary"
+                "cardano-sl-node"
+                "cardano-sl-client"
+            ];
         };
         cardano-wallet-args = rec {
             src = builtins.fetchTarball (iohk-archive "cardano-wallet" "d525e85fe19a37d8b5648ac783ef35474be38bcc");
+            pkgs = [
+                "bech32"
+                "text-class"
+                "cardano-wallet-http-bridge"
+                "cardano-wallet-launcher"
+                "cardano-wallet-test-utils"
+                "cardano-wallet-core"
+                "cardano-wallet-jormungandr"
+                "cardano-wallet-cli"
+                "cardano-crypto"
+                "cardano-wallet-core-integration"
+            ];
             # wee need these, as they are referenced in the stack.yaml file; however we can't
             # fetch them at IFD time as they don't provide the sha256. Hence we use the cache-file
             # facility on stack-to-nix and pre-populate the cache file with the relevant hashes.
@@ -129,20 +174,29 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     in {
         "release-19.03" = {
             x86_64-linux = {
+                # cardano-sl
                 cardano-sl = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (haskell-nix.stackProject cardano-sl);
-                cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-sl.pkgs)
+                        (haskell-nix.stackProject cardano-sl-args));
                 x86_64-pc-mingw32-cardano-sl = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (haskell-nix.stackProject cardano-sl);
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
+                        (haskell-nix.stackProject cardano-sl-args));
+                # cardano-wallet
+                cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
+                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
                 x86_64-pc-mingw32-cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
+                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
             };
             x86_64-darwin = {
+                # cardano-wallet
                 cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; }));
-                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
+                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
                 x86_64-pc-mingw32-cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
+                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
             };
         };
     };
