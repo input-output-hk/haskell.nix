@@ -53,6 +53,9 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     };
     examples = let
         iohk-archive = name: hash: "https://github.com/input-output-hk/${name}/archive/${hash}.tar.gz";
+        cardano-sl = rec {
+            src = builtins.fetchTarball (iohk-archive "cardano-sl" "1a792d7cd0f0c93a0f0c28f66372bce3c3808dbd");
+        };
         cardano-wallet-args = rec {
             src = builtins.fetchTarball (iohk-archive "cardano-wallet" "d525e85fe19a37d8b5648ac783ef35474be38bcc");
             # wee need these, as they are referenced in the stack.yaml file; however we can't
@@ -126,8 +129,12 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     in {
         "release-19.03" = {
             x86_64-linux = {
+                cardano-sl = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
+                    (haskell-nix.stackProject cardano-sl);
                 cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
                     (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
+                x86_64-pc-mingw32-cardano-sl = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
+                    (haskell-nix.stackProject cardano-sl);
                 x86_64-pc-mingw32-cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
                     (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
             };
