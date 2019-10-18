@@ -53,6 +53,29 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
     };
     examples = let
         iohk-archive = name: hash: "https://github.com/input-output-hk/${name}/archive/${hash}.tar.gz";
+        mkCacheModule = cache:
+            # for each item in the `cache`, set
+            #   packages.$name.src = fetchgit ...
+            # and
+            #   packages.$name.postUnpack = ...
+            # if subdir is given.
+            #
+            # We need to do this, as cabal-to-nix will generate
+            # src = /nix/store/... paths, and when we build the
+            # package we won't have access to the /nix/store
+            # path.  As such we regenerate the fetchgit command
+            # we used in the first place, and thus have a proper
+            # src value.
+            #
+            # TODO: this should be moved into `call-stack-to-nix`
+            #       it should be automatic and not the burden of
+            #       the end user to work around nix peculiarities.
+            { packages = builtins.foldl' (x: y: x // y) {}
+                (builtins.map ({ name, url, rev, sha256, subdir ? null }:
+                    { ${name} = { src = fetchgit { inherit url rev sha256; }; }
+                            // lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                    }) cache);
+            };
         cardano-sl-args = rec {
             src = builtins.fetchTarball (iohk-archive "cardano-sl" "1a792d7cd0f0c93a0f0c28f66372bce3c3808dbd");
             pkgs = [
@@ -98,6 +121,26 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
                     rev = "9bb453139aa82cc973125091800422a523e1eb8f";
                     sha256 = "199mfpbgca7rvwvwk2zsmcpibc0sk0ni7c5zlf4gk3cps8s85gyr"; }
             ];
+            # This is needed due to some deficiencies in stackage snapshots.
+            # maybe we should make this part of some `stack-default-pkg-def-extras`?
+            # We have similar logic in the snapshots.nix file to deal with this in
+            # snapshots.
+            #
+            # TODO: move this somewhere into stackProject
+            pkg-def-extras = [
+                (hackage: {
+                    packages = {
+                        "transformers" = (((hackage.transformers)."0.5.6.2").revisions).default;
+                        "process" = (((hackage.process)."1.6.5.0").revisions).default;
+                    };
+                })
+                (hackage: {
+                    packages = {
+                        "hsc2hs" = (((hackage.hsc2hs)."0.68.4").revisions).default;
+                    };
+                })
+            ];
+            modules = [ (mkCacheModule cache) ];
         };
         cardano-wallet-args = rec {
             src = builtins.fetchTarball (iohk-archive "cardano-wallet" "d525e85fe19a37d8b5648ac783ef35474be38bcc");
@@ -156,30 +199,7 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
                     };
                 })
             ];
-            modules = [
-                # for each item in the `cache`, set
-                #   packages.$name.src = fetchgit ...
-                # and
-                #   packages.$name.postUnpack = ...
-                # if subdir is given.
-                #
-                # We need to do this, as cabal-to-nix will generate
-                # src = /nix/store/... paths, and when we build the
-                # package we won't have access to the /nix/store
-                # path.  As such we regenerate the fetchgit command
-                # we used in the first place, and thus have a proper
-                # src value.
-                #
-                # TODO: this should be moved into `call-stack-to-nix`
-                #       it should be automatic and not the burden of
-                #       the end user to work around nix peculiarities.
-                { packages = builtins.foldl' (x: y: x // y) {}
-                    (builtins.map ({ name, url, rev, sha256, subdir ? null }:
-                        { ${name} = { src = fetchgit { inherit url rev sha256; }; }
-                                // lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
-                        }) cache);
-                }
-            ];
+            modules = [ (mkCacheModule cache) ];
         };
     in {
         "release-19.03" = {
@@ -191,22 +211,31 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
                 x86_64-pc-mingw32-cardano-sl = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
                     (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
                         (haskell-nix.stackProject cardano-sl-args));
+
                 # cardano-wallet
                 cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
                     (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
+                        (haskell-nix.stackProject cardano-wallet-args));
                 x86_64-pc-mingw32-cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
                     (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
+                        (haskell-nix.stackProject cardano-wallet-args));
             };
             x86_64-darwin = {
+                # cardano-sl
+                cardano-sl = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; }));
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-sl.pkgs)
+                        (haskell-nix.stackProject cardano-sl-args));
+                x86_64-pc-mingw32-cardano-sl = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
+                        (haskell-nix.stackProject cardano-sl-args));
+
                 # cardano-wallet
                 cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; }));
                     (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
+                        (haskell-nix.stackProject cardano-wallet-args));
                 x86_64-pc-mingw32-cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
                     (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));#.cardano-wallet-jormungandr.components.all;
+                        (haskell-nix.stackProject cardano-wallet-args));
             };
         };
     };
