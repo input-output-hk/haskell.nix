@@ -97,7 +97,7 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
                     url = "https://github.com/andrewthad/haskell-ip";
                     rev = "9bb453139aa82cc973125091800422a523e1eb8f";
                     sha256 = "199mfpbgca7rvwvwk2zsmcpibc0sk0ni7c5zlf4gk3cps8s85gyr"; }
-            ]
+            ];
         };
         cardano-wallet-args = rec {
             src = builtins.fetchTarball (iohk-archive "cardano-wallet" "d525e85fe19a37d8b5648ac783ef35474be38bcc");
