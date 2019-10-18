@@ -127,15 +127,15 @@ in recRecurseIntoAttrs (x: lib.isAttrs x && !lib.isDerivation x) {
         "release-19.03" = {
             x86_64-linux = {
                 cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (haskell-nix.stackProject cardano-wallet-args).cardano-wallet-jormungandr.components.all;
+                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
                 x86_64-pc-mingw32-cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (haskell-nix.stackProject cardano-wallet-args).cardano-wallet-jormungandr.components.all;
+                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
             };
             x86_64-darwin = {
                 cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; }));
-                    (haskell-nix.stackProject cardano-wallet-args).cardano-wallet-jormungandr.components.all;
+                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
                 x86_64-pc-mingw32-cardano-wallet = with (import nixpkgs1903 (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (haskell-nix.stackProject cardano-wallet-args).cardano-wallet-jormungandr.components.all;
+                    (haskell-nix.stackProject cardano-wallet-args);#.cardano-wallet-jormungandr.components.all;
             };
         };
     };
