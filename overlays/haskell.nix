@@ -254,7 +254,8 @@ self: super: {
         # the index-state-hashes is used.  This guarantees reproducability wrt
         # to the haskell.nix revision.  If reproducability beyond haskell.nix
         # is required, a specific index-state should be provided!
-        hackage-package =
+        hackage-package = { name, ... }@args: (hackage-project args).${name};
+        hackage-project =
             { name
             , version
             , index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
@@ -268,7 +269,7 @@ self: super: {
                 tar xzf ${tarball}
                 mv "${name}-${version}" $out
                 '';
-            in (cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; })).${name};
+            in cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; });
 
         cabalProject' =
             { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
