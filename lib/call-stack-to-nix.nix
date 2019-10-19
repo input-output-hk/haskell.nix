@@ -17,7 +17,9 @@ let
   stack = runCommand "stack-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert ];
   } (''
-    export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
+    # Needed or stack-to-nix will die on unicode inputs
+    export LANG = "en_US.UTF-8";
+    export LC_ALL = "en_US.UTF-8";
     mkdir -p $out
   '' + pkgs.lib.optionalString (cache != null) ''
     cp ${mkCacheFile cache} $out/.stack-to-nix.cache

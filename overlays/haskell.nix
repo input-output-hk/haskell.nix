@@ -198,7 +198,8 @@ self: super: {
             self.buildPackages.pkgs.runCommand "${name}.nix" {
                 nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
             } ''
-            export LANG=C.utf8 # Needed or cabal-to-nix will die on unicode inputs
+            export LANG = "en_US.UTF-8";
+            export LC_ALL = "en_US.UTF-8";
             cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
             '';
 

@@ -165,7 +165,10 @@ let
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests
 
-    export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
+    # Needed or stack-to-nix will die on unicode inputs
+    export LANG = "en_US.UTF-8";
+    export LC_ALL = "en_US.UTF-8";
+
     mkdir -p $out
 
     # ensure we have all our .cabal files (also those generated from package.yaml) files.
