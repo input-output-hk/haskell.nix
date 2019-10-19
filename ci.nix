@@ -147,7 +147,7 @@ in
                     sha256 = "03shp9prflhgqzw7pymw1pq2q7s1wf46pyjm2csx8646snrhf35i";
                 }
                 { name = "network-transport-inmemory";
-                    url = "https://github.com/avieth/network-transport-inmemory"
+                    url = "https://github.com/avieth/network-transport-inmemory";
                     rev = "5d8ff2b07b9df35cf61329a3d975e2c8cf95c12a";
                     sha256 = "0ak64rks3lk3kk5wyndrrk2swmd84h9diribzix305xwz1jhjj9w";
                 }
