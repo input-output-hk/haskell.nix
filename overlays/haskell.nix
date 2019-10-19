@@ -194,11 +194,11 @@ self: super: {
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
         # to produce the nix representation of it.
-        callCabalToNix = name: src:
+        callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
             self.buildPackages.pkgs.runCommand "${name}.nix" {
                 nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
             } ''
-            cabal-to-nix "${src}" "${src}/${name}.cabal" > "$out"
+            cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
             '';
 
         # Given a list of repos:
@@ -213,8 +213,8 @@ self: super: {
                 sha256 = repo.sha256;
             }) + (if repo.subdir or "." == "." then "" else "/" + repo.subdir);
 
-            f = { name, url, rev, subdir ? ".", sha256 }@repo:
-                let nix-expr = self.buildPackages.haskell-nix.callCabalToNix name (fetchRepo repo);
+            f = { name, url, rev, subdir ? ".", sha256, cabal-file ? "${name}.cabal" }@repo:
+                let nix-expr = self.buildPackages.haskell-nix.callCabalToNix { src = (fetchRepo repo); inherit name cabal-file; };
                 in "${url} ${rev} ${subdir} ${sha256} ${name} ${nix-expr}";
             in
             self.buildPackages.pkgs.writeTextFile {

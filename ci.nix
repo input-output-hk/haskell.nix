@@ -122,6 +122,7 @@ in
                     rev = "4590efa638397e952a51a8994b5543e4ea3c1ecd";
                     sha256 = "0hl2n3bba5v2j0lmxhs7hs01z3aznh2bwf9cb434icq2g0bl8ms3"; }
                 { name = "haskell-ip";
+                    cabal-file = "ip.cabal";
                     url = "https://github.com/andrewthad/haskell-ip";
                     rev = "9bb453139aa82cc973125091800422a523e1eb8f";
                     sha256 = "199mfpbgca7rvwvwk2zsmcpibc0sk0ni7c5zlf4gk3cps8s85gyr"; }
