@@ -168,6 +168,12 @@ in
                     sha256 = "139c0yfnj57cpwg4k0am2rp35sh959394nvlb98011rjy68200qc";
                     subdir = "engine-io";
                 }
+                { name = "engine-io-wai";
+                    url = "https://github.com/input-output-hk/engine.io";
+                    rev = "d3c55f51bb81cee7d0d551de930ce65fe7d76756";
+                    sha256 = "139c0yfnj57cpwg4k0am2rp35sh959394nvlb98011rjy68200qc";
+                    subdir = "engine-io-wai";
+                }
                 { name = "canonical-json";
                     url = "https://github.com/well-typed/canonical-json.git";
                     rev = "ddfe3593b80b5ceb88842bb7a6f2268df75d2c2f";
