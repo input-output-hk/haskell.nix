@@ -20,8 +20,13 @@ let
     inherit src;
     nativeBuildInputs = [ self.haskell-nix.nix-tools ];
     phases = [ "unpackPhase" "buildPhase" ];
+
+    LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
+    LANG = "en_US.UTF-8";
+    LC_ALL = "en_US.UTF-8";
+
     buildPhase = ''
-      LANG=C.UTF-8 cabal-to-nix *.cabal > $out
+      cabal-to-nix *.cabal > $out
     '';
   };
   importCabal = name: src:

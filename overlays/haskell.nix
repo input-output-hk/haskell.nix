@@ -198,8 +198,11 @@ self: super: {
             self.buildPackages.pkgs.runCommand "${name}.nix" {
                 nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
                 LANG = "en_US.UTF-8";
+                LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
+                LANG = "en_US.UTF-8";
+                LC_ALL = "en_US.UTF-8";
             } ''
-            LANG=C.UTF-8 cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
+            cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
             '';
 
         # Given a list of repos:

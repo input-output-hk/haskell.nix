@@ -17,13 +17,15 @@ let
   stack = runCommand "stack-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert ];
     # Needed or stack-to-nix will die on unicode inputs
+    LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
+    LC_ALL = "en_US.UTF-8";
   } (''
     mkdir -p $out
   '' + pkgs.lib.optionalString (cache != null) ''
     cp ${mkCacheFile cache} $out/.stack-to-nix.cache
   '' + ''
-    (cd $out && LANG=C.UTF-8 stack-to-nix ${stackToNixArgs})
+    (cd $out && stack-to-nix ${stackToNixArgs})
 
     # We need to strip out any references to $src, as those won't
     # be accessable in restricted mode.
