@@ -21,7 +21,7 @@ let
     nativeBuildInputs = [ self.haskell-nix.nix-tools ];
     phases = [ "unpackPhase" "buildPhase" ];
 
-    LOCALE_ARCHIVE = self.lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE = self.lib.optionalString (self.stdenv.hostPlatform.libc == "glibc") "${self.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
 
