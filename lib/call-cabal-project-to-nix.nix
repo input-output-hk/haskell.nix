@@ -144,6 +144,8 @@ let
 
   plan-nix = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
+    # Needed or stack-to-nix will die on unicode inputs
+    LANG = "en_US.UTF-8";
   } (''
     tmp=$(mktemp -d)
     cd $tmp
@@ -164,10 +166,6 @@ let
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests
-
-    # Needed or stack-to-nix will die on unicode inputs
-    export LANG=en_US.UTF-8;
-    export LC_ALL=en_US.UTF-8;
 
     mkdir -p $out
 
