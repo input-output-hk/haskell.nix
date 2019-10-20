@@ -17,7 +17,7 @@ let
   stack = runCommand "stack-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert ];
     # Needed or stack-to-nix will die on unicode inputs
-    LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
   } (''
