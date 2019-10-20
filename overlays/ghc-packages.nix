@@ -21,7 +21,7 @@ let
     nativeBuildInputs = [ self.haskell-nix.nix-tools ];
     phases = [ "unpackPhase" "buildPhase" ];
     buildPhase = ''
-      cabal-to-nix *.cabal > $out
+      LANG=C.UTF-8 cabal-to-nix *.cabal > $out
     '';
   };
   importCabal = name: src:

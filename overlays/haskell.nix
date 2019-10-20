@@ -199,7 +199,7 @@ self: super: {
                 nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
                 LANG = "en_US.UTF-8";
             } ''
-            cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
+            LANG=C.UTF-8 cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
             '';
 
         # Given a list of repos:
