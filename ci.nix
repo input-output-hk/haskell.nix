@@ -387,8 +387,6 @@ in
                     (haskell-nix.stackProject plutus-args).language-plutus-core.components.all;
         };
     };
-    # Needs agent redeploy
-    #
 
 # Don't build (all of) stackage on linux for now.
 #    stackage = {
