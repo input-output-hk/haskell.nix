@@ -368,7 +368,7 @@ in
         x86_64-darwin = {
                 # cardano-sl
                 cardano-sl = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-sl.pkgs)
+                    (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
                         (haskell-nix.stackProject cardano-sl-args));
                 x86_64-pc-mingw32-cardano-sl = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
                     (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
