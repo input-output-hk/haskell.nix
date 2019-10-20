@@ -76,7 +76,7 @@ in
             #       it should be automatic and not the burden of
             #       the end user to work around nix peculiarities.
             { packages = builtins.foldl' (x: y: x // y) {}
-                (builtins.map ({ name, url, rev, sha256, subdir ? null }:
+                (builtins.map ({ name, url, rev, sha256, subdir ? null, ... }:
                     { ${name} = { src = fetchgit { inherit url rev sha256; }; }
                             // lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                     }) cache);
