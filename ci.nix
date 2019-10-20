@@ -4,7 +4,7 @@
 
 let
   nixpkgsVersions = {
-    "release-18.09" = builtins.fetchTarball "https://github.com/input-output-hk/nixpkgs/archive/7e4dcacbf066a8e2d12693a9de1fb30c77081c5d.tar.gz";
+#    "release-18.09" = builtins.fetchTarball "https://github.com/input-output-hk/nixpkgs/archive/7e4dcacbf066a8e2d12693a9de1fb30c77081c5d.tar.gz";
     "release-19.03" = builtins.fetchTarball "https://github.com/input-output-hk/nixpkgs/archive/a8f81dc037a5977414a356dd068f2621b3c89b60.tar.gz";
     "release-19.09" = builtins.fetchTarball "https://github.com/input-output-hk/nixpkgs/archive/3d623a406cec9052ae0a16a79ce3ce9de11236bb.tar.gz";
   };
