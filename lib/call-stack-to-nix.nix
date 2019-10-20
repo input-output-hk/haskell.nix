@@ -23,7 +23,7 @@ let
   '' + pkgs.lib.optionalString (cache != null) ''
     cp ${mkCacheFile cache} $out/.stack-to-nix.cache
   '' + ''
-    (cd $out && stack-to-nix ${stackToNixArgs})
+    (cd $out && LANG=C.UTF-8 stack-to-nix ${stackToNixArgs})
 
     # We need to strip out any references to $src, as those won't
     # be accessable in restricted mode.
