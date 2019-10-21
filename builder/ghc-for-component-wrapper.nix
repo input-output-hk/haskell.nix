@@ -40,6 +40,10 @@ in runCommand "${componentName}-${ghc.name}" {
     rm -rf ${libDir}/*/
     # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
     ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
+    # ... and the ghcjs shim's if they are available
+    if [ -d ${ghc}/lib/${ghcCommand}-${ghc.version}/shims ]; then
+      ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/shims ${libDir}
+    fi
     # Replace the package database with the one from target package config.
     ln -s ${configFiles}/package.conf.d ${packageCfgDir}
 

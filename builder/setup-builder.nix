@@ -1,6 +1,6 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
 
-{ setup-depends, package, name, src, flags }:
+{ setup-depends, package, name, src, flags, revision, patches, defaultSetupSrc }:
 
 let
   component = {
@@ -34,7 +34,7 @@ let
 
 in
  stdenv.lib.fix (drv:
-    stdenv.mkDerivation {
+    stdenv.mkDerivation ({
       name = "${fullName}";
       src = cleanSrc;
       nativeBuildInputs = [ghc];
@@ -45,8 +45,11 @@ in
         inherit configFiles cleanSrc;
       };
 
-      phases = ["unpackPhase" "buildPhase" "installPhase"];
+      phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
+        if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
+          cat ${defaultSetupSrc} > Setup.hs
+        fi
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f
@@ -62,4 +65,6 @@ in
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
       '';
-    })
+    }
+    // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
+  ))

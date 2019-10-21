@@ -1,0 +1,19 @@
+diff --git a/compiler/main/DynFlags.hs b/compiler/main/DynFlags.hs
+index 539132653e..95a7122a57 100644
+--- a/compiler/main/DynFlags.hs
++++ b/compiler/main/DynFlags.hs
+@@ -4084,14 +4084,6 @@ supportedExtensions :: [String]
+ supportedExtensions = concatMap toFlagSpecNamePair xFlags
+   where
+     toFlagSpecNamePair flg
+-#if !defined(GHCI)
+-      -- IMPORTANT! Make sure that `ghc --supported-extensions` omits
+-      -- "TemplateHaskell"/"QuasiQuotes" when it's known not to work out of the
+-      -- box. See also GHC #11102 and #16331 for more details about
+-      -- the rationale
+-      | flagSpecFlag flg == LangExt.TemplateHaskell  = [noName]
+-      | flagSpecFlag flg == LangExt.QuasiQuotes      = [noName]
+-#endif
+       | otherwise = [name, noName]
+       where
+         noName = "No" ++ name

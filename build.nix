@@ -3,21 +3,32 @@
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
 
-{ pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? ./nixpkgs
+{ nixpkgs ? ./nixpkgs
 # Provide args to the nixpkgs instantiation.
 , system ? builtins.currentSystem
 , crossSystem ? null
 , config ? {}
-, nixpkgsArgs ? { inherit system crossSystem config; }
+, nixpkgsArgs ? { inherit system crossSystem; }
 }:
 
 let
-  haskell = import ./default.nix { inherit pkgs; };
+  haskellNixArgs = import ./default.nix;
+  pkgs = import nixpkgs ({
+    config   = haskellNixArgs.config // config;
+    overlays = haskellNixArgs.overlays ++
+      [(self: super: {
+        darcs = (self.haskell-nix.hackage-package {
+          name = "darcs";
+          version = "2.14.2";
+          # Apply the latest darcs.net Setup.hs patches
+          modules = [{packages.darcs.patches = [ ./patches/darcs-setup.patch ];}];
+        }).components.exes.darcs;
+      })]; } // nixpkgsArgs);
+  haskell = pkgs.haskell-nix;
 
 in {
   inherit (haskell) nix-tools source-pins;
-  tests = import ./test/default.nix { inherit haskell; };
+  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {

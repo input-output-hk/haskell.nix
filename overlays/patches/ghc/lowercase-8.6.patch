@@ -1,0 +1,37 @@
+diff --git a/driver/utils/dynwrapper.c b/driver/utils/dynwrapper.c
+index a9250f58ba..24c6327cce 100644
+--- a/driver/utils/dynwrapper.c
++++ b/driver/utils/dynwrapper.c
+@@ -9,8 +9,8 @@ int rtsOpts;
+
+ #include <stdarg.h>
+ #include <stdio.h>
+-#include <Windows.h>
+-#include <Shlwapi.h>
++#include <windows.h>
++#include <shlwapi.h>
+
+ #include "Rts.h"
+
+diff --git a/rules/build-prog.mk b/rules/build-prog.mk
+index 82c55a70e1..21f99e2bbf 100644
+--- a/rules/build-prog.mk
++++ b/rules/build-prog.mk
+@@ -230,7 +230,7 @@ endif
+
+ $1/$2/build/tmp/$$($1_$2_PROG)-inplace-wrapper.c: driver/utils/dynwrapper.c | $$$$(dir $$$$@)/.
+ 	$$(call removeFiles,$$@)
+-	echo '#include <Windows.h>' >> $$@
++	echo '#include <windows.h>' >> $$@
+ 	echo '#include "Rts.h"' >> $$@
+ 	echo 'LPTSTR path_dirs[] = {' >> $$@
+ 	$$(foreach d,$$($1_$2_DEP_LIB_REL_DIRS),$$(call make-command,echo '    TEXT("/../../$$d")$$(comma)' >> $$@))
+@@ -243,7 +243,7 @@ $1/$2/build/tmp/$$($1_$2_PROG)-inplace-wrapper.c: driver/utils/dynwrapper.c | $$
+
+ $1/$2/build/tmp/$$($1_$2_PROG)-wrapper.c: driver/utils/dynwrapper.c | $$$$(dir $$$$@)/.
+ 	$$(call removeFiles,$$@)
+-	echo '#include <Windows.h>' >> $$@
++	echo '#include <windows.h>' >> $$@
+ 	echo '#include "Rts.h"' >> $$@
+ 	echo 'LPTSTR path_dirs[] = {' >> $$@
+ 	$$(foreach p,$$($1_$2_TRANSITIVE_DEP_COMPONENT_IDS),$$(call make-command,echo '    TEXT("/../lib/$$p")$$(comma)' >> $$@))

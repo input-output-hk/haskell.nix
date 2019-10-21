@@ -28,7 +28,7 @@ let
       # so we are dealing with a sublib. As we build sublibs separately, the above
       # query should be safe.
       echo "--dependency=''${name#z-${p}-z-}=$id" >> $out/configure-flags
-    fi     
+    fi
     if ver=$(target-pkg ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
@@ -105,6 +105,9 @@ in { identifier, component, fullName, flags ? {} }:
   #
   # TODO: Fix Cabal.
   # TODO: this is only needed if we do dynamic libraries.
+  #
+  # NOTE [ln -s -f]: we force link, as we may have dependencies that contain shared deps
+  #                  (e.g. libiconv), and thus we don't want to fail, but just link it again.
   + lib.optionalString stdenv.isDarwin ''
     # Work around a limit in the macOS Sierra linker on the number of paths
     # referenced by any one dynamic library:
@@ -114,7 +117,7 @@ in { identifier, component, fullName, flags ? {} }:
     local dynamicLinksDir="$out/lib/links"
     mkdir -p $dynamicLinksDir
     for d in $(grep dynamic-library-dirs "$out/package.conf.d/"*|awk '{print $2}'|sort -u); do
-      ln -s "$d/"*.dylib $dynamicLinksDir
+      ln -f -s "$d/"*.dylib $dynamicLinksDir
     done
     # Edit the local package DB to reference the links directory.
     for f in "$out/package.conf.d/"*.conf; do

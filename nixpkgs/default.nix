@@ -1,4 +1,5 @@
 # see ../docs/dev/nixpkgs-pin.md
+{ nixpkgs-pin ? "github", ... }@args:
 let
   fetch = jsonFile:
     with builtins;
@@ -8,4 +9,4 @@ let
       inherit (spec) sha256;
       url = "${spec.url}/archive/${spec.rev}.tar.gz";
     };
-in import (fetch ./github.json)
+in import (fetch (./. + "/${nixpkgs-pin}.json")) (builtins.removeAttrs args [ "nixpkgs-pin" ])

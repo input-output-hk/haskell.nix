@@ -1,9 +1,14 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }:
-let defaultGhc = ghc;
-    defaultCabalInstall = cabal-install;
-in { index-state ? null, index-sha256 ? null, src, ghc ? defaultGhc,
-  cabal-install ? defaultCabalInstall, cabalProject ? null }:
-
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }@defaults:
+{ src
+, index-state   ? null
+, index-sha256  ? null
+, cabalProject  ? null
+, ghc           ? defaults.ghc
+, nix-tools     ? defaults.nix-tools
+, hpack         ? defaults.hpack
+, cabal-install ? defaults.cabal-install
+, ...
+}@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
 assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
@@ -139,6 +144,8 @@ let
 
   plan-nix = runCommand "plan-to-nix-pkgs" {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
+    # Needed or stack-to-nix will die on unicode inputs
+    LANG = "en_US.UTF-8";
   } (''
     tmp=$(mktemp -d)
     cd $tmp
@@ -153,14 +160,13 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
+      inherit cabal-install nix-tools;
       index-state = index-state-found;
-      sha256 = index-sha256-found;
-      inherit cabal-install; }} cabal new-configure \
+      sha256 = index-sha256-found; }} cabal new-configure \
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests
 
-    export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
     mkdir -p $out
 
     # ensure we have all our .cabal files (also those generated from package.yaml) files.

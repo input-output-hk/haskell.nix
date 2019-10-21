@@ -15,8 +15,24 @@
 with lib;
 with types;
 
-
 let
+  # dealing with str is a bit annoying espectially with `nullOr str` as that apparently defaults to ""
+  # instead of null :shrug:.  This then messes with our option inheritance logic.
+  # Hence we have a uniqueStr type that ensures multiple identially defined options are collapsed
+  # without raising an error. And a way to fetch default options that will retain `null` if the
+  # option is not defined or "".
+  getDefaultOrNull = def: key: if def ? ${key} && def.${key} != "" then def.${key} else null;
+  mergeUniqueOption = locs: defs: let
+    mergeOneOption = loc: defs':
+      # we ignore "" as optionalString, will default to "".
+      let defs = filter (x: x.value != "") defs'; in
+      if defs == [] then null
+      else if length defs != 1 then
+        throw "The unique option `${showOption loc}' is defined multiple times, in ${showFiles (getFiles defs)}; with values `${concatStringsSep "', `" (map (x: x.value) defs)}'."
+      else (head defs).value;
+  in mergeOneOption locs (lists.unique defs);
+  uniqueStr = str // { merge = mergeUniqueOption; };
+
   # This is just like listOf, except that it filters out all null elements.
   listOfFilteringNulls = elemType: listOf elemType // {
     # Mostly copied from nixpkgs/lib/types.nix
@@ -35,6 +51,10 @@ let
   };
 
   componentOptions = def: {
+         buildable = mkOption {
+            type = bool;
+            default = true;
+         };
          configureFlags = mkOption {
             type = listOfFilteringNulls str;
             default = (def.configureFlags or []);
@@ -105,55 +125,55 @@ let
       default = (def.preUnpack or null);
     };
     postUnpack = mkOption {
-      type = nullOr str;
-      default = (def.postUnpack or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "postUnpack";
     };
     preConfigure = mkOption {
-      type = nullOr str;
-      default = (def.preConfigure or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "preConfigure";
     };
     postConfigure = mkOption {
-      type = nullOr str;
-      default = (def.postConfigure or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "postConfigure";
     };
     preBuild = mkOption {
-      type = nullOr str;
-      default = (def.preBuild or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "preBuild";
     };
     postBuild = mkOption {
-      type = nullOr str;
-      default = (def.postBuild or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "postBuild";
     };
     preCheck = mkOption {
-      type = nullOr str;
-      default = (def.preCheck or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "preCheck";
     };
     # Wrapper for test executable run in checkPhase
     testWrapper = mkOption {
-      type = nullOr str;
-      default = def.testWrapper or null;
+      type = listOfFilteringNulls str;
+      default = def.testWrapper or [];
       description = "A command to run for executing tests in checkPhase, which takes the original test command as its arguments.";
       example = "echo";
     };
     postCheck = mkOption {
-      type = nullOr str;
-      default = (def.postCheck or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "postCheck";
     };
     preInstall = mkOption {
-      type = nullOr str;
-      default = (def.preInstall or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "preInstall";
     };
     postInstall = mkOption {
-      type = nullOr str;
-      default = (def.postInstall or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "postInstall";
     };
     preHaddock = mkOption {
-      type = nullOr str;
-      default = (def.preHaddock or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "preHaddock";
     };
     postHaddock = mkOption {
-      type = nullOr str;
-      default = (def.postHaddock or null);
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "postHaddock";
     };
   };
 
