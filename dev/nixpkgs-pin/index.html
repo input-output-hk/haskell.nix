@@ -209,9 +209,12 @@ running the tests.</p>
 Nixpkgs.  Users should probably pin a suitable version of nixpkgs
 although, although things might not work for them if their Nixpkgs version is
 too different.</p>
-<p>We aim to keep this pin somewhere on the channel of the <strong>NixOS latest
-stable release</strong>. That is currently 19.03. So:</p>
-<pre><code>nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixos-19.03
+<p>We aim to keep this pin somewhere on a channel of the <strong>Nixpkgs latest
+stable release</strong>. That is currently 19.09.</p>
+<p>We also execute tests on MacOS (darwin). The darwin channel is usually
+behind the NixOS channel. So we choose the <code>nixpkgs-19.09-darwin</code>
+channel:</p>
+<pre><code>nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixpkgs-19.09-darwin
 </code></pre>
 
 <p>Keep the URL in <code>github.json</code> pointing at

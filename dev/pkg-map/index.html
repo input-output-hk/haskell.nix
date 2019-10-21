@@ -213,10 +213,10 @@
                 <h1 id="mapping-non-haskell-dependencies-to-nixpkgs">Mapping non-Haskell dependencies to Nixpkgs<a class="headerlink" href="#mapping-non-haskell-dependencies-to-nixpkgs" title="Permanent link">&para;</a></h1>
 <p>Cabal files may contain dependencies to external non-Haskell
 dependencies via:
-<em> <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-build-tool-depends"><code>build-tool-depends</code></a> 
-</em> <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-pkgconfig-depends"><code>pkgconfig-depends</code></a>.
-<em> <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-frameworks"><code>frameworks</code></a>
-</em> <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-extra-libraries"><code>extra-libraries</code></a></p>
+* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-build-tool-depends"><code>build-tool-depends</code></a> 
+* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-pkgconfig-depends"><code>pkgconfig-depends</code></a>.
+* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-frameworks"><code>frameworks</code></a>
+* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-extra-libraries"><code>extra-libraries</code></a></p>
 <p>If there is a <code>pkgs</code> attribute in Nixpkgs that matches the name given
 in the Cabal file, then it will be added as a dependency (see the
 output of <code>cabal-to-nix</code>). Otherwise, there needs to be a mapping from
