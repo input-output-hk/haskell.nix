@@ -1,3 +1,4 @@
+# see ../docs/dev/nixpkgs-pin.md
 { nixpkgs-pin ? "github", ... }@args:
 let
   fetch = jsonFile:
