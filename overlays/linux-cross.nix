@@ -54,7 +54,7 @@ let
     ${qemu}/bin/qemu-${qemuSuffix} $@*
     '';
   testFlags = lib.optionals isLinuxCross [ "--test-wrapper ${qemuTestWrapper}/bin/test-wrapper" ];
-  preCheck = lib.optional isLinuxCross ''
+  preCheck = lib.optionalString isLinuxCross ''
     echo "================================================================="
     echo "RUNNING TESTS for $name via qemu-${qemuSuffix}"
     echo "================================================================="
@@ -63,7 +63,7 @@ let
       find "$p" -iname '*.so*' -exec cp {} . \;
     done
   '';
-  postCheck = lib.optional isLinuxCross ''
+  postCheck = lib.optionalString isLinuxCross ''
     echo "================================================================="
     echo "END RUNNING TESTS"
     echo "================================================================="
