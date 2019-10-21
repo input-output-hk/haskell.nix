@@ -54,7 +54,7 @@ let
   '';
   testWrapper = lib.optional hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
 
-  preCheck = lib.optional hostPlatform.isWindows ''
+  preCheck = lib.optionalString hostPlatform.isWindows ''
     echo "================================================================================"
     echo "RUNNING TESTS for $name via wine64"
     echo "================================================================================"
@@ -72,7 +72,7 @@ let
       fi
     done
   '';
-  postCheck = lib.optional hostPlatform.isWindows ''
+  postCheck = lib.optionalString hostPlatform.isWindows ''
     echo "================================================================================"
     echo "END RUNNING TESTS"
     echo "================================================================================"
