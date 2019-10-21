@@ -413,6 +413,12 @@ This option has no description.</p>
 <p><em>Type:</em> string</p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.buildable</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.cabal-generator</code><br />
 This option has no description.</p>
 <p><em>Type:</em> null or string</p>
@@ -813,8 +819,14 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.all.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
@@ -1219,8 +1231,14 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
@@ -1625,8 +1643,14 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
@@ -2031,8 +2055,14 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
@@ -2431,8 +2461,14 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.library.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
@@ -2837,8 +2873,14 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
@@ -3243,8 +3285,14 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
@@ -3468,9 +3516,26 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>bootPkgs</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Declared by:</em></p>
+<p>modules/component-driver.nix</p>
+<p><code>buildable</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>cabal.compiler</code><br />
@@ -3703,8 +3768,14 @@ This option has no description.</p>
 <p><code>testWrapper</code><br />
 A command to run for executing tests in checkPhase, which takes the
 original test command as its arguments.</p>
-<p><em>Type:</em> null or string</p>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>

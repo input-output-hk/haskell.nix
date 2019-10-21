@@ -71,7 +71,7 @@
     <a class="current" href="./">Creating Nix builds for your projects</a>
     <ul class="subnav">
             
-    <li class="toctree-l3"><a href="#how-to-create-nix-builds-for-your-own-private-haskell-packages">How to create Nix builds for your own private Haskell packages</a></li>
+    <li class="toctree-l3"><a href="#how-to-replace-ifds-with-intermediate-nix-files">How to replace IFDs with intermediate nix files</a></li>
     
 
     </ul>
@@ -200,21 +200,31 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="how-to-create-nix-builds-for-your-own-private-haskell-packages">How to create Nix builds for your own private Haskell packages<a class="headerlink" href="#how-to-create-nix-builds-for-your-own-private-haskell-packages" title="Permanent link">&para;</a></h1>
+                <h1 id="how-to-replace-ifds-with-intermediate-nix-files">How to replace IFDs with intermediate nix files<a class="headerlink" href="#how-to-replace-ifds-with-intermediate-nix-files" title="Permanent link">&para;</a></h1>
+<p>We believe that imports from derivations (IFDs) provide tremendous
+value in nix and the aversion towards them stems mostly from 
+poor tooling and ci support for them.  We do not believe
+that poor tooling or ci support should cripple nix capability
+of abstraction.  Hence haskell.nix makes excessive use of
+IFDs.</p>
+<p>We do note however that there are users who prefer to
+have IFD-free expressions.  For this group of users we
+detail how to expand the IFD dependent high level functions
+into their IFD free building blocks.</p>
 <p>The general structure will be the same, independent of the use of
 Stack or Cabal.</p>
 <p>Let us assume for now that we have already generated a <code>pkgs.nix</code>
-expression. The following file then produces a package set:</p>
+expression (see the links bellow). The following file then produces a package set:</p>
 <pre><code class="nix"># default.nix
 let
   # Import the Haskell.nix library,
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+  pkgs = import &lt;nixpkgs&gt; (import builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
 
   # Import the file you will create in the stack-to-nix or cabal-to-nix step.
   my-pkgs = import ./pkgs.nix;
 
   # Stack projects use this:
-  pkgSet = haskell.mkStackPkgSet {
+  pkgSet = pkgs.haskell-nix.mkStackPkgSet {
     stack-pkgs = my-pkgs;
     pkg-def-extras = [
       # these extras will provide additional packages
@@ -234,7 +244,7 @@ let
   };
 
   # Cabal projects use this:
-  pkgSet = haskell.mkCabalProjectPkgSet {
+  pkgSet = pkgs.haskell-nix.mkCabalProjectPkgSet {
     plan-pkgs = my-pkgs;
     pkg-def-extras = [];
     modules = [
