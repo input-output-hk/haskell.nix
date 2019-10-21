@@ -22,7 +22,15 @@ let
   # without raising an error. And a way to fetch default options that will retain `null` if the
   # option is not defined or "".
   getDefaultOrNull = def: key: if def ? ${key} && def.${key} != "" then def.${key} else null;
-  mergeUniqueOption = locs: defs: mergeOneOption locs (lists.unique defs);
+  mergeUniqueOption = locs: defs: let
+    mergeOneOption = loc: defs':
+      # we ignore "" as optionalString, will default to "".
+      let defs = filter (x: x.value != "") defs'; in
+      if defs == [] then null
+      else if length defs != 1 then
+        throw "The unique option `${showOption loc}' is defined multiple times, in ${showFiles (getFiles defs)}; with values `${concatStringsSep "', `" (map (x: x.value) defs)}'."
+      else (head defs).value;
+  in mergeOneOption locs (lists.unique defs);
   uniqueStr = str // { merge = mergeUniqueOption; };
 
   # This is just like listOf, except that it filters out all null elements.

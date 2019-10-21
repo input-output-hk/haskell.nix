@@ -7,7 +7,5 @@
     (import ./ghc.nix)
     (import ./ghc-packages.nix)
     (import ./windows.nix)
-    # this is currently broken.
-    # Let's re-enable once it works.
-    # (import ./armv6l-linux.nix)
+    (import ./armv6l-linux.nix)
 ]
