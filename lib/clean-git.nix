@@ -74,7 +74,7 @@ then
         type == "directory" ||
         lib.any (i: (lib.hasSuffix i path)) [
           ".gitmodules" ".git/config" ".git/index" ".git/HEAD" ".git/objects" ".git/refs" ] ||
-        (lib.hasInfix ".git/modules/" path &&
+        (lib.strings.hasInfix ".git/modules/" path &&
           lib.any (i: (lib.hasSuffix i path)) [
             "config" "index" "HEAD" "objects" "refs" ]);
     };
