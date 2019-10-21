@@ -5,9 +5,9 @@
  *
  * see also `call-cabal-project-to-nix`!
  */
-{ runCommand, nix-tools, pkgs }:
-{ src, stackYaml ? null, ignorePackageYaml ? false }:
-let 
+{ runCommand, nix-tools, pkgs, mkCacheFile }:
+{ src, stackYaml ? null, ignorePackageYaml ? false, cache ? null, ... }:
+let
   stackToNixArgs = builtins.concatStringsSep " " [
     "--full"
     "--stack-yaml=${src}/${if stackYaml == null then "stack.yaml" else stackYaml}"
@@ -15,11 +15,16 @@ let
     "-o ."
   ];
   stack = runCommand "stack-to-nix-pkgs" {
-    nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git ];
-  } ''
-    export LANG=C.utf8 # Needed or stack-to-nix will die on unicode inputs
+    nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert ];
+    # Needed or stack-to-nix will die on unicode inputs
+    LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
+    LANG = "en_US.UTF-8";
+    LC_ALL = "en_US.UTF-8";
+  } (''
     mkdir -p $out
-
+  '' + pkgs.lib.optionalString (cache != null) ''
+    cp ${mkCacheFile cache} $out/.stack-to-nix.cache
+  '' + ''
     (cd $out && stack-to-nix ${stackToNixArgs})
 
     # We need to strip out any references to $src, as those won't
@@ -30,5 +35,5 @@ let
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
-  '';
+  '');
 in { projectNix = stack; inherit src; sourceRepos = []; }

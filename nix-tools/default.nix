@@ -1,6 +1,7 @@
 { pkgs, lib, symlinkJoin, makeWrapper
 , hpack, git, nix, nix-prefetch-git
-, fetchExternal, cleanSourceHaskell, mkCabalProjectPkgSet }:
+, fetchExternal, cleanSourceHaskell, mkCabalProjectPkgSet
+, ... }@args:
 
 let
   src = cleanSourceHaskell (fetchExternal {
@@ -18,7 +19,9 @@ let
   };
 
   pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
+    plan-pkgs = if args ? ghc
+                then import (./pkgs + "-${args.ghc.version}.nix")
+                else import ./pkgs.nix;
     pkg-def-extras = [];
     modules = [
       {
@@ -36,7 +39,7 @@ let
           Cabal.patches = [ cabalPatch ];
         };
       })
-    ];
+    ] ++ pkgs.lib.optional (args ? ghc) { ghc.package = args.ghc; };
   };
 
   hsPkgs = pkgSet.config.hsPkgs;

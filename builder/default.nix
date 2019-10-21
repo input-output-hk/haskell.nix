@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, buildGHC, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs }:
 
 let
   # Builds a single component of a package.
@@ -7,7 +7,7 @@ let
   };
 
   setup-builder = haskellLib.weakCallPackage pkgs ./setup-builder.nix {
-    ghc = buildGHC;
+    ghc = (ghc.passthru.buildGHC or ghc);
     hsPkgs = hsPkgs.buildPackages;
     inherit haskellLib nonReinstallablePkgs makeSetupConfigFiles;
   };
@@ -28,7 +28,7 @@ let
   # When building setup depends we need to use the build systems GHC and Packages
   makeSetupConfigFiles = haskellLib.weakCallPackage buildPackages ./make-config-files.nix {
     inherit haskellLib nonReinstallablePkgs;
-    ghc = buildGHC;
+    ghc = (ghc.passthru.buildGHC or ghc);
   };
 
 
@@ -57,7 +57,7 @@ in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
   build-package = haskellLib.weakCallPackage pkgs ./hspkg-builder.nix {
-    inherit haskellLib ghc buildGHC comp-builder setup-builder;
+    inherit haskellLib ghc comp-builder setup-builder;
   };
 
   inherit shellFor;

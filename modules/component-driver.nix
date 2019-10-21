@@ -3,16 +3,24 @@ let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
-    buildGHC = buildModules.config.ghc.package;
     inherit (config) nonReinstallablePkgs hsPkgs;
   };
 
 in
 
 {
+  # this has a slightly modified option type. we will *overwrite* any previous
+  # setting of nonRelocatablePkgs, instead of merging them.  Otherwise you
+  # have no chance of removing packages retroacively.  We might improvie this
+  # by implementing a logic that would allow +xxx to be added, -xxx to be removed
+  # and if it's not a list of -/+ prefixed strings, be assumed to be overwriting.
+  # This seems ugly.
   options.nonReinstallablePkgs = lib.mkOption {
-    type = lib.types.listOf lib.types.str;
+    type = (lib.types.listOf lib.types.str) // {
+      merge = loc: defs: lib.last (lib.getValues defs);
+    };
   };
+
   options.reinstallableLibGhc = lib.mkOption {
     type = lib.types.bool;
     default = false;
@@ -20,14 +28,14 @@ in
   };
 
   # Dependencies (with reinstallable-lib:ghc)
-  # 
+  #
   #              .--------.           .------------------.
   #              | pretty | < ------- | template-haskell |
   #              '--------'           '------------------'
   #                   v                          |
   #              .---------.     .-------.       |
-  #              | deepseq | - > | array |       |     
-  #              '---------'     '-------'       v 
+  #              | deepseq | - > | array |       |
+  #              '---------'     '-------'       v
   #                    v            v         .-------------.
   # .----------.  .----------.  .------.   .- | ghc-boot-th |
   # | ghc-heap |  | ghc-prim |  | base |< -'  '-------------'
@@ -41,7 +49,27 @@ in
 
   config.nonReinstallablePkgs =
     [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-      "deepseq" "array" "ghc-boot" "ghc-boot-th" "pretty" "template-haskell" ]
+      "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+      # ghcjs custom packages
+      "ghcjs-prim" "ghcjs-th"
+"ghc" "Cabal" "Win32" "array" "base" "binary" "bytestring" "containers" "deepseq"
+"directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+# "ghci" "haskeline"
+"hpc"
+"integer-gmp" "mtl" "parsec" "process" "template-haskell" "text" "time" "transformers"
+"unix" "xhtml"
+# "stm" "terminfo"
+    ]
+    ++ lib.optionals (!config.reinstallableLibGhc) [ "ghc" "ghc-boot" ];
+
+  options.bootPkgs = lib.mkOption {
+    type = lib.types.listOf lib.types.str;
+  };
+
+  config.bootPkgs =  [
+     "rts" "ghc-boot-th"
+     "ghc-heap" # since ghc 8.6.
+  ]
     ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
   options.hsPkgs = lib.mkOption {
@@ -54,5 +82,5 @@ in
     } //
     lib.mapAttrs
       (name: pkg: if pkg == null then null else builder.build-package pkg)
-      (config.packages // lib.genAttrs config.nonReinstallablePkgs (_: null));
+      (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
 }

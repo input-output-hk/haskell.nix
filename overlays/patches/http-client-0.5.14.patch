@@ -1,0 +1,18 @@
+diff --git a/Network/HTTP/Proxy.hs b/Network/HTTP/Proxy.hs
+index 624d117..c7604a1 100644
+--- a/Network/HTTP/Proxy.hs
++++ b/Network/HTTP/Proxy.hs
+@@ -175,13 +175,8 @@ registryProxyString = catch
+     enable <- toBool . maybe 0 id A.<$> regQueryValueDWORD hkey "ProxyEnable"
+     if enable
+         then do
+-#if MIN_VERSION_Win32(2, 6, 0)
+-            server <- regQueryValue hkey "ProxyServer"
+-            exceptions <- try $ regQueryValue hkey "ProxyOverride" :: IO (Either IOException String)
+-#else
+             server <- regQueryValue hkey (Just "ProxyServer")
+             exceptions <- try $ regQueryValue hkey (Just "ProxyOverride") :: IO (Either IOException String)
+-#endif
+             return $ Just (server, either (const "") id exceptions)
+         else return Nothing)
+   hideError where

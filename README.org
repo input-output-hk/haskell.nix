@@ -8,18 +8,53 @@
 =haskell.nix= is an experimental new builder for Haskell packages.
 
 It works by automatically translating your Cabal or Stack project and
-its dependencies into Nix code. Most of your dependencies are already
-translated, so you generally won't have too much generated code.
+its dependencies into Nix code.  It provides IFD (imports from derviation)
+functions that can minimize the amount of nix code you need to add.
 
 For the documentation, see https://input-output-hk.github.io/haskell.nix/.
 
 ** Quickstart
 
-This will download and build =nix-tools=.
+For =cabal.project= project add a =default.nix=:
 
 #+begin_src sh
-nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz nix-tools -o nt
-./nt/bin/stack-to-nix
+{ pkgs ? import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
+, haskellCompiler ? "ghc865"
+}:
+  pkgs.haskell-nix.cabalProject {
+    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+    ghc = pkgs.buildPackages.pkgs.haskell.compiler.${haskellCompiler};
+  }
+#+end_src
+
+For a =stack.yaml= project add a =default.nix=:
+
+#+begin_src sh
+{ pkgs ? import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
+}:
+  pkgs.haskell-nix.stackProject {
+    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+  }
+#+end_src
+
+To build the library component of a package in the project run:
+
+#+begin_src sh
+nix build -f . your-package-name.components.library
+#+end_src
+
+To build an executable:
+
+#+begin_src sh
+nix build -f . your-package-name.components.exes.your-exe-name
+#+end_src
+
+To open a shell for use with `cabal` run:
+
+#+begin_src sh
+nix-shell -A shellFor
+cabal new-build your-package-name
+cabal new-repl your-package-name:library:your-package-name
 #+end_src
 
 ** Related repos
