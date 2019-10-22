@@ -208,11 +208,18 @@ stdenv.mkDerivation ({
     docdir="${docdir "$doc"}"
     mkdir -p "$docdir"
 
+    # We accept that this might not produce any
+    # output (hence the || true).  Depending of
+    # configuration flags, there might just be no
+    # modules to run haddock on.  E.g. a package
+    # might turn into an empty one (see the fail
+    # pkg).
     $SETUP_HS haddock \
       "--html" \
       ${lib.optionalString doHoogle "--hoogle"} \
       ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-      ${lib.concatStringsSep " " (component.setupHaddockFlags ++ setupGhcOptions)}
+      ${lib.concatStringsSep " " (component.setupHaddockFlags ++ setupGhcOptions)} \
+      || true
 
     html="dist/doc/html/${componentId.cname}"
 
