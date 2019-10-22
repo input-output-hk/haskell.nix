@@ -48,11 +48,15 @@ let
 
   index-state-found = if index-state != null
     then index-state
-    else if rawCabalProject != null
-      then parseIndexState rawCabalProject
-      else
-        builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
-          (pkgs.lib.last (builtins.attrNames index-state-hashes));
+    else
+      let cabalProjectIndexState = if rawCabalProject != null
+        then parseIndexState rawCabalProject
+        else null;
+      in
+        if cabalProjectIndexState != null
+          then cabalProjectIndexState
+          else builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
+            (pkgs.lib.last (builtins.attrNames index-state-hashes));
 
   # Lookup hash for the index state we found
   index-sha256-found = if index-sha256 != null
