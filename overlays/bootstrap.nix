@@ -269,17 +269,20 @@ self: super: rec {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
                     name = "alex"; version = "3.2.4";
+                    index-state = "2019-10-20T00:00:00Z";
                 }).components.exes.alex;
                 happy = (hackage-package {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
                     name = "happy"; version = "1.19.11";
+                    index-state = "2019-10-20T00:00:00Z";
                 }).components.exes.happy;
 
                 hscolour = (hackage-package {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
                     name = "hscolour"; version = "1.24.4";
+                    index-state = "2019-10-20T00:00:00Z";
                 }).components.exes.HsColour;
             };
         };
