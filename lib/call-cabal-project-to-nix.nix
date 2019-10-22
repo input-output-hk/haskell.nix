@@ -1,5 +1,6 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }@defaults:
-{ src
+{ name          ? null # optional name for better error messages
+, src
 , index-state   ? null
 , index-sha256  ? null
 , cabalProject  ? null
@@ -49,7 +50,9 @@ let
     then index-state
     else if rawCabalProject != null
       then parseIndexState rawCabalProject
-      else null;
+      else
+        builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
+          (pkgs.lib.last (builtins.attrNames index-state-hashes));
 
   # Lookup hash for the index state we found
   index-sha256-found = if index-sha256 != null
@@ -161,7 +164,9 @@ let
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
       inherit cabal-install nix-tools;
-      index-state = index-state-found;
+      index-state =
+        builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
+          index-state-found;
       sha256 = index-sha256-found; }} cabal new-configure \
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \

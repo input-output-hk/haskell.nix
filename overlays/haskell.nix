@@ -260,7 +260,6 @@ self: super: {
         hackage-project =
             { name
             , version
-            , index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
             , ... }@args:
             let tarball = self.pkgs.fetchurl {
                 url = "mirror://hackage/${name}-${version}.tar.gz";
@@ -271,15 +270,12 @@ self: super: {
                 tar xzf ${tarball}
                 mv "${name}-${version}" $out
                 '';
-            in cabalProject (builtins.removeAttrs args [ "name" "version" ] // { inherit index-state src; });
+            in cabalProject (builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         cabalProject' =
-            { index-state ? builtins.trace "Using latest index state!"  self.lib.last (builtins.attrNames (import indexStateHashesPath))
+            { name ? null
             , ... }@args:
-            let plan = (importAndFilterProject
-                        (callCabalProjectToNix
-                         (builtins.trace "Using index-state: ${index-state}"
-                          (args // { inherit index-state; }))));
+            let plan = importAndFilterProject (callCabalProjectToNix args);
             in let pkg-set = mkCabalProjectPkgSet
                 { plan-pkgs = plan.pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
