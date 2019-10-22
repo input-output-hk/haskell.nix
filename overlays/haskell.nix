@@ -245,8 +245,9 @@ self: super: {
             #       the end user to work around nix peculiarities.
             { packages = builtins.foldl' (x: y: x // y) {}
                 (builtins.map ({ name, url, rev, sha256, subdir ? null, ... }:
-                    { ${name} = { src = fetchgit { inherit url rev sha256; }; }
-                            // lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                    { ${name} = { src = self.buildPackages.pkgs.fetchgit { inherit url rev sha256; }; }
+                            // self.buildPackages.lib.optionalAttrs (subdir != null)
+                                { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                     }) cache);
             };
 
