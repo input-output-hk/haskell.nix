@@ -266,25 +266,27 @@ self: super: rec {
                 # hackage with haskell.nix.  For alex and happy we
                 # need to use the boot strap compiler as we need them
                 # to build ghcs from source.
-                alex = (hackage-package {
+                alex-project = hackage-project {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
                     name = "alex"; version = "3.2.4";
                     index-state = "2019-10-20T00:00:00Z";
-                }).components.exes.alex;
-                happy = (hackage-package {
+                };
+                alex = bootstrap.haskell.packages.alex-project.alex.components.exes.alex;
+                happy-project = hackage-project {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
                     name = "happy"; version = "1.19.11";
                     index-state = "2019-10-20T00:00:00Z";
-                }).components.exes.happy;
-
-                hscolour = (hackage-package {
+                };
+                happy = bootstrap.haskell.packages.happy-project.happy.components.exes.happy;
+                hscolour-project = hackage-project {
                     inherit ghc;
                     inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
                     name = "hscolour"; version = "1.24.4";
                     index-state = "2019-10-20T00:00:00Z";
-                }).components.exes.HsColour;
+                };
+                hscolour = bootstrap.haskell.packages.hscolour-project.hscolour.components.exes.HsColour;
             };
         };
     };
