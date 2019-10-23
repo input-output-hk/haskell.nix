@@ -1,6 +1,27 @@
 let iohk-archive = name: hash: "https://github.com/input-output-hk/${name}/archive/${hash}.tar.gz";
 in rec {
     src = builtins.fetchTarball (iohk-archive "plutus" "0d76e98ab267d621ad15002b5f824cad71797754");
+    pkgs = [
+        "language-plutus-core"
+        "plutus-core-interpreter"
+        "plutus-exe"
+        "plutus-ir"
+        "plutus-tx"
+        "plutus-use-cases"
+        "playground-common"
+        "marlowe"
+        "marlowe-playground-server"
+        "plutus-wallet-api"
+        "plutus-playground-server"
+        "plutus-playground-lib"
+        "plutus-tutorial"
+        "plutus-book"
+        "plutus-contract"
+        "plutus-emulator"
+        "deployment-server"
+        "iots-export"
+        "marlowe-symbolic"
+    ];
     cache = [
         { name = "row-types";
             url = "https://github.com/target/row-types";
