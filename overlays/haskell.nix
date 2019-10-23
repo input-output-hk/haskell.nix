@@ -226,6 +226,31 @@ self: super: {
                 text = self.buildPackages.lib.concatMapStringsSep "\n" f repos;
             };
 
+        mkCacheModule = cache:
+            # for each item in the `cache`, set
+            #   packages.$name.src = fetchgit ...
+            # and
+            #   packages.$name.postUnpack = ...
+            # if subdir is given.
+            #
+            # We need to do this, as cabal-to-nix will generate
+            # src = /nix/store/... paths, and when we build the
+            # package we won't have access to the /nix/store
+            # path.  As such we regenerate the fetchgit command
+            # we used in the first place, and thus have a proper
+            # src value.
+            #
+            # TODO: this should be moved into `call-stack-to-nix`
+            #       it should be automatic and not the burden of
+            #       the end user to work around nix peculiarities.
+            { packages = builtins.foldl' (x: y: x // y) {}
+                (builtins.map ({ name, url, rev, sha256, subdir ? null, ... }:
+                    { ${name} = { src = self.buildPackages.pkgs.fetchgit { inherit url rev sha256; }; }
+                            // self.buildPackages.lib.optionalAttrs (subdir != null)
+                                { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                    }) cache);
+            };
+
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
@@ -299,7 +324,8 @@ self: super: {
                 { inherit stack-pkgs;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules = (args.modules or [])
-                          ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                          ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; }
+                          ++ self.lib.optional (args ? cache) (mkCacheModule args.cache);
                 };
             in pkg-set.config.hsPkgs;
     };
