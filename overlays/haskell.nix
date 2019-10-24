@@ -339,7 +339,7 @@ self: super: {
         #   project = cabalProject' {...};
         # In your tests module add something that is effectively
         #   testProjectPlan = withInputs project.plan-nix;
-        withInputs = derivation: {
+        withInputs = derivation: pkgs.recurseIntoAttrs {
           inherit derivation;
           inputs = builtins.listToAttrs (
             builtins.concatMap (i: if i == null then [] else [
@@ -350,7 +350,7 @@ self: super: {
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
         haskellNixRoots = self.recurseIntoAttrs {
-          inherit (self) nix-tools source-pins;
+          inherit (self.haskell-nix) nix-tools source-pins;
           bootstap-nix-tools = self.bootstrap.haskell.packages.nix-tools;
           alex-plan-nix = withInputs self.bootstrap.haskell.packages.alex-project.plan-nix;
           happy-plan-nix = withInputs self.bootstrap.haskell.packages.happy-project.plan-nix;
