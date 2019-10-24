@@ -315,7 +315,7 @@ in stdenv.mkDerivation (rec {
   meta = {
     homepage = http://haskell.org/ghc;
     description = "The Glasgow Haskell Compiler";
-    maintainers = with stdenv.lib.maintainers; [ angerman ];
+    maintainers = [];
     inherit (ghc.meta) license platforms;
   };
 
