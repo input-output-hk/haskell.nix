@@ -297,6 +297,9 @@ self: super: {
                 '';
             in cabalProject (builtins.removeAttrs args [ "version" ] // { inherit src; });
 
+        # This function is like `cabalProject` but it makes the plan-nix available
+        # separately from the hsPkgs.  The advantage is that the you can get the
+        # plan-nix without building the project.
         cabalProject' =
             { name ? null
             , ... }@args:
@@ -328,5 +331,31 @@ self: super: {
                           ++ self.lib.optional (args ? cache) (mkCacheModule args.cache);
                 };
             in pkg-set.config.hsPkgs;
+
+        # The functions that return a plan-nix often have a lot of dependencies
+        # that could be GCed and also well not make it into hydra cache.
+        # Use this `withInputs` function to make sure your tests include
+        # the dependencies needed explicitly.  For example, if you have:
+        #   project = cabalProject' {...};
+        # In your tests module add something that is effectively
+        #   testProjectPlan = withInputs project.plan-nix;
+        withInputs = derivation: {
+          inherit derivation;
+          inputs = builtins.listToAttrs (
+            builtins.concatMap (i: if i == null then [] else [
+              { name = builtins.replaceStrings ["."] ["_"] i.name; value = i; }
+            ]) derivation.nativeBuildInputs);
+        };
+  
+        # Add this to your tests to make all the dependencies of haskell.nix
+        # are tested and cached.
+        haskellNixRoots = {
+          inherit (self) nix-tools source-pins;
+          bootstap-nix-tools = self.bootstrap.haskell.packages.nix-tools;
+          alex-plan-nix = withInputs self.bootstrap.haskell.packages.alex-project.plan-nix;
+          happy-plan-nix = withInputs self.bootstrap.haskell.packages.happy-project.plan-nix;
+          hscolour-plan-nix = withInputs self.bootstrap.haskell.packages.hscolour-project.plan-nix;
+          ghc-extra-projects = builtins.mapAttrs (_: proj: withInputs proj.plan-nix) self.ghc-extra-projects;
+        };
     };
 }
