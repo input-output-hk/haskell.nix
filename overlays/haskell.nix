@@ -349,7 +349,7 @@ self: super: {
   
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
-        haskellNixRoots = {
+        haskellNixRoots = self.recurseIntoAttrs {
           inherit (self) nix-tools source-pins;
           bootstap-nix-tools = self.bootstrap.haskell.packages.nix-tools;
           alex-plan-nix = withInputs self.bootstrap.haskell.packages.alex-project.plan-nix;
