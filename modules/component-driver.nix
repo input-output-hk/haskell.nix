@@ -23,7 +23,7 @@ in
 
   options.reinstallableLibGhc = lib.mkOption {
     type = lib.types.bool;
-    default = false;
+    default = true;
     description = "Is lib:ghc reinstallable?";
   };
 
