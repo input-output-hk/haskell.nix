@@ -333,7 +333,7 @@ self: super: {
             in pkg-set.config.hsPkgs;
 
         # The functions that return a plan-nix often have a lot of dependencies
-        # that could be GCed and also well not make it into hydra cache.
+        # that could be GCed and also will not make it into hydra cache.
         # Use this `withInputs` function to make sure your tests include
         # the dependencies needed explicitly.  For example, if you have:
         #   project = cabalProject' {...};
