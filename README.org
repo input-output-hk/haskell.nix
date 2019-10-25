@@ -1,5 +1,7 @@
 #+STARTUP: showall hidestars
 
+** :warning: The Overlay branch #261 was merged. haskell.nix is now works as an overlay and the dependency on iohk-nix was dropped. Please see the updated documentation! Once any remaining issues are resolved, this will mark the 1.0 release of haskell.nix. :warning:
+
 * Alternative Haskell Infrastructure for Nixpkgs
 
 [[https://buildkite.com/input-output-hk/haskell-dot-nix][https://badge.buildkite.com/d453edcd29bd2f8f3f3b32c9b7d6777a33773d9671c37a6ccc.svg?branch=master]]
