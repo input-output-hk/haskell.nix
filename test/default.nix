@@ -1,5 +1,8 @@
 { pkgs ? import nixpkgs ((import ../.) // nixpkgsArgs)
-, nixpkgs ? <nixpkgs>
+, nixpkgs ? builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/f6dac8083874408fe287525007d3da9decd9bf44.tar.gz";
+    sha256 = "13hxl8gcyqrpranh12fa14sg2lxx2glbgzkx10z4i2x3gh59yl1n";
+  }
 , nixpkgsArgs ? { }
 }:
 
@@ -18,6 +21,7 @@ in pkgs.recurseIntoAttrs {
   snapshots = haskell-nix.callPackage ./snapshots {};
   shell-for = haskell-nix.callPackage ./shell-for {};
   shell-for-setup-deps = haskell-nix.callPackage ./shell-for-setup-deps {};
+  setup-deps = haskell-nix.callPackage ./setup-deps {};
   callStackToNix = haskell-nix.callPackage ./call-stack-to-nix {};
   callCabalProjectToNix = haskell-nix.callPackage ./call-cabal-project-to-nix {};
   cabal-source-repo = haskell-nix.callPackage ./cabal-source-repo {};
