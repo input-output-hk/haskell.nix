@@ -1,33 +1,15 @@
-{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }:
+{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
-{ setup-depends, package, name, src, flags, revision, patches, defaultSetupSrc
+{ component, package, name, src, flags, revision, patches, defaultSetupSrc
 , preUnpack ? null, postUnpack ? null
 }:
 
 let
-  component = {
-    depends = setup-depends;
-    libs = [];
-    frameworks = [];
-    doExactConfig = false;
-    # We have to set hsSourceDirs or cleanCabalComponent will
-    # include everything (and as a result all the components of
-    # the package will depend on eveything in the package).
-    # TODO find a better way
-    hsSourceDirs = ["setup-src"];
-    includeDirs = [];
-    asmSources = [];
-    cSources = [];
-    cmmSources = [];
-    cxxSources = [];
-    jsSources = [];
-    extraSrcFiles = [ "Setup.hs" "Setup.lhs" ];
-  };
   cleanSrc = haskellLib.cleanCabalComponent package component src;
 
   fullName = "${name}-setup";
 
-  includeGhcPackage = lib.any (p: p.identifier.name == "ghc") setup-depends;
+  includeGhcPackage = lib.any (p: p.identifier.name == "ghc") component.depends;
 
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
@@ -37,12 +19,21 @@ let
     inherit preUnpack postUnpack;
   };
 
+  executableToolDepends =
+    (lib.concatMap (c: if c.isHaskell or false
+      then builtins.attrValues (c.components.exes or {})
+      else [c]) component.build-tools) ++
+    lib.optional (component.pkgconfig != []) pkgconfig;
+
 in
  stdenv.lib.fix (drv:
     stdenv.mkDerivation ({
       name = "${fullName}";
       src = cleanSrc;
-      nativeBuildInputs = [ghc];
+      buildInputs = component.libs
+        ++ component.frameworks
+        ++ builtins.concatLists component.pkgconfig;
+      nativeBuildInputs = [ghc] ++ executableToolDepends;
 
       passthru = {
         inherit (package) identifier;

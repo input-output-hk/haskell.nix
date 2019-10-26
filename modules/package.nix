@@ -213,6 +213,27 @@ in {
         };
       };
     in {
+      setup = mkOption {
+        type = nullOr componentType;
+        default = {
+          depends = [];
+          libs = [];
+          frameworks = [];
+          doExactConfig = false;
+          # We have to set hsSourceDirs or cleanCabalComponent will
+          # include everything (and as a result all the components of
+          # the package will depend on eveything in the package).
+          # TODO find a better way
+          hsSourceDirs = ["setup-src"];
+          includeDirs = [];
+          asmSources = [];
+          cSources = [];
+          cmmSources = [];
+          cxxSources = [];
+          jsSources = [];
+          extraSrcFiles = [ "Setup.hs" "Setup.lhs" ];
+        };
+      };
       library = mkOption {
         type = nullOr componentType;
         default = null;

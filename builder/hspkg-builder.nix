@@ -39,7 +39,10 @@ let
   setup = if package.buildType == "Simple" && package.setup-depends == []
     then defaultSetup
     else setup-builder {
-      setup-depends = package.setup-depends;
+      component = components.setup // {
+        depends = components.setup.depends ++ package.setup-depends;
+        extraSrcFiles = components.setup.extraSrcFiles ++ [ "Setup.hs" "Setup.lhs" ];
+      };
       inherit package name src flags revision patches defaultSetupSrc;
       inherit (config) preUnpack postUnpack;
     };
