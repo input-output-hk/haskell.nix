@@ -356,7 +356,7 @@ self: super: {
           happy-plan-nix = withInputs self.bootstrap.haskell.packages.happy-project.plan-nix;
           hscolour-plan-nix = withInputs self.bootstrap.haskell.packages.hscolour-project.plan-nix;
           ghc-extra-projects = builtins.mapAttrs (_: proj: self.recurseIntoAttrs (withInputs proj.plan-nix))
-            (builtins.filterAttrs (n: n != "ghc844" && n != "ghc861" && n != "ghc862") self.ghc-extra-projects);
+            (self.lib.filterAttrs (n: _: n != "ghc844" && n != "ghc861" && n != "ghc862") self.ghc-extra-projects);
         });
     };
 }
