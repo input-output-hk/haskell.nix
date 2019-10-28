@@ -1,8 +1,5 @@
 { pkgs ? import nixpkgs ((import ../.) // nixpkgsArgs)
-, nixpkgs ? builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/f6dac8083874408fe287525007d3da9decd9bf44.tar.gz";
-    sha256 = "13hxl8gcyqrpranh12fa14sg2lxx2glbgzkx10z4i2x3gh59yl1n";
-  }
+, nixpkgs ? ../nixpkgs
 , nixpkgsArgs ? { }
 }:
 
