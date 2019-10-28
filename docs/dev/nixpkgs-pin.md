@@ -6,8 +6,7 @@ This is the version of Nixpkgs used for builds of `nix-tools` and
 running the tests.
 
 To use haskell.nix the `config` and `overlays` need to be applied to
-Nixpkgs.  Users should probably pin a suitable version of nixpkgs
-although, although things might not work for them if their Nixpkgs version is
+Nixpkgs.  Users should probably pin a suitable version of nixpkgs, although things might not work for them if their Nixpkgs version is
 too different.
 
 We aim to keep this pin somewhere on a channel of the **Nixpkgs latest
