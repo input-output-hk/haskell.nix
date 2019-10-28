@@ -1,4 +1,4 @@
-{ supportedSystems ? [ "x86_64-linux" ] # spare our "x86_64-darwin" builders for now
+{ supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
 , scrubJobs ? true
 , haskell-nix ? { outPath = ./.; rev = "abcdef"; }
 , nixpkgsArgs ? {}
