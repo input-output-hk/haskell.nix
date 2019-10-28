@@ -81,10 +81,12 @@ in rec {
       '';
     }) self.buildPackages.haskell.compiler;
 
-  ghc-extra-packages = builtins.mapAttrs (name: proj: self.haskell-nix.cabalProject {
+  ghc-extra-projects = builtins.mapAttrs (name: proj: self.haskell-nix.cabalProject' {
       name = "ghc-extra-packages";
       src = proj;
       ghc = self.buildPackages.haskell.compiler.${name};
     })
     ghc-extra-pkgs-cabal-projects;
+
+  ghc-extra-packages = builtins.mapAttrs (_: proj: proj.hsPkgs) ghc-extra-projects;
 }
