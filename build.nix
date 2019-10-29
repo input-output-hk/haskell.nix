@@ -27,7 +27,6 @@ let
   haskell = pkgs.haskell-nix;
 
 in {
-  inherit (haskell) haskellNixRoots;
   tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
