@@ -18,7 +18,7 @@ in pkgs.recurseIntoAttrs {
   snapshots = haskell-nix.callPackage ./snapshots {};
   shell-for = haskell-nix.callPackage ./shell-for {};
   shell-for-setup-deps = haskell-nix.callPackage ./shell-for-setup-deps {};
-  setup-deps = haskell-nix.callPackage ./setup-deps {};
+  setup-deps = import ./setup-deps { inherit pkgs; };
   callStackToNix = haskell-nix.callPackage ./call-stack-to-nix {};
   callCabalProjectToNix = haskell-nix.callPackage ./call-cabal-project-to-nix {};
   cabal-source-repo = haskell-nix.callPackage ./cabal-source-repo {};
