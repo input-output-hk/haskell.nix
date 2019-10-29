@@ -1,13 +1,11 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
+{ pkgs }:
 
+with pkgs;
 with stdenv.lib;
 
 let
-  plan = importAndFilterProject (callCabalProjectToNix {
+  project = haskell-nix.cabalProject' {
     src = ./.;
-  });
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = plan.pkgs;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -16,9 +14,10 @@ let
     { reinstallableLibGhc = true; } ];
   };
 
-  packages = pkgSet.config.hsPkgs;
-in
-  stdenv.mkDerivation {
+  packages = project.hsPkgs;
+in recurseIntoAttrs {
+  plan = haskell-nix.withInputs project.plan-nix;
+  run = pkgs.stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
@@ -34,7 +33,7 @@ in
 
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit pkgSet packages;
+      inherit project packages;
     };
-  }
-
+  };
+}
