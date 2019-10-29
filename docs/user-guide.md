@@ -115,7 +115,7 @@ location of the project relative to `src` as a string. For example:
 
 ```
   src = pkgs.haskell-nix.haskellLib.cleanGit
-    { src = ./.; srcDir = "subdir/another-subdir"; };
+    { src = ./.; subDir = "subdir/another-subdir"; };
 ```
 
 
