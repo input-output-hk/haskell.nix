@@ -34,14 +34,11 @@ let
       meta.description = "All jobs required to pass CI";
       constituents = collect isDerivation jobs.native;
     };
-  } // (builtins.mapAttrs (_: system:
+  } // (genAttrs supportedSystems (system:
     let pkgs = import ./nixpkgs ((import ./.) // { inherit system; });
     in builtins.mapAttrs (_: pkgs.recurseIntoAttrs) {
       inherit (pkgs.haskell-nix) haskellNixRoots;
-    }) {
-      linux = "x86_64-linux";
-      macos = "x86_64-darwin";
-    }
+    })
   );
 
 in jobs
