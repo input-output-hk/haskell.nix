@@ -1,4 +1,4 @@
-{ supportedSystems ? [ "x86_64-linux" ] # spare our "x86_64-darwin" builders for now
+{ supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
 , scrubJobs ? true
 , haskell-nix ? { outPath = ./.; rev = "abcdef"; }
 , nixpkgsArgs ? {}
@@ -24,7 +24,8 @@ let
 
   jobs = {
     native = filterTests (mapTestOn (packagePlatforms pkgs));
-    "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
+    # disable musl for now
+    # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
   } // {
     # On IOHK Hydra, "required" is a special job that updates the
     # GitHub CI status.
@@ -33,6 +34,11 @@ let
       meta.description = "All jobs required to pass CI";
       constituents = collect isDerivation jobs.native;
     };
-  };
+  } // (genAttrs supportedSystems (system:
+    let pkgs = import ./nixpkgs ((import ./.) // { inherit system; });
+    in builtins.mapAttrs (_: pkgs.recurseIntoAttrs) {
+      inherit (pkgs.haskell-nix) haskellNixRoots;
+    })
+  );
 
 in jobs

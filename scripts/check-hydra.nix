@@ -13,6 +13,7 @@ writeScript "check-hydra.sh" ''
   command time --format '%e' -o eval-time.txt \
       hydra-eval-jobs \
       --option allowed-uris "https://github.com/NixOS https://github.com/input-output-hk" \
+      --arg supportedSystems '[ builtins.currentSystem ]' \
       -I . release.nix > eval.json
   EVAL_EXIT_CODE="$?"
   if [ "$EVAL_EXIT_CODE" != 0 ]
