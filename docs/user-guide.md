@@ -108,7 +108,16 @@ If your project has a `cabal.project` you can add a `default.nix` like this:
 Note: The `cleanGit` call will exclude any files not in the index file
 in the local `.git` directory.  This is extremely useful as it avoids
 unwanted builds (for instance when the contents of `dist-newstyle` are
-modified by cabal).
+modified by cabal).  It is important that `src` is the root directory
+of the repo (so `cleanGit` can find the `.git` directory).  If the project
+is not at the root of the repo, then also pass `subDir` to `cleanGit` with the
+location of the project relative to `src` as a string. For example:
+
+```
+  src = pkgs.haskell-nix.haskellLib.cleanGit
+    { src = ./.; subDir = "subdir/another-subdir"; };
+```
+
 
 You can build a component from your project with `nix-build` (in this
 case the `hello` executable in a `helloworld` package):

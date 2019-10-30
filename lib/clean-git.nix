@@ -1,6 +1,6 @@
 # From https://github.com/NixOS/nix/issues/2944
 { lib, runCommand, git, cleanSourceWith }:
-{ src }:
+{ src, subDir ? "" }:
 
 # The function call
 #
@@ -90,12 +90,12 @@ then
     filter = filter_from_list src whitelist;
   in
     cleanSourceWith {
-      inherit src filter;
+      inherit src subDir filter;
     }
 
 else
   trace "gitSource.nix: ${toString src} does not seem to be a git repository,\nassuming it is a clean checkout." (
     cleanSourceWith {
-      inherit src;
+      inherit src subDir;
     }
   )
