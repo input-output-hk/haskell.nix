@@ -54,27 +54,30 @@ in
 if builtins.pathExists (toString src + "/.git")
 then
   let
-    gitDir = cleanSourceWith {
-      src = if builtins.pathExists (toString src + "/.git/index")
-        then (toString src + "/.git")
-        else # likely a git worktree, so follow the indirection
-          let
-            git_content = lines (readFile (toString src + "/.git"));
-            first_line = head git_content;
-            prefix = "gitdir: ";
-            ok = length git_content == 1 && has_prefix prefix first_line;
-          in
-            if ok
-            then /. + remove_prefix prefix first_line
-            else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
-      filter = path: type:
-        type == "directory" ||
-        lib.any (i: (lib.hasSuffix i path)) [
-          "/config" "/index" "/HEAD" ]) ||
-        (lib.strings.hasInfix "modules/" path &&
+    gitDir = cleanSourceWith ({
+        filter = path: type:
+          type == "directory" ||
           lib.any (i: (lib.hasSuffix i path)) [
-            "/config" "/index" "/HEAD" "/objects" "/refs" ]);
-    };
+            "/config" "/index" "/HEAD" ] ||
+          (lib.strings.hasInfix "modules/" path &&
+            lib.any (i: (lib.hasSuffix i path)) [
+              "/config" "/index" "/HEAD" "/objects" "/refs" ]);
+      } // (
+      if builtins.pathExists (toString src + "/.git/index")
+        then { inherit src; subDir = ".git"; }
+        else {
+          # likely a git worktree, so follow the indirection
+          src =
+            let
+              git_content = lines (readFile (toString src + "/.git"));
+              first_line = head git_content;
+              prefix = "gitdir: ";
+              ok = length git_content == 1 && has_prefix prefix first_line;
+            in
+              if ok
+              then /. + remove_prefix prefix first_line
+              else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
+    }));
 
     whitelist_file =
       runCommand "git-ls-files" {envVariable = true;} ''
