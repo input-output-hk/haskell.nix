@@ -79,6 +79,16 @@ then
               else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
     }));
 
+    commonConfig = if builtins.pathExists (toString gitDir.origSrc + "/commondir")
+        then 
+           let
+             git_content = lines (readFile (toString gitDir.origSrc + "/commondir"));
+             first_line = head git_content;
+           in toString gitDir.origSrc + "/" + first_line + "/config"
+        else toString gitDir + "/config";
+
+    gitModules = builtins.path { name = "gitmodules"; path = toString src + "/.gitmodules"; };
+
     whitelist_file =
       runCommand "git-ls-files" {envVariable = true;} ''
         tmp=$(mktemp -d)
@@ -86,6 +96,11 @@ then
         cp -r ${gitDir} .git
         chmod +w -R .git
         mkdir -p .git/objects .git/refs
+        mkdir -p .git-common/objects .git-common/refs
+        cp ${commonConfig} .git-common/config
+        echo ../.git-common > .git/commondir
+        cp ${gitModules} ./.gitmodules
+        ${git}/bin/git ls-files --recurse-submodules | grep inline-js
         ${git}/bin/git ls-files --recurse-submodules > $out
       '';
 
