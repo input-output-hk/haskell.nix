@@ -54,6 +54,7 @@ in
 if builtins.pathExists (toString src + "/.git")
 then
   let
+    # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
         filter = path: type:
           type == "directory" ||
@@ -79,16 +80,24 @@ then
               else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
     }));
 
+    # Worktrees have a commondir pointing to the common `.git` dir.  We need the
+    # config file from there to get the list of active submodules right.
     commonConfig = if builtins.pathExists (toString gitDir.origSrc + "/commondir")
-        then 
+        then
+           # The commondir file contains just the relative path of the
+           # common `.git` dir.
            let
              git_content = lines (readFile (toString gitDir.origSrc + "/commondir"));
              first_line = head git_content;
            in toString gitDir.origSrc + "/" + first_line + "/config"
         else toString gitDir + "/config";
 
+    # We need the .gitmodules file for submoules to work.
     gitModules = builtins.path { name = "gitmodules"; path = toString src + "/.gitmodules"; };
 
+    # Make a temporary dir that looks enough like the real thing for
+    # `git ls-files --recurse-submodules` to give us an accurate list
+    # of all the files in the index.
     whitelist_file =
       runCommand "git-ls-files" {envVariable = true;} ''
         tmp=$(mktemp -d)
@@ -100,7 +109,6 @@ then
         cp ${commonConfig} .git-common/config
         echo ../.git-common > .git/commondir
         cp ${gitModules} ./.gitmodules
-        ${git}/bin/git ls-files --recurse-submodules | grep inline-js
         ${git}/bin/git ls-files --recurse-submodules > $out
       '';
 
