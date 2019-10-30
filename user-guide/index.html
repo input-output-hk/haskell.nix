@@ -296,7 +296,14 @@ nix build -f . haskell-nix.nix-tools --out-link nt
 <p>Note: The <code>cleanGit</code> call will exclude any files not in the index file
 in the local <code>.git</code> directory.  This is extremely useful as it avoids
 unwanted builds (for instance when the contents of <code>dist-newstyle</code> are
-modified by cabal).</p>
+modified by cabal).  It is important that <code>src</code> is the root directory
+of the repo (so <code>cleanGit</code> can find the <code>.git</code> directory).  If the project
+is not at the root of the repo, then also pass <code>subDir</code> to <code>cleanGit</code> with the
+location of the project relative to <code>src</code> as a string. For example:</p>
+<pre><code>  src = pkgs.haskell-nix.haskellLib.cleanGit
+    { src = ./.; subDir = &quot;subdir/another-subdir&quot;; };
+</code></pre>
+
 <p>You can build a component from your project with <code>nix-build</code> (in this
 case the <code>hello</code> executable in a <code>helloworld</code> package):</p>
 <pre><code class="bash">nix-build -A helloworld.components.exes.hello
