@@ -53,7 +53,7 @@ in rec {
   };
 
   # These are pure so they can be added to the cache along with some of the
-  # dependencies of the impure scripts
+  # dependencies of the impure scripts.
   maintainer-script-cache = pkgs.recurseIntoAttrs {
     inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
     inherit (pkgs) coreutils glibc git openssh cabal-install nix-prefetch-git;
