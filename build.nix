@@ -27,11 +27,11 @@ let
       })]; } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
-in {
+in rec {
   tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
-  maintainer-scripts = pkgs.recurseIntoAttrs {
+  maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
@@ -50,5 +50,12 @@ in {
     };
     check-hydra = haskell.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = haskell.callPackage ./scripts/check-closure-size.nix {};
+  };
+
+  # These are pure so they can be added to the cache along with some of the
+  # dependencies of the impure scripts
+  maintainer-script-cache = pkgs.recurseIntoAttrs {
+    inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
+    inherit (pkgs) coreutils glibc git openssh nix-tools cabal-install nix-prefetch-git;
   };
 }
