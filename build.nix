@@ -31,6 +31,9 @@ in rec {
   tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
+  # The dontRecurseIntoAttrs prevents these from building on hydra
+  # as not all of them can work in restricted eval mode (as they
+  # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
@@ -52,10 +55,12 @@ in rec {
     check-closure-size = haskell.callPackage ./scripts/check-closure-size.nix {};
   };
 
-  # These are pure so they can be added to the cache along with some of the
-  # dependencies of the impure scripts.
+  # These are pure parts of maintainer-script so they can be built by hydra
+  # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs {
     inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
+    # Some of the dependencies of the impure scripts so that they will
+    # will be in the cache too for buildkite.
     inherit (pkgs) coreutils glibc git openssh cabal-install nix-prefetch-git;
     inherit (haskell) nix-tools;
   };
