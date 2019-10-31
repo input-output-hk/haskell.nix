@@ -1,4 +1,4 @@
-{ supportedSystems ? [ "x86_64-linux" ] # spare our "x86_64-darwin" builders for now
+{ supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
 , scrubJobs ? true
 , haskell-nix ? { outPath = ./.; rev = "abcdef"; }
 , nixpkgsArgs ? {}
@@ -24,7 +24,8 @@ let
 
   jobs = {
     native = filterTests (mapTestOn (packagePlatforms pkgs));
-    "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
+    # Disabled for now. Something is wrong and this would require `allowBroken`
+    # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
   } // {
     # On IOHK Hydra, "required" is a special job that updates the
     # GitHub CI status.

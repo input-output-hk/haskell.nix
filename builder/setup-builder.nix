@@ -41,6 +41,17 @@ in
         inherit configFiles cleanSrc;
       };
 
+      meta = {
+        homepage = package.homepage;
+        description = package.synopsis;
+        license =
+          let
+            license-map = import ../lib/cabal-licenses.nix lib;
+          in license-map.${package.license} or
+            (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
+        platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
+      };
+
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
