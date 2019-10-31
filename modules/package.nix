@@ -210,7 +210,7 @@ in {
             type = listOfFilteringNulls unspecified;
             default = [];
           };
-          platforms = mkOtion {
+          platforms = mkOption {
             type = nullOr (listOfFilteringNulls unspecified);
             default = null;
           };
