@@ -30,7 +30,7 @@ in {
   tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
-  maintainer-scripts = pkgs.dontRecurseIntoAttrs {
+  maintainer-scripts = pkgs.recurseIntoAttrs {
     update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
