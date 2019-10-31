@@ -24,8 +24,7 @@ let
 
   jobs = {
     native = filterTests (mapTestOn (packagePlatforms pkgs));
-    # disable musl for now
-    # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
+    "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
   } // {
     # On IOHK Hydra, "required" is a special job that updates the
     # GitHub CI status.
