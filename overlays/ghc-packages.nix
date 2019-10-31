@@ -84,6 +84,7 @@ in rec {
   ghc-extra-projects = builtins.mapAttrs (name: proj: self.haskell-nix.cabalProject' {
       name = "ghc-extra-packages";
       src = proj;
+      index-state = "2019-10-31T00:00:00Z";
       ghc = self.buildPackages.haskell.compiler.${name};
     })
     ghc-extra-pkgs-cabal-projects;
