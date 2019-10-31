@@ -2472,6 +2472,462 @@ original test command as its arguments.</p>
 <p><em>Example:</em> <code>"echo"</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or submodule</p>
+<p><em>Default:</em> `</p>
+<pre><code>{
+asmSources = 
+[
+
+]
+</code></pre>
+<p>; cSources = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; cmmSources = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; cxxSources = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; depends = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; doExactConfig = false; extraSrcFiles = 
+    [
+    "Setup.hs" "Setup.lhs" 
+    ]
+  ; frameworks = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; hsSourceDirs = 
+    [
+    "setup-src" 
+    ]
+  ; includeDirs = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; jsSources = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; libs = 
+    [</p>
+<pre><code>]
+</code></pre>
+<p>; 
+    }</p>
+<pre><code>  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.enableExecutableProfiling</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.enableLibraryProfiling</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.enableSeparateDataOutput</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.asmSources</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.build-tools</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.buildable</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.cSources</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.cmmSources</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.configureFlags</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.cxxSources</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.depends</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.doCheck</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.doCrossCheck</code><br />
+Run doCheck also in cross compilation settings. This can be tricky as
+the test logic must know how to run the tests on the target.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.doExactConfig</code><br />
+This option has no description.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.doHaddock</code><br />
+Enable building of the Haddock documentation from the annotated Haskell
+source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.extraSrcFiles</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.frameworks</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of packages</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.hsSourceDirs</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.includeDirs</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.includes</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.jsSources</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.libs</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of null or packages</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.mainPath</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.modules</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of unspecifieds</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.pkgconfig</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of list of packagess</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.postBuild</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.postCheck</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.postConfigure</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.postHaddock</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.postInstall</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.postUnpack</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.preBuild</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.preCheck</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.preConfigure</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.preHaddock</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.preInstall</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.preUnpack</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or strings concatenated with "\n"</p>
+<p><em>Default:</em> <code>null</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.profilingDetail</code><br />
+This option has no description.</p>
+<p><em>Type:</em> null or string</p>
+<p><em>Default:</em> <code>"exported-functions"</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.setupBuildFlags</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.setupHaddockFlags</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.setupInstallFlags</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.shellHook</code><br />
+Hook to run when entering a shell</p>
+<p><em>Type:</em> unspecified</p>
+<p><em>Default:</em> <code>""</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.testFlags</code><br />
+This option has no description.</p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.testWrapper</code><br />
+A command to run for executing tests in checkPhase, which takes the
+original test command as its arguments.</p>
+<p><em>Type:</em> list of strings</p>
+<p><em>Default:</em> `</p>
+<pre><code>[
+
+]
+
+  `
+</code></pre>
+<p><em>Example:</em> <code>"echo"</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.sublibs</code><br />
 This option has no description.</p>
 <p><em>Type:</em> attribute set of submodules</p>
