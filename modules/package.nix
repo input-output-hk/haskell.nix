@@ -210,6 +210,10 @@ in {
             type = listOfFilteringNulls unspecified;
             default = [];
           };
+          platforms = mkOtion {
+            type = nullOr (listOfFilteringNulls unspecified);
+            default = null;
+          };
         };
       };
     in {
@@ -232,6 +236,7 @@ in {
           cxxSources = [];
           jsSources = [];
           extraSrcFiles = [ "Setup.hs" "Setup.lhs" ];
+          platforms = null;
         };
       };
       library = mkOption {

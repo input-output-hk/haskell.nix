@@ -8,6 +8,7 @@ with pkgs;
 let
   util = callPackage ./util.nix {};
 in pkgs.recurseIntoAttrs {
+  inherit (haskell-nix) haskellNixRoots;
   cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };
   cabal-simple-prof = haskell-nix.callPackage ./cabal-simple-prof { inherit util; };
   cabal-sublib = haskell-nix.callPackage ./cabal-sublib { inherit util; };

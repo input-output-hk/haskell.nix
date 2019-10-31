@@ -33,11 +33,6 @@ let
       meta.description = "All jobs required to pass CI";
       constituents = collect isDerivation jobs.native;
     };
-  } // (genAttrs supportedSystems (system:
-    let pkgs = import ./nixpkgs ((import ./.) // { inherit system; });
-    in builtins.mapAttrs (_: pkgs.recurseIntoAttrs) {
-      inherit (pkgs.haskell-nix) haskellNixRoots;
-    })
-  );
+  };
 
 in jobs
