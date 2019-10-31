@@ -94,7 +94,7 @@ let
     };
 
     profilingDetail = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.profilingDetail or "exported-functions");
     };
 
@@ -105,54 +105,54 @@ let
       default = (def.preUnpack or null);
     };
     postUnpack = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.postUnpack or null);
     };
     preConfigure = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.preConfigure or null);
     };
     postConfigure = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.postConfigure or null);
     };
     preBuild = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.preBuild or null);
     };
     postBuild = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.postBuild or null);
     };
     preCheck = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.preCheck or null);
     };
     # Wrapper for test executable run in checkPhase
     testWrapper = mkOption {
-      type = nullOr str;
-      default = def.testWrapper or null;
+      type = string;
+      default = (def.testWrapper or "");
       description = "A command to run for executing tests in checkPhase, which takes the original test command as its arguments.";
       example = "echo";
     };
     postCheck = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.postCheck or null);
     };
     preInstall = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.preInstall or null);
     };
     postInstall = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.postInstall or null);
     };
     preHaddock = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.preHaddock or null);
     };
     postHaddock = mkOption {
-      type = nullOr str;
+      type = nullOr string;
       default = (def.postHaddock or null);
     };
   };
