@@ -15,16 +15,8 @@
 with lib;
 with types;
 
-let
-  # dealing with str is a bit annoying espectially with `nullOr str` as that apparently defaults to ""
-  # instead of null :shrug:.  This then messes with our option inheritance logic.
-  # Hence we have a uniqueStr type that ensures multiple identially defined options are collapsed
-  # without raising an error. And a way to fetch default options that will retain `null` if the
-  # option is not defined or "".
-  getDefaultOrNull = def: key: if def ? ${key} && def.${key} != "" then def.${key} else null;
-  mergeUniqueOption = locs: defs: mergeOneOption locs (lists.unique defs);
-  uniqueStr = str // { merge = mergeUniqueOption; };
 
+let
   # This is just like listOf, except that it filters out all null elements.
   listOfFilteringNulls = elemType: listOf elemType // {
     # Mostly copied from nixpkgs/lib/types.nix
@@ -113,28 +105,28 @@ let
       default = (def.preUnpack or null);
     };
     postUnpack = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "postUnpack";
+      type = nullOr str;
+      default = (def.postUnpack or null);
     };
     preConfigure = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "preConfigure";
+      type = nullOr str;
+      default = (def.preConfigure or null);
     };
     postConfigure = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "postConfigure";
+      type = nullOr str;
+      default = (def.postConfigure or null);
     };
     preBuild = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "preBuild";
+      type = nullOr str;
+      default = (def.preBuild or null);
     };
     postBuild = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "postBuild";
+      type = nullOr str;
+      default = (def.postBuild or null);
     };
     preCheck = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "preCheck";
+      type = nullOr str;
+      default = (def.preCheck or null);
     };
     # Wrapper for test executable run in checkPhase
     testWrapper = mkOption {
@@ -144,24 +136,24 @@ let
       example = "echo";
     };
     postCheck = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "postCheck";
+      type = nullOr str;
+      default = (def.postCheck or null);
     };
     preInstall = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "preInstall";
+      type = nullOr str;
+      default = (def.preInstall or null);
     };
     postInstall = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "postInstall";
+      type = nullOr str;
+      default = (def.postInstall or null);
     };
     preHaddock = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "preHaddock";
+      type = nullOr str;
+      default = (def.preHaddock or null);
     };
     postHaddock = mkOption {
-      type = nullOr uniqueStr;
-      default = getDefaultOrNull def "postHaddock";
+      type = nullOr str;
+      default = (def.postHaddock or null);
     };
   };
 
