@@ -41,6 +41,10 @@ in stdenv.mkDerivation ({
       inherit version;
   };
 
+  meta = {
+    platforms = stdenv.lib.platforms.all;
+  };
+
   nativeBuildInputs = [ ghc zlib ];
 
   inherit src;
