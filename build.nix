@@ -56,6 +56,7 @@ in rec {
   # dependencies of the impure scripts
   maintainer-script-cache = pkgs.recurseIntoAttrs {
     inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
-    inherit (pkgs) coreutils glibc git openssh nix-tools cabal-install nix-prefetch-git;
+    inherit (pkgs) coreutils glibc git openssh cabal-install nix-prefetch-git;
+    inherit (haskell) nix-tools;
   };
 }
