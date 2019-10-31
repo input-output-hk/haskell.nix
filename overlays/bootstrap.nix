@@ -198,10 +198,8 @@ self: super: rec {
     cabal-install = self.buildPackages.bootstrap.haskell.packages.cabal-install;
 
     # see below
-    haskellPackages.hpack = null;
-    haskellPackages.hoogle = self.haskell-nix.haskellPackages.hoogle.components.exes.hoogle;
-    haskellPackages.happy = self.haskell-nix.haskellPackages.happy.components.exes.happy;
-    haskellPackages.alex = self.haskell-nix.haskellPackages.alex.components.exes.alex;
+    haskellPackages = builtins.mapAttrs (_: p: p.components.allExes)
+    	self.haskell-nix.haskellPackages;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
@@ -217,7 +215,7 @@ self: super: rec {
 
     # stub out lib stuff.
     haskell.lib = {
-        justStaticExecutables = x: x;
+        justStaticExecutables = x: if x ? components then x.components.allExes else x;
     };
 
     # NOTE: 8.6.5 prebuilt binaries on macOS, will yield:

@@ -30,6 +30,8 @@ with haskellLib;
 
   getAllComponents = foldComponents subComponentTypes (c: acc:
     lib.optional c.buildable c ++ acc) [];
+  getAllExeComponents = foldComponents ["exes"] (c: acc:
+    lib.optional c.buildable c ++ acc) [];
 
   componentPrefix = {
     # Are all of these right?
@@ -46,6 +48,7 @@ with haskellLib;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
       applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
+      applyAllExesComp = f { cname = config.package.identifier.name; ctype = "all"; };
       buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true);
       libComp = if comps.library == null || !(comps.library.buildable or true)
         then {}
@@ -54,7 +57,8 @@ with haskellLib;
         (ctype: attrs: lib.mapAttrs (applySubComp ctype) (buildableAttrs attrs))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);
       allComp = { all = applyAllComp comps.all; };
-    in subComps // libComp // allComp;
+      allExesComp = { allExes = applyAllExesComp comps.allExes; };
+    in subComps // libComp // allComp // allExesComp;
 
   isLibrary = componentId: componentId.ctype == "lib";
   isAll = componentId: componentId.ctype == "all";
