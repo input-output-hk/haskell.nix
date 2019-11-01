@@ -48,11 +48,11 @@ with haskellLib;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
       applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
-      applyAllExesComp = f { cname = config.package.identifier.name; ctype = "all"; };
+      applyAllExesComp = f { cname = config.package.identifier.name; ctype = "allExes"; };
       buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true);
       libComp = if comps.library == null || !(comps.library.buildable or true)
         then {}
-        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
+        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" "allExes" ]));
       subComps = lib.mapAttrs
         (ctype: attrs: lib.mapAttrs (applySubComp ctype) (buildableAttrs attrs))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);
@@ -62,6 +62,7 @@ with haskellLib;
 
   isLibrary = componentId: componentId.ctype == "lib";
   isAll = componentId: componentId.ctype == "all";
+  isAllExes = componentId: componentId.ctype == "allExes";
   isTest = componentId: componentId.ctype == "test";
   isBenchmark = componentId: componentId.ctype == "bench";
 
@@ -73,7 +74,7 @@ with haskellLib;
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
   componentTarget = componentId:
-    if componentId.ctype == "all" then ""
+    if isAll componentId || isAllExes componentId then ""
     else "${componentId.ctype}:${componentId.cname}";
 
   # Remove null or empty values from an attrset.

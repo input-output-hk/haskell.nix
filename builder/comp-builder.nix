@@ -50,7 +50,9 @@ let
 
   fullName = if haskellLib.isAll componentId
     then "${name}-all"
-    else "${name}-${componentId.ctype}-${componentId.cname}";
+    else if haskellLib.isAllExes componentId
+      then "${name}-allExes"
+      else "${name}-${componentId.ctype}-${componentId.cname}";
 
   configFiles = makeConfigFiles {
     inherit (package) identifier;
