@@ -5,6 +5,7 @@ with stdenv.lib;
 let
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = (importAndFilterProject (callCabalProjectToNix {
+      name = "test-cabal-source-repo";
       index-state = "2019-04-30T00:00:00Z";
       # reuse the cabal-simple test project
       src = ./.;

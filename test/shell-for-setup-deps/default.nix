@@ -4,6 +4,7 @@ with stdenv.lib;
 
 let
   plan = importAndFilterProject (callCabalProjectToNix {
+    name = "test-shell-for-setup-deps";
     src = ./.;
   });
   pkgSet = mkCabalProjectPkgSet {
