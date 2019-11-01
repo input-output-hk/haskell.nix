@@ -20,11 +20,13 @@ let
     then "ghc-shell-for-${(lib.head selected).identifier.name}"
     else "ghc-shell-for-packages";
 
+  # Removes the selected packages from a list of packages.
   # If `packages = [ a b ]` and `a` depends on `b`, don't build `b`,
-  # because cabal will end up ignoring that built version, assuming
-  # new-style commands.
-  packageInputs = lib.filter
-    (input: lib.all (cfg: input.identifier != cfg.identifier) selected)
+  # because cabal will end up ignoring that built version;
+  removeSelected = lib.filter
+    (input: lib.all (cfg: (input.identifier or null) != cfg.identifier) selected);
+
+  packageInputs = removeSelected
     (lib.concatMap (cfg: cfg.depends) selectedConfigs
     ++ additionalSelected
     ++ lib.concatMap (cfg: cfg.setup.config.depends or []) selected
@@ -33,7 +35,8 @@ let
   # Add the system libraries and build tools of the selected haskell
   # packages to the shell.
   systemInputs = lib.concatMap (p: p.components.all.buildInputs) selected;
-  nativeBuildInputs = lib.concatMap (p: p.components.all.executableToolDepends) selected;
+  nativeBuildInputs = removeSelected
+    (lib.concatMap (p: p.components.all.executableToolDepends) selected);
 
   # Set up a "dummy" component to use with ghcForComponent.
   component = {
