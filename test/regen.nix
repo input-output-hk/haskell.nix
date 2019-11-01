@@ -1,17 +1,17 @@
 # A script for regenerating nix for tests
-{ pkgs ? import nixpkgs {}
+{ pkgs ? import nixpkgs ((import ../.) // nixpkgsArgs)
 , nixpkgs ? ../nixpkgs
-, haskell ? pkgs.callPackage ../. { }
+, nixpkgsArgs ? { }
 }:
 
 with pkgs;
 
 writeScript "regen-tests.sh" ''
-  #!${pkgs.stdenv.shell}
+  #!${pkgs.runtimeShell}
 
   set -euo pipefail
 
-  export PATH="${lib.makeBinPath [ coreutils glibc haskell.nix-tools cabal-install pkgs.haskell.compiler.ghc844 ]}"
+  export PATH="${lib.makeBinPath [ coreutils glibc haskell-nix.nix-tools cabal-install haskell.compiler.ghc844 ]}"
 
   cabal_configure() {
     cabal new-configure \
