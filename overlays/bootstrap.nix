@@ -198,8 +198,9 @@ self: super: rec {
     cabal-install = self.buildPackages.bootstrap.haskell.packages.cabal-install;
 
     # see below
-    haskellPackages = builtins.mapAttrs (_: p: p.components.allExes)
-    	self.haskell-nix.haskellPackages;
+    haskellPackages = (builtins.mapAttrs (_: p: p.components.allExes)
+    	self.haskell-nix.haskellPackages)
+    	// { hpack = null; };
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
