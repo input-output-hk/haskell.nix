@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash -p bash jq nix
+#! nix-shell -i bash -p bash jq nix gnused
 
 set -euo pipefail
 
@@ -87,6 +87,18 @@ nix-shell $NIX_BUILD_ARGS \
     -A shell-for.env \
     --run 'hoogle ConduitT | grep Data.Conduit'
 echo >& 2
+
+printf "*** Checking shellFor does not depend on given packages...\n" >& 2
+drva=$(nix-instantiate ./default.nix -A shell-for.env)
+echo "-- hello" >> shell-for/pkga/PkgA.hs
+drvb=$(nix-instantiate ./default.nix -A shell-for.env)
+sed -i -e '/-- hello/d' shell-for/pkga/PkgA.hs
+if [ "$drva" != "$drvb" ]; then
+    printf "FAIL\nShell derivations\n$drva\n$drvb\n are not identical.\n" >& 2
+    exit 1
+else
+    printf "PASS\n" >& 2
+fi
 
 printf "*** Checking the maintainer scripts...\n" >& 2
 nix build $NIX_BUILD_ARGS --no-link --keep-going -f ../build.nix maintainer-scripts

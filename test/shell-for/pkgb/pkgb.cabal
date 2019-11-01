@@ -26,11 +26,18 @@ library
 
 executable pkgb
   main-is:             Main.hs
-  -- other-modules:
-  -- other-extensions:
   build-depends:       base
                      , pkgb
                      , optparse-applicative
                      , text
   hs-source-dirs:      app
   default-language:    Haskell2010
+
+test-suite tests
+  type:                exitcode-stdio-1.0
+  main-is:             tests.hs
+  hs-source-dirs:      app
+  build-depends:       base
+                     , pkgb
+                     , process
+  build-tools:         pkga
