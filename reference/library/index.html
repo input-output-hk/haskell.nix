@@ -526,6 +526,67 @@ needed for <code>importAndFilterProject</code>.</p>
     })).pkgs;
 </code></pre>
 
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>String</td>
+<td>Optional name for better error messages.</td>
+</tr>
+<tr>
+<td><code>src</code></td>
+<td>Path</td>
+<td>Location of the cabal project files.</td>
+</tr>
+<tr>
+<td><code>index-state</code></td>
+<td>Timestamp</td>
+<td>Optional hackage index-state, eg. "2019-10-10T00:00:00Z".</td>
+</tr>
+<tr>
+<td><code>index-sha256</code></td>
+<td>Sha256</td>
+<td>Optional hash of the truncated hackage index-state.</td>
+</tr>
+<tr>
+<td><code>plan-sha256</code></td>
+<td>Sha256</td>
+<td>Optional hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation).</td>
+</tr>
+<tr>
+<td><code>cabalProject</code></td>
+<td>Path</td>
+<td>Optional cabal project file (defaults to "${src}/cabal.project").</td>
+</tr>
+<tr>
+<td><code>ghc</code></td>
+<td></td>
+<td>Optional ghc to use</td>
+</tr>
+<tr>
+<td><code>nix-tools</code></td>
+<td></td>
+<td>Optional nix-tools to use</td>
+</tr>
+<tr>
+<td><code>hpack</code></td>
+<td></td>
+<td>Optional hpack to use</td>
+</tr>
+<tr>
+<td><code>cabal-install</code></td>
+<td></td>
+<td>Optional cabal-install to use</td>
+</tr>
+</tbody>
+</table>
 <h2 id="importandfilterproject">importAndFilterProject<a class="headerlink" href="#importandfilterproject" title="Permanent link">&para;</a></h2>
 <p>Imports from a derivation created by <code>callStackToNix</code>
 or <code>callCabalProjectToNix</code>.</p>
