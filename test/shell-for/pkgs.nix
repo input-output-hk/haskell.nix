@@ -39,7 +39,7 @@
         "deepseq".revision = (((hackage."deepseq")."1.4.4.0").revisions).default;
         "random".revision = (((hackage."random")."1.1").revisions).default;
         "optparse-applicative".revision = (((hackage."optparse-applicative")."0.15.1.0").revisions).default;
-        "network".revision = (((hackage."network")."3.1.0.1").revisions).default;
+        "network".revision = (((hackage."network")."3.1.1.0").revisions).default;
         "async".revision = (((hackage."async")."2.2.2").revisions).default;
         "async".flags.bench = false;
         "conduit".revision = (((hackage."conduit")."1.3.1.1").revisions).default;
@@ -68,7 +68,7 @@
         "transformers-compat".flags.four = false;
         "transformers-compat".flags.three = false;
         "template-haskell".revision = (((hackage."template-haskell")."2.14.0.0").revisions).default;
-        "mono-traversable".revision = (((hackage."mono-traversable")."1.0.12.0").revisions).default;
+        "mono-traversable".revision = (((hackage."mono-traversable")."1.0.13.0").revisions).default;
         "vector".revision = (((hackage."vector")."0.12.0.3").revisions).default;
         "vector".flags.unsafechecks = false;
         "vector".flags.internalchecks = false;
@@ -77,7 +77,7 @@
         "call-stack".revision = (((hackage."call-stack")."0.2.0").revisions).default;
         "primitive".revision = (((hackage."primitive")."0.7.0.0").revisions).default;
         "profunctors".revision = (((hackage."profunctors")."5.5").revisions).default;
-        "ansi-terminal".revision = (((hackage."ansi-terminal")."0.10").revisions).default;
+        "ansi-terminal".revision = (((hackage."ansi-terminal")."0.10.1").revisions).default;
         "ansi-terminal".flags.example = false;
         "tagged".revision = (((hackage."tagged")."0.8.6").revisions).default;
         "tagged".flags.transformers = true;
@@ -147,7 +147,7 @@
         "kan-extensions".revision = (((hackage."kan-extensions")."5.2").revisions).default;
         "resourcet".revision = (((hackage."resourcet")."1.2.2").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
-        "cabal-doctest".revision = (((hackage."cabal-doctest")."1.0.7").revisions).default;
+        "cabal-doctest".revision = (((hackage."cabal-doctest")."1.0.8").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.6.5").revisions).default;
         "base-orphans".revision = (((hackage."base-orphans")."0.8.1").revisions).default;
         "th-abstraction".revision = (((hackage."th-abstraction")."0.3.1.0").revisions).default;
@@ -189,4 +189,8 @@
     {
       packages = { pkga = ./.plan.nix/pkga.nix; pkgb = ./.plan.nix/pkgb.nix; };
       };
+  modules = [
+    ({ lib, ... }:
+      { packages = { "pkga" = { flags = {}; }; "pkgb" = { flags = {}; }; }; })
+    ];
   }
