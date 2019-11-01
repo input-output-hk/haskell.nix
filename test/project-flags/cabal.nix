@@ -4,6 +4,7 @@ with stdenv.lib;
 
 let
   plan = (importAndFilterProject (callCabalProjectToNix {
+      name = "test-project-flags";
       index-state = "2019-04-30T00:00:00Z";
       src = ./.;
     }));
