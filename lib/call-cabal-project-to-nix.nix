@@ -1,10 +1,10 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }@defaults:
 { name          ? null # optional name for better error messages
 , src
-, index-state   ? null
-, index-sha256  ? null
-, plan-sha256   ? null
-, cabalProject  ? null
+, index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
+, index-sha256  ? null # The hash of the truncated hackage index-state
+, plan-sha256   ? null # The hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation)
+, cabalProject  ? null # Cabal project file (when null uses "${src}/cabal.project")
 , ghc           ? defaults.ghc
 , nix-tools     ? defaults.nix-tools
 , hpack         ? defaults.hpack
