@@ -208,6 +208,19 @@ needed for `importAndFilterProject`.
     })).pkgs;
 ```
 
+| Argument         | Type | Description         |
+|------------------|------|---------------------|
+| `name`          | String | Optional name for better error messages. |
+| `src`           | Path   | Location of the cabal project files. |
+| `index-state`   | Timestamp | Optional hackage index-state, eg. "2019-10-10T00:00:00Z". |
+| `index-sha256`  | Sha256 | Optional hash of the truncated hackage index-state. |
+| `plan-sha256`   | Sha256 | Optional hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation). |
+| `cabalProject`  | Path   | Optional cabal project file (defaults to "${src}/cabal.project"). |
+| `ghc`           |        | Optional ghc to use |
+| `nix-tools`     |        | Optional nix-tools to use |
+| `hpack`         |        | Optional hpack to use |
+| `cabal-install` |        | Optional cabal-install to use |
+
 ## importAndFilterProject
 
 Imports from a derivation created by `callStackToNix`
