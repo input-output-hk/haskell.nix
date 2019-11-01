@@ -10,6 +10,7 @@ let
        sublibs = { };
        tests = { };
        all = "all";
+       allExes = "all";
     };
     package.identifier.name = "empty";
   };
@@ -23,6 +24,7 @@ let
        sublibs = { };
        tests = { ttt = "ttt"; };
        all = "all";
+       allExes = "all";
     };
     package.identifier.name = "nnn";
   };
@@ -38,7 +40,7 @@ lib.runTests {
   # map a component to its component name and check these are correct
   test-applyComponents-library = {
     expr = haskellLib.applyComponents (componentId: component: componentId.cname) emptyConfig;
-    expected = emptyConfig.components // { library = "empty"; all = "empty"; };
+    expected = emptyConfig.components // { library = "empty"; all = "empty"; allExes = "empty"; };
   };
 
   test-applyComponents-components = {
