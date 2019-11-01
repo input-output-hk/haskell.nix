@@ -77,5 +77,18 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
           buildable = true;
           };
         };
+      tests = {
+        "tests" = {
+          depends = [
+            (hsPkgs."base" or (buildDepError "base"))
+            (hsPkgs."pkgb" or (buildDepError "pkgb"))
+            (hsPkgs."process" or (buildDepError "process"))
+            ];
+          build-tools = [
+            (hsPkgs.buildPackages.pkga or (pkgs.buildPackages.pkga or (buildToolDepError "pkga")))
+            ];
+          buildable = true;
+          };
+        };
       };
     } // rec { src = (pkgs.lib).mkDefault ../pkgb; }
