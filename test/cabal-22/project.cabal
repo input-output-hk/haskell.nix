@@ -15,20 +15,20 @@ maintainer:          rodney.lorrimar@iohk.io
 
 library
   exposed-modules:     Lib
-  build-depends:       base ^>=4.11.1.0
+  build-depends:       base >=4.11.1.0
   hs-source-dirs:      lib
   default-language:    Haskell2010
 
 executable project
   main-is:             Main.hs
-  build-depends:       base ^>=4.11.1.0
+  build-depends:       base >=4.11.1.0
                      , project
   default-language:    Haskell2010
 
 benchmark project-bench
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
-  build-depends:       base ^>=4.11.1.0
+  build-depends:       base >=4.11.1.0
                      , project
   default-language:    Haskell2010
   ghc-options: -threaded -rtsopts -Wall -O2
@@ -36,7 +36,7 @@ benchmark project-bench
 test-suite unit
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
-  build-depends:       base ^>=4.11.1.0
+  build-depends:       base >=4.11.1.0
                      , project
                      , hspec
   build-tools:         hspec-discover

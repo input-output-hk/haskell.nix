@@ -9,7 +9,7 @@ library
   exposed-modules:     TestHaddock
   other-modules:       Paths_test_haddock
   -- other-extensions:
-  build-depends:       base ^>=4.11.1.0
+  build-depends:       base >=4.11.1.0
                      , stm
   -- hs-source-dirs:
   default-language:    Haskell2010
