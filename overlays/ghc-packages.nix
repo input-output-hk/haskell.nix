@@ -6,7 +6,7 @@ let
       EOF
     '';
   callCabalSdist = name: src: self.runCommand "${name}-sdist.tar.gz" {
-      nativeBuildInputs = [ self.cabal-install ];
+      nativeBuildInputs = [ self.haskell-nix.cabal-install ];
     } ''
       tmp=$(mktemp -d)
       cp -r ${src}/* $tmp
@@ -65,7 +65,7 @@ in rec {
   ghc-boot-packages = builtins.mapAttrs
     (name: value: builtins.mapAttrs
       (pkgName: dir: importCabal "${name}-${pkgName}" "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
-    self.buildPackages.haskell.compiler;
+    self.buildPackages.haskell-nix.compiler;
 
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value: let package-locs = builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs; in
     self.writeTextFile {
@@ -79,13 +79,13 @@ in rec {
                      ghci +ghci,
                      libiserv +network
       '';
-    }) self.buildPackages.haskell.compiler;
+    }) self.buildPackages.haskell-nix.compiler;
 
   ghc-extra-projects = builtins.mapAttrs (name: proj: self.haskell-nix.cabalProject' {
       name = "ghc-extra-packages";
       src = proj;
       index-state = "2019-10-31T00:00:00Z";
-      ghc = self.buildPackages.haskell.compiler.${name};
+      ghc = self.buildPackages.haskell-nix.compiler.${name};
     })
     ghc-extra-pkgs-cabal-projects;
 

@@ -25,7 +25,7 @@ For =cabal.project= project add a =default.nix=:
 }:
   pkgs.haskell-nix.cabalProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
-    ghc = pkgs.buildPackages.pkgs.haskell.compiler.${haskellCompiler};
+    ghc = pkgs.buildPackages.pkgs.haskell-nix.compiler.${haskellCompiler};
   }
 #+end_src
 

@@ -1,9 +1,10 @@
-self: super: rec {
+self: super: {
+  haskell-nix = super.haskell-nix // rec {
     # Use this to disable the existing haskell infra structure for testing purposes
-    haskell.compiler =
+    compiler =
         let bootPkgs = with self.buildPackages; {
-                ghc = buildPackages.bootstrap.haskell.compiler.ghc844;
-                inherit (bootstrap.haskell.packages) alex happy hscolour;
+                ghc = buildPackages.haskell-nix.bootstrap.compiler.ghc844;
+                inherit (bootstrap.packages) alex happy hscolour;
             };
             sphinx = with self.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
             hsc2hs-align-conditionals-patch = self.fetchpatch {
@@ -70,7 +71,7 @@ self: super: rec {
                 ;
         in ({
             ghc844 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc844; };
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc844; };
 
                 inherit bootPkgs sphinx;
 
@@ -88,7 +89,7 @@ self: super: rec {
                             ++ self.lib.optional self.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
             };
             ghc861 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc861; };
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc861; };
 
                 inherit bootPkgs sphinx;
 
@@ -104,7 +105,7 @@ self: super: rec {
                 ghc-patches = [ D5123-patch ];
             };
             ghc862 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc862; };
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc862; };
 
                 inherit bootPkgs sphinx;
 
@@ -121,7 +122,7 @@ self: super: rec {
                             ++ [ D5123-patch ];
             };
             ghc863 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc863; };
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc863; };
 
                 inherit bootPkgs sphinx;
 
@@ -138,7 +139,7 @@ self: super: rec {
                             ++ [ D5123-patch ];
             };
             ghc864 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc864; };
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc864; };
 
                 inherit bootPkgs sphinx;
 
@@ -155,7 +156,7 @@ self: super: rec {
                             ++ [ D5123-patch ];
             };
             ghc865 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell.compiler.ghc865; };
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc865; };
 
                 inherit bootPkgs sphinx;
 
@@ -175,7 +176,7 @@ self: super: rec {
             ghc865 = let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";
-                ghc = self.buildPackages.haskell.compiler.ghc865;
+                ghc = self.buildPackages.haskell-nix.compiler.ghc865;
             }; in let targetPrefix = "js-unknown-ghcjs-"; in self.runCommand "${targetPrefix}ghc-8.6.5" {
                 passthru = {
                     inherit targetPrefix;
@@ -194,14 +195,8 @@ self: super: rec {
                 '';
         });
 
-    ghc = haskell.compiler.ghc865;
-    cabal-install = self.buildPackages.bootstrap.haskell.packages.cabal-install;
-
-    # see below
-    haskellPackages.hpack = null;
-    haskellPackages.hoogle = self.haskell-nix.haskellPackages.hoogle.components.exes.hoogle;
-    haskellPackages.happy = self.haskell-nix.haskellPackages.happy.components.exes.happy;
-    haskellPackages.alex = self.haskell-nix.haskellPackages.alex.components.exes.alex;
+    ghc = compiler.ghc865;
+    cabal-install = self.buildPackages.haskell-nix.bootstrap.packages.cabal-install;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
@@ -214,11 +209,6 @@ self: super: rec {
     #         name = "hello"; version = "1.0.0.2";
     #     }).components.exes.hello;
     # };
-
-    # stub out lib stuff.
-    haskell.lib = {
-        justStaticExecutables = x: x;
-    };
 
     # NOTE: 8.6.5 prebuilt binaries on macOS, will yield:
     #
@@ -234,63 +224,62 @@ self: super: rec {
 
 
     # the bootstrap infra structure (pre-compiled ghc; bootstrapped cabal-install, ...)
-    bootstrap = {
+    bootstrap = with self.haskell-nix; let ghc = self.buildPackages.haskell-nix.bootstrap.compiler.ghc844; in {
         # XXX: import ../. will throw away all other overlays, config values, ...
         #      this is not ideal!
-        haskell = with self.haskell-nix; let ghc = self.buildPackages.bootstrap.haskell.compiler.ghc844; in {
-            # get binary compilers for bootstrapping.  We'll put the eventual proper
-            # compilers into the same place where nix expects them.
-            compiler = import ../compiler/old-ghc-nix { pkgs = self; };
+        # get binary compilers for bootstrapping.  We'll put the eventual proper
+        # compilers into the same place where nix expects them.
+        compiler = import ../compiler/old-ghc-nix { pkgs = self; };
 
-            packages = {
-                # cabal has it's own bootstrap script which we'll use.
-                cabal-install = import ../compiler/bootstrap/cabal-install.nix {
-                    inherit (self) fetchurl stdenv zlib;
-                    inherit hackage ghc;
-                    src = self.fetchurl {
-                        url = "https://github.com/haskell/cabal/archive/Cabal-v3.0.0.0-rc3.tar.gz";
-                        sha256 = "1zl2mgg8307ykq3v8nmafc6zdhhj1cw7w8ffpap16dsm65lbnx33";
-                    };
-                    version = "3.0.0.0";
+        packages = {
+            # cabal has it's own bootstrap script which we'll use.
+            cabal-install = import ../compiler/bootstrap/cabal-install.nix {
+                inherit (self) fetchurl stdenv zlib;
+                inherit hackage ghc;
+                src = self.fetchurl {
+                    url = "https://github.com/haskell/cabal/archive/Cabal-v3.0.0.0-rc3.tar.gz";
+                    sha256 = "1zl2mgg8307ykq3v8nmafc6zdhhj1cw7w8ffpap16dsm65lbnx33";
                 };
-
-                # disable hpack support during bootstrap
-                hpack = null;
-                nix-tools = nix-tools.override {
-                    inherit ghc;
-                    inherit (bootstrap.haskell.packages) hpack;
-                };
-
-                # now that we have nix-tools and hpack, we can just
-                # use `hackage-package` to build any package from
-                # hackage with haskell.nix.  For alex and happy we
-                # need to use the boot strap compiler as we need them
-                # to build ghcs from source.
-                alex-project = hackage-project {
-                    inherit ghc;
-                    inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
-                    name = "alex"; version = "3.2.4";
-                    index-state = "2019-10-20T00:00:00Z";
-                    plan-sha256 = "086kd6aa5bir3y4aqb1wl5zkj6agz5q4wp4snvdnf6cidz5wra06";
-                };
-                alex = bootstrap.haskell.packages.alex-project.alex.components.exes.alex;
-                happy-project = hackage-project {
-                    inherit ghc;
-                    inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
-                    name = "happy"; version = "1.19.11";
-                    index-state = "2019-10-20T00:00:00Z";
-                    plan-sha256 = "011bxlxdv239psgi80j00km2wcgb68j16sz3fng67d03sqf5i37w";
-                };
-                happy = bootstrap.haskell.packages.happy-project.happy.components.exes.happy;
-                hscolour-project = hackage-project {
-                    inherit ghc;
-                    inherit (bootstrap.haskell.packages) cabal-install nix-tools hpack;
-                    name = "hscolour"; version = "1.24.4";
-                    index-state = "2019-10-20T00:00:00Z";
-                    plan-sha256 = "021rwcmkshibc3mfr833ay5hfr19kq6k32lxyrrb6vp9vmihgw4b";
-                };
-                hscolour = bootstrap.haskell.packages.hscolour-project.hscolour.components.exes.HsColour;
+                version = "3.0.0.0";
             };
+
+            # disable hpack support during bootstrap
+            hpack = null;
+            nix-tools = nix-tools.override {
+                inherit ghc;
+                inherit (bootstrap.packages) hpack;
+            };
+
+            # now that we have nix-tools and hpack, we can just
+            # use `hackage-package` to build any package from
+            # hackage with haskell.nix.  For alex and happy we
+            # need to use the boot strap compiler as we need them
+            # to build ghcs from source.
+            alex-project = hackage-project {
+                inherit ghc;
+                inherit (bootstrap.packages) cabal-install nix-tools hpack;
+                name = "alex"; version = "3.2.4";
+                index-state = "2019-10-20T00:00:00Z";
+                plan-sha256 = "086kd6aa5bir3y4aqb1wl5zkj6agz5q4wp4snvdnf6cidz5wra06";
+            };
+            alex = bootstrap.packages.alex-project.alex.components.exes.alex;
+            happy-project = hackage-project {
+                inherit ghc;
+                inherit (bootstrap.packages) cabal-install nix-tools hpack;
+                name = "happy"; version = "1.19.11";
+                index-state = "2019-10-20T00:00:00Z";
+                plan-sha256 = "011bxlxdv239psgi80j00km2wcgb68j16sz3fng67d03sqf5i37w";
+            };
+            happy = bootstrap.packages.happy-project.happy.components.exes.happy;
+            hscolour-project = hackage-project {
+                inherit ghc;
+                inherit (bootstrap.packages) cabal-install nix-tools hpack;
+                name = "hscolour"; version = "1.24.4";
+                index-state = "2019-10-20T00:00:00Z";
+                plan-sha256 = "021rwcmkshibc3mfr833ay5hfr19kq6k32lxyrrb6vp9vmihgw4b";
+            };
+            hscolour = bootstrap.packages.hscolour-project.hscolour.components.exes.HsColour;
         };
     };
+  };
 }

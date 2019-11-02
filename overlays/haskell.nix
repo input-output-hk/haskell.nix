@@ -142,8 +142,7 @@ self: super: {
             inherit (self) pkgs lib symlinkJoin makeWrapper
                            git nix nix-prefetch-git;
             inherit (self.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
-            hpack = self.haskell.lib.justStaticExecutables
-                (self.haskellPackages.hpack);
+            hpack = null; # nix-tools does not use hpack project files
         };
         # While `nix-tools-cross-compiled` may be cross compiled,
         # getting it from `buildPackages` we should get
@@ -258,7 +257,8 @@ self: super: {
             inherit (self.buildPackages.haskell-nix) dotCabal nix-tools haskellLib;
             pkgs = self.buildPackages.pkgs;
             inherit (self.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
-            inherit (self.buildPackages.pkgs) runCommand cabal-install ghc symlinkJoin cacert;
+            inherit (self.buildPackages.haskell-nix) cabal-install ghc;
+            inherit (self.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
@@ -351,10 +351,10 @@ self: super: {
         # are tested and cached.
         haskellNixRoots = self.recurseIntoAttrs (builtins.mapAttrs (_: self.recurseIntoAttrs) {
           inherit (self.haskell-nix) nix-tools source-pins;
-          bootstap-nix-tools = self.bootstrap.haskell.packages.nix-tools;
-          alex-plan-nix = withInputs self.bootstrap.haskell.packages.alex-project.plan-nix;
-          happy-plan-nix = withInputs self.bootstrap.haskell.packages.happy-project.plan-nix;
-          hscolour-plan-nix = withInputs self.bootstrap.haskell.packages.hscolour-project.plan-nix;
+          bootstap-nix-tools = self.haskell-nix.bootstrap.packages.nix-tools;
+          alex-plan-nix = withInputs self.haskell-nix.bootstrap.packages.alex-project.plan-nix;
+          happy-plan-nix = withInputs self.haskell-nix.bootstrap.packages.happy-project.plan-nix;
+          hscolour-plan-nix = withInputs self.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
           ghc-extra-projects = builtins.mapAttrs (_: proj: self.recurseIntoAttrs (withInputs proj.plan-nix))
             (self.lib.filterAttrs (n: _: n != "ghc844" && n != "ghc861" && n != "ghc862") self.ghc-extra-projects);
         });

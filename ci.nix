@@ -46,11 +46,11 @@ in
                 (ghc-extra-packages.ghc865.remote-iserv.components.exes).remote-iserv;
 
       };
-      haskell.compiler = {
+      haskell-nix.compiler = {
         x86_64-linux = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; }));
-            haskell.compiler;
+            haskell-nix.compiler;
         x86_64-darwin = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin";}));
-            haskell.compiler;
+            haskell-nix.compiler;
       };
       tests = {
         x86_64-linux = (import ./test { nixpkgs = nixpkgsSrc; nixpkgsArgs = { system = "x86_64-linux"; }; });
