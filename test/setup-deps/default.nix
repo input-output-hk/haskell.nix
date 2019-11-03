@@ -5,6 +5,7 @@ with stdenv.lib;
 
 let
   project = haskell-nix.cabalProject' {
+    name = "test-setup-deps";
     src = ./.;
     modules = [{
       # Package has no exposed modules which causes
