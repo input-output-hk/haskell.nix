@@ -278,7 +278,7 @@ nix build -f . haskell-nix.nix-tools --out-link nt
 }:
   pkgs.haskell-nix.cabalProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
-    ghc = pkgs.buildPackages.pkgs.haskell.compiler.${haskellCompiler};
+    ghc = pkgs.buildPackages.pkgs.haskell-nix.compiler.${haskellCompiler};
     # pkg-def-extras = [
     #   # Additional packages ontop of all those listed in `cabal.project`
     # ];
