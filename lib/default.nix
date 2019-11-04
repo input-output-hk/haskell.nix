@@ -49,7 +49,7 @@ with haskellLib;
       buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true);
       libComp = if comps.library == null || !(comps.library.buildable or true)
         then {}
-        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" ]));
+        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" "setup" ]));
       subComps = lib.mapAttrs
         (ctype: attrs: lib.mapAttrs (applySubComp ctype) (buildableAttrs attrs))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);
