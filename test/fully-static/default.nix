@@ -45,7 +45,7 @@ let
       in {
         # Select a non-GMP compiler, usually for software licensing reasons.
         ghc.package = mkIf (stdenv.hostPlatform.isMusl && !gpl)
-            buildPackages.haskell.compiler.integer-simple.${compiler};
+            buildPackages.haskell-nix.compiler.integer-simple.${compiler};
 
         # Add GHC flags and libraries for fully static build
         packages.pandoc.components.exes.pandoc = withFullyStatic;

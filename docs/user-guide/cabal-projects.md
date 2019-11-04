@@ -31,7 +31,7 @@ If all goes well, you should now have the file
 
 !!! tip "Specifying the GHC version"
     To use a specific compiler version, replace `haskellPackages.ghc`
-    with something like `haskell.compiler.ghc865`. The given compiler
+    with something like `haskell-nix.compiler.ghc865`. The given compiler
     must exist in your Nixpkgs version, of course. See also the
     [Nixpkgs Manual][compiler].
 

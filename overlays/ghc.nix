@@ -9,7 +9,7 @@ self: super: with super;
         hardeningDisable = (drv.hardeningDisable or []) ++ [ "stackprotector" "format" ];
       };
    in {
-   haskell = let
+   haskell-nix = let
      # These patches (ghcPkgOverrides and ghcDrvOverrides) only apply to vanilla source ghcs.
      # Not ghcjs or binary distributions.
      # We also ignore ghc82. And are only concerned with ghc84+
@@ -24,8 +24,8 @@ self: super: with super;
      overrideCompiler = compiler:
        (compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides;
    in
-     lib.recursiveUpdate super.haskell {
+     lib.recursiveUpdate super.haskell-nix {
        compiler = lib.mapAttrs (_name: overrideCompiler)
-         (lib.filterAttrs (name: _value: needsPatches name) super.haskell.compiler);
+         (lib.filterAttrs (name: _value: needsPatches name) super.haskell-nix.compiler);
      };
    }

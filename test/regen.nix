@@ -11,7 +11,7 @@ writeScript "regen-tests.sh" ''
 
   set -euo pipefail
 
-  export PATH="${lib.makeBinPath [ coreutils glibc haskell-nix.nix-tools cabal-install haskell.compiler.ghc865 ]}"
+  export PATH="${lib.makeBinPath [ coreutils glibc haskell-nix.nix-tools cabal-install haskell-nix.compiler.ghc865 ]}"
 
   cabal_configure() {
     cabal new-configure \
