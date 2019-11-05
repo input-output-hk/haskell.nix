@@ -130,7 +130,7 @@ self: super: {
             };
 
         # Package sets for all stackage snapshots.
-        snapshots = import ../snapshots.nix { inherit (self) lib; inherit mkPkgSet stackage; };
+        snapshots = import ../snapshots.nix { inherit (self) lib ghc-boot-packages; inherit mkPkgSet stackage; };
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages = snapshots."lts-13.26";
 
