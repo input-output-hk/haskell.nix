@@ -310,7 +310,7 @@ self: super: {
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in {inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
+            in { inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
 
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // {
@@ -320,17 +320,25 @@ self: super: {
               shells.ghc = p.hsPkgs.shellFor {};
             };
 
-        stackProject =
+        stackProject' =
             { ... }@args:
-            let stack-pkgs = (importAndFilterProject (callStackToNix args)).pkgs;
+            let stack = importAndFilterProject (callStackToNix args);
             in let pkg-set = mkStackPkgSet
-                { inherit stack-pkgs;
+                { stack-pkgs = stack.pkgs;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; }
                           ++ self.lib.optional (args ? cache) (mkCacheModule args.cache);
                 };
-            in pkg-set.config.hsPkgs;
+            in { inherit (pkg-set.config) hsPkgs; stack-nix = stack.nix; };
+
+        stackProject = args: let p = stackProject' args;
+            in p.hsPkgs // {
+              inherit (p) stack-nix;
+              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
+              # But we should encourage use of `nix-shell -A shellFor`
+              shells.ghc = p.hsPkgs.shellFor {};
+            };
 
         # The functions that return a plan-nix often have a lot of dependencies
         # that could be GCed and also will not make it into hydra cache.
