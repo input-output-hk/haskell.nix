@@ -1,0 +1,15 @@
+cabal-version:       >=1.10
+
+name:                exe-only
+version:             0.1.0.0
+license:             PublicDomain
+author:              Hamish Mackenzie
+maintainer:          Hamish.Mackenzie@iohk.io
+build-type:          Simple
+
+executable exe-only
+  main-is:             Main.hs
+  build-depends:       base
+                     , extra
+                     , optparse-applicative
+  default-language:    Haskell2010

@@ -242,6 +242,9 @@ stdenv.mkDerivation ({
   # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
   #         folder isntead of a file for the configuration.  Therfore if the result is a folder,
   #         we need to register each and every element of that folder.
+  #
+  # Note 3: if a package has no libs SETUP will not generate anything.  This can
+  #         happen when building the `all` component of a package.
   installPhase = ''
     runHook preInstall
     $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
@@ -252,7 +255,7 @@ stdenv.mkDerivation ({
         for pkg in ${name}.conf/*; do
           ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register "$pkg"
         done
-      else
+      elif [ -e "${name}.conf" ]; then
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
       fi
     ''}

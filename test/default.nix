@@ -29,6 +29,7 @@ in pkgs.recurseIntoAttrs {
   fully-static = haskell-nix.callPackage ./fully-static { inherit (pkgs) buildPackages; };
   ghc-options-cabal = haskell-nix.callPackage ./ghc-options/cabal.nix {};
   ghc-options-stack = haskell-nix.callPackage ./ghc-options/stack.nix {};
+  exe-only = haskell-nix.callPackage ./exe-only { inherit util; };
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
