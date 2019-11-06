@@ -78,9 +78,12 @@ in
                     (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
                         (haskell-nix.stackProject cardano-wallet-args));
                 plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (haskell-nix.stackProject plutus-args).language-plutus-core.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
+                        (haskell-nix.stackProject plutus-args));
                 x86_64-pc-mingw32-plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (haskell-nix.stackProject plutus-args).language-plutus-core.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
+                        (haskell-nix.stackProject plutus-args));
+
         };
         x86_64-darwin = {
                 # cardano-sl
@@ -99,9 +102,11 @@ in
                     (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
                         (haskell-nix.stackProject cardano-wallet-args));
                 plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; }));
-                    (haskell-nix.stackProject plutus-args).language-plutus-core.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
+                        (haskell-nix.stackProject plutus-args));
                 x86_64-pc-mingw32-plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (haskell-nix.stackProject plutus-args).language-plutus-core.components.all;
+                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
+                        (haskell-nix.stackProject plutus-args));
         };
     };
 
