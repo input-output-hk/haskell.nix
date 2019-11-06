@@ -12,16 +12,21 @@ with lib;
 
 let
   mkSnapshot = name: pkg-def: (let pkgSet = mkPkgSet {
-    # libiserv is not in hackage so we should not try to get it from there
+    # Some boot packages are (libiserv) are in lts, but not in hackage,
+    # so we should not try to get it from hackage based on the stackage
+    # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
     pkg-def = hackage:
       let original = pkg-def hackage;
+          bootPkgNames = lib.attrNames
+            ghc-boot-packages.${(pkg-def hackage).compiler.nix-name};
       in original // {
-        packages = lib.filterAttrs (n: _: n != "libiserv") original.packages;
+        packages = lib.filterAttrs (n: _: lib.all (b: n != b) bootPkgNames)
+          original.packages;
       };
     pkg-def-extras = (pkg-def-extras name)
       ++ [(hackage: ghc-boot-packages.${(pkg-def hackage).compiler.nix-name})];
     modules = [
-      { reinstallableLibGhc = true; }
+      { reinstallableLibGhc = true; } # Allow ghc library to be installed for packages that need it
       { packages.Cabal.patches = [ ./overlays/patches/Cabal/fix-data-dir.patch ]; }
       { packages.alex.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
       { packages.happy.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
