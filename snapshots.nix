@@ -6,15 +6,29 @@
 # A particular package in a snapshot would be accessed with:
 #   snapshots."lts-13.18".conduit
 
-{ lib, mkPkgSet, stackage }:
+{ lib, mkPkgSet, stackage, ghc-boot-packages }:
 
 with lib;
 
 let
   mkSnapshot = name: pkg-def: (let pkgSet = mkPkgSet {
-    inherit pkg-def;
-    pkg-def-extras = pkg-def-extras name;
+    # Some boot packages (libiserv) are in lts, but not in hackage,
+    # so we should not try to get it from hackage based on the stackage
+    # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
+    pkg-def = hackage:
+      let original = pkg-def hackage;
+          bootPkgNames = lib.attrNames
+            ghc-boot-packages.${(pkg-def hackage).compiler.nix-name};
+      in original // {
+        packages = lib.filterAttrs (n: _: lib.all (b: n != b) bootPkgNames)
+          original.packages;
+      };
+    # ghc-boot-packages are needed for the reinstallable ghc library and
+    # are constructed from the patched ghc source.
+    pkg-def-extras = (pkg-def-extras name)
+      ++ [(hackage: ghc-boot-packages.${(pkg-def hackage).compiler.nix-name})];
     modules = [
+      { reinstallableLibGhc = true; } # Allow ghc library to be installed for packages that need it
       { packages.Cabal.patches = [ ./overlays/patches/Cabal/fix-data-dir.patch ]; }
       { packages.alex.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
       { packages.happy.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
@@ -40,7 +54,7 @@ let
       # libraries shipped with GHC.
       # https://github.com/commercialhaskell/stackage/issues/4466
       fix-ghc-transformers = {
-        predicate = ltsInRange "12" "14";
+        predicate = ltsInRange "12" "14"; # [12, 14) : 14.1 has correct versions
         extra = hackage: {
           packages = {
             "transformers" = (((hackage.transformers)."0.5.6.2").revisions).default;
@@ -53,6 +67,7 @@ let
       # packages. Stackage does not include it in the snapshots
       # because it is expected that hsc2hs comes with ghc.
       fix-hsc2hs = {
+        predicate = ltsInRange "1" "14"; # [1, 14) : 14.1 includes hsc2hs
         extra = hackage: {
           packages = {
             "hsc2hs" = (((hackage.hsc2hs)."0.68.4").revisions).default;
