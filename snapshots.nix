@@ -12,7 +12,7 @@ with lib;
 
 let
   mkSnapshot = name: pkg-def: (let pkgSet = mkPkgSet {
-    # Some boot packages are (libiserv) are in lts, but not in hackage,
+    # Some boot packages (libiserv) are in lts, but not in hackage,
     # so we should not try to get it from hackage based on the stackage
     # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
     pkg-def = hackage:
@@ -23,6 +23,8 @@ let
         packages = lib.filterAttrs (n: _: lib.all (b: n != b) bootPkgNames)
           original.packages;
       };
+    # ghc-boot-packages are needed for the reinstallable ghc library and
+    # are constructed from the patched ghc source.
     pkg-def-extras = (pkg-def-extras name)
       ++ [(hackage: ghc-boot-packages.${(pkg-def hackage).compiler.nix-name})];
     modules = [
