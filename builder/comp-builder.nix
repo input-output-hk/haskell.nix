@@ -117,9 +117,10 @@ let
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
-  installedExe = "${if haskellLib.isTest componentId || haskellLib.isBenchmark componentId
+  installedExeDir = if haskellLib.isTest componentId || haskellLib.isBenchmark componentId
     then name
-    else "bin"}/${componentId.cname}${exeExt}";
+    else "bin";
+  installedExe = "${installedExeDir}/${componentId.cname}${exeExt}";
 
 in stdenv.lib.fix (drv:
 
@@ -183,7 +184,7 @@ stdenv.mkDerivation ({
   prePatch = if (cabalFile != null)
      then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
      else lib.optionalString (cabal-generator == "hpack") ''
-       ${hsPkgs.hpack.components.exes.hpack}/bin/hpack
+       ${buildPackages.haskell-nix.haskellPackages.hpack.components.exes.hpack}/bin/hpack
      '';
 
   configurePhase = ''
@@ -276,7 +277,7 @@ stdenv.mkDerivation ({
     + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.isExe componentId || haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId)) ''
       echo "Copying libffi and gmp .dlls ..."
       for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
-        find "$p" -iname '*.dll' -exec cp {} $out/bin \;
+        find "$p" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
       done
       # copy all .dlls into the local directory.
       # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
@@ -284,7 +285,7 @@ stdenv.mkDerivation ({
       echo "Copying library dependencies..."
       for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
         if [ -d "$libdir" ]; then
-          find "$libdir" -iname '*.dll' -exec cp {} $out/bin \;
+          find "$libdir" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
         fi
       done
     '')
