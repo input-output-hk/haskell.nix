@@ -1,4 +1,4 @@
-{ stdenv, mkStackPkgSet }:
+{ stdenv, pkgs, mkStackPkgSet }:
 
 with stdenv.lib;
 
@@ -13,23 +13,10 @@ let
 
   packages = pkgSet.config.hsPkgs;
 
-in
-  stdenv.mkDerivation {
-    name = "stack-simple-test";
-
-    buildCommand = ''
-      exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe"
-
-      printf "checking whether executable runs... " >& 2
-      $exe
-
-      touch $out
-    '';
-
-    meta.platforms = platforms.all;
-
-    passthru = {
+in pkgs.recurseIntoAttrs {
+  stack-simple-exe = packages.stack-simple.components.exes.stack-simple-exe.run // {
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
-    };
-  }
+  };
+  stack-simple-test = packages.stack-simple.components.tests.stack-simple-test.run;
+}
