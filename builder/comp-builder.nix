@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp }:
 
 { componentId
 , component
@@ -136,6 +136,9 @@ stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
+    run = runCommand (fullName + "-run") {} ''
+      ${toString component.testWrapper} ${drv}/bin/${componentId.cname}${exeExt} | tee $out
+    '';
   };
 
   meta = {
@@ -267,6 +270,21 @@ stdenv.mkDerivation ({
     '')
     # In case `setup copy` did not creat this
     + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
+    + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.isExe componentId || haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId)) ''
+      echo "Copying libffi and gmp .dlls ..."
+      for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
+        find "$p" -iname '*.dll' -exec cp {} $out/bin \;
+      done
+      # copy all .dlls into the local directory.
+      # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
+      # to copy over dlls as needed.
+      echo "Copying library dependencies..."
+      for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
+        if [ -d "$libdir" ]; then
+          find "$libdir" -iname '*.dll' -exec cp {} $out/bin \;
+        fi
+      done
+    '')
     }
     runHook postInstall
   '';

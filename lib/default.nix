@@ -58,6 +58,7 @@ with haskellLib;
 
   isLibrary = componentId: componentId.ctype == "lib";
   isAll = componentId: componentId.ctype == "all";
+  isExe = componentId: componentId.ctype == "exe";
   isTest = componentId: componentId.ctype == "test";
   isBenchmark = componentId: componentId.ctype == "bench";
 
