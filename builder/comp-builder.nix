@@ -117,6 +117,9 @@ let
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
+  installedExe = "${if haskellLib.isTest componentId || haskellLib.isBenchmark componentId
+    then name
+    else "bin"}/${componentId.cname}${exeExt}";
 
 in stdenv.lib.fix (drv:
 
@@ -137,7 +140,7 @@ stdenv.mkDerivation ({
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
     run = runCommand (fullName + "-run") {} ''
-      ${toString component.testWrapper} ${drv}/bin/${componentId.cname}${exeExt} | tee $out
+      ${toString component.testWrapper} ${drv}/${installedExe} | tee $out
     '';
   };
 
