@@ -3,7 +3,7 @@
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
 
-{ nixpkgs ? ./nixpkgs
+{ nixpkgs ? (import ./.).nixpkgs
 # Provide args to the nixpkgs instantiation.
 , system ? builtins.currentSystem
 , crossSystem ? null
@@ -12,8 +12,8 @@
 }:
 
 let
-  haskellNixArgs = import ./default.nix;
-  pkgs = import nixpkgs ({
+  haskellNixArgs = (import ./.).nixpkgsArgs;
+  pkgs = nixpkgs ({
     config   = haskellNixArgs.config // config;
     overlays = haskellNixArgs.overlays ++
       [(self: super: {

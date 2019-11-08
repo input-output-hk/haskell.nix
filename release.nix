@@ -1,10 +1,10 @@
-{ supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
+{ supportedSystems ? [ "x86_64-darwin" ]
 , scrubJobs ? true
 , haskell-nix ? { outPath = ./.; rev = "abcdef"; }
 , nixpkgsArgs ? {}
 }:
 
-let fixedNixpkgs = import ./nixpkgs {}; in
+let fixedNixpkgs = (import ./.).nixpkgs {}; in
 with fixedNixpkgs.lib;
 with (import (fixedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
   inherit supportedSystems scrubJobs nixpkgsArgs;
