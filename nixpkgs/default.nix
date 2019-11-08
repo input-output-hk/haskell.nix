@@ -1,5 +1,5 @@
 # see ../docs/dev/nixpkgs-pin.md
-{ nixpkgs-pin ? (import ../.).default-nixpkgs-name, ... }@args:
+{ nixpkgs-pin }:
 let
   fetch = jsonFile:
     with builtins;
@@ -9,5 +9,4 @@ let
       inherit (spec) sha256;
       url = "${spec.url}/archive/${spec.rev}.tar.gz";
     };
-in import (fetch (./. + "/${nixpkgs-pin}.json"))
-  ((import ../.).nixpkgsArgs // (builtins.removeAttrs args [ "nixpkgs-pin" ]))
+in fetch (./. + "/${nixpkgs-pin}.json")

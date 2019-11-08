@@ -4,7 +4,7 @@
 , nixpkgsArgs ? {}
 }:
 
-let fixedNixpkgs = (import ./.).nixpkgs {}; in
+let fixedNixpkgs = import (import ./.).defaultNixpkgs (import ./.).nixpkgsArgs; in
 with fixedNixpkgs.lib;
 with (import (fixedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
   inherit supportedSystems scrubJobs nixpkgsArgs;

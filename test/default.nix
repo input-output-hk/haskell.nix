@@ -1,5 +1,5 @@
-{ pkgs ? nixpkgs nixpkgsArgs
-, nixpkgs ? (import ../.).nixpkgs
+{ pkgs ? import nixpkgs ((import ../.).nixpkgsArgs // nixpkgsArgs)
+, nixpkgs ? (import ../.).defaultNixpkgs
 , nixpkgsArgs ? { }
 }:
 

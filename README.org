@@ -20,7 +20,8 @@ For the documentation, see https://input-output-hk.github.io/haskell.nix/.
 For =cabal.project= project add a =default.nix=:
 
 #+begin_src sh
-{ pkgs ? (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)).nixpkgs {}
+{ haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)
+, pkgs ? import haskellNix.defaultNixpkgs haskellNix.nixpkgsArgs
 , haskellCompiler ? "ghc865"
 }:
   pkgs.haskell-nix.cabalProject {
@@ -32,7 +33,8 @@ For =cabal.project= project add a =default.nix=:
 For a =stack.yaml= project add a =default.nix=:
 
 #+begin_src sh
-{ pkgs ? (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)).nixpkgs {}
+{ haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)
+, pkgs ? import haskellNix.defaultNixpkgs haskellNix.nixpkgsArgs
 }:
   pkgs.haskell-nix.stackProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };

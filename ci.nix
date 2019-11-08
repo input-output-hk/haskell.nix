@@ -4,17 +4,17 @@
 
 let
   nixpkgs-pins = [
-    # "release-18.09"
-    "release-19.03"
-    # "release-19.09"
+    # "18.09"
+    "19.03"
+    # "19.09"
   ];
-  defaultNixpkgs = (import ./.).nixpkgs {};
+  defaultNixpkgs = import (import ./.).defaultNixpkgs (import ./.).nixpkgsArgs;
   recRecurseIntoAttrs = with defaultNixpkgs; pred: x: if pred x then recurseIntoAttrs (lib.mapAttrs (n: v: if n == "buildPackages" then v else recRecurseIntoAttrs pred v) x) else x;
 in
   recRecurseIntoAttrs (x: with defaultNixpkgs; lib.isAttrs x && !lib.isDerivation x) (
     defaultNixpkgs.lib.genAttrs nixpkgs-pins (nixpkgs-pin: with (import ./nixpkgs { inherit nixpkgs-pin; });
       let
-        nixpkgs = (import ./.).nixpkgs-pins.${nixpkgs-pin};
+        nixpkgs = args: import (import ./.).nixpkgs-pins.${nixpkgs-pin} ((import ./.).nixpkgsArgs // args);
       in {
       x86_64-linux = {
             hello = with nixpkgs { system = "x86_64-linux"; };
