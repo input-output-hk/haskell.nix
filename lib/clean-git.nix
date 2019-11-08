@@ -93,7 +93,8 @@ then
         else toString gitDir + "/config";
 
     # We need the .gitmodules file for submoules to work.
-    gitModules = builtins.path { name = "gitmodules"; path = toString src + "/.gitmodules"; };
+    gitModulesStr = toString src + "/.gitmodules";
+    gitModules = builtins.path { name = "gitmodules"; path = gitModulesStr; };
 
     # Make a temporary dir that looks enough like the real thing for
     # `git ls-files --recurse-submodules` to give us an accurate list
@@ -108,7 +109,9 @@ then
         mkdir -p .git-common/objects .git-common/refs
         cp ${commonConfig} .git-common/config
         echo ../.git-common > .git/commondir
-        cp ${gitModules} ./.gitmodules
+        ${ lib.optionalString (builtins.pathExists gitModulesStr) ''
+          cp ${gitModules} ./.gitmodules
+        ''}
         ${git}/bin/git ls-files --recurse-submodules > $out
       '';
 
