@@ -83,7 +83,7 @@ let haskellNix = import (builtins.fetchTarball https://github.com/input-output-h
 in import haskellNix.defaultNixpkgs haskellNix.nixpkgsArgs
 ```
 
-To specify the pinned nixpkgs (out of `release-18.09`, `release-19.03` and `release-19.09`) use:
+To specify the pinned nixpkgs (out of `18.09`, `19.03` and `19.09`) use:
 
 ```nix
 let haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
