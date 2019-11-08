@@ -220,6 +220,7 @@ needed for `importAndFilterProject`.
 | `nix-tools`     |        | Optional nix-tools to use |
 | `hpack`         |        | Optional hpack to use |
 | `cabal-install` |        | Optional cabal-install to use |
+| `configureArgs` | String | Optional extra arguments to pass to `cabal new-configure` (--enable-tests is included by default, include `--disable-tests` to override that). |
 
 ## importAndFilterProject
 
