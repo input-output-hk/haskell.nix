@@ -4,7 +4,11 @@
 , nixpkgsArgs ? {}
 }:
 
-let fixedNixpkgs = import ./nixpkgs {}; in
+# Just checking hydra (TODO delete this and put arg back)
+let fixedNixpkgs = import (builtins.fetchTarball {
+    url = "https://github.com/input-output-hk/haskell.nix/archive/1c85c0561ab93bcd16616ff0b32ee59689d0344d.tar.gz";
+    sha256 = "0vqd12kv4gwzc49i7rmii6ixlfrdwnbjvmibcj4yr64k1sspcgbn";
+  } + "/nixpkgs") {}; in
 with fixedNixpkgs.lib;
 with (import (fixedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
   inherit supportedSystems scrubJobs nixpkgsArgs;
