@@ -9,6 +9,7 @@
 , nix-tools     ? defaults.nix-tools
 , hpack         ? defaults.hpack
 , cabal-install ? defaults.cabal-install
+, configureArgs ? "" # Extra arguments to pass to `cabal new-configure` (--enable-tests is included by default, include `--disable-tests` to override that)
 , ...
 }@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
@@ -182,7 +183,8 @@ let
       sha256 = index-sha256-found; }} cabal new-configure \
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
-        --enable-tests
+        --enable-tests \
+        ${configureArgs}
 
     mkdir -p $out
 
