@@ -77,6 +77,15 @@ The easiest way to get a hold of [Haskell.nix][] is with
 [`fetchTarball`](https://nixos.org/nix/manual/#ssec-builtins).
 
 ```nix
+import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz + "/nixpkgs")
+  { nixpkgs-pin = "release-19.03"; }
+```
+The `nixpkgs-pin` argument is optional and specifies which of the nixpkgs versions.
+The supported options are `release-18.09`, `release-19.03` and `release-19.09` (the default).
+
+To use a different version of nixpkgs:
+
+```nix
 import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
 ```
 
@@ -85,7 +94,7 @@ import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-
 If your project has a `cabal.project` you can add a `default.nix` like this:
 
 ```nix
-{ pkgs ? import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
+{ pkgs ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz + "/nixpkgs") {}
 , haskellCompiler ? "ghc865"
 }:
   pkgs.haskell-nix.cabalProject {
@@ -154,7 +163,7 @@ or one of the constraints in your local `.cabal` files).
 If your project has a `stack.yaml` you can add a `default.nix` like this:
 
 ```nix
-{ pkgs ? import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
+{ pkgs ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz + "/nixpkgs") {}
 }:
   pkgs.haskell-nix.stackProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
@@ -243,14 +252,15 @@ these Git repositories correspond to the actual Hackage and Stackage.
 [stackage.nix]: https://github.com/input-output-hk/stackage.nix
 
 ```nix
-{ pkgs ? import <nixpkgs> (haskellNixArgs // { overlays = haskellNixArgs.overlays ++ [
+{ pkgs ? import (haskellNix + "/nixpkgs") (haskellNixArgs // { overlays = haskellNixArgs.overlays ++ [
   (self: super: {
     haskell-nix = super.haskell-nix // {
       hackageSourceJSON  = ./hackage-src.json;
       stackageSourceJSON = ./stackage-src.json;
     };
   })]; })
-, haskellNixArgs ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)
+, haskellNix ? builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz
+, haskellNixArgs = import haskellNix
 }:
   pkgs
 ```
@@ -262,9 +272,8 @@ attrsets and try examples.
 
 ```
 # example.nix
-{ nixpkgs ? <nixpkgs> }:
 rec {
-  haskell = import nixpkgs (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz));
+  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz + "/nixpkgs") {};
   pkgNames = haskell.pkgs.lib.attrNames haskell.haskell-nix.snapshots."lts-13.18";
 }
 ```

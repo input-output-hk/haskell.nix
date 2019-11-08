@@ -9,4 +9,5 @@ let
       inherit (spec) sha256;
       url = "${spec.url}/archive/${spec.rev}.tar.gz";
     };
-in import (fetch (./. + "/${nixpkgs-pin}.json")) (builtins.removeAttrs args [ "nixpkgs-pin" ])
+in import (fetch (./. + "/${nixpkgs-pin}.json"))
+  ((import ../.) // (builtins.removeAttrs args [ "nixpkgs-pin" ]))
