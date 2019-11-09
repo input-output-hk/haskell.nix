@@ -1,4 +1,7 @@
 rec {
+  # Make error given when using haskell.nix the old way clear
+  _Update_Haskell_Nix_See_PR_307_ = "https://github.com/input-output-hk/haskell.nix/pull/307";
+  
   # nixpkgsArgs is designed to be passed directly nixpkgs with something like:
   #   import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)).nixpkgsArgs
   nixpkgsArgs = {
