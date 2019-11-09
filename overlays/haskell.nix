@@ -76,6 +76,18 @@ self: super: {
                 inherit hackage pkg-def;
             });
 
+        # Some boot packages (libiserv) are in lts, but not in hackage,
+        # so we should not try to get it from hackage based on the stackage
+        # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
+        excludeBootPackages = pkg-def: hackage:
+          let original = pkg-def hackage;
+              bootPkgNames = self.lib.attrNames
+                self.ghc-boot-packages.${(pkg-def hackage).compiler.nix-name};
+          in original // {
+            packages = self.lib.filterAttrs (n: _: self.lib.all (b: n != b) bootPkgNames)
+              original.packages;
+          };
+
         # Create a Haskell package set based on a Stack configuration.
         mkStackPkgSet =
             { stack-pkgs  # Path to the output of stack-to-nix
@@ -92,7 +104,7 @@ self: super: {
                 compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
             in mkPkgSet {
-                inherit pkg-def;
+                pkg-def = excludeBootPackages pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
                                    self.ghc-boot-packages.${compiler.nix-name}
                                  ]
@@ -130,7 +142,7 @@ self: super: {
             };
 
         # Package sets for all stackage snapshots.
-        snapshots = import ../snapshots.nix { inherit (self) lib ghc-boot-packages; inherit mkPkgSet stackage; };
+        snapshots = import ../snapshots.nix { inherit (self) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages = snapshots."lts-14.13";
 
