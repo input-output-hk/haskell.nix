@@ -1,5 +1,5 @@
 # see ../docs/dev/nixpkgs-pin.md
-{ nixpkgs-pin }:
+{ nixpkgs-pin ? "release-19.09" }:
 let
   fetch = jsonFile:
     with builtins;
