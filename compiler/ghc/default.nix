@@ -310,6 +310,9 @@ in stdenv.mkDerivation (rec {
     haskellCompilerName = "ghc-${version}";
 
     configured-src = configured-src;
+
+    # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
+    isHaskellNixCompiler = true;
   } // extra-passthru;
 
   meta = {

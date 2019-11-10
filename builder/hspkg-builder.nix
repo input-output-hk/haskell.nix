@@ -18,6 +18,10 @@
 , ...
 }@config:
 
+assert (if ghc.isHaskellNixCompiler or false then true
+  else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
+    + pkgs.lib.optionalString (name != null) (" for " + name)));
+
 let
   cabalFile = if revision == null || revision == 0 then null else
     fetchurl {
