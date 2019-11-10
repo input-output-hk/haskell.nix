@@ -7,6 +7,6 @@
         stack-simple = ./stack-simple.nix;
         };
       };
-  resolver = "lts-13.26";
+  resolver = "lts-14.13";
   modules = [ ({ lib, ... }: { packages = {}; }) { packages = {}; } ];
   }

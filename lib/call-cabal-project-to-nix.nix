@@ -16,6 +16,11 @@
 assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
          else true);
+
+assert (if ghc.isHaskellNixCompiler or false then true
+  else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
+    + pkgs.lib.optionalString (name != null) (" for " + name)));
+
 let
   maybeCleanedSource =
     if haskellLib.canCleanSource src
