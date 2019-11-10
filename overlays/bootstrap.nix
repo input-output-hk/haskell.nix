@@ -229,7 +229,10 @@ self: super: {
         #      this is not ideal!
         # get binary compilers for bootstrapping.  We'll put the eventual proper
         # compilers into the same place where nix expects them.
-        compiler = import ../compiler/old-ghc-nix { pkgs = self; };
+        # We mark these compilers as boot compilers to make sure they are only used
+        # where a boot compiler is expected.
+        compiler = builtins.mapAttrs (_: v: v // { isHaskellNixBootCompiler = true; })
+          (import ../compiler/old-ghc-nix { pkgs = self; });
 
         packages = {
             # cabal has it's own bootstrap script which we'll use.
@@ -246,7 +249,8 @@ self: super: {
             # disable hpack support during bootstrap
             hpack = null;
             nix-tools = nix-tools.override {
-                inherit ghc;
+                # Only a boot compiler is suitable here
+                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) hpack;
             };
 
@@ -256,7 +260,8 @@ self: super: {
             # need to use the boot strap compiler as we need them
             # to build ghcs from source.
             alex-project = hackage-project {
-                inherit ghc;
+                # Only a boot compiler is suitable here
+                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "alex"; version = "3.2.4";
                 index-state = "2019-10-20T00:00:00Z";
@@ -264,7 +269,8 @@ self: super: {
             };
             alex = bootstrap.packages.alex-project.alex.components.exes.alex;
             happy-project = hackage-project {
-                inherit ghc;
+                # Only a boot compiler is suitable here
+                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "happy"; version = "1.19.11";
                 index-state = "2019-10-20T00:00:00Z";
@@ -272,7 +278,8 @@ self: super: {
             };
             happy = bootstrap.packages.happy-project.happy.components.exes.happy;
             hscolour-project = hackage-project {
-                inherit ghc;
+                # Only a boot compiler is suitable here
+                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "hscolour"; version = "1.24.4";
                 index-state = "2019-10-20T00:00:00Z";
