@@ -54,6 +54,8 @@ in
 if builtins.pathExists (toString src + "/.git")
 then
   let
+    isWorktree = !builtins.pathExists (toString src + "/.git/index");
+    
     # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
         filter = path: type:
@@ -64,7 +66,7 @@ then
             lib.any (i: (lib.hasSuffix i path)) [
               "/config" "/index" "/HEAD" "/objects" "/refs" ]);
       } // (
-      if builtins.pathExists (toString src + "/.git/index")
+      if !isWorktree
         then { inherit src; subDir = ".git"; }
         else {
           # likely a git worktree, so follow the indirection
@@ -96,6 +98,19 @@ then
     gitModulesStr = toString src + "/.gitmodules";
     gitModules = builtins.path { name = "gitmodules"; path = gitModulesStr; };
 
+    gitSubmoduleFiles = cleanSourceWith {
+      inherit src;
+      filter = path: type:
+          type == "directory" # TODO get sudmodule directories from `.gitmodules`
+                              # and use that to filter directory tree here
+        ||
+          lib.any (i: (lib.hasSuffix i path)) [
+            ".gitmodules" ".git/config" ".git/index" ".git/HEAD" ".git/objects" ".git/refs" ] ||
+          (lib.strings.hasInfix ".git/modules/" path &&
+            lib.any (i: (lib.hasSuffix i path)) [
+              "config" "index" "HEAD" "objects" "refs" ]);
+    };
+    
     # Make a temporary dir that looks enough like the real thing for
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
@@ -103,13 +118,18 @@ then
       runCommand "git-ls-files" {envVariable = true;} ''
         tmp=$(mktemp -d)
         cd $tmp
+        ${ lib.optionalString (!isWorktree && builtins.pathExists gitModulesStr) ''
+          cp -ra ${gitSubmoduleFiles}/. $tmp
+          chmod +w -R $tmp
+          rm -rf .git
+        ''}
         cp -r ${gitDir} .git
         chmod +w -R .git
         mkdir -p .git/objects .git/refs
         mkdir -p .git-common/objects .git-common/refs
         cp ${commonConfig} .git-common/config
         echo ../.git-common > .git/commondir
-        ${ lib.optionalString (builtins.pathExists gitModulesStr) ''
+        ${ lib.optionalString (isWorktree && builtins.pathExists gitModulesStr) ''
           cp ${gitModules} ./.gitmodules
         ''}
         ${git}/bin/git ls-files --recurse-submodules > $out
