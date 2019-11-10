@@ -11,7 +11,7 @@ rec {
 
   # nixpkgs allows you to import haskell.nix with the default pinned nixpkgs
   #   (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)).nixpkgs {}
-  defaultNixpkgs = nixpkgs-pins."19.09";
+  defaultNixpkgs = nixpkgs-pins.default;
   
   # nixpkgs-pins allows you to import haskell.nix with one of the pinned nixpkgs
   #   (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)).nixpkgs-pins."release-19.03" {}
@@ -20,5 +20,14 @@ rec {
       "18.09" = "release-18.09";
       "19.03" = "release-19.03";
       "19.09" = "release-19.09";
+      default = "release-19.09";
     };  
+
+  # Make it easier to get the pins with default nixpkgsArgs
+  #   import X.nixpkgs-pins.Y (X.nixpkgsArgs)
+  # becomes
+  #   X.nixpkgs.Y
+  nixpkgs = builtins.mapAttrs
+    (_: nixpkgs-pin: import nixpkgs-pin nixpkgsArgs)
+      nixpkgs-pins;  
 }
