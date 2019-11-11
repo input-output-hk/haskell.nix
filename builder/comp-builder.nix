@@ -117,6 +117,9 @@ let
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
+  # exe components are in /bin, but test and benchmarks are not.  Perhaps to avoid
+  # them being from being added to the PATH when the all component added to an env.
+  # TODO revist this to find out why and document or maybe change this.
   installedExeDir = if haskellLib.isTest componentId || haskellLib.isBenchmark componentId
     then name
     else "bin";
@@ -274,7 +277,7 @@ stdenv.mkDerivation ({
     '')
     # In case `setup copy` did not creat this
     + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
-    + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.isExe componentId || haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId)) ''
+    + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
       echo "Copying libffi and gmp .dlls ..."
       for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
         find "$p" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
