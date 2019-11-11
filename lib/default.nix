@@ -58,8 +58,16 @@ with haskellLib;
 
   isLibrary = componentId: componentId.ctype == "lib";
   isAll = componentId: componentId.ctype == "all";
+  isExe = componentId: componentId.ctype == "exe";
   isTest = componentId: componentId.ctype == "test";
   isBenchmark = componentId: componentId.ctype == "bench";
+  isExecutableType = componentId:
+       isExe componentId
+    || isTest componentId
+    || isBenchmark componentId;
+  mayHaveExecutable = componentId:
+       isExecutableType componentId
+    || isAll componentId;
 
   # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
   # This is used to make the default `packages` list for `shellFor`.

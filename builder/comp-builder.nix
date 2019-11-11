@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs }:
+{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp }:
 
 { componentId
 , component
@@ -117,6 +117,13 @@ let
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
+  # exe components are in /bin, but test and benchmarks are not.  Perhaps to avoid
+  # them being from being added to the PATH when the all component added to an env.
+  # TODO revist this to find out why and document or maybe change this.
+  installedExeDir = if haskellLib.isTest componentId || haskellLib.isBenchmark componentId
+    then name
+    else "bin";
+  installedExe = "${installedExeDir}/${componentId.cname}${exeExt}";
 
 in stdenv.lib.fix (drv:
 
@@ -136,6 +143,9 @@ stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
+    run = runCommand (fullName + "-run") {} ''
+      ${toString component.testWrapper} ${drv}/${installedExe} | tee $out
+    '';
   };
 
   meta = {
@@ -177,7 +187,7 @@ stdenv.mkDerivation ({
   prePatch = if (cabalFile != null)
      then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
      else lib.optionalString (cabal-generator == "hpack") ''
-       ${hsPkgs.hpack.components.exes.hpack}/bin/hpack
+       ${buildPackages.haskell-nix.haskellPackages.hpack.components.exes.hpack}/bin/hpack
      '';
 
   configurePhase = ''
@@ -267,6 +277,21 @@ stdenv.mkDerivation ({
     '')
     # In case `setup copy` did not creat this
     + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
+    + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
+      echo "Copying libffi and gmp .dlls ..."
+      for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
+        find "$p" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
+      done
+      # copy all .dlls into the local directory.
+      # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
+      # to copy over dlls as needed.
+      echo "Copying library dependencies..."
+      for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
+        if [ -d "$libdir" ]; then
+          find "$libdir" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
+        fi
+      done
+    '')
     }
     runHook postInstall
   '';

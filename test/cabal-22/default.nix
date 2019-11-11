@@ -20,8 +20,8 @@ in
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
-      printf "checking whether executable runs... " >& 2
-      "$exe"
+      printf "checking whether executable rans... " >& 2
+      cat ${packages.project.components.exes.project.run}
 
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString stdenv.isLinux ''
@@ -46,11 +46,11 @@ in
     '') + ''
       touch $out
 
-      printf "checking whether benchmark runs... " >& 2
-      ${packages.project.components.benchmarks.project-bench}/*/project-bench
+      printf "checking whether benchmark ran... " >& 2
+      cat ${packages.project.components.benchmarks.project-bench.run}
 
-      printf "checking whether tests run... " >& 2
-      ${packages.project.components.tests.unit}/*/unit
+      printf "checking whether tests ran... " >& 2
+      cat ${packages.project.components.tests.unit.run}
     '';
 
     meta.platforms = platforms.all;
