@@ -2,7 +2,8 @@
 self: super: super.lib.optionalAttrs (super.lib.versions.majorMinor super.lib.version == "19.03") {
     #11420 (unbreak gcc on darwin)
     binutils-unwrapped = super.binutils-unwrapped.overrideAttrs (old: {
-        buildInputs = old.buildInputs ++ [ self.gettext ];
+        buildInputs = old.buildInputs
+          ++ self.lib.optional self.stdenv.isDarwin self.gettext;
     });
     #44172 TMPDIR=$NIX_BUILD_TOP is supposed to fix it, but doesn't.
     nix = super.nix.overrideAttrs (oldAttrs: {
