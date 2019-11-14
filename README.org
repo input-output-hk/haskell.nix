@@ -59,6 +59,15 @@ cabal new-build your-package-name
 cabal new-repl your-package-name:library:your-package-name
 #+end_src
 
+** Cache
+
+CI pushes to [[https://cachix.org][cachix]] so you can benefit from the cache
+if you pin a combination of =haskell.nix= and =nixpkgs= built by CI.
+
+You'll need to configure the [[nix-tools cachix][https://nix-tools.cachix.org]]
+as a =substituter= for =nix= and add the public key found at the url to
+=trusted-public-keys=.
+
 ** Related repos
 
 The =haskell.nix= repository contains the runtime system for building
