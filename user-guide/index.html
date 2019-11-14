@@ -79,6 +79,8 @@
         
             <li><a class="toctree-l4" href="#getting-the-haskellnix-source-optional">Getting the Haskell.nix source (optional)</a></li>
         
+            <li><a class="toctree-l4" href="#setting-up-the-cachix-binary-cache">Setting up the Cachix binary cache</a></li>
+        
             <li><a class="toctree-l4" href="#using-haskellnix-with-your-project">Using Haskell.nix with your project</a></li>
         
             <li><a class="toctree-l4" href="#using-nix-repl">Using nix repl</a></li>
@@ -265,6 +267,12 @@ cd haskell.nix
 nix build -f . haskell-nix.nix-tools --out-link nt
 </code></pre>
 
+<h2 id="setting-up-the-cachix-binary-cache">Setting up the Cachix binary cache<a class="headerlink" href="#setting-up-the-cachix-binary-cache" title="Permanent link">&para;</a></h2>
+<p>CI pushes to <a href="https://cachix.org">cachix</a> so you can benefit from the cache if
+you pin a combination of <code>haskell.nix</code> and <code>nixpkgs</code> built by CI. You'll need
+to configure the <a href="https://nix-tools.cachix.org">nix-tools cachix</a> as a
+<code>substituter</code> for <code>nix</code> and add the public key found at the url to
+<code>trusted-public-keys</code>.</p>
 <h2 id="using-haskellnix-with-your-project">Using <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> with your project<a class="headerlink" href="#using-haskellnix-with-your-project" title="Permanent link">&para;</a></h2>
 <p>The easiest way to get a hold of <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> is with
 <a href="https://nixos.org/nix/manual/#ssec-builtins"><code>fetchTarball</code></a>.</p>
