@@ -238,7 +238,7 @@ stdenv.mkDerivation ({
     runHook postBuild
   '';
 
-  checkPhase = "";
+  checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
 
   haddockPhase = ''
     runHook preHaddock
