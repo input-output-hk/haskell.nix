@@ -133,16 +133,13 @@ with haskellLib;
   #   from: hsPkgs.mypackage.components.tests.unit-tests
   #     to: tests.mypackage.unit-tests
   #
-  # Note: To build, but not run the components use `collectBuildComponents`
+  # Note: To build, but not run the components use `collectComponents`
   collectRunComponents = group: packageSel: haskellPackages:
-  	collectRunDerivations (collectBuildComponents group packageSel haskellPackages);
-
-  # TODO maybe add warning
-  collectComponents = collectBuildComponents;
+  	collectRunDerivations (collectComponents group packageSel haskellPackages);
 
   # Like `collectRunComponents`, but does not build the `run` derivation
   # (so your benchmark or test will be built, but not run).
-  collectBuildComponents = group: packageSel: haskellPackages:
+  collectComponents = group: packageSel: haskellPackages:
     (lib.mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
      (lib.filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
     // { recurseForDerivations = true; };

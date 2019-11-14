@@ -247,14 +247,14 @@ Assorted functions for operating on [Haskell.nix][] data. This is
 distinct from `pkgs.haskell.lib` in the current Nixpkgs Haskell
 Infrastructure.
 
-### collectRunComponents and collectBuildComponents
+### collectRunComponents and collectComponents
 
 Extracts a selection of derivations to run components from a Haskell [package set](#package-set).
 
 `collectRunComponents` can be used to filter out all test suites or benchmarks of
 your project, so that they can be built and run in Hydra.
 
-`collectBuildComponents` can be used to just build the components.
+`collectComponents` can be used to just build the components.
 
 ```
 collectRunComponents =
