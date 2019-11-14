@@ -132,7 +132,10 @@ stdenv.mkDerivation ({
 
   src = cleanSrc;
 
-  inherit doCheck doCrossCheck dontPatchELF dontStrip;
+  doCheck = false;
+  doCrossCheck = false;
+  
+  inherit dontPatchELF dontStrip;
 
   passthru = {
     inherit (package) identifier;
@@ -143,9 +146,46 @@ stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
-    run = runCommand (fullName + "-run") {} ''
-      ${toString component.testWrapper} ${drv}/${installedExe} | tee $out
-    '';
+    run = stdenv.mkDerivation ({
+      name = (fullName + "-run");
+
+      src = drv;
+
+      passthru = {
+        inherit (package) identifier;
+        config = component;
+        inherit configFiles executableToolDepends cleanSrc;
+        env = shellWrappers;
+      };
+
+      meta = {
+        homepage = package.homepage;
+        description = package.synopsis;
+        license =
+          let
+            license-map = import ../lib/cabal-licenses.nix lib;
+          in license-map.${package.license} or
+            (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
+        platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
+      };
+
+      LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
+      LC_ALL = "en_US.UTF-8";
+
+      inherit doCheck doCrossCheck;
+
+      phases = ["checkPhase"];
+
+      checkPhase = ''
+        runHook preCheck
+
+        ${toString component.testWrapper} $src/${installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
+
+        runHook postCheck
+      '';
+    } // haskellLib.optionalHooks {
+      inherit preCheck postCheck;
+    });
   };
 
   meta = {
@@ -206,13 +246,7 @@ stdenv.mkDerivation ({
     runHook postBuild
   '';
 
-  checkPhase = ''
-    runHook preCheck
-
-    ${toString component.testWrapper} ${testExecutable} ${lib.concatStringsSep " " component.testFlags}
-
-    runHook postCheck
-  '';
+  checkPhase = "";
 
   haddockPhase = ''
     runHook preHaddock
@@ -305,7 +339,7 @@ stdenv.mkDerivation ({
 // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
 // haskellLib.optionalHooks {
   inherit preUnpack postUnpack preConfigure postConfigure
-    preBuild postBuild preCheck postCheck
+    preBuild postBuild
     preInstall postInstall preHaddock postHaddock;
 }
 // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }

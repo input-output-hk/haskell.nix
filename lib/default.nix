@@ -123,7 +123,7 @@ with haskellLib;
   # Extracts a selection of components from a Haskell package set.
   #
   # This can be used to filter out all test suites or benchmarks of
-  # your project, so that they can be built in Hydra.
+  # your project, so that they can be built and run in Hydra.
   #
   # For example:
   #
@@ -133,11 +133,24 @@ with haskellLib;
   #   from: hsPkgs.mypackage.components.tests.unit-tests
   #     to: tests.mypackage.unit-tests
   #
-  collectComponents = group: packageSel: haskellPackages:
+  # Note: To build, but not run the components use `collectBuildComponents`
+  collectRunComponents = group: packageSel: haskellPackages:
+  	collectRunDerivations (collectBuildComponents group packageSel haskellPackages);
+
+  # TODO maybe add warning
+  collectComponents = collectBuildComponents;
+
+  # Like `collectRunComponents`, but does not build the `run` derivation
+  # (so your benchmark or test will be built, but not run).
+  collectBuildComponents = group: packageSel: haskellPackages:
     (lib.mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
      (lib.filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
     // { recurseForDerivations = true; };
 
+  # If a derivation has a passthru.run derivation this will map to that
+  collectRunDerivations =
+    lib.mapAttrsRecursiveCond (d: !(lib.isDerivation d)) (_: d: d.run or d);  
+  
   # Replacement for lib.cleanSourceWith that has a subDir argument.
   inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;
 
