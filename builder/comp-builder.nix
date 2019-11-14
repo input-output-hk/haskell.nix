@@ -158,19 +158,7 @@ stdenv.mkDerivation ({
         env = shellWrappers;
       };
 
-      meta = {
-        homepage = package.homepage;
-        description = package.synopsis;
-        license =
-          let
-            license-map = import ../lib/cabal-licenses.nix lib;
-          in license-map.${package.license} or
-            (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
-        platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
-      };
-
-      LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
-      LC_ALL = "en_US.UTF-8";
+      inherit (drv) meta LANG LC_ALL;
 
       inherit doCheck doCrossCheck;
 
