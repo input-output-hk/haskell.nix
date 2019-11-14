@@ -146,6 +146,10 @@ stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
+
+    # This run derivation can be used to execute test, benchmark (or even
+    # exe) components.  The $out of the derivation is a file containing
+    # the resulting stdout output.
     run = stdenv.mkDerivation ({
       name = (fullName + "-run");
 
