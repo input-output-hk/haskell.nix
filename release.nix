@@ -20,10 +20,11 @@ let
     tests = filterAttrs (_: nonEmpty) (mapAttrs (name: removeDisabled) jobs.tests);
   };
 
-  inherit (systems.examples) musl64;
+  inherit (systems.examples) musl64 mingwW64;
 
   jobs = {
     native = filterTests (mapTestOn (packagePlatforms pkgs));
+    "${mingwW64.config}" = filterTests (mapTestOnCross mingwW64 (packagePlatforms pkgs));
     # Disabled for now. Something is wrong and this would require `allowBroken`
     # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
   } // {
