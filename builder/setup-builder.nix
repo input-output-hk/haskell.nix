@@ -1,7 +1,10 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
 { component, package, name, src, flags, revision, patches, defaultSetupSrc
-, preUnpack ? null, postUnpack ? null
+, preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
+, prePatch ? null, postPatch ? null
+, preBuild ? component.preBuild , postBuild ? component.postBuild
+, preInstall ? component.preInstall , postInstall ? component.postInstall
 }:
 
 let
@@ -16,7 +19,12 @@ let
     inherit fullName flags component;
   };
   hooks = haskellLib.optionalHooks {
-    inherit preUnpack postUnpack;
+    inherit
+      preUnpack postUnpack
+      prePatch postPatch
+      preBuild postBuild
+      preInstall postInstall
+      ;
   };
 
   executableToolDepends =
