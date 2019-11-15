@@ -1,12 +1,10 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, gmp6, zlib }:
+{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib, gmp6, zlib }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    modules = [
+  modules = [
      {
        # Package has no exposed modules which causes
        #   haddock: No input file(s)
@@ -25,10 +23,25 @@ let
            # "--ghc-option=-optl=-L${zlib.static}/lib"
          ];
      }
-    ];
-  };
+  ];
 
-  packages = pkgSet.config.hsPkgs;
+  # The ./pkgs.nix works for linux & darwin, but not for windows
+  project = if stdenv.hostPlatform.isWindows
+    then cabalProject' {
+      name = "cabal-simple";
+      src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-simple"; };
+      inherit modules;
+    }
+    else rec {
+      pkgSet = mkCabalProjectPkgSet {
+        plan-pkgs = import ./pkgs.nix;
+        inherit modules;
+      };
+
+      inherit (pkgSet.config) hsPkgs;
+    };
+
+  packages = project.hsPkgs;
 
 in
   stdenv.mkDerivation {
@@ -66,7 +79,7 @@ in
 
     passthru = {
       # Used for debugging with nix repl
-      inherit pkgSet packages;
+      inherit project packages;
 
       # Used for testing externally with nix-shell (../tests.sh).
       # This just adds cabal-install to the existing shells.

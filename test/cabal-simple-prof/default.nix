@@ -1,24 +1,37 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet }:
+{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    modules = [
-     {
-       # Package has no exposed modules which causes
-       #   haddock: No input file(s)
-       packages.cabal-simple.doHaddock = false;
-       packages.cabal-simple.enableExecutableProfiling = true;
-       enableLibraryProfiling = true;
-       # executableProfiling = false;
-     }
-    ];
-  };
+  modules = [
+    {
+      # Package has no exposed modules which causes
+      #   haddock: No input file(s)
+      packages.cabal-simple.doHaddock = false;
+      packages.cabal-simple.enableExecutableProfiling = true;
+      enableLibraryProfiling = true;
+      # executableProfiling = false;
+    }
+  ];
 
-  packages = pkgSet.config.hsPkgs;
+  # The ./pkgs.nix works for linux & darwin, but not for windows
+  project = if stdenv.hostPlatform.isWindows
+    then cabalProject' {
+      name = "cabal-simple-prof";
+      src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-simple-prof"; };
+      inherit modules;
+    }
+    else rec {
+      pkgSet = mkCabalProjectPkgSet {
+        plan-pkgs = import ./pkgs.nix;
+        inherit modules;
+      };
+
+      inherit (pkgSet.config) hsPkgs;
+    };
+
+  packages = project.hsPkgs;
 
 in
   stdenv.mkDerivation {
@@ -41,7 +54,7 @@ in
 
     passthru = {
       # Used for debugging with nix repl
-      inherit pkgSet packages;
+      inherit project packages;
 
       # Used for testing externally with nix-shell (../tests.sh).
       # This just adds cabal-install to the existing shells.

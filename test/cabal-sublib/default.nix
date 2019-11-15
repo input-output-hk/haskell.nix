@@ -1,21 +1,34 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet }:
+{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    modules = [
-     {
-       # Package has no exposed modules which causes
-       #   haddock: No input file(s)
-       packages.cabal-sublib.doHaddock = false;
-     }
-    ];
-  };
+  modules = [
+    {
+      # Package has no exposed modules which causes
+      #   haddock: No input file(s)
+      packages.cabal-sublib.doHaddock = false;
+    }
+  ];
 
-  packages = pkgSet.config.hsPkgs;
+  # The ./pkgs.nix works for linux & darwin, but not for windows
+  project = if stdenv.hostPlatform.isWindows
+    then cabalProject' {
+      name = "cabal-sublib";
+      src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-sublib"; };
+      inherit modules;
+    }
+    else rec {
+      pkgSet = mkCabalProjectPkgSet {
+        plan-pkgs = import ./pkgs.nix;
+        inherit modules;
+      };
+
+      inherit (pkgSet.config) hsPkgs;
+    };
+
+  packages = project.hsPkgs;
 
 in
   stdenv.mkDerivation {

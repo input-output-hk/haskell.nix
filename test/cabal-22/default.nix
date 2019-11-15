@@ -1,4 +1,4 @@
-{ stdenv, mkCabalProjectPkgSet, util }:
+{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util }:
 
 with stdenv.lib;
 
@@ -7,7 +7,21 @@ let
     plan-pkgs = import ./pkgs.nix;
   };
 
-  packages = pkgSet.config.hsPkgs;
+  # The ./pkgs.nix works for linux & darwin, but not for windows
+  project = if stdenv.hostPlatform.isWindows
+    then cabalProject' {
+      name = "cabal-22";
+      src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-22"; };
+    }
+    else rec {
+      pkgSet = mkCabalProjectPkgSet {
+        plan-pkgs = import ./pkgs.nix;
+      };
+
+      inherit (pkgSet.config) hsPkgs;
+    };
+
+  packages = project.hsPkgs;
 
 in
   stdenv.mkDerivation {
