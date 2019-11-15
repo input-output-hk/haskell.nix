@@ -58,12 +58,13 @@ in rec {
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs ({
-    inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
+    inherit (maintainer-scripts) update-docs check-hydra;
     # Some of the dependencies of the impure scripts so that they will
     # will be in the cache too for buildkite.
     inherit (pkgs) glibc;
     inherit (haskell) nix-tools;
   } // (pkgs.lib.optionalAttrs (!pkgs.stdenv.hostPlatform.isWindows) {
+    inherit (maintainer-scripts) check-closure-size;
     inherit (pkgs) coreutils git openssh cabal-install nix-prefetch-git;
   }));
 }
