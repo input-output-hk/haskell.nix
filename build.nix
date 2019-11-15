@@ -63,7 +63,7 @@ in rec {
     # will be in the cache too for buildkite.
     inherit (pkgs) glibc;
     inherit (haskell) nix-tools;
-  } // (pkgs.lib.optionalAttrs (!stdenv.hostPlatform.isWindows) {
+  } // (pkgs.lib.optionalAttrs (!pkgs.stdenv.hostPlatform.isWindows) {
     inherit (pkgs) coreutils git openssh cabal-install nix-prefetch-git;
   }));
 }
