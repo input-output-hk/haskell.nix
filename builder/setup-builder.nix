@@ -62,6 +62,7 @@ in
 
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
+        runHook preBuild
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
         fi
@@ -74,11 +75,14 @@ in
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
+        runHook preBuild
       '';
 
       installPhase = ''
+        runHook preInstall
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
+        runHook postInstall
       '';
     }
     // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
