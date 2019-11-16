@@ -21,7 +21,7 @@ in recurseIntoAttrs {
   run = pkgs.stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 
-    buildCommand = ''
+    buildCommand = optionalString (!stdenv.hostPlatform.isWindows) ''
       exe="${packages.pkg.components.exes.pkg}/bin/pkg"
 
       printf "checking whether executable runs... " >& 2
