@@ -38,14 +38,14 @@ in
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"
+      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs with profiling... " >& 2
-      $exe +RTS -p -h
+      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -h
 
       touch $out
     '';

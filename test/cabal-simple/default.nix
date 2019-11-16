@@ -48,14 +48,14 @@ in
     name = "cabal-simple-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"
+      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.cabal-simple.components.exes.cabal-simple.run}
     '' + (if stdenv.hostPlatform.isMusl then ''
         printf "checking that executable is statically linked... " >& 2
         (ldd $exe 2>&1 || true) | grep -i "not a"
@@ -68,7 +68,7 @@ in
     '') + ''
 
       printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple"
+      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
       test -f "$all_exe"
       echo "$all_exe" >& 2
 

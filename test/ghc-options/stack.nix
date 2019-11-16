@@ -1,24 +1,19 @@
-{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject }:
+{ stdenv, stackProject' }:
 
 with stdenv.lib;
 
 let
-  stack = (importAndFilterProject (callStackToNix {
+  project = stackProject' {
     src = ./.;
-  }));
-  pkgSet = mkStackPkgSet {
-    stack-pkgs = stack.pkgs;
   };
-  packages = pkgSet.config.hsPkgs;
+  packages = project.hsPkgs;
 in
   stdenv.mkDerivation {
     name = "callStackToNix-test";
 
     buildCommand = ''
-      exe="${packages.test-ghc-options.components.exes.test-ghc-options-exe}/bin/test-ghc-options-exe"
-
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.test-ghc-options.components.exes.test-ghc-options-exe.run}
 
       touch $out
     '';
@@ -27,7 +22,6 @@ in
 
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit pkgSet packages;
-      stack-nix = stack.nix;
+      inherit project packages;
     };
   }

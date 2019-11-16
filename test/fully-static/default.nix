@@ -1,4 +1,4 @@
-{ mkStackPkgSet, callStackToNix, importAndFilterProject
+{ stackProject'
 , stdenv, gmp6, openssl, zlib, libffi
 , buildPackages
 }:
@@ -6,17 +6,13 @@
 with stdenv.lib;
 
 let
-  # IFD stack-to-nix
-  stack-pkgs = (importAndFilterProject (callStackToNix {
-    src = ./.;
-  })).pkgs;
-
   # Grab the compiler name from stack-to-nix output.
   # compiler = (stack-pkgs.extras {}).compiler.nix-name;
   compiler = "ghc865";  # fixme
 
-  pkgSet = { gpl ? true }: mkStackPkgSet {
-    inherit stack-pkgs;
+  # IFD stack-to-nix
+  project = { gpl ? true }: stackProject' {
+    src = ./.;
     pkg-def-extras = [];
     modules = [
       # Musl libc fully static build
@@ -52,8 +48,8 @@ let
       })
     ];
   };
-  packagesGmp = (pkgSet { gpl = true; }).config.hsPkgs;
-  packagesIntegerSimple = (pkgSet { gpl = false; }).config.hsPkgs;
+  packagesGmp = (project { gpl = true; }).hsPkgs;
+  packagesIntegerSimple = (project { gpl = false; }).hsPkgs;
 in
   stdenv.mkDerivation {
     name = "fully-static-test";
@@ -63,10 +59,10 @@ in
     buildCommand = flip concatMapStrings
       [ packagesGmp /* packagesIntegerSimple */ ]
       (packages: ''
-        exe="${packages.pandoc.components.exes.pandoc}/bin/pandoc"
+        exe="${packages.pandoc.components.exes.pandoc}/bin/pandoc${stdenv.hostPlatform.extensions.executable}"
 
         printf "checking whether executable runs... " >& 2
-        $exe --version
+        ${toString packages.pandoc.components.exes.pandoc.config.testWrapper} $exe --version
 
       '' + optionalString stdenv.hostPlatform.isMusl ''
         printf "checking whether executable is static... " >& 2
@@ -79,7 +75,9 @@ in
 
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit pkgSet buildPackages stack-pkgs;
+      inherit buildPackages;
+      project-gmp = project { gpl = true; };
+      project-integer-simple = project { gpl = false; };
       pandoc-gmp = packagesGmp.pandoc.components.exes.pandoc;
       pandoc-integer-simple = packagesIntegerSimple.pandoc.components.exes.pandoc;
     };

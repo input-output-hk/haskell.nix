@@ -19,10 +19,8 @@ in
 
     buildCommand = 
       (concatStrings (mapAttrsToList (name: value: ''
-        exe="${value}/bin/${name}"
-
         printf "checking whether executable runs... " >& 2
-        $exe
+        cat ${value.run}
       '') packages.buildable-test.components.exes)) + ''
       touch $out
     '';

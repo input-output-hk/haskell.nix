@@ -48,7 +48,7 @@ let
   stdenv.mkDerivation {
     name = "shell-for-test";
 
-    buildCommand = ''
+    buildCommand = optionalString (!stdenv.hostPlatform.isWindows) ''
       ########################################################################
       # test shell-for with an example program
 
@@ -64,7 +64,7 @@ let
     '';
 
     meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl;
+    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
 
     passthru = {
       # Used for debugging with nix repl

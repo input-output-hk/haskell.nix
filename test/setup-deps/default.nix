@@ -6,7 +6,7 @@ with stdenv.lib;
 let
   project = haskell-nix.cabalProject' {
     name = "test-setup-deps";
-    src = ./.;
+    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ../..; subDir = "test/setup-deps"; };
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)

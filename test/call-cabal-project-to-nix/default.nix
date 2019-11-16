@@ -17,10 +17,10 @@ in
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"
+      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.cabal-simple.components.exes.cabal-simple.run}
 
       touch $out
     '';

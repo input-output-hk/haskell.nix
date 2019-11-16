@@ -28,7 +28,7 @@ in
     name = "cabal-22-test";
 
     buildCommand = ''
-      exe="${packages.project.components.exes.project}/bin/project"
+      exe="${packages.project.components.exes.project}/bin/project${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

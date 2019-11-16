@@ -35,7 +35,12 @@ in
     buildCommand = let
       inherit (packages.test-haddock.components) library;
       noDocLibrary = packages.stm.components.library;
-    in ''
+    in if (stdenv.hostPlatform != stdenv.buildPlatform)
+      then ''
+        echo "Skipping haddock tests when cross compiling" >& 2
+        touch $out
+      ''
+      else ''
       ########################################################################
       # test haddock
 

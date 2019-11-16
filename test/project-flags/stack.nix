@@ -15,10 +15,10 @@ in
     name = "callStackToNix-test";
 
     buildCommand = ''
-      exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe"
+      exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.test-project-flags.components.exes.test-project-flags-exe.run}
 
       touch $out
     '';

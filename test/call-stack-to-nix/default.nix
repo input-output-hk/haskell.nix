@@ -16,10 +16,10 @@ in
     name = "callStackToNix-test";
 
     buildCommand = ''
-      exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe"
+      exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.stack-simple.components.exes.stack-simple-exe.run}
 
       touch $out
     '';

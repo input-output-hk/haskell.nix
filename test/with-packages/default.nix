@@ -60,15 +60,19 @@ in
 
       printf "checking that the 'library' component works... " >& 2
       echo ${package.components.library} >& 2
+    '' + (if stdenv.hostPlatform.isWindows
+      then ''
+        printf "runghc tests are not working yet for windows. skipping. " >& 2
+      ''
+      else ''
+        printf "checking that the package env has the dependencies... " >& 2
+        ${package.components.all.env}/bin/runghc ${./Point.hs}
+        echo >& 2
 
-      printf "checking that the package env has the dependencies... " >& 2
-      ${package.components.all.env}/bin/runghc ${./Point.hs}
-      echo >& 2
-
-      printf "checking that components.library.env has the dependencies... " >& 2
-      ${library.env}/bin/runghc ${./Point.hs}
-      echo >& 2
-
+        printf "checking that components.library.env has the dependencies... " >& 2
+        ${library.env}/bin/runghc ${./Point.hs}
+        echo >& 2
+      '') + ''
       touch $out
     '';
 

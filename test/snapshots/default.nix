@@ -3,14 +3,19 @@
 with stdenv.lib;
 
 let
-  env = snapshots."lts-12.21".ghcWithHoogle
+  env = snapshots."lts-14.13".ghcWithHoogle
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
 in
   stdenv.mkDerivation {
     name = "shell-for-test";
 
-    buildCommand = ''
+    buildCommand = if stdenv.hostPlatform.isWindows
+      then ''
+        printf "snapshot test is not working yet for windows. skipping. " >& 2
+        touch $out
+      ''
+      else ''
       ########################################################################
       # test single component from haskellPackages
 
