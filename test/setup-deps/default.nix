@@ -19,9 +19,14 @@ let
 in recurseIntoAttrs {
   plan = haskell-nix.withInputs project.plan-nix;
   run = pkgs.stdenv.mkDerivation {
-    name = "call-cabal-project-to-nix-test";
+    name = "setup-deps-test";
 
-    buildCommand = optionalString (!stdenv.hostPlatform.isWindows) ''
+    buildCommand = if stdenv.hostPlatform.isWindows
+    then ''
+      echo "Skipping setup-deps test on windows as it needs the ghc lib" >& 2
+      touch $out
+    ''
+    else ''
       exe="${packages.pkg.components.exes.pkg}/bin/pkg"
 
       printf "checking whether executable runs... " >& 2
