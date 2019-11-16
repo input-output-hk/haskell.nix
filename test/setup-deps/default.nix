@@ -30,7 +30,8 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta.platforms = platforms.unix;
+    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
 
     passthru = {
       # Attributes used for debugging with nix repl
