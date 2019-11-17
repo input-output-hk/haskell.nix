@@ -170,6 +170,13 @@ let
   ) (''
     tmp=$(mktemp -d)
     cd $tmp
+    # if maybeCleanedSource is empty, this means it's a new
+    # project where the files haven't been added to the git
+    # repo yet. We fail early and provide a useful error
+    # message to prevent headaches (#290).
+    if [ -z "$(ls -A ${maybeCleanedSource})" ]; 
+      echo "cleaned source is empty. Did you forget to 'git add -A'?"; exit 1;
+    fi
     cp -r ${maybeCleanedSource}/* .
     chmod +w -R .
     ${fixedProject.makeFixedProjectFile}
