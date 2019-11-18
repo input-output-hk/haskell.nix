@@ -36,19 +36,24 @@ let
       # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
     } // (optionalAttrs (nixpkgs-pin == "release-19.03") {
       "${mingwW64.config}" = filterTests (mapTestOnCross mingwW64 (packagePlatforms pkgs));
-    }) // {
-      # On IOHK Hydra, "required" is a special job that updates the
-      # GitHub CI status.
-      required = fixedNixpkgs.releaseTools.aggregate {
-        name = "haskell.nix-required";
-        meta.description = "All jobs required to pass CI";
-        constituents = collect isDerivation jobs.native;
-      };
+    });
+
+  allJobs =
+    builtins.mapAttrs (_: nixpkgs-pin: jobs nixpkgs-pin) {
+      "R1903" = "release-19.03";
+      "R1909" = "release-19.09";
     };
 
-in builtins.mapAttrs (_: nixpkgs-pin: jobs nixpkgs-pin) {
-  "R1903" = "release-19.03";
-  "R1909" = "release-19.09";
-}
+in allJobs // {
+    # On IOHK Hydra, "required" is a special job that updates the
+    # GitHub CI status.
+    required = fixedNixpkgs.releaseTools.aggregate {
+      name = "haskell.nix-required";
+      meta.description = "All jobs required to pass CI";
+      constituents =
+          collect isDerivation allJobs.R1903.native
+       ++ collect isDerivation allJobs.R1909.native;
+    };
+  }
 
 
