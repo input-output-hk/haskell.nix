@@ -15,8 +15,17 @@ let
   haskellNixArgs = import ./default.nix;
   pkgs = import nixpkgs ({
     config   = haskellNixArgs.config // config;
-    overlays = haskellNixArgs.overlays;
-  } // nixpkgsArgs);
+    overlays = haskellNixArgs.overlays ++
+      [(self: super: {
+        darcs = (self.haskell-nix.hackage-package {
+          name = "darcs";
+          version = "2.14.2";
+          index-state = "2019-10-28T00:00:00Z";
+          plan-sha256 = "1h8dxib0wz6mg8md6ldwa54dsr1dn7vxfij8cfhdawl4y3wr51k0";
+          # Apply the latest darcs.net Setup.hs patches
+          modules = [{packages.darcs.patches = [ ./patches/darcs-setup.patch ];}];
+        }).components.exes.darcs;
+      })]; } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
 in rec {
@@ -43,7 +52,8 @@ in rec {
         }) {};
       };
     };
-    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
+    check-hydra = haskell.callPackage ./scripts/check-hydra.nix {
+    };
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       inherit (haskell) nix-tools;
     };
