@@ -363,7 +363,7 @@ self: super: {
           inherit derivation;
           inputs = builtins.listToAttrs (
             builtins.concatMap (i: if i == null then [] else [
-              { name = builtins.replaceStrings ["."] ["_"] i.name; value = i; }
+              { name = builtins.replaceStrings ["." (self.stdenv.hostPlatform.config + "-")] ["_" ""] i.name; value = i; }
             ]) derivation.nativeBuildInputs);
         };
   
