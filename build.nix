@@ -30,7 +30,7 @@ in rec {
     update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
-    update-docs = haskell.callPackage ./scripts/update-docs.nix {
+    update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = import ./scripts/options-doc.nix {
         # nixpkgs unstable changes "Option has no description" from an
         # error into a warning. That is quite helpful when hardly any
@@ -43,19 +43,17 @@ in rec {
         }) {};
       };
     };
-    check-hydra = haskell.callPackage ./scripts/check-hydra.nix {};
-    check-closure-size = haskell.callPackage ./scripts/check-closure-size.nix {};
+    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
+    check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {};
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
-  maintainer-script-cache = pkgs.recurseIntoAttrs ({
-    inherit (maintainer-scripts) update-docs check-hydra;
+  maintainer-script-cache = pkgs.recurseIntoAttrs {
+    inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
     # Some of the dependencies of the impure scripts so that they will
     # will be in the cache too for buildkite.
     inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
     inherit (haskell) nix-tools;
-  } // (pkgs.lib.optionalAttrs (!pkgs.stdenv.hostPlatform.isWindows) {
-    inherit (maintainer-scripts) check-closure-size;
-  }));
+  };
 }
