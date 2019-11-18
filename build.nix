@@ -44,7 +44,9 @@ in rec {
       };
     };
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
-    check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {};
+    check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
+      inherit (haskell) nix-tools;
+    };
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra
