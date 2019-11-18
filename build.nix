@@ -61,7 +61,7 @@ in rec {
     inherit (maintainer-scripts) update-docs check-hydra;
     # Some of the dependencies of the impure scripts so that they will
     # will be in the cache too for buildkite.
-    inherit (pkgs) glibc;
+    inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
     inherit (haskell) nix-tools;
   } // (pkgs.lib.optionalAttrs (!pkgs.stdenv.hostPlatform.isWindows) {
     inherit (maintainer-scripts) check-closure-size;
