@@ -304,17 +304,17 @@ stdenv.mkDerivation ({
     # In case `setup copy` did not creat this
     + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
     + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
-      echo "Copying libffi and gmp .dlls ..."
+      echo "Symlink libffi and gmp .dlls ..."
       for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
-        find "$p" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
+        find "$p" -iname '*.dll' -exec ln -s {} $out/${installedExeDir} \;
       done
-      # copy all .dlls into the local directory.
+      # symlink all .dlls into the local directory.
       # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
-      # to copy over dlls as needed.
-      echo "Copying library dependencies..."
+      # to symlink over dlls as needed.
+      echo "Symlink library dependencies..."
       for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
         if [ -d "$libdir" ]; then
-          find "$libdir" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
+          find "$libdir" -iname '*.dll' -exec ln -s {} $out/${installedExeDir} \;
         fi
       done
     '')
