@@ -155,6 +155,8 @@
         
             <li><a class="toctree-l4" href="#cleansourcehaskell">cleanSourceHaskell</a></li>
         
+            <li><a class="toctree-l4" href="#haskellsourcefilter">haskellSourceFilter</a></li>
+        
             <li><a class="toctree-l4" href="#haskelllib">haskellLib</a></li>
         
         </ul>
@@ -621,6 +623,29 @@ or <code>callCabalProjectToNix</code>.</p>
 <h2 id="stackage">stackage<a class="headerlink" href="#stackage" title="Permanent link">&para;</a></h2>
 <h2 id="fetchexternal">fetchExternal<a class="headerlink" href="#fetchexternal" title="Permanent link">&para;</a></h2>
 <h2 id="cleansourcehaskell">cleanSourceHaskell<a class="headerlink" href="#cleansourcehaskell" title="Permanent link">&para;</a></h2>
+<pre><code>cleanSourceHaskell = { src, name ? null }: ...
+</code></pre>
+
+<p>Filters a source tree removing common filenames that are not Haskell
+build sources.</p>
+<p>This can avoid unecessary rebuilds when these files change.</p>
+<p>It's recommended to provide <code>name</code> so that the source derivation
+remains constant regardless of how it was fetched.</p>
+<p>Example:</p>
+<pre><code>src = pkgs.haskell-nix.cleanSourceHaskell {
+  src = ./.;
+  name = &quot;myproject-src&quot;;
+};
+</code></pre>
+
+<h2 id="haskellsourcefilter">haskellSourceFilter<a class="headerlink" href="#haskellsourcefilter" title="Permanent link">&para;</a></h2>
+<pre><code>haskellSourceFilter = name: type: ...
+</code></pre>
+
+<p>This is a source filter function which cleans common build products
+and files not needed to do a Haskell build from a source directory.</p>
+<p>It should be used with <code>pkgs.lib.cleanSourceWith</code>. Alternatively,
+use the convenience function <a href="#cleansourcehaskell"><code>cleanSourceHaskell</code></a>.</p>
 <h2 id="haskelllib">haskellLib<a class="headerlink" href="#haskelllib" title="Permanent link">&para;</a></h2>
 <p>Assorted functions for operating on <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> data. This is
 distinct from <code>pkgs.haskell.lib</code> in the current Nixpkgs Haskell

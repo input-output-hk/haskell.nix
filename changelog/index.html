@@ -155,6 +155,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#november-18-2019">November 18, 2019</a></li>
+    
+
     <li class="toctree-l2"><a href="#october-12-2019">October 12, 2019</a></li>
     
 
@@ -228,6 +231,13 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="november-18-2019">November 18, 2019<a class="headerlink" href="#november-18-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Changed the <code>cleanSourceHaskell</code> to accept an attrset of <code>src</code> and
+    (optional) <code>name</code> parameters. This allows you to keep the source
+    derivation name constant, so that your builds are always
+    cached. Usage of <code>cleanSourceHaskell</code> will need to be updated.</li>
+</ul>
 <h2 id="october-12-2019">October 12, 2019<a class="headerlink" href="#october-12-2019" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://input-output-hk.github.io/haskell.nix/reference/library/#shellfor"><code>shellFor</code></a> no longer sets <code>CABAL_CONFIG</code> by default.
