@@ -31,8 +31,10 @@ self: super: {
         # overridden with NIX_PATH.
         fetchExternal = import ../lib/fetch-external.nix;
 
-        # Function for cleaning haskell source directories pulled from iohk-nix
-        cleanSourceHaskell = import ../lib/clean-source-haskell.nix { pkgs = self; };
+        # Functions for cleaning Haskell source directories.
+        inherit (import ../lib/clean-source-haskell.nix { inherit (self) lib; })
+          haskellSourceFilter
+          cleanSourceHaskell;
 
         # All packages from Hackage as Nix expressions
         hackageSrc = fetchExternal {
