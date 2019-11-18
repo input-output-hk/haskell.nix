@@ -65,6 +65,5 @@ in rec {
     inherit (haskell) nix-tools;
   } // (pkgs.lib.optionalAttrs (!pkgs.stdenv.hostPlatform.isWindows) {
     inherit (maintainer-scripts) check-closure-size;
-    inherit (pkgs) coreutils git openssh cabal-install nix-prefetch-git;
   }));
 }
