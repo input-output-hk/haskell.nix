@@ -57,8 +57,10 @@ let
             ;
   };
 
-in {
+in rec {
   components = haskellLib.applyComponents buildComp config;
+  run = builtins.mapAttrs (_: es: builtins.mapAttrs (_: d: d.run) es)
+    { inherit (components) exes tests benchmarks; };
   inherit (package) identifier detailLevel isLocal;
   inherit setup cabalFile;
   isHaskell = true;
