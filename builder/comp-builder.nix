@@ -117,10 +117,10 @@ let
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
-  # exe components are in /bin, but test and benchmarks are not.  Perhaps to avoid
-  # them being from being added to the PATH when the all component added to an env.
-  # TODO revist this to find out why and document or maybe change this.
-  installedExeDir = if haskellLib.isTest componentId || haskellLib.isBenchmark componentId
+  # Avoid issues with tests and benchmarks winding up unexpectedly in the `PATH`.
+  # For example if a package had a test called `gcc` and the `.all` component
+  # was used as a buildInput, the test would replace `gcc` in the `PATH`.
+  installedExeDir = if (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) && haskellLib.isAll componentId
     then name
     else "bin";
   installedExe = "${installedExeDir}/${componentId.cname}${exeExt}";
@@ -296,9 +296,9 @@ stdenv.mkDerivation ({
       fi
     ''}
     ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
-      mkdir -p $out/${name}
+      mkdir -p $out/${installedExeDir}
       if [ -f ${testExecutable} ]; then
-        cp ${testExecutable} $out/${name}/
+        cp ${testExecutable} $out/${installedExeDir}/
       fi
     '')
     # In case `setup copy` did not creat this
