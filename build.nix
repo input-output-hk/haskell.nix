@@ -52,8 +52,7 @@ in rec {
         }) {};
       };
     };
-    check-hydra = haskell.callPackage ./scripts/check-hydra.nix {
-    };
+    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       inherit (haskell) nix-tools;
     };
