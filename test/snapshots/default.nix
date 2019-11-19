@@ -1,4 +1,4 @@
-{ stdenv, haskellPackages, snapshots, recurseIntoAttrs }:
+{ stdenv, haskellPackages, snapshots, recurseIntoAttrs, runCommand }:
 
 with stdenv.lib;
 
