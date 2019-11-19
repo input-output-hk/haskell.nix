@@ -174,7 +174,7 @@ let
     # project where the files haven't been added to the git
     # repo yet. We fail early and provide a useful error
     # message to prevent headaches (#290).
-    if [ -z "$(ls -A ${maybeCleanedSource})" ]; 
+    if [ -z "$(ls -A ${maybeCleanedSource})" ]; then
       echo "cleaned source is empty. Did you forget to 'git add -A'?"; exit 1;
     fi
     cp -r ${maybeCleanedSource}/* .
