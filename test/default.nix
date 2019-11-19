@@ -6,7 +6,7 @@
 with pkgs;
 
 let
-  util = callPackage ./util.nix {};
+  util = import ./util.nix { inherit (pkgs.haskell-nix) cabal-install; };
 in pkgs.recurseIntoAttrs {
   inherit (haskell-nix) haskellNixRoots;
   cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };
