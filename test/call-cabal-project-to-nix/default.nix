@@ -1,19 +1,24 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
+{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
+  # This test could use cabalProject', but it does so that it
+  # tests using callCabalProjectToNix and importAndFilterProject
+  plan = (importAndFilterProject (callCabalProjectToNix {
+    name = "test-call-cabal-project-to-nix";
+    index-state = "2019-04-30T00:00:00Z";
+    # reuse the cabal-simple test project
+    src = ../cabal-simple;
+  }));
   pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = (importAndFilterProject (callCabalProjectToNix {
-      name = "test-call-cabal-project-to-nix";
-      index-state = "2019-04-30T00:00:00Z";
-      # reuse the cabal-simple test project
-      src = ../cabal-simple;
-    })).pkgs;
+    plan-pkgs = plan.pkgs;
   };
   packages = pkgSet.config.hsPkgs;
-in
-  stdenv.mkDerivation {
+
+in recurseIntoAttrs {
+  plan-nix = plan.nix;
+  run = stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
@@ -31,4 +36,5 @@ in
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
     };
-  }
+  };
+}

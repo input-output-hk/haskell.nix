@@ -1,14 +1,11 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
+{ stdenv, cabal-install, cabalProject', recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  plan = importAndFilterProject (callCabalProjectToNix {
+  project = cabalProject' {
     name = "test-shell-for-setup-deps";
     src = ./.;
-  });
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = plan.pkgs;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -16,10 +13,12 @@ let
     }];
   };
 
-  env = pkgSet.config.hsPkgs.shellFor {};
+  env = project.hsPkgs.shellFor {};
 
- in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  inherit env;
+  run = stdenv.mkDerivation {
     name = "shell-for-test";
 
     buildCommand = optionalString (!stdenv.hostPlatform.isWindows) ''
@@ -42,7 +41,7 @@ let
       inherit pkgSet;
 
       # Used for testing externally with nix-shell (../tests.sh).
-      inherit env;
-      plan-nix = plan.nix;
+      inherit project env;
     };
+  };
 }

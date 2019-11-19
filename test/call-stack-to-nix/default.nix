@@ -1,18 +1,21 @@
-{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject }:
+{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
+  stack = importAndFilterProject (callStackToNix {
+    src = ../stack-simple;
+  });
   pkgSet = mkStackPkgSet {
-    stack-pkgs = (importAndFilterProject (callStackToNix {
-      src = ../stack-simple;
-    })).pkgs;
+    stack-pkgs = stack.pkgs;
     pkg-def-extras = [];
     modules = [];
   };
   packages = pkgSet.config.hsPkgs;
-in
-  stdenv.mkDerivation {
+
+in recurseIntoAttrs {
+  stack-nix = stack.nix;
+  run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 
     buildCommand = ''
@@ -30,4 +33,5 @@ in
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
     };
-  }
+  };
+}

@@ -1,4 +1,4 @@
-{ stdenv, stackProject' }:
+{ stdenv, stackProject', recurseIntoAttrs }:
 
 with stdenv.lib;
 
@@ -7,8 +7,10 @@ let
     src = ./.;
   };
   packages = project.hsPkgs;
-in
-  stdenv.mkDerivation {
+
+in recurseIntoAttrs {
+  inherit (project) stack-nix;
+  run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 
     buildCommand = ''
@@ -24,4 +26,5 @@ in
       # Attributes used for debugging with nix repl
       inherit project packages;
     };
-  }
+  };
+}

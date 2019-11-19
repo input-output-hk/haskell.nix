@@ -17,7 +17,7 @@ let
 
   packages = project.hsPkgs;
 in recurseIntoAttrs {
-  plan = haskell-nix.withInputs project.plan-nix;
+  inherit (project) plan-nix;
   run = pkgs.stdenv.mkDerivation {
     name = "setup-deps-test";
 

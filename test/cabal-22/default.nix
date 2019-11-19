@@ -1,30 +1,18 @@
-{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util }:
+{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
+  project = cabalProject' {
+    name = "cabal-22";
+    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-22"; };
   };
-
-  # The ./pkgs.nix works for linux & darwin, but not for windows
-  project = if stdenv.hostPlatform.isWindows
-    then cabalProject' {
-      name = "cabal-22";
-      src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-22"; };
-    }
-    else rec {
-      pkgSet = mkCabalProjectPkgSet {
-        plan-pkgs = import ./pkgs.nix;
-      };
-
-      inherit (pkgSet.config) hsPkgs;
-    };
 
   packages = project.hsPkgs;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "cabal-22-test";
 
     buildCommand = ''
@@ -72,4 +60,5 @@ in
       inherit (packages) project;
       shell = util.addCabalInstall packages.project.components.all;
     };
-  }
+  };
+}

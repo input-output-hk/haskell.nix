@@ -1,20 +1,19 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
+{ stdenv, cabalProject', haskellLib, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  plan = importAndFilterProject (callCabalProjectToNix {
+  project = cabalProject' {
     name = "test-buildable";
     index-state = "2019-04-30T00:00:00Z";
-    src = ./.;
-  });
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = plan.pkgs;
+    src = haskellLib.cleanGit { src = ../..; subDir = "test/buildable"; };
     modules = [ { packages.buildable-test.flags.exclude-broken = true; } ];
   };
-  packages = pkgSet.config.hsPkgs;
-in
-  stdenv.mkDerivation {
+  packages = project.hsPkgs;
+
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "buildable-test";
 
     buildCommand = 
@@ -29,7 +28,7 @@ in
 
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit pkgSet packages;
-      inherit (plan) nix;
+      inherit project packages;
     };
-  }
+  };
+}

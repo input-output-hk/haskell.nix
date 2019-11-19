@@ -1,4 +1,4 @@
-{ stdenv, cabalProject' }:
+{ stdenv, cabalProject', recurseIntoAttrs }:
 
 with stdenv.lib;
 
@@ -11,8 +11,10 @@ let
     modules = [ { packages.test-ghc-options.package.ghcOptions = "-DTEST_GHC_OPTION"; } ];
   };
   packages = project.hsPkgs;
-in
-  stdenv.mkDerivation {
+
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
@@ -28,4 +30,5 @@ in
       # Attributes used for debugging with nix repl
       inherit project packages;
     };
-  }
+  };
+}

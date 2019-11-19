@@ -1,6 +1,7 @@
 { stackProject'
 , stdenv, gmp6, openssl, zlib, libffi
 , buildPackages
+, recurseIntoAttrs
 }:
 
 with stdenv.lib;
@@ -50,8 +51,11 @@ let
   };
   packagesGmp = (project { gpl = true; }).hsPkgs;
   packagesIntegerSimple = (project { gpl = false; }).hsPkgs;
-in
-  stdenv.mkDerivation {
+
+in recurseIntoAttrs {
+  stack-nix-gmp = (project { gpl = true; }).stack-nix;
+  stack-nix-simple = (project { gpl = false; }).stack-nix;
+  run = stdenv.mkDerivation {
     name = "fully-static-test";
 
     depsBuildBuild = [ buildPackages.file ];
@@ -81,4 +85,5 @@ in
       pandoc-gmp = packagesGmp.pandoc.components.exes.pandoc;
       pandoc-integer-simple = packagesIntegerSimple.pandoc.components.exes.pandoc;
     };
-  }
+  };
+}

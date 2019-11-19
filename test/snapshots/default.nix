@@ -1,4 +1,4 @@
-{ stdenv, haskellPackages, snapshots }:
+{ stdenv, haskellPackages, snapshots, recurseIntoAttrs }:
 
 with stdenv.lib;
 
@@ -6,8 +6,9 @@ let
   env = snapshots."lts-14.13".ghcWithHoogle
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit env;
+  run = stdenv.mkDerivation {
     name = "shell-for-test";
 
     buildCommand = if stdenv.hostPlatform.isWindows
@@ -38,4 +39,5 @@ in
     passthru = {
       inherit env;
     };
+  };
 }

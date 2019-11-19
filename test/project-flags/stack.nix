@@ -1,17 +1,16 @@
-{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject }:
+{ stdenv, stackProject', recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  stack = (importAndFilterProject (callStackToNix {
+  project = stackProject' {
     src = ./.;
-  }));
-  pkgSet = mkStackPkgSet {
-    stack-pkgs = stack.pkgs;
   };
-  packages = pkgSet.config.hsPkgs;
-in
-  stdenv.mkDerivation {
+  packages = project.hsPkgs;
+
+in recurseIntoAttrs {
+  inherit (project) stack-nix;
+  run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 
     buildCommand = ''
@@ -30,4 +29,5 @@ in
       inherit pkgSet packages;
       stack-nix = stack.nix;
     };
-  }
+  };
+}

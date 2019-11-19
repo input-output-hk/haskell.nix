@@ -1,4 +1,4 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet }:
+{ stdenv, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs }:
 
 with stdenv.lib;
 
@@ -44,8 +44,9 @@ let
     buildInputs = [ cabal-install ];
   };
 
- in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit env envPkga envDefault;
+  run = stdenv.mkDerivation {
     name = "shell-for-test";
 
     buildCommand = optionalString (!stdenv.hostPlatform.isWindows) ''
@@ -73,4 +74,5 @@ let
       # Used for testing externally with nix-shell (../tests.sh).
       inherit env envPkga envDefault;
     };
+  };
 }

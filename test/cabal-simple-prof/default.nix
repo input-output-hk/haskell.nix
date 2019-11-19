@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib }:
+{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs }:
 
 with stdenv.lib;
 
@@ -15,26 +15,17 @@ let
     }
   ];
 
-  # The ./pkgs.nix works for linux & darwin, but not for windows
-  project = if stdenv.hostPlatform.isWindows
-    then cabalProject' {
-      name = "cabal-simple-prof";
-      src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-simple-prof"; };
-      inherit modules;
-    }
-    else rec {
-      pkgSet = mkCabalProjectPkgSet {
-        plan-pkgs = import ./pkgs.nix;
-        inherit modules;
-      };
-
-      inherit (pkgSet.config) hsPkgs;
-    };
+  project = cabalProject' {
+    name = "cabal-simple-prof";
+    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-simple-prof"; };
+    inherit modules;
+  };
 
   packages = project.hsPkgs;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
@@ -60,4 +51,5 @@ in
       # This just adds cabal-install to the existing shells.
       test-shell = util.addCabalInstall packages.cabal-simple.components.all;
     };
+  };
 }
