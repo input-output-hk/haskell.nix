@@ -4,8 +4,8 @@
 , nixpkgsArgs ? {}
 }:
 
-let fixedNixpkgs = import ./nixpkgs {}; in
-with fixedNixpkgs.lib;
+let defaultNixpkgs = import ./nixpkgs {}; in
+with defaultNixpkgs.lib;
 let
   # Remove tests which have meta.disabled = true
   filterTests = let
@@ -15,10 +15,14 @@ let
     tests = filterAttrs (_: nonEmpty) (mapAttrs (name: removeDisabled) jobs.tests);
   };
 
-  inherit (systems.examples) musl64 mingwW64;
-
   jobs = nixpkgs-pin:
-    with (import (fixedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
+    # Now we know what nixpkgs-pin we are testing use that one.
+    # This fixes and issue where the vendor has changed from `x86_64-pc-mingw32`
+    # to `x86_64-w64-mingw32` in 19.09.
+    let pinnedNixpkgs = import ./nixpkgs { inherit nixpkgs-pin; }; in
+    with pinnedNixpkgs.lib;
+    let inherit (systems.examples) musl64 mingwW64; in
+    with (import (pinnedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
       inherit supportedSystems scrubJobs nixpkgsArgs;
       packageSet = {
             system ? builtins.currentSystem
@@ -47,7 +51,7 @@ let
 in allJobs // {
     # On IOHK Hydra, "required" is a special job that updates the
     # GitHub CI status.
-    required = fixedNixpkgs.releaseTools.aggregate {
+    required = defaultNixpkgs.releaseTools.aggregate {
       name = "haskell.nix-required";
       meta.description = "All jobs required to pass CI";
       constituents =
