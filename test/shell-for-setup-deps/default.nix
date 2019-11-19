@@ -15,13 +15,23 @@ let
 
   env = project.hsPkgs.shellFor {};
 
-in recurseIntoAttrs {
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = runCommand "skipping" {} ''
+      echo This test does not work for windows yet.
+    '';
+    in {
+      plan-nix = skip;
+      env = skip;
+      run = skip;
+    }
+ else {
   inherit (project) plan-nix;
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
 
-    buildCommand = optionalString (!stdenv.hostPlatform.isWindows) ''
+    buildCommand = ''
       ########################################################################
       # test shell-for with an example program
 
@@ -44,4 +54,4 @@ in recurseIntoAttrs {
       inherit project env;
     };
   };
-}
+})

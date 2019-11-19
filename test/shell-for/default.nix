@@ -44,12 +44,23 @@ let
     buildInputs = [ cabal-install ];
   };
 
-in recurseIntoAttrs {
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = runCommand "skipping" {} ''
+      echo This test does not work for windows yet.
+    '';
+    in {
+      env = skip;
+      envPkga = skip;
+      envDefault = skip;
+      run = skip;
+    }
+ else {
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
 
-    buildCommand = optionalString (!stdenv.hostPlatform.isWindows) ''
+    buildCommand = ''
       ########################################################################
       # test shell-for with an example program
 
@@ -75,4 +86,4 @@ in recurseIntoAttrs {
       inherit env envPkga envDefault;
     };
   };
-}
+})
