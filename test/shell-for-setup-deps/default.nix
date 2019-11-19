@@ -1,4 +1,4 @@
-{ stdenv, cabal-install, cabalProject', recurseIntoAttrs }:
+{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand }:
 
 with stdenv.lib;
 
