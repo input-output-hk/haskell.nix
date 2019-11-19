@@ -1,4 +1,4 @@
-{ stdenv, util, mkPkgSet }:
+{ stdenv, util, mkPkgSet, recurseIntoAttrs }:
 
 with stdenv.lib;
 with util;
@@ -35,8 +35,15 @@ let
   pkgId = p: "${p.identifier.name}-${p.identifier.version}";
   showDepends = component: concatMapStringsSep " " pkgId component.depends;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  # Used for testing externally with nix-shell (../tests.sh).
+  # This just adds cabal-install to the existing shells.
+  test-shell = addCabalInstall packages.test-with-packages.components.all;
+
+  # A variant of test-shell with the component option doExactConfig enabled
+  test-shell-dec = addCabalInstall packages.test-with-packages.components.library;
+
+  run = stdenv.mkDerivation {
     name = "with-packages-test";
     libraryDepends = showDepends pkgSet.config.packages.test-with-packages.components.library;
     allDepends = showDepends pkgSet.config.packages.test-with-packages.components.all;
@@ -82,12 +89,6 @@ in
     passthru = {
       # Used for debugging with nix repl
       inherit packages pkgSet;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = addCabalInstall packages.test-with-packages.components.all;
-
-      # A variant of test-shell with the component option doExactConfig enabled
-      test-shell-dec = addCabalInstall packages.test-with-packages.components.library;
     };
+  };
 }

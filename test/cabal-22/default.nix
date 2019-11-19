@@ -12,6 +12,7 @@ let
 
 in recurseIntoAttrs {
   inherit (project) plan-nix;
+  shell = util.addCabalInstall packages.project.components.all;
   run = stdenv.mkDerivation {
     name = "cabal-22-test";
 
@@ -58,7 +59,6 @@ in recurseIntoAttrs {
     meta.platforms = platforms.all;
     passthru = {
       inherit (packages) project;
-      shell = util.addCabalInstall packages.project.components.all;
     };
   };
 }
