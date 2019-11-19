@@ -16,17 +16,22 @@ let
   };
 
   packages = project.hsPkgs;
-in recurseIntoAttrs {
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = pkgs.runCommand "skip-test-setup-deps" {} ''
+      echo "Skipping setup-deps test on windows as it needs the ghc lib" >& 2
+      touch $out
+    '';
+    in {
+      plan-nix = skip;
+      run = skip;
+    }
+ else {
   inherit (project) plan-nix;
   run = pkgs.stdenv.mkDerivation {
     name = "setup-deps-test";
 
-    buildCommand = if stdenv.hostPlatform.isWindows
-    then ''
-      echo "Skipping setup-deps test on windows as it needs the ghc lib" >& 2
-      touch $out
-    ''
-    else ''
+    buildCommand = ''
       exe="${packages.pkg.components.exes.pkg}/bin/pkg"
 
       printf "checking whether executable runs... " >& 2
@@ -43,4 +48,4 @@ in recurseIntoAttrs {
       inherit project packages;
     };
   };
-}
+})

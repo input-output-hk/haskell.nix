@@ -17,8 +17,9 @@ let
 
 in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
  then
-    let skip = runCommand "skipping" {} ''
-      echo This test does not work for windows yet.
+    let skip = runCommand "skipping-test-shell-for-setup-deps" {} ''
+      echo "Skipping shell-for-setup-deps test on windows as does not work yet" >& 2
+      touch $out
     '';
     in {
       plan-nix = skip;
