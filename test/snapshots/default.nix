@@ -6,7 +6,17 @@ let
   env = snapshots."lts-14.13".ghcWithHoogle
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
-in recurseIntoAttrs {
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = runCommand "skip-test-snapshot" {} ''
+      echo "Skipping snapshot test on windows as does not work yet" >& 2
+      touch $out
+    '';
+    in {
+      env = skip;
+      run = skip;
+    }
+ else {
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
@@ -40,4 +50,4 @@ in recurseIntoAttrs {
       inherit env;
     };
   };
-}
+})
