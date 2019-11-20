@@ -1,6 +1,7 @@
 { pkgs ? import nixpkgs ((import ../.) // nixpkgsArgs)
 , nixpkgs ? ../nixpkgs
 , nixpkgsArgs ? { }
+, ifdInputsOnly ? false
 }:
 
 with pkgs;
@@ -9,6 +10,7 @@ let
   util = import ./util.nix { inherit (pkgs.haskell-nix) cabal-install; };
 in pkgs.recurseIntoAttrs {
   inherit (haskell-nix) haskellNixRoots;
+} // pkgs.lib.optionalAttrs (!ifdInputsOnly) {
   cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };
   cabal-simple-prof = haskell-nix.callPackage ./cabal-simple-prof { inherit util; };
   cabal-sublib = haskell-nix.callPackage ./cabal-sublib { inherit util; };
