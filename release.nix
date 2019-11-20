@@ -2,6 +2,7 @@
 , scrubJobs ? true
 , haskell-nix ? { outPath = ./.; rev = "abcdef"; }
 , nixpkgsArgs ? {}
+, ifdInputsOnly ? true
 }:
 
 let defaultNixpkgs = import ./nixpkgs {}; in
@@ -31,6 +32,7 @@ let
           , ...}@args:
         import (haskell-nix + /build.nix) (args // {
           nixpkgsArgs = nixpkgsArgs // { inherit nixpkgs-pin; };
+          inherit ifdInputsOnly;
       });
     });
 
