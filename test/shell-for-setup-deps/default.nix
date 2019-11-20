@@ -1,14 +1,11 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
+{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand }:
 
 with stdenv.lib;
 
 let
-  plan = importAndFilterProject (callCabalProjectToNix {
+  project = cabalProject' {
     name = "test-shell-for-setup-deps";
     src = ./.;
-  });
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = plan.pkgs;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -16,10 +13,23 @@ let
     }];
   };
 
-  env = pkgSet.config.hsPkgs.shellFor {};
+  env = project.hsPkgs.shellFor {};
 
- in
-  stdenv.mkDerivation {
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = runCommand "skipping-test-shell-for-setup-deps" {} ''
+      echo "Skipping shell-for-setup-deps test on windows as does not work yet" >& 2
+      touch $out
+    '';
+    in {
+      plan-nix = skip;
+      env = skip;
+      run = skip;
+    }
+ else {
+  inherit (project) plan-nix;
+  inherit env;
+  run = stdenv.mkDerivation {
     name = "shell-for-test";
 
     buildCommand = ''
@@ -35,14 +45,14 @@ let
     '';
 
     meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl;
+    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
 
     passthru = {
       # Used for debugging with nix repl
       inherit pkgSet;
 
       # Used for testing externally with nix-shell (../tests.sh).
-      inherit env;
-      plan-nix = plan.nix;
+      inherit project env;
     };
-}
+  };
+})

@@ -1,4 +1,4 @@
-resolver: lts-13.26
+resolver: lts-14.13
 
 extra-deps:
   - pandoc-2.7.3

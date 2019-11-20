@@ -1,4 +1,4 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet }:
+{ stdenv, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand }:
 
 with stdenv.lib;
 
@@ -44,8 +44,21 @@ let
     buildInputs = [ cabal-install ];
   };
 
- in
-  stdenv.mkDerivation {
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = runCommand "skip-test-shell-for" {} ''
+      echo "Skipping shell-for test on windows as does not work yet" >& 2
+      touch $out
+    '';
+    in {
+      env = skip;
+      envPkga = skip;
+      envDefault = skip;
+      run = skip;
+    }
+ else {
+  inherit env envPkga envDefault;
+  run = stdenv.mkDerivation {
     name = "shell-for-test";
 
     buildCommand = ''
@@ -64,7 +77,7 @@ let
     '';
 
     meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl;
+    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
 
     passthru = {
       # Used for debugging with nix repl
@@ -73,4 +86,5 @@ let
       # Used for testing externally with nix-shell (../tests.sh).
       inherit env envPkga envDefault;
     };
-}
+  };
+})

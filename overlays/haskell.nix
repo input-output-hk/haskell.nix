@@ -365,20 +365,23 @@ self: super: {
           inherit derivation;
           inputs = builtins.listToAttrs (
             builtins.concatMap (i: if i == null then [] else [
-              { name = builtins.replaceStrings ["."] ["_"] i.name; value = i; }
+              { name = builtins.replaceStrings ["." (self.stdenv.hostPlatform.config + "-")] ["_" ""] i.name; value = i; }
             ]) derivation.nativeBuildInputs);
         };
   
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
         haskellNixRoots = self.recurseIntoAttrs (builtins.mapAttrs (_: self.recurseIntoAttrs) {
-          inherit (self.haskell-nix) nix-tools source-pins;
-          bootstap-nix-tools = self.haskell-nix.bootstrap.packages.nix-tools;
-          alex-plan-nix = withInputs self.haskell-nix.bootstrap.packages.alex-project.plan-nix;
-          happy-plan-nix = withInputs self.haskell-nix.bootstrap.packages.happy-project.plan-nix;
-          hscolour-plan-nix = withInputs self.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
+          inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
+          bootstap-nix-tools = self.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
+          alex-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.alex-project.plan-nix;
+          happy-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
+          hscolour-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
           ghc-extra-projects = builtins.mapAttrs (_: proj: self.recurseIntoAttrs (withInputs proj.plan-nix))
-            (self.lib.filterAttrs (n: _: n != "ghc844" && n != "ghc861" && n != "ghc862") self.ghc-extra-projects);
+            (self.lib.filterAttrs (n: _: n != "ghc844" && n != "ghc861" && n != "ghc862"
+                # There is an issue with GHC 8.6.4 and nixpkgs 19.09, so only build it for 19.03 for now
+                && (n != "ghc864" || super.lib.versions.majorMinor super.lib.version == "19.03")
+              ) self.ghc-extra-projects);
         });
     };
 }

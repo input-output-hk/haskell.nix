@@ -21,6 +21,7 @@ let
           name = "darcs";
           version = "2.14.2";
           index-state = "2019-10-28T00:00:00Z";
+          plan-sha256 = "1h8dxib0wz6mg8md6ldwa54dsr1dn7vxfij8cfhdawl4y3wr51k0";
           # Apply the latest darcs.net Setup.hs patches
           modules = [{packages.darcs.patches = [ ./patches/darcs-setup.patch ];}];
         }).components.exes.darcs;
@@ -38,7 +39,7 @@ in rec {
     update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
-    update-docs = haskell.callPackage ./scripts/update-docs.nix {
+    update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = import ./scripts/options-doc.nix {
         # nixpkgs unstable changes "Option has no description" from an
         # error into a warning. That is quite helpful when hardly any
@@ -51,8 +52,10 @@ in rec {
         }) {};
       };
     };
-    check-hydra = haskell.callPackage ./scripts/check-hydra.nix {};
-    check-closure-size = haskell.callPackage ./scripts/check-closure-size.nix {};
+    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
+    check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
+      inherit (haskell) nix-tools;
+    };
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra
@@ -61,7 +64,7 @@ in rec {
     inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
     # Some of the dependencies of the impure scripts so that they will
     # will be in the cache too for buildkite.
-    inherit (pkgs) coreutils glibc git openssh cabal-install nix-prefetch-git;
+    inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
     inherit (haskell) nix-tools;
   };
 }

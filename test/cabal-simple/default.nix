@@ -1,12 +1,10 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, gmp6, zlib }:
+{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    modules = [
+  modules = [
      {
        # Package has no exposed modules which causes
        #   haddock: No input file(s)
@@ -25,24 +23,35 @@ let
            # "--ghc-option=-optl=-L${zlib.static}/lib"
          ];
      }
-    ];
+  ];
+
+  project = cabalProject' {
+    name = "cabal-simple";
+    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-simple"; };
+    inherit modules;
   };
 
-  packages = pkgSet.config.hsPkgs;
+  packages = project.hsPkgs;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+
+  # Used for testing externally with nix-shell (../tests.sh).
+  # This just adds cabal-install to the existing shells.
+  test-shell = util.addCabalInstall packages.cabal-simple.components.all;
+
+  run = stdenv.mkDerivation {
     name = "cabal-simple-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"
+      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.cabal-simple.components.exes.cabal-simple.run}
     '' + (if stdenv.hostPlatform.isMusl then ''
         printf "checking that executable is statically linked... " >& 2
         (ldd $exe 2>&1 || true) | grep -i "not a"
@@ -55,7 +64,7 @@ in
     '') + ''
 
       printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple"
+      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
       test -f "$all_exe"
       echo "$all_exe" >& 2
 
@@ -66,10 +75,7 @@ in
 
     passthru = {
       # Used for debugging with nix repl
-      inherit pkgSet packages;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = util.addCabalInstall packages.cabal-simple.components.all;
+      inherit project packages;
     };
+  };
 }

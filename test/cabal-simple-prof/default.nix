@@ -1,38 +1,42 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet }:
+{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    modules = [
-     {
-       # Package has no exposed modules which causes
-       #   haddock: No input file(s)
-       packages.cabal-simple.doHaddock = false;
-       packages.cabal-simple.enableExecutableProfiling = true;
-       enableLibraryProfiling = true;
-       # executableProfiling = false;
-     }
-    ];
+  modules = [
+    {
+      # Package has no exposed modules which causes
+      #   haddock: No input file(s)
+      packages.cabal-simple.doHaddock = false;
+      packages.cabal-simple.enableExecutableProfiling = true;
+      enableLibraryProfiling = true;
+      # executableProfiling = false;
+    }
+  ];
+
+  project = cabalProject' {
+    name = "cabal-simple-prof";
+    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-simple-prof"; };
+    inherit modules;
   };
 
-  packages = pkgSet.config.hsPkgs;
+  packages = project.hsPkgs;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple"
+      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs with profiling... " >& 2
-      $exe +RTS -p -h
+      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -h
 
       touch $out
     '';
@@ -41,10 +45,11 @@ in
 
     passthru = {
       # Used for debugging with nix repl
-      inherit pkgSet packages;
+      inherit project packages;
 
       # Used for testing externally with nix-shell (../tests.sh).
       # This just adds cabal-install to the existing shells.
       test-shell = util.addCabalInstall packages.cabal-simple.components.all;
     };
+  };
 }

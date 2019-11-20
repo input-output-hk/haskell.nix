@@ -1,35 +1,40 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet }:
+{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    modules = [
-     {
-       # Package has no exposed modules which causes
-       #   haddock: No input file(s)
-       packages.cabal-sublib.doHaddock = false;
-     }
-    ];
+  modules = [
+    {
+      # Package has no exposed modules which causes
+      #   haddock: No input file(s)
+      packages.cabal-sublib.doHaddock = false;
+    }
+  ];
+
+  # The ./pkgs.nix works for linux & darwin, but not for windows
+  project = cabalProject' {
+    name = "cabal-sublib";
+    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-sublib"; };
+    inherit modules;
   };
 
-  packages = pkgSet.config.hsPkgs;
+  packages = project.hsPkgs;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "cabal-sublib-test";
 
     buildCommand = ''
-      exe="${packages.cabal-sublib.components.exes.cabal-sublib}/bin/cabal-sublib"
+      exe="${packages.cabal-sublib.components.exes.cabal-sublib}/bin/cabal-sublib${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.cabal-sublib.components.exes.cabal-sublib.run}
 
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString stdenv.isLinux ''
@@ -39,7 +44,7 @@ in
     '' + ''
 
       printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-sublib.components.all}/bin/cabal-sublib"
+      all_exe="${packages.cabal-sublib.components.all}/bin/cabal-sublib${stdenv.hostPlatform.extensions.executable}"
       test -f "$all_exe"
       echo "$all_exe" >& 2
 
@@ -56,4 +61,5 @@ in
       # This just adds cabal-install to the existing shells.
       test-shell = util.addCabalInstall packages.cabal-sublib.components.all;
     };
+  };
 }
