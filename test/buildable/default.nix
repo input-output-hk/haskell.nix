@@ -19,7 +19,7 @@ in recurseIntoAttrs {
     buildCommand = 
       (concatStrings (mapAttrsToList (name: value: ''
         printf "checking whether executable runs... " >& 2
-        cat ${value.run}
+        cat ${haskellLib.check value}
       '') packages.buildable-test.components.exes)) + ''
       touch $out
     '';

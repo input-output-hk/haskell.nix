@@ -20,8 +20,6 @@
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
 
-, doCheck ? component.doCheck || haskellLib.isTest componentId
-, doCrossCheck ? component.doCrossCheck || false
 , dontPatchELF ? true
 , dontStrip ? true
 
@@ -117,13 +115,7 @@ let
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
-  # Avoid issues with tests and benchmarks winding up unexpectedly in the `PATH`.
-  # For example if a package had a test called `gcc` and the `.all` component
-  # was used as a buildInput, the test would replace `gcc` in the `PATH`.
-  installedExeDir = if (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) && haskellLib.isAll componentId
-    then name
-    else "bin";
-  installedExe = "${installedExeDir}/${componentId.cname}${exeExt}";
+  installedExe = "bin/${componentId.cname}${exeExt}";
 
 in stdenv.lib.fix (drv:
 
@@ -140,44 +132,12 @@ stdenv.mkDerivation ({
   passthru = {
     inherit (package) identifier;
     config = component;
-    inherit configFiles executableToolDepends cleanSrc;
+    inherit configFiles executableToolDepends cleanSrc installedExe;
     env = shellWrappers;
 
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
-
-    # This run derivation can be used to execute test, benchmark (or even
-    # exe) components.  The $out of the derivation is a file containing
-    # the resulting stdout output.
-    run = stdenv.mkDerivation ({
-      name = (fullName + "-run");
-
-      src = drv;
-
-      passthru = {
-        inherit (package) identifier;
-        config = component;
-        inherit configFiles executableToolDepends cleanSrc;
-        env = shellWrappers;
-      };
-
-      inherit (drv) meta LANG LC_ALL;
-
-      inherit doCheck doCrossCheck;
-
-      phases = ["checkPhase"];
-
-      checkPhase = ''
-        runHook preCheck
-
-        ${toString component.testWrapper} $src/${installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
-
-        runHook postCheck
-      '';
-    } // haskellLib.optionalHooks {
-      inherit preCheck postCheck;
-    });
   };
 
   meta = {
@@ -296,9 +256,9 @@ stdenv.mkDerivation ({
       fi
     ''}
     ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
-      mkdir -p $out/${installedExeDir}
+      mkdir -p $out/bin
       if [ -f ${testExecutable} ]; then
-        cp ${testExecutable} $out/${installedExeDir}/
+        cp ${testExecutable} $out/bin/
       fi
     '')
     # In case `setup copy` did not creat this
@@ -306,7 +266,7 @@ stdenv.mkDerivation ({
     + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
       echo "Symlink libffi and gmp .dlls ..."
       for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
-        find "$p" -iname '*.dll' -exec ln -s {} $out/${installedExeDir} \;
+        find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
       done
       # symlink all .dlls into the local directory.
       # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
@@ -314,7 +274,7 @@ stdenv.mkDerivation ({
       echo "Symlink library dependencies..."
       for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
         if [ -d "$libdir" ]; then
-          find "$libdir" -iname '*.dll' -exec ln -s {} $out/${installedExeDir} \;
+          find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
         fi
       done
     '')

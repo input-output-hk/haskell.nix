@@ -59,7 +59,7 @@ let
 
 in rec {
   components = haskellLib.applyComponents buildComp config;
-  checks = builtins.mapAttrs (_: d: d.run) components.tests;
+  checks = builtins.mapAttrs (_: d: haskellLib.check d) components.tests;
   inherit (package) identifier detailLevel isLocal;
   inherit setup cabalFile;
   isHaskell = true;

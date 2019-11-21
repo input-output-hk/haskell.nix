@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, haskell-nix, recurseIntoAttrs }:
+{ stdenv, util, haskell-nix, recurseIntoAttrs, haskellLib }:
 
 with stdenv.lib;
 
@@ -24,7 +24,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable ran... " >& 2
-      cat ${packages.exe-only.components.exes.exe-only.run}
+      cat ${haskellLib.check packages.exe-only.components.exes.exe-only}
     '' + (if stdenv.hostPlatform.isMusl then ''
         printf "checking that executable is statically linked... " >& 2
         (ldd $exe 2>&1 || true) | grep -i "not a"

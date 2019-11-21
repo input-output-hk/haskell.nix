@@ -1,4 +1,4 @@
-{ lib, haskellLib, runCommand, git }:
+{ stdenv, lib, haskellLib, runCommand, git }:
 
 with haskellLib;
 
@@ -158,5 +158,10 @@ with haskellLib;
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
     inherit lib runCommand git cleanSourceWith;
+  };
+
+  # Check a test component
+  check = import ./check.nix {
+    inherit stdenv lib haskellLib;
   };
 }

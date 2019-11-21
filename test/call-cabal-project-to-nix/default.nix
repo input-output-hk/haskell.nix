@@ -1,4 +1,4 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs }:
+{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib }:
 
 with stdenv.lib;
 
@@ -25,7 +25,7 @@ in recurseIntoAttrs {
       exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      cat ${packages.cabal-simple.components.exes.cabal-simple.run}
+      cat ${haskellLib.check packages.cabal-simple.components.exes.cabal-simple}
 
       touch $out
     '';

@@ -1,4 +1,4 @@
-{ stdenv, cabalProject', recurseIntoAttrs }:
+{ stdenv, cabalProject', recurseIntoAttrs, haskellLib }:
 
 with stdenv.lib;
 
@@ -19,7 +19,7 @@ in recurseIntoAttrs {
       exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      cat ${packages.test-project-flags.components.exes.test-project-flags-exe.run}
+      cat ${haskellLib.check packages.test-project-flags.components.exes.test-project-flags-exe}
 
       touch $out
     '';

@@ -24,7 +24,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable rans... " >& 2
-      cat ${packages.project.components.exes.project.run}
+      cat ${haskellLib.check packages.project.components.exes.project}
 
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString stdenv.isLinux ''
@@ -50,10 +50,10 @@ in recurseIntoAttrs {
       touch $out
 
       printf "checking whether benchmark ran... " >& 2
-      cat ${packages.project.components.benchmarks.project-bench.run}
+      cat ${haskellLib.check packages.project.components.benchmarks.project-bench}
 
       printf "checking whether tests ran... " >& 2
-      cat ${packages.project.components.tests.unit.run}
+      cat ${haskellLib.check packages.project.components.tests.unit}
     '';
 
     meta.platforms = platforms.all;

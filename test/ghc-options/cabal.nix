@@ -1,4 +1,4 @@
-{ stdenv, cabalProject', recurseIntoAttrs }:
+{ stdenv, cabalProject', recurseIntoAttrs, haskellLib }:
 
 with stdenv.lib;
 
@@ -19,7 +19,7 @@ in recurseIntoAttrs {
 
     buildCommand = ''
       printf "checking whether executable runs... " >& 2
-      cat ${packages.test-ghc-options.components.exes.test-ghc-options-exe.run}
+      cat ${haskellLib.check packages.test-ghc-options.components.exes.test-ghc-options-exe}
 
       touch $out
     '';
