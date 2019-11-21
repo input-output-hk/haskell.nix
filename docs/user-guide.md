@@ -71,6 +71,14 @@ cd haskell.nix
 nix build -f . haskell-nix.nix-tools --out-link nt
 ```
 
+## Setting up the Cachix binary cache
+
+CI pushes to [cachix](https://cachix.org) so you can benefit from the cache if
+you pin a combination of `haskell.nix` and `nixpkgs` built by CI. You'll need
+to configure the [nix-tools cachix](https://nix-tools.cachix.org) as a
+`substituter` for `nix` and add the public key found at the url to
+`trusted-public-keys`.
+
 ## Using [Haskell.nix][] with your project
 
 The easiest way to get a hold of [Haskell.nix][] is with

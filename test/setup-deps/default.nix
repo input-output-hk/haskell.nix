@@ -6,7 +6,7 @@ with stdenv.lib;
 let
   project = haskell-nix.cabalProject' {
     name = "test-setup-deps";
-    src = ./.;
+    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ../..; subDir = "test/setup-deps"; };
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -16,10 +16,20 @@ let
   };
 
   packages = project.hsPkgs;
-in recurseIntoAttrs {
-  plan = haskell-nix.withInputs project.plan-nix;
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = pkgs.runCommand "skip-test-setup-deps" {} ''
+      echo "Skipping setup-deps test on windows as it needs the ghc lib" >& 2
+      touch $out
+    '';
+    in {
+      plan-nix = skip;
+      run = skip;
+    }
+ else {
+  inherit (project) plan-nix;
   run = pkgs.stdenv.mkDerivation {
-    name = "call-cabal-project-to-nix-test";
+    name = "setup-deps-test";
 
     buildCommand = ''
       exe="${packages.pkg.components.exes.pkg}/bin/pkg"
@@ -30,11 +40,12 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta.platforms = platforms.unix;
+    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
 
     passthru = {
       # Attributes used for debugging with nix repl
       inherit project packages;
     };
   };
-}
+})

@@ -1,16 +1,32 @@
-{ stdenv, haskellPackages, snapshots }:
+{ stdenv, haskellPackages, snapshots, recurseIntoAttrs, runCommand }:
 
 with stdenv.lib;
 
 let
-  env = snapshots."lts-12.21".ghcWithHoogle
+  env = snapshots."lts-14.13".ghcWithHoogle
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+ then
+    let skip = runCommand "skip-test-snapshot" {} ''
+      echo "Skipping snapshot test on windows as does not work yet" >& 2
+      touch $out
+    '';
+    in {
+      env = skip;
+      run = skip;
+    }
+ else {
+  inherit env;
+  run = stdenv.mkDerivation {
     name = "shell-for-test";
 
-    buildCommand = ''
+    buildCommand = if stdenv.hostPlatform.isWindows
+      then ''
+        printf "snapshot test is not working yet for windows. skipping. " >& 2
+        touch $out
+      ''
+      else ''
       ########################################################################
       # test single component from haskellPackages
 
@@ -33,4 +49,5 @@ in
     passthru = {
       inherit env;
     };
-}
+  };
+})

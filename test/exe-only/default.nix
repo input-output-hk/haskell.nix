@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, haskell-nix }:
+{ stdenv, util, haskell-nix, recurseIntoAttrs }:
 
 with stdenv.lib;
 
@@ -11,8 +11,9 @@ let
 
   packages = project.hsPkgs;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "exe-only-test";
 
     buildCommand = ''
@@ -53,4 +54,5 @@ in
       # This just adds cabal-install to the existing shells.
       test-shell = util.addCabalInstall packages.exe-only.components.all;
     };
+  };
 }

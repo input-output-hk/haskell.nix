@@ -1,20 +1,23 @@
-{ stdenv, mkCabalProjectPkgSet, util }:
+{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
+  project = cabalProject' {
+    name = "cabal-22";
+    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-22"; };
   };
 
-  packages = pkgSet.config.hsPkgs;
+  packages = project.hsPkgs;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  shell = util.addCabalInstall packages.project.components.all;
+  run = stdenv.mkDerivation {
     name = "cabal-22-test";
 
     buildCommand = ''
-      exe="${packages.project.components.exes.project}/bin/project"
+      exe="${packages.project.components.exes.project}/bin/project${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
@@ -56,6 +59,6 @@ in
     meta.platforms = platforms.all;
     passthru = {
       inherit (packages) project;
-      shell = util.addCabalInstall packages.project.components.all;
     };
-  }
+  };
+}

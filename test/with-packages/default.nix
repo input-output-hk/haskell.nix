@@ -1,4 +1,4 @@
-{ stdenv, util, mkPkgSet }:
+{ stdenv, util, mkPkgSet, recurseIntoAttrs }:
 
 with stdenv.lib;
 with util;
@@ -35,8 +35,15 @@ let
   pkgId = p: "${p.identifier.name}-${p.identifier.version}";
   showDepends = component: concatMapStringsSep " " pkgId component.depends;
 
-in
-  stdenv.mkDerivation {
+in recurseIntoAttrs {
+  # Used for testing externally with nix-shell (../tests.sh).
+  # This just adds cabal-install to the existing shells.
+  test-shell = addCabalInstall packages.test-with-packages.components.all;
+
+  # A variant of test-shell with the component option doExactConfig enabled
+  test-shell-dec = addCabalInstall packages.test-with-packages.components.library;
+
+  run = stdenv.mkDerivation {
     name = "with-packages-test";
     libraryDepends = showDepends pkgSet.config.packages.test-with-packages.components.library;
     allDepends = showDepends pkgSet.config.packages.test-with-packages.components.all;
@@ -60,15 +67,19 @@ in
 
       printf "checking that the 'library' component works... " >& 2
       echo ${package.components.library} >& 2
+    '' + (if stdenv.hostPlatform.isWindows
+      then ''
+        printf "runghc tests are not working yet for windows. skipping. " >& 2
+      ''
+      else ''
+        printf "checking that the package env has the dependencies... " >& 2
+        ${package.components.all.env}/bin/runghc ${./Point.hs}
+        echo >& 2
 
-      printf "checking that the package env has the dependencies... " >& 2
-      ${package.components.all.env}/bin/runghc ${./Point.hs}
-      echo >& 2
-
-      printf "checking that components.library.env has the dependencies... " >& 2
-      ${library.env}/bin/runghc ${./Point.hs}
-      echo >& 2
-
+        printf "checking that components.library.env has the dependencies... " >& 2
+        ${library.env}/bin/runghc ${./Point.hs}
+        echo >& 2
+      '') + ''
       touch $out
     '';
 
@@ -78,12 +89,6 @@ in
     passthru = {
       # Used for debugging with nix repl
       inherit packages pkgSet;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = addCabalInstall packages.test-with-packages.components.all;
-
-      # A variant of test-shell with the component option doExactConfig enabled
-      test-shell-dec = addCabalInstall packages.test-with-packages.components.library;
     };
+  };
 }

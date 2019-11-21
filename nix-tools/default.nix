@@ -4,11 +4,14 @@
 , ... }@args:
 
 let
-  src = cleanSourceHaskell (fetchExternal {
-    name     = "nix-tools-src";
-    specJSON = ./nix-tools-src.json;
-    override = "nix-tools-src";
-  });
+  src = cleanSourceHaskell {
+    src = fetchExternal {
+      name     = "nix-tools-src";
+      specJSON = ./nix-tools-src.json;
+      override = "nix-tools-src";
+    };
+  };
+
   # we need to patch Cabal, as its data directory logic is broken for component builds, which haskell.nix
   # uses excessively. See issue https://github.com/haskell/cabal/issues/5862, and the fix for Cabal 3.0
   # in https://github.com/haskell/cabal/pull/6055. We apply the haskell/cabal#6055 here.

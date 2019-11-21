@@ -1,7 +1,10 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
 { component, package, name, src, flags, revision, patches, defaultSetupSrc
-, preUnpack ? null, postUnpack ? null
+, preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
+, prePatch ? null, postPatch ? null
+, preBuild ? component.preBuild , postBuild ? component.postBuild
+, preInstall ? component.preInstall , postInstall ? component.postInstall
 }:
 
 let
@@ -16,7 +19,12 @@ let
     inherit fullName flags component;
   };
   hooks = haskellLib.optionalHooks {
-    inherit preUnpack postUnpack;
+    inherit
+      preUnpack postUnpack
+      prePatch postPatch
+      preBuild postBuild
+      preInstall postInstall
+      ;
   };
 
   executableToolDepends =
@@ -54,6 +62,7 @@ in
 
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
+        runHook preBuild
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
         fi
@@ -66,11 +75,14 @@ in
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
+        runHook preBuild
       '';
 
       installPhase = ''
+        runHook preInstall
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
+        runHook postInstall
       '';
     }
     // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })

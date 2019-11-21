@@ -1,26 +1,25 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject }:
+{ stdenv, cabalProject', recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  plan = (importAndFilterProject (callCabalProjectToNix {
-      name = "test-project-flags";
-      index-state = "2019-04-30T00:00:00Z";
-      src = ./.;
-    }));
-  pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = plan.pkgs;
+  project = cabalProject' {
+    name = "test-project-flags";
+    index-state = "2019-04-30T00:00:00Z";
+    src = ./.;
   };
-  packages = pkgSet.config.hsPkgs;
-in
-  stdenv.mkDerivation {
+  packages = project.hsPkgs;
+
+in recurseIntoAttrs {
+  inherit (project) plan-nix;
+  run = stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
-      exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe"
+      exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.test-project-flags.components.exes.test-project-flags-exe.run}
 
       touch $out
     '';
@@ -32,4 +31,5 @@ in
       inherit pkgSet packages;
       plan-nix = plan.nix;
     };
-  }
+  };
+}

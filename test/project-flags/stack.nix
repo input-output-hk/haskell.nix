@@ -1,24 +1,23 @@
-{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject }:
+{ stdenv, stackProject', recurseIntoAttrs }:
 
 with stdenv.lib;
 
 let
-  stack = (importAndFilterProject (callStackToNix {
+  project = stackProject' {
     src = ./.;
-  }));
-  pkgSet = mkStackPkgSet {
-    stack-pkgs = stack.pkgs;
   };
-  packages = pkgSet.config.hsPkgs;
-in
-  stdenv.mkDerivation {
+  packages = project.hsPkgs;
+
+in recurseIntoAttrs {
+  inherit (project) stack-nix;
+  run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 
     buildCommand = ''
-      exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe"
+      exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      $exe
+      cat ${packages.test-project-flags.components.exes.test-project-flags-exe.run}
 
       touch $out
     '';
@@ -30,4 +29,5 @@ in
       inherit pkgSet packages;
       stack-nix = stack.nix;
     };
-  }
+  };
+}

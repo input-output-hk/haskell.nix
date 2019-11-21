@@ -241,6 +241,40 @@ The result is an attrset with the following values:
 
 ## cleanSourceHaskell
 
+```
+cleanSourceHaskell = { src, name ? null }: ...
+```
+
+Filters a source tree removing common filenames that are not Haskell
+build sources.
+
+This can avoid unecessary rebuilds when these files change.
+
+It's recommended to provide `name` so that the source derivation
+remains constant regardless of how it was fetched.
+
+Example:
+
+```
+src = pkgs.haskell-nix.cleanSourceHaskell {
+  src = ./.;
+  name = "myproject-src";
+};
+```
+
+## haskellSourceFilter
+
+```
+haskellSourceFilter = name: type: ...
+```
+
+This is a source filter function which cleans common build products
+and files not needed to do a Haskell build from a source directory.
+
+It should be used with `pkgs.lib.cleanSourceWith`. Alternatively,
+use the convenience function [`cleanSourceHaskell`](#cleansourcehaskell).
+
+
 ## haskellLib
 
 Assorted functions for operating on [Haskell.nix][] data. This is

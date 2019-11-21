@@ -1,6 +1,12 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## November 18, 2019
+  * Changed the `cleanSourceHaskell` to accept an attrset of `src` and
+    (optional) `name` parameters. This allows you to keep the source
+    derivation name constant, so that your builds are always
+    cached. Usage of `cleanSourceHaskell` will need to be updated.
+
 ## October 12, 2019
  * [`shellFor`](https://input-output-hk.github.io/haskell.nix/reference/library/#shellfor) no longer sets `CABAL_CONFIG` by default.
    This avoids surprising users, but means that Cabal may select a plan which is different to your Haskell.nix package set.

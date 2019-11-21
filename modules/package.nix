@@ -192,7 +192,7 @@ in {
           };
           hsSourceDirs = mkOption {
             type = listOfFilteringNulls unspecified;
-            default = [];
+            default = ["."];
           };
           includeDirs = mkOption {
             type = listOfFilteringNulls unspecified;
