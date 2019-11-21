@@ -378,10 +378,13 @@ self: super: {
           happy-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
           hscolour-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
           ghc-extra-projects = builtins.mapAttrs (_: proj: self.recurseIntoAttrs (withInputs proj.plan-nix))
-            (self.lib.filterAttrs (n: _: n != "ghc844" && n != "ghc861" && n != "ghc862"
-                # There is an issue with GHC 8.6.4 and nixpkgs 19.09, so only build it for 19.03 for now
-                && (n != "ghc864" || super.lib.versions.majorMinor super.lib.version == "19.03")
-              ) self.ghc-extra-projects);
+            (self.lib.filterAttrs (n: _:
+                   n != "ghc844"
+                && n != "ghc861"
+                && n != "ghc862"
+                && n != "ghc863"
+                && n != "ghc864"
+          ) self.ghc-extra-projects);
         });
     };
 }
