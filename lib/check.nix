@@ -8,7 +8,7 @@ let
 # The $out of the derivation is a file containing the resulting
 # stdout output.
 in stdenv.mkDerivation ({
-  name = (drv.name + "-run");
+  name = (drv.name + "-check");
 
   src = drv;
 
@@ -20,7 +20,13 @@ in stdenv.mkDerivation ({
 
   inherit (component) doCheck doCrossCheck;
 
-  phases = ["checkPhase"];
+  phases = ["buildPhase" "checkPhase"];
+
+  # If doCheck or doCrossCheck are false we may still build this
+  # component and we want it to quietly succeed.
+  buildPhase = ''
+    touch $out
+  '';
 
   checkPhase = ''
     runHook preCheck

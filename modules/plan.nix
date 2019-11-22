@@ -81,7 +81,7 @@ let
           };
           doCheck = mkOption {
             type = bool;
-            default = (def.doCheck or false);
+            default = (def.doCheck or true);
           };
           doCrossCheck = mkOption {
             description = "Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.";

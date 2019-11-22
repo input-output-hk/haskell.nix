@@ -18,5 +18,6 @@ in pkgs.recurseIntoAttrs {
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
   };
-  stack-simple-test = haskellLib.check packages.stack-simple.components.tests.stack-simple-test;
+  stack-simple-test = packages.stack-simple.checks.stack-simple-test;
+  stack-simple-checks = packages.stack-simple.checks;
 }
