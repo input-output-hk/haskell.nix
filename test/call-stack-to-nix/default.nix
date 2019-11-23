@@ -14,7 +14,7 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in recurseIntoAttrs {
-  ifdInputs = recurseIntoAttrs {
+  ifdInputs = {
     stack-nix = stack.nix;
   };
   run = stdenv.mkDerivation {

@@ -7,10 +7,14 @@
 with pkgs;
 
 let
+  withIfdInputs = builtins.mapAttrs (n: x:
+    if n == "ifdInputs"
+      then pkgs.recurseIntoAttrs (builtins.mapAttrs (_: pkgs.haskell-nix.withInputs) x)
+      else x);
   util = import ./util.nix { inherit (pkgs.haskell-nix) cabal-install; };
 in pkgs.recurseIntoAttrs {
   inherit (haskell-nix) haskellNixRoots;
-} // (if ifdInputsOnly
+} // builtins.mapAttrs (_: y: withIfdInputs y) ((if ifdInputsOnly
     then builtins.mapAttrs (_: d: pkgs.recurseIntoAttrs (pkgs.lib.filterAttrs (n: _: n == "ifdInputs") d))
     else x: x) {
   cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };
@@ -42,7 +46,7 @@ in pkgs.recurseIntoAttrs {
   in runCommand "unit-tests" { passthru = { inherit tests; }; }
      (lib.concatMapStringsSep "\n" (t: "echo ${t.name} failed") tests +
       (if builtins.length tests == 0 then "\ntouch $out" else "\nexit 1"));
-}
+})
 
 ## more possible test cases
 # 1. fully static linking

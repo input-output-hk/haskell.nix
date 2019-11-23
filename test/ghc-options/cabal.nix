@@ -13,7 +13,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = {
+    inherit (project) plan-nix;
+  };
   run = stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 

@@ -11,7 +11,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  ifdInputs = recurseIntoAttrs {
+  ifdInputs = {
     inherit (project) plan-nix;
   };
   shell = util.addCabalInstall packages.project.components.all;

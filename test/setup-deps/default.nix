@@ -23,11 +23,11 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       touch $out
     '';
     in {
-      ifdInputs = recurseIntoAttrs { plan-nix = skip; };
+      ifdInputs = { plan-nix = skip; };
       run = skip;
     }
  else {
-  ifdInputs = recurseIntoAttrs {
+  ifdInputs = {
     inherit (project) plan-nix;
   };
   run = pkgs.stdenv.mkDerivation {

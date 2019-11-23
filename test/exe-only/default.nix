@@ -12,7 +12,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  ifdInputs = recurseIntoAttrs {
+  ifdInputs = {
     inherit (project) plan-nix;
   };
   run = stdenv.mkDerivation {

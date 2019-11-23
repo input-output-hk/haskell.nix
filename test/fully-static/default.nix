@@ -53,7 +53,7 @@ let
   packagesIntegerSimple = (project { gpl = false; }).hsPkgs;
 
 in recurseIntoAttrs {
-  ifdInputs = recurseIntoAttrs {
+  ifdInputs = {
     stack-nix-gmp = (project { gpl = true; }).stack-nix;
     stack-nix-simple = (project { gpl = false; }).stack-nix;
   };

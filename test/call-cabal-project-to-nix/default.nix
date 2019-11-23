@@ -17,7 +17,7 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in recurseIntoAttrs {
-  ifdInputs = recurseIntoAttrs {
+  ifdInputs = {
     plan-nix = plan.nix;
   };
   run = stdenv.mkDerivation {
