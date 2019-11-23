@@ -12,7 +12,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = recurseIntoAttrs {
+    inherit (project) plan-nix;
+  };
   run = stdenv.mkDerivation {
     name = "buildable-test";
 

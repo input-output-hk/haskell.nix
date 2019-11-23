@@ -27,7 +27,9 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       run = skip;
     }
  else {
-  inherit (project) plan-nix;
+  ifdInputs = recurseIntoAttrs {
+    inherit (project) plan-nix;
+  };
   run = pkgs.stdenv.mkDerivation {
     name = "setup-deps-test";
 

@@ -34,7 +34,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = recurseIntoAttrs {
+    inherit (project) plan-nix;
+  };
 
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.

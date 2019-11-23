@@ -17,7 +17,9 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in recurseIntoAttrs {
-  plan-nix = plan.nix;
+  ifdInputs = recurseIntoAttrs {
+    plan-nix = plan.nix;
+  };
   run = stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 

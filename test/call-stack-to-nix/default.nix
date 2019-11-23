@@ -14,7 +14,9 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in recurseIntoAttrs {
-  stack-nix = stack.nix;
+  ifdInputs = recurseIntoAttrs {
+    stack-nix = stack.nix;
+  };
   run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 

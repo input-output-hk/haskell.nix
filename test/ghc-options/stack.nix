@@ -9,7 +9,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) stack-nix;
+  ifdInputs = recurseIntoAttrs {
+    inherit (project) stack-nix;
+  };
   run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 

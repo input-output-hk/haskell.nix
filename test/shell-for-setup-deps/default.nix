@@ -27,7 +27,9 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       run = skip;
     }
  else {
-  inherit (project) plan-nix;
+  ifdInputs = recurseIntoAttrs {
+    inherit (project) plan-nix;
+  };
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
