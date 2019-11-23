@@ -64,13 +64,24 @@ let
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
     ] ++ lib.optionals (stdenv.cc != null)
-    [ # CC
-      "--with-gcc=${stdenv.cc.targetPrefix}cc"
+    ( # CC
+      [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
+      ] ++
       # BINTOOLS
-      "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
-      "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
-      "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
-    ] ++ [ # other flags
+      (if stdenv.hostPlatform.isLinux
+        # use gold as the linker on linux to improve link times
+        then [
+          "--with-ld=${stdenv.cc.bintools.targetPrefix}ld.gold"
+          "--ghc-option=-optl-fuse-ld=gold"
+          "--ld-option=-fuse-ld=gold"
+        ] else [
+          "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
+        ]
+      ) ++ [
+        "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
+        "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
+      ]
+    ) ++ [ # other flags
       (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
       (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
       (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )

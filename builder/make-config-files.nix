@@ -1,10 +1,12 @@
-{ stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand }:
+{ stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }:
 
 let
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
     echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
   '';
+
+  target-pkg = "${ghc.targetPrefix}ghc-pkg";
 
   # This is a bit of a hack.  So we'll have a slightly longer explaination here:
   # exactDep will pass --exact-configuration to the `SETUP_HS confiugre` command.
@@ -20,38 +22,57 @@ let
   #            sublib name to exactDep, as we don't have access to it at the call-site,
   #            we resort to a bit of globbing, which (as pkg db's should contain only
   #            a single package) work.
-  exactDep = pdbArg: p: ''
-    if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
+  exactDep = pdbArg: p: nativeBuildInputs:  runCommand "${p}-exactdep" { inherit nativeBuildInputs; } ''
+    mkdir -p $out
+    touch $out/configure-flags
+    touch $out/cabal.config
+
+    if id=$(${target-pkg} ${pdbArg} field ${p} id --simple-output); then
       echo "--dependency=${p}=$id" >> $out/configure-flags
-    elif id=$(target-pkg ${pdbArg} field "z-${p}-z-*" id --simple-output); then
-      name=$(target-pkg ${pdbArg} field "z-${p}-z-*" name --simple-output)
+    elif id=$(${target-pkg} ${pdbArg} field "z-${p}-z-*" id --simple-output); then
+      name=$(${target-pkg} ${pdbArg} field "z-${p}-z-*" name --simple-output)
       # so we are dealing with a sublib. As we build sublibs separately, the above
       # query should be safe.
       echo "--dependency=''${name#z-${p}-z-}=$id" >> $out/configure-flags
     fi
-    if ver=$(target-pkg ${pdbArg} field ${p} version --simple-output); then
+    if ver=$(${target-pkg} ${pdbArg} field ${p} version --simple-output); then
       echo "constraint: ${p} == $ver" >> $out/cabal.config
       echo "constraint: ${p} installed" >> $out/cabal.config
     fi
   '';
 
-  envDep = pdbArg: p: ''
-    if id=$(target-pkg ${pdbArg} field ${p} id --simple-output); then
-      echo "package-id $id" >> $out/ghc-environment
+  catExactDep = dep: ''
+    cat ${dep}/configure-flags >> $out/configure-flags
+    cat ${dep}/cabal.config >> $out/cabal.config
+  '';
+
+  catPkgExactDep = p:
+    catExactDep (exactDep (packageDb p) p.identifier.name [ghc (p.components.library or p)]);
+
+  catGhcPkgExactDep = p: catExactDep (exactDep "" p [ghc]);
+
+  envDep = pdbArg: p: nativeBuildInputs: runCommand "${p}-envdep" { inherit nativeBuildInputs; } ''
+    touch $out
+    if id=$(${target-pkg} ${pdbArg} field ${p} id --simple-output); then
+      echo "package-id $id" >> $out
     fi
   '';
 
-in { identifier, component, fullName, flags ? {} }:
+  catEnvDep = ghcEnv: ''
+    cat ${ghcEnv} >> $out/ghc-environment
+  '';
 
+  catPkgEnvDep = p:
+    catEnvDep (envDep (packageDb p) p.identifier.name [ghc (p.components.library or p)]);
+
+  catGhcPkgEnvDep = p: catEnvDep (envDep "" p [ghc]);
+
+  packageDb = p: "--package-db ${p.components.library or p}/package.conf.d";
+in { identifier, component, fullName, flags ? {} }:
   runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out
 
-    # Calls ghc-pkg for the target platform
-    target-pkg() {
-      ${ghc.targetPrefix}ghc-pkg "$@"
-    }
-
-    target-pkg init $out/package.conf.d
+    ${target-pkg} init $out/package.conf.d
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs;
@@ -60,14 +81,12 @@ in { identifier, component, fullName, flags ? {} }:
     })}
 
     # Copy over the nonReinstallablePkgs from the global package db.
-    # Note: we need to use --global-package-db with ghc-pkg to prevent it
-    #       from looking into the implicit global package db when registering the package.
     ${lib.concatMapStringsSep "\n" (p: ''
-      target-pkg describe ${p} | target-pkg --force --global-package-db $out/package.conf.d register - || true
+      find ${ghc}/lib/${ghc.name}/package.conf.d -name '${p}*.conf' -exec cp -f {} $out/package.conf.d \;
     '') nonReinstallablePkgs}
 
     ${lib.concatMapStringsSep "\n" (p: ''
-      target-pkg --package-db ${p}/package.conf.d dump | target-pkg --force --package-db $out/package.conf.d register -
+      cp -f "${p}/package.conf.d/"*.conf $out/package.conf.d
     '') (haskellLib.flatLibDepends component)}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
@@ -82,16 +101,16 @@ in { identifier, component, fullName, flags ? {} }:
     cat > $out/ghc-environment <<EOF
     package-db $out/package.conf.d
     EOF
-    ${lib.concatMapStringsSep "\n" (p: envDep "--package-db ${p.components.library or p}/package.conf.d" p.identifier.name) component.depends}
-    ${lib.concatMapStringsSep "\n" (envDep "") (lib.remove "ghc" nonReinstallablePkgs)}
 
+    ${lib.concatMapStringsSep "\n" catPkgEnvDep component.depends}
+    ${lib.concatMapStringsSep "\n" catGhcPkgEnvDep (lib.remove "ghc" nonReinstallablePkgs)}
   '' + lib.optionalString component.doExactConfig ''
     echo "--exact-configuration" >> $out/configure-flags
     echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
     echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
 
-    ${lib.concatMapStringsSep "\n" (p: exactDep "--package-db ${p.components.library or p}/package.conf.d" p.identifier.name) component.depends}
-    ${lib.concatMapStringsSep "\n" (exactDep "") nonReinstallablePkgs}
+    ${lib.concatMapStringsSep "\n" catPkgExactDep component.depends}
+    ${lib.concatMapStringsSep "\n" catGhcPkgExactDep nonReinstallablePkgs}
 
   ''
   # This code originates in the `generic-builder.nix` from nixpkgs.  However GHC has been fixed
@@ -124,7 +143,5 @@ in { identifier, component, fullName, flags ? {} }:
       sed -i "s,dynamic-library-dirs: .*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    target-pkg --package-db $out/package.conf.d recache
-  '' + ''
-    target-pkg --package-db $out/package.conf.d check
+    ${target-pkg} -v0 --package-db $out/package.conf.d recache
   '')
