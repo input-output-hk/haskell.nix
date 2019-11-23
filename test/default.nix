@@ -10,7 +10,9 @@ let
   util = import ./util.nix { inherit (pkgs.haskell-nix) cabal-install; };
 in pkgs.recurseIntoAttrs {
   inherit (haskell-nix) haskellNixRoots;
-} // pkgs.lib.optionalAttrs (!ifdInputsOnly) {
+} // (if ifdInputsOnly
+    then builtins.mapAttrs (_: d: pkgs.recurseIntoAttrs (pkgs.lib.filterAttrs (n: _: n == "ifdInputs") d))
+    else x: x) {
   cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };
   cabal-simple-prof = haskell-nix.callPackage ./cabal-simple-prof { inherit util; };
   cabal-sublib = haskell-nix.callPackage ./cabal-sublib { inherit util; };

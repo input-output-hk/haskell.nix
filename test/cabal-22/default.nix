@@ -11,7 +11,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = recurseIntoAttrs {
+    inherit (project) plan-nix;
+  };
   shell = util.addCabalInstall packages.project.components.all;
   run = stdenv.mkDerivation {
     name = "cabal-22-test";
