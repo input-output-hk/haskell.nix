@@ -11,7 +11,7 @@ let
 in pkgs.recurseIntoAttrs {
   inherit (haskell-nix) haskellNixRoots;
 } // (if ifdInputsOnly
-    then builtins.mapAttrs (_: d: pkgs.lib.filterAttrs (n: _: n == "ifdInputs") d)
+    then builtins.mapAttrs (_: d: pkgs.recurseIntoAttrs (pkgs.lib.filterAttrs (n: _: n == "ifdInputs") d))
     else x: x) {
   cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };
   cabal-simple-prof = haskell-nix.callPackage ./cabal-simple-prof { inherit util; };
