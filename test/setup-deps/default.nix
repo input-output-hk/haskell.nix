@@ -23,7 +23,7 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       touch $out
     '';
     in {
-      plan-nix = skip;
+      ifdInputs = recurseIntoAttrs { plan-nix = skip; };
       run = skip;
     }
  else {
