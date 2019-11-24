@@ -361,13 +361,7 @@ self: super: {
         #   project = cabalProject' {...};
         # In your tests module add something that is effectively
         #   testProjectPlan = withInputs project.plan-nix;
-        withInputs = derivation: self.recurseIntoAttrs (builtins.mapAttrs (_: self.recurseIntoAttrs) {
-          inherit derivation;
-          inputs = builtins.listToAttrs (
-            builtins.concatMap (i: if i == null then [] else [
-              { name = builtins.replaceStrings ["." (self.stdenv.hostPlatform.config + "-")] ["_" ""] i.name; value = i; }
-            ]) derivation.nativeBuildInputs);
-        });
+        withInputs = self.recurseIntoAttrs;
   
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
