@@ -14,7 +14,10 @@
 
 let
   haskellNixArgs = import ./default.nix;
-  pkgs = import nixpkgs nixpkgsArgs;
+  pkgs = import nixpkgs ({
+      config = haskellNixArgs.config // config;
+      inherit haskellNixArgs overlays;
+    } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
 in rec {
