@@ -1,7 +1,7 @@
 { pkgs ? import nixpkgs ((import ../.) // nixpkgsArgs)
 , nixpkgs ? ../nixpkgs
 , nixpkgsArgs ? { }
-, ifdInputsOnly ? false
+, ifdLevel ? 1000
 }:
 
 with pkgs;
@@ -13,8 +13,8 @@ let
       else x);
   util = import ./util.nix { inherit (pkgs.haskell-nix) cabal-install; };
 in pkgs.recurseIntoAttrs {
-  inherit (haskell-nix) haskellNixRoots;
-} // builtins.mapAttrs (_: y: withIfdInputs y) ((if ifdInputsOnly
+  haskellNixRoots = haskell-nix.haskellNixRoots' ifdLevel;
+} // builtins.mapAttrs (_: y: withIfdInputs y) ((if ifdLevel < 3
     then builtins.mapAttrs (_: d: pkgs.recurseIntoAttrs (pkgs.lib.filterAttrs (n: _: n == "ifdInputs") d))
     else x: x) {
   cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };

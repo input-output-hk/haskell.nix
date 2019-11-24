@@ -9,7 +9,7 @@
 , crossSystem ? null
 , config ? {}
 , nixpkgsArgs ? { inherit system crossSystem; }
-, ifdInputsOnly ? false
+, ifdLevel ? 1000
 }:
 
 let
@@ -30,8 +30,8 @@ let
   haskell = pkgs.haskell-nix;
 
 in {
-  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdInputsOnly; };
-} // pkgs.lib.optionalAttrs (!ifdInputsOnly) rec {
+  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdLevel; };
+} // pkgs.lib.optionalAttrs (ifdLevel > 2) rec {
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
