@@ -16,7 +16,7 @@ let
   haskellNixArgs = import ./default.nix;
   pkgs = import nixpkgs ({
       config = haskellNixArgs.config // config;
-      inherit haskellNixArgs overlays;
+      inherit (haskellNixArgs) overlays;
     } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
@@ -57,13 +57,16 @@ in rec {
 
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
-  maintainer-script-cache = pkgs.recurseIntoAttrs {
-    inherit (maintainer-scripts) check-hydra;
-  } // pkgs.lib.optionalAttrs (ifdLevel > 2) {
-    inherit (maintainer-scripts) update-docs check-closure-size;
-    # Some of the dependencies of the impure scripts so that they will
-    # will be in the cache too for buildkite.
-    inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
-    inherit (haskell) nix-tools;
-  };
+  maintainer-script-cache = pkgs.recurseIntoAttrs (
+      (pkgs.lib.optionalAttrs stdenv.hostPlatform.isWindows {
+        inherit (maintainer-scripts) check-hydra;
+      })
+    // (pkgs.lib.optionalAttrs (ifdLevel > 2) {
+        inherit (maintainer-scripts) update-docs check-closure-size;
+        # Some of the dependencies of the impure scripts so that they will
+        # will be in the cache too for buildkite.
+        inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
+        inherit (haskell) nix-tools;
+      })
+  );
 }
