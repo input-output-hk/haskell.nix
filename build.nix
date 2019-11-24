@@ -14,24 +14,12 @@
 
 let
   haskellNixArgs = import ./default.nix;
-  pkgs = import nixpkgs ({
-    config   = haskellNixArgs.config // config;
-    overlays = haskellNixArgs.overlays ++
-      [(self: super: {
-        darcs = (self.haskell-nix.hackage-package {
-          name = "darcs";
-          version = "2.14.2";
-          index-state = "2019-10-28T00:00:00Z";
-          plan-sha256 = "1h8dxib0wz6mg8md6ldwa54dsr1dn7vxfij8cfhdawl4y3wr51k0";
-          # Apply the latest darcs.net Setup.hs patches
-          modules = [{packages.darcs.patches = [ ./patches/darcs-setup.patch ];}];
-        }).components.exes.darcs;
-      })]; } // nixpkgsArgs);
+  pkgs = import nixpkgs nixpkgsArgs;
   haskell = pkgs.haskell-nix;
 
-in {
+in rec {
   tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdLevel; };
-} // pkgs.lib.optionalAttrs (ifdLevel > 2) rec {
+
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
@@ -53,6 +41,11 @@ in {
         }) {};
       };
     };
+    # Because this is going to be used to test caching on hydra, it must not
+    # use the darcs package from the haskell.nix we are testing.  For that reason
+    # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
+    # (We could pull in darcs from a known good haskell.nix for hydra to
+    # use)
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       inherit (haskell) nix-tools;
@@ -62,7 +55,9 @@ in {
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs {
-    inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
+    inherit (maintainer-scripts) check-hydra;
+  } // pkgs.lib.optionalAttrs (ifdLevel > 2) {
+    inherit (maintainer-scripts) update-docs check-closure-size;
     # Some of the dependencies of the impure scripts so that they will
     # will be in the cache too for buildkite.
     inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
