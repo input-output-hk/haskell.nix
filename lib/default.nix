@@ -112,7 +112,7 @@ with haskellLib;
       #
       # which indicates that the package.Win32 is missing and not defined.
       getKey = x: if x ? "outPath" then "${x}" else (throw x.identifier.name);
-      makePairs = map (p: rec { key=getKey val; val=(p.components.library or p); });
+      makePairs = vals: map (p: rec { key=getKey val; val=(p.components.library or p); }) (builtins.filter (v: !(isNull v)) vals);
       closure = builtins.genericClosure {
         startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;

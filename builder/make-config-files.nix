@@ -102,7 +102,7 @@ in { identifier, component, fullName, flags ? {} }:
     package-db $out/package.conf.d
     EOF
 
-    ${lib.concatMapStringsSep "\n" catPkgEnvDep component.depends}
+    ${lib.concatMapStringsSep "\n" catPkgEnvDep (builtins.filter (v: !isNull v) component.depends)}
     ${lib.concatMapStringsSep "\n" catGhcPkgEnvDep (lib.remove "ghc" nonReinstallablePkgs)}
   '' + lib.optionalString component.doExactConfig ''
     echo "--exact-configuration" >> $out/configure-flags
