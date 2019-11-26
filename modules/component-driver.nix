@@ -60,7 +60,7 @@ in
       # "ghci" "haskeline"
       "hpc"
       "mtl" "parsec" "process" "text" "time" "transformers"
-      "unix" "xhtml"
+      "unix" "xhtml" "terminfo"
       # "stm" "terminfo"
     ];
 
