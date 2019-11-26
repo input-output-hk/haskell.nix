@@ -87,7 +87,7 @@ let
       (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
       (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
       (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )
-      (if enableExecutableProfiling then "--enable-executable-profiling" else "--disable-executable-profiling" )
+      (if enableExecutableProfiling then "--enable-profiling" else "--disable-profiling" )
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
