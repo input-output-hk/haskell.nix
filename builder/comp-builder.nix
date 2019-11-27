@@ -26,6 +26,7 @@
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
+, enableShared ? component.enableShared
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
@@ -94,6 +95,7 @@ let
       (enableFeature enableLibraryProfiling "library-profiling")
       (enableFeature enableExecutableProfiling "executable-profiling")
       (enableFeature enableStatic "static")
+      (enableFeature enableShared "shared")
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"

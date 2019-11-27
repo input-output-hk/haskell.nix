@@ -123,6 +123,11 @@ let
             type = bool;
             default = (def.enableStatic or true);
           };
+          enableShared = mkOption {
+            description = "If set, enables building shared libraries.";
+            type = bool;
+            default = (def.enableShared or true);
+          };
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
             type = unspecified; # Can be either a string or a function
