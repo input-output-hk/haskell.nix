@@ -93,6 +93,36 @@ let
             type = bool;
             default = (def.doHaddock or true);
           };
+          doHoogle = mkOption {
+            description = "Also build a hoogle index.";
+            type = bool;
+            default = (def.doHoogle or true);
+          };
+          doHyperlinkSource = mkOption {
+            description = "Link documentation to the source code.";
+            type = bool;
+            default = (def.doHoogle or true);
+          };
+          dontPatchELF = mkOption {
+            description = "If set, the patchelf command is not used to remove unnecessary RPATH entries. Only applies to Linux.";
+            type = bool;
+            default = (def.dontPatchELF or true);
+          };
+          dontStrip = mkOption {
+            description = "If set, libraries and executables are not stripped.";
+            type = bool;
+            default = (def.dontStrip or true);
+          };
+          enableDeadCodeElimination = mkOption {
+            description = "If set, enables split sections for link-time dead-code stripping. Only applies to Linux";
+            type = bool;
+            default = (def.enableDeadCodeElimination or true);
+          };
+          enableStatic = mkOption {
+            description = "If set, enables building static libraries and executables.";
+            type = bool;
+            default = (def.enableStatic or true);
+          };
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
             type = unspecified; # Can be either a string or a function

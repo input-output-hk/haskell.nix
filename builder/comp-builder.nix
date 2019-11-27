@@ -22,16 +22,16 @@
 
 , doCheck ? component.doCheck || haskellLib.isTest componentId
 , doCrossCheck ? component.doCrossCheck || false
-, dontPatchELF ? true
-, dontStrip ? true
+, dontPatchELF ? component.dontPatchELF
+, dontStrip ? component.dontStrip
 
-, static ? stdenv.hostPlatform.isMusl
-, deadCodeElimination ? true
+, enableStatic ? component.enableStatic
+, enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
-, doHoogle ? true  # Also build a hoogle index
-, hyperlinkSource ? true  # Link documentation to the source code
+, doHoogle ? component.doHoogle # Also build a hoogle index
+, hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 
 # Profiling
 , enableLibraryProfiling ? component.enableLibraryProfiling
@@ -56,6 +56,11 @@ let
     inherit (package) identifier;
     inherit component fullName flags;
   };
+
+  enableFeature = enable: feature:
+    (if enable then "--enable-" else "--disable-") + feature;
+
+  disableFeature = disable: enableFeature (!disable);
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
@@ -84,15 +89,15 @@ let
         "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       ]
     ) ++ [ # other flags
-      (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
-      (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
-      (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )
-      (if enableExecutableProfiling then "--enable-executable-profiling" else "--disable-executable-profiling" )
+      (disableFeature dontStrip "executable-stripping")
+      (disableFeature dontStrip "library-stripping")
+      (enableFeature enableLibraryProfiling "library-profiling")
+      (enableFeature enableExecutableProfiling "executable-profiling")
+      (enableFeature enableStatic "static")
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
-      ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
-      ++ lib.optional (static) "--enable-static"
+      ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
