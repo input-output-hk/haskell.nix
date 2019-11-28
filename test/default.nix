@@ -16,6 +16,7 @@ in pkgs.recurseIntoAttrs {
   with-packages = haskell-nix.callPackage ./with-packages { inherit util; };
   builder-haddock = haskell-nix.callPackage ./builder-haddock {};
   stack-simple = haskell-nix.callPackage ./stack-simple {};
+  stack-local-resolver = haskell-nix.callPackage ./stack-local-resolver {};
   snapshots = haskell-nix.callPackage ./snapshots {};
   shell-for = haskell-nix.callPackage ./shell-for {};
   shell-for-setup-deps = haskell-nix.callPackage ./shell-for-setup-deps {};
