@@ -31,6 +31,9 @@ in pkgs.recurseIntoAttrs {
   ghc-options-stack = haskell-nix.callPackage ./ghc-options/stack.nix {};
   exe-only = haskell-nix.callPackage ./exe-only { inherit util; };
 
+  # packages that just happend to break
+  test-Chart-cairo = haskell-nix.hackage-package { name = "Chart-cairo"; version = "1.9.1"; })).components.library;
+
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
   unit = let
