@@ -281,17 +281,16 @@ Assorted functions for operating on [Haskell.nix][] data. This is
 distinct from `pkgs.haskell.lib` in the current Nixpkgs Haskell
 Infrastructure.
 
-### collectRunComponents and collectComponents
+### collectComponents
 
-Extracts a selection of derivations to run components from a Haskell [package set](#package-set).
+Extracts a selection of components from a Haskell [package set](#package-set).
 
-`collectRunComponents` can be used to filter out all test suites or benchmarks of
-your project, so that they can be built and run in Hydra.
-
-`collectComponents` can be used to just build the components.
+This can be used to filter out all test suites or benchmarks of
+your project, so that they can be built in Hydra (see check if you
+waht to run the tests as well as build them).
 
 ```
-collectRunComponents =
+collectComponents =
     group: packageSel: haskellPackages: ...
 ```
 
@@ -307,11 +306,26 @@ collectRunComponents =
 **Example**:
 
 ```nix
-tests = collectRunComponents "tests" (package: package.identifier.name == "mypackage") hsPkgs;
+tests = collectComponents "tests" (package: package.identifier.name == "mypackage") hsPkgs;
 ```
 
-Will result in moving derivations from `hsPkgs.mypackage.components.tests.unit-tests.run`
+Will result in moving derivations from `hsPkgs.mypackage.components.tests.unit-tests`
 to `tests.mypackage.unit-tests`.
+
+#### check
+
+This function turns a derivation that builds a test into one to run it.
+
+| Argument          | Type   | Description         |
+|-------------------|--------|---------------------|
+| `drv`           | Derivation | One of `$pkg.components.tests.$test`. |
+
+For convenience `$pkg.components.tests` are mapped with this function
+to `$pkg.components.checks`.
+
+This function is intended for use with `tests` but it should also work
+for `exes` and `benchmarks` if you just want to run them to make sure
+they execute.
 
 #### subComponentTypes
 
