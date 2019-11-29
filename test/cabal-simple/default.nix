@@ -34,7 +34,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = {
+    inherit (project) plan-nix;
+  };
 
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
@@ -51,7 +53,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${packages.cabal-simple.components.exes.cabal-simple.run}
+      cat ${haskellLib.check packages.cabal-simple.components.exes.cabal-simple}
     '' + (if stdenv.hostPlatform.isMusl then ''
         printf "checking that executable is statically linked... " >& 2
         (ldd $exe 2>&1 || true) | grep -i "not a"

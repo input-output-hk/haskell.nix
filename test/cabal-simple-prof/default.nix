@@ -24,7 +24,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = {
+    inherit (project) plan-nix;
+  };
   run = stdenv.mkDerivation {
     name = "cabal-simple-prof-test";
 

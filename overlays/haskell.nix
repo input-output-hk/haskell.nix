@@ -59,7 +59,7 @@ self: super: {
 
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
-            inherit (self) lib runCommand;
+            inherit (self) stdenv lib runCommand srcOnly;
             inherit (self.buildPackages) git;
             haskellLib = hl;
         }; in hl;
@@ -309,7 +309,7 @@ self: super: {
                 tar xzf ${tarball}
                 mv "${name}-${version}" $out
                 '';
-            in cabalProject (builtins.removeAttrs args [ "version" ] // { inherit src; });
+            in cabalProject' (builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
@@ -361,27 +361,36 @@ self: super: {
         #   project = cabalProject' {...};
         # In your tests module add something that is effectively
         #   testProjectPlan = withInputs project.plan-nix;
-        withInputs = derivation: builtins.mapAttrs (_: self.recurseIntoAttrs) {
-          inherit derivation;
-          inputs = builtins.listToAttrs (
-            builtins.concatMap (i: if i == null then [] else [
-              { name = builtins.replaceStrings ["." (self.stdenv.hostPlatform.config + "-")] ["_" ""] i.name; value = i; }
-            ]) derivation.nativeBuildInputs);
-        };
+        withInputs = self.recurseIntoAttrs;
   
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
-        haskellNixRoots = self.recurseIntoAttrs (builtins.mapAttrs (_: self.recurseIntoAttrs) {
-          inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
-          bootstap-nix-tools = self.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
-          alex-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.alex-project.plan-nix;
-          happy-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
-          hscolour-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
-          ghc-extra-projects = builtins.mapAttrs (_: proj: self.recurseIntoAttrs (withInputs proj.plan-nix))
-            (self.lib.filterAttrs (n: _: n != "ghc844" && n != "ghc861" && n != "ghc862"
-                # There is an issue with GHC 8.6.4 and nixpkgs 19.09, so only build it for 19.03 for now
-                && (n != "ghc864" || super.lib.versions.majorMinor super.lib.version == "19.03")
-              ) self.ghc-extra-projects);
-        });
+        haskellNixRoots = self.recurseIntoAttrs {
+          Level0 = haskellNixRoots' 0;
+          Level1 = haskellNixRoots' 1;
+        };
+
+        haskellNixRoots' = ifdLevel:
+            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865");
+          in self.recurseIntoAttrs ({
+            # Things that require no IFD to build
+            inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
+            bootstap-nix-tools = self.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
+            alex-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.alex-project.plan-nix;
+            happy-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
+            hscolour-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
+          } // self.lib.optionalAttrs (ifdLevel > 0) {
+            # Things that require one IFD to build (the inputs should be in level 0)
+            alex = self.buildPackages.haskell-nix.bootstrap.packages.alex;
+            happy = self.buildPackages.haskell-nix.bootstrap.packages.happy;
+            hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
+            ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
+            ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
+              (filterSupportedGhc self.ghc-extra-projects));
+          } // self.lib.optionalAttrs (ifdLevel > 1) {
+            # Things that require two levels of IFD to build (inputs should be in level 1)
+            ghc-extra-packages = self.recurseIntoAttrs
+              (filterSupportedGhc self.ghc-extra-packages);
+          });
     };
 }

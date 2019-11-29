@@ -286,7 +286,8 @@ Infrastructure.
 Extracts a selection of components from a Haskell [package set](#package-set).
 
 This can be used to filter out all test suites or benchmarks of
-your project, so that they can be built in Hydra.
+your project, so that they can be built in Hydra (see check if you
+waht to run the tests as well as build them).
 
 ```
 collectComponents =
@@ -310,6 +311,21 @@ tests = collectComponents "tests" (package: package.identifier.name == "mypackag
 
 Will result in moving derivations from `hsPkgs.mypackage.components.tests.unit-tests`
 to `tests.mypackage.unit-tests`.
+
+#### check
+
+This function turns a derivation that builds a test into one to run it.
+
+| Argument          | Type   | Description         |
+|-------------------|--------|---------------------|
+| `drv`           | Derivation | One of `$pkg.components.tests.$test`. |
+
+For convenience `$pkg.components.tests` are mapped with this function
+to `$pkg.components.checks`.
+
+This function is intended for use with `tests` but it should also work
+for `exes` and `benchmarks` if you just want to run them to make sure
+they execute.
 
 #### subComponentTypes
 
