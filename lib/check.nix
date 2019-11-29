@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib }:
+{ stdenv, lib, haskellLib, srcOnly }:
 drv:
 
 let
@@ -10,7 +10,9 @@ let
 in stdenv.mkDerivation ({
   name = (drv.name + "-check");
 
-  src = drv;
+  # Useing `srcOnly` (rather than getting the `src` via a `drv.passthru`)
+  # should correctly apply the patches from `drv` (if any).
+  src = srcOnly drv;
 
   passthru = {
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env;
@@ -31,7 +33,7 @@ in stdenv.mkDerivation ({
   checkPhase = ''
     runHook preCheck
 
-    ${toString component.testWrapper} $src/${drv.installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
+    ${toString component.testWrapper} ${drv}/${drv.installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
 
     runHook postCheck
   '';

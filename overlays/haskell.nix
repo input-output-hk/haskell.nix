@@ -59,7 +59,7 @@ self: super: {
 
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
-            inherit (self) stdenv lib runCommand;
+            inherit (self) stdenv lib runCommand srcOnly;
             inherit (self.buildPackages) git;
             haskellLib = hl;
         }; in hl;

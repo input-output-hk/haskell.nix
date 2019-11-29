@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, runCommand, git }:
+{ stdenv, lib, haskellLib, runCommand, git, srcOnly }:
 
 with haskellLib;
 
@@ -162,6 +162,6 @@ with haskellLib;
 
   # Check a test component
   check = import ./check.nix {
-    inherit stdenv lib haskellLib;
+    inherit stdenv lib haskellLib srcOnly;
   };
 }
