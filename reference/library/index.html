@@ -653,7 +653,8 @@ Infrastructure.</p>
 <h3 id="collectcomponents">collectComponents<a class="headerlink" href="#collectcomponents" title="Permanent link">&para;</a></h3>
 <p>Extracts a selection of components from a Haskell <a href="#package-set">package set</a>.</p>
 <p>This can be used to filter out all test suites or benchmarks of
-your project, so that they can be built in Hydra.</p>
+your project, so that they can be built in Hydra (see check if you
+waht to run the tests as well as build them).</p>
 <pre><code>collectComponents =
     group: packageSel: haskellPackages: ...
 </code></pre>
@@ -691,6 +692,29 @@ your project, so that they can be built in Hydra.</p>
 
 <p>Will result in moving derivations from <code>hsPkgs.mypackage.components.tests.unit-tests</code>
 to <code>tests.mypackage.unit-tests</code>.</p>
+<h4 id="check">check<a class="headerlink" href="#check" title="Permanent link">&para;</a></h4>
+<p>This function turns a derivation that builds a test into one to run it.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>drv</code></td>
+<td>Derivation</td>
+<td>One of <code>$pkg.components.tests.$test</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>For convenience <code>$pkg.components.tests</code> are mapped with this function
+to <code>$pkg.components.checks</code>.</p>
+<p>This function is intended for use with <code>tests</code> but it should also work
+for <code>exes</code> and <code>benchmarks</code> if you just want to run them to make sure
+they execute.</p>
 <h4 id="subcomponenttypes">subComponentTypes<a class="headerlink" href="#subcomponenttypes" title="Permanent link">&para;</a></h4>
 <p>Sub-component types identify <a href="#component">components</a> and are one of:</p>
 <ul>
