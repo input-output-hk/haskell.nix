@@ -57,7 +57,7 @@ stackexpr args =
      case evalue of
        Left e -> error (show e)
        Right value -> stack2nix args
-                      =<< resolveSnapshot value
+                      =<< resolveSnapshot (argStackYaml args) value
 
 stack2nix :: Args -> Stack -> IO NExpr
 stack2nix args stack@(Stack resolver compiler pkgs pkgFlags ghcOpts) =

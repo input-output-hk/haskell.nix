@@ -7,6 +7,7 @@ import Data.Aeson
 import Data.Yaml hiding (Parser)
 import Control.Applicative ((<|>))
 import Data.List (isPrefixOf, isSuffixOf)
+import System.FilePath ((</>), dropFileName)
 
 import qualified Data.ByteString.Lazy.Char8 as L8
 
@@ -34,15 +35,17 @@ decodeURLEither url
 -- | If a stack.yaml file contains a @resolver@ that points to
 -- a file, resolve that file and merge the snapshot into the
 -- @Stack@ record.
-resolveSnapshot :: Stack -> IO Stack
-resolveSnapshot stack@(Stack resolver compiler pkgs flags ghcOptions)
+resolveSnapshot :: FilePath -> Stack -> IO Stack
+resolveSnapshot stackYaml stack@(Stack resolver compiler pkgs flags ghcOptions)
   = if ".yaml" `isSuffixOf` resolver
     then do evalue <- if ("http://" `isPrefixOf` resolver) || ("https://" `isPrefixOf` resolver)
                       then decodeURLEither resolver
-                      else decodeFileEither resolver
+                      else decodeFileEither (srcDir </> resolver)
             case evalue of
               Left e -> error (show e)
               Right (Snapshot resolver' compiler' _name pkgs' flags' ghcOptions') ->
                 pure $ Stack resolver' (compiler' <|> compiler)  (pkgs <> pkgs') (flags <> flags')
                     (ghcOptions <> ghcOptions')
     else pure stack
+  where
+    srcDir = dropFileName stackYaml
