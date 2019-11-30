@@ -1,7 +1,5 @@
 {
-  "url": "https://github.com/angerman/old-ghc-nix",
-  "rev": "cda937215e85ef5f8064a9f97fc5dce948d028a2",
-  "date": "2019-07-26T23:00:31+08:00",
-  "sha256": "00zgkmd7g2rafa2gfz7nx3ahv89qf2jwr8i8r4g7bvykxvh8ga8v",
-  "fetchSubmodules": false
+  "url": "https://github.com/kayhide/old-ghc-nix",
+  "rev": "c76fa93e8cf092608c122be2a2ebc9aad5e4a308",
+  "sha256": "15ry46m8slab9d18wpk5zavxfjvfcva6ywrhfl2vi217kfw77vi3"
 }
