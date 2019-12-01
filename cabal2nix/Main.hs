@@ -4,6 +4,7 @@ module Main where
 
 import System.Environment (getArgs)
 
+import System.Exit
 import System.Directory
 import System.FilePath
 import Control.Monad
@@ -26,7 +27,6 @@ import Data.ByteString (ByteString)
 
 import Data.List (isPrefixOf, isSuffixOf)
 
-import qualified Hpack
 import qualified Hpack.Config as Hpack
 import qualified Hpack.Render as Hpack
 import qualified Data.Text as T
@@ -48,12 +48,20 @@ main = getArgs >>= \case
             (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
             _ -> return ()
   [path,file] -> doesDirectoryExist file >>= \case
-    False -> print . prettyNix =<< cabal2nix False MinimalDetails (Just (Path path)) (OnDisk file)
+    False -> doesFileExist file >>= \case
+      True -> nixFromCabal path (OnDisk file)
+      False -> (findCabalFiles $ takeDirectory file) >>= \case
+        [] -> die "Cabal file does not exit, no package.yaml found either"
+        [cabal] -> nixFromCabal path cabal
+        _ -> die "Cabal file does not exist, but multiple other cabal files found"
     True  -> print . prettyNix =<< cabalexprs file
   [file] -> doesDirectoryExist file >>= \case
-    False -> print . prettyNix =<< cabal2nix False MinimalDetails (Just (Path ".")) (OnDisk file)
+    False -> nixFromCabal "." (OnDisk file)
     True  -> print . prettyNix =<< cabalexprs file
-  _ -> putStrLn "call with cabalfile (Cabal2Nix file.cabal)."
+  _ -> die "call with cabalfile (Cabal2Nix file.cabal)."
+  where
+    nixFromCabal path cabal =
+      print . prettyNix =<< cabal2nix False MinimalDetails (Just (Path path)) cabal
 
 cabalFromPath
   :: String    -- URL
