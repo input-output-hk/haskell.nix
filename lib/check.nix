@@ -39,4 +39,6 @@ in stdenv.mkDerivation ({
   '';
 } // haskellLib.optionalHooks {
   inherit (component) preCheck postCheck;
-})
+}
+// lib.optionalAttrs (drv ? LOCALE_ARCHIVE) { inherit (drv) LOCALE_ARCHIVE; }
+)
