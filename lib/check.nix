@@ -12,7 +12,7 @@ in stdenv.mkDerivation ({
 
   # Useing `srcOnly` (rather than getting the `src` via a `drv.passthru`)
   # should correctly apply the patches from `drv` (if any).
-  src = srcOnly drv;
+  src = drv.source or (srcOnly drv);
 
   passthru = {
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env;
@@ -31,6 +31,7 @@ in stdenv.mkDerivation ({
   '';
 
   checkPhase = ''
+    cd $src
     runHook preCheck
 
     ${toString component.testWrapper} ${drv}/${drv.installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
