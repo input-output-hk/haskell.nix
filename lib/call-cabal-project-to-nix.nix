@@ -156,10 +156,11 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
-  plan-nix = runCommand "plan-to-nix-pkgs" ({
+  plan-nix = runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") ({
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
     # Needed or stack-to-nix will die on unicode inputs
     LANG = "en_US.UTF-8";
+    preferLocalBuild = false;
   } // (if plan-sha256 == null
     then {}
     else {

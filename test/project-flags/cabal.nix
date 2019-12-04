@@ -1,4 +1,4 @@
-{ stdenv, cabalProject', recurseIntoAttrs }:
+{ stdenv, cabalProject', recurseIntoAttrs, haskellLib }:
 
 with stdenv.lib;
 
@@ -11,7 +11,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = {
+    inherit (project) plan-nix;
+  };
   run = stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";
 
@@ -19,7 +21,7 @@ in recurseIntoAttrs {
       exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      cat ${packages.test-project-flags.components.exes.test-project-flags-exe.run}
+      cat ${haskellLib.check packages.test-project-flags.components.exes.test-project-flags-exe}
 
       touch $out
     '';

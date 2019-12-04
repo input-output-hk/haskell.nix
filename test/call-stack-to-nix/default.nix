@@ -1,4 +1,4 @@
-{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs }:
+{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib }:
 
 with stdenv.lib;
 
@@ -14,7 +14,9 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in recurseIntoAttrs {
-  stack-nix = stack.nix;
+  ifdInputs = {
+    stack-nix = stack.nix;
+  };
   run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 
@@ -22,7 +24,7 @@ in recurseIntoAttrs {
       exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      cat ${packages.stack-simple.components.exes.stack-simple-exe.run}
+      cat ${haskellLib.check packages.stack-simple.components.exes.stack-simple-exe}
 
       touch $out
     '';

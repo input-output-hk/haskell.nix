@@ -1,4 +1,4 @@
-{ stdenv, pkgs, mkStackPkgSet }:
+{ stdenv, pkgs, mkStackPkgSet, haskellLib }:
 
 with stdenv.lib;
 
@@ -14,9 +14,10 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in pkgs.recurseIntoAttrs {
-  stack-simple-exe = packages.stack-simple.components.exes.stack-simple-exe.run // {
+  stack-simple-exe = (haskellLib.check packages.stack-simple.components.exes.stack-simple-exe) // {
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
   };
-  stack-simple-test = packages.stack-simple.components.tests.stack-simple-test.run;
+  stack-simple-test = packages.stack-simple.checks.stack-simple-test;
+  stack-simple-checks = packages.stack-simple.checks;
 }

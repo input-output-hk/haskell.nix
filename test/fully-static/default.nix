@@ -53,8 +53,10 @@ let
   packagesIntegerSimple = (project { gpl = false; }).hsPkgs;
 
 in recurseIntoAttrs {
-  stack-nix-gmp = (project { gpl = true; }).stack-nix;
-  stack-nix-simple = (project { gpl = false; }).stack-nix;
+  ifdInputs = {
+    stack-nix-gmp = (project { gpl = true; }).stack-nix;
+    stack-nix-simple = (project { gpl = false; }).stack-nix;
+  };
   run = stdenv.mkDerivation {
     name = "fully-static-test";
 

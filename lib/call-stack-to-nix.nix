@@ -20,6 +20,7 @@ let
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
+    preferLocalBuild = false;
   } (''
     mkdir -p $out
   '' + pkgs.lib.optionalString (cache != null) ''

@@ -22,7 +22,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = {
+    inherit (project) plan-nix;
+  };
   run = stdenv.mkDerivation {
     name = "cabal-sublib-test";
 
@@ -34,7 +36,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${packages.cabal-sublib.components.exes.cabal-sublib.run}
+      cat ${haskellLib.check packages.cabal-sublib.components.exes.cabal-sublib}
 
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString stdenv.isLinux ''

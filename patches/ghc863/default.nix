@@ -7,4 +7,5 @@
   packages.time.patches = [ ({ version, revision }: if version == "1.8.0.2" && revision == 0 then ./time-1.8.0.2.patch else null) ];
   packages.transformers.patches = [ ({ version, revision }: if version == "0.5.5.0" && revision == 0 then ./transformers-0.5.5.0.patch else null) ];
   packages.unix.patches = [ ({ version, revision }: if version == "2.7.2.2" && revision == 0 then ./unix-2.7.2.2.patch else null) ];
+  packages.singletons.patches = [ ({ version, revision }: if version == "2.5.1" && revision == 0 then ./singletons-2.5.1.patch else null) ];
 }

@@ -12,14 +12,16 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  inherit (project) plan-nix;
+  ifdInputs = {
+    inherit (project) plan-nix;
+  };
   run = stdenv.mkDerivation {
     name = "buildable-test";
 
     buildCommand = 
       (concatStrings (mapAttrsToList (name: value: ''
         printf "checking whether executable runs... " >& 2
-        cat ${value.run}
+        cat ${haskellLib.check value}
       '') packages.buildable-test.components.exes)) + ''
       touch $out
     '';
