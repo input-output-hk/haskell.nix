@@ -218,27 +218,77 @@ self: super: {
             cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
             '';
 
+
+        # Given a single cache entry:
+        # { name = ...; url = ...; rev = ...; ref = ...; sha256 = ...; cabal-file = ...; type = ...; is-private = ...; }
+        # compute a string that represents this cache entry:
+        # "${url} ${rev} ${subdir} ${sha256} ${name} ${nix-expr}"
+        #
+        # This handles private repositories with the `is-private` argument
+        # (with `builtins.fetchGit`), as well as handling stack-based projects
+        # with the `type` argument.
+        mkCacheLine = { name, url, rev, ref ? null, subdir ? ".", sha256 ? null, cabal-file ? "${name}.cabal", type ? "cabal", is-private ? false }:
+          let
+            # Fetch the entire repo, using either pkgs.fetchgit or
+            # builtins.fetchGit depending on whether the repo is private.
+            entireRepo =
+              if is-private
+              then
+                # It doesn't make sense to specify sha256 on a private repo
+                # because it is not used by buitins.fetchGit.
+                assert isNull sha256;
+                builtins.fetchGit {
+                  url = url;
+                  rev = rev;
+                } // self.buildPackages.lib.optionalAttrs (ref != null) {
+                  ref = ref;
+                }
+              else
+                # Non-private repos must have sha256 set.
+                assert sha256 != null;
+                # pkgs.fetchgit doesn't have any way of fetching from a given
+                # ref.
+                assert isNull ref;
+                self.buildPackages.pkgs.fetchgit {
+                  url = url;
+                  rev = rev;
+                  sha256 = sha256;
+                };
+
+            # This is basically entireRepo, but focused on the subdir if it is specified.
+            repoWithSubdir =
+              entireRepo + (if subdir == "." then "" else "/" + subdir);
+
+            nix-expr =
+              if type == "cabal"
+              then
+                self.buildPackages.haskell-nix.callCabalToNix {
+                  src = repoWithSubdir;
+                  inherit name cabal-file;
+                }
+              else if type == "stack"
+              then
+                (self.buildPackages.haskell-nix.callStackToNix {
+                  src = repoWithSubdir;
+                  inherit name subdir;
+                }).projectNix
+              else
+                throw "Unknown type '${type}` for a cache entry";
+
+            sha256String = if isNull sha256 then self.buildPackages.lib.fakeSha256 else sha256;
+
+          in "${url} ${rev} ${subdir} ${sha256String} ${name} ${nix-expr}";
+
         # Given a list of repos:
-        # [ { name = ...; url = ...; rev = ...; sha256 = ... } ]
+        # [ { name = ...; url = ...; rev = ...; ref = ...; sha256 = ...; cabal-file = ...; type = ...; is-private = ...; } ]
         # produce a cache file that can be used for
         # stack-to-nix or plan-to-nix to prevent them
         # from needing network access.
-        mkCacheFile = repos: let
-            fetchRepo = repo: (self.buildPackages.pkgs.fetchgit { inherit (repo) url sha256 rev; }) + (if repo.subdir or "." == "." then "" else "/" + repo.subdir);
-
-            f = { name, url, rev, subdir ? ".", sha256, cabal-file ? "${name}.cabal", type ? "cabal" }@repo:
-              let nix-expr =
-                if type == "cabal"
-                then self.buildPackages.haskell-nix.callCabalToNix { src = (fetchRepo repo); inherit name cabal-file; }
-                else if type == "stack"
-                then (self.buildPackages.haskell-nix.callStackToNix { src = (fetchRepo repo); inherit name subdir; }).projectNix 
-                else throw "Unknown type '${type}` for a cache entry";
-              in "${url} ${rev} ${subdir} ${sha256} ${name} ${nix-expr}";
-            in
-            self.buildPackages.pkgs.writeTextFile {
-                name = "cache-file";
-                text = self.buildPackages.lib.concatMapStringsSep "\n" f repos;
-            };
+        mkCacheFile = repos:
+          self.buildPackages.pkgs.writeTextFile {
+              name = "cache-file";
+              text = self.buildPackages.lib.concatMapStringsSep "\n" mkCacheLine repos;
+          };
 
         mkCacheModule = cache:
             # for each item in the `cache`, set
@@ -257,12 +307,23 @@ self: super: {
             # TODO: this should be moved into `call-stack-to-nix`
             #       it should be automatic and not the burden of
             #       the end user to work around nix peculiarities.
-            { packages = builtins.foldl' (x: y: x // y) {}
-                (builtins.map ({ name, url, rev, sha256, subdir ? null, ... }:
-                    { ${name} = { src = self.buildPackages.pkgs.fetchgit { inherit url rev sha256; }; }
-                            // self.buildPackages.lib.optionalAttrs (subdir != null)
-                                { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
-                    }) cache);
+            { packages =
+                let
+                  repoToAttr = { name, url, rev, ref ? null, sha256 ? null, subdir ? null, is-private ? false, ... }: {
+                    ${name} = {
+                      src =
+                        if is-private
+                        then
+                          builtins.fetchGit { inherit url rev; }
+                            // self.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
+                        else
+                          self.buildPackages.pkgs.fetchgit { inherit url rev sha256; };
+                    } // self.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                  };
+
+                  cacheMap = builtins.map repoToAttr cache;
+                in
+                builtins.foldl' (x: y: x // y) {} cacheMap;
             };
 
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
