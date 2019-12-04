@@ -224,15 +224,16 @@ self: super: {
         # stack-to-nix or plan-to-nix to prevent them
         # from needing network access.
         mkCacheFile = repos: let
-            fetchRepo = repo: (self.buildPackages.pkgs.fetchgit {
-                url = repo.url;
-                rev = repo.rev;
-                sha256 = repo.sha256;
-            }) + (if repo.subdir or "." == "." then "" else "/" + repo.subdir);
+            fetchRepo = repo: (self.buildPackages.pkgs.fetchgit { inherit (repo) url sha256 rev; }) + (if repo.subdir or "." == "." then "" else "/" + repo.subdir);
 
-            f = { name, url, rev, subdir ? ".", sha256, cabal-file ? "${name}.cabal" }@repo:
-                let nix-expr = self.buildPackages.haskell-nix.callCabalToNix { src = (fetchRepo repo); inherit name cabal-file; };
-                in "${url} ${rev} ${subdir} ${sha256} ${name} ${nix-expr}";
+            f = { name, url, rev, subdir ? ".", sha256, cabal-file ? "${name}.cabal", type ? "cabal" }@repo:
+              let nix-expr =
+                if type == "cabal"
+                then self.buildPackages.haskell-nix.callCabalToNix { src = (fetchRepo repo); inherit name cabal-file; }
+                else if type == "stack"
+                then (self.buildPackages.haskell-nix.callStackToNix { src = (fetchRepo repo); inherit name subdir; }).projectNix 
+                else throw "Unknown type '${type}` for a cache entry";
+              in "${url} ${rev} ${subdir} ${sha256} ${name} ${nix-expr}";
             in
             self.buildPackages.pkgs.writeTextFile {
                 name = "cache-file";
