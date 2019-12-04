@@ -210,6 +210,13 @@ subdirectory.</p>
 <p>The Markdown generation script could also be improved.</p>
 </div>
 <h1 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h1>
+<p><code>enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -228,9 +235,28 @@ This option has no description.</p>
 <p><em>Default:</em> <code>false</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages</code><br />
 This option has no description.</p>
 <p><em>Type:</em> attribute set of submodules</p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.enableExecutableProfiling</code><br />
@@ -249,6 +275,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.package.author</code><br />
@@ -430,6 +468,13 @@ The merged dependencies of all other components</p>
 <p><em>Type:</em> submodule</p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.all.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.all.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -446,6 +491,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.all.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.all.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.all.asmSources</code><br />
@@ -560,6 +617,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.all.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.all.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.all.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.all.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.all.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -848,6 +930,13 @@ This option has no description.</p>
 </code></pre>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -864,6 +953,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.asmSources</code><br />
@@ -978,6 +1079,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.benchmarks.&lt;name&gt;.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -1266,6 +1392,13 @@ This option has no description.</p>
 </code></pre>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -1282,6 +1415,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.asmSources</code><br />
@@ -1396,6 +1541,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.exes.&lt;name&gt;.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -1684,6 +1854,13 @@ This option has no description.</p>
 </code></pre>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -1700,6 +1877,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.asmSources</code><br />
@@ -1814,6 +2003,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.foreignlibs.&lt;name&gt;.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -2096,6 +2310,13 @@ This option has no description.</p>
 <p><em>Default:</em> <code>null</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.library.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.library.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -2112,6 +2333,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.library.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.library.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.library.asmSources</code><br />
@@ -2226,6 +2459,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.library.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.library.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.library.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.library.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.library.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -2558,6 +2816,13 @@ asmSources =
 </code></pre>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.setup.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -2574,6 +2839,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.setup.asmSources</code><br />
@@ -2688,6 +2965,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.setup.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.setup.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -2976,6 +3278,13 @@ This option has no description.</p>
 </code></pre>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -2992,6 +3301,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.asmSources</code><br />
@@ -3106,6 +3427,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.sublibs.&lt;name&gt;.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -3394,6 +3740,13 @@ This option has no description.</p>
 </code></pre>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.enableDeadCodeElimination</code><br />
+If set, enables split sections for link-time dead-code stripping. Only
+applies to Linux</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.enableExecutableProfiling</code><br />
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
@@ -3410,6 +3763,18 @@ This option has no description.</p>
 This option has no description.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>false</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.enableShared</code><br />
+If set, enables building shared libraries.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.enableStatic</code><br />
+If set, enables building static libraries and executables.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.asmSources</code><br />
@@ -3524,6 +3889,31 @@ This option has no description.</p>
 <p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.components.tests.&lt;name&gt;.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
@@ -3838,6 +4228,31 @@ source code.</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
 <p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>packages.&lt;name&gt;.dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
 <p><code>packages.&lt;name&gt;.flags</code><br />
 This option has no description.</p>
 <p><em>Type:</em> attribute set of booleans</p>
@@ -4101,6 +4516,31 @@ This option has no description.</p>
 <p><code>doHaddock</code><br />
 Enable building of the Haddock documentation from the annotated Haskell
 source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>doHoogle</code><br />
+Also build a hoogle index.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>doHyperlinkSource</code><br />
+Link documentation to the source code.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>dontPatchELF</code><br />
+If set, the patchelf command is not used to remove unnecessary RPATH
+entries. Only applies to Linux.</p>
+<p><em>Type:</em> boolean</p>
+<p><em>Default:</em> <code>true</code></p>
+<p><em>Declared by:</em></p>
+<p>modules/plan.nix</p>
+<p><code>dontStrip</code><br />
+If set, libraries and executables are not stripped.</p>
 <p><em>Type:</em> boolean</p>
 <p><em>Default:</em> <code>true</code></p>
 <p><em>Declared by:</em></p>
