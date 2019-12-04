@@ -22,7 +22,7 @@ in stdenv.mkDerivation ({
 
   inherit (component) doCheck doCrossCheck;
 
-  phases = ["buildPhase" "checkPhase"];
+  phases = ["unpackPhase" "buildPhase" "checkPhase"];
 
   # If doCheck or doCrossCheck are false we may still build this
   # component and we want it to quietly succeed.
@@ -31,7 +31,6 @@ in stdenv.mkDerivation ({
   '';
 
   checkPhase = ''
-    cd $src
     runHook preCheck
 
     ${toString component.testWrapper} ${drv}/${drv.installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
