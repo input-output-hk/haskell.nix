@@ -22,12 +22,14 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       touch $out
     '';
     in {
-      plan-nix = skip;
+      ifdInputs = { plan-nix = skip; };
       env = skip;
       run = skip;
     }
  else {
-  inherit (project) plan-nix;
+  ifdInputs = {
+    inherit (project) plan-nix;
+  };
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";

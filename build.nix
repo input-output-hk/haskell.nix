@@ -9,27 +9,19 @@
 , crossSystem ? null
 , config ? {}
 , nixpkgsArgs ? { inherit system crossSystem; }
+, ifdLevel ? 1000
 }:
 
 let
   haskellNixArgs = import ./default.nix;
   pkgs = import nixpkgs ({
-    config   = haskellNixArgs.config // config;
-    overlays = haskellNixArgs.overlays ++
-      [(self: super: {
-        darcs = (self.haskell-nix.hackage-package {
-          name = "darcs";
-          version = "2.14.2";
-          index-state = "2019-10-28T00:00:00Z";
-          plan-sha256 = "1h8dxib0wz6mg8md6ldwa54dsr1dn7vxfij8cfhdawl4y3wr51k0";
-          # Apply the latest darcs.net Setup.hs patches
-          modules = [{packages.darcs.patches = [ ./patches/darcs-setup.patch ];}];
-        }).components.exes.darcs;
-      })]; } // nixpkgsArgs);
+      config = haskellNixArgs.config // config;
+      inherit (haskellNixArgs) overlays;
+    } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
 
 in rec {
-  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs; };
+  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdLevel; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
@@ -41,17 +33,17 @@ in rec {
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = import ./scripts/options-doc.nix {
-        # nixpkgs unstable changes "Option has no description" from an
+        # nixpkgs 19.09 changes "Option has no description" from an
         # error into a warning. That is quite helpful when hardly any
         # of our options are documented, thanks @oxij.
-        pkgs = import (pkgs.fetchFromGitHub {
-          owner = "NixOS";
-          repo = "nixpkgs";
-          rev = "4ab1c14714fc97a27655f3a6877386da3cb237bc";
-          sha256 = "16lcj9552q2jfxc27j6116qkf2vl2dcj7vhg5gdq4qi51d891yhn";
-        }) {};
+        pkgs = import ./nixpkgs { nixpkgs-pin = "release-19.09"; };
       };
     };
+    # Because this is going to be used to test caching on hydra, it must not
+    # use the darcs package from the haskell.nix we are testing.  For that reason
+    # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
+    # (We could pull in darcs from a known good haskell.nix for hydra to
+    # use)
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       inherit (haskell) nix-tools;
@@ -60,11 +52,16 @@ in rec {
 
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
-  maintainer-script-cache = pkgs.recurseIntoAttrs {
-    inherit (maintainer-scripts) update-docs check-hydra check-closure-size;
-    # Some of the dependencies of the impure scripts so that they will
-    # will be in the cache too for buildkite.
-    inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
-    inherit (haskell) nix-tools;
-  };
+  maintainer-script-cache = pkgs.recurseIntoAttrs (
+      (pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isWindows {
+        inherit (maintainer-scripts) check-hydra;
+      })
+    // (pkgs.lib.optionalAttrs (ifdLevel > 2) {
+        inherit (maintainer-scripts) update-docs check-closure-size;
+        # Some of the dependencies of the impure scripts so that they will
+        # will be in the cache too for buildkite.
+        inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
+        inherit (haskell) nix-tools;
+      })
+  );
 }

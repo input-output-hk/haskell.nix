@@ -1,0 +1,4 @@
+resolver: snapshot.yaml
+
+packages:
+- .

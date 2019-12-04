@@ -20,18 +20,17 @@
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
 
-, doCheck ? component.doCheck || haskellLib.isTest componentId
-, doCrossCheck ? component.doCrossCheck || false
-, dontPatchELF ? true
-, dontStrip ? true
+, dontPatchELF ? component.dontPatchELF
+, dontStrip ? component.dontStrip
 
-, static ? stdenv.hostPlatform.isMusl
-, deadCodeElimination ? true
+, enableStatic ? component.enableStatic
+, enableShared ? component.enableShared
+, enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
-, doHoogle ? true  # Also build a hoogle index
-, hyperlinkSource ? true  # Link documentation to the source code
+, doHoogle ? component.doHoogle # Also build a hoogle index
+, hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 
 # Profiling
 , enableLibraryProfiling ? component.enableLibraryProfiling
@@ -56,6 +55,11 @@ let
     inherit (package) identifier;
     inherit component fullName flags;
   };
+
+  enableFeature = enable: feature:
+    (if enable then "--enable-" else "--disable-") + feature;
+
+  disableFeature = disable: enableFeature (!disable);
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
@@ -84,15 +88,16 @@ let
         "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       ]
     ) ++ [ # other flags
-      (if dontStrip then "--disable-executable-stripping" else "--enable-executable-stripping")
-      (if dontStrip then "--disable-library-stripping"    else "--enable-library-stripping")
-      (if enableLibraryProfiling    then "--enable-library-profiling"    else "--disable-library-profiling" )
-      (if enableExecutableProfiling then "--enable-profiling" else "--disable-profiling" )
+      (disableFeature dontStrip "executable-stripping")
+      (disableFeature dontStrip "library-stripping")
+      (enableFeature enableLibraryProfiling "library-profiling")
+      (enableFeature enableExecutableProfiling "profiling")
+      (enableFeature enableStatic "static")
+      (enableFeature enableShared "shared")
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
-      ++ lib.optional (deadCodeElimination && stdenv.hostPlatform.isLinux) "--enable-split-sections"
-      ++ lib.optional (static) "--enable-static"
+      ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
@@ -128,13 +133,7 @@ let
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
-  # exe components are in /bin, but test and benchmarks are not.  Perhaps to avoid
-  # them being from being added to the PATH when the all component added to an env.
-  # TODO revist this to find out why and document or maybe change this.
-  installedExeDir = if haskellLib.isTest componentId || haskellLib.isBenchmark componentId
-    then name
-    else "bin";
-  installedExe = "${installedExeDir}/${componentId.cname}${exeExt}";
+  installedExe = "bin/${componentId.cname}${exeExt}";
 
 in stdenv.lib.fix (drv:
 
@@ -143,20 +142,20 @@ stdenv.mkDerivation ({
 
   src = cleanSrc;
 
-  inherit doCheck doCrossCheck dontPatchELF dontStrip;
+  doCheck = false;
+  doCrossCheck = false;
+  
+  inherit dontPatchELF dontStrip;
 
   passthru = {
     inherit (package) identifier;
     config = component;
-    inherit configFiles executableToolDepends cleanSrc;
+    inherit configFiles executableToolDepends cleanSrc installedExe;
     env = shellWrappers;
 
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
-    run = runCommand (fullName + "-run") {} ''
-      ${toString component.testWrapper} ${drv}/${installedExe} | tee $out
-    '';
   };
 
   meta = {
@@ -218,13 +217,7 @@ stdenv.mkDerivation ({
     runHook postBuild
   '';
 
-  checkPhase = ''
-    runHook preCheck
-
-    ${toString component.testWrapper} ${testExecutable} ${lib.concatStringsSep " " component.testFlags}
-
-    runHook postCheck
-  '';
+  checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
 
   haddockPhase = ''
     runHook preHaddock
@@ -282,25 +275,25 @@ stdenv.mkDerivation ({
       fi
     ''}
     ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
-      mkdir -p $out/${name}
+      mkdir -p $out/bin
       if [ -f ${testExecutable} ]; then
-        cp ${testExecutable} $out/${name}/
+        cp ${testExecutable} $out/bin/
       fi
     '')
     # In case `setup copy` did not creat this
     + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
     + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
-      echo "Copying libffi and gmp .dlls ..."
+      echo "Symlink libffi and gmp .dlls ..."
       for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
-        find "$p" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
+        find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
       done
-      # copy all .dlls into the local directory.
+      # symlink all .dlls into the local directory.
       # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
-      # to copy over dlls as needed.
-      echo "Copying library dependencies..."
+      # to symlink over dlls as needed.
+      echo "Symlink library dependencies..."
       for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
         if [ -d "$libdir" ]; then
-          find "$libdir" -iname '*.dll' -exec cp {} $out/${installedExeDir} \;
+          find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
         fi
       done
     '')
@@ -317,7 +310,7 @@ stdenv.mkDerivation ({
 // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
 // haskellLib.optionalHooks {
   inherit preUnpack postUnpack preConfigure postConfigure
-    preBuild postBuild preCheck postCheck
+    preBuild postBuild
     preInstall postInstall preHaddock postHaddock;
 }
 // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }

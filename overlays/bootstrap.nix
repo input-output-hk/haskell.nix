@@ -267,7 +267,7 @@ self: super: {
                 index-state = "2019-10-20T00:00:00Z";
                 plan-sha256 = "086kd6aa5bir3y4aqb1wl5zkj6agz5q4wp4snvdnf6cidz5wra06";
             };
-            alex = bootstrap.packages.alex-project.alex.components.exes.alex;
+            alex = bootstrap.packages.alex-project.hsPkgs.alex.components.exes.alex;
             happy-project = hackage-project {
                 # Only a boot compiler is suitable here
                 ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
@@ -276,7 +276,7 @@ self: super: {
                 index-state = "2019-10-20T00:00:00Z";
                 plan-sha256 = "011bxlxdv239psgi80j00km2wcgb68j16sz3fng67d03sqf5i37w";
             };
-            happy = bootstrap.packages.happy-project.happy.components.exes.happy;
+            happy = bootstrap.packages.happy-project.hsPkgs.happy.components.exes.happy;
             hscolour-project = hackage-project {
                 # Only a boot compiler is suitable here
                 ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
@@ -285,7 +285,7 @@ self: super: {
                 index-state = "2019-10-20T00:00:00Z";
                 plan-sha256 = "021rwcmkshibc3mfr833ay5hfr19kq6k32lxyrrb6vp9vmihgw4b";
             };
-            hscolour = bootstrap.packages.hscolour-project.hscolour.components.exes.HsColour;
+            hscolour = bootstrap.packages.hscolour-project.hsPkgs.hscolour.components.exes.HsColour;
         };
     };
   };

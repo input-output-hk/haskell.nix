@@ -56,59 +56,6 @@ in
         x86_64-linux = (import ./test { nixpkgs = nixpkgsSrc; nixpkgsArgs = { system = "x86_64-linux"; }; });
         # x86_64-darwin = (import ./test { nixpkgs = nixpkgsSrc; nixpkgsArgs = { system = "x86_64-darwin"; }; });
       };
-      examples = let
-        cardano-sl-args = import ./examples/cardano-sl-args.nix;
-        cardano-wallet-args = import ./examples/cardano-wallet-args.nix;
-        plutus-args = import ./examples/plutus-args.nix;
-      in {
-        x86_64-linux = {
-                # cardano-sl
-                cardano-sl = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
-                        (haskell-nix.stackProject cardano-sl-args));
-                x86_64-pc-mingw32-cardano-sl = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
-                        (haskell-nix.stackProject cardano-sl-args));
-
-                # cardano-wallet
-                cardano-wallet = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));
-                x86_64-pc-mingw32-cardano-wallet = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));
-                plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
-                        (haskell-nix.stackProject plutus-args));
-                x86_64-pc-mingw32-plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-linux"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
-                        (haskell-nix.stackProject plutus-args));
-
-        };
-        x86_64-darwin = {
-                # cardano-sl
-                cardano-sl = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
-                        (haskell-nix.stackProject cardano-sl-args));
-                x86_64-pc-mingw32-cardano-sl = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-sl-args.pkgs)
-                        (haskell-nix.stackProject cardano-sl-args));
-
-                # cardano-wallet
-                cardano-wallet = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));
-                x86_64-pc-mingw32-cardano-wallet = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k cardano-wallet-args.pkgs)
-                        (haskell-nix.stackProject cardano-wallet-args));
-                plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
-                        (haskell-nix.stackProject plutus-args));
-                x86_64-pc-mingw32-plutus = with (import nixpkgsSrc (haskellNixArgs // { system = "x86_64-darwin"; crossSystem.config = "x86_64-pc-mingw32"; }));
-                    (lib.filterAttrs (k: _: builtins.elem k plutus-args.pkgs)
-                        (haskell-nix.stackProject plutus-args));
-        };
-    };
 
 # Don't build (all of) stackage on linux for now.
 #    stackage = {

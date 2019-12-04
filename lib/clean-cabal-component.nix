@@ -69,8 +69,7 @@ in
                 ++ package.extraSrcFiles
                 ++ component.extraSrcFiles
                 ++ package.extraDocFiles
-                ++ builtins.map (f:
-                  dataDir + (if dataDir == "" then "" else "/") + f) package.dataFiles
+                ++ builtins.map (f: dataDir + f) package.dataFiles
                 ++ otherSourceFiles))
             || traceReason "cabal package definition" (lib.strings.hasSuffix ".cabal" rPath)
             || traceReason "hpack package defintion" (rPath == "package.yaml")
