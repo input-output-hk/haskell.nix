@@ -18,7 +18,7 @@ in stdenv.mkDerivation ({
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env;
   };
 
-  inherit (drv) meta LANG LC_ALL;
+  inherit (drv) meta LANG LC_ALL buildInputs nativeBuildInputs;
 
   inherit (component) doCheck doCrossCheck;
 
