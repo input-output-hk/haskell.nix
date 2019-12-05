@@ -24,7 +24,7 @@
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared
+, enableShared ? component.enableShared && !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt;
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
@@ -40,9 +40,6 @@
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 }:
-
-# We build windows compilers nonShared, hence ensure we never set shared for windows. Same for iOSPrebuilt
-assert enableShared -> !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt;
 
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards

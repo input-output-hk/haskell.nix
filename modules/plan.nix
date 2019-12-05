@@ -121,12 +121,12 @@ let
           enableStatic = mkOption {
             description = "If set, enables building static libraries and executables.";
             type = bool;
-            default = (def.enableStatic or false);
+            default = (def.enableStatic or true);
           };
           enableShared = mkOption {
             description = "If set, enables building shared libraries.";
             type = bool;
-            default = (def.enableShared or false);
+            default = (def.enableShared or true);
           };
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
