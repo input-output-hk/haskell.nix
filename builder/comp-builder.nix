@@ -42,7 +42,7 @@
 }:
 
 # We build windows compilers nonShared, hence ensure we never set shared for windows. Same for iOSPrebuilt
-assert enableShared -> !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt
+assert enableShared -> !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt;
 
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
