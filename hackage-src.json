@@ -1,7 +1,7 @@
 {
   "url": "https://github.com/input-output-hk/hackage.nix",
-  "rev": "7e59ffc6acf8eab0d90c402b8c762a44155256c7",
-  "date": "2019-12-04T01:08:42+00:00",
-  "sha256": "1c8wkhln988nll1lwyiajl5s47cfvh16pvzjs0z6wpfcg0p0whcn",
+  "rev": "aaef2f0389bee53aaad76462d83f52deed8831f1",
+  "date": "2019-12-05T01:26:53+00:00",
+  "sha256": "10n3rdyi3rlcw0j5c94kvz6n6ri0l4bxhpqr7wd4dvr39ydaybc1",
   "fetchSubmodules": false
 }
