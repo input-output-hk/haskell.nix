@@ -41,6 +41,9 @@
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 }:
 
+# We build windows compilers nonShared, hence ensure we never set shared for windows. Same for iOSPrebuilt
+assert enableShared -> !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt
+
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   cleanSrc = if cabal-generator == "hpack" && !(package.cleanHpack or false)
@@ -144,7 +147,7 @@ stdenv.mkDerivation ({
 
   doCheck = false;
   doCrossCheck = false;
-  
+
   inherit dontPatchELF dontStrip;
 
   passthru = {
