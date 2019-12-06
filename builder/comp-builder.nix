@@ -23,8 +23,8 @@
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
 
-, enableStatic ? component.enableStatic && !stdenv.targetPlatform.isWindows
-, enableShared ? component.enableShared && !stdenv.targetPlatform.useiOSPrebuilt
+, enableStatic ? component.enableStatic
+, enableShared ? component.enableShared && !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
