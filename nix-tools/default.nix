@@ -1,5 +1,5 @@
 { pkgs, lib, symlinkJoin, makeWrapper
-, hpack, git, nix, nix-prefetch-git
+, hpack, git, nix
 , fetchExternal, cleanSourceHaskell, mkCabalProjectPkgSet
 , ... }@args:
 
@@ -46,6 +46,10 @@ let
   };
 
   hsPkgs = pkgSet.config.hsPkgs;
+
+  nix-prefetch-git =
+    pkgs.writeShellScriptBin "nix-prefetch-git"
+      (builtins.readFile ./nix-prefetch-git);
 
   tools = [ hpack git nix nix-prefetch-git ];
 in
