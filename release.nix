@@ -46,7 +46,7 @@ let
 
   allJobs =
     builtins.mapAttrs (_: nixpkgs-pin: jobs nixpkgs-pin) {
-#      "R1903" = "release-19.03";
+      "R1903" = "release-19.03";
       "R1909" = "release-19.09";
     };
 
