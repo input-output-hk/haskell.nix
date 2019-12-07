@@ -21,7 +21,7 @@ let
   haskell = pkgs.haskell-nix;
 
 in rec {
-  # tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdLevel; };
+  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdLevel; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
