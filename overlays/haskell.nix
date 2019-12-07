@@ -296,7 +296,7 @@ self: super: {
         # the index-state-hashes is used.  This guarantees reproducability wrt
         # to the haskell.nix revision.  If reproducability beyond haskell.nix
         # is required, a specific index-state should be provided!
-        hackage-package = { name, ... }@args: (hackage-project args).${name};
+        hackage-package = { name, ... }@args: (hackage-project args).hsPkgs.${name};
         hackage-project =
             { name
             , version
