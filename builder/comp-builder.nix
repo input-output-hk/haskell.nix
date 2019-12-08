@@ -24,7 +24,7 @@
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared
+, enableShared ? component.enableShared && !stdenv.hostPlatform.isWindows && !stdenv.hostPlatform.useiOSPrebuilt
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
@@ -144,7 +144,7 @@ stdenv.mkDerivation ({
 
   doCheck = false;
   doCrossCheck = false;
-  
+
   inherit dontPatchELF dontStrip;
 
   passthru = {
