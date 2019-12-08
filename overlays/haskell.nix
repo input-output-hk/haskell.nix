@@ -165,7 +165,7 @@ self: super: {
         # TODO perhaps there is a cleaner way to get a suitable nix-tools.
 
             # Produce a fixed output derivation from a moving target (hackage index tarball)
-        hackageTarball = { index-state, sha256, nix-tools ? self.nix-tools, ... }:
+        hackageTarball = { index-state, sha256, nix-tools ? self.haskell-nix.nix-tools, ... }:
             assert sha256 != null;
             self.fetchurl {
                 name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
