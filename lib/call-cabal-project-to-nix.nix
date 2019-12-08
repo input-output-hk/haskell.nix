@@ -160,6 +160,7 @@ let
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
     # Needed or stack-to-nix will die on unicode inputs
     LANG = "en_US.UTF-8";
+    meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
   } // (if plan-sha256 == null
     then {}
