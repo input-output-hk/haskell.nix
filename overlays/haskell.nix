@@ -390,6 +390,7 @@ self: super: {
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
+            self.haskell-nix.nix-tools;
             ghc-extra-packages = self.recurseIntoAttrs
               (filterSupportedGhc self.ghc-extra-packages);
           });
