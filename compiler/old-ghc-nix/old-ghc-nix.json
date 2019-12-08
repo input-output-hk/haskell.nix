@@ -1,7 +1,7 @@
 {
   "url": "https://github.com/angerman/old-ghc-nix",
-  "rev": "32310a584c3e06c1c1b34769fe49c411edaeb6b5",
-  "date": "2019-12-08T20:07:35+13:00",
+  "rev": "ee5e7181f681522f075e01a1875228188b03cc8c",
+  "date": "2019-12-08T20:24:29+08:00",
   "sha256": "0ywvyjvyw9vm0qbf0a7k6zpsrzcz5wa7y16rfcs3wfv36plj3qd5",
   "fetchSubmodules": false
 }
