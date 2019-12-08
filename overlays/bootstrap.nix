@@ -1,10 +1,10 @@
 self: super: {
-  haskell-nix = super.haskell-nix // rec {
+  haskell-nix = super.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = with self.buildPackages; {
                 ghc = buildPackages.haskell-nix.bootstrap.compiler.ghc844;
-                inherit (bootstrap.packages) alex happy hscolour;
+                inherit (self.haskell-nix.bootstrap.packages) alex happy hscolour;
             };
             sphinx = with self.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
             hsc2hs-align-conditionals-patch = self.fetchpatch {
@@ -195,7 +195,7 @@ self: super: {
                 '';
         });
 
-    ghc = compiler.ghc865;
+    ghc = self.haskell-nix.compiler.ghc865;
     cabal-install = self.buildPackages.haskell-nix.bootstrap.packages.cabal-install;
 
     # WARN: The `import ../. {}` will prevent
