@@ -53,6 +53,7 @@ in
     name = "nix-tools";
     paths = builtins.attrValues hsPkgs.nix-tools.components.exes;
     buildInputs = [ makeWrapper ];
+    meta.platforms = lib.platforms.all;
     # We wrap the -to-nix executables with the executables from `tools` (e.g. nix-prefetch-git)
     # so that consumers of `nix-tools` won't have to provide those tools.
     postBuild = ''
