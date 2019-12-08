@@ -2,7 +2,7 @@
 , scrubJobs ? true
 , haskell-nix ? { outPath = ./.; rev = "abcdef"; }
 , nixpkgsArgs ? {}
-, ifdLevel ? 0
+, ifdLevel ? 3
 }:
 
 let defaultNixpkgs = import ./nixpkgs {}; in
