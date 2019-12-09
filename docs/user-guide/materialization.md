@@ -22,7 +22,7 @@ for instance).
   on the nix being present (although this is often blamed on IFD
   it would be the same wrote out JSON files and read them in)
 
-## When is it Ok to Materialize?
+## When is it ok to materialize?
 
 * The nix is unlikely to change frequently (and when it does you
   are happy to manually update it).
@@ -127,7 +127,7 @@ $ nix-build hlint.nix
 We may want to run `cmod -R +w hlint.materialized` as the files copied from the
 store will be read only.
 
-## How can I check if the `sha256` and `materialized`?
+## How can we check `sha256` and `materialized` are up to date?
 
 Let's pretend we had to go back to `hlint` version `2.2.3`.
 We can change `version` and temporarily add
