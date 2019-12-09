@@ -193,6 +193,16 @@ self: super: {
                 HOME=$out cabal new-update cached
             '';
 
+        checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
+
+        # Helps materialize the output of derivations
+        materialize = import ../lib/materialize.nix {
+          inherit (self) nix;
+          inherit (self.haskell-nix) checkMaterialization;
+          pkgs = self.buildPackages.pkgs;
+          inherit (self.buildPackages.pkgs) runCommand;
+        };
+
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
             inherit (self.haskell-nix) indexStateHashesPath nix-tools;
             inherit (self) coreutils nix writeShellScriptBin stdenv;
@@ -202,7 +212,7 @@ self: super: {
         callStackToNix = import ../lib/call-stack-to-nix.nix {
             pkgs = self.buildPackages.pkgs;
             inherit (self.buildPackages.pkgs) runCommand;
-            inherit (self.buildPackages.haskell-nix) nix-tools mkCacheFile;
+            inherit (self.buildPackages.haskell-nix) nix-tools mkCacheFile materialize;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
@@ -269,7 +279,7 @@ self: super: {
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
-            inherit (self.buildPackages.haskell-nix) dotCabal nix-tools haskellLib;
+            inherit (self.buildPackages.haskell-nix) dotCabal nix-tools haskellLib materialize;
             pkgs = self.buildPackages.pkgs;
             inherit (self.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
             inherit (self.buildPackages.haskell-nix) cabal-install ghc;

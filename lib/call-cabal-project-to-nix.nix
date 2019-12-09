@@ -1,9 +1,11 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib }@defaults:
+{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
 { name          ? null # optional name for better error messages
 , src
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
 , index-sha256  ? null # The hash of the truncated hackage index-state
 , plan-sha256   ? null # The hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation)
+, materialized  ? null # Location of a materialized copy of the nix files
+, checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , cabalProject  ? null # Cabal project file (when null uses "${src}/cabal.project")
 , ghc           ? defaults.ghc
 , nix-tools     ? defaults.nix-tools
@@ -156,20 +158,24 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
-  plan-nix = runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") ({
+  plan-nix = materialize ({
+    inherit materialized;
+    sha256 = plan-sha256;
+    sha256Arg = "plan-sha256";
+    # Before pinning stuff down we need an index state to use
+    reasonNotSafe =
+      if index-state == null
+        then "index-state is not set"
+        else null;
+  } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
+    inherit checkMaterialization;
+  }) (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
     # Needed or stack-to-nix will die on unicode inputs
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
-  } // (if plan-sha256 == null
-    then {}
-    else {
-      outputHashMode = "recursive";
-      outputHashAlgo = "sha256";
-      outputHash = plan-sha256;
-    })
-  ) (''
+  } ''
     tmp=$(mktemp -d)
     cd $tmp
     # if maybeCleanedSource is empty, this means it's a new
@@ -221,6 +227,11 @@ let
     # run `plan-to-nix` in $out.  This should produce files right there with the
     # proper relative paths.
     (cd $out && plan-to-nix --full --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
+
+    # Remove the non nix files ".project" ".cabal" "package.yaml" files
+    # as they should not be in the output hash (they may change slightly
+    # without affecting the nix).
+    find $out -type f ! -name '*.nix' -exec rm "{}" \;
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix

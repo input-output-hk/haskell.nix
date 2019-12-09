@@ -265,7 +265,8 @@ self: super: {
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "alex"; version = "3.2.4";
                 index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "086kd6aa5bir3y4aqb1wl5zkj6agz5q4wp4snvdnf6cidz5wra06";
+                plan-sha256 = "1adn8s46msqm2rl6yf01z2r81maa2001qh441j491gpmc3ki36n0";
+                materialized = ../materialized/alex;
             };
             alex = bootstrap.packages.alex-project.hsPkgs.alex.components.exes.alex;
             happy-project = hackage-project {
@@ -274,7 +275,8 @@ self: super: {
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "happy"; version = "1.19.11";
                 index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "011bxlxdv239psgi80j00km2wcgb68j16sz3fng67d03sqf5i37w";
+                plan-sha256 = "0swpwhlym4p3209qv90mfgq6zsaw99ipznm4pvd32mxzwq9s5q8i";
+                materialized = ../materialized/happy;
             };
             happy = bootstrap.packages.happy-project.hsPkgs.happy.components.exes.happy;
             hscolour-project = hackage-project {
@@ -283,7 +285,8 @@ self: super: {
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "hscolour"; version = "1.24.4";
                 index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "021rwcmkshibc3mfr833ay5hfr19kq6k32lxyrrb6vp9vmihgw4b";
+                plan-sha256 = "0cnkczsh1xy7cc60q3blwa51qrjhf5mc89s34y9ab3x702a26b75";
+                materialized = ../materialized/hscolour;
             };
             hscolour = bootstrap.packages.hscolour-project.hsPkgs.hscolour.components.exes.HsColour;
         };
