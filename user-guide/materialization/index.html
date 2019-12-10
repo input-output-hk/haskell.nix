@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Materialization - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Materialization";
+    var mkdocs_page_input_path = "user-guide/materialization.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../projects/">Creating Nix builds for your projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../stack-projects/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cabal-projects/">Cabal Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../development/">How to create a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/library/">Haskell.nix Library</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../dev/dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/tests/">Test Suite</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../changelog/">ChangeLog</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Materialization</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/materialization.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="materialization">Materialization<a class="headerlink" href="#materialization" title="Permanent link">&para;</a></h1>
+<h2 id="what-is-materialization">What is materialization?<a class="headerlink" href="#what-is-materialization" title="Permanent link">&para;</a></h2>
+<p>Capturing and storing the nix files for a project so that they do
+not need to be built (or checked).  This allows us to cache the input
+of an IFD (import from derviation).</p>
+<h2 id="why-use-materialization">Why use materialization?<a class="headerlink" href="#why-use-materialization" title="Permanent link">&para;</a></h2>
+<p>Using functions like <code>cabalProject</code>, <code>stackProject</code> and <code>hackage-package</code>
+results in a lot of dependencies (all the dependencies of nix-tools
+for instance).</p>
+<ul>
+<li>
+<p>They can be slow to calculate (even if no work needs to be done it
+  is not unusual for it to take 5 seconds per project).</p>
+</li>
+<li>
+<p>They can be slow to build (or download) on machines that do not
+  yet have them in the nix store.</p>
+</li>
+<li>
+<p>Hydra does not show progress because it does not provide feedback
+  until it has a list of jobs and the list of jobs cannot depends
+  on the nix being present (although this is often blamed on IFD
+  it would be the same if it wrote out JSON files and read them in)</p>
+</li>
+</ul>
+<h2 id="when-is-it-ok-to-materialize">When is it ok to materialize?<a class="headerlink" href="#when-is-it-ok-to-materialize" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>The nix is unlikely to change frequently (and when it does you
+  are happy to manually update it).</p>
+</li>
+<li>
+<p>You are happy to script something to update the materialized
+  nix files automatically.</p>
+</li>
+<li>You are certain that the IFD you materialize is not <code>system</code>-dependent. If it was you'd
+   obtain different nix expressions depending on which <code>system</code> the IFD was evaluated.</li>
+</ul>
+<h2 id="how-can-we-materialize-the-nix-files">How can we materialize the nix files?<a class="headerlink" href="#how-can-we-materialize-the-nix-files" title="Permanent link">&para;</a></h2>
+<p>Lets say we want to build <code>hlint</code>.  We might start with an <code>hlint</code>
+file that looks like this:</p>
+<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
+  name = &quot;hlint&quot;;
+  version = &quot;2.2.4&quot;;
+}).components.exes.hlint
+</code></pre>
+
+<p>Building this may result in a lot of output, but if youb build
+it again it should give just:</p>
+<pre><code>$ nix-build hlint.nix 
+trace: Using latest index state for hlint!
+trace: Using index-state: 2019-12-09T00:00:00Z for hlint
+/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+</code></pre>
+
+<p>To materialize the nix files we need to take care to pin down the
+inputs.  For <code>cabalProject</code> and <code>hackage-package</code> this means
+we must specify the <code>index-state</code> of hackage we want to use:</p>
+<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
+  name = &quot;hlint&quot;;
+  version = &quot;2.2.4&quot;;
+  index-state = &quot;2019-12-03T00:00:00Z&quot;;
+}).components.exes.hlint
+</code></pre>
+
+<p>Now if we build again we get a hint telling use how to
+calculate a suitable sha256 hash to turn the derivation
+containing the nix files into a fixed output derivation:</p>
+<pre><code>$ nix-build hlint.nix 
+trace: Using index-state: 2019-12-03T00:00:00Z for hlint
+trace: Get `plan-sha256` with `nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/`
+/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+
+$ nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/
+1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss
+</code></pre>
+
+<p>We can add the hash as <code>plan-sha256</code> or (<code>stack-sha256</code> for
+<code>stackProject</code>)</p>
+<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
+  name = &quot;hlint&quot;;
+  version = &quot;2.2.4&quot;;
+  index-state = &quot;2019-12-03T00:00:00Z&quot;;
+  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+}).components.exes.hlint
+</code></pre>
+
+<p>Just adding the hash might help reuse of the cached nix, but nix will
+still calculate all the dependencies (which can add seconds to
+<code>nix-build</code> and <code>nix-shell</code> commands when no other work is needed)
+and users who do not yet have the dependencies in their store will have
+to wait while they are built or downloaded.</p>
+<p>Running nix build again gives us a hint on what we can do next:</p>
+<pre><code>$ nix-build hlint.nix 
+trace: Using index-state: 2019-12-03T00:00:00Z for hlint
+trace: To materialize, point `materialized` to a copy of /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs
+/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+</code></pre>
+
+<p>To capture the nix we can do something like:</p>
+<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
+  name = &quot;hlint&quot;;
+  version = &quot;2.2.4&quot;;
+  index-state = &quot;2019-12-03T00:00:00Z&quot;;
+  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+  materialized = ./hlint.materialized;
+}).components.exes.hlint
+</code></pre>
+
+<p>Now we can copy the nix files needed and build with:</p>
+<pre><code>$ cp -r /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs hlint.materialized
+$ nix-build hlint.nix 
+/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+</code></pre>
+
+<p>We may want to run <code>cmod -R +w hlint.materialized</code> as the files copied from the
+store will be read only.</p>
+<h2 id="how-can-we-check-sha256-and-materialized-are-up-to-date">How can we check <code>sha256</code> and <code>materialized</code> are up to date?<a class="headerlink" href="#how-can-we-check-sha256-and-materialized-are-up-to-date" title="Permanent link">&para;</a></h2>
+<p>Let's pretend we had to go back to <code>hlint</code> version <code>2.2.3</code>.
+We can change <code>version</code> and temporarily add
+<code>checkMaterialization = true;</code>:</p>
+<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
+  name = &quot;hlint&quot;;
+  version = &quot;2.2.3&quot;;
+  index-state = &quot;2019-12-03T00:00:00Z&quot;;
+  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+  materialized = ./hlint.materialized;
+  checkMaterialization = true;
+}).components.exes.hlint
+</code></pre>
+
+<p>This will fail and report the details of what is wrong:</p>
+<pre><code>$ nix-build hlint.nix 
+trace: Using index-state: 2019-12-03T00:00:00Z for hlint
+building '/nix/store/zmif4gk52ynh57pf4dikzgsk30haqi2b-hlint-plan-to-nix-pkgs.drv'...
+Changes to hlint-plan-to-nix-pkgs not reflected in plan-sha256
+diff -ru /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix
+--- /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix      1970-01-01 00:00:01.000000000 +0000
++++ /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix      1970-01-01 00:00:01.000000000 +0000
+@@ -42,7 +42,7 @@
+     flags = { threaded = true; gpl = true; ghc-lib = false; };
+     package = {
+       specVersion = &quot;1.18&quot;;
+-      identifier = { name = &quot;hlint&quot;; version = &quot;2.2.4&quot;; };
++      identifier = { name = &quot;hlint&quot;; version = &quot;2.2.3&quot;; };
+       license = &quot;BSD-3-Clause&quot;;
+       copyright = &quot;Neil Mitchell 2006-2019&quot;;
+       maintainer = &quot;Neil Mitchell &lt;ndmitchell@gmail.com&gt;&quot;;
+@@ -95,7 +95,6 @@
+           (hsPkgs.&quot;extra&quot; or (buildDepError &quot;extra&quot;))
+           (hsPkgs.&quot;refact&quot; or (buildDepError &quot;refact&quot;))
+           (hsPkgs.&quot;aeson&quot; or (buildDepError &quot;aeson&quot;))
+-          (hsPkgs.&quot;filepattern&quot; or (buildDepError &quot;filepattern&quot;))
+           (hsPkgs.&quot;syb&quot; or (buildDepError &quot;syb&quot;))
+           (hsPkgs.&quot;mtl&quot; or (buildDepError &quot;mtl&quot;))
+           ] ++ (if !flags.ghc-lib &amp;&amp; (compiler.isGhc &amp;&amp; (compiler.version).ge &quot;8.8.0&quot;) &amp;&amp; (compiler.isGhc &amp;&amp; (compiler.version).lt &quot;8.9.0&quot;)
+diff -ru /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/default.nix /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/default.nix
+--- /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/default.nix      1970-01-01 00:00:01.000000000 +0000
++++ /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/default.nix      1970-01-01 00:00:01.000000000 +0000
+@@ -76,7 +76,7 @@
+         &quot;tagged&quot;.revision = (((hackage.&quot;tagged&quot;).&quot;0.8.6&quot;).revisions).default;
+         &quot;tagged&quot;.flags.transformers = true;
+         &quot;tagged&quot;.flags.deepseq = true;
+-        &quot;haskell-src-exts&quot;.revision = (((hackage.&quot;haskell-src-exts&quot;).&quot;1.22.0&quot;).revisions).default;
++        &quot;haskell-src-exts&quot;.revision = (((hackage.&quot;haskell-src-exts&quot;).&quot;1.21.1&quot;).revisions).default;
+         &quot;unliftio-core&quot;.revision = (((hackage.&quot;unliftio-core&quot;).&quot;0.1.2.0&quot;).revisions).default;
+         &quot;ghc-lib-parser&quot;.revision = (((hackage.&quot;ghc-lib-parser&quot;).&quot;8.8.1&quot;).revisions).default;
+         &quot;containers&quot;.revision = (((hackage.&quot;containers&quot;).&quot;0.6.0.1&quot;).revisions).default;
+@@ -116,7 +116,6 @@
+         &quot;hpc&quot;.revision = (((hackage.&quot;hpc&quot;).&quot;0.6.0.3&quot;).revisions).default;
+         &quot;filepath&quot;.revision = (((hackage.&quot;filepath&quot;).&quot;1.4.2.1&quot;).revisions).default;
+         &quot;process&quot;.revision = (((hackage.&quot;process&quot;).&quot;1.6.5.0&quot;).revisions).default;
+-        &quot;filepattern&quot;.revision = (((hackage.&quot;filepattern&quot;).&quot;0.1.1&quot;).revisions).default;
+         &quot;libyaml&quot;.revision = (((hackage.&quot;libyaml&quot;).&quot;0.1.1.1&quot;).revisions).default;
+         &quot;libyaml&quot;.flags.system-libyaml = false;
+         &quot;libyaml&quot;.flags.no-unicode = false;
+Calculated hash is 1qjmhlb4rw6mggs7y57f6zr5zjmkhkx7sn9q8pb18308n5nxgxcs expected hash was 1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss for hlint-plan-to-nix-pkgs
+builder for '/nix/store/zmif4gk52ynh57pf4dikzgsk30haqi2b-hlint-plan-to-nix-pkgs.drv' failed with exit code 1
+error: build of '/nix/store/zmif4gk52ynh57pf4dikzgsk30haqi2b-hlint-plan-to-nix-pkgs.drv' failed
+</code></pre>
+
+<p>Checking the materialization requires nix to do all the work that materialization
+avoids.  So while it might be tempting to leave <code>checkMaterialization = true</code> all
+the time, we would be better off just removing <code>materialized</code> and <code>plan-sha256</code>.</p>
+<h2 id="how-can-we-update-the-nix-files-with-a-script">How can we update the nix files with a script?<a class="headerlink" href="#how-can-we-update-the-nix-files-with-a-script" title="Permanent link">&para;</a></h2>
+<p>There are versions of the functions (<code>cabalProject'</code>, <code>stackProject'</code>
+and <code>hackage-project</code>) that also return the nix as <code>plan-nix</code> or
+<code>stack-nix</code>.  By calling one of these functions without the
+hash and materialized nix we can find out what nix files should be.
+For instance:</p>
+<pre><code class="nix">(import ./nixpkgs (import ./.)).haskell-nix.hackage-project {
+  name = &quot;hlint&quot;;
+  version = &quot;2.2.4&quot;;
+  index-state = &quot;2019-12-03T00:00:00Z&quot;;
+}
+</code></pre>
+
+<pre><code>$ nix-build hlint.nix -A plan-nix
+trace: Using index-state: 2019-12-03T00:00:00Z for hlint
+trace: Get `plan-sha256` with `nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/`
+/nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs
+</code></pre>
+
+<p>We can have the script copy <code>$(nix-build hlint.nix -A plan-nix --no-out-link)</code>
+and use <code>nix-hash</code> to calculate the new value for <code>plan-sha256</code>.</p>
+<h2 id="can-we-skip-making-a-copy-and-use-materialized-nixstore">Can we skip making a copy and use <code>materialized = /nix/store/...</code>?<a class="headerlink" href="#can-we-skip-making-a-copy-and-use-materialized-nixstore" title="Permanent link">&para;</a></h2>
+<p>Yes and it gives us the same speed improvement, however:</p>
+<ul>
+<li>
+<p>It does not help at all in <code>restricted-eval</code> mode (Hydra).</p>
+</li>
+<li>
+<p>Users will still wind up building or downloading the dependencies
+  needed to build the nix fileds (if they do not have them).</p>
+</li>
+</ul>
+<p>For instance:</p>
+<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
+  name = &quot;hlint&quot;;
+  version = &quot;2.2.4&quot;;
+  index-state = &quot;2019-12-03T00:00:00Z&quot;;
+  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+  materialized = /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs;
+}).components.exes.hlint
+</code></pre>
+
+<p>Running when no building is needed is still slow in restricted evaluation mode.</p>
+<pre><code>$ time nix-build --option restrict-eval true -I . --option allowed-uris &quot;https://github.com/NixOS https://github.com/input-output-hk&quot; hlint.nix 
+trace: Using index-state: 2019-12-03T00:00:00Z for hlint
+/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+
+real    0m10.066s
+user    0m8.563s
+sys 0m0.630s
+$ time nix-build hlint.nix 
+/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+
+real    0m4.628s
+user    0m3.889s
+sys 0m0.389s
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>
