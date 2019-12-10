@@ -220,34 +220,28 @@ stdenv.mkDerivation ({
 
   haddockPhase = ''
     runHook preHaddock
+    # If we don't have any source files, no need to run haddock
+    [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
     docdir="${docdir "$doc"}"
     mkdir -p "$docdir"
 
-    # We accept that this might not produce any
-    # output (hence the || true).  Depending of
-    # configuration flags, there might just be no
-    # modules to run haddock on.  E.g. a package
-    # might turn into an empty one (see the fail
-    # pkg).
     $SETUP_HS haddock \
       "--html" \
       ${lib.optionalString doHoogle "--hoogle"} \
       ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
       ${lib.concatStringsSep " " (component.setupHaddockFlags ++ setupGhcOptions)} \
-      || true
 
     html="dist/doc/html/${componentId.cname}"
 
-    if [ -d "$html" ]; then
-       # Ensure that libraries are not pulled into the docs closure.
-       # As an example, the prettified source code of a
-       # Paths_package module will contain store paths of the library package.
-       for x in "$html/src/"*.html; do
-         remove-references-to -t $out $x
-       done
-
-       cp -R "$html" "$docdir"/html
-    fi
+    # Ensure that libraries are not pulled into the docs closure.
+    # As an example, the prettified source code of a
+    # Paths_package module will contain store paths of the library package.
+    for x in "$html/src/"*.html; do
+      remove-references-to -t $out $x
+    done
+    
+    cp -R "$html" "$docdir"/html
+    }
     runHook postHaddock
   '';
 
