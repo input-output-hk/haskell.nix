@@ -34,7 +34,7 @@ for instance).
    
 ## How can we materialize the nix files?
 
-Lets say we want to build hlint.  We might start with an hlint
+Lets say we want to build `hlint`.  We might start with an `hlint`
 file that looks like this:
 
 ```nix
