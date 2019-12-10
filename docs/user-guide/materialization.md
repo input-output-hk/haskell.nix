@@ -29,7 +29,9 @@ for instance).
 
 * You are happy to script something to update the materialized
   nix files automatically.
-
+* You are certain that the IFD you materialize is not `system`-dependent. If it was you'd
+   obtain different nix expressions depending on which `system` the IFD was evaluated.
+   
 ## How can we materialize the nix files?
 
 Lets say we want to build hlint.  We might start with an hlint
