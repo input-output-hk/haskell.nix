@@ -75,6 +75,7 @@ $ nix-build hlint.nix
 trace: Using index-state: 2019-12-03T00:00:00Z for hlint
 trace: Get `plan-sha256` with `nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/`
 /nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+
 $ nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/
 1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss
 ```
