@@ -50,8 +50,7 @@ let
         NEW_HASH=$(nix-hash --base32 --type sha256 ${calculateNoHash})
         if [ "${sha256}" != "$NEW_HASH" ]; then
           echo Changes to ${name} not reflected in ${sha256Arg}
-          echo diff -r ${calculateUseHash} ${calculateNoHash}
-          diff -r ${calculateUseHash} ${calculateNoHash} || true
+          diff -ru ${calculateUseHash} ${calculateNoHash} || true
           echo Calculated hash is $NEW_HASH expected hash was ${sha256} for ${name}
           false
         else
@@ -63,8 +62,7 @@ let
           echo materialized nix used for ${name} is correct
         else
           echo Changes to plan not reflected in materialized nix for ${name}
-          echo diff -r ${materialized} ${calculateNoHash}
-          diff -r ${materialized} ${calculateNoHash}
+          diff -ru ${materialized} ${calculateNoHash}
         fi
       '')
     + ''
