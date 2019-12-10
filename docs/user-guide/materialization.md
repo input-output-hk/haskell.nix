@@ -95,7 +95,7 @@ We can add the hash as `plan-sha256` or (`stack-sha256` for
 
 Just adding the hash might help reuse of the cached nix, but nix will
 still calculate all the dependencies (which can add seconds to
-`nix-build` and `nix-shell` commands when no ohter work is needed)
+`nix-build` and `nix-shell` commands when no other work is needed)
 and users who do not yet have the dependencies in their store will have
 to wait while they are built or downloaded.
 
