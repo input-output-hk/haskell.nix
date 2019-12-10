@@ -20,7 +20,7 @@ for instance).
 * Hydra does not show progress because it does not provide feedback
   until it has a list of jobs and the list of jobs cannot depends
   on the nix being present (although this is often blamed on IFD
-  it would be the same wrote out JSON files and read them in)
+  it would be the same if it wrote out JSON files and read them in)
 
 ## When is it ok to materialize?
 
