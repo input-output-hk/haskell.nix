@@ -298,6 +298,10 @@ self: super: {
               text = self.buildPackages.lib.concatMapStringsSep "\n" mkCacheLine repos;
           };
 
+        genStackCache = import ../lib/stack-cache-generator.nix {
+            inherit (self.buildPackages) pkgs;
+        };
+
         mkCacheModule = cache:
             # for each item in the `cache`, set
             #   packages.$name.src = fetchgit ...
@@ -313,8 +317,6 @@ self: super: {
             # src value.
             #
             # TODO: this should be moved into `call-stack-to-nix`
-            #       it should be automatic and not the burden of
-            #       the end user to work around nix peculiarities.
             { packages =
                 let
                   repoToAttr = { name, url, rev, ref ? null, sha256 ? null, subdir ? null, is-private ? false, ... }: {
@@ -334,6 +336,7 @@ self: super: {
                   cacheMap = builtins.map repoToAttr cache;
                 in
                 builtins.foldl' (x: y: x // y) {} cacheMap;
+
             };
 
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
@@ -408,13 +411,21 @@ self: super: {
 
         stackProject' =
             { ... }@args:
-            let stack = importAndFilterProject (callStackToNix args);
+            let stack = importAndFilterProject (callStackToNix ({ inherit cache; } // args));
+                cache = if args ? cache
+                        then builtins.trace
+                            "warning: passing `cache' to `stackProject' is deprecated. See #335 #358"
+                            args.cache
+                        else genStackCache {
+                            inherit (args) src;
+                            stackYaml = args.stackYaml or "stack.yaml";
+                        };
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = stack.pkgs;
                   pkg-def-extras = (args.pkg-def-extras or []);
-                  modules = (args.modules or [])
-                          ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; }
-                          ++ self.lib.optional (args ? cache) (mkCacheModule args.cache);
+                  modules =  self.lib.singleton (mkCacheModule cache)
+                             ++ (args.modules or [])
+                             ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
             in { inherit (pkg-set.config) hsPkgs; stack-nix = stack.nix; };
 
