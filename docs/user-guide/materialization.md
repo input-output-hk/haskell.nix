@@ -104,7 +104,7 @@ Running nix build again gives us a hint on what we can do next:
 ```
 $ nix-build hlint.nix 
 trace: Using index-state: 2019-12-03T00:00:00Z for hlint
-trace: To materialize copy /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs
+trace: To materialize, point `materialized` to a copy of /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs
 /nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
 ```
 
