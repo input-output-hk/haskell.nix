@@ -29,7 +29,7 @@ in a change to the `.cabal` file the test will still be built the same).
 ```
 components.tests.test.extraSrcFiles = [ "subdir-needed-by-test" ];
 ```
-Override the source with a suitable filter function. 
+Or alternatively, override the source with a suitable filter function. 
 ```
 components.tests.test.src = haskell-nix.haskellLib.cleanSourceWith {
     inherit src;
