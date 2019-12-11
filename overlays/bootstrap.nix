@@ -1,7 +1,7 @@
 self: super:
 let
     exactDeps = ghc: self.runCommand "ghc-exactdep-${ghc.version}" { nativeBuildInputs = [ ghc ]; } ''
-      for P in $(${ghc.targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9.]*//g'); do
+      for P in $(${ghc.targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
         mkdir -p $out/$P
         touch $out/$P/configure-flags
         touch $out/$P/cabal.config
