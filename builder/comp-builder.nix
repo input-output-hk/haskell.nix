@@ -259,7 +259,9 @@ stdenv.mkDerivation ({
   #
   # Note 3: if a package has no libs SETUP will not generate anything.  This can
   #         happen when building the `all` component of a package.
-  installPhase = ''
+  installPhase = let
+      target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
+    in ''
     runHook preInstall
     $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
     ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
@@ -271,6 +273,28 @@ stdenv.mkDerivation ({
         done
       elif [ -e "${name}.conf" ]; then
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+      fi
+
+      mkdir -p $out/exactDep
+      touch $out/exactDep/configure-flags
+      touch $out/exactDep/cabal.config
+
+      if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
+        echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
+      elif id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
+        name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
+        # so we are dealing with a sublib. As we build sublibs separately, the above
+        # query should be safe.
+        echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+      fi
+      if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
+        echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
+        echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
+      fi
+
+      touch $out/envDep
+      if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
+        echo "package-id $id" >> $out/envDep
       fi
     ''}
     ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''

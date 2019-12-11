@@ -47,7 +47,7 @@ let
   '';
 
   catPkgExactDep = p:
-    catExactDep (exactDep (packageDb p) p.identifier.name [ghc (p.components.library or p)]);
+    catExactDep ((p.components.library or p) + "/exactDep");
 
   catGhcPkgExactDep = p: catExactDep (exactDep "" p [ghc]);
 
@@ -63,7 +63,7 @@ let
   '';
 
   catPkgEnvDep = p:
-    catEnvDep (envDep (packageDb p) p.identifier.name [ghc (p.components.library or p)]);
+    catEnvDep ((p.components.library or p) + "/envDep");
 
   catGhcPkgEnvDep = p: catEnvDep (envDep "" p [ghc]);
 
@@ -87,7 +87,7 @@ in { identifier, component, fullName, flags ? {} }:
 
     ${lib.concatMapStringsSep "\n" (p: ''
       cp -f "${p}/package.conf.d/"*.conf $out/package.conf.d
-    '') (haskellLib.flatLibDepends component)}
+    '') (builtins.trace (toString (builtins.length (haskellLib.flatLibDepends component)) + " " + toString (builtins.length component.depends)) haskellLib.flatLibDepends component)}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
     ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
