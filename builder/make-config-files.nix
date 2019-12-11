@@ -22,52 +22,28 @@ let
   #            sublib name to exactDep, as we don't have access to it at the call-site,
   #            we resort to a bit of globbing, which (as pkg db's should contain only
   #            a single package) work.
-  exactDep = pdbArg: p: nativeBuildInputs:  runCommand "${p}-exactdep" { inherit nativeBuildInputs; } ''
-    mkdir -p $out
-    touch $out/configure-flags
-    touch $out/cabal.config
+  catPkgExactDep = p: ''
+    cat ${p.components.library}/exactDep/configure-flags >> $out/configure-flags
+    cat ${p.components.library}/exactDep/cabal.config >> $out/cabal.config
+  '';
 
-    if id=$(${target-pkg} ${pdbArg} field ${p} id --simple-output); then
-      echo "--dependency=${p}=$id" >> $out/configure-flags
-    elif id=$(${target-pkg} ${pdbArg} field "z-${p}-z-*" id --simple-output); then
-      name=$(${target-pkg} ${pdbArg} field "z-${p}-z-*" name --simple-output)
-      # so we are dealing with a sublib. As we build sublibs separately, the above
-      # query should be safe.
-      echo "--dependency=''${name#z-${p}-z-}=$id" >> $out/configure-flags
-    fi
-    if ver=$(${target-pkg} ${pdbArg} field ${p} version --simple-output); then
-      echo "constraint: ${p} == $ver" >> $out/cabal.config
-      echo "constraint: ${p} installed" >> $out/cabal.config
+  catGhcPkgExactDep = p: ''
+    if [ -e ${ghc.exactDeps}/${p} ]; then
+      cat ${ghc.exactDeps}/${p}/configure-flags >> $out/configure-flags
+      cat ${ghc.exactDeps}/${p}/cabal.config >> $out/cabal.config
     fi
   '';
 
-  catExactDep = dep: ''
-    cat ${dep}/configure-flags >> $out/configure-flags
-    cat ${dep}/cabal.config >> $out/cabal.config
+  catPkgEnvDep = p: ''
+    cat ${p.components.library}/envDep >> $out/ghc-environment
   '';
 
-  catPkgExactDep = p:
-    catExactDep ((p.components.library or p) + "/exactDep");
-
-  catGhcPkgExactDep = p: catExactDep (exactDep "" p [ghc]);
-
-  envDep = pdbArg: p: nativeBuildInputs: runCommand "${p}-envdep" { inherit nativeBuildInputs; } ''
-    touch $out
-    if id=$(${target-pkg} ${pdbArg} field ${p} id --simple-output); then
-      echo "package-id $id" >> $out
+  catGhcPkgEnvDep = p: ''
+    if [ -e ${ghc.envDeps}/${p} ]; then
+      cat ${ghc.envDeps}/${p} >> $out/ghc-environment
     fi
   '';
 
-  catEnvDep = ghcEnv: ''
-    cat ${ghcEnv} >> $out/ghc-environment
-  '';
-
-  catPkgEnvDep = p:
-    catEnvDep ((p.components.library or p) + "/envDep");
-
-  catGhcPkgEnvDep = p: catEnvDep (envDep "" p [ghc]);
-
-  packageDb = p: "--package-db ${p.components.library or p}/package.conf.d";
 in { identifier, component, fullName, flags ? {} }:
   runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out

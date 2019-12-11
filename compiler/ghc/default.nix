@@ -13,6 +13,8 @@
 
 , libiconv ? null, ncurses
 
+, exactDeps, envDeps
+
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
@@ -204,7 +206,7 @@ in let configured-src = stdenv.mkDerivation (rec {
         installPhase = "cp -r . $out";
     });
 
-in stdenv.mkDerivation (rec {
+  drv =stdenv.mkDerivation (rec {
   version = ghc-version;
   name = "${targetPrefix}ghc-${version}";
 
@@ -313,6 +315,10 @@ in stdenv.mkDerivation (rec {
 
     # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
+
+    # These are used in make-config-files.nix
+    exactDeps = exactDeps drv;
+    envDeps = envDeps drv;
   } // extra-passthru;
 
   meta = {
@@ -326,4 +332,6 @@ in stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-})
+});
+
+in drv
