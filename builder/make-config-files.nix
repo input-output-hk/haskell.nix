@@ -85,9 +85,10 @@ in { identifier, component, fullName, flags ? {} }:
       find ${ghc}/lib/${ghc.name}/package.conf.d -name '${p}*.conf' -exec cp -f {} $out/package.conf.d \;
     '') nonReinstallablePkgs}
 
-    ${lib.concatMapStringsSep "\n" (p: ''
-      cp -f "${p}/package.conf.d/"*.conf $out/package.conf.d
-    '') (builtins.trace (toString (builtins.length (haskellLib.flatLibDepends component)) + " " + toString (builtins.length component.depends)) haskellLib.flatLibDepends component)}
+    ${lib.concatMapStringsSep "\n" (p: lib.optionalString (p ? components && p.components ? library) ''
+      cp -f "${p.components.library.configFiles}/package.conf.d/"*.conf $out/package.conf.d
+      cp -f "${p.components.library}/package.conf.d/"*.conf $out/package.conf.d
+    '') component.depends}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
     ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
