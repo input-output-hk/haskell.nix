@@ -9,12 +9,17 @@ let
   target-pkg = "${ghc.targetPrefix}ghc-pkg";
 
   # This is a bit of a hack.  So we'll have a slightly longer explaination here:
+
+  # Every library component built with `comp-builder.nix` includes an `exactDep`
+  # and `envDep` directory with precomputed values used here.
+  # GHC derivations include `exactDep` and `envDep` derivations that have
+  # the same information for each of the built in packages.
+
   # exactDep will pass --exact-configuration to the `SETUP_HS confiugre` command.
   # This requires us to pass --dependency={dep name}={pkg id}.  The dependency
-  # name will usually be the name of the package `p`, which we can locate in the
-  # package-db, passed in via `pdbArg`.  Thus querying the package-db for the
-  # id field for package `p`, will unsually provide is with the right value.  Sublibs
-  # need a bit of special handling:
+  # name will usually be the name of the package `p`, that will have been located
+  # in the suitable package db when the dependency (along with `exactDep` and `envDep`)
+  # was built.  Sublibs need a bit of special handling:
   #
   # - Sublibs: if the dependency is a sublibrary of a package, we need to use
   #            the sublibrary's name for the dep name, and lookup the sublibraries
