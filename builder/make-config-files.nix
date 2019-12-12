@@ -22,9 +22,14 @@ let
   #            sublib name to exactDep, as we don't have access to it at the call-site,
   #            we resort to a bit of globbing, which (as pkg db's should contain only
   #            a single package) work.
+
+  getLibComponent = dep:
+       dep.components.library # Regular package dependency
+    or dep;                   # or a sublib 
+  
   catPkgExactDep = p: ''
-    cat ${p.components.library}/exactDep/configure-flags >> $out/configure-flags
-    cat ${p.components.library}/exactDep/cabal.config >> $out/cabal.config
+    cat ${getLibComponent p}/exactDep/configure-flags >> $out/configure-flags
+    cat ${getLibComponent p}/exactDep/cabal.config >> $out/cabal.config
   '';
 
   catGhcPkgExactDep = p: ''
@@ -35,7 +40,7 @@ let
   '';
 
   catPkgEnvDep = p: ''
-    cat ${p.components.library}/envDep >> $out/ghc-environment
+    cat ${getLibComponent p}/envDep >> $out/ghc-environment
   '';
 
   catGhcPkgEnvDep = p: ''
@@ -61,9 +66,9 @@ in { identifier, component, fullName, flags ? {} }:
       find ${ghc}/lib/${ghc.name}/package.conf.d -name '${p}*.conf' -exec cp -f {} $out/package.conf.d \;
     '') nonReinstallablePkgs}
 
-    ${lib.concatMapStringsSep "\n" (p: lib.optionalString (p ? components && p.components ? library) ''
-      cp -f "${p.components.library.configFiles}/package.conf.d/"*.conf $out/package.conf.d
-      cp -f "${p.components.library}/package.conf.d/"*.conf $out/package.conf.d
+    ${lib.concatMapStringsSep "\n" (p: ''
+      cp -f "${(getLibComponent p).configFiles}/package.conf.d/"*.conf $out/package.conf.d
+      cp -f "${getLibComponent p}/package.conf.d/"*.conf $out/package.conf.d
     '') component.depends}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
