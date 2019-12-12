@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>cleanGit - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "cleanGit";
+    var mkdocs_page_input_path = "user-guide/clean-git.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../">General</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../projects/">Creating Nix builds for your projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../stack-projects/">Stack Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cabal-projects/">Cabal Projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../development/">How to create a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/library/">Haskell.nix Library</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../dev/dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/tests/">Test Suite</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../changelog/">ChangeLog</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>cleanGit</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/clean-git.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="cleangit">cleanGit<a class="headerlink" href="#cleangit" title="Permanent link">&para;</a></h1>
+<p>To filter out just the files in your git index use
+<code>haskell-nix.haskellLib.cleanGit { src = ./.; }</code> where <code>./.</code> is the
+root of your git repo (or a git work tree).</p>
+<p>First it filters just the files needed to run <code>git index</code>, then
+it uses the results of that to filter your directory.  It does not
+need to parse the <code>.gitignore</code> files at all, but we do need to
+<code>git add</code> our files before they will be included.
+<a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/clean-git.nix">cleanGit source</a>.</p>
+<p>In addition haskell.nix (including <code>cleanGit</code>) uses a version
+of <a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/clean-source-with.nix"><code>cleanSourceWith</code></a>
+with a <code>subdir</code> argument to filter out just the package it is
+building.  Then it uses the info from the <code>cabal</code> file to filter
+just the source dirs for the component it is building.  That way
+if we modify a test in a package nix will not rebuild the library
+in that package (or anything that depends on that package's library).</p>
+<p>There is a downside to this though.  If we have a test that depends
+on something outside the scope of what is described in its entry in
+the in the <code>.cabal</code> file it will not see it.  For instance perhaps
+it needs to run <code>hlint</code> or <code>doctest</code> on the library source.  There
+are ways to fix this with a module:</p>
+<p>Use <code>extraSrcFiles</code> to add dirs the test needs (this will not result
+in a change to the <code>.cabal</code> file the test will still be built the same).</p>
+<pre><code>components.tests.test.extraSrcFiles = [ &quot;subdir-needed-by-test&quot; ];
+</code></pre>
+
+<p>Or alternatively, override the source with a suitable filter function. </p>
+<pre><code>components.tests.test.src = haskell-nix.haskellLib.cleanSourceWith {
+    inherit src;
+    subdir = &quot;path-to-package&quot;;
+    filter = ...
+};
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

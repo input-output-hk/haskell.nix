@@ -307,7 +307,8 @@ unwanted builds (for instance when the contents of <code>dist-newstyle</code> ar
 modified by cabal).  It is important that <code>src</code> is the root directory
 of the repo (so <code>cleanGit</code> can find the <code>.git</code> directory).  If the project
 is not at the root of the repo, then also pass <code>subDir</code> to <code>cleanGit</code> with the
-location of the project relative to <code>src</code> as a string. For example:</p>
+location of the project relative to <code>src</code> as a string (<a href="clean-git.md">more information
+on using cleanGit</a>). For example:</p>
 <pre><code>  src = pkgs.haskell-nix.haskellLib.cleanGit
     { src = ./.; subDir = &quot;subdir/another-subdir&quot;; };
 </code></pre>
