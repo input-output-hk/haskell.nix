@@ -247,12 +247,10 @@ self: super: {
                 # It doesn't make sense to specify sha256 on a private repo
                 # because it is not used by buitins.fetchGit.
                 assert isNull sha256;
-                builtins.fetchGit {
-                  url = url;
-                  rev = rev;
-                } // self.buildPackages.lib.optionalAttrs (ref != null) {
-                  ref = ref;
-                }
+                builtins.fetchGit
+                  ({ inherit url rev; } //
+                      self.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
+                  )
               else
                 # Non-private repos must have sha256 set.
                 assert sha256 != null;
@@ -324,8 +322,10 @@ self: super: {
                       src =
                         if is-private
                         then
-                          builtins.fetchGit { inherit url rev; }
-                            // self.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
+                          builtins.fetchGit
+                            ({ inherit url rev; } //
+                              self.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
+                            )
                         else
                           self.buildPackages.pkgs.fetchgit { inherit url rev sha256; };
                     } // self.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
