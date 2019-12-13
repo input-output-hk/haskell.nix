@@ -31,6 +31,7 @@
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
+, keepSource ? component.keepSource  # Build from `source` output in the store then delete `dist`
 
 # Profiling
 , enableLibraryProfiling ? component.enableLibraryProfiling
@@ -189,7 +190,8 @@ stdenv.mkDerivation ({
 
   outputs = ["out" ]
     ++ (lib.optional enableSeparateDataOutput "data")
-    ++ (lib.optional doHaddock' "doc");
+    ++ (lib.optional doHaddock' "doc")
+    ++ (lib.optional keepSource "source");
 
   # Phases
   preInstallPhases = lib.optional doHaddock' "haddockPhase";
@@ -200,7 +202,12 @@ stdenv.mkDerivation ({
        ${buildPackages.haskell-nix.haskellPackages.hpack.components.exes.hpack}/bin/hpack
      '';
 
-  configurePhase = ''
+  configurePhase =
+    (lib.optionalString keepSource ''
+      cp -r . $source
+      cd $source
+      chmod -R +w .
+    '') + ''
     runHook preConfigure
     echo Configure flags:
     printf "%q " ${finalConfigureFlags}
@@ -322,7 +329,9 @@ stdenv.mkDerivation ({
     '')
     }
     runHook postInstall
-  '';
+  '' + (lib.optionalString keepSource ''
+    rm -rf dist
+  '');
 
   shellHook = ''
     export PATH="${shellWrappers}/bin:$PATH"

@@ -316,12 +316,18 @@ in {
   # this is relevant would be to switch from the bool type to
   # something like an anyBool type, which would merge definitions by
   # returning true if any is true.
-  config.components.all = lib.mkMerge (
-    builtins.map (c:
-      # Exclude attributes that are likely to have conflicting definitions
-      # (a common use case for `all` is in `shellFor` and it only has an
-      # install phase).
-      builtins.removeAttrs c ["preCheck" "postCheck"]
-    ) (haskellLib.getAllComponents config)
-  );
+  config.components.all =
+    let allComps = haskellLib.getAllComponents config;
+    in lib.mkMerge (
+      builtins.map (c:
+        # Exclude attributes that are likely to have conflicting definitions
+        # (a common use case for `all` is in `shellFor` and it only has an
+        # install phase).
+        builtins.removeAttrs c ["preCheck" "postCheck" "keepSource"]
+      ) allComps
+    ) // {
+      # If any one of the components needs us to keep the source
+      # then keep it for the `all` component
+      keepSource = lib.foldl' (x: comp: x || comp.keepSource) false allComps;
+    };
 }

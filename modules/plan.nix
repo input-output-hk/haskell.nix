@@ -153,6 +153,11 @@ let
       default = (def.profilingDetail or "exported-functions");
     };
 
+    keepSource = mkOption {
+      type = bool;
+      default = (def.keepSource or false);
+      description = "Keep component source in the store in a `source` output";
+    };
   };
   packageOptions = def: componentOptions def // {
     preUnpack = mkOption {

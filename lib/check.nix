@@ -12,25 +12,23 @@ in stdenv.mkDerivation ({
 
   # Useing `srcOnly` (rather than getting the `src` via a `drv.passthru`)
   # should correctly apply the patches from `drv` (if any).
-  src = srcOnly drv;
+  src = drv.source or (srcOnly drv);
 
   passthru = {
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env;
   };
 
-  inherit (drv) meta LANG LC_ALL;
+  inherit (drv) meta LANG LC_ALL buildInputs nativeBuildInputs;
 
   inherit (component) doCheck doCrossCheck;
 
-  phases = ["buildPhase" "checkPhase"];
+  phases = ["unpackPhase" "buildPhase"];
 
   # If doCheck or doCrossCheck are false we may still build this
   # component and we want it to quietly succeed.
   buildPhase = ''
     touch $out
-  '';
 
-  checkPhase = ''
     runHook preCheck
 
     ${toString component.testWrapper} ${drv}/${drv.installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
