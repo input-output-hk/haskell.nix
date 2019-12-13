@@ -56,12 +56,27 @@ let
 
 in { identifier, component, fullName, flags ? {} }:
   let
+    # we need this as ghc-pkg init won't accept being run on an existing folder.
+    # not even with --force.
     empty-pkg-db = runCommand "blank-pkg-db" { nativeBuildInputs = [ ghc ]; } (''
       ${target-pkg} init $out/package.conf.d;
     '');
+
+    # compute the package-db for thie package. This consists of copying the package
+    # information from dependencies as well as their dependencies.  If we had a pkg-db
+    # that contained the package as well as it's dependencies in a single one, we'd only
+    # need to aggregate those here instead of the dependencies(y) and their build
+    # datatabase (y.configFiles.pkg-db).
     pkg-db = buildEnv {
       name = "${fullName}-package-db";
-      paths = lib.concatLists (map (x: let y = getLibComponent x; in [ y.configFiles y ]) component.depends);
+      paths = lib.concatLists (map (x: let y = getLibComponent x; in [ y.configFiles.pkg-db y ]) component.depends);
+
+      # we just don't care for collisions here. There will inevitably be a few.
+      # each pkg-db has their own package.conf.d/package.cache(.lock) and those
+      # won't be identical, hence collide.
+      ignoreCollisions = true;
+      checkCollisionContents = false;
+
       pathsToLink = "/package.conf.d";
       buildInputs = [ ghc ];
       postBuild = ''
