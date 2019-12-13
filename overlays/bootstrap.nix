@@ -208,10 +208,15 @@ in {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";
                 ghc = self.buildPackages.haskell-nix.compiler.ghc865;
+                cabal-install = self.buildPackages.haskell-nix.cabal-install;
+                # The alex from the bootstrap packages is apparently broken, and will fail with something like:
+                # > alex: /nix/store/f7b78rg9pmqgvxvsqfzh1przp7pxii5a-alex-3.2.4-exe-alex/share/x86_64-osx-ghc-8.4.4/alex-3.2.4-1pf5faR9dBuJ8mryql0DoA-alex/AlexTemplate-ghc-nopred: openFile: does not exist (No such file or directory)
+                # inherit (self.buildPackages.haskell-nix.bootstrap.packages) alex happy;
             }; in let targetPrefix = "js-unknown-ghcjs-"; in self.runCommand "${targetPrefix}ghc-8.6.5" {
                 passthru = {
                     inherit targetPrefix;
                     version = "8.6.5";
+                    isHaskellNixCompiler = true;
                 };
             } ''
                 mkdir -p $out/bin

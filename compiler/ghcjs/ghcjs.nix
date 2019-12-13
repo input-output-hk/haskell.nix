@@ -50,6 +50,9 @@ let
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
     ghcjs = (pkgs.buildPackages.haskell-nix.cabalProject {
         src = configured-src;
+        index-state = "2019-12-10T00:00:00Z";
+        plan-sha256 = "0kkwaakkwgvs0cpxkaw3w52yxl55y8scrdj4q83w7m07dpjymqph";
+        materialized = ../../materialized/ghcjs;
         inherit ghc;
         modules = [
             {
@@ -99,6 +102,9 @@ in pkgs.stdenv.mkDerivation {
     ];
     passthru = {
         inherit all-ghcjs;
+
+        # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
+        isHaskellNixCompiler = true;
     } // ghcjs.components.exes;
     dontConfigure = true;
     dontInstall = true;
