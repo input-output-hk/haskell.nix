@@ -1,6 +1,11 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## December 12, 2019
+  * Fixed `haskell-nix.callCabalToNix` so that it imports the
+    generated package description from the derivation, instead
+    of simply returning the derivation.
+
 ## November 18, 2019
   * Changed the `cleanSourceHaskell` to accept an attrset of `src` and
     (optional) `name` parameters. This allows you to keep the source

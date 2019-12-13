@@ -218,16 +218,17 @@ self: super: {
         # given a source location call `cabal-to-nix` (from nix-tools) on it
         # to produce the nix representation of it.
         callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
-            self.buildPackages.pkgs.runCommand "${name}.nix" {
-                nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
+            let
+                nixDrv = self.buildPackages.pkgs.runCommand "${name}.nix" {
+                    nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
 
-                LOCALE_ARCHIVE = self.lib.optionalString (self.stdenv.buildPlatform.libc == "glibc") "${self.buildPackages.glibcLocales}/lib/locale/locale-archive";
-                LANG = "en_US.UTF-8";
-                LC_ALL = "en_US.UTF-8";
-            } ''
-            cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
-            '';
-
+                    LOCALE_ARCHIVE = self.lib.optionalString (self.stdenv.buildPlatform.libc == "glibc") "${self.buildPackages.glibcLocales}/lib/locale/locale-archive";
+                    LANG = "en_US.UTF-8";
+                    LC_ALL = "en_US.UTF-8";
+                } ''
+                cabal-to-nix "${src}" "${src}/${cabal-file}" > "$out"
+                '';
+            in import nixDrv;
 
         # Given a single cache entry:
         # { name = ...; url = ...; rev = ...; ref = ...; sha256 = ...; cabal-file = ...; type = ...; is-private = ...; }
