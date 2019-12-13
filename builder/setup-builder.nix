@@ -70,7 +70,7 @@ in
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded '' + (if includeGhcPackage then "-package ghc " else "")
-                + ''-package-db ${configFiles}/package.conf.d --make -o ./Setup
+                + ''-package-db ${configFiles.pkg-db}/package.conf.d --make -o ./Setup
             setup=$(pwd)/Setup
           fi
         done

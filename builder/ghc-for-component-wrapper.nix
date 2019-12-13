@@ -45,7 +45,7 @@ in runCommand "${componentName}-${ghc.name}" {
       ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/shims ${libDir}
     fi
     # Replace the package database with the one from target package config.
-    ln -s ${configFiles}/package.conf.d ${packageCfgDir}
+    ln -s ${configFiles.pkg-db}/package.conf.d ${packageCfgDir}
 
     # Wrap compiler executables with correct env variables.
     # The NIX_ variables are used by the patched Paths_ghc module.
@@ -88,7 +88,7 @@ in runCommand "${componentName}-${ghc.name}" {
     for prg in ${ghcCommand}-pkg ${ghcCommand}-pkg-${ghc.version}; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
         rm -f $out/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $out/bin/$prg --add-flags "--global-package-db=${packageCfgDir}"
+        makeWrapper ${ghc}/bin/$prg $out/bin/$prg --add-flags "--global-package-db=${configFiles.pkg-db}/package.conf.d"
       fi
     done
 
