@@ -1,4 +1,36 @@
-self: super: {
+self: super:
+let
+    exactDeps = ghc: self.runCommand "ghc-exactdep-${ghc.version}" { nativeBuildInputs = [ ghc ]; } ''
+      for P in $(${ghc.targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
+        mkdir -p $out/$P
+        touch $out/$P/configure-flags
+        touch $out/$P/cabal.config
+
+        if id=$(${ghc.targetPrefix}ghc-pkg field $P id --simple-output); then
+          echo "--dependency=$P=$id" >> $out/$P/configure-flags
+        elif id=$(${ghc.targetPrefix}ghc-pkg field "z-$P-z-*" id --simple-output); then
+          name=$(${ghc.targetPrefix}ghc-pkg field "z-$P-z-*" name --simple-output)
+          # so we are dealing with a sublib. As we build sublibs separately, the above
+          # query should be safe.
+          echo "--dependency=''${name#z-$P-z-}=$id" >> $out/$P/configure-flags
+        fi
+        if ver=$(${ghc.targetPrefix}ghc-pkg field $P version --simple-output); then
+          echo "constraint: $P == $ver" >> $out/$P/cabal.config
+          echo "constraint: $P installed" >> $out/$P/cabal.config
+        fi
+      done
+    '';
+
+    envDeps = ghc: self.runCommand "ghc-envdep-${ghc.version}" { nativeBuildInputs = [ ghc ]; } ''
+      mkdir -p $out
+      for P in $(${ghc.targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9.]*//g'); do
+        touch $out/$P
+        if id=$(${ghc.targetPrefix}ghc-pkg field $P id --simple-output); then
+          echo "package-id $id" >> $out/$P
+        fi
+      done
+    '';
+in {
   haskell-nix = super.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
@@ -73,7 +105,7 @@ self: super: {
             ghc844 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc844; };
 
-                inherit bootPkgs sphinx;
+                inherit bootPkgs sphinx exactDeps envDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -91,7 +123,7 @@ self: super: {
             ghc861 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc861; };
 
-                inherit bootPkgs sphinx;
+                inherit bootPkgs sphinx exactDeps envDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -107,7 +139,7 @@ self: super: {
             ghc862 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc862; };
 
-                inherit bootPkgs sphinx;
+                inherit bootPkgs sphinx exactDeps envDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -124,7 +156,7 @@ self: super: {
             ghc863 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc863; };
 
-                inherit bootPkgs sphinx;
+                inherit bootPkgs sphinx exactDeps envDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -141,7 +173,7 @@ self: super: {
             ghc864 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc864; };
 
-                inherit bootPkgs sphinx;
+                inherit bootPkgs sphinx exactDeps envDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -158,7 +190,7 @@ self: super: {
             ghc865 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc865; };
 
-                inherit bootPkgs sphinx;
+                inherit bootPkgs sphinx exactDeps envDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -231,7 +263,13 @@ self: super: {
         # compilers into the same place where nix expects them.
         # We mark these compilers as boot compilers to make sure they are only used
         # where a boot compiler is expected.
-        compiler = builtins.mapAttrs (_: v: v // { isHaskellNixBootCompiler = true; })
+        compiler = builtins.mapAttrs (_: v:
+            v // {
+              isHaskellNixBootCompiler = true;
+              exactDeps = exactDeps v;
+              envDeps = envDeps v;
+            }
+          )
           (import ../compiler/old-ghc-nix { pkgs = self; });
 
         packages = {

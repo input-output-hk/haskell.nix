@@ -9,12 +9,17 @@ let
   target-pkg = "${ghc.targetPrefix}ghc-pkg";
 
   # This is a bit of a hack.  So we'll have a slightly longer explaination here:
+
+  # Every library component built with `comp-builder.nix` includes an `exactDep`
+  # and `envDep` directory with precomputed values used here.
+  # GHC derivations include `exactDep` and `envDep` derivations that have
+  # the same information for each of the built in packages.
+
   # exactDep will pass --exact-configuration to the `SETUP_HS confiugre` command.
   # This requires us to pass --dependency={dep name}={pkg id}.  The dependency
-  # name will usually be the name of the package `p`, which we can locate in the
-  # package-db, passed in via `pdbArg`.  Thus querying the package-db for the
-  # id field for package `p`, will unsually provide is with the right value.  Sublibs
-  # need a bit of special handling:
+  # name will usually be the name of the package `p`, that will have been located
+  # in the suitable package db when the dependency (along with `exactDep` and `envDep`)
+  # was built.  Sublibs need a bit of special handling:
   #
   # - Sublibs: if the dependency is a sublibrary of a package, we need to use
   #            the sublibrary's name for the dep name, and lookup the sublibraries
@@ -22,52 +27,33 @@ let
   #            sublib name to exactDep, as we don't have access to it at the call-site,
   #            we resort to a bit of globbing, which (as pkg db's should contain only
   #            a single package) work.
-  exactDep = pdbArg: p: nativeBuildInputs:  runCommand "${p}-exactdep" { inherit nativeBuildInputs; } ''
-    mkdir -p $out
-    touch $out/configure-flags
-    touch $out/cabal.config
 
-    if id=$(${target-pkg} ${pdbArg} field ${p} id --simple-output); then
-      echo "--dependency=${p}=$id" >> $out/configure-flags
-    elif id=$(${target-pkg} ${pdbArg} field "z-${p}-z-*" id --simple-output); then
-      name=$(${target-pkg} ${pdbArg} field "z-${p}-z-*" name --simple-output)
-      # so we are dealing with a sublib. As we build sublibs separately, the above
-      # query should be safe.
-      echo "--dependency=''${name#z-${p}-z-}=$id" >> $out/configure-flags
-    fi
-    if ver=$(${target-pkg} ${pdbArg} field ${p} version --simple-output); then
-      echo "constraint: ${p} == $ver" >> $out/cabal.config
-      echo "constraint: ${p} installed" >> $out/cabal.config
+  getLibComponent = dep:
+       dep.components.library # Regular package dependency
+    or dep;                   # or a sublib 
+  
+  catPkgExactDep = p: ''
+    cat ${getLibComponent p}/exactDep/configure-flags >> $out/configure-flags
+    cat ${getLibComponent p}/exactDep/cabal.config >> $out/cabal.config
+  '';
+
+  catGhcPkgExactDep = p: ''
+    if [ -e ${ghc.exactDeps}/${p} ]; then
+      cat ${ghc.exactDeps}/${p}/configure-flags >> $out/configure-flags
+      cat ${ghc.exactDeps}/${p}/cabal.config >> $out/cabal.config
     fi
   '';
 
-  catExactDep = dep: ''
-    cat ${dep}/configure-flags >> $out/configure-flags
-    cat ${dep}/cabal.config >> $out/cabal.config
+  catPkgEnvDep = p: ''
+    cat ${getLibComponent p}/envDep >> $out/ghc-environment
   '';
 
-  catPkgExactDep = p:
-    catExactDep (exactDep (packageDb p) p.identifier.name [ghc (p.components.library or p)]);
-
-  catGhcPkgExactDep = p: catExactDep (exactDep "" p [ghc]);
-
-  envDep = pdbArg: p: nativeBuildInputs: runCommand "${p}-envdep" { inherit nativeBuildInputs; } ''
-    touch $out
-    if id=$(${target-pkg} ${pdbArg} field ${p} id --simple-output); then
-      echo "package-id $id" >> $out
+  catGhcPkgEnvDep = p: ''
+    if [ -e ${ghc.envDeps}/${p} ]; then
+      cat ${ghc.envDeps}/${p} >> $out/ghc-environment
     fi
   '';
 
-  catEnvDep = ghcEnv: ''
-    cat ${ghcEnv} >> $out/ghc-environment
-  '';
-
-  catPkgEnvDep = p:
-    catEnvDep (envDep (packageDb p) p.identifier.name [ghc (p.components.library or p)]);
-
-  catGhcPkgEnvDep = p: catEnvDep (envDep "" p [ghc]);
-
-  packageDb = p: "--package-db ${p.components.library or p}/package.conf.d";
 in { identifier, component, fullName, flags ? {} }:
   runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out
@@ -86,8 +72,9 @@ in { identifier, component, fullName, flags ? {} }:
     '') nonReinstallablePkgs}
 
     ${lib.concatMapStringsSep "\n" (p: ''
-      cp -f "${p}/package.conf.d/"*.conf $out/package.conf.d
-    '') (haskellLib.flatLibDepends component)}
+      cp -f "${(getLibComponent p).configFiles}/package.conf.d/"*.conf $out/package.conf.d
+      cp -f "${getLibComponent p}/package.conf.d/"*.conf $out/package.conf.d
+    '') component.depends}
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
     ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
