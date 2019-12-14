@@ -126,7 +126,7 @@ self: super: {
             }@args:
 
             let
-                pkg-def = plan-pkgs.pkgs;
+                pkg-def = excludeBootPackages plan-pkgs.pkgs;
                 # The compiler referenced in the stack config
                 compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};

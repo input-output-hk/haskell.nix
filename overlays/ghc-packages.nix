@@ -38,8 +38,11 @@ let
 
   ghc-extra-pkgs = {
       ghc          = "compiler";
+      base         = "libraries/base";
+      bytestring   = "libraries/bytestring";
       ghci         = "libraries/ghci";
       ghc-boot     = "libraries/ghc-boot";
+      ghc-heap     = "libraries/ghc-heap";
       libiserv     = "libraries/libiserv";
       iserv        = "utils/iserv";
       remote-iserv = "utils/remote-iserv";
