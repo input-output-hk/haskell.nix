@@ -96,6 +96,7 @@ in {
                 ++ always                    ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
                 ++ always                    ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
                 ++ always                    ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
+                ++ from      "8.8"           ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
 
                 # Patches for specific ghc versions.
                 ++ self.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
