@@ -443,7 +443,7 @@ self: super: {
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865");
+            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc881");
           in self.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
@@ -457,6 +457,7 @@ self: super: {
             happy = self.buildPackages.haskell-nix.bootstrap.packages.happy;
             hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
+            ghc881 = self.buildPackages.haskell-nix.compiler.ghc8881;
             ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {
