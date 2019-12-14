@@ -70,8 +70,11 @@ in rec {
       (pkgName: dir: importCabal "${name}-${pkgName}" "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
     self.buildPackages.haskell-nix.compiler;
 
-  ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value: let package-locs = builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs; in
-    self.writeTextFile {
+  ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:
+    let package-locs =
+      builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}")
+        (self.lib.filterAttrs (n: _: n == "base") ghc-extra-pkgs);
+    in self.writeTextFile {
       name = "ghc-extra-pkgs-cabal-project-${name}";
       destination = "/cabal.project";
       text = ''
