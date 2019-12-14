@@ -1,7 +1,7 @@
 diff --git a/libraries/Cabal/Cabal/Distribution/Simple.hs b/libraries/Cabal/Cabal/Distribution/Simple.hs
 index e632acc88..1a687bb2e 100644
---- a/Cabal/Distribution/Simple.hs
-+++ b/Cabal/Distribution/Simple.hs
+--- a/libraries/Cabal/Cabal/Distribution/Simple.hs
++++ b/libraries/Cabal/Cabal/Distribution/Simple.hs
 @@ -755,7 +755,7 @@ runConfigureScript verbosity backwardsCompatHack flags lbi = do
                  [("PATH", Just pathEnv) | not (null extraPath)]
        hp = hostPlatform lbi
