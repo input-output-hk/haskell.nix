@@ -73,7 +73,7 @@ in rec {
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:
     let package-locs =
       builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}")
-        (self.lib.filterAttrs (n: _: n != "base" && n != "bytestring") ghc-extra-pkgs);
+        (self.lib.filterAttrs (n: _: n != "base" && n != "bytestring" && n != "ghc-heap") ghc-extra-pkgs);
     in self.writeTextFile {
       name = "ghc-extra-pkgs-cabal-project-${name}";
       destination = "/cabal.project";
