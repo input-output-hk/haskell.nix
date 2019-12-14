@@ -75,6 +75,7 @@ in {
                 ++ self.lib.optional (versionOlder "8.6.4")                           ./patches/ghc/MR95--ghc-pkg-deadlock-fix.patch
                 ++ self.lib.optional (versionAtLeast "8.6" && versionOlder "8.8")     ./patches/ghc/iserv-proxy-cleanup.patch                             # https://gitlab.haskell.org/ghc/ghc/merge_requests/250  -- merged; ghc-8.8.1
                 ++ self.lib.optional (versionAtLeast "8.6")                           ./patches/ghc/iserv-proxy-cleanup-2.patch
+                ++ self.lib.optional (versionAtLeast "8.8")                            ./patches/ghc/iserv-proxy-cleanup-3.patch
                 ++ self.lib.optional (versionAtLeast "8.2" && versionOlder "8.8")     ./patches/ghc/MR545--ghc-pkg-databases.patch                        # https://gitlab.haskell.org/ghc/ghc/merge_requests/545  -- merged; ghc-8.8.1
                 ++ self.lib.optional (versionAtLeast "8.6" && versionOlder "8.8")     ./patches/ghc/outputtable-assert-8.6.patch
                 ++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")   ./patches/ghc/ghc-8.6.4-reenable-th-qq-in-stage1.patch
