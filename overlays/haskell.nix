@@ -387,8 +387,7 @@ self: super: {
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
-            { name ? null
-            , ... }@args:
+            { ... }@args:
             let plan = importAndFilterProject (callCabalProjectToNix args);
             in let pkg-set = mkCabalProjectPkgSet
                 { plan-pkgs = plan.pkgs;

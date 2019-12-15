@@ -5,7 +5,6 @@ with stdenv.lib;
 
 let
   project = haskell-nix.cabalProject' {
-    name = "exe-only";
     src = ./.;
   };
 
