@@ -6,7 +6,6 @@ let
   # This test could use cabalProject', but it does so that it
   # tests using callCabalProjectToNix and importAndFilterProject
   plan = (importAndFilterProject (callCabalProjectToNix {
-    name = "test-call-cabal-project-to-nix";
     index-state = "2019-04-30T00:00:00Z";
     # reuse the cabal-simple test project
     src = ../cabal-simple;

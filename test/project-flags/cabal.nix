@@ -4,7 +4,6 @@ with stdenv.lib;
 
 let
   project = cabalProject' {
-    name = "test-project-flags";
     index-state = "2019-04-30T00:00:00Z";
     src = ./.;
   };
