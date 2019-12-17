@@ -12,7 +12,7 @@ let
 
   # Every library component built with `comp-builder.nix` includes an `exactDep`
   # and `envDep` directory with precomputed values used here.
-  # GHC derivations include `exactDep` and `envDep` derivations that have
+  # GHC derivations include `exactDep` and `envDep` directories that have
   # the same information for each of the built in packages.
 
   # exactDep will pass --exact-configuration to the `SETUP_HS confiugre` command.
@@ -38,9 +38,9 @@ let
   '';
 
   catGhcPkgExactDep = p: ''
-    if [ -e ${ghc.exactDeps}/${p} ]; then
-      cat ${ghc.exactDeps}/${p}/configure-flags >> $out/configure-flags
-      cat ${ghc.exactDeps}/${p}/cabal.config >> $out/cabal.config
+    if [ -e ${ghc}/exactDeps/${p} ]; then
+      cat ${ghc}/exactDeps/${p}/configure-flags >> $out/configure-flags
+      cat ${ghc}/exactDeps/${p}/cabal.config >> $out/cabal.config
     fi
   '';
 
@@ -49,8 +49,8 @@ let
   '';
 
   catGhcPkgEnvDep = p: ''
-    if [ -e ${ghc.envDeps}/${p} ]; then
-      cat ${ghc.envDeps}/${p} >> $out/ghc-environment
+    if [ -e ${ghc}/envDeps/${p} ]; then
+      cat ${ghc}/envDeps/${p} >> $out/ghc-environment
     fi
   '';
 
