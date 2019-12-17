@@ -1,32 +1,30 @@
 self: super:
 let
-    exactDeps = ghc: self.runCommand "ghc-exactdep-${ghc.version}" { nativeBuildInputs = [ ghc ]; } ''
-      for P in $(${ghc.targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
-        mkdir -p $out/$P
-        touch $out/$P/configure-flags
-        touch $out/$P/cabal.config
+    installDeps = targetPrefix: ''
+      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
+        mkdir -p $out/exactDeps/$P
+        touch $out/exactDeps/$P/configure-flags
+        touch $out/exactDeps/$P/cabal.config
 
-        if id=$(${ghc.targetPrefix}ghc-pkg field $P id --simple-output); then
-          echo "--dependency=$P=$id" >> $out/$P/configure-flags
-        elif id=$(${ghc.targetPrefix}ghc-pkg field "z-$P-z-*" id --simple-output); then
-          name=$(${ghc.targetPrefix}ghc-pkg field "z-$P-z-*" name --simple-output)
+        if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
+          echo "--dependency=$P=$id" >> $out/exactDeps/$P/configure-flags
+        elif id=$($out/bin/${targetPrefix}ghc-pkg field "z-$P-z-*" id --simple-output); then
+          name=$($out/bin/${targetPrefix}ghc-pkg field "z-$P-z-*" name --simple-output)
           # so we are dealing with a sublib. As we build sublibs separately, the above
           # query should be safe.
-          echo "--dependency=''${name#z-$P-z-}=$id" >> $out/$P/configure-flags
+          echo "--dependency=''${name#z-$P-z-}=$id" >> $out/exactDeps/$P/configure-flags
         fi
-        if ver=$(${ghc.targetPrefix}ghc-pkg field $P version --simple-output); then
-          echo "constraint: $P == $ver" >> $out/$P/cabal.config
-          echo "constraint: $P installed" >> $out/$P/cabal.config
+        if ver=$($out/bin/${targetPrefix}ghc-pkg field $P version --simple-output); then
+          echo "constraint: $P == $ver" >> $out/exactDeps/$P/cabal.config
+          echo "constraint: $P installed" >> $out/exactDeps/$P/cabal.config
         fi
       done
-    '';
 
-    envDeps = ghc: self.runCommand "ghc-envdep-${ghc.version}" { nativeBuildInputs = [ ghc ]; } ''
-      mkdir -p $out
-      for P in $(${ghc.targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9.]*//g'); do
-        touch $out/$P
-        if id=$(${ghc.targetPrefix}ghc-pkg field $P id --simple-output); then
-          echo "package-id $id" >> $out/$P
+      mkdir -p $out/evalDeps
+      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9.]*//g'); do
+        touch $out/evalDeps/$P
+        if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
+          echo "package-id $id" >> $out/evalDeps/$P
         fi
       done
     '';
@@ -110,7 +108,7 @@ in {
             ghc844 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc844; };
 
-                inherit bootPkgs sphinx exactDeps envDeps;
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -128,7 +126,7 @@ in {
             ghc861 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc861; };
 
-                inherit bootPkgs sphinx exactDeps envDeps;
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -144,7 +142,7 @@ in {
             ghc862 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc862; };
 
-                inherit bootPkgs sphinx exactDeps envDeps;
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -161,7 +159,7 @@ in {
             ghc863 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc863; };
 
-                inherit bootPkgs sphinx exactDeps envDeps;
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -178,7 +176,7 @@ in {
             ghc864 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc864; };
 
-                inherit bootPkgs sphinx exactDeps envDeps;
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -195,7 +193,7 @@ in {
             ghc865 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc865; };
 
-                inherit bootPkgs sphinx exactDeps envDeps;
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
@@ -286,10 +284,10 @@ in {
         # We mark these compilers as boot compilers to make sure they are only used
         # where a boot compiler is expected.
         compiler = builtins.mapAttrs (_: v:
-            v // {
+            v.overrideAttrs (drv: {
+              postInstall = (drv.postInstall or "") + installDeps "";
+            }) // {
               isHaskellNixBootCompiler = true;
-              exactDeps = exactDeps v;
-              envDeps = envDeps v;
             }
           )
           (import ../compiler/old-ghc-nix { pkgs = self; });
