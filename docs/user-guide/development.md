@@ -108,7 +108,9 @@ selects packages from the larger package set.
 ```nix
 # shell.nix
 let
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
+  src = builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz;
+  nixpkgs = import (src + "/nixpkgs") (import src);
+  haskell = nixpkgs.haskell-nix;
 in
   haskell.haskellPackages.ghcWithPackages (ps: with ps;
     [ lens conduit conduit-extra ])
@@ -125,7 +127,9 @@ project.
 
 ```nix
 let
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
+  src = builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz;
+  nixpkgs = import (src + "/nixpkgs") (import src);
+  haskell = nixpkgs.haskell-nix;
 in
   haskell.snapshots."lts-13.18".alex.components.exes.alex
 ```
