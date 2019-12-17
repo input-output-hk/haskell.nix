@@ -210,7 +210,7 @@ in {
             ghc881 = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc881; };
 
-                inherit bootPkgs sphinx exactDeps envDeps;
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_5;
                 llvmPackages = self.llvmPackages_5;
