@@ -412,14 +412,17 @@ self: super: {
         stackProject' =
             { ... }@args:
             let stack = importAndFilterProject (callStackToNix ({ inherit cache; } // args));
-                cache = if args ? cache
-                        then builtins.trace
-                            "warning: passing `cache' to `stackProject' is deprecated. See #335 #358"
-                            args.cache
-                        else genStackCache {
-                            inherit (args) src;
-                            stackYaml = args.stackYaml or "stack.yaml";
-                        };
+                generatedCache = genStackCache {
+                    inherit (args) src;
+                    stackYaml = args.stackYaml or "stack.yaml";
+                };
+                cache = args.cache or (builtins.trace
+                    (builtins.trace ''
+                        Automatically generated cache for this project.
+                        You can pass it as a cache argument to speed up builds:
+                    ''
+                    # Force evaluation so that tracing prints out the whole list
+                    (builtins.deepSeq generatedCache generatedCache)) generatedCache);
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = stack.pkgs;
                   pkg-def-extras = (args.pkg-def-extras or []);

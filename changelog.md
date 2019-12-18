@@ -1,9 +1,6 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## December 10, 2019
-  * Now the `cache` attribute of `stackProject` is not required and is going to be deprecated.
-
 ## November 18, 2019
   * Changed the `cleanSourceHaskell` to accept an attrset of `src` and
     (optional) `name` parameters. This allows you to keep the source
