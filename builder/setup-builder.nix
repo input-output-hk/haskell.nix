@@ -5,11 +5,10 @@
 , prePatch ? null, postPatch ? null
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
+, cleanSrc ? haskellLib.cleanCabalComponent package component src
 }:
 
 let
-  cleanSrc = haskellLib.cleanCabalComponent package component src;
-
   fullName = "${name}-setup";
 
   includeGhcPackage = lib.any (p: p.identifier.name == "ghc") component.depends;
@@ -70,7 +69,7 @@ in
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded '' + (if includeGhcPackage then "-package ghc " else "")
-                + ''-package-db ${configFiles.pkg-db}/package.conf.d --make -o ./Setup
+                + ''-package-db ${configFiles}/package.conf.d --make -o ./Setup
             setup=$(pwd)/Setup
           fi
         done

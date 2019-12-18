@@ -102,7 +102,7 @@ in pkgs.stdenv.mkDerivation {
     ];
     passthru = {
         inherit all-ghcjs;
-
+        inherit configured-src;
         # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
         isHaskellNixCompiler = true;
     } // ghcjs.components.exes;

@@ -169,7 +169,7 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
+  }) (builtins.trace "[${if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs"}] cabal new-configure --with-ghc=${ghc.targetPrefix}ghc --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg" (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
     # Needed or stack-to-nix will die on unicode inputs
     LANG = "en_US.UTF-8";
@@ -241,5 +241,5 @@ let
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
-  '');
+  ''));
 in { projectNix = plan-nix; inherit src; inherit (fixedProject) sourceRepos; }

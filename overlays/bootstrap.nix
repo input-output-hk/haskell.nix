@@ -203,11 +203,22 @@ in {
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
             };
-        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false) {
-            ghc865 = let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
+        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
+                # This will inject `exactDeps` and `envDeps`  into the ghcjs
+                # compiler defined below.  This is crucial to build packages
+                # with the current use of env and exact Deps.
+                (builtins.mapAttrs
+                    (_: v: v // {
+                        isHaskellNixBootCompiler = true;
+                        exactDeps = exactDeps v;
+                        envDeps = envDeps v;
+                    })
+          ({
+            ghc865 = let buildGHC = self.buildPackages.haskell-nix.compiler.ghc865;
+                in let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";
-                ghc = self.buildPackages.haskell-nix.compiler.ghc865;
+                ghc = buildGHC;
                 cabal-install = self.buildPackages.haskell-nix.cabal-install;
                 # The alex from the bootstrap packages is apparently broken, and will fail with something like:
                 # > alex: /nix/store/f7b78rg9pmqgvxvsqfzh1przp7pxii5a-alex-3.2.4-exe-alex/share/x86_64-osx-ghc-8.4.4/alex-3.2.4-1pf5faR9dBuJ8mryql0DoA-alex/AlexTemplate-ghc-nopred: openFile: does not exist (No such file or directory)
@@ -217,6 +228,9 @@ in {
                     inherit targetPrefix;
                     version = "8.6.5";
                     isHaskellNixCompiler = true;
+                    inherit (ghcjs865) configured-src;
+                    inherit buildGHC;
+                    extraConfigureFlags = [ "--ghcjs" "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg" ];
                 };
             } ''
                 mkdir -p $out/bin
@@ -229,7 +243,7 @@ in {
                 cd lib
                 cp -R ${ghcjs865}/lib/ghcjs-8.6.5 ${targetPrefix}ghc-8.6.5
                 '';
-        });
+        })));
 
     ghc = self.haskell-nix.compiler.ghc865;
     cabal-install = self.buildPackages.haskell-nix.bootstrap.packages.cabal-install;
