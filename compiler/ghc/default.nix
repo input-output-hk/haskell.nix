@@ -13,7 +13,7 @@
 
 , libiconv ? null, ncurses
 
-, exactDeps, envDeps
+, installDeps
 
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
@@ -300,7 +300,7 @@ in let configured-src = stdenv.mkDerivation (rec {
       egrep --quiet '^#!' <(head -n 1 $i) || continue
       sed -i -e '2i export PATH="$PATH:${stdenv.lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' $i
     done
-  '';
+  '' + installDeps targetPrefix;
 
   passthru = {
     inherit bootPkgs targetPrefix;
@@ -315,10 +315,6 @@ in let configured-src = stdenv.mkDerivation (rec {
 
     # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
-
-    # These are used in make-config-files.nix
-    exactDeps = exactDeps drv;
-    envDeps = envDeps drv;
   } // extra-passthru;
 
   meta = {
