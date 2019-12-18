@@ -304,7 +304,9 @@ operates on a Haskell.nix package set, and accepts an argument that
 selects packages from the larger package set.</p>
 <pre><code class="nix"># shell.nix
 let
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+  src = builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz;
+  nixpkgs = import (src + &quot;/nixpkgs&quot;) (import src);
+  haskell = nixpkgs.haskell-nix;
 in
   haskell.haskellPackages.ghcWithPackages (ps: with ps;
     [ lens conduit conduit-extra ])
@@ -317,7 +319,9 @@ of <code>ghcWithPackages</code>.</p>
 it to build packages from a given snapshot, without setting up a full
 project.</p>
 <pre><code class="nix">let
-  haskell = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+  src = builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz;
+  nixpkgs = import (src + &quot;/nixpkgs&quot;) (import src);
+  haskell = nixpkgs.haskell-nix;
 in
   haskell.snapshots.&quot;lts-13.18&quot;.alex.components.exes.alex
 </code></pre>
