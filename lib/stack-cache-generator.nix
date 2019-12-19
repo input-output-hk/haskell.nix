@@ -10,6 +10,9 @@ let
        sha256 = "1xnx5baj3k29iy8ccppn28ayf4483zddrvq6fikfpvblzp5zrnaj";
     }}/lib.nix" pkgs;
 
+    # All repos served via ssh or git protocols are usually private
+    private = url: pkgs.lib.substring 0 4 url != "http";
+    
     deps = (s2n.importYAML "${src}/${stackYaml}").extra-deps or [ ];
     hashPath = path:
         builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
@@ -31,5 +34,6 @@ concatMap (dep:
                 rev = dep.commit;
                 url = dep.git;
                 sha256 = hashPath pkgsrc;
+                is-private = private dep.git;
             } // (optionalAttrs (subdir != "") { inherit subdir; }))
         (dep.subdirs or [ "" ])) deps
