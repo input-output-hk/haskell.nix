@@ -29,11 +29,11 @@ concatMap (dep:
                 rev = dep.commit;
             };
         in map (subdir:
-            {
+            rec {
                 name = s2n.cabalPackageName "${pkgsrc}/${subdir}";
                 rev = dep.commit;
                 url = dep.git;
-                sha256 = hashPath pkgsrc;
-                is-private = private dep.git;
+                is-private = private url;
+                sha256 = if is-private then hashPath pkgsrc else null;
             } // (optionalAttrs (subdir != "") { inherit subdir; }))
         (dep.subdirs or [ "" ])) deps
