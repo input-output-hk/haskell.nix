@@ -29,6 +29,19 @@ For =cabal.project= project add a =default.nix=:
   }
 #+end_src
 
+Note that you'll need to add a comment specifying the expected sha256
+output for your =source-repository-packages= in your =cabal.project=
+file:
+
+#+begin_src sh
+source-repository-package
+  type: git
+  location: https://github.com/input-output-hk/iohk-monitoring-framework
+  subdir:   plugins/backend-editor
+  tag: 4956b32f039579a0e7e4fd10793f65b4c77d9044
+  --sha256: 03lyb2m4i6p7rpjqarnhsx21nx48fwk6rzsrx15k6274a4bv0pix
+#+end_src
+
 For a =stack.yaml= project add a =default.nix=:
 
 #+begin_src sh
