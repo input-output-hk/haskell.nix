@@ -236,18 +236,20 @@ stdenv.mkDerivation ({
       "--html" \
       ${lib.optionalString doHoogle "--hoogle"} \
       ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-      ${lib.concatStringsSep " " (component.setupHaddockFlags ++ setupGhcOptions)} \
+      ${lib.concatStringsSep " " (component.setupHaddockFlags ++ setupGhcOptions)}
 
     html="dist/doc/html/${componentId.cname}"
 
-    # Ensure that libraries are not pulled into the docs closure.
-    # As an example, the prettified source code of a
-    # Paths_package module will contain store paths of the library package.
-    for x in "$html/src/"*.html; do
-      remove-references-to -t $out $x
-    done
-    
-    cp -R "$html" "$docdir"/html
+    if [ -d "$html" ]; then
+       # Ensure that libraries are not pulled into the docs closure.
+       # As an example, the prettified source code of a
+       # Paths_package module will contain store paths of the library package.
+       for x in "$html/src/"*.html; do
+         remove-references-to -t $out $x
+       done
+
+       cp -R "$html" "$docdir"/html
+    fi
     }
     runHook postHaddock
   '';
