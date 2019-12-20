@@ -604,6 +604,21 @@ index 0000000..f944f7a
 +#include "ghc_boot_platform.h"
 +#include "config.hs-incl"
 \ No newline at end of file
+diff -u a/compiler/main/DynFlags.hs b/compiler/main/DynFlags.hs
+--- a/compiler/main/DynFlags.hs
++++ b/compiler/main/DynFlags.hs
+@@ -250,8 +250,9 @@
+ import GHC.Foreign (withCString, peekCString)
+ import qualified GHC.LanguageExtensions as LangExt
+ 
+-#if defined(GHCI)
+-import Foreign (Ptr) -- needed for 2nd stage
++#if GHC_STAGE >= 2
++-- used by SHARED_GLOBAL_VAR
++import Foreign (Ptr)
+ #endif
+ 
+ -- Note [Updating flag description in the User's Guide]
 diff --git a/compiler/nativeGen/PPC/CodeGen.hs b/compiler/nativeGen/PPC/CodeGen.hs
 index 88b9692..d73de55 100644
 --- a/compiler/nativeGen/PPC/CodeGen.hs
