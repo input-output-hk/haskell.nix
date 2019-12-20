@@ -33,6 +33,7 @@ pkgs:
      magic = pkgs.file;
      pq = pkgs.postgresql;
      iconv = pkgs.libiconv;
+     lapack = pkgs.liblapack;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
