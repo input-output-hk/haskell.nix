@@ -235,7 +235,9 @@ let
       chmod +w -R $out/.source-repository-packages
       rm -rf $out/.source-repository-packages
     fi
-    find $out -type f ! -name '*.nix' -exec rm "{}" \;
+    find $out -type f ! -name '*.nix' -delete
+    # Remove empty dirs
+    find $out -type d -empty -delete
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
