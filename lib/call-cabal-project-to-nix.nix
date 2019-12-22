@@ -231,7 +231,13 @@ let
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly
     # without affecting the nix).
-    find $out -type f ! -name '*.nix' -exec rm "{}" \;
+    if [ -d $out/.source-repository-packages ]; then
+      chmod +w -R $out/.source-repository-packages
+      rm -rf $out/.source-repository-packages
+    fi
+    find $out -type f ! -name '*.nix' -delete
+    # Remove empty dirs
+    find $out -type d -empty -delete
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
