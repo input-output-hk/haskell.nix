@@ -34,6 +34,6 @@ concatMap (dep:
                 rev = dep.commit;
                 url = dep.git;
                 is-private = private url;
-                sha256 = if is-private then hashPath pkgsrc else null;
+                sha256 = if !is-private then hashPath pkgsrc else null;
             } // (optionalAttrs (subdir != "") { inherit subdir; }))
         (dep.subdirs or [ "" ])) deps
