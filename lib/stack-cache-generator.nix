@@ -3,12 +3,7 @@
 { pkgs }:
 { src, stackYaml ? "stack.yaml" }:
 let
-    s2n = import "${pkgs.fetchFromGitHub {
-       owner = "serokell";
-       repo = "stack-to-nix";
-       rev = "28e690d3eddd47c59982c7fbf4f950320ff7ff69";
-       sha256 = "1xnx5baj3k29iy8ccppn28ayf4483zddrvq6fikfpvblzp5zrnaj";
-    }}/lib.nix" pkgs;
+    s2n = import ../pkgs/stack-to-nix pkgs;
 
     # All repos served via ssh or git protocols are usually private
     private = url: pkgs.lib.substring 0 4 url != "http";
