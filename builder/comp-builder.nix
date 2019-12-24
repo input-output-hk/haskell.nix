@@ -175,8 +175,9 @@ stdenv.mkDerivation ({
 
   enableParallelBuilding = true;
 
+  propagatedBuildInputs = component.frameworks;
+
   buildInputs = component.libs
-    ++ component.frameworks
     ++ builtins.concatLists component.pkgconfig
     # Note: This is a hack until we can fix properly. See:
     # https://github.com/haskell-gi/haskell-gi/issues/226
