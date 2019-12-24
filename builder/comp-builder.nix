@@ -140,7 +140,7 @@ let
 in stdenv.lib.fix (drv:
 
 stdenv.mkDerivation ({
-  name = fullName;
+  name = "${ghc.targetPrefix}${fullName}";
 
   src = cleanSrc;
 

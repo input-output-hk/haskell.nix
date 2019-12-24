@@ -64,7 +64,7 @@ in { identifier, component, fullName, flags ? {} }:
         in lib.concatStringsSep "\" \"" xs;
       libs     = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
   in
-  runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
+  runCommand "${ghc.targetPrefix}${fullName}-config" { nativeBuildInputs = [ghc]; } (''
     mkdir -p $out
 
     ${target-pkg} init $out/package.conf.d

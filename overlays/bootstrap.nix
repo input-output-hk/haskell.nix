@@ -210,8 +210,6 @@ in {
                 (builtins.mapAttrs
                     (_: v: v // {
                         isHaskellNixBootCompiler = true;
-                        exactDeps = exactDeps v;
-                        envDeps = envDeps v;
                     })
           ({
             ghc865 = let buildGHC = self.buildPackages.haskell-nix.compiler.ghc865;
@@ -230,23 +228,30 @@ in {
                     isHaskellNixCompiler = true;
                     inherit (ghcjs865) configured-src;
                     inherit buildGHC;
-                    extraConfigureFlags = [ "--ghcjs" "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg" ];
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        # setting gcc is stupid. non-emscripten ghcjs has no cc.
+                        # however cabal insists on compiling the c sources. m(
+                        "--with-gcc=${self.buildPackages.stdenv.cc}/bin/cc"
+                    ];
                 };
-            } ''
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
                 mkdir -p $out/bin
                 cd $out/bin
                 ln -s ${ghcjs865}/bin/ghcjs ${targetPrefix}ghc
                 ln -s ${ghcjs865}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
-                ln -s ${ghcjs865}/bin/hsc2hs-ghcjs ${targetPrefix}hsc2hs
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
                 mkdir lib
                 cd lib
                 cp -R ${ghcjs865}/lib/ghcjs-8.6.5 ${targetPrefix}ghc-8.6.5
-                '';
+            '' + installDeps targetPrefix);
         })));
 
     ghc = self.haskell-nix.compiler.ghc865;
-    cabal-install = self.buildPackages.haskell-nix.bootstrap.packages.cabal-install;
+    inherit (self.buildPackages.haskell-nix.bootstrap.packages) cabal-install alex happy;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose

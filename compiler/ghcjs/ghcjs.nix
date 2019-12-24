@@ -46,6 +46,11 @@ let
         ./utils/makePackages.sh copy
 
         echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
+
+        # nuke the HsBaseConfig.h from base.buildinfo.in; this will
+        # prevent it from being installed and provide incorrect values.
+        sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
+        cat lib/boot/pkg/base/base.buildinfo.in
         '';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
     ghcjs = (pkgs.buildPackages.haskell-nix.cabalProject {
@@ -67,7 +72,15 @@ let
                 packages.ghcjs.doHaddock = false;
                 packages.haddock-ghcjs.doHaddock = false;
                 packages.haddock-api-ghcjs.doHaddock = false;
-                packages.ghcjs.flags = { no-wrapper-install = true; };
+                packages.ghcjs.flags.no-wrapper-install = true;
+                # set use-host-template-haskell. This *does*
+                # work as we use a patched ghc to boot anyway.
+                # (we apply https://github.com/ghcjs/ghc/commit/2918d88d4ef786b5f2801f6f77ac333cc56dde75 already)
+                packages.ghcjs.flags.use-host-template-haskell = true;
+                packages.ghc-api-ghcjs.flags.use-host-template-haskell = true;
+                packages.ghcjs-th.flags.use-host-template-haskell = true;
+                packages.ghc.flags.ghci = true;
+                packages.ghci.flags.ghci = true;
                 # packages.ghcjs.components.library.configureFlags = [ "-fno-wrapper-install" ];
             }
         ];

@@ -26,7 +26,7 @@ in
     default = false;
     description = "Is lib:ghc reinstallable?";
   };
-  options.globalSetupDepends = lib.mkOption {
+  options.setup-depends = lib.mkOption {
     type = lib.types.listOf lib.types.unspecified;
     default = [];
     description = "pkgs to globally provide to Setup.hs builds";
@@ -88,6 +88,6 @@ in
       buildPackages = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
-      (name: pkg: if pkg == null then null else builder.build-package buildModules.config pkg)
+      (name: pkg: if pkg == null then null else builder.build-package config pkg)
       (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
 }

@@ -1,6 +1,6 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
-{ component, package, name, src, flags, revision, patches, defaultSetupSrc
+{ component, package, name, src, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
 , prePatch ? null, postPatch ? null
 , preBuild ? component.preBuild , postBuild ? component.postBuild
@@ -35,7 +35,7 @@ let
 in
  stdenv.lib.fix (drv:
     stdenv.mkDerivation ({
-      name = "${fullName}";
+      name = "${ghc.targetPrefix}${fullName}";
       src = cleanSrc;
       buildInputs = component.libs
         ++ component.frameworks
