@@ -3,7 +3,7 @@
 { pkgs }:
 { src, stackYaml ? "stack.yaml" }:
 let
-    s2n = import ../pkgs/stack-to-nix pkgs;
+    s2n = import ../pkgs/stack-to-nix { inherit pkgs; };
 
     # All repos served via ssh or git protocols are usually private
     private = url: pkgs.lib.substring 0 4 url != "http";
