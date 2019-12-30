@@ -4,9 +4,11 @@ self: super: with super;
     ghcPkgOverrides = {
         enableShared = super.stdenv.targetPlatform == super.stdenv.hostPlatform;
         enableIntegerSimple = false;
+      } // lib.optionalAttrs self.stdenv.hostPlatform.isAarch32 {
+        enableRelocatableStaticLibs = false;
       };
     ghcDrvOverrides = drv: {
-        hardeningDisable = (drv.hardeningDisable or []) ++ [ "stackprotector" "format" ];
+        hardeningDisable = (drv.hardeningDisable or []) ++ [ "stackprotector" "format" ] ++ lib.optionals super.stdenv.hostPlatform.isAarch32 [ "pic" "pie" ];
       };
    in {
    haskell-nix = let

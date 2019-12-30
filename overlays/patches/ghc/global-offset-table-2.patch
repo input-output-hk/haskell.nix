@@ -1,0 +1,26 @@
+From 358b0f69c752464c7a6d75ce44c95ff3d0ddcdea Mon Sep 17 00:00:00 2001
+From: Edward Amsden <edward.amsden@plowtech.net>
+Date: Thu, 16 May 2019 19:41:30 -0400
+Subject: [PATCH] Lookup _GLOBAL_OFFSET_TABLE by symbol->addr when doing
+ relocations
+
+---
+ rts/linker/Elf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index c6f82af72a..349de86227 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1064,7 +1064,7 @@ do_Elf_Rel_relocations ( ObjectCode* oc, char* ehdrC,
+        } else {
+            symbol = &stab->symbols[ELF_R_SYM(info)];
+            /* First see if it is a local symbol. */
+-           if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_LOCAL) {
++           if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_LOCAL || strncmp(symbol->name, "_GLOBAL_OFFSET_TABLE_", 21) == 0) {
+                S = (Elf_Addr)symbol->addr;
+            } else {
+                S_tmp = lookupSymbol_( symbol->name );
+-- 
+2.17.1
+
