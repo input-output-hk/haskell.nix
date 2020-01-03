@@ -117,7 +117,8 @@ in { identifier, component, fullName, flags ? {} }:
   #
   # Confusing sed stuff:
   #   '/^ ./{H;$!d} ; x'                   Groups lines that start with a space with the initial
-  #                                        line of a block.
+  #                                        line of a block.  Needs a blank line added to the file
+  #                                        to terminate the last block.
   #   's/ /\n/g ; s/\n\n*/\n/g; s/^\n//;'  Puts each field on its own line.
   + lib.optionalString stdenv.isDarwin ''
     # Work around a limit in the macOS Sierra linker on the number of paths
@@ -129,7 +130,7 @@ in { identifier, component, fullName, flags ? {} }:
     mkdir -p $dynamicLinksDir
     local dirsToLink=$(
       for f in "$out/package.conf.d/"*.conf; do
-        cat $f | sed -En '/^ ./{H;$!d} ; x ; /^dynamic-library-dirs:/ {s/^dynamic-library-dirs:// ; s/ /\n/g ; s/\n\n*/\n/g; s/^\n//; p}'
+        (cat $f; echo) | sed -En '/^ ./{H;$!d} ; x ; /^dynamic-library-dirs:/ {s/^dynamic-library-dirs:// ; s/ /\n/g ; s/\n\n*/\n/g; s/^\n//; p}'
       done | sort -u
     )
     for d in $dirsToLink; do
@@ -137,6 +138,8 @@ in { identifier, component, fullName, flags ? {} }:
     done
     # Edit the local package DB to reference the links directory.
     for f in "$out/package.conf.d/"*.conf; do
+      chmod +w $f
+      echo >> $f
       sed -i -E "/^ ./{H;$!d} ; x ; s,^dynamic-library-dirs:.*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
