@@ -214,8 +214,8 @@ in {
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_5;
-                llvmPackages = self.llvmPackages_5;
+                buildLlvmPackages = self.buildPackages.llvmPackages_7;
+                llvmPackages = self.llvmPackages_7;
 
                 src-spec = rec {
                     version = "8.8.1";
