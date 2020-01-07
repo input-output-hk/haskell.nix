@@ -1,0 +1,8 @@
+name: stack-source-repo
+
+dependencies:
+- base
+- cabal-simple
+
+library:
+  source-dirs: src

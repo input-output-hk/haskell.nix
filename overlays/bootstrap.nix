@@ -130,8 +130,8 @@ in {
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_5;
-                llvmPackages = self.llvmPackages_5;
+                buildLlvmPackages = self.buildPackages.llvmPackages_6;
+                llvmPackages = self.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.1";
@@ -146,8 +146,8 @@ in {
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_5;
-                llvmPackages = self.llvmPackages_5;
+                buildLlvmPackages = self.buildPackages.llvmPackages_6;
+                llvmPackages = self.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.2";
@@ -163,8 +163,8 @@ in {
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_5;
-                llvmPackages = self.llvmPackages_5;
+                buildLlvmPackages = self.buildPackages.llvmPackages_6;
+                llvmPackages = self.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.3";
@@ -180,8 +180,8 @@ in {
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_5;
-                llvmPackages = self.llvmPackages_5;
+                buildLlvmPackages = self.buildPackages.llvmPackages_6;
+                llvmPackages = self.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.4";
@@ -197,8 +197,8 @@ in {
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_5;
-                llvmPackages = self.llvmPackages_5;
+                buildLlvmPackages = self.buildPackages.llvmPackages_6;
+                llvmPackages = self.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.5";

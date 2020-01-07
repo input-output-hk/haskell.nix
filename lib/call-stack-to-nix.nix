@@ -35,7 +35,7 @@ let
   } (''
     mkdir -p $out
   '' + pkgs.lib.optionalString (cache != null) ''
-    cp ${mkCacheFile cache} $out/.stack-to-nix.cache
+    cp ${mkCacheFile cache}/.stack-to-nix.cache* $out
   '' + ''
     (cd $out && stack-to-nix ${stackToNixArgs})
 
