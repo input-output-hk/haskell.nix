@@ -40,6 +40,7 @@ in pkgs.recurseIntoAttrs {
   ghc-options-cabal = haskell-nix.callPackage ./ghc-options/cabal.nix {};
   ghc-options-stack = haskell-nix.callPackage ./ghc-options/stack.nix {};
   exe-only = haskell-nix.callPackage ./exe-only { inherit util; };
+  stack-source-repo = haskell-nix.callPackage ./stack-source-repo {};
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
