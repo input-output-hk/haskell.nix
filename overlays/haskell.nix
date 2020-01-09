@@ -105,6 +105,11 @@ self: super: {
                 # The compiler referenced in the stack config
                 compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
+                # Remove fake packages generated from stack keywords used in ghc-options
+                removeStackSpecial = module: if builtins.typeOf module == "set"
+                  then module // { packages = removeSpecialPackages (module.packages or {}); }
+                  else module;
+                removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
                 pkg-def = excludeBootPackages pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
@@ -115,7 +120,7 @@ self: super: {
                 # and we should trust stackage here!
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
-                       ++ stack-pkgs.modules or [];
+                       ++ map removeStackSpecial (stack-pkgs.modules or []);
             };
 
         # Create a Haskell package set based on a Cabal configuration.
