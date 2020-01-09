@@ -133,8 +133,8 @@ let
     && stdenv.hostPlatform == stdenv.buildPlatform;
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
-  testExecutable = "dist/build/${componentId.cname}/${componentId.cname}${exeExt}";
-  installedExe = "bin/${componentId.cname}${exeExt}";
+  exeName = componentId.cname + exeExt;
+  testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
 in stdenv.lib.fix (drv:
 
@@ -151,7 +151,7 @@ stdenv.mkDerivation ({
   passthru = {
     inherit (package) identifier;
     config = component;
-    inherit configFiles executableToolDepends cleanSrc installedExe;
+    inherit configFiles executableToolDepends cleanSrc exeName;
     env = shellWrappers;
 
     # The directory containing the haddock documentation.
