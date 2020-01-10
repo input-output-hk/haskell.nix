@@ -105,6 +105,11 @@ self: super: {
                 # The compiler referenced in the stack config
                 compiler = (stack-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
+                # Remove fake packages generated from stack keywords used in ghc-options
+                removeStackSpecial = module: if builtins.typeOf module == "set"
+                  then module // { packages = removeSpecialPackages (module.packages or {}); }
+                  else module;
+                removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
                 pkg-def = excludeBootPackages pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
@@ -115,7 +120,7 @@ self: super: {
                 # and we should trust stackage here!
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
-                       ++ stack-pkgs.modules or [];
+                       ++ map removeStackSpecial (stack-pkgs.modules or []);
             };
 
         # Create a Haskell package set based on a Cabal configuration.
@@ -285,18 +290,34 @@ self: super: {
 
             sha256String = if isNull sha256 then self.buildPackages.lib.fakeSha256 else sha256;
 
-          in "${url} ${rev} ${subdir} ${sha256String} ${name} ${nix-expr}";
+          in {
+            line = "${url} ${rev} ${subdir} ${sha256String} ${name}";
+            inherit nix-expr;
+          };
 
         # Given a list of repos:
         # [ { name = ...; url = ...; rev = ...; ref = ...; sha256 = ...; cabal-file = ...; type = ...; is-private = ...; } ]
         # produce a cache file that can be used for
         # stack-to-nix or plan-to-nix to prevent them
         # from needing network access.
+        # The cache contains only local paths to nix files so that it can
+        # the results of `stack-to-nix` can be imported in restrected eval
+        # mode.
         mkCacheFile = repos:
-          self.buildPackages.pkgs.writeTextFile {
-              name = "cache-file";
-              text = self.buildPackages.lib.concatMapStringsSep "\n" mkCacheLine repos;
-          };
+          self.buildPackages.pkgs.runCommand "cache-file" {} ''
+              mkdir -p $out
+              touch $out/.stack-to-nix.cache
+              ${self.lib.concatStrings (
+                self.lib.lists.zipListsWith (n: repo:
+                  let l = mkCacheLine repo;
+                  in ''
+                    cp ${l.nix-expr} $out/.stack-to-nix.cache.${toString n}
+                    echo ${l.line} .stack-to-nix.cache.${toString n} >> $out/.stack-to-nix.cache
+                  '')
+                  (self.lib.lists.range 0 ((builtins.length repos) - 1))
+                  repos)
+              }
+          '';
 
         genStackCache = import ../lib/stack-cache-generator.nix {
             inherit (self.buildPackages) pkgs;

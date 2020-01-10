@@ -1,6 +1,9 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## December 27, 2019
+* Fix overlays/bootstrap.nix to provide LLVM 6, not LLVM 5, to ghc-8.6.X compilers.
+
 ## November 18, 2019
   * Changed the `cleanSourceHaskell` to accept an attrset of `src` and
     (optional) `name` parameters. This allows you to keep the source

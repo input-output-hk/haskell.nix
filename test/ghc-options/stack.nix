@@ -8,6 +8,11 @@ let
   };
   packages = project.hsPkgs;
 
+  # Get the names of all packages. This is a test to see
+  # whether there is a broken "$locals" package present.
+  hasIdentifier = p: p != null && p ? identifier;
+  packageNames = mapAttrsToList (name: p: p.identifier.name) (filterAttrs (name: hasIdentifier) packages);
+
 in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) stack-nix;
@@ -19,7 +24,7 @@ in recurseIntoAttrs {
       printf "checking whether executable runs... " >& 2
       cat ${haskellLib.check packages.test-ghc-options.components.exes.test-ghc-options-exe}
 
-      touch $out
+      echo '${concatStringsSep " " packageNames}' > $out
     '';
 
     meta.platforms = platforms.all;
