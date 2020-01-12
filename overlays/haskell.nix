@@ -321,6 +321,7 @@ self: super: {
 
         genStackCache = import ../lib/stack-cache-generator.nix {
             inherit (self.buildPackages) pkgs;
+            inherit (self.buildPackages.haskell-nix) haskellLib nix-tools;
         };
 
         mkCacheModule = cache:
@@ -437,13 +438,7 @@ self: super: {
                     inherit (args) src;
                     stackYaml = args.stackYaml or "stack.yaml";
                 };
-                cache = args.cache or (builtins.trace
-                    (builtins.trace ''
-                        Automatically generated cache for this project.
-                        You can pass it as a cache argument to speed up builds:
-                    ''
-                    # Force evaluation so that tracing prints out the whole list
-                    (builtins.deepSeq generatedCache generatedCache)) generatedCache);
+                cache = args.cache or generatedCache;
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = stack.pkgs;
                   pkg-def-extras = (args.pkg-def-extras or []);
