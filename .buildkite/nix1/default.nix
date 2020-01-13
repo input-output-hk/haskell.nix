@@ -1,7 +1,8 @@
-{ nixpkgs ? builtins.fetchTarball https://github.com/NixOS/nixpkgs/archive/2255f292063ccbe184ff8f9b35ce475c04d5ae69.tar.gz }:
+{ haskellNixSrc ? builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz
+, nixpkgs ? haskellNixSrc + "/nixpkgs" }:
 
 let
-  pkgs = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/hkm/overlays-2.tar.gz) { inherit nixpkgs; };
+  pkgs = import nixpkgs (import haskellNixSrc);
 
   pkgSet = pkgs.haskell-nix.mkCabalProjectPkgSet {
     plan-pkgs = import ./pkgs.nix;
