@@ -6,13 +6,11 @@ let
     # We only care about the stackYaml file.  If src is a local directory
     # we want to avoid recalculating the cache unless the stack.yaml file
     # changes.
-    justStackFile =
-      if haskellLib.canCleanSource src
-        then haskellLib.cleanSourceWith {
-          inherit src;
-          filter = path: type: pkgs.lib.hasSuffix ("/" + stackYaml) path;
-        }
-        else src;
+
+    # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
+    # access to the store is restricted.  If origSrc was already in the store
+    # you can pass the project in as a string.
+    rawStackYaml = builtins.readFile ((src.origSrcSubDir or src) + ("/" + stackYaml));
 
     # Determine the resolver as it may point to another file we need
     # to look at.
@@ -21,7 +19,7 @@ let
         rs = pkgs.lib.lists.concatLists (
           pkgs.lib.lists.filter (l: l != null)
             (builtins.map (l: builtins.match "^resolver: *(.*)" l)
-              (pkgs.lib.splitString "\n" (builtins.readFile (justStackFile + ("/" + stackYaml))))));
+              (pkgs.lib.splitString "\n" rawStackYaml)));
       in
         pkgs.lib.lists.head (rs ++ [ null ]);
 
