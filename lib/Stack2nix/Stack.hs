@@ -112,7 +112,7 @@ instance Text CabalRev where
 data Dependency
   = PkgIndex PackageIdentifier (Maybe (Either Sha256 CabalRev)) -- ^ overridden package in the stackage index
   | LocalPath String -- ^ Some local package (potentially overriding a package in the index as well)
-  | DVCS Location [FilePath] -- ^ One or more packages fetched from git or similar.
+  | DVCS Location (Maybe Sha256) [FilePath] -- ^ One or more packages fetched from git or similar.
   -- TODO: Support archives.
   -- | Archive ...
   deriving (Show)
@@ -213,6 +213,7 @@ instance FromJSON Dependency where
             return . LocalPath . dropTrailingSlash . T.unpack
           parseDVCS = withObject "DVCS" $ \o -> DVCS
             <$> (o .: "location" <|> parseJSON p)
+            <*> o .:? "nix-sha256" .!= Nothing
             <*> o .:? "subdirs" .!= ["."]
 
           -- drop trailing slashes. Nix doesn't like them much;

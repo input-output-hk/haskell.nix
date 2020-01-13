@@ -152,7 +152,7 @@ packages2nix args pkgs =
                     writeDoc nixFile =<<
                       prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
                     return $ fromString pkg $= mkPath False nix
-       (DVCS (Git url rev) subdirs) ->
+       (DVCS (Git url rev) _ subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
          do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
             case cacheHits of
