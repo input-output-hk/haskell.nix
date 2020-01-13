@@ -295,8 +295,6 @@
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.4.4").revisions).default;
         "th-lift-instances".revision = (((hackage."th-lift-instances")."0.1.14").revisions).default;
         "base-orphans".revision = (((hackage."base-orphans")."0.8.1").revisions).default;
-        "hackage-db".revision = (((hackage."hackage-db")."2.0.1").revisions).default;
-        "hackage-db".flags.install-examples = false;
         "th-abstraction".revision = (((hackage."th-abstraction")."0.3.1.0").revisions).default;
         "memory".revision = (((hackage."memory")."0.15.0").revisions).default;
         "memory".flags.support_bytestring = true;
@@ -342,7 +340,12 @@
         };
       };
   extras = hackage:
-    { packages = { nix-tools = ./.plan.nix/nix-tools.nix; }; };
+    {
+      packages = {
+        nix-tools = ./.plan.nix/nix-tools.nix;
+        hackage-db = ./.plan.nix/hackage-db.nix;
+        };
+      };
   modules = [
     ({ lib, ... }:
       { packages = { "nix-tools" = { flags = {}; }; }; })
