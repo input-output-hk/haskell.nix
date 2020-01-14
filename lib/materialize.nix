@@ -67,6 +67,8 @@ let
       '')
     + ''
         cp -r ${unchecked} $out
+        # Make sure output files can be moved out of sandbox
+        chmod +w $out
       ''
   );
 
