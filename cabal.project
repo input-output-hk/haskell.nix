@@ -1,3 +1,5 @@
+index-state: 2020-01-10T00:00:00Z
+
 packages: .
 
 -- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
@@ -16,4 +18,3 @@ source-repository-package
     location: https://github.com/galenhuntington/haskell-src-meta.git
     tag: 109ee29d5fd0f4e23fdd2f80eb122d66341b64a9
     --sha256: 08qw6y9br6fy3qkwl9v2kp38msprsq9v1ssym0fsnj2jm0vbnfrx
-
