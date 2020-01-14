@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, RecordWildCards, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, RecordWildCards, OverloadedStrings, TupleSections #-}
 
 module Stack2nix
   ( doStack2nix
@@ -14,6 +14,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad (unless, forM)
 import Extra (unlessM)
 
+import qualified Data.Map as M (fromListWith, toList)
 import System.FilePath ((<.>), (</>), takeDirectory, dropFileName)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getCurrentDirectory)
 import System.IO (IOMode(..), openFile, hClose)
@@ -71,9 +72,15 @@ stack2nix args stack@(Stack resolver compiler pkgs pkgFlags ghcOpts) =
          _mapAttrs_   = mkSym "mapAttrs"
          _config_     = mkSym "config"
      packages <- packages2nix args pkgs
+     let allPackages = extraDeps <> packages
+         allPackageNames = M.fromListWith (+) ((,1 :: Int) . fst <$> allPackages)
+         duplicates = filter ((>1) . snd) (M.toList allPackageNames)
+     unless (null duplicates) $
+        error $ concat ((\(name, _) ->
+          "Duplicate definitions for package " <> show name <> "\n") <$> duplicates)
      return . mkNonRecSet $
        [ "extras" $= ("hackage" ==> mkNonRecSet
-                     ([ "packages" $= mkNonRecSet (extraDeps <> packages) ]
+                     ([ "packages" $= mkNonRecSet (snd <$> allPackages) ]
                    ++ [ "compiler.version" $= fromString (quoted ver)
                       | (Just c) <- [compiler], let ver = filter (`elem` (".0123456789" :: [Char])) c]
                    ++ [ "compiler.nix-name" $= fromString (quoted name)
@@ -94,14 +101,14 @@ stack2nix args stack@(Stack resolver compiler pkgs pkgFlags ghcOpts) =
 --
 --   { name.revision = hackage.name.version.revisions.default; }
 --
-extraDeps2nix :: [Dependency] -> [Binding NExpr]
+extraDeps2nix :: [Dependency] -> [(T.Text, Binding NExpr)]
 extraDeps2nix pkgs =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
-  in [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default")
+  in [ (toText pkg, quoted (toText pkg) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default"))
      | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
-  ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. quoted (T.pack sha))
+  ++ [ (toText pkg, quoted (toText pkg) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. quoted (T.pack sha)))
      | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
-  ++ [ (quoted (toText pkg)) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. toText revNo)
+  ++ [ (toText pkg, quoted (toText pkg) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. toText revNo))
      | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse
@@ -137,7 +144,7 @@ writeDoc file doc =
 
 
 -- makeRelativeToCurrentDirectory
-packages2nix :: Args -> [Dependency] -> IO [Binding NExpr]
+packages2nix :: Args -> [Dependency] -> IO [(T.Text, Binding NExpr)]
 packages2nix args pkgs =
   do cwd <- getCurrentDirectory
      fmap concat . forM pkgs $ \case
@@ -151,7 +158,7 @@ packages2nix args pkgs =
               in do createDirectoryIfMissing True (takeDirectory nixFile)
                     writeDoc nixFile =<<
                       prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
-                    return $ fromString pkg $= mkPath False nix
+                    return (fromString pkg, fromString pkg $= mkPath False nix)
        (DVCS (Git url rev) _ subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
          do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
@@ -163,7 +170,7 @@ packages2nix args pkgs =
                   _ -> return []
               hits ->
                 forM hits $ \( pkg, nix ) -> do
-                  return $ fromString pkg $= mkPath False nix
+                  return (fromString pkg, fromString pkg $= mkPath False nix)
        _ -> return []
   where relPath = shortRelativePath (argOutputDir args) (dropFileName (argStackYaml args))
         cabalFromPath
@@ -171,7 +178,7 @@ packages2nix args pkgs =
           -> String    -- Revision
           -> FilePath  -- Subdir
           -> FilePath  -- Local Directory
-          -> MaybeT IO (String -> IO [Binding NExpr])
+          -> MaybeT IO (String -> IO [(T.Text, Binding NExpr)])
         cabalFromPath url rev subdir path = do
           d <- liftIO $ doesDirectoryExist path
           unless d $ fail ("not a directory: " ++ path)
@@ -188,7 +195,7 @@ packages2nix args pkgs =
             writeDoc nixFile =<<
               prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
             liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
-            return $ fromString pkg $= mkPath False nix
+            return (fromString pkg, fromString pkg $= mkPath False nix)
 
 defaultNixContents :: String
 defaultNixContents = unlines

@@ -35,6 +35,7 @@ library
                      , base16-bytestring
                      , bytestring
                      , cryptohash-sha256
+                     , containers
                      , data-fix
                      , deepseq
                      , directory
