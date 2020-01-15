@@ -1,13 +1,56 @@
+From d78e5ce3fb865ec1c1659817b0bba1a1bccc692c Mon Sep 17 00:00:00 2001
+From: Matthew Bauer <mjbauer95@gmail.com>
+Date: Sat, 1 Jun 2019 07:04:31 -0400
+Subject: [PATCH] Make qNewUnique return a Uniq instead of an Int
+
+After GHC commit
+https://gitlab.haskell.org/ghc/ghc/commit/4ba73e00c4887b58d85131601a15d00608acaa60,
+`Uniq` is an `Integer` instead of `Int`. The `qNewUnique` function,
+however, currently returns an `Int` by using `fromIntegral` to
+convert the `Integer` to an `Int`. This is potentially dangerous,
+however, as this could truncate large `Integer`s down into smaller
+`Int`s, which has the potential to return non-unique `Int`s.
+
+Instead of doing this, let's simply make `qNewUnique` return a `Uniq`
+without any modification. The only place where `singletons` uses
+`qNewUnique` is for the purpose of turning the `Uniq` directly into
+a `String` anyway, so this is a perfectly fine thing to do.
+
+This is originally Matthew Bauer's patch from #398, which was an
+abandoned attempt at fixing a separate GHCJS bug. Since this patch is
+useful on its own merits, I (@RyanGlScott) have modified the commit
+message to reflect its new purpose.
+
+Co-authored-by: Matthew Bauer <mjbauer95@gmail.com>
+Co-authored-by: Ryan Scott <ryan.gl.scott@gmail.com>
+---
+ src/Data/Singletons/Util.hs | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
 diff --git a/src/Data/Singletons/Util.hs b/src/Data/Singletons/Util.hs
-index 0f8f788..0ada2fe 100644
+index 8ffdcf96..f28d6329 100644
 --- a/src/Data/Singletons/Util.hs
 +++ b/src/Data/Singletons/Util.hs
-@@ -96,7 +96,7 @@ qNewUnique :: DsMonad q => q Int
+@@ -91,11 +91,11 @@ qReportError :: Quasi q => String -> q ()
+ qReportError = qReport True
+ 
+ -- | Generate a new Unique
+-qNewUnique :: DsMonad q => q Int
++qNewUnique :: DsMonad q => q Uniq
  qNewUnique = do
    Name _ flav <- qNewName "x"
    case flav of
--    NameU n -> return n
-+    NameU n -> return (fromInteger n)
+-    NameU n -> return $ fromIntegral n
++    NameU n -> return n
      _       -> error "Internal error: `qNewName` didn't return a NameU"
  
  checkForRep :: Quasi q => [Name] -> q ()
+@@ -202,7 +202,7 @@ suffixName ident symb n =
+ -- convert a number into both alphanumeric and symoblic forms
+ uniquePrefixes :: String   -- alphanumeric prefix
+                -> String   -- symbolic prefix
+-               -> Int
++               -> Uniq
+                -> (String, String)  -- (alphanum, symbolic)
+ uniquePrefixes alpha symb n = (alpha ++ n_str, symb ++ convert n_str)
+   where
