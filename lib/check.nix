@@ -31,7 +31,7 @@ in stdenv.mkDerivation ({
 
     runHook preCheck
 
-    ${toString component.testWrapper} ${drv}/${drv.installedExe} ${lib.concatStringsSep " " component.testFlags} | tee $out
+    ${toString component.testWrapper} ${drv}/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out
 
     runHook postCheck
   '';
