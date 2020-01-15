@@ -56,7 +56,7 @@ let
     ghcjs = (pkgs.buildPackages.haskell-nix.cabalProject {
         src = configured-src;
         index-state = "2019-12-10T00:00:00Z";
-        plan-sha256 = "0kkwaakkwgvs0cpxkaw3w52yxl55y8scrdj4q83w7m07dpjymqph";
+        plan-sha256 = "1wy2lr08maxyi7r8jiwf2gj6pdayk5vxxwh42bj4s2gg4035z0yc";
         materialized = ../../materialized/ghcjs;
         inherit ghc;
         modules = [
