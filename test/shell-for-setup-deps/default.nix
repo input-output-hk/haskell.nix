@@ -4,7 +4,6 @@ with stdenv.lib;
 
 let
   project = cabalProject' {
-    name = "test-shell-for-setup-deps";
     src = ./.;
     modules = [{
       # Package has no exposed modules which causes
