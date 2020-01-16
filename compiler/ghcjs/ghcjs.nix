@@ -95,6 +95,7 @@ let
             ghcjs.components.exes.hsc2hs-ghcjs
             ghcjs.components.exes.ghcjs-boot
             ghcjs.components.exes.ghcjs-run
+            ghcjs.components.exes.ghcjs-dumparchive
         ];
     };
     libexec = "${all-ghcjs}/libexec/${builtins.replaceStrings ["darwin" "i686"] ["osx" "i386"] pkgs.stdenv.buildPlatform.system}-${ghc.name}/ghcjs-${ghcVersion}";
