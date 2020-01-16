@@ -1,6 +1,6 @@
 # fix wine at 3.0.2; the 4.x branch breaks windows cross compilation.
 # this will inevitably replace *any* wine version. Thus this might not
-# really be waht we ultimately want.
+# really be what we ultimately want.
 self: super:
 {
     winePackages = super.winePackages // {
