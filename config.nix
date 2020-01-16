@@ -2,13 +2,9 @@
   # allow building for windows
   allowUnsupportedSystem = true;
   # we want the 64bit wine version
+  # See overlays/wine.nix as well!
   wine.build = "wine64";
-  # once https://github.com/NixOS/nixpkgs/pull/71216 is
-  # merged, we can use `series3`; wine4 seems to suffer
-  # from some non-obvious regression :(
-  # This will also need to be backported to 19.03 and 19.09
-  # at least...
-  wine.release = "series3";
+  wine.release = "stable";
 
   # sadly we need to patch GHC a bit.
   packageOverrides = ps: with ps; let
