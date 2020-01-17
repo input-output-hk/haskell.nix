@@ -224,7 +224,22 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.8.1";
-                            # ++ [ D5123-patch haddock-900-patch ];
+            };
+            ghc882 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc882; };
+
+                inherit bootPkgs sphinx installDeps;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_7;
+                llvmPackages = self.llvmPackages_7;
+
+                src-spec = rec {
+                    version = "8.8.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "02qa6wgjpxgakg7hv4zfdlrx9k7zxa5i02wnr6y9fsv8j16sbkh1";
+                };
+
+                ghc-patches = ghc-patches "8.8.2";
             };
         } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false) {
             ghc865 = let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
