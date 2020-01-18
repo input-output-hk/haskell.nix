@@ -102,6 +102,7 @@ in {
                 ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.8.2") ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ self.lib.optional (versionAtLeast "8.6.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ self.lib.optional (versionAtLeast "8.4.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
