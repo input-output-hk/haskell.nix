@@ -94,7 +94,7 @@ in rec {
       src = proj;
       index-state = "2019-10-31T00:00:00Z";
       ghc = self.buildPackages.haskell-nix.compiler.${name};
-      configureArgs = "--disable-tests";
+      configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
 
