@@ -74,6 +74,11 @@ with haskellLib;
   isLocalPackage = p: p.isLocal or false;
   selectLocalPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p) ps;
 
+  # if it's a project package it has a src attribute set with an origSubDir attribute.
+  # project packages are a subset of localPackages
+  isProjectPackage = p: p ? src && p.src ? origSubDir;
+  selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
+
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
   componentTarget = componentId:
