@@ -73,7 +73,9 @@ in rec {
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:
     let package-locs =
       builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}")
-        (self.lib.filterAttrs (n: _: n != "base") ghc-extra-pkgs);
+        # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
+        # in `ghc-extra-projects` below to work with this.
+        (self.lib.filterAttrs (n: _: n != "base" && n != "ghc-heap") ghc-extra-pkgs);
     in self.writeTextFile {
       name = "ghc-extra-pkgs-cabal-project-${name}";
       destination = "/cabal.project";
@@ -92,6 +94,7 @@ in rec {
       src = proj;
       index-state = "2019-10-31T00:00:00Z";
       ghc = self.buildPackages.haskell-nix.compiler.${name};
+      configureArgs = "--disable-tests";
     })
     ghc-extra-pkgs-cabal-projects;
 
