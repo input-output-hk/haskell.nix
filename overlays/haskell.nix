@@ -442,6 +442,9 @@ self: super: {
               shells.ghc = p.hsPkgs.shellFor {};
             };
 
+        # Like `cabalProject'`, but for building the GHCJS compiler.
+        ghcjsProject = import ../lib/ghcjs-project.nix { pkgs = self; };
+
         # The functions that return a plan-nix often have a lot of dependencies
         # that could be GCed and also will not make it into hydra cache.
         # Use this `withInputs` function to make sure your tests include
