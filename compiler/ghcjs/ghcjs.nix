@@ -36,6 +36,7 @@ in pkgs.stdenv.mkDerivation {
     name = "ghcjs-${ghcVersion}";
     src = project.configured-src;
 
+    nativeBuildInputs = project.bootInputs;
     passthru = {
         inherit all-ghcjs;
         inherit (project) configured-src;
