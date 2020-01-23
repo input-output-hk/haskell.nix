@@ -1,5 +1,12 @@
-# This module wraps haskell-nix.cabalProject` for use with
-# ghcjs source.  It takes thes the clean src (from fetched
+# For the time being we can't really treat ghcjs like a
+# regular ghc (with different target). We need this as a
+# stop-gap measure until ghcjs can be treated like a regular
+# ghc.
+#
+# `haskell-nix.ghcjsProject` wraps `haskell-nix.cabalProject'`
+# for use with the ghcjs source. It is exposed to allow GHCJS
+# developers to work on the GHCJS code in a nix-shell with
+# `shellFor`. It takes thes the clean src (from fetched
 # source or local source that has been cleaned with cleanGit.
 # It configures the source and passes it onto `cabalProject`
 # along with the necessary modules.

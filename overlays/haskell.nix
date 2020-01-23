@@ -443,6 +443,8 @@ self: super: {
             };
 
         # Like `cabalProject'`, but for building the GHCJS compiler.
+        # This is exposed to allow GHCJS developers to work on the GHCJS
+        # code in a nix-shell with `shellFor`.
         ghcjsProject = import ../lib/ghcjs-project.nix { pkgs = self; };
 
         # The functions that return a plan-nix often have a lot of dependencies
