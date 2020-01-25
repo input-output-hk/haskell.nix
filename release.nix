@@ -40,9 +40,8 @@ let
       native = filterTests (mapTestOn (packagePlatforms pkgs));
       # Disabled for now. Something is wrong and this would require `allowBroken`
       # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
-    } // (optionalAttrs (nixpkgs-pin == "release-19.03") {
       "${mingwW64.config}" = filterTests (mapTestOnCross mingwW64 (packagePlatforms pkgs));
-    });
+    };
 
   allJobs =
     builtins.mapAttrs (_: nixpkgs-pin: jobs nixpkgs-pin) {
