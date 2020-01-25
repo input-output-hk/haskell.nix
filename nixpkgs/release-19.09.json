@@ -1,7 +1,7 @@
 {
   "url": "https://github.com/input-output-hk/nixpkgs",
-  "rev": "31aa5316ca232a53667790a99e8b1e76252e065c",
-  "date": "2019-11-16T23:51:02+13:00",
-  "sha256": "0g0r473rdrh5vsdvr45nmfs6ibp0pqyzbw9f0iv6r0jkg6jjiykr",
+  "rev": "8215f2ee01c56a764416f703c66767404a321d92",
+  "date": "2020-01-25T20:38:55+13:00",
+  "sha256": "0cdmpwpi19354hqvph7mnxrdbphina1vg61fk487i9559bsv545m",
   "fetchSubmodules": false
 }
