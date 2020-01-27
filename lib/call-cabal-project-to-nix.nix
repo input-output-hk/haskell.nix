@@ -1,5 +1,5 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
-{ name          ? null # optional name for better error messages
+{ name          ? src.name or (baseNameOf src) # optional name for better error messages
 , src
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
 , index-sha256  ? null # The hash of the truncated hackage index-state

@@ -4,7 +4,6 @@ with stdenv.lib;
 
 let
   project = cabalProject' {
-    name = "test-ghc-options";
     index-state = "2019-04-30T00:00:00Z";
     src = ./.;
     # TODO find a way to get the ghc-options into plan.json so we can use it in plan-to-nix

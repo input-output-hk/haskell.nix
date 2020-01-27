@@ -5,3 +5,5 @@ packages:
 
 ghc-options:
   test-ghc-options: -DTEST_GHC_OPTION
+  # See https://github.com/ndmitchell/weeder/issues/53
+  $locals: -ddump-to-file -ddump-hi

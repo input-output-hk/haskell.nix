@@ -4,7 +4,6 @@ with stdenv.lib;
 
 let
   project = cabalProject' {
-    name = "test-buildable";
     index-state = "2019-04-30T00:00:00Z";
     src = haskellLib.cleanGit { src = ../..; subDir = "test/buildable"; };
     modules = [ { packages.buildable-test.flags.exclude-broken = true; } ];

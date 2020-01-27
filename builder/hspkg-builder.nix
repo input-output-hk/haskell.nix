@@ -106,4 +106,5 @@ in rec {
   inherit (package) identifier detailLevel isLocal;
   inherit setup cabalFile;
   isHaskell = true;
+  inherit src;
 }

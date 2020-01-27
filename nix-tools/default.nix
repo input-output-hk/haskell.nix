@@ -37,11 +37,13 @@ let
         packages.nix-tools.src = src;
       }
 
-      ({ config, ...}: {
-        packages = {
-          Cabal.patches = [ cabalPatch ];
-        };
-      })
+      {
+        packages.Cabal.patches = [ cabalPatch ];
+      }
+
+      {
+        reinstallableLibGhc = true;
+      }
     ] ++ pkgs.lib.optional (args ? ghc) { ghc.package = args.ghc; };
   };
 

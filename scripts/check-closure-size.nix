@@ -1,6 +1,6 @@
 { stdenv, writeScript, coreutils, gawk, nix
 , nix-tools
-, limitMB ? 500
+, limitMB ? 525
 }:
 
 with stdenv.lib;

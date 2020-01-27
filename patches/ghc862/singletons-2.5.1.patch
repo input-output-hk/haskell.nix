@@ -1,13 +1,22 @@
 diff --git a/src/Data/Singletons/Util.hs b/src/Data/Singletons/Util.hs
-index 0f8f788..0ada2fe 100644
+index 0f8f788..d5a06ef 100644
 --- a/src/Data/Singletons/Util.hs
 +++ b/src/Data/Singletons/Util.hs
-@@ -96,7 +96,7 @@ qNewUnique :: DsMonad q => q Int
+@@ -92,7 +92,7 @@ qReportError :: Quasi q => String -> q ()
+ qReportError = qReport True
+ 
+ -- | Generate a new Unique
+-qNewUnique :: DsMonad q => q Int
++qNewUnique :: DsMonad q => q Uniq
  qNewUnique = do
    Name _ flav <- qNewName "x"
    case flav of
--    NameU n -> return n
-+    NameU n -> return (fromInteger n)
-     _       -> error "Internal error: `qNewName` didn't return a NameU"
- 
- checkForRep :: Quasi q => [Name] -> q ()
+@@ -203,7 +203,7 @@ suffixName ident symb n =
+ -- convert a number into both alphanumeric and symoblic forms
+ uniquePrefixes :: String   -- alphanumeric prefix
+                -> String   -- symbolic prefix
+-               -> Int
++               -> Uniq
+                -> (String, String)  -- (alphanum, symbolic)
+ uniquePrefixes alpha symb n = (alpha ++ n_str, symb ++ convert n_str)
+   where
