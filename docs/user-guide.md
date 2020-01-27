@@ -127,6 +127,16 @@ on using cleanGit](clean-git.md)). For example:
     { src = ./.; subDir = "subdir/another-subdir"; };
 ```
 
+If you want to use a custom filtering function, don't use the built-in nix `filterSource` function.
+Due to some technicalities about how filtering and the nix store work, it will cause all components in
+your project to be rebuilt any time any part of the project source changes. Use `cleanSourceWith` instead:
+
+```
+  src = pkgs.haskell-nix.haskellLib.cleanSourceWith
+    { src = ./.; filter = myFilterFunction; };
+```
+
+Note that `cleanSourceWith` will also take the `subDir` argument.
 
 You can build a component from your project with `nix-build` (in this
 case the `hello` executable in a `helloworld` package):
