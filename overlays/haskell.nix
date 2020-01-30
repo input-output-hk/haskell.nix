@@ -20,6 +20,9 @@ self: super: {
         hackageSourceJSON = ../hackage-src.json;
         stackageSourceJSON = ../stackage-src.json;
 
+        # allow for some limite cross-compile type interactions, when evaluating on linux but building for darwin
+        hostPkgs = import self.path { config = {}; overlays = []; };
+
         # ghc hackage patches.
         # these are patches that turn hackage packages into the same as the ones
         # ghc ships with the supposedly same version. See GHC Track Issue: 16199
@@ -59,9 +62,9 @@ self: super: {
 
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
-            inherit (self) stdenv lib runCommand srcOnly;
-            inherit (self.buildPackages) git;
+            inherit (self) stdenv lib srcOnly;
             haskellLib = hl;
+            inherit hostPkgs;
         }; in hl;
 
         # Create a Haskell package set based on a cabal build plan (plan-to-nix)
@@ -182,7 +185,7 @@ self: super: {
                 outputHash = sha256;
             };
 
-        mkLocalHackageRepo = import ../mk-local-hackage-repo { inherit hackageTarball; pkgs = self; };
+        mkLocalHackageRepo = import ../mk-local-hackage-repo { inherit hackageTarball hostPkgs; };
 
         dotCabal = { index-state, sha256, cabal-install, ... }@args:
             self.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
@@ -413,7 +416,7 @@ self: super: {
         # plan-nix without building the project.
         cabalProject' =
             { ... }@args:
-            let plan = importAndFilterProject (callCabalProjectToNix args);
+            let plan = importAndFilterProject (callCabalProjectToNix (args // { inherit hostPkgs; }));
             in let pkg-set = mkCabalProjectPkgSet
                 { plan-pkgs = plan.pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];

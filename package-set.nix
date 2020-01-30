@@ -7,7 +7,12 @@ in pkgs.lib.evalModules {
       _module.args = {
         # this is *not* the hasekllLib from nixpkgs; it is rather our own
         # library from haskell.nix
-        haskellLib = let hl = import ./lib { inherit lib; inherit (pkgs) stdenv runCommand git srcOnly; haskellLib = hl; }; in hl;
+        haskellLib = let hl = import ./lib {
+          inherit lib;
+          inherit (pkgs) stdenv srcOnly;
+          haskellLib = hl;
+          hostPkgs = import pkgs.path { config = {}; overlays = []; };
+        }; in hl;
 
         # The package descriptions depend on pkgs, which are used to resolve system package dependencies
         # as well as pkgconfPkgs, which are used to resolve pkgconfig name to nixpkgs names.  We simply
