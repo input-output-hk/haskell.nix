@@ -273,10 +273,10 @@ stdenv.mkDerivation ({
       ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
       if [ -d "${name}.conf" ]; then
         for pkg in ${name}.conf/*; do
-          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register "$pkg"
+          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
         done
       elif [ -e "${name}.conf" ]; then
-        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/package.conf.d -f $out/package.conf.d register ${name}.conf
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
       fi
 
       mkdir -p $out/exactDep
