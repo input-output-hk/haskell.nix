@@ -56,7 +56,7 @@ then
   let
     hasIndex = builtins.pathExists (toString src + "/.git/index");
     isWorktree = (builtins.readDir (toString src)).".git" == "regular";
-    
+
     # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
         filter = path: type:
@@ -94,8 +94,8 @@ then
            let
              git_content = lines (readFile (toString gitDir.origSrc + "/commondir"));
              first_line = head git_content;
-           in toString gitDir.origSrc + "/" + first_line + "/config"
-        else toString gitDir + "/config";
+           in gitDir.origSrc + ("/" + first_line + "/config")
+        else gitDir + "/config";
 
     # We need the .gitmodules file for submoules to work.
     gitModulesStr = toString src + "/.gitmodules";
@@ -113,7 +113,7 @@ then
             lib.any (i: (lib.hasSuffix i path)) [
               "config" "index" "HEAD" "objects" "refs" ]);
     };
-    
+
     # Make a temporary dir that looks enough like the real thing for
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
