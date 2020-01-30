@@ -64,7 +64,10 @@ let
   packageCfgDir  = "${libDir}/package.conf.d";
 
 in { identifier, component, fullName, flags ? {} }:
-  let libDeps = map getLibComponent component.depends;
+  # Filters out only library packages that for this GHC target
+  # TODO investigate why this is needed
+  let libDeps = lib.filter (p: p.configFiles.targetPrefix == ghc.targetPrefix)
+        (map getLibComponent component.depends);
       cfgFiles =
         let xs = map
           (p: "${p.configFiles}")
