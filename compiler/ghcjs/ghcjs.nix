@@ -31,7 +31,8 @@ let
             ghcjs.components.exes.ghcjs-dumparchive
         ];
     };
-    libexec = "${all-ghcjs}/libexec/${builtins.replaceStrings ["darwin" "i686"] ["osx" "i386"] pkgs.stdenv.buildPlatform.system}-${ghc.name}/ghcjs-${ghcVersion}";
+    libexec = "libexec/${builtins.replaceStrings ["darwin" "i686"] ["osx" "i386"] pkgs.stdenv.buildPlatform.system}-${ghc.name}/ghcjs-${ghcVersion}";
+    bashScriptParentDir = ''"$(dirname "$(dirname "$(readlink -f "$0")")")"'';
 in pkgs.stdenv.mkDerivation {
     name = "ghcjs-${ghcVersion}";
     src = project.configured-src;
@@ -46,20 +47,39 @@ in pkgs.stdenv.mkDerivation {
     dontConfigure = true;
     dontInstall = true;
     buildPhase = ''
-      export HOME=$TMP
-      mkdir $HOME/.cabal
-      touch $HOME/.cabal/config
-      cd lib/boot
+        export HOME=$TMP
+        mkdir $HOME/.cabal
+        touch $HOME/.cabal/config
+        cd lib/boot
 
-      mkdir -p $out/bin
-      mkdir -p $out/lib/ghcjs-${ghcVersion}
-      lndir ${libexec} $out/bin
+        mkdir -p $out/bin
+        mkdir -p $out/lib/ghcjs-${ghcVersion}
+        cp ${all-ghcjs}/${libexec}/* $out/bin
+        cp ${pkgs.coreutils}/bin/readlink $out/bin
+        chmod -R +w $out/bin
+        strip $out/bin/*
+      '' + (pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+        cp ${pkgs.gmp}/lib/libgmp.10.dylib $out/bin
+        cp ${pkgs.ncurses}/lib/libncursesw.6.dylib $out/bin
+        cp ${pkgs.libffi}/lib/libffi.6.dylib $out/bin
 
-      wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-      wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-      wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
+        chmod -R +w $out/bin
+        install_name_tool -id "@executable_path/libgmp.10.dylib" "$out/bin/libgmp.10.dylib"
+        install_name_tool -id "@executable_path/libncursesw.6.dylib" "$out/bin/libncursesw.6.dylib"
+        install_name_tool -id "@executable_path/libffi.6.dylib" "$out/bin/libffi.6.dylib"
+        for fn in $out/bin/*; do
+          install_name_tool -change "${pkgs.libiconv}/lib/libiconv.dylib" /usr/lib/libiconv.dylib "$fn"
+          install_name_tool -change "${pkgs.stdenv.libc}/lib/libSystem.B.dylib" /usr/lib/libSystem.B.dylib "$fn"
+          install_name_tool -change "${pkgs.gmp}/lib/libgmp.10.dylib" "@executable_path/libgmp.10.dylib" "$fn"
+          install_name_tool -change "${pkgs.ncurses}/lib/libncursesw.6.dylib" "@executable_path/libncursesw.6.dylib" "$fn"
+          install_name_tool -change "${pkgs.libffi}/lib/libffi.6.dylib" "@executable_path/libffi.6.dylib" "$fn"
+        done
+      '') + ''
+        wrapProgram $out/bin/ghcjs --add-flags '"-B${bashScriptParentDir}/lib/ghcjs-${ghcVersion}"'
+        wrapProgram $out/bin/haddock-ghcjs --add-flags '"-B${bashScriptParentDir}/lib/ghcjs-${ghcVersion}"'
+        wrapProgram $out/bin/ghcjs-pkg --add-flags '"--global-package-db=${bashScriptParentDir}/lib/ghcjs-${ghcVersion}/package.conf.d"'
 
-      env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin
+        env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin
     '';
     # We hard code -j1 as a temporary workaround for
     # https://github.com/ghcjs/ghcjs/issues/654
