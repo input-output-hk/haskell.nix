@@ -69,4 +69,6 @@ let
     echo "================================================================="
   '';
 
-in { inherit preCheck postCheck configureFlags setupBuildFlags testFlags; }
+  enableShared = lib.mkDefault (!isLinuxCross);
+
+in { inherit preCheck postCheck configureFlags setupBuildFlags testFlags enableShared; }

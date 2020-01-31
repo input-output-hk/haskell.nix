@@ -1,0 +1,100 @@
+From 8e2c350f870f8cd99122c62efd023820e563e935 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Thu, 16 May 2019 13:35:31 +0800
+Subject: [PATCH] Add _GLOBAL_OFFSET_TABLE_ support
+
+This adds lookup logic for _GLOBAL_OFFSET_TABLE_ as well as
+relocation logic for R_ARM_BASE_PREL and R_ARM_GOT_BREL which
+the gnu toolchain (gas, gcc, ...) prefers to produce.  Apparently
+recent llvm toolchains will produce those as well.
+---
+ rts/linker/Elf.c     | 33 +++++++++++++++++++++++++++++++--
+ rts/linker/elf_got.c | 10 +++++++---
+ 2 files changed, 38 insertions(+), 5 deletions(-)
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index b647d207cb..c6f82af72a 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1023,6 +1023,19 @@ do_Elf_Rel_relocations ( ObjectCode* oc, char* ehdrC,
+        return 1;
+    }
+ 
++   /* The following nomenclature is used for the operation:
++    * - S -- (when used on its own) is the address of the symbol.
++    * - A -- is the addend for the relocation.
++    * - P -- is the address of the place being relocated (derived from r_offset).
++    * - Pa - is the adjusted address of the place being relocated, defined as (P & 0xFFFFFFFC).
++    * - T -- is 1 if the target symbol S has type STT_FUNC and the symbol addresses a Thumb instruction; it is 0 otherwise.
++    * - B(S) is the addressing origin of the output segment defining the symbol S. The origin is not required to be the
++    *        base address of the segment. This value must always be word-aligned.
++    * - GOT_ORG is the addressing origin of the Global Offset Table (the indirection table for imported data addresses).
++    *        This value must always be word-aligned.  See §4.6.1.8, Proxy generating relocations.
++    * - GOT(S) is the address of the GOT entry for the symbol S.
++    */
++
+    for (j = 0; j < nent; j++) {
+        Elf_Addr offset = rtab[j].r_offset;
+        Elf_Addr info   = rtab[j].r_info;
+@@ -1117,19 +1130,35 @@ do_Elf_Rel_relocations ( ObjectCode* oc, char* ehdrC,
+ #        endif
+ 
+ #        ifdef arm_HOST_ARCH
+-       case COMPAT_R_ARM_ABS32:
++       case COMPAT_R_ARM_ABS32:     /* (S + A) | T */
+            // Specified by Linux ARM ABI to be equivalent to ABS32
+        case COMPAT_R_ARM_TARGET1:
+            *(Elf32_Word *)P += S;
+            *(Elf32_Word *)P |= T;
+            break;
+ 
+-       case COMPAT_R_ARM_REL32:
++       case COMPAT_R_ARM_REL32:     /* ((S + A) | T) – P */
+            *(Elf32_Word *)P += S;
+            *(Elf32_Word *)P |= T;
+            *(Elf32_Word *)P -= P;
+            break;
+ 
++       case COMPAT_R_ARM_BASE_PREL: /* B(S) + A – P */
++       {
++           int32_t A = *pP;
++           // bfd used to encode sb (B(S)) as 0.
++           *(uint32_t *)P += 0 + A - P;
++           break;
++       }
++
++       case COMPAT_R_ARM_GOT_BREL: /* GOT(S) + A – GOT_ORG */
++       {
++           int32_t A = *pP;
++           void* GOT_S = symbol->got_addr;
++           *(uint32_t *)P = (uint32_t) GOT_S + A - (uint32_t) oc->info->got_start;
++           break;
++       }
++
+        case COMPAT_R_ARM_CALL:
+        case COMPAT_R_ARM_JUMP24:
+        {
+diff --git a/rts/linker/elf_got.c b/rts/linker/elf_got.c
+index 10ea25b98b..162fff3161 100644
+--- a/rts/linker/elf_got.c
++++ b/rts/linker/elf_got.c
+@@ -83,9 +83,13 @@ fillGot(ObjectCode * oc) {
+                     if(0x0 == symbol->addr) {
+                         symbol->addr = lookupSymbol_(symbol->name);
+                         if(0x0 == symbol->addr) {
+-                            errorBelch("Failed to lookup symbol: %s\n",
+-                                       symbol->name);
+-                            return EXIT_FAILURE;
++                            if(0 == strncmp(symbol->name,"_GLOBAL_OFFSET_TABLE_",21)) {
++                                symbol->addr = oc->info->got_start;
++                            } else {
++                                errorBelch("Failed to lookup symbol: %s\n",
++                                           symbol->name);
++                                return EXIT_FAILURE;
++                            }
+                         }
+                     } else {
+                         // we already have the address.
+-- 
+2.21.0
+

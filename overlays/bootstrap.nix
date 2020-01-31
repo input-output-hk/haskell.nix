@@ -99,6 +99,9 @@ in {
                 ++ self.lib.optional (version == "8.6.4")                             ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ self.lib.optional (versionAtLeast "8.6.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ self.lib.optional (versionAtLeast "8.4.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
+		++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
+		++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/global-offset-table.patch
+                ++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/global-offset-table-2.patch
                 ;
         in ({
             ghc844 = self.callPackage ../compiler/ghc {
