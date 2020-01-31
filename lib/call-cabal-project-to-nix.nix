@@ -12,6 +12,7 @@
 , hpack         ? defaults.hpack
 , cabal-install ? defaults.cabal-install
 , configureArgs ? "" # Extra arguments to pass to `cabal new-configure` (--enable-tests is included by default, include `--disable-tests` to override that)
+, hostPkgs
 , ...
 }@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
@@ -124,7 +125,7 @@ let
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map parseBlock (pkgs.lib.lists.drop 1 blocks);
       sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
-      otherText = pkgs.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
+      otherText = hostPkgs.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
     in {
