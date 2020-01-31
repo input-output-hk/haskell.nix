@@ -78,7 +78,7 @@ let
   #   ${(ghc.passthru.buildGHC or ghc).targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
   # '';
 
-  setup = if package.buildType == "Simple" && package.setup-depends == []
+  setup = if package.buildType == "Simple"
     then defaultSetup
     else setup-builder {
       component = components.setup // {
