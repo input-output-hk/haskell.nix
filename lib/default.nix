@@ -81,8 +81,20 @@ with haskellLib;
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
-  componentTarget = componentId:
-    if componentId.ctype == "all" then ""
+  componentSetupTarget = componentId: component:
+    if componentId.ctype == "all"
+    then ""
+    else
+      if component.isDoctest
+      # TODO: Why is this needed???
+      then "--enable-tests"
+      else "${componentId.ctype}:${componentId.cname}";
+
+  # Format a componentId as it should appear as a target on the
+  # command line of the setup script.
+  componentBuildTarget = componentId: component:
+    if componentId.ctype == "all"
+    then ""
     else "${componentId.ctype}:${componentId.cname}";
 
   # Remove null or empty values from an attrset.

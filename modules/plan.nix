@@ -128,6 +128,10 @@ let
             type = bool;
             default = (def.enableShared or true);
           };
+          isDoctest = mkOption {
+            type = bool;
+            default = false;
+          };
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
             type = unspecified; # Can be either a string or a function

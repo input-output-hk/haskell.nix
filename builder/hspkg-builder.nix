@@ -51,14 +51,14 @@ let
       inherit (config) preUnpack postUnpack;
     };
 
-  buildComp = componentId: component: comp-builder {
-    inherit componentId component package name src flags setup cabalFile cabal-generator patches revision
+  buildComp = allComponent: componentId: component: comp-builder {
+    inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches revision
             shellHook
             ;
   };
 
 in rec {
-  components = haskellLib.applyComponents buildComp config;
+  components = haskellLib.applyComponents (buildComp config.components.all) config;
   checks = pkgs.recurseIntoAttrs (builtins.mapAttrs
     (_: d: haskellLib.check d)
       (lib.filterAttrs (_: d: d.config.doCheck) components.tests));

@@ -1,6 +1,7 @@
 { stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp }:
 
-{ componentId
+{ allComponent
+, componentId
 , component
 , package
 , name
@@ -19,6 +20,7 @@
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
+, isDoctest ? component.isDoctest
 
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
@@ -52,10 +54,19 @@ let
     then "${name}-all"
     else "${name}-${componentId.ctype}-${componentId.cname}";
 
-  configFiles = makeConfigFiles {
-    inherit (package) identifier;
-    inherit component fullName flags;
-  };
+  configFiles =
+    if isDoctest
+    then
+      makeConfigFiles {
+        inherit (package) identifier;
+        component = allComponent;
+        inherit fullName flags;
+      }
+    else
+      makeConfigFiles {
+        inherit (package) identifier;
+        inherit component fullName flags;
+      };
 
   enableFeature = enable: feature:
     (if enable then "--enable-" else "--disable-") + feature;
@@ -64,7 +75,7 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
-      "${haskellLib.componentTarget componentId}"
+      "${haskellLib.componentSetupTarget componentId component}"
       "$(cat ${configFiles}/configure-flags)"
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
@@ -188,10 +199,11 @@ stdenv.mkDerivation ({
 
   SETUP_HS = setup + /bin/Setup;
 
-  outputs = ["out" ]
+  outputs = ["out"]
     ++ (lib.optional enableSeparateDataOutput "data")
     ++ (lib.optional doHaddock' "doc")
-    ++ (lib.optional keepSource "source");
+    ++ (lib.optional keepSource "source")
+    ++ (lib.optional isDoctest "dist");
 
   # Phases
   preInstallPhases = lib.optional doHaddock' "haddockPhase";
@@ -219,7 +231,7 @@ stdenv.mkDerivation ({
   buildPhase = ''
     runHook preBuild
     # https://gitlab.haskell.org/ghc/ghc/issues/9221
-    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (component.setupBuildFlags ++ setupGhcOptions)}
+    $SETUP_HS build ${haskellLib.componentBuildTarget componentId component} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (component.setupBuildFlags ++ setupGhcOptions)}
     runHook postBuild
   '';
 
@@ -325,7 +337,9 @@ stdenv.mkDerivation ({
     '')
     }
     runHook postInstall
-  '' + (lib.optionalString keepSource ''
+  '' + (lib.optionalString isDoctest ''
+    cp -r dist/ $dist/
+  '') + (lib.optionalString keepSource ''
     rm -rf dist
   '');
 
