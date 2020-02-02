@@ -95,6 +95,9 @@ in {
                 ++ always                    ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
                 ++ always                    ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
                 ++ from      "8.8"           ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
+                ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
+                ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
+                ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
 
                 # Patches for specific ghc versions.
                 ++ self.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
@@ -106,9 +109,6 @@ in {
                 ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ self.lib.optional (versionAtLeast "8.6.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ self.lib.optional (versionAtLeast "8.4.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
-		++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
-		++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/global-offset-table.patch
-                ++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/global-offset-table-2.patch
                 ;
         in ({
             ghc844 = self.callPackage ../compiler/ghc {
