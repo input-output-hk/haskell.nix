@@ -77,6 +77,43 @@ index 38c165d261..1a99aa3bb0 100644
  SRC_DIST_GHC_FILES += \
      configure.ac config.guess config.sub configure \
      aclocal.m4 README.md ANNOUNCE HACKING.md INSTALL.md LICENSE Makefile \
+diff --git a/libraries/libiserv/LICENSE b/libraries/libiserv/LICENSE
+new file mode 100644
+index 0000000000..6dc323b336
+--- /dev/null
++++ b/libraries/libiserv/LICENSE
+@@ -0,0 +1,31 @@
++The Glasgow Haskell Compiler License
++
++Copyright 2002, The University Court of the University of Glasgow.
++All rights reserved.
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
++
++- Redistributions of source code must retain the above copyright notice,
++this list of conditions and the following disclaimer.
++
++- Redistributions in binary form must reproduce the above copyright notice,
++this list of conditions and the following disclaimer in the documentation
++and/or other materials provided with the distribution.
++
++- Neither name of the University nor the names of its contributors may be
++used to endorse or promote products derived from this software without
++specific prior written permission.
++
++THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY COURT OF THE UNIVERSITY OF
++GLASGOW AND THE CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
++INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
++FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++UNIVERSITY COURT OF THE UNIVERSITY OF GLASGOW OR THE CONTRIBUTORS BE LIABLE
++FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
++DAMAGE.
 diff --git a/iserv/Makefile b/libraries/libiserv/Makefile
 similarity index 100%
 rename from iserv/Makefile
@@ -218,16 +255,6 @@ index 0000000000..f160978c19
 +dir = iserv
 +TOP = ..
 +include $(TOP)/mk/sub-makefile.mk
-diff --git a/utils/iserv-proxy/cabal.project b/utils/iserv-proxy/cabal.project
-new file mode 100644
-index 0000000000..2e6cd12dc9
---- /dev/null
-+++ b/utils/iserv-proxy/cabal.project
-@@ -0,0 +1,4 @@
-+packages: . ../../libraries/libiserv
-+
-+package libiserv
-+  flags: +network
 diff --git a/utils/iserv-proxy/ghc.mk b/utils/iserv-proxy/ghc.mk
 new file mode 100644
 index 0000000000..b90a96a1fa
@@ -711,16 +738,6 @@ index 0000000000..c91b2d08c6
 +
 +  lo_ref <- newIORef Nothing
 +  pure Pipe{ pipeRead = hdl, pipeWrite = hdl, pipeLeftovers = lo_ref }
-diff --git a/utils/iserv-slave/cabal.project b/utils/iserv-slave/cabal.project
-new file mode 100644
-index 0000000000..2e6cd12dc9
---- /dev/null
-+++ b/utils/iserv-slave/cabal.project
-@@ -0,0 +1,4 @@
-+packages: . ../../libraries/libiserv
-+
-+package libiserv
-+  flags: +network
 diff --git a/utils/iserv-slave/iserv-slave.cabal b/utils/iserv-slave/iserv-slave.cabal
 new file mode 100644
 index 0000000000..7f82f3d125

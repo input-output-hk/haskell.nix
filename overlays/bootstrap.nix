@@ -73,6 +73,7 @@ in {
                 ++ self.lib.optional (versionOlder "8.6.4")                           ./patches/ghc/MR95--ghc-pkg-deadlock-fix.patch
 
                 # Patches for which we only know a lower bound.
+                ++ self.lib.optional (versionAtLeast "8.4" && versionOlder "8.6")     ./patches/ghc/iserv-proxy-cleanup-8.4.2.patch                       # same as below
                 ++ self.lib.optional (versionAtLeast "8.6")                           ./patches/ghc/iserv-proxy-cleanup.patch                             # https://gitlab.haskell.org/ghc/ghc/merge_requests/250  -- merged; ghc-8.8.1
                 ++ self.lib.optional (versionAtLeast "8.2")                           ./patches/ghc/MR545--ghc-pkg-databases.patch                        # https://gitlab.haskell.org/ghc/ghc/merge_requests/545  -- merged; ghc-8.8.1
                 ++ self.lib.optional (versionAtLeast "8.6")                           ./patches/ghc/outputtable-assert-8.6.patch
