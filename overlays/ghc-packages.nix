@@ -38,8 +38,11 @@ let
 
   ghc-extra-pkgs = {
       ghc          = "compiler";
+      base         = "libraries/base";
+      bytestring   = "libraries/bytestring";
       ghci         = "libraries/ghci";
       ghc-boot     = "libraries/ghc-boot";
+      ghc-heap     = "libraries/ghc-heap";
       libiserv     = "libraries/libiserv";
       iserv        = "utils/iserv";
       remote-iserv = "utils/remote-iserv";
@@ -67,8 +70,13 @@ in rec {
       (pkgName: dir: importCabal "${name}-${pkgName}" "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
     self.buildPackages.haskell-nix.compiler;
 
-  ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value: let package-locs = builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs; in
-    self.writeTextFile {
+  ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:
+    let package-locs =
+      builtins.mapAttrs (_: dir: "${value.passthru.configured-src}/${dir}")
+        # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
+        # in `ghc-extra-projects` below to work with this.
+        (self.lib.filterAttrs (n: _: n != "base" && n != "ghc-heap") ghc-extra-pkgs);
+    in self.writeTextFile {
       name = "ghc-extra-pkgs-cabal-project-${name}";
       destination = "/cabal.project";
       text = ''
@@ -86,6 +94,7 @@ in rec {
       src = proj;
       index-state = "2019-10-31T00:00:00Z";
       ghc = self.buildPackages.haskell-nix.compiler.${name};
+      configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
 

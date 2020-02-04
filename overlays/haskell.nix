@@ -131,7 +131,7 @@ self: super: {
             }@args:
 
             let
-                pkg-def = plan-pkgs.pkgs;
+                pkg-def = excludeBootPackages plan-pkgs.pkgs;
                 # The compiler referenced in the stack config
                 compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
@@ -472,7 +472,7 @@ self: super: {
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865");
+            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc882");
           in self.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
@@ -486,6 +486,7 @@ self: super: {
             happy = self.buildPackages.haskell-nix.bootstrap.packages.happy;
             hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
+            ghc882 = self.buildPackages.haskell-nix.compiler.ghc882;
             ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {
