@@ -57,51 +57,58 @@ in {
             };
             ghc-patches = version: let
                 # Returns true iff this derivation's version is strictly older than ver.
-                versionOlder = ver: builtins.compareVersions ver version == 1;
+                versionLessThan = ver: builtins.compareVersions ver version == 1;
                 # Returns true iff this derivation's verion is greater than or equal to ver.
-                versionAtLeast = ver: !versionOlder ver;
-                # Patches for which we know they have been merged into a public release already
-                in self.lib.optional (versionAtLeast "8.4.4" && versionOlder "8.6")   ./patches/ghc/ghc-8.4.4-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (versionOlder "8.6")                             ./patches/ghc/move-iserv-8.4.2.patch
-                ++ self.lib.optional (versionOlder "8.6")                             ./patches/ghc/hsc2hs-8.4.2.patch
-                ++ self.lib.optional (versionOlder "8.6")                             ./patches/ghc/various-8.4.2.patch
-                ++ self.lib.optional (versionOlder "8.6")                             ./patches/ghc/lowercase-8.4.2.patch
-                ++ self.lib.optional (versionOlder "8.6")                             ./patches/ghc/cabal-exe-ext-8.4.2.patch
-                ++ self.lib.optional (versionOlder "8.6")                             ./patches/ghc/ghc-8.4.3-Cabal2201-SMP-test-fix.patch
-                ++ self.lib.optional (versionOlder "8.6")                             ./patches/ghc/outputtable-assert-8.4.patch
-                ++ self.lib.optional (versionAtLeast "8.6" && versionOlder "8.6.4")   ./patches/ghc/MR148--T16104-GhcPlugins.patch
-                ++ self.lib.optional (versionOlder "8.6.4")                           ./patches/ghc/MR95--ghc-pkg-deadlock-fix.patch
-
-                # Patches for which we only know a lower bound.
-                ++ self.lib.optional (versionAtLeast "8.6")                           ./patches/ghc/iserv-proxy-cleanup.patch                             # https://gitlab.haskell.org/ghc/ghc/merge_requests/250  -- merged; ghc-8.8.1
-                ++ self.lib.optional (versionAtLeast "8.2")                           ./patches/ghc/MR545--ghc-pkg-databases.patch                        # https://gitlab.haskell.org/ghc/ghc/merge_requests/545  -- merged; ghc-8.8.1
-                ++ self.lib.optional (versionAtLeast "8.6")                           ./patches/ghc/outputtable-assert-8.6.patch
-                ++ self.lib.optional (versionAtLeast "8.6")                           ./patches/ghc/mistuke-ghc-err_clean_up_error_handler-8ab1a89af89848f1713e6849f189de66c0ed7898.diff # this is part of Phyx- revamped io-manager.
-                ++ self.lib.optional (versionAtLeast "8.6.4")                         ./patches/ghc/ghc-8.6.4-reenable-th-qq-in-stage1.patch
-                ++ [
-                ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
-                ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
-                ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
-                ./patches/ghc/0001-Stop-the-linker-panic.patch                      # https://phabricator.haskell.org/D5012                  -- merged; ghc-8.8.1
-                ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
-                ./patches/ghc/ghc-8.4.3-Cabal2201-allow-test-wrapper.patch          # https://github.com/haskell/cabal/pulls/5995            -- merged; cabal-3.0.0 (ghc-8.8.1)
-                ./patches/ghc/ghc-8.4.3-Cabal2201-response-file-support.patch       # https://github.com/haskell/cabal/pulls/5996            -- merged; cabal-3.0.0 (ghc-8.8.1)
-                ./patches/ghc/ghc-8.6-Cabal-fix-datadir.patch                       # https://github.com/haskell/cabal/issues/5862
-                ./patches/ghc/MR196--ghc-pkg-shut-up.patch                          # https://gitlab.haskell.org/ghc/ghc/merge_requests/196  -- merged; ghc-8.8.1
-                ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
-                ]
+                versionAtLeast = ver: !versionLessThan ver;
+                from = start: self.lib.optional (versionAtLeast start);
+                fromUntil = start: end: self.lib.optional (versionAtLeast start && versionLessThan end);
+                until = end: self.lib.optional (versionLessThan end);
+                always = self.lib.optional true;
+                # Try to avoid reordering the patches unless a patch is added or changed that
+                # will be applied to most versions of the GHC anyway (reordering the patches
+                # results in rebuilds of GHC and reduces sharing in /nix/store).
+                in fromUntil "8.4.4" "8.6"   ./patches/ghc/ghc-8.4.4-reinstallable-lib-ghc.patch
+                ++ until             "8.6"   ./patches/ghc/move-iserv-8.4.2.patch
+                ++ until             "8.6"   ./patches/ghc/hsc2hs-8.4.2.patch
+                ++ until             "8.6"   ./patches/ghc/various-8.4.2.patch
+                ++ until             "8.6"   ./patches/ghc/lowercase-8.4.2.patch
+                ++ until             "8.6"   ./patches/ghc/cabal-exe-ext-8.4.2.patch
+                ++ until             "8.6"   ./patches/ghc/ghc-8.4.3-Cabal2201-SMP-test-fix.patch
+                ++ until             "8.6"   ./patches/ghc/outputtable-assert-8.4.patch
+                ++ fromUntil "8.6"   "8.6.4" ./patches/ghc/MR148--T16104-GhcPlugins.patch
+                ++ until             "8.6.4" ./patches/ghc/MR95--ghc-pkg-deadlock-fix.patch
+                ++ fromUntil "8.6"   "8.8"   ./patches/ghc/iserv-proxy-cleanup.patch                             # https://gitlab.haskell.org/ghc/ghc/merge_requests/250  -- merged; ghc-8.8.1
+                ++ from      "8.6"           ./patches/ghc/iserv-proxy-cleanup-2.patch
+                ++ from      "8.8"           ./patches/ghc/iserv-proxy-cleanup-3.patch
+                ++ fromUntil "8.2"   "8.8"   ./patches/ghc/MR545--ghc-pkg-databases.patch                        # https://gitlab.haskell.org/ghc/ghc/merge_requests/545  -- merged; ghc-8.8.1
+                ++ fromUntil "8.6"   "8.8"   ./patches/ghc/outputtable-assert-8.6.patch
+                ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-reenable-th-qq-in-stage1.patch
+                ++ until             "8.8"   ./patches/ghc/0001-Stop-the-linker-panic.patch                      # https://phabricator.haskell.org/D5012                  -- merged; ghc-8.8.1
+                ++ until             "8.8"   ./patches/ghc/ghc-8.4.3-Cabal2201-allow-test-wrapper.patch          # https://github.com/haskell/cabal/pulls/5995            -- merged; cabal-3.0.0 (ghc-8.8.1)
+                ++ until             "8.8"   ./patches/ghc/ghc-8.4.3-Cabal2201-response-file-support.patch       # https://github.com/haskell/cabal/pulls/5996            -- merged; cabal-3.0.0 (ghc-8.8.1)
+                ++ until             "8.8"   ./patches/ghc/ghc-8.6-Cabal-fix-datadir.patch                       # https://github.com/haskell/cabal/issues/5862
+                ++ until             "8.8"   ./patches/ghc/MR196--ghc-pkg-shut-up.patch                          # https://gitlab.haskell.org/ghc/ghc/merge_requests/196  -- merged; ghc-8.8.1
+                ++ from      "8.6"           ./patches/ghc/mistuke-ghc-err_clean_up_error_handler-8ab1a89af89848f1713e6849f189de66c0ed7898.diff # this is part of Phyx- revamped io-manager.
+                ++ always                    ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
+                ++ always                    ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
+                ++ always                    ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
+                ++ always                    ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
+                ++ always                    ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
+                ++ from      "8.8"           ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
+                ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
+                ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
+                ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
 
                 # Patches for specific ghc versions.
-                ++ self.lib.optional (version == "8.6.3")                             ./patches/ghc/T16057--ghci-doa-on-windows.patch
-                ++ self.lib.optional (version == "8.6.3")                             ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.6.4")                             ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.6.5")                             ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.6.4")                             ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
+                ++ self.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
+                ++ self.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.8.2") ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ self.lib.optional (versionAtLeast "8.6.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ self.lib.optional (versionAtLeast "8.4.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
-		++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
-		++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/global-offset-table.patch
-                ++ self.lib.optional (versionAtLeast "8.6.4" && versionOlder "8.8")       ./patches/ghc/global-offset-table-2.patch
                 ;
         in ({
             ghc844 = self.callPackage ../compiler/ghc {
@@ -205,6 +212,38 @@ in {
 
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
+            };
+            ghc881 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc881; };
+
+                inherit bootPkgs sphinx installDeps;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_7;
+                llvmPackages = self.llvmPackages_7;
+
+                src-spec = rec {
+                    version = "8.8.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "06kj4fhvijinjafiy4s873n60qly323rdlz9bmc79nhlp3cq72lh";
+                };
+
+                ghc-patches = ghc-patches "8.8.1";
+            };
+            ghc882 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc882; };
+
+                inherit bootPkgs sphinx installDeps;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_7;
+                llvmPackages = self.llvmPackages_7;
+
+                src-spec = rec {
+                    version = "8.8.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "02qa6wgjpxgakg7hv4zfdlrx9k7zxa5i02wnr6y9fsv8j16sbkh1";
+                };
+
+                ghc-patches = ghc-patches "8.8.2";
             };
         } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs

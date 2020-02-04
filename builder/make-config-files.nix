@@ -146,6 +146,14 @@ in { identifier, component, fullName, flags ? {} }:
   #
   # NOTE [ln -s -f]: we force link, as we may have dependencies that contain shared deps
   #                  (e.g. libiconv), and thus we don't want to fail, but just link it again.
+  #
+  # Confusing sed stuff:
+  #   '/^ ./{H;$!d} ; x'                       Groups lines that start with a space with the initial
+  #                                            line of a block.  Needs a blank line added to the file
+  #                                            to terminate the last block.
+  #   's/ /\n/g ; s/\n\n*/\n/g; s/^\n//;'      Puts each field on its own line.
+  #   's|/nix/store/|''${pkgroot}/../../../|'  Convert store path to pkgroot relative path
+  #   's|''${pkgroot}/../../../|/nix/store/|'  Convert pkgroot relative path to store path
   + lib.optionalString stdenv.isDarwin ''
     # Work around a limit in the macOS Sierra linker on the number of paths
     # referenced by any one dynamic library:
@@ -155,12 +163,19 @@ in { identifier, component, fullName, flags ? {} }:
     local dynamicLinksDir="$out/lib/links"
     mkdir -p $dynamicLinksDir
     # Enumerate dynamic-library-dirs with ''${pkgroot} expanded.
-    for d in $(grep dynamic-library-dirs "$out/${packageCfgDir}/"*|awk '{print $2}'|sed 's|''${pkgroot}/../../../|/nix/store/|' | sort -u); do
+    local dirsToLink=$(
+      for f in "$out/${packageCfgDir}/"*.conf; do
+        (cat $f; echo) | sed -En '/^ ./{H;$!d} ; x ; /^dynamic-library-dirs:/ {s/^dynamic-library-dirs:// ; s/ /\n/g ; s/\n\n*/\n/g; s/^\n//; p}'
+      done | sed 's|''${pkgroot}/../../../|/nix/store/|' | sort -u
+    )
+    for d in $dirsToLink; do
       ln -f -s "$d/"*.dylib $dynamicLinksDir
     done
     # Edit the local package DB to reference the links directory.
     for f in "$out/${packageCfgDir}/"*.conf; do
-      sed -i "s,dynamic-library-dirs: .*,dynamic-library-dirs: $dynamicLinksDir," $f
+      chmod +w $f
+      echo >> $f
+      sed -i -E "/^ ./{H;$!d} ; x ; s,^dynamic-library-dirs:.*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
     # Use ''${pkgroot} relative paths so that we can relocate the package database
