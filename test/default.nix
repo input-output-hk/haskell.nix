@@ -167,6 +167,7 @@ let
     ghc-options-stack = haskell-nix.callPackage ./ghc-options/stack.nix {};
     exe-only = haskell-nix.callPackage ./exe-only { inherit util; };
     stack-source-repo = haskell-nix.callPackage ./stack-source-repo {};
+    cabal-doctests = haskell-nix.callPackage ./cabal-doctests { inherit util; };
 
     unit = unitTests;
   };
