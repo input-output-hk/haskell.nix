@@ -143,6 +143,15 @@ with haskellLib;
      (lib.filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
     // { recurseForDerivations = true; };
 
+  # Equivalent to collectComponents with (_: true) as selection function.
+  # Useful for pre-filtered package-set.
+  #
+  # For example:
+  #
+  #    myHaskellPackages = selectProjectPackages hsPkgs;
+  #    myTests = collectComponents' "tests" myHaskellPackages;
+  collectComponents' = group: collectComponents group (_: true);
+
   # Replacement for lib.cleanSourceWith that has a subDir argument.
   inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;
 

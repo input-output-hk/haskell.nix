@@ -281,17 +281,21 @@ Assorted functions for operating on [Haskell.nix][] data. This is
 distinct from `pkgs.haskell.lib` in the current Nixpkgs Haskell
 Infrastructure.
 
-### collectComponents
+### collectComponents and collectComponents'
 
 Extracts a selection of components from a Haskell [package set](#package-set).
 
 This can be used to filter out all test suites or benchmarks of
 your project, so that they can be built in Hydra (see check if you
-waht to run the tests as well as build them).
+want to run the tests as well as build them).
+
+`collectComponents'` is an alias of `collectComponents` without
+predicate for filtering.
 
 ```
 collectComponents =
     group: packageSel: haskellPackages: ...
+collectComponents' = group: collectComponents (_: true)
 ```
 
 
