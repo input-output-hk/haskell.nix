@@ -325,7 +325,7 @@ This function turns a derivation that builds a test into one to run it.
 | `drv`           | Derivation | One of `$pkg.components.tests.$test`. |
 
 For convenience `$pkg.components.tests` are mapped with this function
-to `$pkg.components.checks`.
+to `$pkg.checks`.
 
 This function is intended for use with `tests` but it should also work
 for `exes` and `benchmarks` if you just want to run them to make sure
