@@ -3,7 +3,8 @@
 # It adds a subDir argument in a way that allows descending into a subdirectory
 # to compose with cleaning the source with a filter.
 { lib }: rec {
-  cleanSourceWith = { filter ? path: type: true, src, subDir ? "" }:
+  cleanSourceWith =
+    { name ? null, filter ? path: type: true, src, subDir ? "" }:
     let
       subDir' = if subDir == "" then "" else "/" + subDir;
       # In case this is mixed with older versions of cleanSourceWith
@@ -12,20 +13,29 @@
       origSrc = if isFiltered || isFilteredEx then src.origSrc else src;
       origSubDir = if isFilteredEx then src.origSubDir + subDir' else subDir';
       origSrcSubDir = toString origSrc + origSubDir;
-      parentFilter = if isFiltered || isFilteredEx
-        then path: type: src.filter path type
-        else path: type: true;
+      newPath = path:
+        if isNull name then
+          path
+        else
+          builtins.path {
+            inherit name;
+            path = builtins.unsafeDiscardStringContext path;
+          };
+      parentFilter = if isFiltered || isFilteredEx then
+        path: type: src.filter path type
+      else
+        path: type: true;
       filter' = path: type:
         # Include parent paths based on the parent filter
-           (lib.strings.hasPrefix (path + "/") (origSrcSubDir + "/")
-            && parentFilter path type)
+        (lib.strings.hasPrefix (path + "/") (origSrcSubDir + "/")
+          && parentFilter path type)
         # Children only if both filters return true
         || (lib.strings.hasPrefix (origSrcSubDir + "/") path
-            && (filter path type && parentFilter path type));
+          && (filter path type && parentFilter path type));
     in {
       inherit origSrc origSubDir origSrcSubDir;
       filter = filter';
-      outPath = (builtins.filterSource filter' origSrc) + origSubDir;
+      outPath = (newPath (builtins.filterSource filter' origSrc)) + origSubDir;
       _isLibCleanSourceWithEx = true;
       # It is only safe for older cleanSourceWith to filter this one
       # if the we are still looking at the root of origSrc
@@ -35,7 +45,6 @@
   pathHasContext = builtins.hasContext or (lib.hasPrefix builtins.storeDir);
 
   canCleanSource = src:
-       src ? _isLibCleanSourceWithEx
-    || src ? _isLibCleanSourceWith
+    src ? _isLibCleanSourceWithEx || src ? _isLibCleanSourceWith
     || !(pathHasContext (toString src));
 }
