@@ -90,6 +90,7 @@ in
 
     passthru = (mkDrvArgs.passthru or {}) // {
       ghc = ghcEnv;
+      inherit configFiles;
     };
   } // lib.optionalAttrs exactDeps {
     CABAL_CONFIG = "${configFiles}/cabal.config";
