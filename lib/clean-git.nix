@@ -1,5 +1,5 @@
 # From https://github.com/NixOS/nix/issues/2944
-{ lib, hostPkgs, cleanSourceWith }:
+{ lib, runCommand, git, cleanSourceWith }:
 { src, subDir ? "" }:
 
 # The function call
@@ -118,7 +118,7 @@ then
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
     whitelist_file =
-      hostPkgs.runCommand "git-ls-files" {envVariable = true;} ''
+      runCommand "git-ls-files" {envVariable = true;} ''
         tmp=$(mktemp -d)
         cd $tmp
         ${ lib.optionalString (!isWorktree && builtins.pathExists gitModulesStr) ''
@@ -135,7 +135,7 @@ then
         ${ lib.optionalString (isWorktree && builtins.pathExists gitModulesStr) ''
           cp ${gitModules} ./.gitmodules
         ''}
-        ${hostPkgs.git}/bin/git ls-files --recurse-submodules > $out
+        ${git}/bin/git ls-files --recurse-submodules > $out
       '';
 
     whitelist = lines (readFile (whitelist_file.out));

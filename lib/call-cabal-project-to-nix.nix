@@ -16,7 +16,6 @@
                      # If the tests and benchmarks are not needed and they
                      # causes the wrong plan to be choosen, then we can use
                      # `configureArgs = "--disable-tests --disable-benchmarks";`
-, hostPkgs
 , ...
 }@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
@@ -129,7 +128,7 @@ let
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map parseBlock (pkgs.lib.lists.drop 1 blocks);
       sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
-      otherText = hostPkgs.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
+      otherText = pkgs.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
     in {

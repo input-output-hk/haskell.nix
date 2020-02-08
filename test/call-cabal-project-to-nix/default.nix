@@ -1,4 +1,4 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, pkgs }:
+{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib }:
 
 with stdenv.lib;
 
@@ -9,7 +9,6 @@ let
     index-state = "2019-04-30T00:00:00Z";
     # reuse the cabal-simple test project
     src = ../cabal-simple;
-    hostPkgs = import pkgs.path { config = {}; overlays = []; };
   }));
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = plan.pkgs;
