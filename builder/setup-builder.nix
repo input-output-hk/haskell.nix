@@ -1,15 +1,14 @@
 { stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
-{ component, package, name, src, flags, revision, patches, defaultSetupSrc
+{ component, package, name, src, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
 , prePatch ? null, postPatch ? null
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
+, cleanSrc ? haskellLib.cleanCabalComponent package component src
 }:
 
 let
-  cleanSrc = haskellLib.cleanCabalComponent package component src;
-
   fullName = "${name}-setup";
 
   includeGhcPackage = lib.any (p: p.identifier.name == "ghc") component.depends;
@@ -36,7 +35,7 @@ let
 in
  stdenv.lib.fix (drv:
     stdenv.mkDerivation ({
-      name = "${fullName}";
+      name = "${ghc.targetPrefix}${fullName}";
       src = cleanSrc;
       buildInputs = component.libs
         ++ component.frameworks
@@ -70,7 +69,7 @@ in
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded '' + (if includeGhcPackage then "-package ghc " else "")
-                + ''-package-db ${configFiles}/package.conf.d --make -o ./Setup
+                + ''-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
             setup=$(pwd)/Setup
           fi
         done
