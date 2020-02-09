@@ -82,10 +82,7 @@ let
     then defaultSetup
     else setup-builder {
       component = components.setup // {
-        depends = let deps = (config.setup-depends ++ components.setup.depends ++ package.setup-depends);
-                  in if package.identifier.name == "distributive"
-                     then (builtins.trace (lib.concatMapStringsSep ", " (x: x.identifier.name) deps) deps)
-                     else deps;
+        depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
         extraSrcFiles = components.setup.extraSrcFiles ++ [ "Setup.hs" "Setup.lhs" ];
       };
       inherit package name src flags revision patches defaultSetupSrc;
