@@ -650,13 +650,16 @@ use the convenience function <a href="#cleansourcehaskell"><code>cleanSourceHask
 <p>Assorted functions for operating on <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> data. This is
 distinct from <code>pkgs.haskell.lib</code> in the current Nixpkgs Haskell
 Infrastructure.</p>
-<h3 id="collectcomponents">collectComponents<a class="headerlink" href="#collectcomponents" title="Permanent link">&para;</a></h3>
+<h3 id="collectcomponents-and-collectcomponents">collectComponents and collectComponents'<a class="headerlink" href="#collectcomponents-and-collectcomponents" title="Permanent link">&para;</a></h3>
 <p>Extracts a selection of components from a Haskell <a href="#package-set">package set</a>.</p>
 <p>This can be used to filter out all test suites or benchmarks of
 your project, so that they can be built in Hydra (see check if you
-waht to run the tests as well as build them).</p>
+want to run the tests as well as build them).</p>
+<p><code>collectComponents'</code> is an alias of <code>collectComponents</code> without
+predicate for filtering.</p>
 <pre><code>collectComponents =
     group: packageSel: haskellPackages: ...
+collectComponents' = group: collectComponents (_: true)
 </code></pre>
 
 <table>
@@ -711,7 +714,7 @@ to <code>tests.mypackage.unit-tests</code>.</p>
 </tbody>
 </table>
 <p>For convenience <code>$pkg.components.tests</code> are mapped with this function
-to <code>$pkg.components.checks</code>.</p>
+to <code>$pkg.checks</code>.</p>
 <p>This function is intended for use with <code>tests</code> but it should also work
 for <code>exes</code> and <code>benchmarks</code> if you just want to run them to make sure
 they execute.</p>
