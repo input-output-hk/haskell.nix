@@ -337,7 +337,7 @@ in {
               isHaskellNixBootCompiler = true;
             }
           )
-          (import ../compiler/old-ghc-nix { pkgs = self; });
+          (import ../compiler/old-ghc-nix { pkgs = self.buildPackages; });
 
         packages = {
             # cabal has it's own bootstrap script which we'll use.
