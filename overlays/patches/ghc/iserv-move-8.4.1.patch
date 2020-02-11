@@ -60,20 +60,6 @@ Differential Revision: https://phabricator.haskell.org/D4436
  create mode 100644 utils/iserv/iserv.cabal
  rename {iserv => utils/iserv}/src/Main.hs (100%)
 
-diff --git a/.gitignore b/.gitignore
-index 67eea8a29f..0d3a3a24d8 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -81,8 +81,7 @@ _darcs/
- /ghc/stage1/
- /ghc/stage2/
- /ghc/stage3/
--/iserv/stage2*/
--/iserv/dist/
-+/utils/iserv/stage2*/
- 
- # -----------------------------------------------------------------------------
- # specific generated files
 diff --git a/ghc.mk b/ghc.mk
 index 38c165d261..b7bcc92196 100644
 --- a/ghc.mk

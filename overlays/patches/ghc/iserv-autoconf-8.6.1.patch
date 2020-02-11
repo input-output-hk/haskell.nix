@@ -43,27 +43,6 @@ Differential Revision: https://phabricator.haskell.org/D5302
  create mode 100644 utils/iserv-proxy/iserv-proxy.cabal.in
  create mode 100644 utils/iserv/iserv.cabal.in
 
-diff --git a/.gitignore b/.gitignore
-index 7e2425c964..da0254f26a 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -153,6 +153,7 @@ _darcs/
- /libraries/hslogo-16.png
- /libraries/index-frames.html
- /libraries/index.html
-+/libraries/libiserv/libiserv.cabal
- /libraries/minus.gif
- /libraries/ocean.css
- /libraries/plus.gif
-@@ -178,6 +179,8 @@ _darcs/
- /testsuite_summary*.txt
- /testsuite*.xml
- /testlog*
-+/utils/iserv/iserv.cabal
-+/utils/iserv-proxy/iserv-proxy.cabal
- /utils/mkUserGuidePart/mkUserGuidePart.cabal
- /utils/runghc/runghc.cabal
- /utils/gen-dll/gen-dll.cabal
 diff --git a/configure.ac b/configure.ac
 index 5fd3441563..d7d8d192a9 100644
 --- a/configure.ac
