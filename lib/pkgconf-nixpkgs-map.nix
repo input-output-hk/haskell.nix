@@ -12,6 +12,7 @@ pkgs:
     "asound"                             = [ pkgs."alsaLib" ];
     "atk"                                = [ pkgs."atk" ];
     "b2"                                 = [ pkgs."libb2" ];
+    "bdw-gc"                             = [ pkgs."boehmgc" ];
     "bz2"                                = [ pkgs."bzip2" ];
     "c++"                                = []; # What is that?
     "cairo-1.0"                          = [ pkgs."cairo" ];
@@ -95,6 +96,9 @@ pkgs:
     "mnl"                                = [ pkgs."libmnl" ];
     "mpi"                                = [ pkgs."openmpi" ];
     "ncursesw"                           = [ pkgs."ncurses" ];
+    "nix-expr"                           = [ pkgs."nix" ];
+    "nix-main"                           = [ pkgs."nix" ];
+    "nix-store"                          = [ pkgs."nix" ];
     "netsnmp"                            = [ pkgs."net_snmp" ];
     "notify"                             = [ pkgs."libnotify" ];
     "odbc"                               = [ pkgs."unixODBC" ];

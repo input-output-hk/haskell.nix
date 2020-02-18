@@ -68,7 +68,7 @@ in {
                 # will be applied to most versions of the GHC anyway (reordering the patches
                 # results in rebuilds of GHC and reduces sharing in /nix/store).
                 in fromUntil "8.4.4" "8.6"   ./patches/ghc/ghc-8.4.4-reinstallable-lib-ghc.patch
-                ++ until             "8.6"   ./patches/ghc/move-iserv-8.4.2.patch
+                ++ until             "8.6"   ./patches/ghc/iserv-move-8.4.1.patch                                # 6fbe5f274ba84181f5db50901639ae382ef68c4b               -- merged; ghc-8.6.1
                 ++ until             "8.6"   ./patches/ghc/hsc2hs-8.4.2.patch
                 ++ until             "8.6"   ./patches/ghc/various-8.4.2.patch
                 ++ until             "8.6"   ./patches/ghc/lowercase-8.4.2.patch
@@ -77,9 +77,11 @@ in {
                 ++ until             "8.6"   ./patches/ghc/outputtable-assert-8.4.patch
                 ++ fromUntil "8.6"   "8.6.4" ./patches/ghc/MR148--T16104-GhcPlugins.patch
                 ++ until             "8.6.4" ./patches/ghc/MR95--ghc-pkg-deadlock-fix.patch
-                ++ fromUntil "8.6"   "8.8"   ./patches/ghc/iserv-proxy-cleanup.patch                             # https://gitlab.haskell.org/ghc/ghc/merge_requests/250  -- merged; ghc-8.8.1
-                ++ from      "8.6"           ./patches/ghc/iserv-proxy-cleanup-2.patch
-                ++ from      "8.8"           ./patches/ghc/iserv-proxy-cleanup-3.patch
+                ++ fromUntil "8.4"   "8.6"   ./patches/ghc/iserv-autoconf-8.4.1.patch                            # (same as below, but based on 8.4)
+                ++ fromUntil "8.6"   "8.8"   ./patches/ghc/iserv-autoconf-8.6.1.patch                            # 8f9f52d8e421ce544d5437a93117545d52d0eabd               -- merged; ghc-8.8.1
+                ++ fromUntil "8.4"   "8.6"   ./patches/ghc/iserv-cleanup-8.8.1-prepare-8.4.1.patch               # (prepare for below; see patch for details)
+                ++ until             "8.10"  ./patches/ghc/iserv-cleanup-8.8.1.patch                             # https://gitlab.haskell.org/ghc/ghc/merge_requests/250  -- merged; ghc-8.10.1
+                ++ fromUntil "8.4"   "8.6"   ./patches/ghc/iserv-cleanup-8.8.1-revert-8.4.1.patch                # (revert prepare)
                 ++ fromUntil "8.2"   "8.8"   ./patches/ghc/MR545--ghc-pkg-databases.patch                        # https://gitlab.haskell.org/ghc/ghc/merge_requests/545  -- merged; ghc-8.8.1
                 ++ fromUntil "8.6"   "8.8"   ./patches/ghc/outputtable-assert-8.6.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-reenable-th-qq-in-stage1.patch
@@ -245,31 +247,55 @@ in {
 
                 ghc-patches = ghc-patches "8.8.2";
             };
-        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false) {
-            ghc865 = let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
+        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
+                # This will inject `exactDeps` and `envDeps`  into the ghcjs
+                # compiler defined below.  This is crucial to build packages
+                # with the current use of env and exact Deps.
+                (builtins.mapAttrs
+                    (_: v: v // {
+                        isHaskellNixBootCompiler = true;
+                    })
+          ({
+            ghc865 = let buildGHC = self.buildPackages.haskell-nix.compiler.ghc865;
+                in let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";
-                ghc = self.buildPackages.haskell-nix.compiler.ghc865;
+                ghc = buildGHC;
+                cabal-install = self.buildPackages.haskell-nix.cabal-install;
+                # The alex from the bootstrap packages is apparently broken, and will fail with something like:
+                # > alex: /nix/store/f7b78rg9pmqgvxvsqfzh1przp7pxii5a-alex-3.2.4-exe-alex/share/x86_64-osx-ghc-8.4.4/alex-3.2.4-1pf5faR9dBuJ8mryql0DoA-alex/AlexTemplate-ghc-nopred: openFile: does not exist (No such file or directory)
+                # inherit (self.buildPackages.haskell-nix.bootstrap.packages) alex happy;
             }; in let targetPrefix = "js-unknown-ghcjs-"; in self.runCommand "${targetPrefix}ghc-8.6.5" {
                 passthru = {
                     inherit targetPrefix;
                     version = "8.6.5";
+                    isHaskellNixCompiler = true;
+                    inherit (ghcjs865) configured-src;
+                    inherit buildGHC;
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        # setting gcc is stupid. non-emscripten ghcjs has no cc.
+                        # however cabal insists on compiling the c sources. m(
+                        "--with-gcc=${self.buildPackages.stdenv.cc}/bin/cc"
+                    ];
                 };
-            } ''
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
                 mkdir -p $out/bin
                 cd $out/bin
                 ln -s ${ghcjs865}/bin/ghcjs ${targetPrefix}ghc
                 ln -s ${ghcjs865}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
-                ln -s ${ghcjs865}/bin/hsc2hs-ghcjs ${targetPrefix}hsc2hs
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
                 mkdir lib
                 cd lib
                 cp -R ${ghcjs865}/lib/ghcjs-8.6.5 ${targetPrefix}ghc-8.6.5
-                '';
-        });
+            '' + installDeps targetPrefix);
+        })));
 
     ghc = self.haskell-nix.compiler.ghc865;
-    cabal-install = self.buildPackages.haskell-nix.bootstrap.packages.cabal-install;
+    inherit (self.buildPackages.haskell-nix.bootstrap.packages) cabal-install alex happy;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose

@@ -8,6 +8,11 @@ let
 
   compiler = cabal.compiler // {
     isGhc = true;
+    # this is partially a hack to support `impl(ghcjs)`.
+    # We set GHC == true _and_ GHCJS == true.
+    isGhcjs = hostMap.os == "Ghcjs";
+    # maybe we need something for asterius here
+    # as well.
     version = lib.mapAttrs (_: f: v: f (builtins.compareVersions config.compiler.version v)) {
       eq = c: c == 0;
       gt = c: c > 0;

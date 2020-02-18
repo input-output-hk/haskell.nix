@@ -1,32 +1,67 @@
-diff --git a/aclocal.m4 b/aclocal.m4
-index ac20bbc630..0e3a302ef6 100644
---- a/aclocal.m4
-+++ b/aclocal.m4
-@@ -2383,7 +2383,8 @@ AC_DEFUN([FIND_LD],[
-                    FP_CC_LINKER_FLAG_TRY(bfd, $2) ;;
-               "GNU gold"*)
-                    FP_CC_LINKER_FLAG_TRY(gold, $2)
--                   LD_NO_GOLD=ld
-+                   LD_NO_GOLD=
-+                   AC_CHECK_TARGET_TOOL([LD_NO_GOLD],[ld])
-                    ;;
-               "LLD"*)
-                    FP_CC_LINKER_FLAG_TRY(lld, $2) ;;
-diff --git a/configure.ac b/configure.ac
-index b74938f7da..8bed181915 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -16,7 +16,7 @@ dnl
- AC_INIT([The Glorious Glasgow Haskell Compilation System], [8.4.2], [glasgow-haskell-bugs@haskell.org], [ghc-AC_PACKAGE_VERSION])
- 
- # Set this to YES for a released version, otherwise NO
--: ${RELEASE=YES}
-+: ${RELEASE=NO}
- 
- # The primary version (e.g. 7.5, 7.4.1) is set in the AC_INIT line
- # above.  If this is not a released version, then we will append the 
+From 290992a9006ca83c74aae165d456d2c000a5e632 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Thu, 7 Jun 2018 13:36:24 -0400
+Subject: [PATCH] Move `iserv` into `utils` and change package name from
+ `iserv-bin` to `iserv`
+
+This is done for consistency. We usually call the package file the same name the
+folder has.  The move into `utils` is done so that we can move the library into
+`libraries/iserv` and the proxy into `utils/iserv-proxy` and then break the
+`iserv.cabal` apart.  This will make building the cross compiler with TH
+simpler, because we can build the library and proxy as separate packages.
+
+Test Plan: ./validate
+
+Reviewers: bgamari, goldfire, erikd
+
+Reviewed By: bgamari
+
+Subscribers: rwbarton, thomie, carter
+
+Differential Revision: https://phabricator.haskell.org/D4436
+---
+ .gitignore                                    |   3 +-
+ ghc.mk                                        |  11 +-
+ {iserv => libraries/libiserv}/Makefile        |   0
+ .../libiserv}/cbits/iservmain.c               |   0
+ libraries/libiserv/ghc.mk                     |   5 +
+ libraries/libiserv/libiserv.cabal             |  39 +++
+ .../libiserv}/proxy-src/Remote.hs             |   0
+ .../libiserv}/src/GHCi/Utils.hsc              |   0
+ {iserv => libraries/libiserv}/src/Lib.hs      |   0
+ .../libiserv}/src/Remote/Message.hs           |   0
+ .../libiserv}/src/Remote/Slave.hs             |   0
+ utils/iserv-proxy/Makefile                    |  15 +
+ utils/iserv-proxy/ghc.mk                      | 113 ++++++++
+ .../iserv-proxy/iserv-proxy.cabal             |  72 +----
+ utils/iserv-proxy/src/Main.hs                 | 262 ++++++++++++++++++
+ utils/iserv/Makefile                          |  15 +
+ utils/iserv/cbits/iservmain.c                 |  17 ++
+ {iserv => utils/iserv}/ghc.mk                 |  66 ++---
+ utils/iserv/iserv.cabal                       |  44 +++
+ {iserv => utils/iserv}/src/Main.hs            |   0
+ 20 files changed, 555 insertions(+), 107 deletions(-)
+ rename {iserv => libraries/libiserv}/Makefile (100%)
+ rename {iserv => libraries/libiserv}/cbits/iservmain.c (100%)
+ create mode 100644 libraries/libiserv/ghc.mk
+ create mode 100644 libraries/libiserv/libiserv.cabal
+ rename {iserv => libraries/libiserv}/proxy-src/Remote.hs (100%)
+ rename {iserv => libraries/libiserv}/src/GHCi/Utils.hsc (100%)
+ rename {iserv => libraries/libiserv}/src/Lib.hs (100%)
+ rename {iserv => libraries/libiserv}/src/Remote/Message.hs (100%)
+ rename {iserv => libraries/libiserv}/src/Remote/Slave.hs (100%)
+ create mode 100644 utils/iserv-proxy/Makefile
+ create mode 100644 utils/iserv-proxy/ghc.mk
+ rename iserv/iserv-bin.cabal => utils/iserv-proxy/iserv-proxy.cabal (61%)
+ create mode 100644 utils/iserv-proxy/src/Main.hs
+ create mode 100644 utils/iserv/Makefile
+ create mode 100644 utils/iserv/cbits/iservmain.c
+ rename {iserv => utils/iserv}/ghc.mk (56%)
+ create mode 100644 utils/iserv/iserv.cabal
+ rename {iserv => utils/iserv}/src/Main.hs (100%)
+
 diff --git a/ghc.mk b/ghc.mk
-index 38c165d261..1a99aa3bb0 100644
+index 38c165d261..b7bcc92196 100644
 --- a/ghc.mk
 +++ b/ghc.mk
 @@ -473,6 +473,7 @@ endif
@@ -59,15 +94,6 @@ index 38c165d261..1a99aa3bb0 100644
  
  # ----------------------------------------------
  # Actually include the sub-ghc.mk's
-@@ -1105,7 +1106,7 @@ BIN_DIST_MK = $(BIN_DIST_PREP_DIR)/bindist.mk
- unix-binary-dist-prep:
- 	$(call removeTrees,bindistprep/)
- 	"$(MKDIRHIER)" $(BIN_DIST_PREP_DIR)
--	set -e; for i in packages LICENSE compiler ghc iserv rts libraries utils docs libffi includes driver mk rules Makefile aclocal.m4 config.sub config.guess install-sh settings.in llvm-targets ghc.mk inplace distrib/configure.ac distrib/README distrib/INSTALL; do ln -s ../../$$i $(BIN_DIST_PREP_DIR)/; done
-+	set -e; for i in packages LICENSE compiler ghc rts libraries utils docs libffi includes driver mk rules Makefile aclocal.m4 config.sub config.guess install-sh settings.in llvm-targets ghc.mk inplace distrib/configure.ac distrib/README distrib/INSTALL; do ln -s ../../$$i $(BIN_DIST_PREP_DIR)/; done
- 	echo "HADDOCK_DOCS       = $(HADDOCK_DOCS)"       >> $(BIN_DIST_MK)
- 	echo "BUILD_SPHINX_HTML  = $(BUILD_SPHINX_HTML)"  >> $(BIN_DIST_MK)
- 	echo "BUILD_SPHINX_PDF   = $(BUILD_SPHINX_PDF)"   >> $(BIN_DIST_MK)
 @@ -1199,7 +1200,7 @@ SRC_DIST_TESTSUITE_TARBALL        = $(SRC_DIST_ROOT)/$(SRC_DIST_TESTSUITE_NAME).
  # Files to include in source distributions
  #
@@ -98,7 +124,7 @@ index 0000000000..6dc323b336
 +$(if $(filter libiserv,$(PACKAGES_STAGE2)),$(eval $(call build-package,libraries/libiserv,dist-install,2)))
 diff --git a/libraries/libiserv/libiserv.cabal b/libraries/libiserv/libiserv.cabal
 new file mode 100644
-index 0000000000..3a5368e6bd
+index 0000000000..43f1180073
 --- /dev/null
 +++ b/libraries/libiserv/libiserv.cabal
 @@ -0,0 +1,39 @@
@@ -140,7 +166,7 @@ index 0000000000..3a5368e6bd
 +    if os(windows)
 +       Cpp-Options: -DWINDOWS
 +   else
-+       Build-Depends: unix   >= 2.7 && < 2.8
++       Build-Depends: unix   >= 2.7 && < 2.9
 diff --git a/iserv/proxy-src/Remote.hs b/libraries/libiserv/proxy-src/Remote.hs
 similarity index 100%
 rename from iserv/proxy-src/Remote.hs
@@ -158,45 +184,9 @@ similarity index 100%
 rename from iserv/src/Remote/Message.hs
 rename to libraries/libiserv/src/Remote/Message.hs
 diff --git a/iserv/src/Remote/Slave.hs b/libraries/libiserv/src/Remote/Slave.hs
-similarity index 94%
+similarity index 100%
 rename from iserv/src/Remote/Slave.hs
 rename to libraries/libiserv/src/Remote/Slave.hs
-index b80d09592f..701e7d24c9 100644
---- a/iserv/src/Remote/Slave.hs
-+++ b/libraries/libiserv/src/Remote/Slave.hs
-@@ -112,14 +112,18 @@ hook verbose base_path pipe m = case m of
-     handleLoad pipe path (base_path <//> path)
-     return $ Msg (LoadObj (base_path <//> path))
-   Msg (LoadArchive path) -> do
-+    when verbose $ putStrLn ("Need Archieve: " ++ path ++ " at " ++ (base_path <//> path))
-     handleLoad pipe path (base_path <//> path)
-     return $ Msg (LoadArchive (base_path <//> path))
-   -- when loading DLLs (.so, .dylib, .dll, ...) and these are provided
-   -- as relative paths, the intention is to load a pre-existing system library,
-   -- therefore we hook the LoadDLL call only for absolute paths to ship the
-   -- dll from the host to the target.
-+  Msg (LoadDLL path@('C':':':_)) -> do
-+    when verbose $ putStrLn ("Need DLL: " ++ path)
-+    return $ Msg (LoadDLL path)
-   Msg (LoadDLL path) | isAbsolute path -> do
--    when verbose $ putStrLn ("Need DLL: " ++ (base_path <//> path))
-+    when verbose $ putStrLn ("Need DLL: " ++ path ++ " at " ++ (base_path <//> path))
-     handleLoad pipe path (base_path <//> path)
-     return $ Msg (LoadDLL (base_path <//> path))
-   _other -> return m
-diff --git a/mk/config.mk.in b/mk/config.mk.in
-index e5ec04a195..0c8e1bb7e3 100644
---- a/mk/config.mk.in
-+++ b/mk/config.mk.in
-@@ -537,7 +537,7 @@ AS_STAGE1       = $(AS)
- AS_STAGE2       = $(AS)
- AS_STAGE3       = $(AS)
- 
--# why no LD=@LD@ ?
-+LD              = @LD@
- LD_STAGE0       = @LD_STAGE0@
- LD_STAGE1       = $(LD)
- LD_STAGE2       = $(LD)
 diff --git a/utils/iserv-proxy/Makefile b/utils/iserv-proxy/Makefile
 new file mode 100644
 index 0000000000..f160978c19
@@ -218,16 +208,6 @@ index 0000000000..f160978c19
 +dir = iserv
 +TOP = ..
 +include $(TOP)/mk/sub-makefile.mk
-diff --git a/utils/iserv-proxy/cabal.project b/utils/iserv-proxy/cabal.project
-new file mode 100644
-index 0000000000..2e6cd12dc9
---- /dev/null
-+++ b/utils/iserv-proxy/cabal.project
-@@ -0,0 +1,4 @@
-+packages: . ../../libraries/libiserv
-+
-+package libiserv
-+  flags: +network
 diff --git a/utils/iserv-proxy/ghc.mk b/utils/iserv-proxy/ghc.mk
 new file mode 100644
 index 0000000000..b90a96a1fa
@@ -351,14 +331,14 @@ diff --git a/iserv/iserv-bin.cabal b/utils/iserv-proxy/iserv-proxy.cabal
 similarity index 61%
 rename from iserv/iserv-bin.cabal
 rename to utils/iserv-proxy/iserv-proxy.cabal
-index 4c68d8b392..0ab0cfcff2 100644
+index 4c68d8b392..fa25c77794 100644
 --- a/iserv/iserv-bin.cabal
 +++ b/utils/iserv-proxy/iserv-proxy.cabal
 @@ -1,5 +1,5 @@
 -Name: iserv-bin
 -Version: 0.0
 +Name: iserv-proxy
-+Version: 8.5
++Version: 8.4
  Copyright: XXX
  License: BSD3
  -- XXX License-File: LICENSE
@@ -711,78 +691,6 @@ index 0000000000..c91b2d08c6
 +
 +  lo_ref <- newIORef Nothing
 +  pure Pipe{ pipeRead = hdl, pipeWrite = hdl, pipeLeftovers = lo_ref }
-diff --git a/utils/iserv-slave/cabal.project b/utils/iserv-slave/cabal.project
-new file mode 100644
-index 0000000000..2e6cd12dc9
---- /dev/null
-+++ b/utils/iserv-slave/cabal.project
-@@ -0,0 +1,4 @@
-+packages: . ../../libraries/libiserv
-+
-+package libiserv
-+  flags: +network
-diff --git a/utils/iserv-slave/iserv-slave.cabal b/utils/iserv-slave/iserv-slave.cabal
-new file mode 100644
-index 0000000000..7f82f3d125
---- /dev/null
-+++ b/utils/iserv-slave/iserv-slave.cabal
-@@ -0,0 +1,20 @@
-+Name: iserv-slave
-+Version: 8.4
-+Copyright: XXX
-+License: BSD3
-+-- XXX License-File: LICENSE
-+Author: XXX
-+Maintainer: XXX
-+Synopsis: iserv allows GHC to delegate Tempalte Haskell computations
-+Description:
-+Category: Development
-+build-type: Simple
-+cabal-version: >=1.10
-+
-+Executable iserv-slave
-+   Default-Language: Haskell2010
-+   Main-Is: Cli.hs
-+   Hs-Source-Dirs: src
-+   Build-Depends:
-+                  base       >= 4   && < 5,
-+                  libiserv   == 8.4
-diff --git a/utils/iserv-slave/src/Cli.hs b/utils/iserv-slave/src/Cli.hs
-new file mode 100644
-index 0000000000..8a3a34f9c4
---- /dev/null
-+++ b/utils/iserv-slave/src/Cli.hs
-@@ -0,0 +1,30 @@
-+module Main where
-+
-+import System.Environment (getProgName, getArgs)
-+import System.Exit        (die)
-+import Remote.Slave       (startSlave')
-+
-+main :: IO ()
-+main = getArgs >>= startSlave
-+
-+dieWithUsage :: IO a
-+dieWithUsage = do
-+	prog <- getProgName
-+	die $ prog  ++ ": " ++ msg
-+  where
-+  	msg = "usage: iserv-slave /path/to/storage PORT [-v]"
-+
-+startSlave :: [String] -> IO ()
-+startSlave args0
-+	| "--help" `elem` args0 = dieWithUsage
-+	| otherwise = do
-+		(path, port, rest) <- case args0 of
-+			arg0:arg1:rest -> return (arg0, read arg1, rest)
-+			_              -> dieWithUsage
-+		verbose <- case rest of
-+			["-v"] -> return True
-+			[]     -> return False
-+			_      -> dieWithUsage
-+
-+		startSlave' verbose path port
-+
 diff --git a/utils/iserv/Makefile b/utils/iserv/Makefile
 new file mode 100644
 index 0000000000..361985852f
@@ -947,7 +855,7 @@ index c5ca6a524e..194621a85c 100644
  all_ghc_stage2 : $(iserv-stage2_INPLACE)
 diff --git a/utils/iserv/iserv.cabal b/utils/iserv/iserv.cabal
 new file mode 100644
-index 0000000000..f2a0a41102
+index 0000000000..768c0e0f83
 --- /dev/null
 +++ b/utils/iserv/iserv.cabal
 @@ -0,0 +1,44 @@
@@ -994,8 +902,11 @@ index 0000000000..f2a0a41102
 +    if os(windows)
 +        Cpp-Options: -DWINDOWS
 +    else
-+        Build-Depends: unix   >= 2.7 && < 2.8
++        Build-Depends: unix   >= 2.7 && < 2.9
 diff --git a/iserv/src/Main.hs b/utils/iserv/src/Main.hs
 similarity index 100%
 rename from iserv/src/Main.hs
 rename to utils/iserv/src/Main.hs
+-- 
+2.24.1
+

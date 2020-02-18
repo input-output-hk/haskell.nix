@@ -1,0 +1,31 @@
+From b362ab9a2c9fc35f9089010f1aaa2e8c96571584 Mon Sep 17 00:00:00 2001
+From: Kirill Elagin <kirelagin@gmail.com>
+Date: Thu, 6 Feb 2020 14:33:39 -0500
+Subject: [PATCH] GHC 8.4 prepare for GHC 8.6 patch
+
+The long AC_CONFIG_FILES line was changed upstream between 8.4.1 and
+8.6.1, so causes a conflict when applying the same iserv-cleanup patch.
+
+Instead of having two different patches, we first prepare 8.4 by making
+the line the same as in 8.6, then apply the 8.6 patch, then revert the
+first change.
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index a5d2026434..756b60e74f 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1298,7 +1298,7 @@ checkMake380() {
+ checkMake380 make
+ checkMake380 gmake
+ 
+-AC_CONFIG_FILES([mk/config.mk mk/install.mk mk/project.mk rts/rts.cabal compiler/ghc.cabal ghc/ghc-bin.cabal utils/iserv/iserv.cabal utils/iserv-proxy/iserv-proxy.cabal utils/runghc/runghc.cabal utils/gen-dll/gen-dll.cabal libraries/ghc-boot/ghc-boot.cabal libraries/ghc-boot-th/ghc-boot-th.cabal libraries/ghci/ghci.cabal libraries/libiserv/libiserv.cabal settings docs/users_guide/ghc_config.py docs/index.html libraries/prologue.txt distrib/configure.ac])
++AC_CONFIG_FILES([mk/config.mk mk/install.mk mk/project.mk rts/rts.cabal compiler/ghc.cabal ghc/ghc-bin.cabal utils/iserv/iserv.cabal utils/iserv-proxy/iserv-proxy.cabal utils/runghc/runghc.cabal utils/gen-dll/gen-dll.cabal libraries/ghc-boot/ghc-boot.cabal libraries/ghc-boot-th/ghc-boot-th.cabal libraries/ghci/ghci.cabal libraries/ghc-heap/ghc-heap.cabal libraries/libiserv/libiserv.cabal settings docs/users_guide/ghc_config.py docs/index.html libraries/prologue.txt distrib/configure.ac])
+ AC_OUTPUT
+ [
+ if test "$print_make_warning" = "true"; then
+-- 
+2.24.1
+

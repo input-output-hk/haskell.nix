@@ -15,15 +15,11 @@
 }:
 
 let
-  isGhcjs        = ghc.isGhcjs or false;
-  ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
-  ghcCommand     = "${ghc.targetPrefix}${ghcCommand'}";
-  ghcCommandCaps = lib.toUpper ghcCommand';
-  libDir         = "$out/lib/${ghcCommand}-${ghc.version}";
+  inherit (configFiles) ghcCommand ghcCommandCaps packageCfgDir;
+  libDir         = "$out/${configFiles.libDir}";
   docDir         = "$out/share/doc/ghc/html";
-  packageCfgDir  = "${libDir}/package.conf.d";
 
-in runCommand "${componentName}-${ghc.name}" {
+in runCommand "${componentName}-${ghc.name}-env" {
   preferLocalBuild = true;
   passthru = {
     inherit (ghc) version meta;
@@ -40,12 +36,16 @@ in runCommand "${componentName}-${ghc.name}" {
     rm -rf ${libDir}/*/
     # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
     ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
-    # ... and the ghcjs shim's if they are available
+    # ... and the ghcjs shim's if they are available ...
     if [ -d ${ghc}/lib/${ghcCommand}-${ghc.version}/shims ]; then
       ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/shims ${libDir}
     fi
+    # ... and node modules ...
+    if [ -d ${ghc}/lib/${ghcCommand}-${ghc.version}/ghcjs-node ]; then
+      ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/ghcjs-node ${libDir}
+    fi
     # Replace the package database with the one from target package config.
-    ln -s ${configFiles}/package.conf.d ${packageCfgDir}
+    ln -s ${configFiles}/${packageCfgDir} $out/${packageCfgDir}
 
     # Wrap compiler executables with correct env variables.
     # The NIX_ variables are used by the patched Paths_ghc module.
@@ -88,7 +88,7 @@ in runCommand "${componentName}-${ghc.name}" {
     for prg in ${ghcCommand}-pkg ${ghcCommand}-pkg-${ghc.version}; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
         rm -f $out/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $out/bin/$prg --add-flags "--global-package-db=${packageCfgDir}"
+        makeWrapper ${ghc}/bin/$prg $out/bin/$prg --add-flags "--global-package-db=$out/${packageCfgDir}"
       fi
     done
 
