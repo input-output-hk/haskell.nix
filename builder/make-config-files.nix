@@ -79,7 +79,7 @@ in { identifier, component, fullName, flags ? {} }:
       nativeBuildInputs = [ghc];
       passthru = {
         inherit (ghc) targetPrefix;
-        inherit ghcCommand ghcCommandCaps libDir packageCfgDir;
+        inherit ghcCommand ghcCommandCaps libDir packageCfgDir component;
       };
     } (''
     mkdir -p $out

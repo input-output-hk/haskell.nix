@@ -270,7 +270,7 @@ in {
                     inherit targetPrefix;
                     version = "8.6.5";
                     isHaskellNixCompiler = true;
-                    inherit (ghcjs865) configured-src;
+                    inherit (ghcjs865) configured-src bundled-ghcjs;
                     inherit buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"

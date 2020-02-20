@@ -38,7 +38,7 @@ let
 
       nativeBuildInputs = project.bootInputs;
       passthru = {
-        inherit all-ghcjs;
+        inherit all-ghcjs bundled-ghcjs;
         inherit (project) configured-src;
         # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
         isHaskellNixCompiler = true;
@@ -65,4 +65,164 @@ let
       # https://github.com/ghcjs/ghcjs/issues/654
       # enableParallelBuilding = true;
     };
+    ghcjs-relocatable-bin = pkgs.stdenv.mkDerivation {
+        name = "ghcjs-relocatable-bin-${ghcVersion}";
+        src = all-ghcjs;
+        dontConfigure = true;
+        dontInstall = true;
+        dontPatchShebangs = true;
+        dontPatchELF = true;
+        buildPhase = ''
+            # Copy the ghcjs exectuables
+            mkdir -p $out/bin
+            cp $src/${libexec}/* $out/bin
+          '' + (pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+            # Make the executables location independent using install_name_tool and @executable_path
+
+            # Copy the libraries needed into place
+            cp ${pkgs.gmp}/lib/libgmp.10.dylib $out/bin
+            cp ${pkgs.ncurses}/lib/libncursesw.6.dylib $out/bin
+            cp ${pkgs.libffi}/lib/libffi.6.dylib $out/bin
+
+            # Set the ID of the libraries
+            chmod -R +w $out/bin
+            install_name_tool -id "@executable_path/libgmp.10.dylib" "$out/bin/libgmp.10.dylib"
+            install_name_tool -id "@executable_path/libncursesw.6.dylib" "$out/bin/libncursesw.6.dylib"
+            install_name_tool -id "@executable_path/libffi.6.dylib" "$out/bin/libffi.6.dylib"
+
+            # Modify all the references so we look for the libraries in the system location or
+            # @executable_path (the directory containin the exetubable itself).
+            for fn in $out/bin/*; do
+              install_name_tool -change "${pkgs.libiconv}/lib/libiconv.dylib" /usr/lib/libiconv.dylib "$fn"
+              install_name_tool -change "${pkgs.stdenv.libc}/lib/libSystem.B.dylib" /usr/lib/libSystem.B.dylib "$fn"
+              install_name_tool -change "${pkgs.gmp}/lib/libgmp.10.dylib" "@executable_path/libgmp.10.dylib" "$fn"
+              install_name_tool -change "${pkgs.ncurses}/lib/libncursesw.6.dylib" "@executable_path/libncursesw.6.dylib" "$fn"
+              install_name_tool -change "${pkgs.libffi}/lib/libffi.6.dylib" "@executable_path/libffi.6.dylib" "$fn"
+            done
+          '')
+
+          + (pkgs.lib.optionalString pkgs.stdenv.isLinux ''
+            # Make the executables location independent using patchelf and $ORIGIN.
+            chmod -R +w $out/bin
+            # This interpreter setting will not work on nixOS, but this bundle is
+            # not really needed on nixOS systems.
+            patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 $out/bin/*
+            patchelf --set-rpath '$ORIGIN' $out/bin/*
+            # Link the libraries needed into place
+            ln -s ${pkgs.gmp}/lib/libgmp.so.* $out/bin
+            ln -s ${pkgs.ncurses}/lib/libncursesw.so.* $out/bin
+            ln -s ${pkgs.libffi}/lib/libffi.so.* $out/bin
+          '');
+    };
+    # This is a way to find the location of the root directory of this bundle
+    # when one of the wrapper scripts runs.  By using readlink (to avoid
+    # issues with symlinks that might be made to the script) and dirname
+    # we can find the directory even when it may have been moved.
+    bundleRootDir = ''"$(dirname "$(dirname "$(readlink -f "$0")")")"'';
+    bundled-ghcjs = {
+        compilerName ? "ghcjs", # Name for the compiler wrapper
+        db ? null,    # A ghcjs package database this argument should can
+                      # be `project.(shellFor { ... }).configFiles` or
+                      # the result of a `makeConfigFiles` call.
+        hostDb ? null # Like db, but this will be passed as the `-host-package-db`.
+      }:
+      let
+        libDeps = pkgs.lib.concatMapStrings (lib: "${lib} ") (pkgs.lib.unique (
+                 [booted-ghcjs ghc db hostDb pkgs.ncurses pkgs.gmp pkgs.libffi]
+              ++ (pkgs.haskell-nix.haskellLib.flatLibDepends db.component)
+              ++ (pkgs.haskell-nix.haskellLib.flatLibDepends hostDb.component)
+              ));    
+      in pkgs.stdenv.mkDerivation {
+        name = "${compilerName}-${ghcVersion}-bundle";
+        src = booted-ghcjs;
+        nativeBuildInputs = [ pkgs.makeWrapper pkgs.xorg.lndir ];
+        dontConfigure = true;
+        dontInstall = true;
+        dontPatchShebangs = true;
+        dontPatchELF = true;
+        buildPhase = ''
+            # Copy the ghcjs exectuables
+            mkdir -p $out/bin
+            lndir ${ghcjs-relocatable-bin}/bin $out/bin
+
+            # Add readlink (needed by bundleRootDir)
+            cp ${pkgs.coreutils}/bin/readlink $out/bin
+
+            # Make the executables writeable for patchelf and install_name_tool
+            chmod -R +w $out/bin
+
+            # And links for the /lib directory of all the dependencies
+            # including the booted ghcjs
+            for lib in ${ libDeps }; do
+              if [ -d $lib/lib ]; then
+                mkdir -p $out/$(basename $lib)/lib
+                lndir -silent $lib/lib $out/$(basename $lib)/lib
+              fi
+            done
+
+          '' + (pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+            rm -rf $out/$(basename ${hostDb})/lib/links
+            cp -rL ${hostDb}/lib/links $out/$(basename ${hostDb})/lib
+            chmod -R +w $out/$(basename ${hostDb})/lib/links
+
+            # Modify all the references so we look for the libraries in the system location or
+            # @executable_path (the directory containin the exetubable itself).
+            for fn in $out/$(basename ${hostDb})/lib/links/*; do
+              install_name_tool -change "${pkgs.libiconv}/lib/libiconv.dylib" /usr/lib/libiconv.dylib "$fn"
+              install_name_tool -change "${pkgs.stdenv.libc}/lib/libSystem.B.dylib" /usr/lib/libSystem.B.dylib "$fn"
+              install_name_tool -change "${pkgs.gmp}/lib/libgmp.10.dylib" "@executable_path/libgmp.10.dylib" "$fn"
+              install_name_tool -change "${pkgs.ncurses}/lib/libncursesw.6.dylib" "@executable_path/libncursesw.6.dylib" "$fn"
+              install_name_tool -change "${pkgs.libffi}/lib/libffi.6.dylib" "@executable_path/libffi.6.dylib" "$fn"
+            done
+          '') + ''
+
+            # Wrap the programs to add the ghcjs library dir and package DB directories
+            wrapProgram $out/bin/ghcjs \
+              --add-flags '"-B${bundleRootDir}/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}"' \
+              --add-flags '"-package-db ${db}/${db.packageCfgDir}"' ${
+                pkgs.lib.optionalString (hostDb != null)
+                  " --add-flags '-host-package-db=${hostDb}/${hostDb.packageCfgDir}'"
+              }
+            wrapProgram $out/bin/ghcjs-pkg --add-flags '"--global-package-db=${db}/${db.packageCfgDir}"'
+            wrapProgram $out/bin/haddock-ghcjs --add-flags '"-B${bundleRootDir}/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}"'
+
+            # Fix the bang pattern to use the systems bash.
+            # Replace the absolute output path ($out) with bundleRootDir
+            # (this will fix the references to the unwarpped executables).
+            # Replace the `/nix/store` refs (in the package DB paths) with
+            # bundleRootDir.
+            sed -i \
+              -e 's|${pkgs.stdenv.shell}|/usr/bin/env bash -x|' \
+              -e "s|$out/|"'${bundleRootDir}/|g' \
+              -e 's|/nix/store/|${bundleRootDir}/|g' \
+              $out/bin/ghcjs $out/bin/haddock-ghcjs $out/bin/ghcjs-pkg
+
+            # Update the ghcjs and ghc settings files so that `cc` looked up in the PATH.
+            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/settings
+            sed -e 's|/nix/store/.*/bin/cc|cc|' \
+             < ${booted-ghcjs}/lib/ghcjs-8.6.5/settings \
+             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/settings
+            rm $out/$(basename ${ghc})/lib/ghc-8.6.5/settings
+            sed -e 's|/nix/store/.*/bin/cc|cc|' \
+             < ${ghc}/lib/ghc-8.6.5/settings \
+             > $out/$(basename ${ghc})/lib/ghc-8.6.5/settings
+
+            # Update the ghcjs settings files so that `node` looked up in the PATH.
+            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/nodeSettings.json
+            sed -e 's|/nix/store/.*/bin/node|node|' \
+             < ${booted-ghcjs}/lib/ghcjs-8.6.5/nodeSettings.json \
+             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/nodeSettings.json
+
+            # Update the ghcjs settings files so that `node` looked up in the PATH.
+            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/ghc_libdir
+            sed -e 's|/nix/store/|../../../|' \
+             < ${booted-ghcjs}/lib/ghcjs-8.6.5/ghc_libdir \
+             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/ghc_libdir
+          '' + (pkgs.lib.optionalString (compilerName != "ghcjs") ''
+            # Rename the wrappers based on the `compilerName` arg
+            mv $out/bin/ghcjs         $out/bin/${compilerName}
+            mv $out/bin/ghcjs-pkg     $out/bin/${compilerName}-pkg
+            mv $out/bin/haddock-ghcjs $out/bin/haddock-${compilerName}
+          '');
+      };
 in booted-ghcjs

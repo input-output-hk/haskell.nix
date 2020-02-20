@@ -67,7 +67,7 @@ in {
     inherit haskellLib ghc comp-builder setup-builder;
   };
 
-  inherit shellFor;
+  inherit shellFor makeConfigFiles;
 
   ghcWithPackages = withPackages { withHoogle = false; };
   ghcWithHoogle = withPackages { withHoogle = true; };
