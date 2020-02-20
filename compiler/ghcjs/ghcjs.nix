@@ -76,6 +76,10 @@ let
             # Copy the ghcjs exectuables
             mkdir -p $out/bin
             cp $src/${libexec}/* $out/bin
+
+            # Add readlink (needed by bundleRootDir)
+            cp ${pkgs.coreutils}/bin/readlink $out/bin
+
           '' + (pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
             # Make the executables location independent using install_name_tool and @executable_path
 
@@ -144,9 +148,6 @@ let
             # Copy the ghcjs exectuables
             mkdir -p $out/bin
             lndir ${ghcjs-relocatable-bin}/bin $out/bin
-
-            # Add readlink (needed by bundleRootDir)
-            cp ${pkgs.coreutils}/bin/readlink $out/bin
 
             # Make the executables writeable for patchelf and install_name_tool
             chmod -R +w $out/bin
