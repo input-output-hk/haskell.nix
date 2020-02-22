@@ -47,8 +47,11 @@ let
     in
     {
       native = filterTests ((packages supportedSystems).mapTestOn);
+      # Musl cross compile does not work on macOS
       "${musl64.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems)).mapTestOnCross musl64);
-      "${mingwW64.config}" = filterTests ((packages supportedSystems).mapTestOnCross mingwW64);
+      # Windows cross compilation is currently broken on macOS for nixpkgs 19.09 (works on 19.03)
+      "${mingwW64.config}" = filterTests ((packages (filter
+        (x: x == "x86_64-linux" || nixpkgs-pin == "release-19.03") supportedSystems)).mapTestOnCross mingwW64);
     };
 
   allJobs =
