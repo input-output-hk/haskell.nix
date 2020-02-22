@@ -22,24 +22,30 @@ let
     # to `x86_64-w64-mingw32` in 19.09.
     let pinnedNixpkgs = import ./nixpkgs { inherit nixpkgs-pin; }; in
     with pinnedNixpkgs.lib;
-    let inherit (systems.examples) musl64 mingwW64; in
-    with (import (pinnedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
-      inherit supportedSystems scrubJobs nixpkgsArgs;
-      packageSet = {
-            system ? builtins.currentSystem
-          , crossSystem ? null
-          , nixpkgsArgs ? { inherit system crossSystem; }
-          , ...}@args:
-        import (haskell-nix + /build.nix) (args // {
-          nixpkgsArgs = nixpkgsArgs // { inherit nixpkgs-pin; };
-          inherit ifdLevel;
-      });
-    });
-
+    let
+      inherit (systems.examples) musl64 mingwW64;
+      packages = supportedSystems:
+        with (import (pinnedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
+          inherit supportedSystems scrubJobs nixpkgsArgs;
+          packageSet = {
+                system ? builtins.currentSystem
+              , crossSystem ? null
+              , nixpkgsArgs ? { inherit system crossSystem; }
+              , ...}@args:
+            import (haskell-nix + /build.nix) (args // {
+              nixpkgsArgs = nixpkgsArgs // { inherit nixpkgs-pin; };
+              inherit ifdLevel;
+          });
+        });
+        {
+          mapTestOn = mapTestOn (packagePlatforms pkgs);
+          mapTestOnCross = p: mapTestOnCross p (packagePlatforms pkgs);
+        };
+    in
     {
-      native = filterTests (mapTestOn (packagePlatforms pkgs));
-      "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
-      "${mingwW64.config}" = filterTests (mapTestOnCross mingwW64 (packagePlatforms pkgs));
+      native = filterTests ((packages supportedSystems).mapTestOn);
+      "${musl64.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems)).mapTestOnCross musl64);
+      "${mingwW64.config}" = filterTests ((packages supportedSystems).mapTestOnCross);
     };
 
   allJobs =
