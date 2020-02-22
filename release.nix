@@ -38,8 +38,7 @@ let
 
     {
       native = filterTests (mapTestOn (packagePlatforms pkgs));
-      # Disabled for now. Something is wrong and this would require `allowBroken`
-      # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
+      "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
       "${mingwW64.config}" = filterTests (mapTestOnCross mingwW64 (packagePlatforms pkgs));
     };
 
