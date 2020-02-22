@@ -33,7 +33,10 @@ let
               , nixpkgsArgs ? { inherit system crossSystem; }
               , ...}@args:
             import (haskell-nix + /build.nix) (args // {
-              nixpkgsArgs = nixpkgsArgs // { inherit nixpkgs-pin; };
+              nixpkgsArgs = nixpkgsArgs // {
+                inherit nixpkgs-pin; 
+                config = { allowBroken = true; };
+              };
               inherit ifdLevel;
           });
         });
