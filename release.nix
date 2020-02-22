@@ -23,7 +23,7 @@ let
     let pinnedNixpkgs = import ./nixpkgs { inherit nixpkgs-pin; }; in
     with pinnedNixpkgs.lib;
     let
-      inherit (systems.examples) musl64 mingwW64;
+      inherit (systems.examples) musl64 mingwW64 aarch64-multiplatform;
       packages = supportedSystems:
         with (import (pinnedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
           inherit supportedSystems scrubJobs nixpkgsArgs;
@@ -51,6 +51,7 @@ let
       # Windows cross compilation is currently broken on macOS for nixpkgs 19.09 (works on 19.03)
       "${mingwW64.config}" = filterTests ((packages (filter
         (x: x == "x86_64-linux" || nixpkgs-pin == "release-19.03") supportedSystems)).mapTestOnCross mingwW64);
+      "${aarch64-multiplatform.config}" = filterTests ((packages supportedSystems).mapTestOnCross aarch64-multiplatform);
     };
 
   allJobs =
@@ -67,7 +68,12 @@ in allJobs // {
       meta.description = "All jobs required to pass CI";
       constituents =
           collect isDerivation allJobs.R1903.native
-       ++ collect isDerivation allJobs.R1909.native;
+       ++ collect isDerivation allJobs.R1909.native
+       # Windows cross compiling with GHC 8.8.2 is broken
+       # ++ collect isDerivation allJobs.R1903.x86_64-pc-mingw32
+       # ++ collect isDerivation allJobs.R1909.x86_64-w64-mingw32
+       ++ collect isDerivation allJobs.R1903.x86_64-unknown-linux-musl
+       ++ collect isDerivation allJobs.R1909.x86_64-unknown-linux-musl;
     };
   }
 
