@@ -51,7 +51,7 @@ let
       # Windows cross compilation is currently broken on macOS for nixpkgs 19.09 (works on 19.03)
       "${mingwW64.config}" = filterTests ((packages (filter
         (x: x == "x86_64-linux" || nixpkgs-pin == "release-19.03") supportedSystems)).mapTestOnCross mingwW64);
-      "${aarch64-multiplatform.config}" = filterTests ((packages supportedSystems).mapTestOnCross aarch64-multiplatform);
+      "${aarch64-multiplatform.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems)).mapTestOnCross aarch64-multiplatform);
     };
 
   allJobs =
