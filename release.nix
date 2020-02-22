@@ -45,7 +45,7 @@ let
     {
       native = filterTests ((packages supportedSystems).mapTestOn);
       "${musl64.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems)).mapTestOnCross musl64);
-      "${mingwW64.config}" = filterTests ((packages supportedSystems).mapTestOnCross);
+      "${mingwW64.config}" = filterTests ((packages supportedSystems).mapTestOnCross mingwW64);
     };
 
   allJobs =
