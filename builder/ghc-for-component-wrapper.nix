@@ -75,9 +75,9 @@ in runCommand "${componentName}-${ghc.name}-env" {
     done
 
     # Wrap haddock, if the base GHC provides it.
-    if [[ -x "${ghc}/bin/haddock" ]]; then
+    if [[ -x "${ghc.buildGHC or ghc}/bin/haddock" ]]; then
       rm -f $out/bin/haddock
-      makeWrapper ${ghc}/bin/haddock $out/bin/haddock    \
+      makeWrapper ${ghc.buildGHC or ghc}/bin/haddock $out/bin/haddock    \
         --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'  \
         --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
     fi

@@ -40,9 +40,9 @@ let
 
   hoogleLocal = let
     nixpkgsHoogleLocal = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
     haskellLib.weakCallPackage pkgs nixpkgsHoogleLocal {
-      ghc = pkgs.haskell-nix.ghc;
+      ghc = ghc.buildGHC or ghc;
       inherit packages hoogle;
     };
 
