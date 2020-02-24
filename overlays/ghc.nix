@@ -2,10 +2,6 @@ self: super: with super;
   # sadly we need to patch GHC a bit.
    let
     ghcPkgOverrides = {
-        # With nixpkgs 19.09 we seem to have to explicity disable shared
-        # when cross compiline for windows, otherwise we get:
-        #   utils/deriveConstants/ghc.mk:28: *** Do not know how to prependLibraryPath on Windows.  Stop.
-        enableShared = !super.stdenv.targetPlatform.isWindows;
         enableIntegerSimple = false;
       } // lib.optionalAttrs self.stdenv.hostPlatform.isAarch32 {
         enableRelocatableStaticLibs = false;

@@ -24,7 +24,7 @@
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared && !stdenv.hostPlatform.isWindows && !stdenv.hostPlatform.useiOSPrebuilt
+, enableShared ? component.enableShared && stdenv.buildPlatform == stdenv.hostPlatform
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
