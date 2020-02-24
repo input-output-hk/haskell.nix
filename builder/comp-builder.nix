@@ -99,7 +99,10 @@ let
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
-      ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
+      ++ lib.optionals (
+                stdenv.hostPlatform != stdenv.buildPlatform
+            # When building for musl on a linux system we do not need to use the `--cross-compile` flag
+            && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl)) (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
