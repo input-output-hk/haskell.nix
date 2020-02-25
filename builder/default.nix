@@ -43,7 +43,7 @@ let
   in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
     haskellLib.weakCallPackage pkgs nixpkgsHoogleLocal {
       # For musl we can use haddock from the buildGHC
-      ghc = if hostPlatform.isLinux && targetPlatform.isMusl
+      ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl
         then ghc.buildGHC
         else ghc;
       inherit packages hoogle;
