@@ -74,9 +74,10 @@ let
     endif
     DYNAMIC_GHC_PROGRAMS = ${if enableShared then "YES" else "NO"}
     INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
+  '' + stdenv.lib.optionalString (targetPlatform != hostPlatform) ''
+    CrossCompilePrefix = ${targetPrefix}
   '' + stdenv.lib.optionalString (targetPlatform != hostPlatform && !(hostPlatform.isLinux && targetPlatform.isMusl)) ''
     Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
-    CrossCompilePrefix = ${targetPrefix}
     HADDOCK_DOCS = NO
     BUILD_SPHINX_HTML = NO
     BUILD_SPHINX_PDF = NO
