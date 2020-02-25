@@ -42,7 +42,11 @@ let
     nixpkgsHoogleLocal = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
   in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
     haskellLib.weakCallPackage pkgs nixpkgsHoogleLocal {
-      inherit ghc packages hoogle;
+      # For musl we can use haddock from the buildGHC
+      ghc = if hostPlatform.isLinux && targetPlatform.isMusl
+        then ghc.buildGHC
+        else ghc;
+      inherit packages hoogle;
     };
 
   # Same as haskellPackages.shellFor in nixpkgs.

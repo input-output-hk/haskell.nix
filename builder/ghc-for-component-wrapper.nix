@@ -18,6 +18,10 @@ let
   inherit (configFiles) ghcCommand ghcCommandCaps packageCfgDir;
   libDir         = "$out/${configFiles.libDir}";
   docDir         = "$out/share/doc/ghc/html";
+  # For musl we can use haddock from the buildGHC
+  haddock        = if hostPlatform.isLinux && targetPlatform.isMusl
+    then ghc.buildGHC
+    else ghc;
 
 in runCommand "${componentName}-${ghc.name}-env" {
   preferLocalBuild = true;
@@ -75,9 +79,9 @@ in runCommand "${componentName}-${ghc.name}-env" {
     done
 
     # Wrap haddock, if the base GHC provides it.
-    if [[ -x "${ghc}/bin/haddock" ]]; then
+    if [[ -x "${haddock}/bin/haddock" ]]; then
       rm -f $out/bin/haddock
-      makeWrapper ${ghc}/bin/haddock $out/bin/haddock    \
+      makeWrapper ${haddock}/bin/haddock $out/bin/haddock    \
         --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'  \
         --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
     fi
