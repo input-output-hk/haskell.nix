@@ -42,8 +42,7 @@ let
     nixpkgsHoogleLocal = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
   in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
     haskellLib.weakCallPackage pkgs nixpkgsHoogleLocal {
-      ghc = if stdenv.buildPlatform != stdenv.targetPlatform then ghc.buildGHC else ghc;
-      inherit packages hoogle;
+      inherit ghc packages hoogle;
     };
 
   # Same as haskellPackages.shellFor in nixpkgs.

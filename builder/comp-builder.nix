@@ -133,7 +133,8 @@ let
   docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
 
   doHaddock' = doHaddock
-    && (haskellLib.isLibrary componentId);
+    && (haskellLib.isLibrary componentId)
+    && (stdenv.hostPlatform == stdenv.buildPlatform || (buildPlatform.isLinux && hostPlatform.isMusl));
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   exeName = componentId.cname + exeExt;
