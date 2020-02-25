@@ -23,7 +23,7 @@ let
     let pinnedNixpkgs = import ./nixpkgs { inherit nixpkgs-pin; }; in
     with pinnedNixpkgs.lib;
     let
-      inherit (systems.examples) musl64 mingwW64 aarch64-multiplatform;
+      inherit (systems.examples) musl64 mingwW64 aarch64-multiplatform raspberryPi;
       packages = supportedSystems:
         with (import (pinnedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
           inherit supportedSystems scrubJobs nixpkgsArgs;
@@ -51,7 +51,10 @@ let
       # Windows cross compilation is currently broken on macOS for nixpkgs 19.09 (works on 19.03)
       "${mingwW64.config}" = filterTests ((packages (filter
         (x: x == "x86_64-linux" || nixpkgs-pin == "release-19.03") supportedSystems)).mapTestOnCross mingwW64);
-      "${aarch64-multiplatform.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems)).mapTestOnCross aarch64-multiplatform);
+      "${aarch64-multiplatform.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems))
+        .mapTestOnCross aarch64-multiplatform);
+      # "${raspberryPi.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems))
+      #   .mapTestOnCross raspberryPi);
     };
 
   allJobs =
