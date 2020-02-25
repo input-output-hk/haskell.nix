@@ -156,8 +156,8 @@ let
             # including the booted ghcjs
             for lib in ${ libDeps }; do
               if [ -d $lib/lib ]; then
-                mkdir -p $out/$(basename $lib)/lib
-                lndir -silent $lib/lib $out/$(basename $lib)/lib
+                mkdir -p $out/$(basename $lib)
+                lndir -silent $lib $out/$(basename $lib)
               fi
             done
 
