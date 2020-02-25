@@ -134,7 +134,7 @@ let
 
   doHaddock' = doHaddock
     && (haskellLib.isLibrary componentId)
-    && (stdenv.hostPlatform == stdenv.buildPlatform || (buildPlatform.isLinux && hostPlatform.isMusl));
+    && (stdenv.hostPlatform == stdenv.buildPlatform || (stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl));
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   exeName = componentId.cname + exeExt;
