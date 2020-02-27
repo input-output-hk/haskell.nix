@@ -193,7 +193,7 @@ let
             # Replace the `/nix/store` refs (in the package DB paths) with
             # bundleRootDir.
             sed -i \
-              -e 's|${pkgs.stdenv.shell}|/usr/bin/env bash -x|' \
+              -e 's|${pkgs.stdenv.shell}|/usr/bin/env -S bash|' \
               -e "s|$out/|"'${bundleRootDir}/|g' \
               -e 's|/nix/store/|${bundleRootDir}/|g' \
               $out/bin/ghcjs $out/bin/haddock-ghcjs $out/bin/ghcjs-pkg
