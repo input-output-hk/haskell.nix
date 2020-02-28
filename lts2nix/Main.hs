@@ -3,20 +3,31 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Data.Foldable (toList)
-import System.Environment (getArgs)
+import System.Environment (getArgs,lookupEnv)
+import Data.Maybe (fromMaybe)
+
+import Distribution.Text (disp)
 
 import Data.Yaml (decodeFileEither)
+
+import Data.Text (Text)
+import qualified Data.Text as Text
 
 import Nix.Pretty (prettyNix)
 import Nix.Expr
 
 import           Data.Aeson
 import qualified Data.HashMap.Strict           as Map
+import qualified Data.Vector                   as V
 import           Lens.Micro
 import           Lens.Micro.Aeson
 
 import           Cabal2Nix.Plan
+
+import           Stack2nix.Stack (parsePackageIdentifier)
+import Distribution.Types.PackageId
+
+type CompilerPackages = Map.HashMap Text (Map.HashMap Text Text)
 
 main :: IO ()
 main = getArgs >>= \case
@@ -26,34 +37,42 @@ main = getArgs >>= \case
 
 ltsPackages :: FilePath -> IO NExpr
 ltsPackages lts = do
+  -- use yaml here, so we don't have to deal with yaml AND json.
+  -- pull it from https://raw.githubusercontent.com/commercialhaskell/stackage-content/master/stack/global-hints.yaml
+  cpYaml <- fromMaybe "./global-hints.yaml" <$> lookupEnv "GLOBAL_HINTS"
+  compilerPackages <- decodeFileEither cpYaml >>= \case
+    Left e      -> error $ "Parsing " ++ show cpYaml ++ ": " ++ show e
+    Right value -> pure value
   evalue <- decodeFileEither lts
   case evalue of
-    Left  e     -> error (show e)
-    Right value -> pure $ plan2nix $ lts2plan value
+    Left  e     -> error $ "Parsing " ++ show lts ++ ": " ++ show e
+    Right value -> pure $ plan2nix $ lts2plan compilerPackages value
 
-lts2plan :: Value -> Plan
-lts2plan lts = Plan { packages , compilerVersion , compilerPackages }
- where
-  packages = mappend compilerPackages' $ fmap Just $ lts ^. key "packages" . _Object <&> \v -> Package
-    { packageVersion  = v ^. key "version" . _String
-    , packageRevision = v ^? key "cabal-file-info" . key "hashes" . key "SHA256" . _String
-    , packageFlags    = Map.mapMaybe (^? _Bool) $ v ^. key "constraints" . key "flags" . _Object
-    }
-  compilerVersion = lts ^. key "system-info" . key "ghc-version" . _String
-  compilerPackages =
-    (lts ^.  key "system-info" . key "core-packages" . _Object <&> (Just . (^. _String)))
-    <> Map.fromList
-           [ (p, Nothing) -- core-executables is just a list of
-                                 -- exe names shipped with GHC, which
-                                 -- lots of packages depend on
-                                 -- (e.g. hsc2hs)
-           | p <- toList $ lts ^. key "system-info" . key "core-executables" . _Array <&> (^. _String)
-           ]
-  compilerPackages' = fmap
-    (fmap $ \v -> Package
-      { packageVersion  = v
-      , packageRevision = Nothing
-      , packageFlags    = Map.empty
-      }
-    )
-    compilerPackages
+-- pretty crude hack to get the compiler version. Assuming ghc-X.Y.Z
+parseCompilerVersion :: Text -> Text
+parseCompilerVersion c
+  | "ghc-" `Text.isPrefixOf` c = Text.drop 4 c
+  | otherwise = error $ "Unable to parse version from compiler: " ++ Text.unpack c
+
+lts2plan :: CompilerPackages -> Value -> Plan
+lts2plan compilerPackagesMap lts = Plan { packages, compilerVersion, compilerPackages }
+  where
+    compilerName = lts ^. key "resolver" . key "compiler" . _String
+    compilerVersion = parseCompilerVersion compilerName
+    compilerPackages = Just <$> Map.lookupDefault (error $ "failed to lookup the compiler packages for compiler: " ++ Text.unpack compilerName) compilerName compilerPackagesMap
+
+    -- turn flags into HashMap Text (HashMap Text Bool)
+    flags :: Map.HashMap Text (Map.HashMap Text Bool)
+    flags = lts ^. key "flags" . _Object <&> (\v -> Map.mapMaybe (^? _Bool) $ v ^. _Object)
+    packages = Map.fromList . V.toList $ lts ^. key "packages" . _Array <&> \v ->
+      let (pkg, rev) = case (parsePackageIdentifier . Text.unpack $ v ^. key "hackage" . _String) of
+                          Just p -> p
+                          _ -> error $ "failed to parse: " ++ Text.unpack (v ^. key "hackage" . _String)
+          name = Text.pack (show (disp (pkgName pkg)))
+      in (name, Just $ Package
+        { packageVersion = Text.pack (show (disp (pkgVersion pkg)))
+        , packageRevision = case rev of
+            Just (Left sha) -> Just $ Text.pack sha
+            _               -> Nothing
+        , packageFlags = Map.lookupDefault Map.empty name flags
+        })

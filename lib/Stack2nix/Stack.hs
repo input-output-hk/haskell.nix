@@ -15,6 +15,7 @@ module Stack2nix.Stack
   , StackSnapshot(..)
   , PackageFlags
   , GhcOptions
+  , parsePackageIdentifier
   ) where
 
 import Data.Char (isDigit)
@@ -161,6 +162,12 @@ suffix = option Nothing (Just <$> (Left <$> sha256Suffix) +++ (Right <$> revSuff
 
 pkgIndex :: ReadP r Dependency
 pkgIndex = PkgIndex <$> parse <*> suffix <* eof
+
+
+parsePackageIdentifier :: String -> Maybe (PackageIdentifier, Maybe (Either Sha256 CabalRev))
+parsePackageIdentifier input = case readP_to_S pkgIndex input of
+  [(PkgIndex d rev,"")] -> Just (d, rev)
+  _ -> Nothing
 
 --------------------------------------------------------------------------------
 -- JSON/YAML destructors
