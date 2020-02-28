@@ -24,7 +24,11 @@
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared && stdenv.buildPlatform == stdenv.hostPlatform
+, enableShared ? component.enableShared &&
+  # Disable shared on cross compilers
+  (stdenv.buildPlatform == stdenv.hostPlatform
+    # But allow enableShared on musl for ghci support
+    || (stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl))
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
@@ -95,6 +99,15 @@ let
       (enableFeature enableExecutableProfiling "executable-profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
+    ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.mayHaveExecutable componentId)) [
+      # These flags will make sure the resulting executable is statically linked.
+      # If it uses other libraries it may be nicessary for to add more
+      # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
+      # component.
+      "--disable-executable-dynamic"
+      "--ghc-option=-optl=-pthread"
+      "--ghc-option=-optl=-static"
+      "--ghc-option=-optl=-L${gmp.override { withStatic = true; }}/lib"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"

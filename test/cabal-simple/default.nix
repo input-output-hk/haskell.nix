@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs }:
+{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib, recurseIntoAttrs }:
 
 with stdenv.lib;
 
@@ -9,19 +9,6 @@ let
        # Package has no exposed modules which causes
        #   haddock: No input file(s)
        packages.cabal-simple.doHaddock = false;
-
-       # When compiling with musl ghc, build a statically linked
-       # executable against static libraries.
-       # Ref: https://vaibhavsagar.com/blog/2018/01/03/static-haskell-nix/
-       packages.cabal-simple.components.exes.cabal-simple.configureFlags =
-         optionals stdenv.hostPlatform.isMusl [
-           "--disable-executable-dynamic"
-           "--disable-shared"
-           "--ghc-option=-optl=-pthread"
-           "--ghc-option=-optl=-static"
-           "--ghc-option=-optl=-L${gmp6.override { withStatic = true; }}/lib"
-           # "--ghc-option=-optl=-L${zlib.static}/lib"
-         ];
      }
   ];
 

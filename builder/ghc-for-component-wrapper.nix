@@ -15,7 +15,7 @@
 }:
 
 let
-  inherit (configFiles) ghcCommand ghcCommandCaps packageCfgDir;
+  inherit (configFiles) targetPrefix ghcCommand ghcCommandCaps packageCfgDir;
   libDir         = "$out/${configFiles.libDir}";
   docDir         = "$out/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
@@ -27,6 +27,7 @@ in runCommand "${componentName}-${ghc.name}-env" {
   preferLocalBuild = true;
   passthru = {
     inherit (ghc) version meta;
+    inherit targetPrefix;
     baseGhc = ghc;
   };
 } (
@@ -66,7 +67,7 @@ in runCommand "${componentName}-${ghc.name}-env" {
       fi
     done
 
-    for prg in runghc runhaskell; do
+    for prg in "${targetPrefix}runghc" "${targetPrefix}runhaskell"; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
         rm -f $out/bin/$prg
         makeWrapper ${ghc}/bin/$prg $out/bin/$prg                           \

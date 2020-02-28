@@ -34,13 +34,17 @@
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
   enableShared ? stdenv.targetPlatform == stdenv.hostPlatform
+    # Allow enableShared for musl ghci support
+    || (stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl)
 
-, # Whetherto build terminfo.
-  enableTerminfo ? !stdenv.targetPlatform.isWindows
+, # Whetherto build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
+  enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
-  ghcFlavour ? stdenv.lib.optionalString (stdenv.targetPlatform != stdenv.hostPlatform)
+  ghcFlavour ? stdenv.lib.optionalString (stdenv.targetPlatform != stdenv.hostPlatform
+    # Don't treat musl as a cross compiler so ghci is supported
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl))
     (if useLLVM then "quick-cross" else "perf-cross-ncg")
 
 , # Whether to disable the large address space allocator
@@ -61,6 +65,11 @@ let
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
 
   inherit (bootPkgs) ghc;
+
+  # TODO check if this posible fix for segfaults works or not.
+  libffiStaticEnabled = if libffi == null || !stdenv.targetPlatform.isMusl
+    then libffi
+    else targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; });
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -89,11 +98,13 @@ let
   '' + stdenv.lib.optionalString useLLVM ''
     GhcStage2HcOpts += -fast-llvm
     GhcLibHcOpts += -fast-llvm
+  '' + stdenv.lib.optionalString (!enableTerminfo) ''
+    WITH_TERMINFO=NO
   '';
 
   # Splicer will pull out correct variations
   libDeps = platform: stdenv.lib.optional enableTerminfo [ ncurses ]
-    ++ [libffi]
+    ++ [libffiStaticEnabled]
     ++ stdenv.lib.optional (!enableIntegerSimple) gmp
     ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv;
 
@@ -185,7 +196,7 @@ in let configured-src = stdenv.mkDerivation (rec {
         configureFlags = [
             "--datadir=$doc/share/doc/ghc"
             "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
-        ] ++ stdenv.lib.optionals (libffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetPackages.libffi.dev}/include" "--with-ffi-libraries=${targetPackages.libffi.out}/lib"
+        ] ++ stdenv.lib.optionals (libffiStaticEnabled != null) ["--with-system-libffi" "--with-ffi-includes=${libffiStaticEnabled.dev}/include" "--with-ffi-libraries=${libffiStaticEnabled.out}/lib"
         ] ++ stdenv.lib.optional (!enableIntegerSimple) [
             "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
         ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
@@ -299,7 +310,12 @@ in let configured-src = stdenv.mkDerivation (rec {
     for i in "$out/bin/"*; do
       test ! -h $i || continue
       egrep --quiet '^#!' <(head -n 1 $i) || continue
-      sed -i -e '2i export PATH="$PATH:${stdenv.lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' $i
+      # The ghcprog fixup is for musl (where runhaskell script just needs to point to the correct
+      # ghc program to work).
+      sed -i \
+        -e '2i export PATH="$PATH:${stdenv.lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' \
+        -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
+        $i
     done
   '' + installDeps targetPrefix;
 

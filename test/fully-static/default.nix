@@ -32,12 +32,7 @@ let
 
         withFullyStatic = {
           configureFlags =
-             optionals stdenv.hostPlatform.isMusl ([
-               "--disable-executable-dynamic"
-               "--disable-shared"
-               "--ghc-option=-optl=-pthread"
-               "--ghc-option=-optl=-static"
-             ] ++ map (drv: "--ghc-option=-optl=-L${drv}/lib") staticLibs);
+             optionals stdenv.hostPlatform.isMusl (map (drv: "--ghc-option=-optl=-L${drv}/lib") staticLibs);
         };
       in {
         # Select a non-GMP compiler, usually for software licensing reasons.
