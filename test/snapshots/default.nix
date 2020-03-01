@@ -37,7 +37,7 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       # test snapshot ghcWithHoogle
 
       printf "checking that the ghcWithPackages env has the package...\n" >& 2
-      ${env}/bin/ghc-pkg list | grep conduit
+      ${env}/bin/${env.targetPrefix}ghc-pkg list | grep conduit
 
       printf "checking that the ghcWithPackages env has a hoogle index...\n" >& 2
       ${env}/bin/hoogle search Conduit --count=100 | grep ConduitT
