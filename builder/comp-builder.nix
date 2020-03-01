@@ -99,7 +99,7 @@ let
       (enableFeature enableExecutableProfiling "executable-profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
-    ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.mayHaveExecutable componentId)) [
+    ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be nicessary for to add more
       # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
