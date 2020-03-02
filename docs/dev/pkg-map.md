@@ -28,11 +28,6 @@ nixpkgs.overlays = [
 ];
 ```
 
-### Haskell component/package configuration
-
-This is not implemented yet, tracked by issue
-[#198](https://github.com/input-output-hk/haskell.nix/issues/198).
-
 ### Mapping in Haskell.nix
 
 Alternatively, if the name is commonly used, an alias can be added to
