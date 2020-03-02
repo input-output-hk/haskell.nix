@@ -101,7 +101,7 @@ let
       (enableFeature enableShared "shared")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
-      # If it uses other libraries it may be nicessary for to add more
+      # If it uses other libraries it may be necessary for to add more
       # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
       # component.
       "--disable-executable-dynamic"
