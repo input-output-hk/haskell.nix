@@ -106,6 +106,12 @@ let
     GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
+  ''
+  # While split sections are now enabled by default in ghc 8.8 for windows,
+  # the seem to lead to `too many sections` errors when building base for
+  # profiling.
+  + stdenv.lib.optionalString targetPlatform.isWindows ''
+    SplitSections = NO
   '';
 
   # Splicer will pull out correct variations
