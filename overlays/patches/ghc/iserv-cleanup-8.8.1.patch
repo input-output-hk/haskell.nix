@@ -1,18 +1,75 @@
+From a6edc06e205848ea1e15456b24238e0f7cb001cd Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 30 Jan 2019 09:47:20 +0800
+Subject: [PATCH] Cleanup iserv/iserv-proxy
+
+This adds trace messages that include the processes name and as such
+make debugging and following the communication easier.
+
+It also adds a note regarding the fwd*Call proxy-communication logic
+between the proxy and the slave.
+
+The proxy will now also poll for 60s to wait for the remote iserv
+to come up. (Alternatively you can start the remote process
+beforehand; and just have iserv-proxy connect to it)
+---
+ .gitignore                                    |   1 +
+ configure.ac                                  |   2 +-
+ docs/users_guide/ghci.rst                     |  32 +++++
+ libraries/libiserv/libiserv.cabal.in          |   2 +-
+ libraries/libiserv/proxy-src/Remote.hs        |   3 +-
+ libraries/libiserv/src/Lib.hs                 |  23 +++-
+ libraries/libiserv/src/Remote/Slave.hs        |  24 ++--
+ testsuite/tests/iserv-remote/Lib.hs           |   7 ++
+ testsuite/tests/iserv-remote/Main.hs          |   5 +
+ testsuite/tests/iserv-remote/Makefile         |  38 ++++++
+ testsuite/tests/iserv-remote/Setup.hs         |   2 +
+ testsuite/tests/iserv-remote/all.T            |  11 ++
+ .../tests/iserv-remote/iserv-remote.stderr    |   1 +
+ .../tests/iserv-remote/iserv-remote.stdout    |   1 +
+ testsuite/tests/iserv-remote/iserv-wrapper    |  12 ++
+ .../tests/iserv-remote/remote-iserv.stderr    |   2 +
+ .../tests/iserv-remote/remote-iserv.stdout    |   4 +
+ utils/iserv-proxy/Makefile                    |   4 +-
+ utils/iserv-proxy/iserv-proxy.cabal.in        |   2 +-
+ utils/iserv-proxy/src/Main.hs                 |  89 ++++++++++----
+ utils/remote-iserv/Makefile                   |  15 +++
+ utils/remote-iserv/Setup.hs                   |   2 +
+ utils/remote-iserv/ghc.mk                     | 113 ++++++++++++++++++
+ utils/remote-iserv/remote-iserv.cabal.in      |  27 +++++
+ utils/remote-iserv/src/Cli.hs                 |  30 +++++
+ 25 files changed, 415 insertions(+), 37 deletions(-)
+ create mode 100644 testsuite/tests/iserv-remote/Lib.hs
+ create mode 100644 testsuite/tests/iserv-remote/Main.hs
+ create mode 100644 testsuite/tests/iserv-remote/Makefile
+ create mode 100644 testsuite/tests/iserv-remote/Setup.hs
+ create mode 100644 testsuite/tests/iserv-remote/all.T
+ create mode 100644 testsuite/tests/iserv-remote/iserv-remote.stderr
+ create mode 100644 testsuite/tests/iserv-remote/iserv-remote.stdout
+ create mode 100755 testsuite/tests/iserv-remote/iserv-wrapper
+ create mode 100644 testsuite/tests/iserv-remote/remote-iserv.stderr
+ create mode 100644 testsuite/tests/iserv-remote/remote-iserv.stdout
+ create mode 100644 utils/remote-iserv/Makefile
+ create mode 100644 utils/remote-iserv/Setup.hs
+ create mode 100644 utils/remote-iserv/ghc.mk
+ create mode 100644 utils/remote-iserv/remote-iserv.cabal.in
+ create mode 100644 utils/remote-iserv/src/Cli.hs
+
 diff --git a/configure.ac b/configure.ac
-index 846924727d..0e67c1051a 100644
+index e4c4b02fb4..434aa4e29c 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1334,7 +1334,7 @@ checkMake380() {
+@@ -1329,7 +1329,7 @@ checkMake380() {
  checkMake380 make
  checkMake380 gmake
  
--AC_CONFIG_FILES([mk/config.mk mk/install.mk mk/project.mk rts/rts.cabal compiler/ghc.cabal ghc/ghc-bin.cabal utils/runghc/runghc.cabal utils/gen-dll/gen-dll.cabal libraries/ghc-boot/ghc-boot.cabal libraries/ghc-boot-th/ghc-boot-th.cabal libraries/ghci/ghci.cabal libraries/ghc-heap/ghc-heap.cabal settings docs/users_guide/ghc_config.py docs/index.html libraries/prologue.txt distrib/configure.ac])
+-AC_CONFIG_FILES([mk/config.mk mk/install.mk mk/project.mk rts/rts.cabal compiler/ghc.cabal ghc/ghc-bin.cabal utils/iserv/iserv.cabal utils/iserv-proxy/iserv-proxy.cabal utils/runghc/runghc.cabal utils/gen-dll/gen-dll.cabal libraries/ghc-boot/ghc-boot.cabal libraries/ghc-boot-th/ghc-boot-th.cabal libraries/ghci/ghci.cabal libraries/ghc-heap/ghc-heap.cabal libraries/libiserv/libiserv.cabal settings docs/users_guide/ghc_config.py docs/index.html libraries/prologue.txt distrib/configure.ac])
 +AC_CONFIG_FILES([mk/config.mk mk/install.mk mk/project.mk rts/rts.cabal compiler/ghc.cabal ghc/ghc-bin.cabal utils/iserv/iserv.cabal utils/iserv-proxy/iserv-proxy.cabal utils/remote-iserv/remote-iserv.cabal utils/runghc/runghc.cabal utils/gen-dll/gen-dll.cabal libraries/ghc-boot/ghc-boot.cabal libraries/ghc-boot-th/ghc-boot-th.cabal libraries/ghci/ghci.cabal libraries/ghc-heap/ghc-heap.cabal libraries/libiserv/libiserv.cabal settings docs/users_guide/ghc_config.py docs/index.html libraries/prologue.txt distrib/configure.ac])
  AC_OUTPUT
  [
  if test "$print_make_warning" = "true"; then
 diff --git a/docs/users_guide/ghci.rst b/docs/users_guide/ghci.rst
-index 49a96caa0b..e974840d7d 100644
+index 544b8604ef..fa6e6c4780 100644
 --- a/docs/users_guide/ghci.rst
 +++ b/docs/users_guide/ghci.rst
 @@ -3287,6 +3287,38 @@ dynamically-linked) from GHC itself.  So for example:
@@ -55,59 +112,37 @@ index 49a96caa0b..e974840d7d 100644
  
  FAQ and Things To Watch Out For
 diff --git a/libraries/libiserv/libiserv.cabal.in b/libraries/libiserv/libiserv.cabal.in
-new file mode 100644
-index 0000000000..31eaaeb838
---- /dev/null
+index 31eaaeb838..3721a853cc 100644
+--- a/libraries/libiserv/libiserv.cabal.in
 +++ b/libraries/libiserv/libiserv.cabal.in
-@@ -0,0 +1,43 @@
-+-- WARNING: libiserv.cabal is automatically generated from libiserv.cabal.in by
-+-- ../../configure.  Make sure you are editing libiserv.cabal.in, not
-+-- libiserv.cabal.
-+
-+Name: libiserv
-+Version: @ProjectVersionMunged@
-+Copyright: XXX
-+License: BSD3
-+License-File: LICENSE
-+Author: XXX
-+Maintainer: XXX
-+Synopsis: Provides shared functionality between iserv and iserv-proxy
-+Description:
-+Category: Development
-+build-type: Simple
-+cabal-version: >=1.10
-+
-+Flag network
-+    Description:   Build libiserv with over-the-network support
-+    Default:       False
-+
-+Library
-+    Default-Language: Haskell2010
-+    Hs-Source-Dirs: src
-+    Exposed-Modules: Lib
-+                   , GHCi.Utils
-+    Build-Depends: base       >= 4   && < 5,
-+                   binary     >= 0.7 && < 0.11,
-+                   bytestring >= 0.10 && < 0.11,
-+                   containers >= 0.5 && < 0.7,
-+                   deepseq    >= 1.4 && < 1.5,
-+                   ghci       == @ProjectVersionMunged@
-+    if flag(network)
-+       Exposed-Modules: Remote.Message
-+                      , Remote.Slave
-+       Build-Depends: network    >= 2.6 && < 2.7,
-+                      directory  >= 1.3 && < 1.4,
-+                      filepath   >= 1.4 && < 1.5
-+
-+    if os(windows)
-+       Cpp-Options: -DWINDOWS
-+   else
-+       Build-Depends: unix   >= 2.7 && < 2.9
+@@ -33,7 +33,7 @@ Library
+     if flag(network)
+        Exposed-Modules: Remote.Message
+                       , Remote.Slave
+-       Build-Depends: network    >= 2.6 && < 2.7,
++       Build-Depends: network    >= 2.6 && < 3,
+                       directory  >= 1.3 && < 1.4,
+                       filepath   >= 1.4 && < 1.5
+ 
+diff --git a/libraries/libiserv/proxy-src/Remote.hs b/libraries/libiserv/proxy-src/Remote.hs
+index c91b2d08c6..d07220ba7f 100644
+--- a/libraries/libiserv/proxy-src/Remote.hs
++++ b/libraries/libiserv/proxy-src/Remote.hs
+@@ -107,7 +107,8 @@ main = do
+     putStrLn ("Trying to connect to " ++ host_ip ++ ":" ++ (show port))
+   out_pipe <- connectTo host_ip port >>= socketToPipe
+ 
+-  putStrLn "Starting proxy"
++  when verbose $
++    putStrLn "Starting proxy"
+   proxy verbose in_pipe out_pipe
+ 
+ -- | A hook, to transform outgoing (proxy -> slave)
 diff --git a/libraries/libiserv/src/Lib.hs b/libraries/libiserv/src/Lib.hs
-index 57e65706c3..707966dc2d 100644
+index 57e65706c3..69741fdd73 100644
 --- a/libraries/libiserv/src/Lib.hs
 +++ b/libraries/libiserv/src/Lib.hs
-@@ -10,25 +10,33 @@ import Control.Exception
+@@ -10,16 +10,24 @@ import Control.Exception
  import Control.Monad
  import Data.Binary
  
@@ -125,19 +160,15 @@ index 57e65706c3..707966dc2d 100644
    loop = do
 +    when verbose $ trace "reading pipe..."
      Msg msg <- readPipe pipe getMessage >>= hook
--    discardCtrlC
++
+     discardCtrlC
  
 -    when verbose $ putStrLn ("iserv: " ++ show msg)
-+    discardCtrlC verbose
-+
 +    when verbose $ trace ("msg: " ++ (show msg))
      case msg of
        Shutdown -> return ()
--      RunTH st q ty loc -> wrapRunTH $ runTH pipe st q ty loc
--      RunModFinalizers st qrefs -> wrapRunTH $ runModFinalizerRefs pipe st qrefs
-+      RunTH st q ty loc -> wrapRunTH verbose $ runTH pipe st q ty loc
-+      RunModFinalizers st qrefs -> wrapRunTH verbose $ runModFinalizerRefs pipe st qrefs
-       _other -> run msg >>= reply
+       RunTH st q ty loc -> wrapRunTH $ runTH pipe st q ty loc
+@@ -28,7 +36,7 @@ serv verbose hook pipe@Pipe{..} restore = loop
  
    reply :: forall a. (Binary a, Show a) => a -> IO ()
    reply r = do
@@ -146,17 +177,12 @@ index 57e65706c3..707966dc2d 100644
      writePipe pipe (put r)
      loop
  
-@@ -36,36 +44,43 @@ serv verbose hook pipe@Pipe{..} restore = loop
-   -- THMessage requests, and then finally send RunTHDone followed by a
-   -- QResult.  For an overview of how TH works with Remote GHCi, see
+@@ -38,23 +46,29 @@ serv verbose hook pipe@Pipe{..} restore = loop
    -- Note [Remote Template Haskell] in libraries/ghci/GHCi/TH.hs.
--  wrapRunTH :: forall a. (Binary a, Show a) => IO a -> IO ()
--  wrapRunTH io = do
--    r <- try io
-+  wrapRunTH :: forall a. (Binary a, Show a) => Bool -> IO a -> IO ()
-+  wrapRunTH verbose io = do
+   wrapRunTH :: forall a. (Binary a, Show a) => IO a -> IO ()
+   wrapRunTH io = do
 +    when verbose $ trace "wrapRunTH..."
-+    r <- Right <$> io -- try io
+     r <- try io
 +    when verbose $ trace "wrapRunTH done."
 +    when verbose $ trace "writing RunTHDone."
      writePipe pipe (putTHMessage RunTHDone)
@@ -167,8 +193,7 @@ index 57e65706c3..707966dc2d 100644
 +           when verbose $ trace ("QFail " ++ show err)
             reply (QFail err :: QResult a)
          | otherwise -> do
--           str <- showException e
-+           str <- showException verbose e
+            str <- showException e
 +           when verbose $ trace ("QException " ++ str)
             reply (QException str :: QResult a)
        Right a -> do
@@ -178,29 +203,20 @@ index 57e65706c3..707966dc2d 100644
  
    -- carefully when showing an exception, there might be other exceptions
    -- lurking inside it.  If so, we return the inner exception instead.
--  showException :: SomeException -> IO String
--  showException e0 = do
-+  showException :: Bool -> SomeException -> IO String
-+  showException verbose e0 = do
+   showException :: SomeException -> IO String
+   showException e0 = do
 +     when verbose $ trace "showException"
       r <- try $ evaluate (force (show (e0::SomeException)))
       case r of
--       Left e -> showException e
-+       Left e -> showException verbose e
-        Right str -> return str
- 
-   -- throw away any pending ^C exceptions while we're not running
+        Left e -> showException e
+@@ -64,6 +78,7 @@ serv verbose hook pipe@Pipe{..} restore = loop
    -- interpreted code.  GHC will also get the ^C, and either ignore it
    -- (if this is GHCi), or tell us to quit with a Shutdown message.
--  discardCtrlC = do
-+  discardCtrlC verbose = do
+   discardCtrlC = do
 +    when verbose $ trace "discardCtrlC"
      r <- try $ restore $ return ()
      case r of
--      Left UserInterrupt -> return () >> discardCtrlC
-+      Left UserInterrupt -> return () >> discardCtrlC verbose
-       Left e -> throwIO e
-       _ -> return ()
+       Left UserInterrupt -> return () >> discardCtrlC
 diff --git a/libraries/libiserv/src/Remote/Slave.hs b/libraries/libiserv/src/Remote/Slave.hs
 index b80d09592f..577161f35f 100644
 --- a/libraries/libiserv/src/Remote/Slave.hs
@@ -266,6 +282,149 @@ index b80d09592f..577161f35f 100644
      handleLoad pipe path (base_path <//> path)
      return $ Msg (LoadDLL (base_path <//> path))
    _other -> return m
+diff --git a/testsuite/tests/iserv-remote/Lib.hs b/testsuite/tests/iserv-remote/Lib.hs
+new file mode 100644
+index 0000000000..f34fc9d8ab
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/Lib.hs
+@@ -0,0 +1,7 @@
++{-# LANGUAGE TemplateHaskell #-}
++module Lib where
++
++import Language.Haskell.TH
++
++x :: Int -> ExpQ
++x n = [| 3 + n |]
+diff --git a/testsuite/tests/iserv-remote/Main.hs b/testsuite/tests/iserv-remote/Main.hs
+new file mode 100644
+index 0000000000..dcc2354287
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/Main.hs
+@@ -0,0 +1,5 @@
++{-# LANGUAGE TemplateHaskell #-}
++
++import Lib (x)
++
++main = putStrLn "Hello World" >> print $(x 10)
+diff --git a/testsuite/tests/iserv-remote/Makefile b/testsuite/tests/iserv-remote/Makefile
+new file mode 100644
+index 0000000000..409e33be09
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/Makefile
+@@ -0,0 +1,38 @@
++TOP=../..
++include $(TOP)/mk/boilerplate.mk
++include $(TOP)/mk/test.mk
++
++SETUP='$(PWD)/Setup' -v0
++CONFIGURE=$(SETUP) configure $(CABAL_MINIMAL_BUILD) --with-ghc='$(TEST_HC)' --ghc-options='$(TEST_HC_OPTS)' --package-db='$(PWD)/tmp.d' --prefix='$(PWD)/inst'
++
++remote-iserv: clean
++	'$(GHC_PKG)' init tmp.d
++
++	'$(TEST_HC)' $(TEST_HC_OPTS) -v0 --make Setup
++
++	cp -r $(TOP)/../libraries/libiserv .
++	cd libiserv && $(CONFIGURE) -fnetwork
++	cd libiserv && $(SETUP) build
++	cd libiserv && $(SETUP) copy
++	cd libiserv && $(SETUP) register
++
++	cp -r $(TOP)/../utils/iserv-proxy .
++	cd iserv-proxy && $(CONFIGURE)
++	cd iserv-proxy && $(SETUP) build
++	cd iserv-proxy && $(SETUP) copy
++	cd iserv-proxy && $(SETUP) register
++
++	cp -r $(TOP)/../utils/remote-iserv .
++	cd remote-iserv && $(CONFIGURE)
++	cd remote-iserv && $(SETUP) build
++	cd remote-iserv && $(SETUP) copy
++	cd remote-iserv && $(SETUP) register
++
++	'$(TEST_HC)' $(TEST_HC_OPTS)  -fexternal-interpreter -pgmi $(PWD)/iserv-wrapper Main.hs
++
++ifneq "$(CLEANUP)" ""
++        $(MAKE) -s --no-print-directory clean
++endif
++
++clean :
++	$(RM) -rf tmp *.o *.hi Main libiserv iserv-proxy remote-iserv tmp.d inst dist Setup$(exeext)
+diff --git a/testsuite/tests/iserv-remote/Setup.hs b/testsuite/tests/iserv-remote/Setup.hs
+new file mode 100644
+index 0000000000..9a994af677
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/Setup.hs
+@@ -0,0 +1,2 @@
++import Distribution.Simple
++main = defaultMain
+diff --git a/testsuite/tests/iserv-remote/all.T b/testsuite/tests/iserv-remote/all.T
+new file mode 100644
+index 0000000000..f8f0920835
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/all.T
+@@ -0,0 +1,11 @@
++def normalise_port(str):
++  str = re.sub(r'on port [0-9]+', r'on port ****', str)
++  return str
++
++test('remote-iserv'
++    , [ reqlib('network')
++      , normalise_fun(normalise_port)
++      , normalise_errmsg_fun(normalise_port)
++      , extra_files(['Main.hs', 'Lib.hs', 'iserv-wrapper', 'Setup.hs'])]
++    , makefile_test
++    , [])
+diff --git a/testsuite/tests/iserv-remote/iserv-remote.stderr b/testsuite/tests/iserv-remote/iserv-remote.stderr
+new file mode 100644
+index 0000000000..8b13789179
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/iserv-remote.stderr
+@@ -0,0 +1 @@
++
+diff --git a/testsuite/tests/iserv-remote/iserv-remote.stdout b/testsuite/tests/iserv-remote/iserv-remote.stdout
+new file mode 100644
+index 0000000000..8b13789179
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/iserv-remote.stdout
+@@ -0,0 +1 @@
++
+diff --git a/testsuite/tests/iserv-remote/iserv-wrapper b/testsuite/tests/iserv-remote/iserv-wrapper
+new file mode 100755
+index 0000000000..6c7da86214
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/iserv-wrapper
+@@ -0,0 +1,12 @@
++#!/bin/bash
++PORT=$(($((5000+$RANDOM)) % 10000))
++
++(>&2 echo "starting remote-iserv on port $PORT")
++
++./inst/bin/remote-iserv tmp $PORT &
++REMOTE="$!"
++
++(>&2 echo "starting iserv-proxy with $@")
++./inst/bin/iserv-proxy $@ 127.0.0.1 $PORT
++
++kill $REMOTE
+diff --git a/testsuite/tests/iserv-remote/remote-iserv.stderr b/testsuite/tests/iserv-remote/remote-iserv.stderr
+new file mode 100644
+index 0000000000..cd6f9d4385
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/remote-iserv.stderr
+@@ -0,0 +1,2 @@
++starting remote-iserv on port 2051
++starting iserv-proxy with 13 14
+diff --git a/testsuite/tests/iserv-remote/remote-iserv.stdout b/testsuite/tests/iserv-remote/remote-iserv.stdout
+new file mode 100644
+index 0000000000..b062df0c31
+--- /dev/null
++++ b/testsuite/tests/iserv-remote/remote-iserv.stdout
+@@ -0,0 +1,4 @@
++[1 of 2] Compiling Lib              ( Lib.hs, Lib.o )
++[2 of 2] Compiling Main             ( Main.hs, Main.o )
++Listening on port 2051
++Linking Main ...
 diff --git a/utils/iserv-proxy/Makefile b/utils/iserv-proxy/Makefile
 index f160978c19..dec92996f7 100644
 --- a/utils/iserv-proxy/Makefile
@@ -279,180 +438,21 @@ index f160978c19..dec92996f7 100644
 +dir = iserv-proxy
 +TOP = ../..
  include $(TOP)/mk/sub-makefile.mk
-diff --git a/utils/iserv-proxy/iserv-proxy.cabal b/utils/iserv-proxy/iserv-proxy.cabal
-deleted file mode 100644
-index 5d276b244d..0000000000
---- a/utils/iserv-proxy/iserv-proxy.cabal
-+++ /dev/null
-@@ -1,78 +0,0 @@
--Name: iserv-proxy
--Version: 8.6
--Copyright: XXX
--License: BSD3
---- XXX License-File: LICENSE
--Author: XXX
--Maintainer: XXX
--Synopsis: iserv allows GHC to delegate Tempalte Haskell computations
--Description:
--  GHC can be provided with a path to the iserv binary with
--  @-pgmi=/path/to/iserv-bin@, and will in combination with
--  @-fexternal-interpreter@, compile Template Haskell though the
--  @iserv-bin@ delegate. This is very similar to how ghcjs has been
--  compiling Template Haskell, by spawning a separate delegate (so
--  called runner on the javascript vm) and evaluating the splices
--  there.
--  .
--  iserv can also be used in combination with cross compilation. For
--  this, the @iserv-proxy@ needs to be built on the host, targeting the
--  host (as it is running on the host). @cabal install -flibrary
--  -fproxy@ will yield the proxy.
--  .
--  Using the cabal for the target @arch-platform-target-cabal install
--  -flibrary@ will build the required library that contains the ffi
--  @startSlave@ function, which needs to be invoked on the target
--  (e.g. in an iOS application) to start the remote iserv slave.
--  .
--  calling the GHC cross compiler with @-fexternal-interpreter
--  -pgmi=$HOME/.cabal/bin/iserv-proxy -opti\<ip address\> -opti\<port\>@
--  will cause it to compile Template Haskell via the remote at \<ip address\>.
--  .
--  Thus to get cross compilation with Template Haskell follow the
--  following receipt:
--  .
--  * compile the iserv library for your target
--  .
--      > iserv $ arch-platform-target-cabal install -flibrary
--  .
--  * setup an application for your target that calls the
--  * startSlave function. This could be either haskell or your
--  * targets ffi capable language, if needed.
--  .
--      >  void startSlave(false /* verbose */, 5000 /* port */,
--      >                  "/path/to/storagelocation/on/target");
--  .
--  * build the iserv-proxy
--  .
--      > iserv $ cabal install -flibrary -fproxy
--  * Start your iserv-slave app on your target running on say @10.0.0.1:5000@
--  * compiler your sources with -fexternal-interpreter and the proxy
--  .
--      > project $ arch-platform-target-ghc ModuleContainingTH.hs \
--      >             -fexternal-interpreter \
--      >             -pgmi=$HOME/.cabal/bin/iserv-proxy \
--      >             -opti10.0.0.1 -opti5000
--  .
--  Should something not work as expected, provide @-opti-v@ for verbose
--  logging of the @iserv-proxy@.
--
--Category: Development
--build-type: Simple
--cabal-version: >=1.10
--
--Executable iserv-proxy
--   Default-Language: Haskell2010
--   Main-Is: Main.hs
--   Hs-Source-Dirs: src
--   Build-Depends: array      >= 0.5 && < 0.6,
--                  base       >= 4   && < 5,
--                  binary     >= 0.7 && < 0.9,
--                  bytestring >= 0.10 && < 0.11,
--                  containers >= 0.5 && < 0.6,
--                  deepseq    >= 1.4 && < 1.5,
--                  directory  >= 1.3 && < 1.4,
--                  network    >= 2.6,
--                  filepath   >= 1.4 && < 1.5,
--                  ghci       == 8.6.*,
--                  libiserv   == 8.6.*
 diff --git a/utils/iserv-proxy/iserv-proxy.cabal.in b/utils/iserv-proxy/iserv-proxy.cabal.in
-new file mode 100644
-index 0000000000..0819064601
---- /dev/null
+index 0819064601..cd36426f81 100644
+--- a/utils/iserv-proxy/iserv-proxy.cabal.in
 +++ b/utils/iserv-proxy/iserv-proxy.cabal.in
-@@ -0,0 +1,82 @@
-+-- WARNING: iserv-proxy.cabal is automatically generated from iserv-proxy.cabal.in by
-+-- ../../configure.  Make sure you are editing iserv-proxy.cabal.in, not
-+-- iserv-proxy.cabal.
-+
-+Name: iserv-proxy
-+Version: @ProjectVersion@
-+Copyright: XXX
-+License: BSD3
-+-- XXX License-File: LICENSE
-+Author: XXX
-+Maintainer: XXX
-+Synopsis: iserv allows GHC to delegate Tempalte Haskell computations
-+Description:
-+  GHC can be provided with a path to the iserv binary with
-+  @-pgmi=/path/to/iserv-bin@, and will in combination with
-+  @-fexternal-interpreter@, compile Template Haskell though the
-+  @iserv-bin@ delegate. This is very similar to how ghcjs has been
-+  compiling Template Haskell, by spawning a separate delegate (so
-+  called runner on the javascript vm) and evaluating the splices
-+  there.
-+  .
-+  iserv can also be used in combination with cross compilation. For
-+  this, the @iserv-proxy@ needs to be built on the host, targeting the
-+  host (as it is running on the host). @cabal install -flibrary
-+  -fproxy@ will yield the proxy.
-+  .
-+  Using the cabal for the target @arch-platform-target-cabal install
-+  -flibrary@ will build the required library that contains the ffi
-+  @startSlave@ function, which needs to be invoked on the target
-+  (e.g. in an iOS application) to start the remote iserv slave.
-+  .
-+  calling the GHC cross compiler with @-fexternal-interpreter
-+  -pgmi=$HOME/.cabal/bin/iserv-proxy -opti\<ip address\> -opti\<port\>@
-+  will cause it to compile Template Haskell via the remote at \<ip address\>.
-+  .
-+  Thus to get cross compilation with Template Haskell follow the
-+  following receipt:
-+  .
-+  * compile the iserv library for your target
-+  .
-+      > iserv $ arch-platform-target-cabal install -flibrary
-+  .
-+  * setup an application for your target that calls the
-+  * startSlave function. This could be either haskell or your
-+  * targets ffi capable language, if needed.
-+  .
-+      >  void startSlave(false /* verbose */, 5000 /* port */,
-+      >                  "/path/to/storagelocation/on/target");
-+  .
-+  * build the iserv-proxy
-+  .
-+      > iserv $ cabal install -flibrary -fproxy
-+  * Start your iserv-slave app on your target running on say @10.0.0.1:5000@
-+  * compiler your sources with -fexternal-interpreter and the proxy
-+  .
-+      > project $ arch-platform-target-ghc ModuleContainingTH.hs \
-+      >             -fexternal-interpreter \
-+      >             -pgmi=$HOME/.cabal/bin/iserv-proxy \
-+      >             -opti10.0.0.1 -opti5000
-+  .
-+  Should something not work as expected, provide @-opti-v@ for verbose
-+  logging of the @iserv-proxy@.
-+
-+Category: Development
-+build-type: Simple
-+cabal-version: >=1.10
-+
-+Executable iserv-proxy
-+   Default-Language: Haskell2010
-+   Main-Is: Main.hs
-+   Hs-Source-Dirs: src
-+   Build-Depends: array      >= 0.5 && < 0.6,
-+                  base       >= 4   && < 5,
-+                  binary     >= 0.7 && < 0.9,
-+                  bytestring >= 0.10 && < 0.11,
-+                  containers >= 0.5 && < 0.6,
-+                  deepseq    >= 1.4 && < 1.5,
-+                  directory  >= 1.3 && < 1.4,
-+                  network    >= 2.6,
-+                  filepath   >= 1.4 && < 1.5,
-+                  ghci       == @ProjectVersionMunged@,
-+                  libiserv   == @ProjectVersionMunged@
+@@ -73,7 +73,7 @@ Executable iserv-proxy
+                   base       >= 4   && < 5,
+                   binary     >= 0.7 && < 0.9,
+                   bytestring >= 0.10 && < 0.11,
+-                  containers >= 0.5 && < 0.6,
++                  containers >= 0.5 && < 0.8,
+                   deepseq    >= 1.4 && < 1.5,
+                   directory  >= 1.3 && < 1.4,
+                   network    >= 2.6,
 diff --git a/utils/iserv-proxy/src/Main.hs b/utils/iserv-proxy/src/Main.hs
-index c91b2d08c6..3970ad5df1 100644
+index c91b2d08c6..5901ffe562 100644
 --- a/utils/iserv-proxy/src/Main.hs
 +++ b/utils/iserv-proxy/src/Main.hs
 @@ -1,4 +1,4 @@
@@ -484,7 +484,7 @@ index c91b2d08c6..3970ad5df1 100644
    args <- getArgs
    (wfd1, rfd2, host_ip, port, rest) <-
        case args of
-@@ -104,10 +113,16 @@ main = do
+@@ -104,10 +113,17 @@ main = do
    let in_pipe = Pipe{pipeRead = inh, pipeWrite = outh, pipeLeftovers = lo_ref}
  
    when verbose $
@@ -494,17 +494,18 @@ index c91b2d08c6..3970ad5df1 100644
  
 -  putStrLn "Starting proxy"
 +  out_pipe <- do
-+    let go n = E.try (connectTo host_ip port >>= socketToPipe) >>= \case
++    let go n = E.try (connectTo verbose host_ip port >>= socketToPipe) >>= \case
 +          Left e | n == 0 -> E.throw (e :: E.SomeException)
 +                 | n >  0 -> threadDelay 500000 >> go (n - 1)
 +          Right a -> return a
 +      in go 120 -- wait for up to 60seconds (polling every 0.5s).
 +
-+  trace "Starting proxy"
++  when verbose $
++    trace "Starting proxy"
    proxy verbose in_pipe out_pipe
  
  -- | A hook, to transform outgoing (proxy -> slave)
-@@ -131,19 +146,24 @@ fwdTHMsg local msg = do
+@@ -131,19 +147,24 @@ fwdTHMsg local msg = do
  -- | Fowarard a @Message@ call and handle @THMessages@.
  fwdTHCall :: (Binary a) => Bool -> Pipe -> Pipe -> Message a -> IO a
  fwdTHCall verbose local remote msg = do
@@ -531,7 +532,7 @@ index c91b2d08c6..3970ad5df1 100644
          writePipe remote (put res)
          case msg' of
            RunTHDone -> return ()
-@@ -161,8 +181,10 @@ fwdTHCall verbose local remote msg = do
+@@ -161,8 +182,10 @@ fwdTHCall verbose local remote msg = do
  --
  fwdLoadCall :: (Binary a, Show a) => Bool -> Pipe -> Pipe -> Message a -> IO a
  fwdLoadCall verbose _ remote msg = do
@@ -542,7 +543,7 @@ index c91b2d08c6..3970ad5df1 100644
    readPipe remote get
    where
      truncateMsg :: Int -> String -> String
-@@ -171,17 +193,19 @@ fwdLoadCall verbose _ remote msg = do
+@@ -171,17 +194,20 @@ fwdLoadCall verbose _ remote msg = do
      reply :: (Binary a, Show a) => a -> IO ()
      reply m = do
        when verbose $
@@ -560,11 +561,12 @@ index c91b2d08c6..3970ad5df1 100644
        case msg' of
          Done -> return ()
          Missing path -> do
-+          trace $ "fwdLoadCall: missing path: " ++ path
++          when verbose $
++            trace $ "fwdLoadCall: missing path: " ++ path
            reply =<< BS.readFile path
            loopLoad
          Have path remoteHash -> do
-@@ -198,21 +222,33 @@ proxy verbose local remote = loop
+@@ -198,21 +224,33 @@ proxy verbose local remote = loop
    where
      fwdCall :: (Binary a, Show a) => Message a -> IO a
      fwdCall msg = do
@@ -600,7 +602,7 @@ index c91b2d08c6..3970ad5df1 100644
        case msg' of
          -- TH might send some message back to ghc.
          RunTH{} -> do
-@@ -233,6 +269,10 @@ proxy verbose local remote = loop
+@@ -233,6 +271,10 @@ proxy verbose local remote = loop
            resp <- fwdLoadCall verbose local remote msg'
            reply resp
            loop
@@ -611,10 +613,12 @@ index c91b2d08c6..3970ad5df1 100644
          LoadDLL path | isAbsolute path -> do
            resp <- fwdLoadCall verbose local remote msg'
            reply resp
-@@ -243,14 +283,19 @@ proxy verbose local remote = loop
+@@ -241,16 +283,23 @@ proxy verbose local remote = loop
+         _other        -> fwdCall msg' >>= reply >> loop
  
- connectTo :: String -> PortNumber -> IO Socket
- connectTo host port = do
+ 
+-connectTo :: String -> PortNumber -> IO Socket
+-connectTo host port = do
 -  let hints = defaultHints { addrFlags = [AI_NUMERICHOST, AI_NUMERICSERV]
 -                           , addrSocketType = Stream }
 -  addr:_ <- getAddrInfo (Just hints) (Just host) (Just (show port))
@@ -623,6 +627,8 @@ index c91b2d08c6..3970ad5df1 100644
 -  connect sock (addrAddress addr)
 -  putStrLn "connected"
 -  return sock
++connectTo :: Bool -> String -> PortNumber -> IO Socket
++connectTo verbose host port = do
 +  addr <- resolve host (show port)
 +  open addr
 +  where
@@ -632,67 +638,15 @@ index c91b2d08c6..3970ad5df1 100644
 +        return addr
 +    open addr = do
 +        sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
-+        trace $ "Created socket for " ++ host ++ ":" ++ show port
++        when verbose $
++          trace $ "Created socket for " ++ host ++ ":" ++ show port
 +        connect sock $ addrAddress addr
-+        trace "connected"
++        when verbose $
++          trace "connected"
 +        return sock
  
  -- | Turn a socket into an unbuffered pipe.
  socketToPipe :: Socket -> IO Pipe
-diff --git a/utils/iserv/iserv.cabal.in b/utils/iserv/iserv.cabal.in
-new file mode 100644
-index 0000000000..356c8a444a
---- /dev/null
-+++ b/utils/iserv/iserv.cabal.in
-@@ -0,0 +1,48 @@
-+-- WARNING: iserv.cabal is automatically generated from iserv.cabal.in by
-+-- ../../configure.  Make sure you are editing iserv.cabal.in, not
-+-- iserv.cabal.
-+
-+Name: iserv
-+Version: @ProjectVersion@
-+Copyright: XXX
-+License: BSD3
-+-- XXX License-File: LICENSE
-+Author: XXX
-+Maintainer: XXX
-+Synopsis: iserv allows GHC to delegate Template Haskell computations
-+Description:
-+  GHC can be provided with a path to the iserv binary with
-+  @-pgmi=/path/to/iserv-bin@, and will in combination with
-+  @-fexternal-interpreter@, compile Template Haskell though the
-+  @iserv-bin@ delegate. This is very similar to how ghcjs has been
-+  compiling Template Haskell, by spawning a separate delegate (so
-+  called runner on the javascript vm) and evaluating the splices
-+  there.
-+  .
-+  To use iserv with cross compilers, please see @libraries/libiserv@
-+  and @utils/iserv-proxy@.
-+
-+Category: Development
-+build-type: Simple
-+cabal-version: >=1.10
-+
-+Executable iserv
-+    Default-Language: Haskell2010
-+    ghc-options: -no-hs-main
-+    Main-Is: Main.hs
-+    C-Sources: cbits/iservmain.c
-+    Hs-Source-Dirs: src
-+    include-dirs: .
-+    Build-Depends: array      >= 0.5 && < 0.6,
-+                   base       >= 4   && < 5,
-+                   binary     >= 0.7 && < 0.11,
-+                   bytestring >= 0.10 && < 0.11,
-+                   containers >= 0.5 && < 0.7,
-+                   deepseq    >= 1.4 && < 1.5,
-+                   ghci       == @ProjectVersionMunged@,
-+                   libiserv   == @ProjectVersionMunged@
-+
-+    if os(windows)
-+        Cpp-Options: -DWINDOWS
-+    else
-+        Build-Depends: unix   >= 2.7 && < 2.9
 diff --git a/utils/remote-iserv/Makefile b/utils/remote-iserv/Makefile
 new file mode 100644
 index 0000000000..c659a21a20
@@ -843,13 +797,13 @@ index 0000000000..db8f32fc22
 +all_ghc_stage2 : $(remote-iserv-stage2_dyn_INPLACE)
 diff --git a/utils/remote-iserv/remote-iserv.cabal.in b/utils/remote-iserv/remote-iserv.cabal.in
 new file mode 100644
-index 0000000000..2e9123bf5e
+index 0000000000..a1cba01301
 --- /dev/null
 +++ b/utils/remote-iserv/remote-iserv.cabal.in
 @@ -0,0 +1,27 @@
-+-- WARNING: iserv-proxy.cabal is automatically generated from iserv-proxy.cabal.in by
-+-- ../../configure.  Make sure you are editing iserv-proxy.cabal.in, not
-+-- iserv-proxy.cabal.
++-- WARNING: iserv-proxy.cabal is automatically generated from remote-iserv.cabal.in by
++-- ../../configure.  Make sure you are editing remote-iserv.cabal.in, not
++-- remote-iserv.cabal.
 +
 +Name: remote-iserv
 +Version: @ProjectVersion@
@@ -910,3 +864,6 @@ index 0000000000..eb8f92c39c
 +        _      -> dieWithUsage
 +
 +      startSlave' verbose path port
+-- 
+2.24.1
+

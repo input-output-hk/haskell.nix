@@ -14,7 +14,11 @@ let
   # Like normalizeRelativePath but with a trailing / when needed
   normalizeRelativeDir = dir:
     let p = normalizeRelativePath dir;
-    in if p == "" then "" else p + "/";
+    in if p == "" || p == "/"
+      then ""
+      else if lib.hasSuffix "/" p
+        then p
+        else p + "/";
 in
   if srcStr' == null || package.detailLevel != "FullDetails"
     then src

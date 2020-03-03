@@ -1,6 +1,6 @@
 # From https://github.com/NixOS/nix/issues/2944
 { lib, runCommand, git, cleanSourceWith }:
-{ src, subDir ? "" }:
+{ name ? null, src, subDir ? "" }:
 
 # The function call
 #
@@ -54,8 +54,9 @@ in
 if builtins.pathExists (toString src + "/.git")
 then
   let
-    isWorktree = !builtins.pathExists (toString src + "/.git/index");
-    
+    hasIndex = builtins.pathExists (toString src + "/.git/index");
+    isWorktree = (builtins.readDir (toString src)).".git" == "regular";
+
     # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
         filter = path: type:
@@ -66,20 +67,22 @@ then
             lib.any (i: (lib.hasSuffix i path)) [
               "/config" "/index" "/HEAD" "/objects" "/refs" ]);
       } // (
-      if !isWorktree
+      if hasIndex
         then { inherit src; subDir = ".git"; }
-        else {
-          # likely a git worktree, so follow the indirection
-          src =
-            let
-              git_content = lines (readFile (toString src + "/.git"));
-              first_line = head git_content;
-              prefix = "gitdir: ";
-              ok = length git_content == 1 && has_prefix prefix first_line;
-            in
-              if ok
-              then /. + remove_prefix prefix first_line
-              else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
+        else if !isWorktree
+          then abort "cleanGit: ${toString src + "/.git"} has no index file"
+          else {
+            # likely a git worktree, so follow the indirection
+            src =
+              let
+                git_content = lines (readFile (toString src + "/.git"));
+                first_line = head git_content;
+                prefix = "gitdir: ";
+                ok = length git_content == 1 && has_prefix prefix first_line;
+              in
+                if ok
+                then /. + remove_prefix prefix first_line
+                else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
     }));
 
     # Worktrees have a commondir pointing to the common `.git` dir.  We need the
@@ -91,8 +94,8 @@ then
            let
              git_content = lines (readFile (toString gitDir.origSrc + "/commondir"));
              first_line = head git_content;
-           in toString gitDir.origSrc + "/" + first_line + "/config"
-        else toString gitDir + "/config";
+           in gitDir.origSrc + ("/" + first_line + "/config")
+        else gitDir + "/config";
 
     # We need the .gitmodules file for submoules to work.
     gitModulesStr = toString src + "/.gitmodules";
@@ -105,12 +108,12 @@ then
                               # and use that to filter directory tree here
         ||
           lib.any (i: (lib.hasSuffix i path)) [
-            ".gitmodules" ".git/config" ".git/index" ".git/HEAD" ".git/objects" ".git/refs" ] ||
+            "/.git" ".gitmodules" ".git/config" ".git/index" ".git/HEAD" ".git/objects" ".git/refs" ] ||
           (lib.strings.hasInfix ".git/modules/" path &&
             lib.any (i: (lib.hasSuffix i path)) [
               "config" "index" "HEAD" "objects" "refs" ]);
     };
-    
+
     # Make a temporary dir that looks enough like the real thing for
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
@@ -140,12 +143,12 @@ then
     filter = filter_from_list src whitelist;
   in
     cleanSourceWith {
-      inherit src subDir filter;
+      inherit name src subDir filter;
     }
 
 else
   trace "gitSource.nix: ${toString src} does not seem to be a git repository,\nassuming it is a clean checkout." (
     cleanSourceWith {
-      inherit src subDir;
+      inherit name src subDir;
     }
   )

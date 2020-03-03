@@ -74,6 +74,11 @@ with haskellLib;
   isLocalPackage = p: p.isLocal or false;
   selectLocalPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p) ps;
 
+  # if it's a project package it has a src attribute set with an origSubDir attribute.
+  # project packages are a subset of localPackages
+  isProjectPackage = p: p ? src && p.src ? origSubDir;
+  selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
+
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
   componentTarget = componentId:
@@ -134,9 +139,27 @@ with haskellLib;
   #     to: tests.mypackage.unit-tests
   #
   collectComponents = group: packageSel: haskellPackages:
-    (lib.mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
-     (lib.filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
-    // { recurseForDerivations = true; };
+    let packageToComponents = name: package:
+          # look for the components with this group if there are any
+          let components = package.components.${group} or {};
+          # set recurseForDerivations unless it's a derivation itself (e.g. the "library" component) or an empty set
+          in if lib.isDerivation components || components == {}
+             then components
+             else pkgs.recurseIntoAttrs components;
+        packageFilter = name: package: (package.isHaskell or false) && packageSel package;
+        filteredPkgs = lib.filterAttrs packageFilter haskellPackages;
+        # at this point we can filter out packages that don't have any of the given kind of component
+        packagesByComponent = lib.filterAttrs (_: components: components != {}) (lib.mapAttrs packageToComponents filteredPkgs);
+    in pkgs.recurseIntoAttrs packagesByComponent;
+
+  # Equivalent to collectComponents with (_: true) as selection function.
+  # Useful for pre-filtered package-set.
+  #
+  # For example:
+  #
+  #    myHaskellPackages = selectProjectPackages hsPkgs;
+  #    myTests = collectComponents' "tests" myHaskellPackages;
+  collectComponents' = group: collectComponents group (_: true);
 
   # Replacement for lib.cleanSourceWith that has a subDir argument.
   inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;

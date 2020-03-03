@@ -17,9 +17,10 @@ let
 
   # exactDep will pass --exact-configuration to the `SETUP_HS confiugre` command.
   # This requires us to pass --dependency={dep name}={pkg id}.  The dependency
-  # name will usually be the name of the package `p`, that will have been located
-  # in the suitable package db when the dependency (along with `exactDep` and `envDep`)
-  # was built.  Sublibs need a bit of special handling:
+  # name will usually be the name of the package `p`, which we can locate in the
+  # package-db, passed in via `pdbArg`.  Thus querying the package-db for the
+  # id field for package `p`, will unsually provide is with the right value.  Sublibs
+  # need a bit of special handling:
   #
   # - Sublibs: if the dependency is a sublibrary of a package, we need to use
   #            the sublibrary's name for the dep name, and lookup the sublibraries
@@ -30,11 +31,11 @@ let
 
   getLibComponent = dep:
        dep.components.library # Regular package dependency
-    or dep;                   # or a sublib 
-  
+    or dep;                   # or a sublib
+
   catPkgExactDep = p: ''
-    cat ${getLibComponent p}/exactDep/configure-flags >> $out/configure-flags
-    cat ${getLibComponent p}/exactDep/cabal.config >> $out/cabal.config
+    cat ${p}/exactDep/configure-flags >> $out/configure-flags
+    cat ${p}/exactDep/cabal.config >> $out/cabal.config
   '';
 
   catGhcPkgExactDep = p: ''
@@ -45,7 +46,7 @@ let
   '';
 
   catPkgEnvDep = p: ''
-    cat ${getLibComponent p}/envDep >> $out/ghc-environment
+    cat ${p}/envDep >> $out/ghc-environment
   '';
 
   catGhcPkgEnvDep = p: ''
@@ -54,11 +55,36 @@ let
     fi
   '';
 
+  # Work our suitable packageCfgDir subdirectory
+  isGhcjs        = ghc.isGhcjs or false;
+  ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
+  ghcCommand     = "${ghc.targetPrefix}${ghcCommand'}";
+  ghcCommandCaps = lib.toUpper ghcCommand';
+  libDir         = "lib/${ghcCommand}-${ghc.version}";
+  packageCfgDir  = "${libDir}/package.conf.d";
+
 in { identifier, component, fullName, flags ? {} }:
-  runCommand "${fullName}-config" { nativeBuildInputs = [ghc]; } (''
+  # Filters out only library packages that for this GHC target
+  # TODO investigate why this is needed
+  let libDeps = lib.filter (p: p.configFiles.targetPrefix == ghc.targetPrefix)
+        (map getLibComponent component.depends);
+      cfgFiles =
+        let xs = map
+          (p: "${p.configFiles}")
+          libDeps;
+        in lib.concatStringsSep "\" \"" xs;
+      libs     = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
+  in
+  runCommand "${ghc.targetPrefix}${fullName}-config" {
+      nativeBuildInputs = [ghc];
+      passthru = {
+        inherit (ghc) targetPrefix;
+        inherit ghcCommand ghcCommandCaps libDir packageCfgDir;
+      };
+    } (''
     mkdir -p $out
 
-    ${target-pkg} init $out/package.conf.d
+    ${target-pkg} init $out/${packageCfgDir}
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs;
@@ -68,16 +94,22 @@ in { identifier, component, fullName, flags ? {} }:
 
     # Copy over the nonReinstallablePkgs from the global package db.
     ${lib.concatMapStringsSep "\n" (p: ''
-      find ${ghc}/lib/${ghc.name}/package.conf.d -name '${p}*.conf' -exec cp -f {} $out/package.conf.d \;
+      find ${ghc}/lib/${ghc.name}/package.conf.d -name '${p}*.conf' -exec cp -f {} $out/${packageCfgDir} \;
     '') nonReinstallablePkgs}
 
-    ${lib.concatMapStringsSep "\n" (p: ''
-      cp -f "${(getLibComponent p).configFiles}/package.conf.d/"*.conf $out/package.conf.d
-      cp -f "${getLibComponent p}/package.conf.d/"*.conf $out/package.conf.d
-    '') component.depends}
+    for l in "${cfgFiles}"; do
+      if [ -n "$l" ]; then
+        cp -f "$l/${packageCfgDir}/"*.conf $out/${packageCfgDir}
+      fi
+    done
+    for l in "${libs}"; do
+      if [ -n "$l" ]; then
+        cp -f "$l/package.conf.d/"*.conf $out/${packageCfgDir}
+      fi
+    done
 
     # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
-    ${flagsAndConfig "package-db" ["clear" "$out/package.conf.d"]}
+    ${flagsAndConfig "package-db" ["clear" "$out/${packageCfgDir}"]}
 
     echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
 
@@ -86,17 +118,17 @@ in { identifier, component, fullName, flags ? {} }:
 
     # Provide a GHC environment file
     cat > $out/ghc-environment <<EOF
-    package-db $out/package.conf.d
+    package-db $out/${packageCfgDir}
     EOF
 
-    ${lib.concatMapStringsSep "\n" catPkgEnvDep component.depends}
+    ${lib.concatMapStringsSep "\n" catPkgEnvDep libDeps}
     ${lib.concatMapStringsSep "\n" catGhcPkgEnvDep (lib.remove "ghc" nonReinstallablePkgs)}
   '' + lib.optionalString component.doExactConfig ''
     echo "--exact-configuration" >> $out/configure-flags
     echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
     echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
 
-    ${lib.concatMapStringsSep "\n" catPkgExactDep component.depends}
+    ${lib.concatMapStringsSep "\n" catPkgExactDep libDeps}
     ${lib.concatMapStringsSep "\n" catGhcPkgExactDep nonReinstallablePkgs}
 
   ''
@@ -114,6 +146,14 @@ in { identifier, component, fullName, flags ? {} }:
   #
   # NOTE [ln -s -f]: we force link, as we may have dependencies that contain shared deps
   #                  (e.g. libiconv), and thus we don't want to fail, but just link it again.
+  #
+  # Confusing sed stuff:
+  #   '/^ ./{H;$!d} ; x'                       Groups lines that start with a space with the initial
+  #                                            line of a block.  Needs a blank line added to the file
+  #                                            to terminate the last block.
+  #   's/ /\n/g ; s/\n\n*/\n/g; s/^\n//;'      Puts each field on its own line.
+  #   's|/nix/store/|''${pkgroot}/../../../|'  Convert store path to pkgroot relative path
+  #   's|''${pkgroot}/../../../|/nix/store/|'  Convert pkgroot relative path to store path
   + lib.optionalString stdenv.isDarwin ''
     # Work around a limit in the macOS Sierra linker on the number of paths
     # referenced by any one dynamic library:
@@ -122,13 +162,25 @@ in { identifier, component, fullName, flags ? {} }:
     # libraries) from all the dependencies.
     local dynamicLinksDir="$out/lib/links"
     mkdir -p $dynamicLinksDir
-    for d in $(grep dynamic-library-dirs "$out/package.conf.d/"*|awk '{print $2}'|sort -u); do
+    # Enumerate dynamic-library-dirs with ''${pkgroot} expanded.
+    local dirsToLink=$(
+      for f in "$out/${packageCfgDir}/"*.conf; do
+        (cat $f; echo) | sed -En '/^ ./{H;$!d} ; x ; /^dynamic-library-dirs:/ {s/^dynamic-library-dirs:// ; s/ /\n/g ; s/\n\n*/\n/g; s/^\n//; p}'
+      done | sed 's|''${pkgroot}/../../../|/nix/store/|' | sort -u
+    )
+    for d in $dirsToLink; do
       ln -f -s "$d/"*.dylib $dynamicLinksDir
     done
     # Edit the local package DB to reference the links directory.
-    for f in "$out/package.conf.d/"*.conf; do
-      sed -i "s,dynamic-library-dirs: .*,dynamic-library-dirs: $dynamicLinksDir," $f
+    for f in "$out/${packageCfgDir}/"*.conf; do
+      chmod +w $f
+      echo >> $f
+      sed -i -E "/^ ./{H;$!d} ; x ; s,^dynamic-library-dirs:.*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    ${target-pkg} -v0 --package-db $out/package.conf.d recache
+    # Use ''${pkgroot} relative paths so that we can relocate the package database
+    # along with referenced packages and still have it work on systems with
+    # or without nix installed.
+    sed -i 's|/nix/store/|''${pkgroot}/../../../|' $out/${packageCfgDir}/*.conf
+    ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
   '')

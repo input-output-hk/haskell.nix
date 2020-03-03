@@ -1,6 +1,6 @@
 #+STARTUP: showall hidestars
 
-** :warning: The Overlay branch #261 was merged. haskell.nix is now an overlay and the dependency on iohk-nix was dropped. Please see the updated documentation! Once any remaining issues are resolved, this will mark the 1.0 release of haskell.nix. :warning:
+** :warning: Please use [[iohk.cachix.org]] instead of [[nix-tools.cachix.org]] :warning: 
 
 * Alternative Haskell Infrastructure for Nixpkgs
 
@@ -77,7 +77,7 @@ cabal new-repl your-package-name:library:your-package-name
 CI pushes to [[https://cachix.org][cachix]] so you can benefit from the cache
 if you pin a combination of =haskell.nix= and =nixpkgs= built by CI.
 
-You'll need to configure the [[https://nix-tools.cachix.org][nix-tools cachix]]
+You'll need to configure the [[https://iohk.cachix.org][iohk cachix]]
 as a =substituter= for =nix= and add the public key found at the url to
 =trusted-public-keys=.
 

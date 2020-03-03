@@ -131,7 +131,7 @@ self: super: {
             }@args:
 
             let
-                pkg-def = plan-pkgs.pkgs;
+                pkg-def = excludeBootPackages plan-pkgs.pkgs;
                 # The compiler referenced in the stack config
                 compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
                 patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
@@ -412,8 +412,7 @@ self: super: {
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
-            { name ? null
-            , ... }@args:
+            { ... }@args:
             let plan = importAndFilterProject (callCabalProjectToNix args);
             in let pkg-set = mkCabalProjectPkgSet
                 { plan-pkgs = plan.pkgs;
@@ -456,6 +455,11 @@ self: super: {
               shells.ghc = p.hsPkgs.shellFor {};
             };
 
+        # Like `cabalProject'`, but for building the GHCJS compiler.
+        # This is exposed to allow GHCJS developers to work on the GHCJS
+        # code in a nix-shell with `shellFor`.
+        ghcjsProject = import ../lib/ghcjs-project.nix { pkgs = self; };
+
         # The functions that return a plan-nix often have a lot of dependencies
         # that could be GCed and also will not make it into hydra cache.
         # Use this `withInputs` function to make sure your tests include
@@ -473,7 +477,7 @@ self: super: {
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865");
+            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc882");
           in self.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
@@ -487,6 +491,7 @@ self: super: {
             happy = self.buildPackages.haskell-nix.bootstrap.packages.happy;
             hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
+            ghc882 = self.buildPackages.haskell-nix.compiler.ghc882;
             ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {

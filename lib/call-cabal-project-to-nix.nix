@@ -1,5 +1,5 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
-{ name          ? null # optional name for better error messages
+{ name          ? src.name or (baseNameOf src) # optional name for better error messages
 , src
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
 , index-sha256  ? null # The hash of the truncated hackage index-state
@@ -11,7 +11,11 @@
 , nix-tools     ? defaults.nix-tools
 , hpack         ? defaults.hpack
 , cabal-install ? defaults.cabal-install
-, configureArgs ? "" # Extra arguments to pass to `cabal new-configure` (--enable-tests is included by default, include `--disable-tests` to override that)
+, configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
+                     # `--enable-tests --enable-benchmarks` are included by default.
+                     # If the tests and benchmarks are not needed and they
+                     # causes the wrong plan to be choosen, then we can use
+                     # `configureArgs = "--disable-tests --disable-benchmarks";`
 , ...
 }@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
@@ -169,9 +173,10 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
+  }) (builtins.trace "[${if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs"}] cabal new-configure --with-ghc=${ghc.targetPrefix}ghc --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg" (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
     # Needed or stack-to-nix will die on unicode inputs
+    LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
@@ -200,10 +205,11 @@ let
       index-state =
         builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
           index-state-found;
-      sha256 = index-sha256-found; }} cabal new-configure \
+      sha256 = index-sha256-found; }} cabal v2-configure \
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests \
+        --enable-benchmarks \
         ${configureArgs}
 
     mkdir -p $out
@@ -241,5 +247,5 @@ let
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
-  '');
+  ''));
 in { projectNix = plan-nix; inherit src; inherit (fixedProject) sourceRepos; }
