@@ -40,16 +40,20 @@ in recurseIntoAttrs {
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
       cat ${haskellLib.check packages.cabal-simple.components.exes.cabal-simple}
-    '' + (if stdenv.hostPlatform.isMusl then ''
+    '' + (if stdenv.hostPlatform.isMusl
+      then ''
         printf "checking that executable is statically linked... " >& 2
         (ldd $exe 2>&1 || true) | grep -i "not a"
-      '' else ''
-        printf "checking that executable is dynamically linked to system libraries... " >& 2
-      '' + optionalString stdenv.isLinux ''
-        ldd $exe | grep libpthread
-      '' + optionalString stdenv.isDarwin ''
-        otool -L $exe |grep .dylib
-    '') + ''
+      ''
+      else
+        # Skip this on aarch as we do not have an `ldd` tool
+        optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
+          printf "checking that executable is dynamically linked to system libraries... " >& 2
+        '' + optionalString stdenv.isLinux ''
+          ldd $exe | grep libpthread
+        '' + optionalString stdenv.isDarwin ''
+          otool -L $exe |grep .dylib
+      '')) + ''
 
       printf "Checking that \"all\" component has the programs... " >& 2
       all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"

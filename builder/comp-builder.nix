@@ -24,11 +24,7 @@
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared &&
-  # Disable shared on cross compilers
-  (stdenv.buildPlatform == stdenv.hostPlatform
-    # But allow enableShared on musl for ghci support
-    || (stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl))
+, enableShared ? component.enableShared && !haskellLib.isCrossHost
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
@@ -112,10 +108,7 @@ let
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
-      ++ lib.optionals (
-                stdenv.hostPlatform != stdenv.buildPlatform
-            # When building for musl on a linux system we do not need to use the `--cross-compile` flag
-            && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl)) (
+      ++ lib.optionals haskellLib.isCrossHost (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
@@ -147,7 +140,7 @@ let
 
   doHaddock' = doHaddock
     && (haskellLib.isLibrary componentId)
-    && (stdenv.hostPlatform == stdenv.buildPlatform || (stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl));
+    && !haskellLib.isCrossHost;
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   exeName = componentId.cname + exeExt;

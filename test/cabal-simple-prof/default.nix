@@ -37,7 +37,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs with profiling... " >& 2
-      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -h
+      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -hc
 
       touch $out
     '';

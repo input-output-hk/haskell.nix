@@ -3,7 +3,7 @@
 # haskell.nix ships its own version of the ghc expression as it needs more
 # control over the expression to isolate it against varying <nixpkgs> and
 # allow us to customize it to the way haskell.nix works.
-{ stdenv, targetPackages
+{ stdenv, haskell-nix, targetPackages
 
 # build-tools
 , bootPkgs
@@ -33,19 +33,24 @@
 
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
-  enableShared ? stdenv.targetPlatform == stdenv.hostPlatform
-    # Allow enableShared for musl ghci support
-    || (stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl)
+  enableShared ? !haskell-nix.haskellLib.isCrossTarget
 
 , # Whetherto build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
-  ghcFlavour ? stdenv.lib.optionalString (stdenv.targetPlatform != stdenv.hostPlatform
-    # Don't treat musl as a cross compiler so ghci is supported
-    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl))
-    (if useLLVM then "quick-cross" else "perf-cross-ncg")
+  ghcFlavour ? stdenv.lib.optionalString haskell-nix.haskellLib.isCrossTarget (
+    if useLLVM
+      then (
+        # TODO check if the issues with qemu and Aarch32 persist. See
+        # https://github.com/input-output-hk/haskell.nix/pull/411/commits/1986264683067198e7fdc1d665351622b664712e
+        if stdenv.targetPlatform.isAarch32
+          then "quick-cross"
+          else "perf-cross"
+      )
+      else "perf-cross-ncg"
+    )
 
 , # Whether to disable the large address space allocator
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
@@ -63,6 +68,7 @@ assert !enableIntegerSimple -> gmp != null;
 
 let
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
+  inherit (haskell-nix.haskellLib) isCrossTarget;
 
   inherit (bootPkgs) ghc;
 
@@ -85,7 +91,7 @@ let
     INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
   '' + stdenv.lib.optionalString (targetPlatform != hostPlatform) ''
     CrossCompilePrefix = ${targetPrefix}
-  '' + stdenv.lib.optionalString (targetPlatform != hostPlatform && !(hostPlatform.isLinux && targetPlatform.isMusl)) ''
+  '' + stdenv.lib.optionalString isCrossTarget ''
     Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
     HADDOCK_DOCS = NO
     BUILD_SPHINX_HTML = NO
