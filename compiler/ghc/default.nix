@@ -140,7 +140,7 @@ in let configured-src = stdenv.mkDerivation (rec {
   nativeBuildInputs = [
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-  ] ++ stdenv.lib.optional (patches != []) autoreconfHook;
+    autoreconfHook ];
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;
@@ -155,7 +155,7 @@ in let configured-src = stdenv.mkDerivation (rec {
 
   postPatch = "patchShebangs .";
 
-        src = fetchurl { inherit (src-spec) url sha256; };
+        src = fetchurl { name = src-spec.name or ""; inherit (src-spec) url sha256; };
 
         # GHC is a bit confused on its cross terminology.
         preConfigure = ''
@@ -224,9 +224,8 @@ in let configured-src = stdenv.mkDerivation (rec {
         ];
 
         outputs = [ "out" ];
-        phases = [ "unpackPhase" "patchPhase" ]
-              ++ stdenv.lib.optional (ghc-patches != []) "autoreconfPhase"
-              ++ [ "configurePhase" "installPhase" ];
+        phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+                   "configurePhase" "installPhase" ];
         installPhase = "cp -r . $out";
     });
 
