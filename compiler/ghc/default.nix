@@ -57,7 +57,8 @@
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
 , ghc-version ? src-spec.version
-, src-spec
+, src-spec ? null
+, raw-src ? fetchurl { name = src-spec.name or ""; inherit (src-spec) url sha256; }
 , ghc-patches ? []
 
 # extra values we want to have available as passthru values.
@@ -155,7 +156,7 @@ in let configured-src = stdenv.mkDerivation (rec {
 
   postPatch = "patchShebangs .";
 
-        src = fetchurl { name = src-spec.name or ""; inherit (src-spec) url sha256; };
+        src = raw-src;
 
         # GHC is a bit confused on its cross terminology.
         preConfigure = ''

@@ -272,12 +272,16 @@ in {
                 buildLlvmPackages = self.buildPackages.llvmPackages_7;
                 llvmPackages = self.llvmPackages_7;
 
-                src-spec = rec {
-                    version = "8.10.0";
-                    name = "ghc-src.tar.gz";
-                    url = "https://gitlab.haskell.org/api/v4/projects/286/repository/archive?sha=b170f3a62f49dd79bc35b98d197661a9e9bff072";
-                    sha256 = "1napm1v555m5n2p5mwangh8wh3anx575xdr7mxjn6g19bxhirhsb";
+               ghc-version = "8.10.0";
+
+                raw-src = self.fetchgit {
+                  url = "https://gitlab.haskell.org/JoshMeredith/ghc.git";
+                  rev = "b170f3a62f49dd79bc35b98d197661a9e9bff072";
+                  fetchSubmodules = true;
+                  sha256 = "0yarrqlpy1ikn9yqrliii48i37zqh5ihjlnp0afvnb2fsmi4mrmw";
                 };
+
+#                ghc-patches = ghc-patches "8.10.0";
             };
         } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
