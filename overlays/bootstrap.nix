@@ -267,7 +267,7 @@ in {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghcCoreSection; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = self.buildPackages.haskell-nix.compiler.ghc865;
+                  ghc = self.buildPackages.haskell-nix.compiler.ghc883;
                   alex = self.haskell-nix.haskellPackages.alex.components.exes.alex;
                   happy = self.haskell-nix.haskellPackages.happy.components.exes.happy;
                 };
