@@ -37,12 +37,16 @@ in recurseIntoAttrs {
       printf "checking whether executable runs... " >& 2
       cat ${haskellLib.check packages.cabal-sublib.components.exes.cabal-sublib}
 
+    '' +
+    # Aarch is statically linked and does not produce a .so file.
+    # Musl is also statically linked, but it does make a .so file so we should check that still.
+    optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
       printf "checking that executable is dynamically linked to system libraries... " >& 2
-    '' + optionalString stdenv.isLinux ''
+    '' + optionalString (stdenv.isLinux && !stdenv.hostPlatform.isMusl) ''
       ldd $exe | grep libgmp
     '' + optionalString stdenv.isDarwin ''
       otool -L $exe |grep .dylib
-    '' + ''
+    '') + ''
 
       printf "Checking that \"all\" component has the programs... " >& 2
       all_exe="${packages.cabal-sublib.components.all}/bin/cabal-sublib${stdenv.hostPlatform.extensions.executable}"
