@@ -38,9 +38,8 @@ in recurseIntoAttrs {
       cat ${haskellLib.check packages.cabal-sublib.components.exes.cabal-sublib}
 
     '' +
-    # Aarch is statically linked and does not produce a .so file.
-    # Musl is also statically linked, but it does make a .so file so we should check that still.
-    optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
+    # Musl and Aarch are statically linked..
+    optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64 && !stdenv.hostPlatform.isMusl) (''
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString (stdenv.isLinux && !stdenv.hostPlatform.isMusl) ''
       ldd $exe | grep libgmp
