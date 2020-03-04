@@ -22,25 +22,39 @@ let
     # to `x86_64-w64-mingw32` in 19.09.
     let pinnedNixpkgs = import ./nixpkgs { inherit nixpkgs-pin; }; in
     with pinnedNixpkgs.lib;
-    let inherit (systems.examples) musl64 mingwW64; in
-    with (import (pinnedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
-      inherit supportedSystems scrubJobs nixpkgsArgs;
-      packageSet = {
-            system ? builtins.currentSystem
-          , crossSystem ? null
-          , nixpkgsArgs ? { inherit system crossSystem; }
-          , ...}@args:
-        import (haskell-nix + /build.nix) (args // {
-          nixpkgsArgs = nixpkgsArgs // { inherit nixpkgs-pin; };
-          inherit ifdLevel;
-      });
-    });
-
+    let
+      inherit (systems.examples) musl64 mingwW64 aarch64-multiplatform raspberryPi;
+      packages = supportedSystems:
+        with (import (pinnedNixpkgs.path + "/pkgs/top-level/release-lib.nix") {
+          inherit supportedSystems scrubJobs nixpkgsArgs;
+          packageSet = {
+                system ? builtins.currentSystem
+              , crossSystem ? null
+              , nixpkgsArgs ? { inherit system crossSystem; }
+              , ...}@args:
+            import (haskell-nix + /build.nix) (args // {
+              nixpkgsArgs = nixpkgsArgs // {
+                inherit nixpkgs-pin; 
+              };
+              inherit ifdLevel;
+          });
+        });
+        {
+          mapTestOn = mapTestOn (packagePlatforms pkgs);
+          mapTestOnCross = p: mapTestOnCross p (packagePlatforms pkgs);
+        };
+    in
     {
-      native = filterTests (mapTestOn (packagePlatforms pkgs));
-      # Disabled for now. Something is wrong and this would require `allowBroken`
-      # "${musl64.config}" = filterTests (mapTestOnCross musl64 (packagePlatforms pkgs));
-      "${mingwW64.config}" = filterTests (mapTestOnCross mingwW64 (packagePlatforms pkgs));
+      native = filterTests ((packages supportedSystems).mapTestOn);
+      # Musl cross compile does not work on macOS
+      "${musl64.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems)).mapTestOnCross musl64);
+      # Windows cross compilation is currently broken on macOS for nixpkgs 19.09 (works on 19.03)
+      "${mingwW64.config}" = filterTests ((packages (filter
+        (x: x == "x86_64-linux" || nixpkgs-pin == "release-19.03") supportedSystems)).mapTestOnCross mingwW64);
+      "${aarch64-multiplatform.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems))
+        .mapTestOnCross aarch64-multiplatform);
+      # "${raspberryPi.config}" = filterTests ((packages (filter (x: x == "x86_64-linux") supportedSystems))
+      #   .mapTestOnCross raspberryPi);
     };
 
   allJobs =
@@ -57,7 +71,12 @@ in allJobs // {
       meta.description = "All jobs required to pass CI";
       constituents =
           collect isDerivation allJobs.R1903.native
-       ++ collect isDerivation allJobs.R1909.native;
+       ++ collect isDerivation allJobs.R1909.native
+       # Windows cross compiling with GHC 8.8.2 is broken
+       # ++ collect isDerivation allJobs.R1903.x86_64-pc-mingw32
+       # ++ collect isDerivation allJobs.R1909.x86_64-w64-mingw32
+       ++ collect isDerivation allJobs.R1903.x86_64-unknown-linux-musl
+       ++ collect isDerivation allJobs.R1909.x86_64-unknown-linux-musl;
     };
   }
 
