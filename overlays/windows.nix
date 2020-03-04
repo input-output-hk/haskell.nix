@@ -36,10 +36,10 @@ self: super:
           inherit (pkgs) gmp;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (self.buildPackages.ghc-extra-packages.ghc865.iserv-proxy.components.exes) iserv-proxy;
+          inherit (self.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
           # remote-iserv however needs to come from the regular packages as it has to
           # run on the target host.
-          inherit (self.ghc-extra-packages.ghc865.remote-iserv.components.exes) remote-iserv;
+          inherit (self.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {

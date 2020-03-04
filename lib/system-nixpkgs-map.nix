@@ -70,6 +70,8 @@ pkgs:
      boost_unit_test_framework = pkgs.boost;
      boost_wave = pkgs.boost;
      boost_wserialization = pkgs.boost;
+     tensorflow = pkgs.libtensorflow;
+     opencv = pkgs.opencv3;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
