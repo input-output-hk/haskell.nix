@@ -39,8 +39,12 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       printf "checking that the ghcWithPackages env has the package...\n" >& 2
       ${env}/bin/${env.targetPrefix}ghc-pkg list | grep conduit
 
-      printf "checking that the ghcWithPackages env has a hoogle index...\n" >& 2
-      ${env}/bin/hoogle search Conduit --count=100 | grep ConduitT
+    ''
+    # Hoogle support is currently disabled in cross compiler shells
+    + (optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) ''
+        printf "checking that the ghcWithPackages env has a hoogle index...\n" >& 2
+        ${env}/bin/hoogle search Conduit --count=100 | grep ConduitT
+    '') +''
 
       touch $out
     '';
