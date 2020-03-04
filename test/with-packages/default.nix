@@ -73,11 +73,11 @@ in recurseIntoAttrs {
       ''
       else ''
         printf "checking that the package env has the dependencies... " >& 2
-        ${package.components.all.env}/bin/runghc ${./Point.hs}
+        ${package.components.all.env}/bin/${package.components.all.env.targetPrefix}runghc ${./Point.hs}
         echo >& 2
 
         printf "checking that components.library.env has the dependencies... " >& 2
-        ${library.env}/bin/runghc ${./Point.hs}
+        ${library.env}/bin/${library.env.targetPrefix}runghc ${./Point.hs}
         echo >& 2
       '') + ''
       touch $out

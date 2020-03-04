@@ -12,6 +12,8 @@
 , ... } @ args:
 
 let
+  # TODO find out why hoogle index creation can be made to work for cross compilers
+  withHoogle' = withHoogle && !haskellLib.isCrossHost;
   selected = packages hsPkgs;
   additionalSelected = additional hsPkgs;
   selectedConfigs = map (p: p.components.all.config) selected;
@@ -53,7 +55,7 @@ let
   ghcEnv = ghcForComponent {
     inherit configFiles;
     componentName = name;
-    postInstall = lib.optionalString withHoogle ''
+    postInstall = lib.optionalString withHoogle' ''
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
   };
@@ -79,7 +81,7 @@ in
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle hoogleIndex;
+      ++ lib.optional withHoogle' hoogleIndex;
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or [];

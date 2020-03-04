@@ -15,10 +15,10 @@ let
   };
 
   packages = project.hsPkgs;
-in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
+in recurseIntoAttrs (if stdenv.buildPlatform != stdenv.hostPlatform
  then
     let skip = pkgs.runCommand "skip-test-setup-deps" {} ''
-      echo "Skipping setup-deps test on windows as it needs the ghc lib" >& 2
+      echo "Skipping setup-deps test when cross compiling as it needs the ghc lib" >& 2
       touch $out
     '';
     in {

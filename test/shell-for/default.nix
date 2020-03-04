@@ -68,10 +68,10 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       cp ${./pkgb/src}/*.hs .
 
       printf "checking that the shell env has the dependencies...\n" >& 2
-      ${env.ghc}/bin/runghc conduit-test.hs
+      ${env.ghc}/bin/${env.ghc.targetPrefix}runghc conduit-test.hs
 
       printf "checking that the shell envDefault has the dependencies...\n" >& 2
-      ${envDefault.ghc}/bin/runghc conduit-test.hs
+      ${envDefault.ghc}/bin/${env.ghc.targetPrefix}runghc conduit-test.hs
 
       touch $out
     '';

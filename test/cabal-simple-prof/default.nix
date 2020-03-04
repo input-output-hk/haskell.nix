@@ -37,7 +37,10 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs with profiling... " >& 2
-      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -h
+      # Curiosity: cross compilers prodcing profiling with `+RTS -p -h` lead to the following cryptic message:
+      #   cabal-simple: invalid heap profile option: -h*
+      # Hence we pass `-hc`.
+      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -hc
 
       touch $out
     '';

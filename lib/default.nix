@@ -151,9 +151,18 @@ with haskellLib;
   #     to: tests.mypackage.unit-tests
   #
   collectComponents = group: packageSel: haskellPackages:
-    (lib.mapAttrs (_: package: package.components.${group} // { recurseForDerivations = true; })
-     (lib.filterAttrs (name: package: (package.isHaskell or false) && packageSel package) haskellPackages))
-    // { recurseForDerivations = true; };
+    let packageToComponents = name: package:
+          # look for the components with this group if there are any
+          let components = package.components.${group} or {};
+          # set recurseForDerivations unless it's a derivation itself (e.g. the "library" component) or an empty set
+          in if lib.isDerivation components || components == {}
+             then components
+             else pkgs.recurseIntoAttrs components;
+        packageFilter = name: package: (package.isHaskell or false) && packageSel package;
+        filteredPkgs = lib.filterAttrs packageFilter haskellPackages;
+        # at this point we can filter out packages that don't have any of the given kind of component
+        packagesByComponent = lib.filterAttrs (_: components: components != {}) (lib.mapAttrs packageToComponents filteredPkgs);
+    in pkgs.recurseIntoAttrs packagesByComponent;
 
   # Equivalent to collectComponents with (_: true) as selection function.
   # Useful for pre-filtered package-set.
@@ -180,4 +189,15 @@ with haskellLib;
   check = import ./check.nix {
     inherit stdenv lib haskellLib srcOnly;
   };
+
+  # Use `isCrossHost` to identify when we are cross compiling and
+  # the code we are producing will not run on the build system
+  # without an emulator.
+  # In most cases we do not want to treat musl as a cross compiler.
+  # For instance when building ghc we want to include ghci.
+  isCrossHost = stdenv.hostPlatform != stdenv.buildPlatform
+    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl);
+  # This is the same as isCrossHost but for use when building ghc itself
+  isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl);
 }
