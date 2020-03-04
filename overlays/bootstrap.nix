@@ -272,7 +272,7 @@ in {
                 buildLlvmPackages = self.buildPackages.llvmPackages_7;
                 llvmPackages = self.llvmPackages_7;
 
-               ghc-version = "8.10.0";
+                ghc-version = "8.10.0";
 
                 raw-src = self.fetchgit {
                   url = "https://gitlab.haskell.org/JoshMeredith/ghc.git";
