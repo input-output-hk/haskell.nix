@@ -60,6 +60,7 @@
 , src-spec ? null
 , raw-src ? fetchurl { name = src-spec.name or ""; inherit (src-spec) url sha256; }
 , ghc-patches ? []
+, runBoot ? false # Indicates if we should run `./boot`.  TODO remove this flag and always boot
 
 # extra values we want to have available as passthru values.
 , extra-passthru ? {}
@@ -200,6 +201,8 @@ in let configured-src = stdenv.mkDerivation (rec {
                 --replace '*-android*|*-gnueabi*)' \
                             '*-android*|*-gnueabi*|*-musleabi*)'
             done
+        '' + stdenv.lib.optionalString runBoot ''
+            ./boot
         '';
 
         # TODO(@Ericson2314): Always pass "--target" and always prefix.

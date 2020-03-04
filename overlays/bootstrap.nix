@@ -90,12 +90,12 @@ in {
                 ++ until             "8.8"   ./patches/ghc/ghc-8.4.3-Cabal2201-response-file-support.patch       # https://github.com/haskell/cabal/pulls/5996            -- merged; cabal-3.0.0 (ghc-8.8.1)
                 ++ until             "8.8"   ./patches/ghc/ghc-8.6-Cabal-fix-datadir.patch                       # https://github.com/haskell/cabal/issues/5862
                 ++ until             "8.8"   ./patches/ghc/MR196--ghc-pkg-shut-up.patch                          # https://gitlab.haskell.org/ghc/ghc/merge_requests/196  -- merged; ghc-8.8.1
-                ++ from      "8.6"           ./patches/ghc/mistuke-ghc-err_clean_up_error_handler-8ab1a89af89848f1713e6849f189de66c0ed7898.diff # this is part of Phyx- revamped io-manager.
-                ++ always                    ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
-                ++ always                    ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
+                ++ fromUntil "8.6"   "8.11"  ./patches/ghc/mistuke-ghc-err_clean_up_error_handler-8ab1a89af89848f1713e6849f189de66c0ed7898.diff # this is part of Phyx- revamped io-manager.
+                ++ until             "8.11"  ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
+                ++ until             "8.11"  ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
                 ++ always                    ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
                 ++ always                    ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
-                ++ always                    ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
+                ++ until             "8.11"  ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
                 ++ from      "8.8"           ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
@@ -266,13 +266,17 @@ in {
             ghcCoreSection = self.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghcCoreSection; };
 
-                bootPkgs = bootPkgs // { ghc = self.buildPackages.haskell-nix.compiler.ghc865; };
+                bootPkgs = bootPkgs // {
+                  ghc = self.buildPackages.haskell-nix.compiler.ghc865;
+                  alex = self.haskell-nix.haskellPackages.alex.components.exes.alex;
+                  happy = self.haskell-nix.haskellPackages.happy.components.exes.happy;
+                };
                 inherit sphinx installDeps;
 
                 buildLlvmPackages = self.buildPackages.llvmPackages_7;
                 llvmPackages = self.llvmPackages_7;
 
-                ghc-version = "8.10.0";
+                ghc-version = "8.11.0.20200304";
 
                 raw-src = self.fetchgit {
                   url = "https://gitlab.haskell.org/JoshMeredith/ghc.git";
@@ -281,7 +285,8 @@ in {
                   sha256 = "0yarrqlpy1ikn9yqrliii48i37zqh5ihjlnp0afvnb2fsmi4mrmw";
                 };
 
-#                ghc-patches = ghc-patches "8.10.0";
+                ghc-patches = ghc-patches "8.11.0.20200304";
+                runBoot = true;
             };
         } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
