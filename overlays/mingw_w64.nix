@@ -50,7 +50,18 @@ let
   wineTestWrapper = writeScriptBin "test-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
-    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag LC_ALL=en_US.UTF-8 WINEPREFIX=$TMP ${wine}/bin/wine64 $@
+    export WINEDLLOVERRIDES="winemac.drv=d"
+    export WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag
+    export LC_ALL=en_US.UTF-8
+    export WINEPREFIX=$TMP
+    Path="''${Path:-}"
+    for path in ''${nativeBuildInputs:-}; do
+      if [ -d "$path/bin" ]; then
+        Path="$Path;$(${wine}/bin/winepath -w $path/bin)";
+      fi
+    done
+    export Path
+    ${wine}/bin/wine64 $@
   '';
   testWrapper = lib.optional hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
 
