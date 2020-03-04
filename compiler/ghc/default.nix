@@ -3,7 +3,7 @@
 # haskell.nix ships its own version of the ghc expression as it needs more
 # control over the expression to isolate it against varying <nixpkgs> and
 # allow us to customize it to the way haskell.nix works.
-{ stdenv, targetPackages
+{ stdenv, haskell-nix, targetPackages
 
 # build-tools
 , bootPkgs
@@ -33,15 +33,24 @@
 
 , # Whether to build dynamic libs for the standard library (on the target
   # platform). Static libs are always built.
-  enableShared ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.useiOSPrebuilt
+  enableShared ? !haskell-nix.haskellLib.isCrossTarget
 
-, # Whetherto build terminfo.
-  enableTerminfo ? !stdenv.targetPlatform.isWindows
+, # Whetherto build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
+  enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
-  ghcFlavour ? stdenv.lib.optionalString (stdenv.targetPlatform != stdenv.hostPlatform)
-    (if useLLVM then "quick-cross" else "perf-cross-ncg")
+  ghcFlavour ? stdenv.lib.optionalString haskell-nix.haskellLib.isCrossTarget (
+    if useLLVM
+      then (
+        # TODO check if the issues with qemu and Aarch32 persist. See
+        # https://github.com/input-output-hk/haskell.nix/pull/411/commits/1986264683067198e7fdc1d665351622b664712e
+        if stdenv.targetPlatform.isAarch32
+          then "quick-cross"
+          else "perf-cross"
+      )
+      else "perf-cross-ncg"
+    )
 
 , # Whether to disable the large address space allocator
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
@@ -59,8 +68,14 @@ assert !enableIntegerSimple -> gmp != null;
 
 let
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
+  inherit (haskell-nix.haskellLib) isCrossTarget;
 
   inherit (bootPkgs) ghc;
+
+  # TODO check if this posible fix for segfaults works or not.
+  libffiStaticEnabled = if libffi == null || !stdenv.targetPlatform.isMusl
+    then libffi
+    else targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; });
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -75,8 +90,9 @@ let
     DYNAMIC_GHC_PROGRAMS = ${if enableShared then "YES" else "NO"}
     INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
   '' + stdenv.lib.optionalString (targetPlatform != hostPlatform) ''
-    Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
     CrossCompilePrefix = ${targetPrefix}
+  '' + stdenv.lib.optionalString isCrossTarget ''
+    Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
     HADDOCK_DOCS = NO
     BUILD_SPHINX_HTML = NO
     BUILD_SPHINX_PDF = NO
@@ -88,11 +104,19 @@ let
   '' + stdenv.lib.optionalString useLLVM ''
     GhcStage2HcOpts += -fast-llvm
     GhcLibHcOpts += -fast-llvm
+  '' + stdenv.lib.optionalString (!enableTerminfo) ''
+    WITH_TERMINFO=NO
+  ''
+  # While split sections are now enabled by default in ghc 8.8 for windows,
+  # the seem to lead to `too many sections` errors when building base for
+  # profiling.
+  + stdenv.lib.optionalString targetPlatform.isWindows ''
+    SplitSections = NO
   '';
 
   # Splicer will pull out correct variations
   libDeps = platform: stdenv.lib.optional enableTerminfo [ ncurses ]
-    ++ [libffi]
+    ++ [libffiStaticEnabled]
     ++ stdenv.lib.optional (!enableIntegerSimple) gmp
     ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv;
 
@@ -184,7 +208,7 @@ in let configured-src = stdenv.mkDerivation (rec {
         configureFlags = [
             "--datadir=$doc/share/doc/ghc"
             "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
-        ] ++ stdenv.lib.optionals (libffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetPackages.libffi.dev}/include" "--with-ffi-libraries=${targetPackages.libffi.out}/lib"
+        ] ++ stdenv.lib.optionals (libffiStaticEnabled != null) ["--with-system-libffi" "--with-ffi-includes=${libffiStaticEnabled.dev}/include" "--with-ffi-libraries=${libffiStaticEnabled.out}/lib"
         ] ++ stdenv.lib.optional (!enableIntegerSimple) [
             "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
         ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
@@ -298,7 +322,12 @@ in let configured-src = stdenv.mkDerivation (rec {
     for i in "$out/bin/"*; do
       test ! -h $i || continue
       egrep --quiet '^#!' <(head -n 1 $i) || continue
-      sed -i -e '2i export PATH="$PATH:${stdenv.lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' $i
+      # The ghcprog fixup is for musl (where runhaskell script just needs to point to the correct
+      # ghc program to work).
+      sed -i \
+        -e '2i export PATH="$PATH:${stdenv.lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' \
+        -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
+        $i
     done
   '' + installDeps targetPrefix;
 

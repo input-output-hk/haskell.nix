@@ -177,4 +177,15 @@ with haskellLib;
   check = import ./check.nix {
     inherit stdenv lib haskellLib srcOnly;
   };
+
+  # Use `isCrossHost` to identify when we are cross compiling and
+  # the code we are producing will not run on the build system
+  # without an emulator.
+  # In most cases we do not want to treat musl as a cross compiler.
+  # For instance when building ghc we want to include ghci.
+  isCrossHost = stdenv.hostPlatform != stdenv.buildPlatform
+    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl);
+  # This is the same as isCrossHost but for use when building ghc itself
+  isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl);
 }

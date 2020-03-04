@@ -24,7 +24,7 @@
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared && !stdenv.hostPlatform.isWindows && !stdenv.hostPlatform.useiOSPrebuilt
+, enableShared ? component.enableShared && !haskellLib.isCrossHost
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
@@ -95,11 +95,20 @@ let
       (enableFeature enableExecutableProfiling "executable-profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
+    ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
+      # These flags will make sure the resulting executable is statically linked.
+      # If it uses other libraries it may be necessary for to add more
+      # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
+      # component.
+      "--disable-executable-dynamic"
+      "--ghc-option=-optl=-pthread"
+      "--ghc-option=-optl=-static"
+      "--ghc-option=-optl=-L${gmp.override { withStatic = true; }}/lib"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
-      ++ lib.optionals (stdenv.hostPlatform != stdenv.buildPlatform) (
+      ++ lib.optionals haskellLib.isCrossHost (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
@@ -131,7 +140,7 @@ let
 
   doHaddock' = doHaddock
     && (haskellLib.isLibrary componentId)
-    && stdenv.hostPlatform == stdenv.buildPlatform;
+    && !haskellLib.isCrossHost;
 
   exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
   exeName = componentId.cname + exeExt;
