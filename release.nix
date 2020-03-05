@@ -72,9 +72,8 @@ in allJobs // {
       constituents =
           collect isDerivation allJobs.R1903.native
        ++ collect isDerivation allJobs.R1909.native
-       # Windows cross compiling with GHC 8.8.2 is broken
-       # ++ collect isDerivation allJobs.R1903.x86_64-pc-mingw32
-       # ++ collect isDerivation allJobs.R1909.x86_64-w64-mingw32
+       ++ collect isDerivation allJobs.R1903.x86_64-pc-mingw32
+       ++ collect isDerivation allJobs.R1909.x86_64-w64-mingw32
        ++ collect isDerivation allJobs.R1903.x86_64-unknown-linux-musl
        ++ collect isDerivation (allJobs.R1909.x86_64-unknown-linux-musl
          // {
