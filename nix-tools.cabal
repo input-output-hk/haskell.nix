@@ -127,11 +127,14 @@ executable hackage-to-nix
                      , hackage-db
                      , hnix
                      , Cabal
+                     , aeson
+                     , aeson-pretty
                      , containers
                      , bytestring
                      , text
                      , cryptohash-sha256
                      , base16-bytestring
+                     , base64-bytestring
                      , filepath
                      , directory
                      , transformers
