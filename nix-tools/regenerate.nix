@@ -52,6 +52,10 @@ writeShellScriptBin "update-nix-tools" ''
    rm cabal.project.local
    rm -fR dist-newstyle
 
+   # we don't want the default.nix that plan-to-nix generates to
+   # update the custom one in nix-tools
+   rm default.nix
+
    rm -f nix-tools.cabal
    echo "--> Done."
    echo "******"
