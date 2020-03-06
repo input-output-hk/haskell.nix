@@ -99,3 +99,4 @@ tags
 
 
 # End of https://www.gitignore.io/api/haskell,emacs,vim
+nix-tools-src-new.json

@@ -25,7 +25,11 @@ let
     plan-pkgs = if args ? ghc
                 then import (./pkgs + "-${args.ghc.version}.nix")
                 else import ./pkgs.nix;
-    pkg-def-extras = [];
+    pkg-def-extras = [
+      # We need this, as we are going to *re-isntall* happy, and happy > 1.19.9 needs
+      # a patched lib:Cabal to be properly installed.
+      (hackage: { packages = { happy = hackage.happy."1.19.9".revisions.default; }; })
+    ];
     modules = [
       {
         packages.transformers-compat.components.library.doExactConfig = true;

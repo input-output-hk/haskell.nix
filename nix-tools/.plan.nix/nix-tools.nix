@@ -64,6 +64,7 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
           (hsPkgs."base16-bytestring" or (buildDepError "base16-bytestring"))
           (hsPkgs."bytestring" or (buildDepError "bytestring"))
           (hsPkgs."cryptohash-sha256" or (buildDepError "cryptohash-sha256"))
+          (hsPkgs."containers" or (buildDepError "containers"))
           (hsPkgs."data-fix" or (buildDepError "data-fix"))
           (hsPkgs."deepseq" or (buildDepError "deepseq"))
           (hsPkgs."directory" or (buildDepError "directory"))
@@ -145,11 +146,14 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
             (hsPkgs."hackage-db" or (buildDepError "hackage-db"))
             (hsPkgs."hnix" or (buildDepError "hnix"))
             (hsPkgs."Cabal" or (buildDepError "Cabal"))
+            (hsPkgs."aeson" or (buildDepError "aeson"))
+            (hsPkgs."aeson-pretty" or (buildDepError "aeson-pretty"))
             (hsPkgs."containers" or (buildDepError "containers"))
             (hsPkgs."bytestring" or (buildDepError "bytestring"))
             (hsPkgs."text" or (buildDepError "text"))
             (hsPkgs."cryptohash-sha256" or (buildDepError "cryptohash-sha256"))
             (hsPkgs."base16-bytestring" or (buildDepError "base16-bytestring"))
+            (hsPkgs."base64-bytestring" or (buildDepError "base64-bytestring"))
             (hsPkgs."filepath" or (buildDepError "filepath"))
             (hsPkgs."directory" or (buildDepError "directory"))
             (hsPkgs."transformers" or (buildDepError "transformers"))
@@ -169,6 +173,7 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
             (hsPkgs."filepath" or (buildDepError "filepath"))
             (hsPkgs."directory" or (buildDepError "directory"))
             (hsPkgs."unordered-containers" or (buildDepError "unordered-containers"))
+            (hsPkgs."vector" or (buildDepError "vector"))
             (hsPkgs."Cabal" or (buildDepError "Cabal"))
             ];
           buildable = true;
@@ -207,4 +212,4 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
           };
         };
       };
-    } // rec { src = (pkgs.lib).mkDefault ../../.././../.; }
+    } // rec { src = (pkgs.lib).mkDefault ../.; }
