@@ -1,4 +1,6 @@
-{ stdenv, writeScript, coreutils, glibc, git, openssh, nix-tools, cabal-install, nix-prefetch-git }@args:
+{ stdenv, writeScript, coreutils, glibc, git, openssh
+, nix-tools, cabal-install, nix-prefetch-git
+, gawk, bash, curl, findutils }@args:
 
 import ./update-external.nix args {
   name = "stackage";
@@ -20,20 +22,6 @@ import ./update-external.nix args {
 
     echo "Running lts-to-nix for all snapshots..."
 
-    for lts in {lts-haskell,stackage-nightly}/*.yaml
-    do
-      if [[ ! -f $(basename ''${lts%.yaml}.nix) ]]; then
-        lts-to-nix $lts > $(basename ''${lts%.yaml}.nix)
-      fi
-    done
-    
-    # update nightlies
-    echo "{" > nightlies.nix;
-    for a in nightly-*.nix; do echo "  \"''${a%%.nix}\" = import ./$a;" >> nightlies.nix; done;
-    echo "}" >> nightlies.nix
-    # update lts
-    echo "{" > ltss.nix;
-    for a in $(ls lts-*.nix | sort -Vtx -k 1,1); do echo "  \"''${a%%.nix}\" = import ./$a;" >> ltss.nix; done;
-    echo "}" >> ltss.nix
+    LTS_TO_NIX=lts-to-nix ./update.sh
   '';
 }
