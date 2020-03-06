@@ -21,13 +21,14 @@ let plan-to-nix = (haskell-nix.cabalProject { name = "nix-tools"; inherit src; }
 with builtins;
 with stdenv.lib;
 writeShellScriptBin "update-nix-tools" ''
-   export PATH="${getBin haskell-nix.cabal-install}/bin:${getBin plan-to-nix}/bin:${getBin coreutils}/bin:${getBin findutils}/bin"
+   export PATH="${getBin nix}/bin:${getBin nix-prefetch-scripts}/bin:${getBin git}/bin:${getBin haskell-nix.cabal-install}/bin:${getBin plan-to-nix}/bin:${getBin coreutils}/bin:${getBin findutils}/bin"
 
    TMP=$(mktemp -d)
    echo $TMP
 
    cd $TMP
    cp ${src}/nix-tools.cabal .
+   cp ${src}/cabal.project .
    cp ${specJSON} ./nix-tools-src.json
 
    # Build for ghc-8.4.4
