@@ -280,9 +280,9 @@ in {
 
                 raw-src = self.fetchgit {
                   url = "https://gitlab.haskell.org/JoshMeredith/ghc.git";
-                  rev = "b170f3a62f49dd79bc35b98d197661a9e9bff072";
+                  rev = "741eb04329394412175f824a8da5e9e0bdd1f4e8";
                   fetchSubmodules = true;
-                  sha256 = "0yarrqlpy1ikn9yqrliii48i37zqh5ihjlnp0afvnb2fsmi4mrmw";
+                  sha256 = "0h1fmzv8fba2r75h4hbsdwlz728q2swgwgwin630l94gzapl44ja";
                 };
 
                 ghc-patches = ghc-patches "8.11.0.20200304";
