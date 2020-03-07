@@ -11,7 +11,6 @@ import           Data.Aeson
 import           Data.Aeson.Types                         ( Pair )
 import           Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Base16        as Base16
-import qualified Data.ByteString.Base64        as Base64
 import qualified Data.ByteString.Char8         as BS
 import qualified Data.ByteString.Lazy          as BL
 import           Data.Foldable                            ( toList
@@ -101,9 +100,9 @@ version2json pname vnum (U.VersionData { U.cabalFileRevisions, U.metaFile }) =
   do
     revisionBindings <- sequenceA
       $ zipWith (revBindingJson pname vnum) cabalFileRevisions [0 ..]
-    let hash = decodeUtf8 $ Base64.encode $ fst $ Base16.decode $ fromString $ P.parseMetaData pname vnum metaFile Map.! "sha256"
+    let hash = decodeUtf8 $ fromString $ P.parseMetaData pname vnum metaFile Map.! "sha256"
     return $ Seq.singleton $ fromPretty vnum .= object
-      [ "sha256" .= ("sha256-" <> hash)
+      [ "sha256" .= hash
       , "revisions" .= object
         ( revisionBindings
         ++ ["default" .= fst (last revisionBindings)]
@@ -119,16 +118,16 @@ revBindingJson
 revBindingJson pname vnum cabalFile revNum = do
   let qualifiedName = mconcat $ intersperse
         "-"
-        [prettyPname, fromPretty vnum, revName, BS.unpack $ Base16.encode cabalHash]
+        [prettyPname, fromPretty vnum, revName, BS.unpack cabalHash]
       revName :: (Semigroup a, IsString a) => a
       revName     = "r" <> fromString (show revNum)
       revPath     = "." </> "hackage" </> qualifiedName <.> "nix"
       prettyPname = fromPretty pname
-      cabalHash   = hashlazy cabalFile
+      cabalHash   = Base16.encode $ hashlazy cabalFile
   modify' $ mappend $ Seq.singleton
     (cabalFile, prettyPname ++ ".cabal", revPath)
   return $ revName .= object
     [ "outPath" .= (qualifiedName <> ".nix")
     , "revNum" .= revNum
-    , "sha256" .= ("sha256-" <> decodeUtf8 (Base64.encode cabalHash))
+    , "sha256" .= decodeUtf8 cabalHash
     ]
