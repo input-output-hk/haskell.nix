@@ -1,0 +1,12 @@
+diff --git a/libraries/ghc-prim/cbits/atomic.c b/libraries/ghc-prim/cbits/atomic.c
+index ea96120..f3f4a9e 100644
+--- a/libraries/ghc-prim/cbits/atomic.c
++++ b/libraries/ghc-prim/cbits/atomic.c
+@@ -1,6 +1,6 @@
+-#if !defined(arm_HOST_ARCH)
+ #include "Rts.h"
+ 
++#if !defined(arm_HOST_ARCH)
+ // Fallbacks for atomic primops on byte arrays. The builtins used
+ // below are supported on both GCC and LLVM.
+ //

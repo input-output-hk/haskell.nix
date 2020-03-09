@@ -106,6 +106,7 @@ in {
                 ++ self.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-atomic-arm-arch.patch
                 ++ self.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.8.2") ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
