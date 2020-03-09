@@ -38,4 +38,19 @@ self: super: super.lib.optionalAttrs (super.lib.versions.majorMinor super.lib.ve
         postFixup = "";
       })
       else super.openssl;
+    winePackages = super.winePackages // {
+      minimal = super.winePackages.minimal.overrideAttrs (oldAttrs: {
+        # Needed for CFNotificationCenterAddObserver symbols.
+        buildInputs = oldAttrs.buildInputs ++ self.lib.optional self.stdenv.isDarwin
+	      self.buildPackages.darwin.cf-private;
+        # the relevant check in configure.ac will fail under nix as we are not
+        # using the system supplied compiler tools. We will subsequently *not*
+        # pass `-mmacosx-version-min` in the LDFLAGS, and end up with a linked
+        # binary against 10.14 which *does* contain a __DATA,__dyld section and
+        # then horribly fail to run on Mojave.
+        postConfigure = self.lib.optional (self.stdenv.hostPlatform.isDarwin) ''
+          sed -i 's|-nostartfiles -nodefaultlibs|-nostartfiles -nodefaultlibs -mmacosx-version-min=10.7|g' loader/Makefile
+        '';
+      });
+    };
 }
