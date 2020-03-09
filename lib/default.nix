@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, runCommand, git, srcOnly }:
+{ stdenv, lib, haskellLib, runCommand, git, recurseIntoAttrs, srcOnly }:
 
 with haskellLib;
 
@@ -145,12 +145,12 @@ with haskellLib;
           # set recurseForDerivations unless it's a derivation itself (e.g. the "library" component) or an empty set
           in if lib.isDerivation components || components == {}
              then components
-             else pkgs.recurseIntoAttrs components;
+             else recurseIntoAttrs components;
         packageFilter = name: package: (package.isHaskell or false) && packageSel package;
         filteredPkgs = lib.filterAttrs packageFilter haskellPackages;
         # at this point we can filter out packages that don't have any of the given kind of component
         packagesByComponent = lib.filterAttrs (_: components: components != {}) (lib.mapAttrs packageToComponents filteredPkgs);
-    in pkgs.recurseIntoAttrs packagesByComponent;
+    in recurseIntoAttrs packagesByComponent;
 
   # Equivalent to collectComponents with (_: true) as selection function.
   # Useful for pre-filtered package-set.
