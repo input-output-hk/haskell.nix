@@ -12,9 +12,15 @@ self: super: super.lib.optionalAttrs (super.lib.versions.majorMinor super.lib.ve
              export TMPDIR=/tmp
            '';
     });
+    # Avoid dependency on perl for windows as it fails to build.
     openssl = if self.stdenv.hostPlatform.isWindows
       then let static = false;  # TODO check that it is ok to assume this (or find a way to detect without instanciating perl)
         in super.openssl.overrideAttrs (attrs: {
+          # This is the `postInstall` from 19.03 nixpkgs but with the line
+          #   substituteInPlace $out/bin/c_rehash --replace ${buildPackages.perl} ${perl}
+          # removed (as including it requires perl to build).
+          # (code is copied here because modifying `attrs.postInstall` would still
+          # introducing the same dependency)
           postInstall = self.stdenv.lib.optionalString (!static) ''
             # If we're building dynamic libraries, then don't install static
             # libraries.
@@ -35,6 +41,8 @@ self: super: super.lib.optionalAttrs (super.lib.versions.majorMinor super.lib.ve
 
             rmdir $out/etc/ssl/{certs,private}
           '';
+        # Skip this step on windows as it checks for references to buildPackages.perl
+        # and we are keeping them.
         postFixup = "";
       })
       else super.openssl;
