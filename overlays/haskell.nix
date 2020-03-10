@@ -59,7 +59,7 @@ self: super: {
 
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
-            inherit (self) stdenv lib runCommand srcOnly;
+            inherit (self) stdenv lib runCommand recurseIntoAttrs srcOnly;
             inherit (self.buildPackages) git;
             haskellLib = hl;
         }; in hl;
@@ -477,7 +477,7 @@ self: super: {
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc882");
+            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc882" || n == "ghc883");
           in self.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
@@ -492,6 +492,7 @@ self: super: {
             hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
             ghc882 = self.buildPackages.haskell-nix.compiler.ghc882;
+            ghc883 = self.buildPackages.haskell-nix.compiler.ghc883;
             ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {

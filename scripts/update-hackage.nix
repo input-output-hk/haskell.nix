@@ -1,4 +1,7 @@
-{ stdenv, writeScript, coreutils, glibc, git, openssh, nix-tools, cabal-install, nix-prefetch-git, update-index-state-hashes }@args:
+{ stdenv, writeScript, coreutils, glibc, git, openssh
+, nix-tools, cabal-install, nix-prefetch-git
+, gawk, bash, curl, findutils
+, update-index-state-hashes }@args:
 
 import ./update-external.nix
 (removeAttrs args ["update-index-state-hashes"]) {

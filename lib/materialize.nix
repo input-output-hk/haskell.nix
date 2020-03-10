@@ -67,6 +67,8 @@ let
       '')
     + ''
         cp -r ${unchecked} $out
+        # Make sure output files can be removed from the sandbox
+        chmod -R +w $out
       ''
   );
 
@@ -80,7 +82,11 @@ let
   calculateUseAll = 
     # Skip right to expectedPath if it already exists
     if materialized != null && builtins.pathExists materialized
-      then runCommand name hashArgs "cp -r ${materialized} $out"
+      then runCommand name hashArgs ''
+        cp -r ${materialized} $out
+        # Make sure output files can be removed from the sandbox
+        chmod -R +w $out
+      ''
       else calculateUseHash;
 
 in

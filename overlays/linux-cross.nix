@@ -53,7 +53,8 @@ let
     set -euo pipefail
     ${qemu}/bin/qemu-${qemuSuffix} $@*
     '';
-  testFlags = lib.optionals isLinuxCross [ "--test-wrapper ${qemuTestWrapper}/bin/test-wrapper" ];
+  testWrapper = lib.optional isLinuxCross "${qemuTestWrapper}/bin/test-wrapper";
+
   preCheck = lib.optionalString isLinuxCross ''
     echo "================================================================="
     echo "RUNNING TESTS for $name via qemu-${qemuSuffix}"
@@ -71,4 +72,4 @@ let
 
   enableShared = lib.mkDefault (!isLinuxCross);
 
-in { inherit preCheck postCheck configureFlags setupBuildFlags testFlags enableShared; }
+in { inherit preCheck postCheck configureFlags setupBuildFlags testWrapper enableShared; }

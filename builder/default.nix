@@ -39,10 +39,14 @@ let
 
 
   hoogleLocal = let
-    nixpkgsHoogleLocal = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
+    # Use the latest default nixpkgs hoogle.nix, as the 19.03 one does not work with cross compilers
+    nixpkgsHoogleLocal = import ((import ../nixpkgs {}).path + /pkgs/development/haskell-modules/hoogle.nix);
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
     haskellLib.weakCallPackage pkgs nixpkgsHoogleLocal {
-      ghc = pkgs.haskell-nix.ghc;
+      # For musl we can use haddock from the buildGHC
+      ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl
+        then ghc.buildGHC
+        else ghc;
       inherit packages hoogle;
     };
 

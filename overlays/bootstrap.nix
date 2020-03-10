@@ -247,6 +247,22 @@ in {
 
                 ghc-patches = ghc-patches "8.8.2";
             };
+            ghc883 = self.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc883; };
+
+                inherit bootPkgs sphinx installDeps;
+
+                buildLlvmPackages = self.buildPackages.llvmPackages_7;
+                llvmPackages = self.llvmPackages_7;
+
+                src-spec = rec {
+                    version = "8.8.3";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "128g932i3wix6ic03v04nh5755vyjiidzri9iybwad72yfmc1p70";
+                };
+
+                ghc-patches = ghc-patches "8.8.3";
+            };
         } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
                 # compiler defined below.  This is crucial to build packages

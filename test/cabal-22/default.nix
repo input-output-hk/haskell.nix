@@ -24,11 +24,15 @@ in recurseIntoAttrs {
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
-      printf "checking whether executable rans... " >& 2
+      printf "checking whether executable runs... " >& 2
       cat ${haskellLib.check packages.project.components.exes.project}
 
+    '' +
+    # Aarch is statically linked and does not produce a .so file.
+    # Musl is also statically linked, but it does make a .so file so we should check that still.
+    optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
       printf "checking that executable is dynamically linked to system libraries... " >& 2
-    '' + optionalString stdenv.isLinux ''
+    '' + optionalString (stdenv.isLinux && !stdenv.hostPlatform.isMusl) ''
       ldd $exe | grep libgmp
     '' + optionalString stdenv.isDarwin ''
       otool -L $exe | grep "libSystem.B"
@@ -47,7 +51,7 @@ in recurseIntoAttrs {
       ldd $sofile | grep libHSghc-prim
     '' + optionalString stdenv.isDarwin ''
       otool -L $sofile | grep libHSghc-prim
-    '') + ''
+    '')) + ''
       touch $out
 
       printf "checking whether benchmark ran... " >& 2
@@ -59,7 +63,7 @@ in recurseIntoAttrs {
 
     meta.platforms = platforms.all;
     passthru = {
-      inherit (packages) project;
+      inherit project;
     };
   };
 }

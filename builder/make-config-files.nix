@@ -66,7 +66,8 @@ let
 in { identifier, component, fullName, flags ? {} }:
   # Filters out only library packages that for this GHC target
   # TODO investigate why this is needed
-  let libDeps = lib.filter (p: p.configFiles.targetPrefix == ghc.targetPrefix)
+  # TODO find out why p ? configFiles helps (for instance for `R1909.aarch64-unknown-linux-gnu.tests.cabal-22.run.x86_64-linux`)
+  let libDeps = lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
         (map getLibComponent component.depends);
       cfgFiles =
         let xs = map
