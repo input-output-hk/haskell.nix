@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp }:
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp }:
 
 { componentId
 , component
@@ -121,7 +121,7 @@ let
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c]) component.build-tools) ++
-    lib.optional (component.pkgconfig != []) pkgconfig;
+    lib.optional (component.pkgconfig != []) buildPackages.pkgconfig;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
