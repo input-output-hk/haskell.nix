@@ -38,7 +38,7 @@ let
     private = url: pkgs.lib.substring 0 4 url != "http";
     
     repos = builtins.fromJSON (builtins.readFile (pkgs.runCommand "stack-repos" {
-        buildInputs = [ nix-tools ];
+        nativeBuildInputs = [ nix-tools ];
       } ''
         TMP=$(mktemp -d)
         cd $TMP
@@ -50,7 +50,7 @@ let
       ''));
 
     cabalName = path: builtins.readFile (pkgs.runCommand "cabal-name" {
-        buildInputs = [ nix-tools ];
+        nativeBuildInputs = [ nix-tools ];
       } ''
         cabal-name ${path} > $out
       '');
