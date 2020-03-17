@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp }:
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, nodejs }:
 
 { componentId
 , component
@@ -142,7 +142,8 @@ let
     && (haskellLib.isLibrary componentId)
     && !haskellLib.isCrossHost;
 
-  exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
+  exeExt = if stdenv.hostPlatform.isGhcjs then ".jsexe/all.js" else
+    if stdenv.hostPlatform.isWindows then ".exe" else "";
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
@@ -313,7 +314,13 @@ stdenv.mkDerivation ({
     ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/bin
       if [ -f ${testExecutable} ]; then
-        cp ${testExecutable} $out/bin/
+        mkdir -p $(dirname $out/bin/${exeName})
+        ${if stdenv.hostPlatform.isGhcjs then ''
+          cat <(echo \#!${lib.getBin buildPackages.nodejs}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+          chmod +x $out/bin/${exeName}
+        '' else ''
+           cp -r ${testExecutable} $(dirname $out/bin/${exeName})
+        ''}
       fi
     '')
     # In case `setup copy` did not creat this
