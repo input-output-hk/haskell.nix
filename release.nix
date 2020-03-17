@@ -75,11 +75,7 @@ in allJobs // {
        ++ collect isDerivation allJobs.R1903.x86_64-pc-mingw32
        ++ collect isDerivation allJobs.R1909.x86_64-w64-mingw32
        ++ collect isDerivation allJobs.R1903.x86_64-unknown-linux-musl
-       ++ collect isDerivation (allJobs.R1909.x86_64-unknown-linux-musl
-         // {
-           # Exclude failing test (openssl issue in nixpkgs R1909 with musl)
-           tests = filterAttrs (n: _: n != "fully-static") allJobs.R1909.x86_64-unknown-linux-musl.tests;
-         });
+       ++ collect isDerivation allJobs.R1909.x86_64-unknown-linux-musl;
     };
   }
 
