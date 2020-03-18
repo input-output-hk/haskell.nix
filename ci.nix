@@ -25,7 +25,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgsSrc:
     in pkgs.recurseIntoAttrs {
       hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2";}).components.exes.hello;
       iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
-      ghc = pkgs.haskell-nix.compiler;
+      ghc = pkgs.recurseIntoAttrs pkgs.haskell-nix.compiler;
       tests = pkgs.lib.optionalAttrs (system == "x86_64-linux") (import ./test { inherit pkgs; });
     }
     //
