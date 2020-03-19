@@ -79,6 +79,19 @@ with haskellLib;
   isProjectPackage = p: p ? src && p.src ? origSubDir;
   selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
 
+  # By reading a file we can cause lorri to watch a file for changes.  This
+  # is useful when we are using an IFD function like `cabalProject` to
+  # generate nix expreassions.  By calling `traceLorriRead` with the input
+  # files used by the IFD function we can have lorri rerun the `IFD` when
+  # they change.  Lorri replaces `builtins.readFile` with a function that
+  # outputs `lorri read:` and the filename (hence the name of this function)
+  # it then captures the output and uses these trace messages to identify the
+  # files to watch.
+  traceLorriRead = file: __deepSeq (
+        if __pathExists file
+          then __readFile file
+          else "");
+
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
   componentTarget = componentId:
