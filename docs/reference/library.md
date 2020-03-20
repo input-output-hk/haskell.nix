@@ -281,7 +281,7 @@ Assorted functions for operating on [Haskell.nix][] data. This is
 distinct from `pkgs.haskell.lib` in the current Nixpkgs Haskell
 Infrastructure.
 
-### collectComponents and collectComponents'
+### collectComponents, collectComponents'
 
 Extracts a selection of components from a Haskell [package set](#package-set).
 
@@ -315,6 +315,12 @@ tests = collectComponents "tests" (package: package.identifier.name == "mypackag
 
 Will result in moving derivations from `hsPkgs.mypackage.components.tests.unit-tests`
 to `tests.mypackage.unit-tests`.
+
+### collectChecks, collectChecks'
+
+These are just like `collectComponents` and `collectComponents'`, except that they collect
+the `checks` attributes of packages (which aren't components, and so can't be collected
+by the other functions.
 
 #### check
 
