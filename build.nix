@@ -3,25 +3,16 @@
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
 
-{ nixpkgs ? ./nixpkgs
-# Provide args to the nixpkgs instantiation.
-, system ? builtins.currentSystem
-, crossSystem ? null
-, config ? {}
-, nixpkgsArgs ? { inherit system crossSystem; }
+{ nixpkgs ? (import ./nixpkgs/default.nix)
+, nixpkgsArgs ? (import ./default.nix)
+, pkgs ? (nixpkgs nixpkgsArgs)
 , ifdLevel ? 1000
 }:
 
 let
-  haskellNixArgs = import ./default.nix;
-  pkgs = import nixpkgs ({
-      config = haskellNixArgs.config // config;
-      inherit (haskellNixArgs) overlays;
-    } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
-
 in rec {
-  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdLevel; };
+  tests = import ./test/default.nix { inherit pkgs ifdLevel; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
