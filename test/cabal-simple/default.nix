@@ -13,7 +13,7 @@ let
   ];
 
   project = cabalProject' {
-    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-simple"; };
+    src = haskellLib.cleanGit { src = ../..; name = "cabal-simple"; subDir = "test/cabal-simple"; };
     inherit modules;
   };
 
