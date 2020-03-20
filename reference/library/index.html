@@ -650,7 +650,7 @@ use the convenience function <a href="#cleansourcehaskell"><code>cleanSourceHask
 <p>Assorted functions for operating on <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> data. This is
 distinct from <code>pkgs.haskell.lib</code> in the current Nixpkgs Haskell
 Infrastructure.</p>
-<h3 id="collectcomponents-and-collectcomponents">collectComponents and collectComponents'<a class="headerlink" href="#collectcomponents-and-collectcomponents" title="Permanent link">&para;</a></h3>
+<h3 id="collectcomponents-collectcomponents">collectComponents, collectComponents'<a class="headerlink" href="#collectcomponents-collectcomponents" title="Permanent link">&para;</a></h3>
 <p>Extracts a selection of components from a Haskell <a href="#package-set">package set</a>.</p>
 <p>This can be used to filter out all test suites or benchmarks of
 your project, so that they can be built in Hydra (see check if you
@@ -695,6 +695,10 @@ collectComponents' = group: collectComponents (_: true)
 
 <p>Will result in moving derivations from <code>hsPkgs.mypackage.components.tests.unit-tests</code>
 to <code>tests.mypackage.unit-tests</code>.</p>
+<h3 id="collectchecks-collectchecks">collectChecks, collectChecks'<a class="headerlink" href="#collectchecks-collectchecks" title="Permanent link">&para;</a></h3>
+<p>These are just like <code>collectComponents</code> and <code>collectComponents'</code>, except that they collect
+the <code>checks</code> attributes of packages (which aren't components, and so can't be collected
+by the other functions.</p>
 <h4 id="check">check<a class="headerlink" href="#check" title="Permanent link">&para;</a></h4>
 <p>This function turns a derivation that builds a test into one to run it.</p>
 <table>
