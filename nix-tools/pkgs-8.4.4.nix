@@ -100,7 +100,6 @@
         "deepseq".revision = (((hackage."deepseq")."1.4.3.0").revisions).default;
         "hnix-store-core".revision = (((hackage."hnix-store-core")."0.1.0.0").revisions).default;
         "hnix-store-core".flags.bounded_memory = false;
-        "haskell-src-meta".revision = (((hackage."haskell-src-meta")."0.8.5").revisions).default;
         "random".revision = (((hackage."random")."1.1").revisions).default;
         "uuid-types".revision = (((hackage."uuid-types")."1.0.3").revisions).default;
         "optparse-applicative".revision = (((hackage."optparse-applicative")."0.14.3.0").revisions).default;
@@ -166,7 +165,7 @@
         "tagged".flags.transformers = true;
         "tagged".flags.deepseq = true;
         "x509".revision = (((hackage."x509")."1.7.5").revisions).default;
-        "haskell-src-exts".revision = (((hackage."haskell-src-exts")."1.23.0").revisions).default;
+        "haskell-src-exts".revision = (((hackage."haskell-src-exts")."1.21.1").revisions).default;
         "lens".revision = (((hackage."lens")."4.17.1").revisions).default;
         "lens".flags.j = false;
         "lens".flags.test-properties = true;
@@ -230,6 +229,7 @@
         "Cabal".flags.bundled-binary-generic = false;
         "unordered-containers".revision = (((hackage."unordered-containers")."0.2.10.0").revisions).default;
         "unordered-containers".flags.debug = false;
+        "base64-bytestring".revision = (((hackage."base64-bytestring")."1.0.0.2").revisions).default;
         "aeson-pretty".revision = (((hackage."aeson-pretty")."0.8.8").revisions).default;
         "aeson-pretty".flags.lib-only = false;
         "base".revision = (((hackage."base")."4.11.1.0").revisions).default;
@@ -251,7 +251,7 @@
         "prettyprinter".revision = (((hackage."prettyprinter")."1.2.1.1").revisions).default;
         "prettyprinter".flags.buildreadme = false;
         "cryptohash-sha512".revision = (((hackage."cryptohash-sha512")."0.11.100.1").revisions).default;
-        "pretty-show".revision = (((hackage."pretty-show")."1.8.2").revisions).default;
+        "pretty-show".revision = (((hackage."pretty-show")."1.9.5").revisions).default;
         "transformers".revision = (((hackage."transformers")."0.5.5.0").revisions).default;
         "hashable".revision = (((hackage."hashable")."1.2.7.0").revisions).default;
         "hashable".flags.sse2 = true;
@@ -264,7 +264,7 @@
         "colour".revision = (((hackage."colour")."2.3.5").revisions).default;
         "transformers-base".revision = (((hackage."transformers-base")."0.4.5.2").revisions).default;
         "transformers-base".flags.orphaninstances = true;
-        "happy".revision = (((hackage."happy")."1.19.9").revisions).default;
+        "happy".revision = (((hackage."happy")."1.19.12").revisions).default;
         "happy".flags.small_base = true;
         "filepath".revision = (((hackage."filepath")."1.4.2").revisions).default;
         "asn1-types".revision = (((hackage."asn1-types")."0.3.3").revisions).default;
@@ -344,10 +344,19 @@
       packages = {
         nix-tools = ./.plan.nix/nix-tools.nix;
         hackage-db = ./.plan.nix/hackage-db.nix;
+        haskell-src-meta = ./.plan.nix/haskell-src-meta.nix;
         };
       };
   modules = [
     ({ lib, ... }:
-      { packages = { "nix-tools" = { flags = {}; }; }; })
+      {
+        packages = {
+          "nix-tools" = { flags = {}; };
+          "hackage-db" = {
+            flags = { "install-examples" = lib.mkOverride 900 false; };
+            };
+          "haskell-src-meta" = { flags = {}; };
+          };
+        })
     ];
   }

@@ -153,7 +153,7 @@ let
     };
 
     profilingDetail = mkOption {
-      type = nullOr str;
+      type = nullOr uniqueStr;
       default = (def.profilingDetail or "exported-functions");
     };
 

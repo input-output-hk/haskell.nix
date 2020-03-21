@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, pkgconfig, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp }:
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, nodejs }:
 
 { allComponent
 , componentId
@@ -81,7 +81,7 @@ let
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ] ++ lib.optionals (stdenv.cc != null)
+    ] ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
     ( # CC
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
@@ -132,7 +132,7 @@ let
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c]) component.build-tools) ++
-    lib.optional (component.pkgconfig != []) pkgconfig;
+    lib.optional (component.pkgconfig != []) buildPackages.pkgconfig;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
@@ -153,7 +153,8 @@ let
     && (haskellLib.isLibrary componentId)
     && !haskellLib.isCrossHost;
 
-  exeExt = lib.optionalString stdenv.hostPlatform.isWindows ".exe";
+  exeExt = if stdenv.hostPlatform.isGhcjs then ".jsexe/all.js" else
+    if stdenv.hostPlatform.isWindows then ".exe" else "";
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
@@ -325,7 +326,13 @@ stdenv.mkDerivation ({
     ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
       mkdir -p $out/bin
       if [ -f ${testExecutable} ]; then
-        cp ${testExecutable} $out/bin/
+        mkdir -p $(dirname $out/bin/${exeName})
+        ${if stdenv.hostPlatform.isGhcjs then ''
+          cat <(echo \#!${lib.getBin buildPackages.nodejs}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+          chmod +x $out/bin/${exeName}
+        '' else ''
+           cp -r ${testExecutable} $(dirname $out/bin/${exeName})
+        ''}
       fi
     '')
     # In case `setup copy` did not creat this

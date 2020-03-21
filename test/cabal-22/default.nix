@@ -63,7 +63,7 @@ in recurseIntoAttrs {
 
     meta.platforms = platforms.all;
     passthru = {
-      inherit (packages) project;
+      inherit project;
     };
   };
 }

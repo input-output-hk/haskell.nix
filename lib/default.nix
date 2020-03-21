@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, runCommand, git, srcOnly }:
+{ stdenv, lib, haskellLib, runCommand, git, recurseIntoAttrs, srcOnly }:
 
 with haskellLib;
 
@@ -157,12 +157,12 @@ with haskellLib;
           # set recurseForDerivations unless it's a derivation itself (e.g. the "library" component) or an empty set
           in if lib.isDerivation components || components == {}
              then components
-             else pkgs.recurseIntoAttrs components;
+             else recurseIntoAttrs components;
         packageFilter = name: package: (package.isHaskell or false) && packageSel package;
         filteredPkgs = lib.filterAttrs packageFilter haskellPackages;
         # at this point we can filter out packages that don't have any of the given kind of component
         packagesByComponent = lib.filterAttrs (_: components: components != {}) (lib.mapAttrs packageToComponents filteredPkgs);
-    in pkgs.recurseIntoAttrs packagesByComponent;
+    in recurseIntoAttrs packagesByComponent;
 
   # Equivalent to collectComponents with (_: true) as selection function.
   # Useful for pre-filtered package-set.
@@ -172,6 +172,17 @@ with haskellLib;
   #    myHaskellPackages = selectProjectPackages hsPkgs;
   #    myTests = collectComponents' "tests" myHaskellPackages;
   collectComponents' = group: collectComponents group (_: true);
+
+  # Extracts a selection of 'checks' from a Haskell package set.
+  #
+  # This can be used to collect all the test runs in your project, so that can be run in CI.
+  collectChecks = packageSel: haskellPackages:
+    let packageFilter = name: package: (package.isHaskell or false) && packageSel package;
+    in recurseIntoAttrs (lib.mapAttrs (_: p: p.checks) (lib.filterAttrs packageFilter haskellPackages));
+
+  # Equivalent to collectChecks with (_: true) as selection function.
+  # Useful for pre-filtered package-set.
+  collectChecks' = collectChecks (_: true);
 
   # Replacement for lib.cleanSourceWith that has a subDir argument.
   inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;
