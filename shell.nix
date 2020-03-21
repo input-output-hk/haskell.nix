@@ -1,11 +1,11 @@
-with import <nixpkgs> {};
-let this = import ./. {}; in
-stdenv.mkDerivation rec {
+let
+  pkgs = import ./nixpkgs/default.nix (import ./default.nix); 
+in pkgs.stdenv.mkDerivation rec {
   name = "env";
-  env = buildEnv { name = name; paths = buildInputs; };
+  env = pkgs.buildEnv { name = name; paths = buildInputs; };
   buildInputs = [
-    this.ghc
-    this.cabal-install
-    this.nix-tools
+    pkgs.cabal-install
+    pkgs.haskell-nix.ghc
+    pkgs.haskell-nix.nix-tools
   ];
 }
