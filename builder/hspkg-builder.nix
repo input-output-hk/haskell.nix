@@ -96,7 +96,7 @@ let
   };
 
 in rec {
-  components = haskellLib.applyComponents (buildComp config.components.all) pkg;
+  components = haskellLib.applyComponents (buildComp pkg.components.all) pkg;
   checks = pkgs.recurseIntoAttrs (builtins.mapAttrs
     (_: d: haskellLib.check d)
       (lib.filterAttrs (_: d: d.config.doCheck) components.tests));
