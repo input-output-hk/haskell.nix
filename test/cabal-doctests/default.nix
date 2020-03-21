@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs }:
+{ stdenv, util, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs, runCommand }:
 
 with stdenv.lib;
 
@@ -42,7 +42,19 @@ let
 
 in
 
-recurseIntoAttrs {
+# Making this work for cross compilers will be difficult. Skipping for now.
+recurseIntoAttrs (if stdenv.buildPlatform != stdenv.hostPlatform
+ then
+    let skip = runCommand "skipping-test-cabal-doctests" {} ''
+      echo "Skipping cabal-doctests test on cross compilers (does not work yet)" >& 2
+      touch $out
+    '';
+    in {
+      ifdInputs = { plan-nix = skip; };
+      env = skip;
+      run = skip;
+    }
+ else {
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -70,4 +82,4 @@ recurseIntoAttrs {
       inherit project packages;
     };
   };
-}
+})
