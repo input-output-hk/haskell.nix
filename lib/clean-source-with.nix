@@ -44,6 +44,7 @@
   cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null }:
     let
       subDir' = if subDir == "" then "" else "/" + subDir;
+      subDirName = __replaceStrings ["/"] ["-"] subDir;
       # In case this is mixed with older versions of cleanSourceWith
       isFiltered = src ? _isLibCleanSourceWith;
       isFilteredEx = src ? _isLibCleanSourceWithEx;
@@ -62,10 +63,32 @@
             && (filter path type && parentFilter path type));
       name' = if name != null
         then name
-        else (if isFiltered && src ? name
-          then src.name
-          else baseNameOf src)
-          + (lib.optionalString (origSubDir != "") ("--" + baseNameOf origSubDir));
+        else
+          if subDirName != ""
+            then if src ? name
+              then src.name + "-" + subDirName 
+              else "cleaned-" + subDirName
+            else if src ? name
+              then src.name
+              else
+                # No name was provided and one could not be constructed from
+                # the `subDirName`.
+
+                # We used to use `baseNameOf src` as a default here.
+                # This was cute, but it lead to cache misses.  For instance if
+                # `x = cleanSourceWith { src = ./.; }` then `baseName src`
+                # will be different when `src` resolves to "/nix/store/X"
+                # than when it is in a local directory.  If people use
+                # git worktrees they also may wind up with different
+                # values for `name`. Anything that depends on `x.name` will
+                # propagate the issue.
+
+                # Encourage adding a suitable `name` with:
+                #   * A warning message.
+                #   * A default name that gives a hint as to why there is no name.
+                __trace (
+                    "WARNING: `cleanSourceWith` called on ${toString src} without a `name`. "
+                    + "Consider adding `name = \"${baseNameOf src};\"`") "unnamed-cleanSourceWith";
     in {
       inherit origSrc origSubDir origSrcSubDir;
       filter = filter';

@@ -59,6 +59,7 @@ then
 
     # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
+        inherit name;
         filter = path: type:
           type == "directory" ||
           lib.any (i: (lib.hasSuffix i path)) [
@@ -102,7 +103,7 @@ then
     gitModules = builtins.path { name = "gitmodules"; path = gitModulesStr; };
 
     gitSubmoduleFiles = cleanSourceWith {
-      inherit src;
+      inherit name src;
       filter = path: type:
           type == "directory" # TODO get sudmodule directories from `.gitmodules`
                               # and use that to filter directory tree here
