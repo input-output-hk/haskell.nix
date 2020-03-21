@@ -179,6 +179,10 @@ stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
+  } // lib.optionalAttrs isDoctest {
+    # We could not figure out how to have separate `source` and `dist` outputs
+    # for doctest as it results in a circular references.
+    source = drv;
   };
 
   meta = {
@@ -213,8 +217,7 @@ stdenv.mkDerivation ({
   outputs = ["out"]
     ++ (lib.optional enableSeparateDataOutput "data")
     ++ (lib.optional doHaddock' "doc")
-    ++ (lib.optional keepSource "source")
-    ++ (lib.optional isDoctest "dist");
+    ++ (lib.optional (keepSource && !isDoctest) "source");
 
   # Phases
   preInstallPhases = lib.optional doHaddock' "haddockPhase";
@@ -226,7 +229,12 @@ stdenv.mkDerivation ({
      '';
 
   configurePhase =
-    (lib.optionalString keepSource ''
+    (lib.optionalString isDoctest ''
+      cp -r . $out
+      cd $out
+      chmod -R +w .
+    '') +
+    (lib.optionalString (keepSource && !isDoctest) ''
       cp -r . $source
       cd $source
       chmod -R +w .
@@ -354,9 +362,7 @@ stdenv.mkDerivation ({
     '')
     }
     runHook postInstall
-  '' + (lib.optionalString isDoctest ''
-    cp -r dist/ $dist/
-  '') + (lib.optionalString keepSource ''
+  '' + (lib.optionalString (keepSource && !isDoctest) ''
     rm -rf dist
   '');
 

@@ -26,21 +26,7 @@ in stdenv.mkDerivation ({
 
   # If doCheck or doCrossCheck are false we may still build this
   # component and we want it to quietly succeed.
-  buildPhase =
-    (lib.optionalString component.isDoctest ''
-      # cabal-doctest assumes we are running tests in a directory with the same
-      # name as when we built the test.
-      this_dir_name=$(pwd)
-      src_basename="$(basename "${drv.cleanSrc}")"
-      cd ../
-      mv "$this_dir_name" "$src_basename"
-      cd "$src_basename"
-
-      # cabal-doctest needs the ./dist directory available to get auto-generated
-      # modules.
-      cp -r ${drv.dist} ./dist
-      chmod u+w -R ./dist
-    '') + ''
+  buildPhase = ''
       touch $out
 
       runHook preCheck
