@@ -14,7 +14,7 @@ let
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
   project = cabalProject' {
-    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-sublib"; };
+    src = haskellLib.cleanGit { src = ../..; name = "cabal-sublib"; subDir = "test/cabal-sublib"; };
     inherit modules;
   };
 
