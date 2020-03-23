@@ -59,7 +59,8 @@ then
 
     # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
-        inherit name;
+        caller = "cleanGit";
+        name = (if name == null then "" else name + "-") + "gitFiles";
         filter = path: type:
           type == "directory" ||
           lib.any (i: (lib.hasSuffix i path)) [
@@ -103,7 +104,9 @@ then
     gitModules = builtins.path { name = "gitmodules"; path = gitModulesStr; };
 
     gitSubmoduleFiles = cleanSourceWith {
-      inherit name src;
+      caller = "cleanGit";
+      name = (if name == null then "" else name + "-") + "gitSubmoduleFiles";
+      inherit src;
       filter = path: type:
           type == "directory" # TODO get sudmodule directories from `.gitmodules`
                               # and use that to filter directory tree here
@@ -144,12 +147,14 @@ then
     filter = filter_from_list src whitelist;
   in
     cleanSourceWith {
+      caller = "cleanGit";
       inherit name src subDir filter;
     }
 
 else
   trace "gitSource.nix: ${toString src} does not seem to be a git repository,\nassuming it is a clean checkout." (
     cleanSourceWith {
+      caller = "cleanGit";
       inherit name src subDir;
     }
   )

@@ -32,16 +32,23 @@
   #             https://nixos.org/nix/manual/#builtin-filterSource
   #
   #   subDir:   Descend into a subdirectory in a way that will compose.
-  #             It will be ase if `src = src + "/${subDir}` and filters
+  #             It will be as if `src = src + "/${subDir}` and filters
   #             already applied to `src` will be respected.
   #
   #   name:     Optional name to use as part of the store path.
-  #             This defaults `src.name` or otherwise `baseNameOf src`.
-  #             We recommend setting `name` whenever `src` is syntactically `./.`.
-  #             Otherwise, you depend on `./.`'s name in the parent directory,
-  #             which can cause inconsistent names, defeating caching.
+  #             If you do not provide a `name` it wil be derived
+  #             from the `subDir`. You should provide `name` or
+  #             `subDir`.  If you do not a warning will be displayed
+  #             and the name used will be `unnamed-${caller}`.
   #
-  cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null }:
+  #   caller:   Name of the function used in warning message and
+  #             in the default `unnamed-${caller}` name.  Functions
+  #             that are implemented using `cleanSourceWith`, and
+  #             forward a `name` argument, can use this to make
+  #             the message to the use more meaningful.
+  #
+  cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null
+      , caller ? "cleanSourceWith" }:
     let
       subDir' = if subDir == "" then "" else "/" + subDir;
       subDirName = __replaceStrings ["/"] ["-"] subDir;
@@ -87,8 +94,8 @@
                 #   * A warning message.
                 #   * A default name that gives a hint as to why there is no name.
                 __trace (
-                    "WARNING: `cleanSourceWith` called on ${toString src} without a `name`. "
-                    + "Consider adding `name = \"${baseNameOf src};\"`") "unnamed-cleanSourceWith";
+                    "WARNING: `${caller}` called on ${toString src} without a `name`. "
+                    + "Consider adding `name = \"${baseNameOf src};\"`") "unnamed-${caller}";
     in {
       inherit origSrc origSubDir origSrcSubDir;
       filter = filter';
