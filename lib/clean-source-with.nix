@@ -74,7 +74,7 @@
           if subDirName != ""
             then if src ? name
               then src.name + "-" + subDirName 
-              else "unnamed-" + subDirName
+              else "unnamed-${caller}-" + subDirName
             else if src ? name
               then src.name
               else
