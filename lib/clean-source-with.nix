@@ -39,12 +39,11 @@
   #             If you do not provide a `name` it wil be derived
   #             from the `subDir`. You should provide `name` or
   #             `subDir`.  If you do not a warning will be displayed
-  #             and the name used will be `source-${caller}`.
+  #             and the name used will be `source`.
   #
-  #   caller:   Name of the function used in warning message and
-  #             in the default `source-${caller}` name.  Functions
-  #             that are implemented using `cleanSourceWith` (and
-  #             forward a `name` argument) can use this to make
+  #   caller:   Name of the function used in warning message.
+  #             Functions that are implemented using `cleanSourceWith`
+  #             (and forward a `name` argument) can use this to make
   #             the message to the use more meaningful.
   #
   cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null
@@ -74,7 +73,7 @@
           if subDirName != ""
             then if src ? name
               then src.name + "-" + subDirName 
-              else "source-${caller}-" + subDirName
+              else "source-" + subDirName
             else if src ? name
               then src.name
               else
@@ -95,7 +94,7 @@
                 #   * A default name that gives a hint as to why there is no name.
                 __trace (
                     "WARNING: `${caller}` called on ${toString src} without a `name`. "
-                    + "Consider adding `name = \"${baseNameOf src};\"`") "source-${caller}";
+                    + "Consider adding `name = \"${baseNameOf src};\"`") "source";
     in {
       inherit origSrc origSubDir origSrcSubDir;
       filter = filter';
