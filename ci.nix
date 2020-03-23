@@ -32,7 +32,9 @@ in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   # We need this for generic nixpkgs stuff at the right version
   let genericPkgs = import ./nixpkgs { inherit nixpkgs-pin; };
-  in dimension "System" (systems genericPkgs) (systemName: system:
+  # The compilers contain 'buildPackages', which contains itself. This makes the job collection for Hydra go
+  # into an infinite loop
+  in genericPkgs.lib.filterAttrsRecursive (n: _: n != "buildPackages") (dimension "System" (systems genericPkgs) (systemName: system:
     let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system; });
     in {
       # Native builds
@@ -52,7 +54,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
               # update-hackage accesses the hackage index at eval time (!), which doesn't work in restricted mode
               # https://github.com/input-output-hk/haskell.nix/issues/507
               (restrictEval && (n == "update-hackage")) ;
-        in genericPkgs.lib.filterAttrsRecursive (n: _: !(blacklisted n))  (import ./build.nix { inherit pkgs ifdLevel; })
+        in pkgs.lib.filterAttrsRecursive (n: _: !(blacklisted n))  (import ./build.nix { inherit pkgs ifdLevel; })
       );
     }
     //
@@ -67,5 +69,5 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         remote-iserv = pkgs.ghc-extra-packages.ghc865.remote-iserv.components.exes.remote-iserv;
       }
     )
-  )
+  ))
 )
