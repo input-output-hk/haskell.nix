@@ -74,7 +74,7 @@
           if subDirName != ""
             then if src ? name
               then src.name + "-" + subDirName 
-              else "cleaned-" + subDirName
+              else "unnamed-" + subDirName
             else if src ? name
               then src.name
               else
