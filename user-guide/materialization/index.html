@@ -237,7 +237,7 @@ file that looks like this:</p>
 }).components.exes.hlint
 </code></pre>
 
-<p>Building this may result in a lot of output, but if youb build
+<p>Building this may result in a lot of output, but if you build
 it again it should give just:</p>
 <pre><code>$ nix-build hlint.nix 
 trace: Using latest index state for hlint!
@@ -305,7 +305,7 @@ $ nix-build hlint.nix
 /nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
 </code></pre>
 
-<p>We may want to run <code>cmod -R +w hlint.materialized</code> as the files copied from the
+<p>We may want to run <code>chmod -R +w hlint.materialized</code> as the files copied from the
 store will be read only.</p>
 <h2 id="how-can-we-check-sha256-and-materialized-are-up-to-date">How can we check <code>sha256</code> and <code>materialized</code> are up to date?<a class="headerlink" href="#how-can-we-check-sha256-and-materialized-are-up-to-date" title="Permanent link">&para;</a></h2>
 <p>Let's pretend we had to go back to <code>hlint</code> version <code>2.2.3</code>.
