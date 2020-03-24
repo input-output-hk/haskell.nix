@@ -32,9 +32,7 @@ in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   # We need this for generic nixpkgs stuff at the right version
   let genericPkgs = import ./nixpkgs { inherit nixpkgs-pin; };
-  # The compilers contain 'buildPackages', which contains itself. This makes the job collection for Hydra go
-  # into an infinite loop
-  in genericPkgs.lib.filterAttrsRecursive (n: _: n != "buildPackages") (dimension "System" (systems genericPkgs) (systemName: system:
+  in dimension "System" (systems genericPkgs) (systemName: system:
     let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system; });
         # TODO: can we use meta.platforms for this sort of thing?
         buildBlacklisted = n:
@@ -67,5 +65,5 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         remote-iserv = pkgs.ghc-extra-packages.ghc865.remote-iserv.components.exes.remote-iserv;
       }
     )
-  ))
+  )
 )
