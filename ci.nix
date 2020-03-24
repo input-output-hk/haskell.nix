@@ -36,36 +36,34 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   # into an infinite loop
   in genericPkgs.lib.filterAttrsRecursive (n: _: n != "buildPackages") (dimension "System" (systems genericPkgs) (systemName: system:
     let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system; });
-    in {
-      # Native builds
-      # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
-      native = pkgs.recurseIntoAttrs {
-        hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
-        iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
-        ghc = pkgs.recurseIntoAttrs pkgs.haskell-nix.compiler;
-      }
-      //
-      (
         # TODO: can we use meta.platforms for this sort of thing?
-        let blacklisted = n:
+        buildBlacklisted = n:
               # update-docs depends on glibc which doesn't build on darwin
               (system == "x86_64-darwin" && (n == "update-docs" || n == "glibc"))
               ||
               # update-hackage accesses the hackage index at eval time (!), which doesn't work in restricted mode
               # https://github.com/input-output-hk/haskell.nix/issues/507
               (restrictEval && (n == "update-hackage")) ;
-        in pkgs.lib.filterAttrsRecursive (n: _: !(blacklisted n))  (import ./build.nix { inherit pkgs ifdLevel; })
-      );
+          build = pkgs.lib.filterAttrsRecursive (n: _: !(buildBlacklisted n)) (import ./build.nix { inherit pkgs ifdLevel; });
+    in {
+      # Native builds
+      # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
+      native = pkgs.recurseIntoAttrs {
+        inherit (build) tests maintainer-scripts maintainer-script-cache;
+        hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
+        iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
+        ghc = pkgs.recurseIntoAttrs pkgs.haskell-nix.compiler;
+      };
     }
     //
     dimension "Cross system" (crossSystems nixpkgsName genericPkgs system) (crossSystemName: crossSystem:
       # Cross builds
       let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system crossSystem; });
+          build = pkgs.lib.filterAttrsRecursive (n: _: !(buildBlacklisted n)) (import ./build.nix { inherit pkgs ifdLevel; });
       in pkgs.recurseIntoAttrs {
+        inherit (build) tests;
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
-
         iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
-
         remote-iserv = pkgs.ghc-extra-packages.ghc865.remote-iserv.components.exes.remote-iserv;
       }
     )
