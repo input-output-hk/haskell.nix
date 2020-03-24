@@ -60,11 +60,13 @@ lts2plan compilerPackagesMap lts = Plan { packages, compilerVersion, compilerPac
     compilerName = lts ^. key "resolver" . key "compiler" . _String
     compilerVersion = parseCompilerVersion compilerName
     compilerPackages = Just <$> Map.lookupDefault (error $ "failed to lookup the compiler packages for compiler: " ++ Text.unpack compilerName) compilerName compilerPackagesMap
+    compilerPackages' = fmap vrToPkg <$> compilerPackages
+      where vrToPkg v = Package v Nothing Map.empty
 
     -- turn flags into HashMap Text (HashMap Text Bool)
     flags :: Map.HashMap Text (Map.HashMap Text Bool)
     flags = lts ^. key "flags" . _Object <&> (\v -> Map.mapMaybe (^? _Bool) $ v ^. _Object)
-    packages = Map.fromList . V.toList $ lts ^. key "packages" . _Array <&> \v ->
+    packages' = Map.fromList . V.toList $ lts ^. key "packages" . _Array <&> \v ->
       let (pkg, rev) = case (parsePackageIdentifier . Text.unpack $ v ^. key "hackage" . _String) of
                           Just p -> p
                           _ -> error $ "failed to parse: " ++ Text.unpack (v ^. key "hackage" . _String)
@@ -76,3 +78,5 @@ lts2plan compilerPackagesMap lts = Plan { packages, compilerVersion, compilerPac
             _               -> Nothing
         , packageFlags = Map.lookupDefault Map.empty name flags
         })
+
+    packages = packages' `Map.union` compilerPackages'
