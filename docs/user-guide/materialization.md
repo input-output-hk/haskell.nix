@@ -45,7 +45,7 @@ file that looks like this:
 }).components.exes.hlint
 ```
 
-Building this may result in a lot of output, but if youb build
+Building this may result in a lot of output, but if you build
 it again it should give just:
 
 ```
@@ -128,7 +128,7 @@ $ nix-build hlint.nix
 /nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
 ```
 
-We may want to run `cmod -R +w hlint.materialized` as the files copied from the
+We may want to run `chmod -R +w hlint.materialized` as the files copied from the
 store will be read only.
 
 ## How can we check `sha256` and `materialized` are up to date?
