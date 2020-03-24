@@ -5,7 +5,7 @@
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false }:
 let
-  inherit (import ./dimension.nix) dimension;
+  inherit (import ./ci-lib.nix) dimension platformFilterGeneric;
   nixpkgsVersions = {
     "R1903" = "release-19.03";
     "R1909" = "release-19.09";
@@ -28,14 +28,6 @@ let
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
   haskellNixArgs = import ./.;
-  platformFilterGeneric = pkgs: system: drv:
-    let lib = pkgs.lib;
-        platform = lib.systems.elaborate { inherit system; };
-    # Can't just default to [] for platforms, since no meta.platforms
-    # means "all platforms" not "no platforms"
-    in if drv ? meta && drv.meta ? platforms then
-      lib.any (lib.meta.platformMatch platform) drv.meta.platforms
-    else true;
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   # We need this for generic nixpkgs stuff at the right version
