@@ -5,7 +5,7 @@
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false }:
 let
-  inherit (import ./ci-lib.nix) dimension platformFilterGeneric;
+  inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   nixpkgsVersions = {
     "R1903" = "release-19.03";
     "R1909" = "release-19.09";
@@ -40,7 +40,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
               # update-hackage accesses the hackage index at eval time (!), which doesn't work in restricted mode
               # https://github.com/input-output-hk/haskell.nix/issues/507
               (restrictEval && (n == "update-hackage")) ;
-    in pkgs.lib.filterAttrsRecursive (n: v: !(blacklisted n) && platformFilter v) {
+    in filterAttrsOnlyRecursive (n: v: !(blacklisted n) && platformFilter v) {
       # Native builds
       # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
       native = pkgs.recurseIntoAttrs {
