@@ -28,22 +28,27 @@ let
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
   haskellNixArgs = import ./.;
+  platformFilterGeneric = pkgs: system: drv:
+    let lib = pkgs.lib;
+        platform = lib.systems.elaborate { inherit system; };
+    # Can't just default to [] for platforms, since no meta.platforms
+    # means "all platforms" not "no platforms"
+    in if drv ? meta && drv.meta ? platforms then
+      lib.any (lib.meta.platformMatch platform) drv.meta.platforms
+    else true;
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   # We need this for generic nixpkgs stuff at the right version
   let genericPkgs = import ./nixpkgs { inherit nixpkgs-pin; };
   in dimension "System" (systems genericPkgs) (systemName: system:
     let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system; });
-        # TODO: can we use meta.platforms for this sort of thing?
-        buildBlacklisted = n:
-              # update-docs depends on glibc which doesn't build on darwin
-              (system == "x86_64-darwin" && (n == "update-docs" || n == "glibc"))
-              ||
+        build = import ./build.nix { inherit pkgs ifdLevel; };
+        platformFilter = platformFilterGeneric pkgs system;
+        blacklisted = n:
               # update-hackage accesses the hackage index at eval time (!), which doesn't work in restricted mode
               # https://github.com/input-output-hk/haskell.nix/issues/507
               (restrictEval && (n == "update-hackage")) ;
-          build = pkgs.lib.filterAttrsRecursive (n: _: !(buildBlacklisted n)) (import ./build.nix { inherit pkgs ifdLevel; });
-    in {
+    in pkgs.lib.filterAttrsRecursive (n: v: !(blacklisted n) && platformFilter v) {
       # Native builds
       # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
       native = pkgs.recurseIntoAttrs {
@@ -57,7 +62,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
     dimension "Cross system" (crossSystems nixpkgsName genericPkgs system) (crossSystemName: crossSystem:
       # Cross builds
       let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system crossSystem; });
-          build = pkgs.lib.filterAttrsRecursive (n: _: !(buildBlacklisted n)) (import ./build.nix { inherit pkgs ifdLevel; });
+          build = import ./build.nix { inherit pkgs ifdLevel; };
       in pkgs.recurseIntoAttrs {
         inherit (build) tests;
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;

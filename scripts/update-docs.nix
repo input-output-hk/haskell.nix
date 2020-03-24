@@ -7,7 +7,8 @@ let
   repo = "git@github.com:input-output-hk/haskell.nix.git";
   sshKey = "/run/keys/buildkite-haskell-dot-nix-ssh-private";
 in
-  writeScript "update-docs.sh" ''
+  # update-docs depends on glibc which doesn't build on darwin
+  meta.addMetaAttrs { platforms = platforms.linux; } (writeScript "update-docs.sh" ''
     #!${stdenv.shell}
 
     set -euo pipefail
@@ -46,4 +47,4 @@ in
     if [ "''${BUILDKITE_BRANCH:-}" = master ]; then
       git push ${repo} HEAD:gh-pages
     fi
-  ''
+  '')
