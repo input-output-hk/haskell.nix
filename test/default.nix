@@ -1,9 +1,9 @@
 let
-  inherit (import ../default.nix {}) sources nixpkgsArgs;
+  haskellNix = (import ../default.nix {});
 in
 { pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? sources.nixpkgs-default
-, nixpkgsArgs ? { }
+, nixpkgs ? haskellNix.sources.nixpkgs-default
+, nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
 }:
 

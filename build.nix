@@ -3,11 +3,11 @@
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
 let
-  inherit (import ./default.nix {}) sources nixpkgsArgs;
+  haskellNix = (import ./default.nix {});
 in
-{ nixpkgs ? sources.nixpkgs-default
-, nixpkgsArgs ? nixpkgsArgs
-, pkgs ? (nixpkgs nixpkgsArgs)
+{ nixpkgs ? haskellNix.sources.nixpkgs-default
+, nixpkgsArgs ? haskellNix.nixpkgsArgs
+, pkgs ? import nixpkgs nixpkgsArgs
 , ifdLevel ? 1000
 }:
 
