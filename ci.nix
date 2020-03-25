@@ -56,11 +56,13 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system crossSystem; });
           build = import ./build.nix { inherit pkgs ifdLevel; };
       in pkgs.recurseIntoAttrs {
-        inherit (build) tests;
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
         iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
         remote-iserv = pkgs.ghc-extra-packages.ghc865.remote-iserv.components.exes.remote-iserv;
       }
+      //
+      # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
+      pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") build.tests
     )
   )
 )
