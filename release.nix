@@ -15,8 +15,9 @@ in allJobs // {
     required = genericPkgs.releaseTools.aggregate {
       name = "haskell.nix-required";
       meta.description = "All jobs required to pass CI";
-      # Just include everything: Hercules will require them all too!
-      constituents = lib.collect lib.isDerivation allJobs;
+      # Hercules will require all of these, we just require the 1909 jobs
+      # to avoid stressing Hydra too much
+      constituents = lib.collect lib.isDerivation allJobs.R1909.linux.native;
     };
   }
 
