@@ -1,4 +1,4 @@
-let inherit (import ../.) sources nixpkgsArgs;
+let inherit (import ../. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs-default (nixpkgsArgs // { crossSystem.config = "js-unknown-ghcjs"; });
     Cabal = pkgs.buildPackages.haskell-nix.hackage-package {
     name = "Cabal"; version = "2.4.1.0";

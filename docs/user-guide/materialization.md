@@ -39,7 +39,7 @@ Lets say we want to build `hlint`.  We might start with an `hlint`
 file that looks like this:
 
 ```nix
-let inherit (import ./.) sources nixpkgsArgs; 
+let inherit (import ./. {}) sources nixpkgsArgs; 
     pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
       name = "hlint";
@@ -63,7 +63,7 @@ inputs.  For `cabalProject` and `hackage-package` this means
 we must specify the `index-state` of hackage we want to use:
 
 ```nix
-let inherit (import ./.) sources nixpkgsArgs; 
+let inherit (import ./. {}) sources nixpkgsArgs; 
     pkgs = import sources.nixpkgs-default nixpkgsArgs; 
     hlint = pkgs.haskell-nix.hackage-package {
       name = "hlint";
@@ -91,7 +91,7 @@ We can add the hash as `plan-sha256` or (`stack-sha256` for
 `stackProject`)
 
 ```nix
-let inherit (import ./.) sources nixpkgsArgs; 
+let inherit (import ./. {}) sources nixpkgsArgs; 
     pkgs = import sources.nixpkgs-default nixpkgsArgs; 
     hlint = pkgs.haskell-nix.hackage-package {
       name = "hlint";
@@ -120,7 +120,7 @@ trace: To materialize, point `materialized` to a copy of /nix/store/0xalcphb7ifv
 To capture the nix we can do something like:
 
 ```nix
-let inherit (import ./.) sources nixpkgsArgs; 
+let inherit (import ./. {}) sources nixpkgsArgs; 
     pkgs = import sources.nixpkgs-default nixpkgsArgs; 
     hlint = pkgs.haskell-nix.hackage-package {
       name = "hlint";
@@ -150,7 +150,7 @@ We can change `version` and temporarily add
 `checkMaterialization = true;`:
 
 ```nix
-let inherit (import ./.) sources nixpkgsArgs; 
+let inherit (import ./. {}) sources nixpkgsArgs; 
     pkgs = import sources.nixpkgs-default nixpkgsArgs; 
     hlint = pkgs.haskell-nix.hackage-package {
       name = "hlint";
@@ -228,7 +228,7 @@ hash and materialized nix we can find out what nix files should be.
 For instance:
 
 ```nix
-let inherit (import ./.) sources nixpkgsArgs; 
+let inherit (import ./. {}) sources nixpkgsArgs; 
     pkgs = import sources.nixpkgs-default nixpkgsArgs; 
     hlint = pkgs.haskell-nix.hackage-project {
       name = "hlint";
@@ -260,7 +260,7 @@ Yes and it gives us the same speed improvement, however:
 For instance:
 
 ```nix
-let inherit (import ./.) sources nixpkgsArgs; 
+let inherit (import ./. {}) sources nixpkgsArgs; 
     pkgs = import sources.nixpkgs-default nixpkgsArgs; 
     hlint = pkgs.haskell-nix.hackage-package {
       name = "hlint";

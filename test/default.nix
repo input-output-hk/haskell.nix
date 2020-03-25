@@ -1,5 +1,8 @@
-{ pkgs ? import nixpkgs ((import ../.).nixpkgsArgs // nixpkgsArgs)
-, nixpkgs ? (import ../nixpkgs).nixpkgs-default
+let
+  inherit (import ../default.nix {}) sources nixpkgsArgs;
+in
+{ pkgs ? import nixpkgs nixpkgsArgs
+, nixpkgs ? sources.nixpkgs-default
 , nixpkgsArgs ? { }
 , ifdLevel ? 1000
 }:

@@ -6,7 +6,7 @@
 , restrictEval ? false }:
 let
   inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
-  inherit (import ./default.nix) sources nixpkgsArgs;
+  inherit (import ./default.nix {}) sources nixpkgsArgs;
   nixpkgsVersions = {
     "R1903" = "nixpkgs-1903";
     "R1909" = "nixpkgs-1909";

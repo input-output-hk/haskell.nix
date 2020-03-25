@@ -6,8 +6,11 @@
 # 3. run `./result/bin/update-nix-tools` and follow the instructions.
 # 4. git commit -a -m "bump nix-tools"
 #
+let
+  inherit (import ../default.nix {}) sources nixpkgsArgs;
+in
 { specJSON ? ./nix-tools-src.json }:
-with import (import ../nixpkgs).nixpkgs-default (import ../default.nix).nixpkgsArgs;
+with import sources.nixpkgs-default nixpkgsArgs;
 let
   src = haskell-nix.cleanSourceHaskell {
     src = haskell-nix.fetchExternal {
