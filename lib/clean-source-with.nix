@@ -32,18 +32,25 @@
   #             https://nixos.org/nix/manual/#builtin-filterSource
   #
   #   subDir:   Descend into a subdirectory in a way that will compose.
-  #             It will be ase if `src = src + "/${subDir}` and filters
+  #             It will be as if `src = src + "/${subDir}` and filters
   #             already applied to `src` will be respected.
   #
   #   name:     Optional name to use as part of the store path.
-  #             This defaults `src.name` or otherwise `baseNameOf src`.
-  #             We recommend setting `name` whenever `src` is syntactically `./.`.
-  #             Otherwise, you depend on `./.`'s name in the parent directory,
-  #             which can cause inconsistent names, defeating caching.
+  #             If you do not provide a `name` it wil be derived
+  #             from the `subDir`. You should provide `name` or
+  #             `subDir`.  If you do not a warning will be displayed
+  #             and the name used will be `source`.
   #
-  cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null }:
+  #   caller:   Name of the function used in warning message.
+  #             Functions that are implemented using `cleanSourceWith`
+  #             (and forward a `name` argument) can use this to make
+  #             the message to the use more meaningful.
+  #
+  cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null
+      , caller ? "cleanSourceWith" }:
     let
       subDir' = if subDir == "" then "" else "/" + subDir;
+      subDirName = __replaceStrings ["/"] ["-"] subDir;
       # In case this is mixed with older versions of cleanSourceWith
       isFiltered = src ? _isLibCleanSourceWith;
       isFilteredEx = src ? _isLibCleanSourceWithEx;
@@ -62,10 +69,32 @@
             && (filter path type && parentFilter path type));
       name' = if name != null
         then name
-        else (if isFiltered && src ? name
-          then src.name
-          else baseNameOf src)
-          + (lib.optionalString (origSubDir != "") ("--" + baseNameOf origSubDir));
+        else
+          if subDirName != ""
+            then if src ? name
+              then src.name + "-" + subDirName 
+              else "source-" + subDirName
+            else if src ? name
+              then src.name
+              else
+                # No name was provided and one could not be constructed from
+                # the `subDirName`.
+
+                # We used to use `baseNameOf src` as a default here.
+                # This was cute, but it lead to cache misses.  For instance if
+                # `x = cleanSourceWith { src = ./.; }` then `baseName src`
+                # will be different when `src` resolves to "/nix/store/X"
+                # than when it is in a local directory.  If people use
+                # git worktrees they also may wind up with different
+                # values for `name`. Anything that depends on `x.name` will
+                # propagate the issue.
+
+                # Encourage adding a suitable `name` with:
+                #   * A warning message.
+                #   * A default name that gives a hint as to why there is no name.
+                __trace (
+                    "WARNING: `${caller}` called on ${toString src} without a `name`. "
+                    + "Consider adding `name = \"${baseNameOf src};\"`") "source";
     in {
       inherit origSrc origSubDir origSrcSubDir;
       filter = filter';
