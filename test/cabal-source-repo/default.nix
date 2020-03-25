@@ -28,7 +28,7 @@ in recurseIntoAttrs {
 
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit pkgSet packages;
+      inherit packages;
     };
   };
 }
