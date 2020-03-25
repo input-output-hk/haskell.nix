@@ -7,7 +7,7 @@
 # 4. git commit -a -m "bump nix-tools"
 #
 { specJSON ? ./nix-tools-src.json }:
-with import ../nixpkgs (import ../.);
+with import (import ../nixpkgs).nixpkgs-default (import ../default.nix).nixpkgsArgs;
 let
   src = haskell-nix.cleanSourceHaskell {
     src = haskell-nix.fetchExternal {

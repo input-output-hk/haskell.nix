@@ -3,8 +3,8 @@
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
 
-{ nixpkgs ? (import ./nixpkgs/default.nix)
-, nixpkgsArgs ? (import ./default.nix)
+{ nixpkgs ? (import ./nixpkgs/default.nix).nixpkgs-default
+, nixpkgsArgs ? (import ./default.nix).nixpkgsArgs
 , pkgs ? (nixpkgs nixpkgsArgs)
 , ifdLevel ? 1000
 }:
@@ -27,7 +27,7 @@ in rec {
         # nixpkgs 19.09 changes "Option has no description" from an
         # error into a warning. That is quite helpful when hardly any
         # of our options are documented, thanks @oxij.
-        pkgs = import ./nixpkgs { nixpkgs-pin = "release-19.09"; };
+        pkgs = import (import ./nixpkgs/default.nix).nixpkgs-1909 {};
       };
     };
     # Because this is going to be used to test caching on hydra, it must not

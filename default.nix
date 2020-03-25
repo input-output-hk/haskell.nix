@@ -1,5 +1,9 @@
-# This default.nix is designed to be passed directly nixpkgs with something like:
-#   import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
-{ config   = import ./config.nix;
+rec {
+  sources = {
+    inherit (import ./nixpkgs/default.nix) nixpkgs-1903 nixpkgs-1909 nixpkgs-default;
+  };
+
+  config   = import ./config.nix;
   overlays = import ./overlays;
+  nixpkgsArgs = { inherit overlays config; };
 }

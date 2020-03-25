@@ -39,10 +39,13 @@ Lets say we want to build `hlint`.  We might start with an `hlint`
 file that looks like this:
 
 ```nix
-((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = "hlint";
-  version = "2.2.4";
-}).components.exes.hlint
+let inherit (import ./.) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = "hlint";
+      version = "2.2.4";
+    };
+in hlint.components.exes.hlint
 ```
 
 Building this may result in a lot of output, but if you build
@@ -60,11 +63,14 @@ inputs.  For `cabalProject` and `hackage-package` this means
 we must specify the `index-state` of hackage we want to use:
 
 ```nix
-((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = "hlint";
-  version = "2.2.4";
-  index-state = "2019-12-03T00:00:00Z";
-}).components.exes.hlint
+let inherit (import ./.) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = "hlint";
+      version = "2.2.4";
+      index-state = "2019-12-03T00:00:00Z";
+    };
+in hlint.components.exes.hlint
 ```
 
 Now if we build again we get a hint telling use how to
@@ -85,12 +91,15 @@ We can add the hash as `plan-sha256` or (`stack-sha256` for
 `stackProject`)
 
 ```nix
-((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = "hlint";
-  version = "2.2.4";
-  index-state = "2019-12-03T00:00:00Z";
-  plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
-}).components.exes.hlint
+let inherit (import ./.) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = "hlint";
+      version = "2.2.4";
+      index-state = "2019-12-03T00:00:00Z";
+      plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
+    };
+in hlint.components.exes.hlint
 ```
 
 Just adding the hash might help reuse of the cached nix, but nix will
@@ -111,13 +120,16 @@ trace: To materialize, point `materialized` to a copy of /nix/store/0xalcphb7ifv
 To capture the nix we can do something like:
 
 ```nix
-((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = "hlint";
-  version = "2.2.4";
-  index-state = "2019-12-03T00:00:00Z";
-  plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
-  materialized = ./hlint.materialized;
-}).components.exes.hlint
+let inherit (import ./.) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = "hlint";
+      version = "2.2.4";
+      index-state = "2019-12-03T00:00:00Z";
+      plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
+      materialized = ./hlint.materialized;
+    };
+in hlint.components.exes.hlint
 ```
 
 Now we can copy the nix files needed and build with:
@@ -138,14 +150,17 @@ We can change `version` and temporarily add
 `checkMaterialization = true;`:
 
 ```nix
-((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = "hlint";
-  version = "2.2.3";
-  index-state = "2019-12-03T00:00:00Z";
-  plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
-  materialized = ./hlint.materialized;
-  checkMaterialization = true;
-}).components.exes.hlint
+let inherit (import ./.) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = "hlint";
+      version = "2.2.4";
+      index-state = "2019-12-03T00:00:00Z";
+      plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
+      materialized = ./hlint.materialized;
+      checkMaterialization = true;
+    };
+in hlint.components.exes.hlint
 ```
 
 This will fail and report the details of what is wrong:
@@ -213,11 +228,14 @@ hash and materialized nix we can find out what nix files should be.
 For instance:
 
 ```nix
-(import ./nixpkgs (import ./.)).haskell-nix.hackage-project {
-  name = "hlint";
-  version = "2.2.4";
-  index-state = "2019-12-03T00:00:00Z";
-}
+let inherit (import ./.) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-project {
+      name = "hlint";
+      version = "2.2.4";
+      index-state = "2019-12-03T00:00:00Z";
+    };
+in hlint
 ```
 
 ```
@@ -242,13 +260,16 @@ Yes and it gives us the same speed improvement, however:
 For instance:
 
 ```nix
-((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = "hlint";
-  version = "2.2.4";
-  index-state = "2019-12-03T00:00:00Z";
-  plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
-  materialized = /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs;
-}).components.exes.hlint
+let inherit (import ./.) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = "hlint";
+      version = "2.2.4";
+      index-state = "2019-12-03T00:00:00Z";
+      plan-sha256 = "1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss";
+      materialized = /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs;
+    };
+in hlint.components.exes.hlint
 ```
 
 Running when no building is needed is still slow in restricted evaluation mode.

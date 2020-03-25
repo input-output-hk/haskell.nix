@@ -6,9 +6,10 @@
 , restrictEval ? false }:
 let
   inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
+  inherit (import ./default.nix) sources nixpkgsArgs;
   nixpkgsVersions = {
-    "R1903" = "release-19.03";
-    "R1909" = "release-19.09";
+    "R1903" = "nixpkgs-1903";
+    "R1909" = "nixpkgs-1909";
   };
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
@@ -27,13 +28,13 @@ let
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
-  haskellNixArgs = import ./.;
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
-  # We need this for generic nixpkgs stuff at the right version
-  let genericPkgs = import ./nixpkgs { inherit nixpkgs-pin; };
+  let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
+      # We need this for generic nixpkgs stuff at the right version
+      genericPkgs = import pinnedNixpkgsSrc {};
   in dimension "System" (systems genericPkgs) (systemName: system:
-    let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system; });
+    let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
         build = import ./build.nix { inherit pkgs ifdLevel; };
         platformFilter = platformFilterGeneric pkgs system;
     in filterAttrsOnlyRecursive (_: v: platformFilter v) {
@@ -49,7 +50,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
     //
     dimension "Cross system" (crossSystems nixpkgsName genericPkgs system) (crossSystemName: crossSystem:
       # Cross builds
-      let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system crossSystem; });
+      let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
           build = import ./build.nix { inherit pkgs ifdLevel; };
       in pkgs.recurseIntoAttrs {
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;

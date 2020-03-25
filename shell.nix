@@ -1,5 +1,6 @@
 let
-  pkgs = import ./nixpkgs/default.nix (import ./default.nix); 
+  inherit (import ./default.nix) sources nixpkgsArgs;
+  pkgs = import sources.nixpkgs-default nixpkgsArgs;
 in pkgs.stdenv.mkDerivation rec {
   name = "env";
   env = pkgs.buildEnv { name = name; paths = buildInputs; };
