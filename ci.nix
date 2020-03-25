@@ -36,11 +36,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
     let pkgs = import ./nixpkgs (haskellNixArgs // { inherit nixpkgs-pin system; });
         build = import ./build.nix { inherit pkgs ifdLevel; };
         platformFilter = platformFilterGeneric pkgs system;
-        blacklisted = n:
-              # update-hackage accesses the hackage index at eval time (!), which doesn't work in restricted mode
-              # https://github.com/input-output-hk/haskell.nix/issues/507
-              (restrictEval && (n == "update-hackage")) ;
-    in filterAttrsOnlyRecursive (n: v: !(blacklisted n) && platformFilter v) {
+    in filterAttrsOnlyRecursive (_: v: platformFilter v) {
       # Native builds
       # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
       native = pkgs.recurseIntoAttrs {
