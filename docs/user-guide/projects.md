@@ -22,7 +22,7 @@ expression (see the links bellow). The following file then produces a package se
 # default.nix
 let
   # Import the Haskell.nix library,
-  pkgs = import <nixpkgs> (import builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz);
+  pkgs = import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs;
 
   # Import the file you will create in the stack-to-nix or cabal-to-nix step.
   my-pkgs = import ./pkgs.nix;
