@@ -47,7 +47,9 @@ let
     [ "-fexternal-interpreter"
       "-pgmi" "${qemuIservWrapper}/bin/iserv-wrapper"
       "-L${gmp}/lib"
-    ]) ++ lib.optionals hostPlatform.isAarch32 (map (opt: "--gcc-option=" + opt) [ "-fno-pic" "-fno-plt" ]);
+    ]) ++ lib.optionals hostPlatform.isAarch32 (map (opt: "--gcc-option=" + opt) [ "-fno-pic" "-fno-plt" ])
+       # Required to work-around https://gitlab.haskell.org/ghc/ghc/issues/15275
+       ++ lib.optionals hostPlatform.isAarch64 [ "-fPIC" "--gcc-option=-fPIC" ];
   qemuTestWrapper = writeScriptBin "test-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
