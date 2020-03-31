@@ -223,21 +223,21 @@
 <h3 id="use-1-to-build-a-specific-package-from-hackage-or-a-stackage-lts-or-nightly-set">Use 1 : to build a specific package from hackage or a <a href="https://stackage.org">stackage</a> lts or nightly set.<a class="headerlink" href="#use-1-to-build-a-specific-package-from-hackage-or-a-stackage-lts-or-nightly-set" title="Permanent link">&para;</a></h3>
 <p>To build a package, say <a href="https://hackage.haskell.org/package/lens">lens</a>, from a stackage snapshot, say <a href="https://www.stackage.org/lts-13.28">lts-13.28</a>,
 you could run</p>
-<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./.); haskell-nix.snapshots.&quot;lts-13.28&quot;).lens.components.library'
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; haskell-nix.snapshots.&quot;lts-13.28&quot;).lens.components.library'
 </code></pre>
 
 <p>which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the lens package as fixed
 by the <a href="https://www.stackage.org/lts-13.28">lts-13.28</a> stackage snapshot.</p>
 <p>To build any package from hackage, say <a href="https://hackage.haskell.org/package/lens">lens</a>, in version, say 4.17.1, you
 could run</p>
-<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./.); (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; })).components.library'
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; })).components.library'
 </code></pre>
 
 <p>which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package
 from hackage.  The dependencies would be solved against the most recent 
 <a href="https://github.com/input-output-hk/hackage.nix/blob/master/index-state-hashes.nix">hackage-index-state</a> that comes via the <a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> pin with your
 <a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a> checkout.  A specific one can be specified as well:</p>
-<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./.); (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; index-state = &quot;2019-07-14T00:00:00Z&quot;; })).components.library'
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; index-state = &quot;2019-07-14T00:00:00Z&quot;; })).components.library'
 </code></pre>
 
 <p>which would use the hackage index as of <code>2019-07-14T00:00:00Z</code> to produce a build plan
@@ -250,7 +250,7 @@ produce a <code>pkgs.nix</code> expression.  Getting a copy of the <code>nix-too
 produce derivations that we can <code>nix build</code>.</p>
 <h2 id="installing-nix-tools">Installing <code>nix-tools</code><a class="headerlink" href="#installing-nix-tools" title="Permanent link">&para;</a></h2>
 <p>To build the latest <code>nix-tools</code> and store the result at <code>./nt</code>, run:</p>
-<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)); haskell-nix.nix-tools)' --out-link nt
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs; haskell-nix.nix-tools)' --out-link nt
 </code></pre>
 
 <p>If you would like to then install <code>nix-tools</code> into your profile, run:</p>
@@ -276,12 +276,12 @@ to configure the <a href="https://nix-tools.cachix.org">nix-tools cachix</a> as 
 <h2 id="using-haskellnix-with-your-project">Using <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> with your project<a class="headerlink" href="#using-haskellnix-with-your-project" title="Permanent link">&para;</a></h2>
 <p>The easiest way to get a hold of <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> is with
 <a href="https://nixos.org/nix/manual/#ssec-builtins"><code>fetchTarball</code></a>.</p>
-<pre><code class="nix">import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
+<pre><code class="nix">import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs
 </code></pre>
 
 <h3 id="using-your-cabalproject-file">Using your cabal.project file<a class="headerlink" href="#using-your-cabalproject-file" title="Permanent link">&para;</a></h3>
 <p>If your project has a <code>cabal.project</code> you can add a <code>default.nix</code> like this:</p>
-<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs
 , haskellCompiler ? &quot;ghc865&quot;
 }:
   pkgs.haskell-nix.cabalProject {
@@ -345,7 +345,7 @@ the same packages will be built each time (until you change the index-state
 or one of the constraints in your local <code>.cabal</code> files).</p>
 <h3 id="using-your-stackyaml-file">Using your stack.yaml file<a class="headerlink" href="#using-your-stackyaml-file" title="Permanent link">&para;</a></h3>
 <p>If your project has a <code>stack.yaml</code> you can add a <code>default.nix</code> like this:</p>
-<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
+<pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs
 }:
   pkgs.haskell-nix.stackProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
@@ -423,7 +423,7 @@ these Git repositories correspond to the actual Hackage and Stackage.</p>
       stackageSourceJSON = ./stackage-src.json;
     };
   })]; })
-, haskellNixArgs ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz)
+, haskellNixArgs ? (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs
 }:
   pkgs
 </code></pre>
@@ -434,7 +434,7 @@ attrsets and try examples. </p>
 <pre><code># example.nix
 { nixpkgs ? &lt;nixpkgs&gt; }:
 rec {
-  haskell = import nixpkgs (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz));
+  haskell = import nixpkgs (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs;
   pkgNames = haskell.pkgs.lib.attrNames haskell.haskell-nix.snapshots.&quot;lts-13.18&quot;;
 }
 </code></pre>

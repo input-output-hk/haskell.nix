@@ -239,8 +239,8 @@ instantiate a package set.</p>
 <pre><code class="nix"># default.nix
 let
   # Import the Haskell.nix library,
-  src = builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz;
-  nixpkgs = import (src + &quot;/nixpkgs&quot;) (import src);
+  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
+  nixpkgs = haskellNix.sources.nixpgs-1909 haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 
   # Instantiate a package set using the generated file.

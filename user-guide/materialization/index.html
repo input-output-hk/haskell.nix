@@ -231,10 +231,13 @@ for instance).</p>
 <h2 id="how-can-we-materialize-the-nix-files">How can we materialize the nix files?<a class="headerlink" href="#how-can-we-materialize-the-nix-files" title="Permanent link">&para;</a></h2>
 <p>Lets say we want to build <code>hlint</code>.  We might start with an <code>hlint</code>
 file that looks like this:</p>
-<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = &quot;hlint&quot;;
-  version = &quot;2.2.4&quot;;
-}).components.exes.hlint
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = &quot;hlint&quot;;
+      version = &quot;2.2.4&quot;;
+    };
+in hlint.components.exes.hlint
 </code></pre>
 
 <p>Building this may result in a lot of output, but if you build
@@ -248,11 +251,14 @@ trace: Using index-state: 2019-12-09T00:00:00Z for hlint
 <p>To materialize the nix files we need to take care to pin down the
 inputs.  For <code>cabalProject</code> and <code>hackage-package</code> this means
 we must specify the <code>index-state</code> of hackage we want to use:</p>
-<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = &quot;hlint&quot;;
-  version = &quot;2.2.4&quot;;
-  index-state = &quot;2019-12-03T00:00:00Z&quot;;
-}).components.exes.hlint
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = &quot;hlint&quot;;
+      version = &quot;2.2.4&quot;;
+      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+    };
+in hlint.components.exes.hlint
 </code></pre>
 
 <p>Now if we build again we get a hint telling use how to
@@ -269,12 +275,15 @@ $ nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hl
 
 <p>We can add the hash as <code>plan-sha256</code> or (<code>stack-sha256</code> for
 <code>stackProject</code>)</p>
-<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = &quot;hlint&quot;;
-  version = &quot;2.2.4&quot;;
-  index-state = &quot;2019-12-03T00:00:00Z&quot;;
-  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
-}).components.exes.hlint
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = &quot;hlint&quot;;
+      version = &quot;2.2.4&quot;;
+      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+    };
+in hlint.components.exes.hlint
 </code></pre>
 
 <p>Just adding the hash might help reuse of the cached nix, but nix will
@@ -290,13 +299,16 @@ trace: To materialize, point `materialized` to a copy of /nix/store/0xalcphb7ifv
 </code></pre>
 
 <p>To capture the nix we can do something like:</p>
-<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = &quot;hlint&quot;;
-  version = &quot;2.2.4&quot;;
-  index-state = &quot;2019-12-03T00:00:00Z&quot;;
-  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
-  materialized = ./hlint.materialized;
-}).components.exes.hlint
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = &quot;hlint&quot;;
+      version = &quot;2.2.4&quot;;
+      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+      materialized = ./hlint.materialized;
+    };
+in hlint.components.exes.hlint
 </code></pre>
 
 <p>Now we can copy the nix files needed and build with:</p>
@@ -311,14 +323,17 @@ store will be read only.</p>
 <p>Let's pretend we had to go back to <code>hlint</code> version <code>2.2.3</code>.
 We can change <code>version</code> and temporarily add
 <code>checkMaterialization = true;</code>:</p>
-<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = &quot;hlint&quot;;
-  version = &quot;2.2.3&quot;;
-  index-state = &quot;2019-12-03T00:00:00Z&quot;;
-  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
-  materialized = ./hlint.materialized;
-  checkMaterialization = true;
-}).components.exes.hlint
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = &quot;hlint&quot;;
+      version = &quot;2.2.4&quot;;
+      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+      materialized = ./hlint.materialized;
+      checkMaterialization = true;
+    };
+in hlint.components.exes.hlint
 </code></pre>
 
 <p>This will fail and report the details of what is wrong:</p>
@@ -380,11 +395,14 @@ and <code>hackage-project</code>) that also return the nix as <code>plan-nix</co
 <code>stack-nix</code>.  By calling one of these functions without the
 hash and materialized nix we can find out what nix files should be.
 For instance:</p>
-<pre><code class="nix">(import ./nixpkgs (import ./.)).haskell-nix.hackage-project {
-  name = &quot;hlint&quot;;
-  version = &quot;2.2.4&quot;;
-  index-state = &quot;2019-12-03T00:00:00Z&quot;;
-}
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-project {
+      name = &quot;hlint&quot;;
+      version = &quot;2.2.4&quot;;
+      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+    };
+in hlint
 </code></pre>
 
 <pre><code>$ nix-build hlint.nix -A plan-nix
@@ -407,13 +425,16 @@ and use <code>nix-hash</code> to calculate the new value for <code>plan-sha256</
 </li>
 </ul>
 <p>For instance:</p>
-<pre><code class="nix">((import ./nixpkgs (import ./.)).haskell-nix.hackage-package {
-  name = &quot;hlint&quot;;
-  version = &quot;2.2.4&quot;;
-  index-state = &quot;2019-12-03T00:00:00Z&quot;;
-  plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
-  materialized = /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs;
-}).components.exes.hlint
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+    hlint = pkgs.haskell-nix.hackage-package {
+      name = &quot;hlint&quot;;
+      version = &quot;2.2.4&quot;;
+      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+      materialized = /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs;
+    };
+in hlint.components.exes.hlint
 </code></pre>
 
 <p>Running when no building is needed is still slow in restricted evaluation mode.</p>
