@@ -34,7 +34,7 @@ let
       inherit src;
       filter = path: type:
         type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ]; }
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ".freeze" ]; }
     else src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
@@ -162,6 +162,10 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
+  name-plan-to-nix-pkgs = if name == null
+    then "plan-to-nix-pkgs"
+    else name + "-plan-to-nix-pkgs";
+
   plan-nix = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
@@ -173,14 +177,14 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (builtins.trace "[${if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs"}] cabal new-configure --with-ghc=${ghc.targetPrefix}ghc --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg" (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
+  }) (runCommand name-plan-to-nix-pkgs {
     nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
-  } ''
+  } (builtins.trace "[${name-plan-to-nix-pkgs}] cabal new-configure --with-ghc=${ghc.targetPrefix}ghc --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg" (''
     tmp=$(mktemp -d)
     cd $tmp
     # if maybeCleanedSource is empty, this means it's a new
@@ -247,5 +251,5 @@ let
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out/pkgs.nix $out/default.nix
-  ''));
+  '')));
 in { projectNix = plan-nix; inherit src; inherit (fixedProject) sourceRepos; }
