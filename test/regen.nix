@@ -1,7 +1,10 @@
 # A script for regenerating nix for tests
-{ pkgs ? import nixpkgs ((import ../.) // nixpkgsArgs)
-, nixpkgs ? ../nixpkgs
-, nixpkgsArgs ? { }
+let
+  haskellNix = (import ../default.nix {});
+in
+{ pkgs ? import nixpkgs nixpkgsArgs
+, nixpkgs ? haskellNix.sources.nixpkgs-default
+, nixpkgsArgs ? haskellNix.nixpkgsArgs
 }:
 
 with pkgs;

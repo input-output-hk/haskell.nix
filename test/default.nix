@@ -1,6 +1,9 @@
-{ pkgs ? import nixpkgs ((import ../.) // nixpkgsArgs)
-, nixpkgs ? ../nixpkgs
-, nixpkgsArgs ? { }
+let
+  haskellNix = (import ../default.nix {});
+in
+{ pkgs ? import nixpkgs nixpkgsArgs
+, nixpkgs ? haskellNix.sources.nixpkgs-default
+, nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
 }:
 

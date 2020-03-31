@@ -5,7 +5,7 @@
 
 let
   inherit (import ./ci-lib.nix) stripAttrsForHydra filterDerivations;
-  genericPkgs = import ./nixpkgs {};
+  genericPkgs = import (import ./nixpkgs/default.nix).nixpkgs-default {};
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
