@@ -42,7 +42,7 @@ let
       inherit src;
       filter = path: type:
         type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ]; }
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" ".freeze" "package.yaml" ]; }
     else src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
