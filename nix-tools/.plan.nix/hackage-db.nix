@@ -37,12 +37,12 @@ let
       If this is a Haskell dependency:
       If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix.
       '';
-in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
+in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, config, ... }:
   {
     flags = { install-examples = false; };
     package = {
       specVersion = "1.10";
-      identifier = { name = "hackage-db"; version = "2.0.1"; };
+      identifier = { name = "hackage-db"; version = "2.1.0"; };
       license = "BSD-3-Clause";
       copyright = "";
       maintainer = "Peter Simons <simons@cryp.to>";
@@ -50,7 +50,7 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
       homepage = "https://github.com/peti/hackage-db#readme";
       url = "";
       synopsis = "Access cabal-install's Hackage database via Data.Map";
-      description = "This library provides convenient access to the local copy of the Hackage\ndatabase that \"cabal update\" creates. Check out\nhttps://github.com/peti/hackage-db/tree/master/example/ for a collection of\nsimple example programs that demonstrate how to use this code.";
+      description = "This library provides convenient access to the local copy of the Hackage\ndatabase that \\\"cabal update\\\" creates. Check out\n<https://github.com/peti/hackage-db/tree/master/example/> for a collection\nof simple example programs that demonstrate how to use this code.";
       buildType = "Simple";
       isLocal = true;
       };
@@ -59,10 +59,11 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
         depends = [
           (hsPkgs."base" or (buildDepError "base"))
           (hsPkgs."Cabal" or (buildDepError "Cabal"))
-          (hsPkgs."containers" or (buildDepError "containers"))
           (hsPkgs."aeson" or (buildDepError "aeson"))
           (hsPkgs."bytestring" or (buildDepError "bytestring"))
+          (hsPkgs."containers" or (buildDepError "containers"))
           (hsPkgs."directory" or (buildDepError "directory"))
+          (hsPkgs."exceptions" or (buildDepError "exceptions"))
           (hsPkgs."filepath" or (buildDepError "filepath"))
           (hsPkgs."tar" or (buildDepError "tar"))
           (hsPkgs."time" or (buildDepError "time"))
@@ -75,9 +76,9 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
           depends = (pkgs.lib).optionals (flags.install-examples) [
             (hsPkgs."base" or (buildDepError "base"))
             (hsPkgs."Cabal" or (buildDepError "Cabal"))
+            (hsPkgs."bytestring" or (buildDepError "bytestring"))
             (hsPkgs."containers" or (buildDepError "containers"))
             (hsPkgs."hackage-db" or (buildDepError "hackage-db"))
-            (hsPkgs."bytestring" or (buildDepError "bytestring"))
             ];
           buildable = if flags.install-examples then true else false;
           };
@@ -104,8 +105,8 @@ in { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }:
       };
     } // {
     src = (pkgs.lib).mkDefault (pkgs.fetchgit {
-      url = "https://github.com/ElvishJerricco/hackage-db.git";
-      rev = "84ca9fc75ad45a71880e938e0d93ea4bde05f5bd";
-      sha256 = "0y3kw1hrxhsqmyx59sxba8npj4ya8dpgjljc21gkgdvdy9628q4c";
+      url = "https://github.com/hamishmack/hackage-db.git";
+      rev = "f1f528db7b02d90e9953297c716de5e046f3570f";
+      sha256 = "0j86xkpndxn41sy2mchx029zc3isaxh61hdvnakpiflkcmfaji1w";
       });
     }
