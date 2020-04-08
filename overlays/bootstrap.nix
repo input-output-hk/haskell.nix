@@ -101,13 +101,13 @@ in {
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
 
-                # Patches for specific ghc versions.
                 ++ self.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
                 ++ self.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
+                ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-atomic-arm-arch.patch
                 ++ self.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.8.2") ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
+                ++ fromUntil "8.8.2" "8.9"                ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
                 ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ self.lib.optional (versionAtLeast "8.6.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ self.lib.optional (versionAtLeast "8.4.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch

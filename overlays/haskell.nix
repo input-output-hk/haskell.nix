@@ -210,7 +210,7 @@ self: super: {
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
             inherit (self.haskell-nix) indexStateHashesPath nix-tools;
-            inherit (self) coreutils nix writeShellScriptBin stdenv;
+            inherit (self) coreutils nix writeShellScriptBin stdenv curl;
         };
 
         # Function to call stackToNix

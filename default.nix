@@ -1,5 +1,24 @@
-# This default.nix is designed to be passed directly nixpkgs with something like:
-#   import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz))
-{ config   = import ./config.nix;
-  overlays = import ./overlays;
+let haskellNix = rec {
+    sources = {
+      inherit (import ./nixpkgs/default.nix) nixpkgs-1903 nixpkgs-1909 nixpkgs-default;
+    };
+
+    config   = import ./config.nix;
+    overlays = import ./overlays;
+    nixpkgsArgs = { inherit overlays config; };
+  };
+
+  haskellNixV1 = haskellNix.nixpkgsArgs;
+  haskellNixV2 = haskellNix;
+
+  v1DeprecationMessage = "Version 1 is deprecated: use version 2 (nixpkgs arguments are available as the `nixpkgsArgs` attribute of version 2)";
+# If no arguments, then you get V1
+# I'd like to make importing directly issue a warning, but I couldn't figure out a way to make it happen
+in haskellNixV1 // {
+  __functor = _: { version ? 2 }:
+    if version == 1
+    then builtins.trace v1DeprecationMessage haskellNixV1
+    else if version == 2
+    then haskellNixV2
+    else builtins.throw ("haskell.nix: unknown version: " + (builtins.toString version));
 }

@@ -43,11 +43,15 @@ let
     kill $RISERV_PID
     '';
   configureFlags = lib.optional hostPlatform.isAarch32 "--disable-split-sections";
-  setupBuildFlags = map (opt: "--ghc-option=" + opt) (lib.optionals isLinuxCross
+  setupBuildFlags = map (opt: "--ghc-option=" + opt) ((lib.optionals isLinuxCross
     [ "-fexternal-interpreter"
       "-pgmi" "${qemuIservWrapper}/bin/iserv-wrapper"
       "-L${gmp}/lib"
-    ]) ++ lib.optionals hostPlatform.isAarch32 (map (opt: "--gcc-option=" + opt) [ "-fno-pic" "-fno-plt" ]);
+         # Required to work-around https://gitlab.haskell.org/ghc/ghc/issues/15275
+    ] ++ lib.optionals hostPlatform.isAarch64 ["-fPIC"]))
+    ++ lib.optionals hostPlatform.isAarch32 (map (opt: "--gcc-option=" + opt) [ "-fno-pic" "-fno-plt" ])
+       # Also for GHC #15275
+    ++ lib.optionals hostPlatform.isAarch64 ["--gcc-option=-fPIC"];
   qemuTestWrapper = writeScriptBin "test-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
