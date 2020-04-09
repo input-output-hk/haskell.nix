@@ -170,7 +170,7 @@ in { identifier, component, fullName, flags ? {} }:
       done | sed 's|''${pkgroot}/../../../|/nix/store/|' | sort -u
     )
     for d in $dirsToLink; do
-      ln -f -s "$d/"*.dylib $dynamicLinksDir
+      ln -f -s "$d/"*.{a,dylib,so} $dynamicLinksDir
     done
     # Edit the local package DB to reference the links directory.
     for f in "$out/${packageCfgDir}/"*.conf; do
