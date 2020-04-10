@@ -1,0 +1,11 @@
+--- a/aclocal.m4
++++ b/aclocal.m4
+@@ -1328,7 +1328,7 @@
+         # Be sure only to look at the first occurrence of the "version " string;
+         # Some Apple compilers emit multiple messages containing this string.
+         AC_MSG_CHECKING([version of gcc])
+-        fp_cv_gcc_version="`$CC -v 2>&1 | sed -n -e '1,/version /s/.*version [[^0-9]]*\([[0-9.]]*\).*/\1/p'`"
++        fp_cv_gcc_version="`$CC -v 2>&1 | sed -n -e '1,/version /s/.*version [[^0-9]]*\([[0-9.]]*\).*/\1/p' | head -n 1`"
+         AC_MSG_RESULT([$fp_cv_gcc_version])
+         FP_COMPARE_VERSIONS([$fp_cv_gcc_version], [-lt], [4.6],
+                             [AC_MSG_ERROR([Need at least gcc version 4.6 (4.7+ recommended)])])
