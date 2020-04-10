@@ -44,6 +44,7 @@ let
       ghc-boot     = "libraries/ghc-boot";
       ghc-heap     = "libraries/ghc-heap";
       libiserv     = "libraries/libiserv";
+      unix         = "libraries/unix";
       iserv        = "utils/iserv";
       remote-iserv = "utils/remote-iserv";
       iserv-proxy  = "utils/iserv-proxy";
@@ -92,7 +93,7 @@ in rec {
   ghc-extra-projects = builtins.mapAttrs (name: proj: self.haskell-nix.cabalProject' {
       name = "ghc-extra-packages";
       src = proj;
-      index-state = "2019-10-31T00:00:00Z";
+      index-state = "2020-04-06T00:00:00Z";
       ghc = self.buildPackages.haskell-nix.compiler.${name};
       configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
     })
