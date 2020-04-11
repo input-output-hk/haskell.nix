@@ -420,7 +420,7 @@ self: super: {
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in { inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
+            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
 
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // {
@@ -445,7 +445,7 @@ self: super: {
                              ++ (args.modules or [])
                              ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in { inherit (pkg-set.config) hsPkgs; stack-nix = stack.nix; };
+            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
