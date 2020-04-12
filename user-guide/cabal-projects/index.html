@@ -274,7 +274,7 @@ instantiate a package set.</p>
 let
   # Import the Haskell.nix library,
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = haskellNix.sources.nixpgs-1909 haskellNix.nixpkgsArgs;
+  nixpkgs = import haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 
   # Instantiate a package set using the generated file.
