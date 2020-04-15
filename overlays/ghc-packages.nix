@@ -29,12 +29,18 @@ let
       cabal-to-nix *.cabal > $out
     '';
   };
-  importCabal = name: src:
+  cabalToSdistAndNix = name: src:
     # build the source dist
     let sdist = callCabalSdist name src;
     # and generate the nix expression corresponding to the source dist
-    # but fixing the src to the sdist as well.
-    in args: (import (callCabal2Nix sdist) args) // { src = sdist; };
+    in {
+      inherit sdist;
+      nix = callCabal2Nix sdist;
+    };
+
+  # Import the nix and fix the src to the sdist as well.
+  importSdistAndNix = sdistAndNix:
+      args: (import sdistAndNix.nix args) // { src = sdistAndNix.sdist; };
 
   ghc-extra-pkgs = {
       ghc          = "compiler";
@@ -65,10 +71,20 @@ let
 # as part of patches we applied to the GHC tree.
 
 in rec {
+  ghc-boot-packages-sdist-and-nix = builtins.mapAttrs
+    (name: value: builtins.mapAttrs
+      (pkgName: dir: cabalToSdistAndNix "${name}-${pkgName}" "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
+    self.buildPackages.haskell-nix.compiler;
+
   ghc-boot-packages = builtins.mapAttrs
     (name: value: builtins.mapAttrs
-      (pkgName: dir: importCabal "${name}-${pkgName}" "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
-    self.buildPackages.haskell-nix.compiler;
+      (_: sdistAndNix: importSdistAndNix sdistAndNix) value)
+        ghc-boot-packages-sdist-and-nix;
+
+  ghc-boot-packages-nix = builtins.mapAttrs
+    (name: value: builtins.mapAttrs
+      (_: sdistAndNix: sdistAndNix.nix) value)
+        ghc-boot-packages-sdist-and-nix;
 
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:
     let package-locs =

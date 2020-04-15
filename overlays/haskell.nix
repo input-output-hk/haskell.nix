@@ -493,13 +493,20 @@ self: super: {
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
             ghc882 = self.buildPackages.haskell-nix.compiler.ghc882;
             ghc883 = self.buildPackages.haskell-nix.compiler.ghc883;
+            ghc-boot-packages-nix = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: self.recurseIntoAttrs)
+                (filterSupportedGhc self.ghc-boot-packages-nix));
             ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             inherit (self.haskell-nix) nix-tools;
-            ghc-extra-packages = self.recurseIntoAttrs
-              (filterSupportedGhc self.ghc-extra-packages);
+            iserv-proxy = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: pkgs: self.recurseIntoAttrs pkgs.iserv-proxy.components.exes.iserv-proxy)
+                (filterSupportedGhc self.ghc-extra-packages));
+            remote-iserv = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: pkgs: self.recurseIntoAttrs pkgs.remote-iserv.components.exes.remote-iserv)
+                (filterSupportedGhc self.ghc-extra-packages));
           });
     };
 }
