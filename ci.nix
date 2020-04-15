@@ -59,7 +59,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       }
       //
       # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
-      pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") build.tests
+      pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") { inherit (build) tests; }
     )
   )
 )
