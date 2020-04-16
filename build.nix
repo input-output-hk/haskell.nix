@@ -2,26 +2,19 @@
 #
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
-
-{ nixpkgs ? ./nixpkgs
-# Provide args to the nixpkgs instantiation.
-, system ? builtins.currentSystem
-, crossSystem ? null
-, config ? {}
-, nixpkgsArgs ? { inherit system crossSystem; }
+let
+  haskellNix = (import ./default.nix {});
+in
+{ nixpkgs ? haskellNix.sources.nixpkgs-default
+, nixpkgsArgs ? haskellNix.nixpkgsArgs
+, pkgs ? import nixpkgs nixpkgsArgs
 , ifdLevel ? 1000
 }:
 
 let
-  haskellNixArgs = import ./default.nix;
-  pkgs = import nixpkgs ({
-      config = haskellNixArgs.config // config;
-      inherit (haskellNixArgs) overlays;
-    } // nixpkgsArgs);
   haskell = pkgs.haskell-nix;
-
 in rec {
-  tests = import ./test/default.nix { inherit nixpkgs nixpkgsArgs ifdLevel; };
+  tests = import ./test/default.nix { inherit pkgs ifdLevel; };
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
@@ -36,7 +29,7 @@ in rec {
         # nixpkgs 19.09 changes "Option has no description" from an
         # error into a warning. That is quite helpful when hardly any
         # of our options are documented, thanks @oxij.
-        pkgs = import ./nixpkgs { nixpkgs-pin = "release-19.09"; };
+        pkgs = import (import ./nixpkgs/default.nix).nixpkgs-1909 {};
       };
     };
     # Because this is going to be used to test caching on hydra, it must not

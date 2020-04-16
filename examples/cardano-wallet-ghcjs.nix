@@ -1,5 +1,6 @@
-with import ../. { nixpkgs = ../nixpkgs; nixpkgsArgs = { crossSystem = { config = "js-unknown-ghcjs"; }; }; };
-let Cabal = buildPackages.haskell-nix.hackage-package {
+let inherit (import ../. {}) sources nixpkgsArgs;
+    pkgs = import sources.nixpkgs-default (nixpkgsArgs // { crossSystem.config = "js-unknown-ghcjs"; });
+    Cabal = pkgs.buildPackages.haskell-nix.hackage-package {
     name = "Cabal"; version = "2.4.1.0";
     modules = [
         { packages.Cabal.patches = [ ./Cabal-install-folder.diff ]; }
@@ -11,7 +12,7 @@ let Cabal = buildPackages.haskell-nix.hackage-package {
 #     	({config, ... }:{ packages.hello.package.setup-depends = [ Cabal ]; })
 #     ];}).cardano-wallet.components.all
 (let stack-pkgs = import ../cardano-wallet/flags-test/pkgs.nix;
- in let pkg-set = haskell-nix.mkStackPkgSet
+ in let pkg-set = pkgs.haskell-nix.mkStackPkgSet
                 { inherit stack-pkgs;
                   pkg-def-extras = [(hackage: {
                     packages = {

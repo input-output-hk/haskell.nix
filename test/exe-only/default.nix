@@ -52,7 +52,7 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit pkgSet packages;
+      inherit packages;
 
       # Used for testing externally with nix-shell (../tests.sh).
       # This just adds cabal-install to the existing shells.

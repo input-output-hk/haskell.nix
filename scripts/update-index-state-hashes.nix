@@ -1,10 +1,8 @@
-{ indexStateHashesPath, nix-tools, coreutils, nix, writeShellScriptBin, stdenv }:
+{ indexStateHashesPath, nix-tools, coreutils, nix, writeShellScriptBin, stdenv, curl }:
 with builtins;
 with stdenv.lib;
 writeShellScriptBin "update-index-state-hashes" ''
-   # get all the tools we need. I wonder if there is a better way? But I couldn't find
-   # any buildInputs for writeShellScriptBin :-/
-   export PATH="${getBin coreutils}/bin:${getBin nix-tools}/bin:${getBin nix}/bin:$PATH"
+   export PATH="${makeBinPath [ coreutils nix-tools nix curl ]}"
    
    # We'll take the last element from the indexStatesHashes file via nix and get the name.
    # This is the last timestamp recorded in the file (implicit assumption: the file is
@@ -31,7 +29,8 @@ writeShellScriptBin "update-index-state-hashes" ''
 
       # ensure we don't generate the $start date twice (skip the first invocation).
       if [[ "''${dt}T00:00:00Z" != "$start" ]]; then
-        truncate-index -o ''${dt}-01-index.tar.gz -i ${fetchurl "https://hackage.haskell.org/01-index.tar.gz"} -s "''${dt}T00:00:00Z"
+        curl "https://hackage.haskell.org/01-index.tar.gz" --output index.tar.gz --fail-early
+        truncate-index -o ''${dt}-01-index.tar.gz -i index.tar.gz -s "''${dt}T00:00:00Z"
         sha256=$(nix-hash --flat --type sha256 ''${dt}-01-index.tar.gz)
         echo "  \"''${dt}T00:00:00Z\" = \"''${sha256}\";"
       fi

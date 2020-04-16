@@ -14,7 +14,7 @@ let
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
   project = cabalProject' {
-    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-sublib"; };
+    src = haskellLib.cleanGit { src = ../..; name = "cabal-sublib"; subDir = "test/cabal-sublib"; };
     inherit modules;
   };
 
@@ -59,7 +59,7 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit pkgSet packages;
+      inherit packages;
 
       # Used for testing externally with nix-shell (../tests.sh).
       # This just adds cabal-install to the existing shells.

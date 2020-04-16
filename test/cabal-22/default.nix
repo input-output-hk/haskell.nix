@@ -4,7 +4,7 @@ with stdenv.lib;
 
 let
   project = cabalProject' {
-    src = haskellLib.cleanGit { src = ../..; subDir = "test/cabal-22"; };
+    src = haskellLib.cleanGit { src = ../..; name = "cabal22"; subDir = "test/cabal-22"; };
   };
 
   packages = project.hsPkgs;

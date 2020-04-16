@@ -73,9 +73,12 @@ let
   inherit (bootPkgs) ghc;
 
   # TODO check if this posible fix for segfaults works or not.
-  libffiStaticEnabled = if libffi == null || !stdenv.targetPlatform.isMusl
-    then libffi
-    else targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; });
+  targetLibffi =
+    if stdenv.targetPlatform.isMusl
+    then targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; })
+    else if targetPlatform != hostPlatform
+    then targetPackages.libffi
+    else libffi;
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -116,7 +119,7 @@ let
 
   # Splicer will pull out correct variations
   libDeps = platform: stdenv.lib.optional enableTerminfo [ ncurses ]
-    ++ [libffiStaticEnabled]
+    ++ [targetLibffi]
     ++ stdenv.lib.optional (!enableIntegerSimple) gmp
     ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv;
 
@@ -208,7 +211,7 @@ in let configured-src = stdenv.mkDerivation (rec {
         configureFlags = [
             "--datadir=$doc/share/doc/ghc"
             "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
-        ] ++ stdenv.lib.optionals (libffiStaticEnabled != null) ["--with-system-libffi" "--with-ffi-includes=${libffiStaticEnabled.dev}/include" "--with-ffi-libraries=${libffiStaticEnabled.out}/lib"
+        ] ++ stdenv.lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
         ] ++ stdenv.lib.optional (!enableIntegerSimple) [
             "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
         ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [

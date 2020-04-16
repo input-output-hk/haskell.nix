@@ -75,6 +75,7 @@ pkgs:
      icuuc = pkgs.icu;
      icui18n = pkgs.icu;
      icudata = pkgs.icu;
+     vulkan = pkgs.vulkan-loader;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
