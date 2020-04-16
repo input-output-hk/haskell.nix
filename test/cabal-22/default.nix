@@ -1,10 +1,10 @@
-{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs }:
+{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
-    src = haskellLib.cleanGit { src = ../..; name = "cabal22"; subDir = "test/cabal-22"; };
+    src = testSrc "cabal-22";
   };
 
   packages = project.hsPkgs;

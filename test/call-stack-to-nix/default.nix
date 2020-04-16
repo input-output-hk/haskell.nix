@@ -1,10 +1,10 @@
-{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib }:
+{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc }:
 
 with stdenv.lib;
 
 let
   stack = importAndFilterProject (callStackToNix {
-    src = ../stack-simple;
+    src = testSrc "stack-simple";
   });
   pkgSet = mkStackPkgSet {
     stack-pkgs = stack.pkgs;

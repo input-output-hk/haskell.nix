@@ -1,8 +1,8 @@
-{ stackProject }:
+{ stackProject, testSrc }:
 
 let
   project = stackProject {
-    src = ./.;
+    src = testSrc "stack-local-resolver";
   };
 in
 

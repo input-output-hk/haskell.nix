@@ -1,11 +1,11 @@
-{ stdenv, cabalProject', recurseIntoAttrs, haskellLib }:
+{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
     index-state = "2019-04-30T00:00:00Z";
-    src = ./.;
+    src = testSrc "ghc-options";
     # TODO find a way to get the ghc-options into plan.json so we can use it in plan-to-nix
     modules = [ { packages.test-ghc-options.package.ghcOptions = "-DTEST_GHC_OPTION"; } ];
   };

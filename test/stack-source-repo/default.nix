@@ -1,8 +1,8 @@
-{ stackProject', recurseIntoAttrs }:
+{ stackProject', recurseIntoAttrs, testSrc }:
 
 let
   project = stackProject' {
-    src = ./.;
+    src = testSrc "stack-source-repo";
   };
   packages = project.hsPkgs;
 

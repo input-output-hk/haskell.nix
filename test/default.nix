@@ -134,11 +134,15 @@ let
     then filterNonIfdInputsValues attrs
     else attrs;
 
+  testSrcRoot = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
+  testSrc = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRoot; inherit subDir; };
+  callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc; });
+
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
   unitTests =
     let
-      tests = haskell-nix.callPackage ./unit.nix {};
+      tests = callTest ./unit.nix {};
       testsFailedEcho = lib.concatMapStringsSep "\n" (t: "echo ${t.name} failed") tests;
       testsFinalLine = if builtins.length tests == 0 then "\ntouch $out" else "\nexit 1";
       testsScript = testsFailedEcho + testsFinalLine;
@@ -147,29 +151,29 @@ let
 
   # All tests.
   allTests = {
-    cabal-simple = haskell-nix.callPackage ./cabal-simple { inherit util; };
-    cabal-simple-prof = haskell-nix.callPackage ./cabal-simple-prof { inherit util; };
-    cabal-sublib = haskell-nix.callPackage ./cabal-sublib { inherit util; };
-    cabal-22 = haskell-nix.callPackage ./cabal-22 { inherit util; };
-    with-packages = haskell-nix.callPackage ./with-packages { inherit util; };
-    builder-haddock = haskell-nix.callPackage ./builder-haddock {};
-    stack-simple = haskell-nix.callPackage ./stack-simple {};
-    stack-local-resolver = haskell-nix.callPackage ./stack-local-resolver {};
-    snapshots = haskell-nix.callPackage ./snapshots {};
-    shell-for = haskell-nix.callPackage ./shell-for {};
-    shell-for-setup-deps = haskell-nix.callPackage ./shell-for-setup-deps {};
+    cabal-simple = callTest ./cabal-simple { inherit util; };
+    cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
+    cabal-sublib = callTest ./cabal-sublib { inherit util; };
+    cabal-22 = callTest ./cabal-22 { inherit util; };
+    with-packages = callTest ./with-packages { inherit util; };
+    builder-haddock = callTest ./builder-haddock {};
+    stack-simple = callTest ./stack-simple {};
+    stack-local-resolver = callTest ./stack-local-resolver {};
+    snapshots = callTest ./snapshots {};
+    shell-for = callTest ./shell-for {};
+    shell-for-setup-deps = callTest ./shell-for-setup-deps {};
     setup-deps = import ./setup-deps { inherit pkgs; };
-    callStackToNix = haskell-nix.callPackage ./call-stack-to-nix {};
-    callCabalProjectToNix = haskell-nix.callPackage ./call-cabal-project-to-nix {};
-    cabal-source-repo = haskell-nix.callPackage ./cabal-source-repo {};
-    buildable = haskell-nix.callPackage ./buildable {};
-    project-flags-cabal = haskell-nix.callPackage ./project-flags/cabal.nix {};
-    project-flags-stack = haskell-nix.callPackage ./project-flags/stack.nix {};
-    fully-static = haskell-nix.callPackage ./fully-static { inherit (pkgs) buildPackages; };
-    ghc-options-cabal = haskell-nix.callPackage ./ghc-options/cabal.nix {};
-    ghc-options-stack = haskell-nix.callPackage ./ghc-options/stack.nix {};
-    exe-only = haskell-nix.callPackage ./exe-only { inherit util; };
-    stack-source-repo = haskell-nix.callPackage ./stack-source-repo {};
+    callStackToNix = callTest ./call-stack-to-nix {};
+    callCabalProjectToNix = callTest ./call-cabal-project-to-nix {};
+    cabal-source-repo = callTest ./cabal-source-repo {};
+    buildable = callTest ./buildable {};
+    project-flags-cabal = callTest ./project-flags/cabal.nix {};
+    project-flags-stack = callTest ./project-flags/stack.nix {};
+    fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
+    ghc-options-cabal = callTest ./ghc-options/cabal.nix {};
+    ghc-options-stack = callTest ./ghc-options/stack.nix {};
+    exe-only = callTest ./exe-only { inherit util; };
+    stack-source-repo = callTest ./stack-source-repo {};
 
     unit = unitTests;
   };

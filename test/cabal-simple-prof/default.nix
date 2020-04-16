@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs }:
+{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
 
 with stdenv.lib;
 
@@ -16,7 +16,7 @@ let
   ];
 
   project = cabalProject' {
-    src = haskellLib.cleanGit { src = ../..; name = "cabal-simple-prof"; subDir = "test/cabal-simple-prof"; };
+    src = testSrc "cabal-simple-prof";
     inherit modules;
   };
 
