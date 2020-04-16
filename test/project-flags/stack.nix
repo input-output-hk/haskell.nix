@@ -4,7 +4,7 @@ with stdenv.lib;
 
 let
   project = stackProject' {
-    src = test "project-flags";
+    src = testSrc "project-flags";
   };
   packages = project.hsPkgs;
 
