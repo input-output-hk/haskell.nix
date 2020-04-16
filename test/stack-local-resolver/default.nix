@@ -10,5 +10,5 @@ in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) stack-nix;
   };
-  inherit (packages.stack-source-repo.components) library;
+  inherit (packages.stack-local-resolver.components) library;
 }
