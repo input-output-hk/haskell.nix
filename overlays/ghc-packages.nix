@@ -54,7 +54,7 @@ let
       nix = callCabal2Nix "${ghcName}-${pkgName}" sdist;
     };
 
-  # Combine the all the boot package nix files for a giving ghc
+  # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
   combineAndMaterialize = ghcName: bootPackages:
       let
