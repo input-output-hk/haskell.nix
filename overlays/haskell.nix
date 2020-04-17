@@ -501,11 +501,13 @@ self: super: {
           } // self.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             inherit (self.haskell-nix) nix-tools;
+            # These seem to be the only things we use from `ghc-extra-packages`
+            # in haskell.nix itself.
             iserv-proxy = self.recurseIntoAttrs
-              (builtins.mapAttrs (_: pkgs: self.recurseIntoAttrs pkgs.iserv-proxy.components.exes.iserv-proxy)
+              (builtins.mapAttrs (_: pkgs: pkgs.iserv-proxy.components.exes.iserv-proxy)
                 (filterSupportedGhc self.ghc-extra-packages));
             remote-iserv = self.recurseIntoAttrs
-              (builtins.mapAttrs (_: pkgs: self.recurseIntoAttrs pkgs.remote-iserv.components.exes.remote-iserv)
+              (builtins.mapAttrs (_: pkgs: pkgs.remote-iserv.components.exes.remote-iserv)
                 (filterSupportedGhc self.ghc-extra-packages));
           });
     };
