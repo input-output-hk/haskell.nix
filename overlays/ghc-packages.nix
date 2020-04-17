@@ -30,6 +30,8 @@ let
     '';
   };
 
+  # Combines multiple derivations into one to make them
+  # easier to materialize.
   combineFiles = name: ext: files: self.stdenv.mkDerivation {
     inherit name;
     phases = [ "buildPhase" ];
@@ -41,6 +43,8 @@ let
     '') files);
   };
 
+  # Convert the calculate the sdist of a single boot
+  # and the output of cabal-to-nix
   cabalToSdistAndNix = ghcName: pkgName: src:
     # build the source dist
     let sdist = callCabalSdist "${ghcName}-${pkgName}" src;
@@ -50,7 +54,9 @@ let
       nix = callCabal2Nix "${ghcName}-${pkgName}" sdist;
     };
 
-  combineAndMaterialize = ghcName: sdistAndNix:
+  # Combine the all the boot package nix files for a giving ghc
+  # into a single derivation and materialize it.
+  combineAndMaterialize = ghcName: bootPackages:
       let
         # Limiting this to "ghc865" as the not all the boot packages can
         # for ghc 8.8 and above can be processed yet by `nix-tools`
@@ -70,12 +76,13 @@ let
           sha256Arg = "ghc-boot-packages-nix-sha256";
           reasonNotSafe = null;
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
-          (_: sdistAndNix: sdistAndNix.nix) (skipBroken sdistAndNix))));
+          (_: sdistAndNix: sdistAndNix.nix) (skipBroken bootPackages))));
 
   # Import the nix and fix the src to the sdist as well.
   importSdistAndNix = sdistAndNix:
       args: (import sdistAndNix.nix args) // { src = sdistAndNix.sdist; };
 
+  # The packages in GHC source and the locations of them
   ghc-extra-pkgs = {
       ghc          = "compiler";
       base         = "libraries/base";
@@ -89,12 +96,16 @@ let
       iserv-proxy  = "utils/iserv-proxy";
     };
 
+  # Hashes needed to make ghc-boot-packages use fixed output derivations
+  # for the nix files.
   ghc-boot-packages-nix-sha256 = {
     ghc865 = "0n5bsi67mczbwch8a3dwf58hkignb8qswv7h707dqgc43himvq3b";
     ghc882 = "1wpvy0f2m7l3h8fz0iag3q8zj6j4i7732x1f0lkxnr2whnv88dfb";
     ghc883 = "147l5a7vm8dgyb2wz692p3n3fsvq8wbjn5wnjhabdgw4mxw0c2mm";
   };
 
+  # The nix produced by `cabalProject` differs slightly depending on
+  # what the platforms are.  There are currently 3 possible outputs.
   ghc-extra-projects-type =
     if self.stdenv.targetPlatform.isWindows
       then "windows"
@@ -102,6 +113,8 @@ let
         then "cross"
         else "default";
 
+  # Hashes needed to make ghc-extra-projects use fixed output derivations
+  # for the nix files.
   ghc-extra-projects-sha256 = {
     default = {
       ghc865 = "12mj0fmm0b0jys6pb2l7l9w2w5as5fiqkfav81mjlz9ic1rkqk92";
@@ -141,10 +154,12 @@ in rec {
       (pkgName: dir: cabalToSdistAndNix ghcName pkgName "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
     self.buildPackages.haskell-nix.compiler;
 
+  # All the ghc boot package nix files for each ghc.
   ghc-boot-packages-nix = builtins.mapAttrs
     combineAndMaterialize
       ghc-boot-packages-sdist-and-nix;
 
+  # The import nix results for each ghc boot package for each ghc (with src=sdist).
   ghc-boot-packages = builtins.mapAttrs
     (ghcName: value: builtins.mapAttrs
       (pkgName: sdistAndNix: importSdistAndNix {
@@ -153,6 +168,7 @@ in rec {
       }) value)
         ghc-boot-packages-sdist-and-nix;
 
+  # Derivation with cabal.project for use with `cabalProject'` for each ghc. 
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
@@ -161,6 +177,8 @@ in rec {
     in self.stdenv.mkDerivation {
       name = "ghc-extra-pkgs-cabal-project-${name}";
       phases = [ "buildPhase" ];
+      # Copy each cabal file from the configured ghc source and
+      # add a suitable cabal.project file.
       buildPhase = ''
         ${self.lib.concatStrings (self.lib.mapAttrsToList (_: dir: ''
           mkdir -p $out/${dir}
@@ -180,8 +198,11 @@ in rec {
       '';
     }) self.buildPackages.haskell-nix.compiler;
 
+  # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
-    let materializedPath = ../materialized/ghc-extra-projects + "/${ghc-extra-projects-type}/${ghcName}";
+    # Where to look for materialization files
+    let materializedPath = ../materialized/ghc-extra-projects
+                             + "/${ghc-extra-projects-type}/${ghcName}";
     in self.haskell-nix.cabalProject' {
       name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
       src = proj;
@@ -199,5 +220,6 @@ in rec {
     })
     ghc-extra-pkgs-cabal-projects;
 
+  # The packages from the project for each ghc
   ghc-extra-packages = builtins.mapAttrs (_: proj: proj.hsPkgs) ghc-extra-projects;
 }
