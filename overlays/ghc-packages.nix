@@ -63,10 +63,7 @@ let
         # (we need to upgrade `nix-tools` to Cabal 3 for them to work)
         skipBroken = self.lib.filterAttrs (pkgName: _:
           ghcName == "ghc865" || (pkgName != "base" && pkgName != "ghc-heap"));
-        sha256 =
-          if ghc-boot-packages-nix-sha256 ? "${ghcName}"
-            then ghc-boot-packages-nix-sha256."${ghcName}"
-            else null;
+        sha256 = ghc-boot-packages-nix-sha256."${ghcName}" or null;
         materializedPath = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
       in (self.haskell-nix.materialize ({
           inherit sha256;
