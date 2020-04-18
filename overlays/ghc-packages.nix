@@ -43,8 +43,8 @@ let
     '') files);
   };
 
-  # Convert the calculate the sdist of a single boot
-  # and the output of cabal-to-nix
+  # Calculate the `cabal sdist` of a single boot package as well as
+  # the output of cabal-to-nix.
   cabalToSdistAndNix = ghcName: pkgName: src:
     # build the source dist
     let sdist = callCabalSdist "${ghcName}-${pkgName}" src;
