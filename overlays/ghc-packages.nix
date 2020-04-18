@@ -104,7 +104,7 @@ let
   # The nix produced by `cabalProject` differs slightly depending on
   # what the platforms are.  There are currently 3 possible outputs.
   ghc-extra-projects-type =
-    if self.stdenv.targetPlatform.isWindows
+    if self.stdenv.hostPlatform.isWindows
       then "windows"
       else if self.stdenv.buildPlatform != self.stdenv.hostPlatform
         then "cross"

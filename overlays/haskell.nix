@@ -210,7 +210,7 @@ self: super: {
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          inherit (self) nix;
+          inherit (self.buildPackages) nix;
           inherit (self.haskell-nix) checkMaterialization;
           pkgs = self.buildPackages.pkgs;
           inherit (self.buildPackages.pkgs) runCommand;
