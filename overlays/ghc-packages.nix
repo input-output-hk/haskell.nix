@@ -203,7 +203,7 @@ in rec {
     in self.haskell-nix.cabalProject' {
       name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
       src = proj;
-      index-state = "2020-04-12T00:00:00Z";
+      index-state = self.haskell-nix.internalHackageIndexState;
       plan-sha256 =
         ghc-extra-projects-sha256."${ghc-extra-projects-type}"."${ghcName}"
           or null;

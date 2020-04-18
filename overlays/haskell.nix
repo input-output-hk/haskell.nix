@@ -198,7 +198,15 @@ self: super: {
                 HOME=$out cabal new-update cached
             '';
 
-        checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
+        # Some of features of haskell.nix rely on using a hackage index
+        # to calculate a build plan.  To maintain stabity for caching and
+        # to allow the outputs to be materialized we pin this value here.
+        # If you want to update this value it important to check the
+        # materializations.  Turn `checkMaterialization` on below and
+        # check the CI results before turning it off again.
+        internalHackageIndexState = "2020-04-12T00:00:00Z";
+
+        checkMaterialization = true; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
