@@ -32,8 +32,11 @@ in rec {
   # 'out' attribute. Weird.
   filterAttrsOnlyRecursive = pred: set:
     lib.mapAttrs (name: v:
-      if builtins.isAttrs v
-          && !lib.isDerivation v
-        then filterAttrsOnlyRecursive pred v
-        else v) (lib.filterAttrs pred set);
+      if pred name v
+        then
+          if builtins.isAttrs v
+              && !lib.isDerivation v
+            then filterAttrsOnlyRecursive pred v
+            else v
+        else {}) set;
 }
