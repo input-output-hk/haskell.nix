@@ -34,7 +34,7 @@ in rec {
     lib.listToAttrs (
       lib.concatMap (name:
         let v = set.${name}; in
-        if pred name v then [
+        if name != "recurseForDerivations" && pred name v then [
           (lib.nameValuePair name (
             # Without the check for `recurseForDerivations` here `lib.isDerivation v` would
             # trigger evaluations of all the siblings of the attribute you might be
