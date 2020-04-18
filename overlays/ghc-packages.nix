@@ -209,7 +209,6 @@ in rec {
           or null;
       materialized =
         if ghc-extra-projects-sha256."${ghc-extra-projects-type}" ? "${ghcName}"
-            && __pathExists materializedPath
           then materializedPath
           else null;
       ghc = self.buildPackages.haskell-nix.compiler.${ghcName};
