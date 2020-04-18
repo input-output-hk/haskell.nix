@@ -36,8 +36,14 @@ in rec {
         let v = set.${name}; in
         if pred name v then [
           (lib.nameValuePair name (
-            if builtins.isAttrs v && !lib.isDerivation v then filterAttrsOnlyRecursive pred v
-            else v
+            # Without the check for `recurseForDerivations` here `lib.isDerivation v` would
+            # trigger evaluations of all the siblings of the attribute you might be
+            # interested in.
+            if set.recurseForDerivations or false
+                && builtins.isAttrs v
+                && !lib.isDerivation v
+              then filterAttrsOnlyRecursive pred v
+              else v
           ))
         ] else []
       ) (builtins.attrNames set)
