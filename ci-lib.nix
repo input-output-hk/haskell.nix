@@ -18,12 +18,14 @@ in rec {
     else true;
 
   # Hydra doesn't like these attributes hanging around in "jobsets": it thinks they're jobs!
-  stripAttrsForHydra = filterAttrsOnlyRecursive (n: _: n != "recurseForDerivations" && n != "dimension");
+  stripAttrsForHydra = x: filterAttrsOnlyRecursive (n: _: n != "recurseForDerivations" && n != "dimension")
+    (pkgs.recurseIntoAttrs x); # Always recurse one into the attrs of x
 
   # Keep derivations and attrsets with 'recurseForDerivations'. This ensures that we match the
   # derivations that Hercules will see, and prevents Hydra from trying to pick up all sorts of bad stuff
   # (like attrsets that contain themselves!).
-  filterDerivations = filterAttrsOnlyRecursive (n: attrs: lib.isDerivation attrs || attrs.recurseForDerivations or false);
+  filterDerivations = x: filterAttrsOnlyRecursive (n: attrs: lib.isDerivation attrs || attrs.recurseForDerivations or false)
+    (pkgs.recurseIntoAttrs x); # Always recurse one into the attrs of x
 
   # A version of 'filterAttrsRecursive' that doesn't recurse into derivations. This prevents us from going into an infinite
   # loop with the 'out' attribute on derivations.
