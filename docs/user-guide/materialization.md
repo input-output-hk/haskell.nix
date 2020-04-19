@@ -146,8 +146,12 @@ store will be read only.
 ## How can we check `sha256` and `materialized` are up to date?
 
 Let's pretend we had to go back to `hlint` version `2.2.10`.
-We can change `version` and temporarily add
-`checkMaterialization = true;`:
+We can tell haskell.nix to check the materialiazation either by:
+
+* Removing the materialization files with `rm -rf hlint.materialized`
+* Temporarily adding `checkMaterialization = true;`
+
+If we choose to add the `checkMaterialization` flag you would have:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
@@ -163,48 +167,21 @@ let inherit (import ./. {}) sources nixpkgsArgs;
 in hlint.components.exes.hlint
 ```
 
-This will fail and report the details of what is wrong:
+This will fail and report the details of what is wrong and how to fix it:
 
 ```
 $ nix-build hlint.nix
-trace: Using index-state: 2020-04-15T00:00:00Z for hlint
-building '/nix/store/575g3fxn99jyxg50x5mfin2nk1n831cm-hlint-plan-to-nix-pkgs.drv'...
-Changes to hlint-plan-to-nix-pkgs not reflected in plan-sha256
-diff -ru /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix /nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix
---- /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix      1970-01-01 00:00:01.000000000 +0000
-+++ /nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix      1970-01-01 00:00:01.000000000 +0000
-@@ -42,7 +42,7 @@
-     flags = { threaded = true; gpl = true; ghc-lib = false; };
-     package = {
-       specVersion = "1.18";
--      identifier = { name = "hlint"; version = "2.2.11"; };
-+      identifier = { name = "hlint"; version = "2.2.10"; };
-       license = "BSD-3-Clause";
-       copyright = "Neil Mitchell 2006-2020";
-       maintainer = "Neil Mitchell <ndmitchell@gmail.com>";
-@@ -103,7 +103,6 @@
-           then [
-             (hsPkgs."ghc" or (buildDepError "ghc"))
-             (hsPkgs."ghc-boot-th" or (buildDepError "ghc-boot-th"))
--            (hsPkgs."ghc-boot" or (buildDepError "ghc-boot"))
-             ]
-           else [
-             (hsPkgs."ghc-lib-parser" or (buildDepError "ghc-lib-parser"))
-diff -ru /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs/default.nix /nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs/default.nix
---- /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs/default.nix      1970-01-01 00:00:01.000000000 +0000
-+++ /nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs/default.nix      1970-01-01 00:00:01.000000000 +0000
-@@ -2,7 +2,7 @@
-   pkgs = hackage:
-     {
-       packages = {
--        "ghc-lib-parser-ex".revision = (((hackage."ghc-lib-parser-ex")."8.8.5.8").revisions).default;
-+        "ghc-lib-parser-ex".revision = (((hackage."ghc-lib-parser-ex")."8.8.4.0").revisions).default;
-         "ghc-lib-parser-ex".flags.ghc-lib = false;
-         "exceptions".revision = (((hackage."exceptions")."0.10.4").revisions).default;
-         "exceptions".flags.transformers-0-4 = true;
-Calculated hash is 0zsi3wv92qax33ic4n5dfsqd1r9qam1k75za3c5jqgdxl3hy8vph expected hash was 02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4 for hlint-plan-to-nix-pkgs
-builder for '/nix/store/575g3fxn99jyxg50x5mfin2nk1n831cm-hlint-plan-to-nix-pkgs.drv' failed with exit code 1
-error: build of '/nix/store/575g3fxn99jyxg50x5mfin2nk1n831cm-hlint-plan-to-nix-pkgs.drv' failed
+
+...
+
+Calculated hash for hlint-plan-to-nix-pkgs was not 02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4. New hash is :
+    plan-sha256 = "0zsi3wv92qax33ic4n5dfsqd1r9qam1k75za3c5jqgdxl3hy8vph";
+Materialized nix used for hlint-plan-to-nix-pkgs incorrect. To fix run :
+    rm -rf /Users/hamish/iohk/haskell.nix/hlint.materialized
+    cp -r /nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs /Users/hamish/iohk/haskell.nix/hlint.materialized
+    chmod -R +w /Users/hamish/iohk/haskell.nix/hlint.materialized
+builder for '/nix/store/a5zmgfjfxahapw0q8hd2da5bg7knqvbx-hlint-plan-to-nix-pkgs.drv' failed with exit code 1
+error: build of '/nix/store/a5zmgfjfxahapw0q8hd2da5bg7knqvbx-hlint-plan-to-nix-pkgs.drv' failed
 (use '--show-trace' to show detailed location information)
 ```
 

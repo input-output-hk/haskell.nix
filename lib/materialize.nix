@@ -57,14 +57,16 @@ let
   # Build fully and check the hash and materialized versions
   checked = runCommand name {
     buildInputs = [ nix ];
-  } (
-      (pkgs.lib.optionalString (sha256 != null) ''
+  } (''
+        ERR=$(mktemp -d)/errors.txt
+      ''
+    + (pkgs.lib.optionalString (sha256 != null) ''
         NEW_HASH=$(nix-hash --base32 --type sha256 ${calculateNoHash})
         if [ "${sha256}" != "$NEW_HASH" ]; then
           echo Changes to ${name} not reflected in ${sha256Arg}
           diff -ru ${calculateUseHash} ${calculateNoHash} || true
-          echo Calculated hash is $NEW_HASH expected hash was ${sha256} for ${name}
-          false
+          echo "Calculated hash for ${name} was not ${sha256}. New hash is :" >> $ERR
+          echo "    ${sha256Arg} = \"$NEW_HASH\";"                      >> $ERR
         else
           echo ${sha256Arg} used for ${name} is correct
         fi
@@ -72,24 +74,34 @@ let
     + (
       if materialized != null && !__pathExists materialized
         then ''
-          echo materialized nix used for ${name} is missing. To fix run :
-          echo cp -r ${calculateNoHash} ${toString materialized}
-          echo chmod -R +w ${toString materialized}
+          echo "Materialized nix used for ${name} is missing. To fix run :" >> $ERR
+          echo "    cp -r ${calculateNoHash} ${toString materialized}"      >> $ERR
+          echo "    chmod -R +w ${toString materialized}"                   >> $ERR
+          cat $ERR
           false
         ''
         else
           (pkgs.lib.optionalString (materialized != null && __pathExists materialized) ''
             if diff -qr ${materialized} ${calculateNoHash} &>/dev/null; then
               echo materialized nix used for ${name} is correct
-            else
+              else
               echo Changes to plan not reflected in materialized nix for ${name}
-              diff -ru ${materialized} ${calculateNoHash}
+              diff -ru ${materialized} ${calculateNoHash} || true
+              echo "Materialized nix used for ${name} incorrect. To fix run :" >> $ERR
+              echo "    rm -rf ${toString materialized}"                       >> $ERR
+              echo "    cp -r ${calculateNoHash} ${toString materialized}"     >> $ERR
+              echo "    chmod -R +w ${toString materialized}"                  >> $ERR
             fi
           '')
         + ''
-            cp -r ${unchecked} $out
-            # Make sure output files can be removed from the sandbox
-            chmod -R +w $out
+            if [ -e $ERR ]; then
+              cat $ERR
+              false
+            else
+              cp -r ${unchecked} $out
+              # Make sure output files can be removed from the sandbox
+              chmod -R +w $out
+            fi
           '')
   );
 
