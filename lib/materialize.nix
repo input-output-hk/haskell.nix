@@ -99,7 +99,14 @@ let
     outputHash = sha256;
   };
   calculateNoHash = derivation;
-  calculateUseHash = derivation.overrideAttrs (_: hashArgs);
+  calculateUseHash =
+    # Use `cp -r` here to get rid of symlinks so we know the result
+    # can be safely materialized (no symlinks to the store).
+    runCommand name hashArgs ''
+      cp -r ${derivation} $out
+      # Make sure output files can be removed from the sandbox
+      chmod -R +w $out
+    '';
   calculateUseAll = 
     # Skip right to expectedPath if it already exists
     if materialized != null
@@ -112,9 +119,12 @@ let
         ''
       else calculateUseHash;
 
+  # Materialized location was specified, but the files are not there.
+  missingMaterialized = materialized != null && !__pathExists materialized;
+
 in
   # Use the checked version if requested or if the `materialized` version
   # is missing (perhaps deleted or not created yet).
-  if checkMaterialization || (materialized != null && !__pathExists materialized)
+  if checkMaterialization || missingMaterialized
     then checked
     else unchecked

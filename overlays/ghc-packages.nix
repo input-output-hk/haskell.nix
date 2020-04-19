@@ -32,16 +32,11 @@ let
 
   # Combines multiple derivations into one to make them
   # easier to materialize.
-  combineFiles = name: ext: files: self.stdenv.mkDerivation {
-    inherit name;
-    phases = [ "buildPhase" ];
-
-    buildPhase = ''
-      mkdir $out
-    '' + self.lib.concatStrings (self.lib.mapAttrsToList (name: file: ''
-      cp ${file} $out/${name}${ext}
-    '') files);
-  };
+  combineFiles = name: ext: files: self.linkFarm name
+    (self.lib.mapAttrsToList (name: path: {
+      name = name + ext;
+      inherit path;
+    }) files);
 
   # Calculate the `cabal sdist` of a single boot package as well as
   # the output of cabal-to-nix.
