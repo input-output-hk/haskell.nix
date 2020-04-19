@@ -53,8 +53,9 @@ let
   # into a single derivation and materialize it.
   combineAndMaterialize = ghcName: bootPackages:
       let
-        # Limiting this to "ghc865" as the not all the boot packages
-        # for ghc 8.8 and above can be processed yet by `nix-tools`
+        # Not all the boot packages for ghc 8.8 and above can be
+        # processed yet by `nix-tools`, so we are not materializing the
+        # ones that currently fail.
         # (we need to upgrade `nix-tools` to Cabal 3 for them to work)
         skipBroken = self.lib.filterAttrs (pkgName: _:
           ghcName == "ghc865" || (pkgName != "base" && pkgName != "ghc-heap"));
