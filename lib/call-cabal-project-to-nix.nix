@@ -94,21 +94,35 @@ let
           (builtins.head pair)
           (builtins.elemAt pair 1))) blockLines);
 
-  fetchRepo = repo: (pkgs.fetchgit {
-    url = repo.location;
-    rev = repo.tag;
-    sha256 = repo."--sha256";
-  }) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
+  # Use pkgs.fetchgit if we have a sha256. Add comment like this
+  #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
+  # otherwise use __fetchGit and pass ref if we one. Use a comemnt like this
+  #   --ref: refs/heads/branchname
+  # or just
+  #   --ref: branchname
+  fetchRepo = repo:
+    (if repo."--sha256" or "" != ""
+      then pkgs.fetchgit {
+          url = repo.location;
+          rev = repo.tag;
+          sha256 = repo."--sha256";
+        }
+      else builtins.fetchGit ({
+          url = repo.location;
+          rev = repo.tag;
+        } //
+          pkgs.lib.optionalAttrs (repo."--ref" or "" != "") {
+            ref = repo."--ref";
+          })
+    ) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
 
-  # Parse a source-repository-package and fetch it if it containts
-  # a line of the form
-  #   --shar256: <<SHA256>>
+  # Parse a source-repository-package and fetch it if has `type: git`
   parseBlock = block:
     let
       x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
       attrs = parseBlockLines x.fst;
     in
-      if attrs."--sha256" or "" == ""
+      if attrs."type" or "" != "git"
         then {
           sourceRepo = [];
           otherText = "\nsource-repository-package\n" + block;
