@@ -121,7 +121,7 @@ let
               url = repo.location;
               ref = repo.tag;
             };
-        in  __trace "No sha256 found for source-repository-package for ${repo.location} ${repo.tag}"
+        in  __trace "WARNING: No sha256 found for source-repository-package ${repo.location} ${repo.tag} download may fail in restricted mode (hydra)"
            (__trace "Consider adding `--sha256: ${hashPath drv}` to the cabal.project file or passing in a lookupSha256 argument"
             drv)
     ) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
