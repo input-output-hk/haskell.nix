@@ -198,11 +198,19 @@ self: super: {
                 HOME=$out cabal new-update cached
             '';
 
+        # Some of features of haskell.nix rely on using a hackage index
+        # to calculate a build plan.  To maintain stabity for caching and
+        # to allow the outputs to be materialized we pin this value here.
+        # If you want to update this value it important to check the
+        # materializations.  Turn `checkMaterialization` on below and
+        # check the CI results before turning it off again.
+        internalHackageIndexState = "2020-04-12T00:00:00Z";
+
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          inherit (self) nix;
+          inherit (self.buildPackages) nix;
           inherit (self.haskell-nix) checkMaterialization;
           pkgs = self.buildPackages.pkgs;
           inherit (self.buildPackages.pkgs) runCommand;
@@ -493,13 +501,22 @@ self: super: {
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
             ghc882 = self.buildPackages.haskell-nix.compiler.ghc882;
             ghc883 = self.buildPackages.haskell-nix.compiler.ghc883;
+            ghc-boot-packages-nix = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: self.recurseIntoAttrs)
+                (filterSupportedGhc self.ghc-boot-packages-nix));
             ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             inherit (self.haskell-nix) nix-tools;
-            ghc-extra-packages = self.recurseIntoAttrs
-              (filterSupportedGhc self.ghc-extra-packages);
+            # These seem to be the only things we use from `ghc-extra-packages`
+            # in haskell.nix itself.
+            iserv-proxy = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: pkgs: pkgs.iserv-proxy.components.exes.iserv-proxy)
+                (filterSupportedGhc self.ghc-extra-packages));
+            remote-iserv = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: pkgs: pkgs.remote-iserv.components.exes.remote-iserv)
+                (filterSupportedGhc self.ghc-extra-packages));
           });
     };
 }

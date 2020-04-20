@@ -1,10 +1,10 @@
-{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand }:
+{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
-    src = ./.;
+    src = testSrc "shell-for-setup-deps";
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
