@@ -16,7 +16,13 @@
                      # If the tests and benchmarks are not needed and they
                      # causes the wrong plan to be choosen, then we can use
                      # `configureArgs = "--disable-tests --disable-benchmarks";`
-, lookupSha256  ? _ : null
+, lookupSha256  ? _: null
+                     # Use the as an alternative to adding `--sha256` comments into the
+                     # cabal.project file:
+                     #   lookupSha256 = repo:
+                     #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
+                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
+                     #       ."${repo.location}"."${repo.tag}";
 , ...
 }@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
@@ -99,7 +105,7 @@ let
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
   # otherwise use __fetchGit.
   fetchRepo = repo:
-    let sha256 = repo."--sha256" or lookupSha256 repo;
+    let sha256 = repo."--sha256" or (lookupSha256 repo);
     in (if sha256 != null
       then pkgs.fetchgit {
           url = repo.location;
