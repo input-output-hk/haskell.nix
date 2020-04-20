@@ -16,6 +16,7 @@
                      # If the tests and benchmarks are not needed and they
                      # causes the wrong plan to be choosen, then we can use
                      # `configureArgs = "--disable-tests --disable-benchmarks";`
+, lookupSha256  ? _ : null
 , ...
 }@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
@@ -98,11 +99,12 @@ let
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
   # otherwise use __fetchGit.
   fetchRepo = repo:
-    (if repo."--sha256" or "" != ""
+    let sha256 = repo."--sha256" or lookupSha256 repo;
+    in (if sha256 != null
       then pkgs.fetchgit {
           url = repo.location;
           rev = repo.tag;
-          sha256 = repo."--sha256";
+          inherit sha256;
         }
       else builtins.fetchGit {
           url = repo.location;
