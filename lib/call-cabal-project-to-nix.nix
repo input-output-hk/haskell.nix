@@ -96,10 +96,7 @@ let
 
   # Use pkgs.fetchgit if we have a sha256. Add comment like this
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
-  # otherwise use __fetchGit and pass ref if we one. Use a comemnt like this
-  #   --ref: refs/heads/branchname
-  # or just
-  #   --ref: branchname
+  # otherwise use __fetchGit.
   fetchRepo = repo:
     (if repo."--sha256" or "" != ""
       then pkgs.fetchgit {
@@ -107,13 +104,10 @@ let
           rev = repo.tag;
           sha256 = repo."--sha256";
         }
-      else builtins.fetchGit ({
+      else builtins.fetchGit {
           url = repo.location;
-          rev = repo.tag;
-        } //
-          pkgs.lib.optionalAttrs (repo."--ref" or "" != "") {
-            ref = repo."--ref";
-          })
+          ref = repo.tag;
+        }
     ) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
 
   # Parse a source-repository-package and fetch it if has `type: git`
