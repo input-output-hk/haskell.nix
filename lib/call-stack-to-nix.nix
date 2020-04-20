@@ -6,7 +6,7 @@
  * see also `call-cabal-project-to-nix`!
  */
 { runCommand, nix-tools, pkgs, mkCacheFile, materialize }:
-{ name          ? src.name or null # optional name for better error messages
+{ name ? src.name or null # optional name for better error messages
 , src
 , stackYaml ? null
 , ignorePackageYaml ? false
