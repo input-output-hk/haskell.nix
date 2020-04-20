@@ -174,6 +174,7 @@ let
     ghc-options-stack = callTest ./ghc-options/stack.nix {};
     exe-only = callTest ./exe-only { inherit util; };
     stack-source-repo = callTest ./stack-source-repo {};
+    lookup-sha256 = callTest ./lookup-sha256 {};
 
     unit = unitTests;
   };
