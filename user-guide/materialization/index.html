@@ -231,32 +231,32 @@ for instance).</p>
 <h2 id="how-can-we-materialize-the-nix-files">How can we materialize the nix files?<a class="headerlink" href="#how-can-we-materialize-the-nix-files" title="Permanent link">&para;</a></h2>
 <p>Lets say we want to build <code>hlint</code>.  We might start with an <code>hlint</code>
 file that looks like this:</p>
-<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
       name = &quot;hlint&quot;;
-      version = &quot;2.2.4&quot;;
+      version = &quot;2.2.11&quot;;
     };
 in hlint.components.exes.hlint
 </code></pre>
 
 <p>Building this may result in a lot of output, but if you build
 it again it should give just:</p>
-<pre><code>$ nix-build hlint.nix 
+<pre><code>$ nix-build hlint.nix
 trace: Using latest index state for hlint!
-trace: Using index-state: 2019-12-09T00:00:00Z for hlint
-/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+trace: Using index-state: 2020-04-15T00:00:00Z for hlint
+/nix/store/rnfz66v7k8i38c8rsmchzsyqjrmrbdpk-hlint-2.2.11-exe-hlint
 </code></pre>
 
 <p>To materialize the nix files we need to take care to pin down the
 inputs.  For <code>cabalProject</code> and <code>hackage-package</code> this means
 we must specify the <code>index-state</code> of hackage we want to use:</p>
-<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
-    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
       name = &quot;hlint&quot;;
-      version = &quot;2.2.4&quot;;
-      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+      version = &quot;2.2.11&quot;;
+      index-state = &quot;2020-04-15T00:00:00Z&quot;;
     };
 in hlint.components.exes.hlint
 </code></pre>
@@ -264,24 +264,24 @@ in hlint.components.exes.hlint
 <p>Now if we build again we get a hint telling use how to
 calculate a suitable sha256 hash to turn the derivation
 containing the nix files into a fixed output derivation:</p>
-<pre><code>$ nix-build hlint.nix 
-trace: Using index-state: 2019-12-03T00:00:00Z for hlint
-trace: Get `plan-sha256` with `nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/`
-/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+<pre><code>$ nix-build hlint.nix
+trace: Using index-state: 2020-04-15T00:00:00Z for hlint
+trace: Get `plan-sha256` with `nix-hash --base32 --type sha256 /nix/store/8z6p4237rin3c6c1lmjwshmj8rdqrhw2-hlint-plan-to-nix-pkgs/`
+/nix/store/rnfz66v7k8i38c8rsmchzsyqjrmrbdpk-hlint-2.2.11-exe-hlint
 
-$ nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/
-1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss
+$ nix-hash --base32 --type sha256 /nix/store/8z6p4237rin3c6c1lmjwshmj8rdqrhw2-hlint-plan-to-nix-pkgs/
+02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4
 </code></pre>
 
 <p>We can add the hash as <code>plan-sha256</code> or (<code>stack-sha256</code> for
 <code>stackProject</code>)</p>
-<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
-    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
       name = &quot;hlint&quot;;
-      version = &quot;2.2.4&quot;;
-      index-state = &quot;2019-12-03T00:00:00Z&quot;;
-      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+      version = &quot;2.2.11&quot;;
+      index-state = &quot;2020-04-15T00:00:00Z&quot;;
+      plan-sha256 = &quot;02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4&quot;;
     };
 in hlint.components.exes.hlint
 </code></pre>
@@ -292,98 +292,68 @@ still calculate all the dependencies (which can add seconds to
 and users who do not yet have the dependencies in their store will have
 to wait while they are built or downloaded.</p>
 <p>Running nix build again gives us a hint on what we can do next:</p>
-<pre><code>$ nix-build hlint.nix 
-trace: Using index-state: 2019-12-03T00:00:00Z for hlint
-trace: To materialize, point `materialized` to a copy of /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs
-/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+<pre><code>$ nix-build hlint.nix
+trace: Using index-state: 2020-04-15T00:00:00Z for hlint
+trace: To materialize, point `materialized` to a copy of /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs
+/nix/store/rnfz66v7k8i38c8rsmchzsyqjrmrbdpk-hlint-2.2.11-exe-hlint
 </code></pre>
 
 <p>To capture the nix we can do something like:</p>
-<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
-    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
       name = &quot;hlint&quot;;
-      version = &quot;2.2.4&quot;;
-      index-state = &quot;2019-12-03T00:00:00Z&quot;;
-      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+      version = &quot;2.2.11&quot;;
+      index-state = &quot;2020-04-15T00:00:00Z&quot;;
+      plan-sha256 = &quot;02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4&quot;;
       materialized = ./hlint.materialized;
     };
 in hlint.components.exes.hlint
 </code></pre>
 
 <p>Now we can copy the nix files needed and build with:</p>
-<pre><code>$ cp -r /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs hlint.materialized
-$ nix-build hlint.nix 
-/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+<pre><code>$ cp -r /nix/store/8z6p4237rin3c6c1lmjwshmj8rdqrhw2-hlint-plan-to-nix-pkgs hlint.materialized
+$ nix-build hlint.nix
+/nix/store/rnfz66v7k8i38c8rsmchzsyqjrmrbdpk-hlint-2.2.11-exe-hlint
 </code></pre>
 
 <p>We may want to run <code>chmod -R +w hlint.materialized</code> as the files copied from the
 store will be read only.</p>
 <h2 id="how-can-we-check-sha256-and-materialized-are-up-to-date">How can we check <code>sha256</code> and <code>materialized</code> are up to date?<a class="headerlink" href="#how-can-we-check-sha256-and-materialized-are-up-to-date" title="Permanent link">&para;</a></h2>
-<p>Let's pretend we had to go back to <code>hlint</code> version <code>2.2.3</code>.
-We can change <code>version</code> and temporarily add
-<code>checkMaterialization = true;</code>:</p>
-<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
-    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+<p>Let's pretend we had to go back to <code>hlint</code> version <code>2.2.10</code>.
+We can tell haskell.nix to check the materialiazation either by:</p>
+<ul>
+<li>Removing the materialization files with <code>rm -rf hlint.materialized</code></li>
+<li>Temporarily adding <code>checkMaterialization = true;</code></li>
+</ul>
+<p>If we choose to add the <code>checkMaterialization</code> flag you would have:</p>
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
       name = &quot;hlint&quot;;
-      version = &quot;2.2.4&quot;;
-      index-state = &quot;2019-12-03T00:00:00Z&quot;;
-      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
+      version = &quot;2.2.10&quot;;
+      index-state = &quot;2020-04-15T00:00:00Z&quot;;
+      plan-sha256 = &quot;02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4&quot;;
       materialized = ./hlint.materialized;
       checkMaterialization = true;
     };
 in hlint.components.exes.hlint
 </code></pre>
 
-<p>This will fail and report the details of what is wrong:</p>
-<pre><code>$ nix-build hlint.nix 
-trace: Using index-state: 2019-12-03T00:00:00Z for hlint
-building '/nix/store/zmif4gk52ynh57pf4dikzgsk30haqi2b-hlint-plan-to-nix-pkgs.drv'...
-Changes to hlint-plan-to-nix-pkgs not reflected in plan-sha256
-diff -ru /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix
---- /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix      1970-01-01 00:00:01.000000000 +0000
-+++ /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/.plan.nix/hlint.nix      1970-01-01 00:00:01.000000000 +0000
-@@ -42,7 +42,7 @@
-     flags = { threaded = true; gpl = true; ghc-lib = false; };
-     package = {
-       specVersion = &quot;1.18&quot;;
--      identifier = { name = &quot;hlint&quot;; version = &quot;2.2.4&quot;; };
-+      identifier = { name = &quot;hlint&quot;; version = &quot;2.2.3&quot;; };
-       license = &quot;BSD-3-Clause&quot;;
-       copyright = &quot;Neil Mitchell 2006-2019&quot;;
-       maintainer = &quot;Neil Mitchell &lt;ndmitchell@gmail.com&gt;&quot;;
-@@ -95,7 +95,6 @@
-           (hsPkgs.&quot;extra&quot; or (buildDepError &quot;extra&quot;))
-           (hsPkgs.&quot;refact&quot; or (buildDepError &quot;refact&quot;))
-           (hsPkgs.&quot;aeson&quot; or (buildDepError &quot;aeson&quot;))
--          (hsPkgs.&quot;filepattern&quot; or (buildDepError &quot;filepattern&quot;))
-           (hsPkgs.&quot;syb&quot; or (buildDepError &quot;syb&quot;))
-           (hsPkgs.&quot;mtl&quot; or (buildDepError &quot;mtl&quot;))
-           ] ++ (if !flags.ghc-lib &amp;&amp; (compiler.isGhc &amp;&amp; (compiler.version).ge &quot;8.8.0&quot;) &amp;&amp; (compiler.isGhc &amp;&amp; (compiler.version).lt &quot;8.9.0&quot;)
-diff -ru /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/default.nix /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/default.nix
---- /nix/store/0xalcphb7ifvy5fc9dpwj40fij6nn5av-hlint-plan-to-nix-pkgs/default.nix      1970-01-01 00:00:01.000000000 +0000
-+++ /nix/store/h5j8k3y5lansyfss25gd7knbninzr6z4-hlint-plan-to-nix-pkgs/default.nix      1970-01-01 00:00:01.000000000 +0000
-@@ -76,7 +76,7 @@
-         &quot;tagged&quot;.revision = (((hackage.&quot;tagged&quot;).&quot;0.8.6&quot;).revisions).default;
-         &quot;tagged&quot;.flags.transformers = true;
-         &quot;tagged&quot;.flags.deepseq = true;
--        &quot;haskell-src-exts&quot;.revision = (((hackage.&quot;haskell-src-exts&quot;).&quot;1.22.0&quot;).revisions).default;
-+        &quot;haskell-src-exts&quot;.revision = (((hackage.&quot;haskell-src-exts&quot;).&quot;1.21.1&quot;).revisions).default;
-         &quot;unliftio-core&quot;.revision = (((hackage.&quot;unliftio-core&quot;).&quot;0.1.2.0&quot;).revisions).default;
-         &quot;ghc-lib-parser&quot;.revision = (((hackage.&quot;ghc-lib-parser&quot;).&quot;8.8.1&quot;).revisions).default;
-         &quot;containers&quot;.revision = (((hackage.&quot;containers&quot;).&quot;0.6.0.1&quot;).revisions).default;
-@@ -116,7 +116,6 @@
-         &quot;hpc&quot;.revision = (((hackage.&quot;hpc&quot;).&quot;0.6.0.3&quot;).revisions).default;
-         &quot;filepath&quot;.revision = (((hackage.&quot;filepath&quot;).&quot;1.4.2.1&quot;).revisions).default;
-         &quot;process&quot;.revision = (((hackage.&quot;process&quot;).&quot;1.6.5.0&quot;).revisions).default;
--        &quot;filepattern&quot;.revision = (((hackage.&quot;filepattern&quot;).&quot;0.1.1&quot;).revisions).default;
-         &quot;libyaml&quot;.revision = (((hackage.&quot;libyaml&quot;).&quot;0.1.1.1&quot;).revisions).default;
-         &quot;libyaml&quot;.flags.system-libyaml = false;
-         &quot;libyaml&quot;.flags.no-unicode = false;
-Calculated hash is 1qjmhlb4rw6mggs7y57f6zr5zjmkhkx7sn9q8pb18308n5nxgxcs expected hash was 1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss for hlint-plan-to-nix-pkgs
-builder for '/nix/store/zmif4gk52ynh57pf4dikzgsk30haqi2b-hlint-plan-to-nix-pkgs.drv' failed with exit code 1
-error: build of '/nix/store/zmif4gk52ynh57pf4dikzgsk30haqi2b-hlint-plan-to-nix-pkgs.drv' failed
+<p>This will fail and report the details of what is wrong and how to fix it:</p>
+<pre><code>$ nix-build hlint.nix
+
+...
+
+Calculated hash for hlint-plan-to-nix-pkgs was not 02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4. New hash is :
+    plan-sha256 = &quot;0zsi3wv92qax33ic4n5dfsqd1r9qam1k75za3c5jqgdxl3hy8vph&quot;;
+Materialized nix used for hlint-plan-to-nix-pkgs incorrect. To fix run :
+    rm -rf /Users/hamish/iohk/haskell.nix/hlint.materialized
+    cp -r /nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs /Users/hamish/iohk/haskell.nix/hlint.materialized
+    chmod -R +w /Users/hamish/iohk/haskell.nix/hlint.materialized
+builder for '/nix/store/a5zmgfjfxahapw0q8hd2da5bg7knqvbx-hlint-plan-to-nix-pkgs.drv' failed with exit code 1
+error: build of '/nix/store/a5zmgfjfxahapw0q8hd2da5bg7knqvbx-hlint-plan-to-nix-pkgs.drv' failed
+(use '--show-trace' to show detailed location information)
 </code></pre>
 
 <p>Checking the materialization requires nix to do all the work that materialization
@@ -395,20 +365,20 @@ and <code>hackage-project</code>) that also return the nix as <code>plan-nix</co
 <code>stack-nix</code>.  By calling one of these functions without the
 hash and materialized nix we can find out what nix files should be.
 For instance:</p>
-<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
-    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-project {
       name = &quot;hlint&quot;;
-      version = &quot;2.2.4&quot;;
-      index-state = &quot;2019-12-03T00:00:00Z&quot;;
+      version = &quot;2.2.10&quot;;
+      index-state = &quot;2020-04-15T00:00:00Z&quot;;
     };
 in hlint
 </code></pre>
 
 <pre><code>$ nix-build hlint.nix -A plan-nix
-trace: Using index-state: 2019-12-03T00:00:00Z for hlint
-trace: Get `plan-sha256` with `nix-hash --base32 --type sha256 /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs/`
-/nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs
+trace: Using index-state: 2020-04-15T00:00:00Z for hlint
+trace: Get `plan-sha256` with `nix-hash --base32 --type sha256 /nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs/`
+/nix/store/ywdhbx9rzzkfc60c5vzk7cins2hnvkgx-hlint-plan-to-nix-pkgs
 </code></pre>
 
 <p>We can have the script copy <code>$(nix-build hlint.nix -A plan-nix --no-out-link)</code>
@@ -424,33 +394,38 @@ and use <code>nix-hash</code> to calculate the new value for <code>plan-sha256</
   needed to build the nix fileds (if they do not have them).</p>
 </li>
 </ul>
-<p>For instance:</p>
-<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs; 
-    pkgs = import sources.nixpkgs-default nixpkgsArgs; 
+<p>For those reasons it might be best to make a copy instead
+of using the <code>/nix/store/...</code> path directly.</p>
+<p>If you really want to use the <code>/nix/store/...</code> path directly
+you should gaurd against the path not existing as passing in
+a non-existing path is now an error:</p>
+<pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    hlintPlan = /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs;
     hlint = pkgs.haskell-nix.hackage-package {
       name = &quot;hlint&quot;;
-      version = &quot;2.2.4&quot;;
-      index-state = &quot;2019-12-03T00:00:00Z&quot;;
-      plan-sha256 = &quot;1a4rhv3h2daz6dzwzfl3w7l1v556n7aqfiagw6m0rvqq230iabss&quot;;
-      materialized = /nix/store/qk1fvza1alkvs51vzmpjp2xsg8xklyxk-hlint-plan-to-nix-pkgs;
+      version = &quot;2.2.11&quot;;
+      index-state = &quot;2020-04-15T00:00:00Z&quot;;
+      plan-sha256 = &quot;02hasr27a994sml1fzf8swb716lm6lgixxr53y0gxkhw437xkck4&quot;;
+      materialized = if __pathExists hlintPlan then hlintPlan else null;
     };
 in hlint.components.exes.hlint
 </code></pre>
 
 <p>Running when no building is needed is still slow in restricted evaluation mode.</p>
-<pre><code>$ time nix-build --option restrict-eval true -I . --option allowed-uris &quot;https://github.com/NixOS https://github.com/input-output-hk&quot; hlint.nix 
-trace: Using index-state: 2019-12-03T00:00:00Z for hlint
-/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+<pre><code>$ time nix-build --option restrict-eval true -I . --option allowed-uris &quot;https://github.com/NixOS https://github.com/input-output-hk&quot; hlint.nix --show-trace
+trace: Using index-state: 2020-04-15T00:00:00Z for hlint
+/nix/store/rnfz66v7k8i38c8rsmchzsyqjrmrbdpk-hlint-2.2.11-exe-hlint
 
-real    0m10.066s
-user    0m8.563s
-sys 0m0.630s
-$ time nix-build hlint.nix 
-/nix/store/7wwqq5v42gm6iiz2d3ngbnkyw7i4py11-hlint-2.2.4-exe-hlint
+real    0m4.463s
+user    0m4.440s
+sys 0m0.461s
+$ time nix-build hlint.nix
+/nix/store/rnfz66v7k8i38c8rsmchzsyqjrmrbdpk-hlint-2.2.11-exe-hlint
 
-real    0m4.628s
-user    0m3.889s
-sys 0m0.389s
+real    0m2.206s
+user    0m1.665s
+sys 0m0.332s
 </code></pre>
               
             </div>
