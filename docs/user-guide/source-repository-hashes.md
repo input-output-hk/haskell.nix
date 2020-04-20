@@ -48,3 +48,34 @@ extra-deps:
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 ```
 
+## lookupSha256
+
+In some cases we cannot modify the `cabal.project` file to add the
+`--sha256` comments. As an alternative we can pass in a `lookupSha256`
+function to get them.  For instance pandoc includes a `cabal.project`
+file in hackage includes a `source-package-reference` to `pandoc-citeproc`:
+
+```
+with builtins;
+with rec {
+  haskellNix = import (fetchTarball {
+    name   = "haskell-nix";
+    url    = https://github.com/input-output-hk/haskell.nix/archive/cb0ab3a2.tar.gz;
+    sha256 = "1ghhs2ii4ndyzlg8qjb8z3fnjsr6fd90ixn1b81lnxv40x6rkvza";
+  }) {};
+
+  pkgs = import haskellNix.sources.nixpkgs-default haskellNix.nixpkgsArgs;
+
+  pandoc = pkgs.haskell-nix.hackage-package {
+    name         = "pandoc";
+    version      = "2.9.2.1";
+    index-state  = "2020-04-15T00:00:00Z";
+    ghc          = pkgs.buildPackages.pkgs.haskell-nix.compiler.ghc865;
+    lookupSha256 = repo:
+      { "https://github.com/jgm/pandoc-citeproc"."0.17"
+          = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
+        ."${repo.location}"."${repo.tag}";
+  };
+};
+pandoc.components.exes.pandoc
+```
