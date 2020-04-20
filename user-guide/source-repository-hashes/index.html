@@ -230,6 +230,28 @@ the hash needed in a comment.</p>
     - test/cabal-simple
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 </code></pre>
+
+<h2 id="lookupsha256">lookupSha256<a class="headerlink" href="#lookupsha256" title="Permanent link">&para;</a></h2>
+<p>In some cases we cannot modify the <code>cabal.project</code> file to add the
+<code>--sha256</code> comments. As an alternative we can pass in a <code>lookupSha256</code>
+function to get them.  For instance pandoc includes a <code>cabal.project</code>
+file in hackage includes a <code>source-package-reference</code> to <code>pandoc-citeproc</code>:</p>
+<pre><code>{ haskell-nix, testSrc } :
+let
+  pandoc = haskell-nix.hackage-package {
+    name         = &quot;pandoc&quot;;
+    version      = &quot;2.9.2.1&quot;;
+    index-state  = &quot;2020-04-15T00:00:00Z&quot;; 
+    # Function that returns a sha256 string by looking up the location
+    # and tag in a nested attrset
+    lookupSha256 = { location, tag, ... }:
+      { &quot;https://github.com/jgm/pandoc-citeproc&quot;.&quot;0.17&quot;
+          = &quot;0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q&quot;; }
+        .&quot;${location}&quot;.&quot;${tag}&quot;;
+  };
+in
+  pandoc.components.exes.pandoc
+</code></pre>
               
             </div>
           </div>
