@@ -98,11 +98,6 @@ let
     GhcRtsHcOpts += -fPIC
   '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
-  ''
-  # At least for Aarch32, using -fast-llvm with the gold linker ends up in program segfaulting at startup.
-  + stdenv.lib.optionalString (useLLVM && !stdenv.targetPlatform.isAarch32) ''
-    GhcStage2HcOpts += -fast-llvm
-    GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
