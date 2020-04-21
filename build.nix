@@ -25,12 +25,7 @@ in rec {
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
-      generatedOptions = import ./scripts/options-doc.nix {
-        # nixpkgs 19.09 changes "Option has no description" from an
-        # error into a warning. That is quite helpful when hardly any
-        # of our options are documented, thanks @oxij.
-        pkgs = import (import ./nixpkgs/default.nix).nixpkgs-1909 {};
-      };
+      generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };
     };
     # Because this is going to be used to test caching on hydra, it must not
     # use the darcs package from the haskell.nix we are testing.  For that reason
