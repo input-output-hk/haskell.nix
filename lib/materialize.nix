@@ -37,7 +37,7 @@ let
         # Warn the user if they tried to pin stuff down when it is not safe
         traceIgnoringSha256 reasonNotSafe
           (traceIgnoringMaterialized reasonNotSafe calculateNoHash)
-    else if sha256 == null
+    else if sha256 == null && materialized == null
       then
         # Let the user know how to calculate a sha256 to use to make this
         # a fixed output derivation.
@@ -52,7 +52,7 @@ let
           calculateUseHash
     else
       # Everything is in place we can safely use the sha256 and materialized
-      calculateUseAll;
+      calculateUseMaterialized;
 
   # Build fully and check the hash and materialized versions
   checked = runCommand name {
@@ -119,17 +119,14 @@ let
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out
     '';
-  calculateUseAll = 
-    # Skip right to expectedPath if it already exists
-    if materialized != null
-      then
-        assert __pathExists materialized;
-        runCommand name hashArgs ''
-          cp -r ${materialized} $out
-          # Make sure output files can be removed from the sandbox
-          chmod -R +w $out
-        ''
-      else calculateUseHash;
+  calculateUseMaterialized =
+    assert materialized != null;
+    assert __pathExists materialized;
+    runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
+      cp -r ${materialized} $out
+      # Make sure output files can be removed from the sandbox
+      chmod -R +w $out
+    '';
 
   # Materialized location was specified, but the files are not there.
   missingMaterialized = materialized != null && !__pathExists materialized;

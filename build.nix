@@ -16,6 +16,14 @@ let
 in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel; };
 
+  # Applies thress levels of recurseIntoAttrs to the path as the
+  # tools are three levels down.  For exmple tools.ghc865.cabal."3.2.0.0"
+  tools = pkgs.recurseIntoAttrs
+    (pkgs.lib.mapAttrs (_: ghc: pkgs.recurseIntoAttrs (
+      pkgs.lib.mapAttrs (_: pkgs.recurseIntoAttrs) (
+        pkgs.buildPackages.haskell-nix.toolsForGhc { materializedOnly = true; } ghc)))
+      pkgs.buildPackages.haskell-nix.compiler);
+
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
