@@ -105,7 +105,7 @@ let
               (self.haskell-nix.hackage-package ({
                 name = packageName."${name}" or name;
                 inherit version;
-              } // (hackageToolArgs ? "${name}" or {})
+              } // (hackageToolArgs."${name}" or {})
                 // materializationAttrs name version)).components.exes."${name}";
           in lib.optionalAttrs (!materializedOnly) (toolForVersion defaultVersion) //
             lib.listToAttrs (
