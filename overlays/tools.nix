@@ -21,7 +21,7 @@
 #   * Add it to `hackageToolVersions`.
 #   * Test it with:
 #       nix-build -E 'let h = (import ./. {}); in (import h.sources.nixpkgs-default h.nixpkgsArgs).haskell-nix.tools.ghc865.cabal."3.2.0.0"'
-#   * If necessary add `modules` it needs to `hackageToolModules`.
+#   * If necessary add `modules` or other args it needs to `hackageToolArgs`.
 #
 # To add a new tool that is not in hackage:
 #   * Add it to `otherTools` in `toolsForGhc`.
@@ -55,11 +55,23 @@ let
   };
 
   # Some hackage packages require some `modules` to work.
-  hackageToolModules = {
+  hackageToolArgs = {
     # FIXME: this is required to build cabal-install 3.2 with ghc 8.6,
     # but also as for
     # https://github.com/input-output-hk/haskell.nix/issues/422
-    cabal = [ { reinstallableLibGhc = true; } ];
+    cabal = {
+      modules = [ { reinstallableLibGhc = true; } ];
+    };
+    hlint = {
+      modules = [ { reinstallableLibGhc = true; } ];
+      pkg-def-extras = [
+        (hackage: {
+          packages = {
+            "alex" = (((hackage.alex)."3.2.5").revisions).default;
+          };
+        })
+      ];
+    };
   };
 
   toolsForGhc =
@@ -93,9 +105,8 @@ let
               (self.haskell-nix.hackage-package ({
                 name = packageName."${name}" or name;
                 inherit version;
-              } // lib.optionalAttrs (hackageToolModules ? "${name}") {
-                modules = hackageToolModules."${name}";
-              } // materializationAttrs name version)).components.exes."${name}";
+              } // (hackageToolArgs ? "${name}" or {})
+                // materializationAttrs name version)).components.exes."${name}";
           in lib.optionalAttrs (!materializedOnly) (toolForVersion defaultVersion) //
             lib.listToAttrs (
               builtins.map
