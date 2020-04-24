@@ -84,7 +84,7 @@ in
   };
 
   config.hsPkgs =
-    { inherit (builder) shellFor ghcWithPackages ghcWithHoogle;
+    { inherit (builder) shellFor ghcWithPackages ghcWithHoogle pkgs-errors;
       buildPackages = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs

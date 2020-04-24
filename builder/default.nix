@@ -64,6 +64,8 @@ let
     inherit withHoogle;
   }).ghc;
 
+  pkgs-errors = import ./hspkgs-errors.nix;
+
 in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
@@ -71,7 +73,7 @@ in {
     inherit haskellLib ghc comp-builder setup-builder;
   };
 
-  inherit shellFor;
+  inherit shellFor pkgs-errors;
 
   ghcWithPackages = withPackages { withHoogle = false; };
   ghcWithHoogle = withPackages { withHoogle = true; };
