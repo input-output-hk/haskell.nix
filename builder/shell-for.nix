@@ -90,6 +90,10 @@ in
     LANG = "en_US.UTF-8";
     LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
 
+    # This helps tools like `ghcide` (that use the ghc api) to find
+    # the correct global package DB.
+    NIX_GHC_LIBDIR = ghcEnv + "/" + configFiles.libDir;
+
     passthru = (mkDrvArgs.passthru or {}) // {
       ghc = ghcEnv;
       inherit configFiles;
