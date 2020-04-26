@@ -22,7 +22,7 @@ in rec {
         tool = name: version: pkgs.buildPackages.haskell-nix.tool "cabal" { inherit version ghc; };
       in pkgs.recurseIntoAttrs {
           cabal-32 = tool "cabal" "3.2.0.0";
-          ghcide   = tool "ghcide" "github";
+          ghcide   = tool "ghcide" "object-code";
         } // pkgs.lib.optionalAttrs (ghc.version == "8.6.5") {
           cabal-30 = tool "cabal" "3.0.0.0";
         }) { inherit (pkgs.buildPackages.haskell-nix.compiler) ghc865 ghc883; });
