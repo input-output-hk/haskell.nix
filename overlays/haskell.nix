@@ -414,7 +414,9 @@ self: super: {
                 tar xzf ${tarball}
                 mv "${name}-${version}" $out
                 '';
-            in cabalProject' (builtins.removeAttrs args [ "version" ] // { inherit src; });
+          in cabalProject' (
+            (self.haskell-nix.hackageDefaultArgs { inherit name version; }) // 
+              builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
