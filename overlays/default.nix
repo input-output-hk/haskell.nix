@@ -13,6 +13,7 @@
     (import ./windows.nix)
     (import ./armv6l-linux.nix)
     (import ./musl.nix)
+    (import ./tools.nix)
     # Restore nixpkgs haskell and haskellPackages
     (_: super: { inherit (super.haskell-nix-super) haskell haskellPackages; })
 ]

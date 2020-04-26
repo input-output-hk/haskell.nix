@@ -1,4 +1,4 @@
-{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib }:
+{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, buildGHC }:
 
 { packages ? ps:
     let
@@ -9,6 +9,7 @@
 , additional ? _: []
 , withHoogle ? true
 , exactDeps ? false
+, tools ? {}
 , ... } @ args:
 
 let
@@ -74,14 +75,23 @@ let
     # inherit (hsPkgs) hoogle;
   };
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
 in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle' hoogleIndex;
+      ++ lib.optional withHoogle' hoogleIndex
+      ++ lib.mapAttrsToList (name: versionOrArgs:
+           let
+             args =
+               if lib.isAttrs versionOrArgs
+                 then versionOrArgs
+                 else { version = versionOrArgs; };
+           in
+             buildPackages.haskell-nix.tool name ({ ghc = buildGHC; } // args)
+         ) tools;
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or [];
