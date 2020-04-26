@@ -19,7 +19,7 @@ in rec {
   tools = pkgs.recurseIntoAttrs
     (pkgs.lib.mapAttrs (_: ghc:
       let
-        tool = name: version: pkgs.buildPackages.haskell-nix.tool "cabal" { inherit version ghc; };
+        tool = name: version: pkgs.buildPackages.haskell-nix.tool name { inherit version ghc; };
       in pkgs.recurseIntoAttrs {
           cabal-32 = tool "cabal" "3.2.0.0";
           ghcide   = tool "ghcide" "object-code";
