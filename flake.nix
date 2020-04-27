@@ -1,5 +1,5 @@
 {
-  description = "A flake for building Hello World";
+  description = "Alternative Haskell Infrastructure for Nixpkgs";
 
   edition = 201909;
 
@@ -16,13 +16,22 @@
     config = import ./config.nix;
     sources = import ./nixpkgs;
     checks = let
-      systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" ];
+      nixpkgs = system:
+        import self.sources.nixpkgs-default {
+          localSystem = { inherit system; };
+        };
+      systems = [ "x86_64-linux" "x86_64-darwin" ];
       forAllSystems = f:
         builtins.listToAttrs (map (system: {
           name = system;
-          value = f system;
+          value = builtins.listToAttrs (map (test: {
+            name = (builtins.parseDrvName test.name).name;
+            value = test;
+          }) (f system));
         }) systems);
-      test = system:
+      removeShells =
+        builtins.filter (x: isNull (builtins.match ".*shell-for.*" x.name));
+      tests = system:
         import ./test {
           nixpkgsArgs = {
             inherit (self) config;
@@ -30,21 +39,10 @@
             localSystem = { inherit system; };
           };
         };
-      testDrv = system:
-        let
-          attrsToList = attrs:
-            map (name: {
-              inherit name;
-              value = attrs.${name};
-            }) (builtins.attrNames attrs);
-        in builtins.listToAttrs (builtins.concatMap ({ name, value }@orig:
-          if value ? run then [{
-            inherit name;
-            value = value.run;
-          }] else if value ? type && value.type == "derivation" then
-            [ orig ]
-          else
-            attrsToList value) (attrsToList (test system)));
-    in forAllSystems testDrv;
+      testDrvs = system:
+        with nixpkgs system;
+        with lib;
+        removeShells (collect isDerivation (tests system));
+    in forAllSystems testDrvs;
   };
 }
