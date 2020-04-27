@@ -1,4 +1,4 @@
-# This overlay adds hackageDefaultArgs to provide suitable default
+# This overlay adds hackageQuirks to provide suitable default
 # arguments for `haskell-nix.hackage-project` and the functions
 # that use it (like `hackage-package`)
 #
@@ -8,7 +8,7 @@ let
 
 in { haskell-nix = super.haskell-nix // {
 
-  hackageDefaultArgs = { name, version }: {
+  hackageQuirks = { name, version }: {
     # FIXME: this is required to build cabal-install 3.2 with ghc 8.6,
     # but also for
     # https://github.com/input-output-hk/haskell.nix/issues/422

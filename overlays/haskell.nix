@@ -415,7 +415,7 @@ self: super: {
                 mv "${name}-${version}" $out
                 '';
           in cabalProject' (
-            (self.haskell-nix.hackageDefaultArgs { inherit name version; }) // 
+            (self.haskell-nix.hackageQuirks { inherit name version; }) // 
               builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
