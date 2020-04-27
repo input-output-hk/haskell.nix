@@ -86,7 +86,7 @@ in
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
-      ++ buildPackages.haskell-nix.toolsForGhc buildGHC tools;
+      ++ lib.attrValues (buildPackages.haskell-nix.toolsForGhc buildGHC tools);
     phases = ["installPhase"];
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
     LANG = "en_US.UTF-8";
