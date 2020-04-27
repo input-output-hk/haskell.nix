@@ -28,7 +28,14 @@ findCabalFiles path = doesFileExist (path </> Hpack.packageConfig) >>= \case
       Right r ->
         return $ [InMemory (Just Hpack)
                            (Hpack.decodeResultCabalFile r)
-                           (encodeUtf8 $ Hpack.renderPackage [] (Hpack.decodeResultPackage r))]
+                           (encodeUtf8 $ render r)]
 
-  where encodeUtf8 :: String -> ByteString
-        encodeUtf8 = T.encodeUtf8 . T.pack
+  where
+    render :: Hpack.DecodeResult -> String
+    render r =
+      let body = Hpack.renderPackage [] (Hpack.decodeResultPackage r)
+          cabalVersion = Hpack.decodeResultCabalVersion r
+      in cabalVersion ++ body
+
+    encodeUtf8 :: String -> ByteString
+    encodeUtf8 = T.encodeUtf8 . T.pack

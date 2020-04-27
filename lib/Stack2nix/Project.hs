@@ -30,10 +30,18 @@ findCabalFiles UsePackageYamlFirst path = doesFileExist (path </> Hpack.packageC
       Right r ->
         return $ [InMemory (Just Hpack)
                            (Hpack.decodeResultCabalFile r)
-                           (encodeUtf8 $ Hpack.renderPackage [] (Hpack.decodeResultPackage r))]
+                           (encodeUtf8 $ render r)]
 
-  where encodeUtf8 :: String -> ByteString
-        encodeUtf8 = T.encodeUtf8 . T.pack
+  where
+    render :: Hpack.DecodeResult -> String
+    render r =
+      let body = Hpack.renderPackage [] (Hpack.decodeResultPackage r)
+          cabalVersion = Hpack.decodeResultCabalVersion r
+      in cabalVersion ++ body
+
+    encodeUtf8 :: String -> ByteString
+    encodeUtf8 = T.encodeUtf8 . T.pack
+
 
 findOnlyCabalFiles :: FilePath -> IO [CabalFile]
 findOnlyCabalFiles path = fmap (OnDisk . (path </>)) . filter (isSuffixOf ".cabal") <$> listDirectory path
