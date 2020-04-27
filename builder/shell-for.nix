@@ -82,19 +82,11 @@ in
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle' hoogleIndex
-      ++ lib.mapAttrsToList (name: versionOrArgs:
-           let
-             args =
-               if lib.isAttrs versionOrArgs
-                 then versionOrArgs
-                 else { version = versionOrArgs; };
-           in
-             buildPackages.haskell-nix.tool name ({ ghc = buildGHC; } // args)
-         ) tools;
+      ++ lib.optional withHoogle' hoogleIndex;
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
-      ++ mkDrvArgs.nativeBuildInputs or [];
+      ++ mkDrvArgs.nativeBuildInputs or []
+      ++ buildPackages.haskell-nix.toolsForGhc buildGHC tools;
     phases = ["installPhase"];
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
     LANG = "en_US.UTF-8";

@@ -49,9 +49,7 @@ in { haskell-nix = super.haskell-nix // {
 
   tool = name: versionOrArgs:
     let
-      args = if lib.isAttrs versionOrArgs
-        then versionOrArgs
-        else { version = versionOrArgs; };
+      args = self.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
     in
       (if self.haskell-nix.custom-tools ? "${name}"
           && self.haskell-nix.custom-tools."${name}" ? "${args.version}"
@@ -59,6 +57,16 @@ in { haskell-nix = super.haskell-nix // {
         else self.haskell-nix.hackage-tool) (args // { inherit name; });
 
   tools = lib.mapAttrs self.haskell-nix.tool;
+
+  # Like `tools` but allows default ghc to be specified
+  toolsForGhc = ghc: toolSet:
+    self.haskell-nix.tools (
+      lib.mapAttrs (name: versionOrArgs:
+        # Add default ghc if not specified in the args
+        { inherit ghc; }
+          // self.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs
+      ) toolSet
+    );
 
   # Tools not in hackage yet
   custom-tools = {
