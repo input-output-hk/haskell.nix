@@ -1,12 +1,14 @@
 { pkgs, nix, runCommand, checkMaterialization }@defaults:
-{ sha256
-, sha256Arg      # Name of the sha256 argument for more meaningful
+{ sha256 ? null  # Has to make this a fixed output derivation
+, sha256Arg ? "sha256"
+                 # Name of the sha256 argument for more meaningful
                  # error messages when checking the materialization.
 , materialized   # null or path where to find materialized version of
                  # the output. If this is set but does not exist
                  # the derivation will fail but with a message
                  # advising how to populate it.
-, reasonNotSafe  # Some times there a reasont the derivation will
+, reasonNotSafe ? null
+                 # Some times there a reasont the derivation will
                  # not produce output that can be safely materialized.
                  # Set this to a string explaining why and materialization
                  # will not be used (if sha256 was set an error will be
