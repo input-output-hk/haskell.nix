@@ -10,7 +10,7 @@ let
     };
 in
 {
+  nixpkgs-2003 = fetch (./. + "/release-20.03.json");
   nixpkgs-1909 = fetch (./. + "/release-19.09.json");
-  nixpkgs-1903 = fetch (./. + "/release-19.03.json");
   nixpkgs-default = fetch (./. + "/github.json");
 }

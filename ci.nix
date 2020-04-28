@@ -8,8 +8,8 @@ let
   inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (import ./default.nix {}) sources nixpkgsArgs;
   nixpkgsVersions = {
-    "R1903" = "nixpkgs-1903";
     "R1909" = "nixpkgs-1909";
+    "R2003" = "nixpkgs-2003";
   };
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
@@ -20,8 +20,8 @@ let
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (system == "x86_64-linux" || nixpkgsName == "R1903") {
-    # Windows cross compilation is currently broken on macOS for nixpkgs 19.09 (works on 19.03)
+    in lib.optionalAttrs (system == "x86_64-linux") {
+    # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux") {
     # Musl cross only works on linux
