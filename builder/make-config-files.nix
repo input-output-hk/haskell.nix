@@ -179,9 +179,5 @@ in { identifier, component, fullName, flags ? {} }:
       sed -i -E "/^ ./{H;$!d} ; x ; s,^dynamic-library-dirs:.*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    # Use ''${pkgroot} relative paths so that we can relocate the package database
-    # along with referenced packages and still have it work on systems with
-    # or without nix installed.
-    sed -i 's|/nix/store/|''${pkgroot}/../../../|' $out/${packageCfgDir}/*.conf
     ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
   '')
