@@ -756,6 +756,11 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <td>Package selection function. It takes a list of <a href="#haskell-package">Haskell packages</a> and returns a subset of these packages.</td>
 </tr>
 <tr>
+<td><code>additional</code></td>
+<td>Function</td>
+<td>Similar to <code>packages</code>, but the selected packages are built and included in <code>ghc-pkg list</code> (not just their dependencies).</td>
+</tr>
+<tr>
 <td><code>withHoogle</code></td>
 <td>Boolean</td>
 <td>Whether to build a Hoogle documentation index and provide the <code>hoogle</code> command.</td>
@@ -764,6 +769,11 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <td><code>exactDeps</code></td>
 <td>Boolean</td>
 <td>Prevents the Cabal solver from choosing any package dependency other than what are in the package set.</td>
+</tr>
+<tr>
+<td><code>tools</code></td>
+<td>Function</td>
+<td>AttrSet of tools to make available e.g. <code>{ cabal = "3.2.0.0"; }</code> or <code>{ cabal = { version = "3.2.0.0"; }; }</code></td>
 </tr>
 <tr>
 <td><code>{ ... }</code></td>
