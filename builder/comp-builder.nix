@@ -75,9 +75,8 @@ let
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
       # BINTOOLS
-      (if stdenv.hostPlatform.isLinux && !stdenv.targetPlatform.isAarch32
+      (if stdenv.hostPlatform.isLinux
         # use gold as the linker on linux to improve link times
-        # Causes segfaults on Aarch32 though.
         then [
           "--with-ld=${stdenv.cc.bintools.targetPrefix}ld.gold"
           "--ghc-option=-optl-fuse-ld=gold"

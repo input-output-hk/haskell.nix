@@ -98,9 +98,6 @@ let
     GhcRtsHcOpts += -fPIC
   '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
-  '' + stdenv.lib.optionalString useLLVM ''
-    GhcStage2HcOpts += -fast-llvm
-    GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
@@ -214,13 +211,11 @@ in let configured-src = stdenv.mkDerivation (rec {
             "--enable-bootstrap-with-devel-snapshot"
         ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
             "--disable-large-address-space"
-        ];
-        # FIXME Currently causes segfaults on armv6l cross-compilation.
-        # ++ stdenv.lib.optionals (targetPlatform.isAarch32) [
-        #     "CFLAGS=-fuse-ld=gold"
-        #     "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
-        #     "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-        # ] ;
+        ] ++ stdenv.lib.optionals (targetPlatform.isAarch32) [
+            "CFLAGS=-fuse-ld=gold"
+            "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
+            "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
+        ] ;
 
         outputs = [ "out" ];
         phases = [ "unpackPhase" "patchPhase" ]
