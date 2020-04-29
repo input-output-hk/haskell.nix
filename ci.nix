@@ -42,9 +42,10 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
       native = pkgs.recurseIntoAttrs {
         inherit (build) tests maintainer-scripts maintainer-script-cache;
+        ghc = pkgs.recurseIntoAttrs pkgs.haskell-nix.compiler;
+      } + lib.optionalAttrs (ifdLevel >= 3) {
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
         iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
-        ghc = pkgs.recurseIntoAttrs pkgs.haskell-nix.compiler;
       };
     }
     //
@@ -53,9 +54,10 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
           build = import ./build.nix { inherit pkgs ifdLevel; };
       in pkgs.recurseIntoAttrs {
+        remote-iserv = pkgs.ghc-extra-packages.ghc865.remote-iserv.components.exes.remote-iserv;
+      } + lib.optionalAttrs (ifdLevel >= 3) {
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
         iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
-        remote-iserv = pkgs.ghc-extra-packages.ghc865.remote-iserv.components.exes.remote-iserv;
       }
       //
       # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
