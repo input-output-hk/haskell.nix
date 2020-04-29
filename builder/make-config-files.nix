@@ -76,11 +76,20 @@ in { identifier, component, fullName, flags ? {} }:
         in lib.concatStringsSep "\" \"" xs;
       libs     = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
   in
-  runCommand "${ghc.targetPrefix}${fullName}-config" {
+  lib.fix (drv: runCommand "${ghc.targetPrefix}${fullName}-config" {
       nativeBuildInputs = [ghc];
       passthru = {
         inherit (ghc) targetPrefix;
         inherit ghcCommand ghcCommandCaps libDir packageCfgDir component;
+        # Use ''${pkgroot} relative paths so that we can relocate the package database
+        # along with referenced packages and still have it work on systems with
+        # or without nix installed.
+        relocatableConfigFiles = runCommand "${ghc.targetPrefix}${fullName}-relocatable-config" ''
+          cp -r ${drv} $out
+          chmod -R +w $out
+          sed -i 's|/nix/store/|''${pkgroot}/../../../|' $out/${packageCfgDir}/*.conf
+          ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
+        '';
       };
     } (''
     mkdir -p $out
@@ -179,9 +188,5 @@ in { identifier, component, fullName, flags ? {} }:
       sed -i -E "/^ ./{H;$!d} ; x ; s,^dynamic-library-dirs:.*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    # Use ''${pkgroot} relative paths so that we can relocate the package database
-    # along with referenced packages and still have it work on systems with
-    # or without nix installed.
-    sed -i 's|/nix/store/|''${pkgroot}/../../../|' $out/${packageCfgDir}/*.conf
     ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
   '')
