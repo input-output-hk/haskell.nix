@@ -6,6 +6,7 @@
     #(import ./ghcjs-asterius-triple.nix)
     #(import ./python.nix)
     (import ./haskell.nix)
+    (import ./hackage-quirks.nix)
     (import ./bootstrap.nix)
     (import ./ghc.nix)
     (import ./ghc-packages.nix)
