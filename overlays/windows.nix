@@ -2,30 +2,30 @@
 # conditionals need to be in the leafs! If we attach the conditional to the root
 # node (e.g. the whole customization here), they will be evaluated at the wrong time
 # and not end up with the expected changes we want.
-self: super:
+final: prev:
 {
    # on windows we have this habit of putting libraries
    # into `bin`, wheras on unix it's usually `lib`. For
    # this confuses nix easily. So we'll just move the
    # .dll's from `bin` into `$out/lib`. Such that they
    # are trivially found.
-  #  openssl = super.openssl.overrideAttrs (drv: {
-  #   #  postInstall = with super.stdenv; drv.postInstall + lib.optionalString hostPlatform.isWindows ''
+  #  openssl = prev.openssl.overrideAttrs (drv: {
+  #   #  postInstall = with prev.stdenv; drv.postInstall + lib.optionalString hostPlatform.isWindows ''
   #   #    cp $bin/bin/*.dll $out/lib/
   #   #  '';
   #   postFixup = "";
   #  });
 
-   mfpr = super.mfpr.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ super.stdenv.lib.optional super.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+   mfpr = prev.mfpr.overrideAttrs (drv: {
+     configureFlags = (drv.configureFlags or []) ++ prev.stdenv.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
 
-   libmpc = super.libmpc.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ super.stdenv.lib.optional super.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+   libmpc = prev.libmpc.overrideAttrs (drv: {
+     configureFlags = (drv.configureFlags or []) ++ prev.stdenv.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
 
-   haskell-nix = super.haskell-nix // ({
-     defaultModules = super.haskell-nix.defaultModules ++ [
+   haskell-nix = prev.haskell-nix // ({
+     defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
       let
         withTH = import ./mingw_w64.nix {
@@ -36,10 +36,10 @@ self: super:
           inherit (pkgs) gmp;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (self.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
+          inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
           # remote-iserv however needs to come from the regular packages as it has to
           # run on the target host.
-          inherit (self.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
+          inherit (final.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {

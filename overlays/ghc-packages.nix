@@ -1,12 +1,12 @@
-self: super:
+final: prev:
 let
-  emptyDotCabal = self.runCommand "empty-dot-cabal" {} ''
+  emptyDotCabal = final.runCommand "empty-dot-cabal" {} ''
       mkdir -p $out/.cabal
       cat <<EOF > $out/.cabal/config
       EOF
     '';
-  callCabalSdist = name: src: self.runCommand "${name}-sdist.tar.gz" {
-      nativeBuildInputs = [ self.haskell-nix.cabal-install ];
+  callCabalSdist = name: src: final.runCommand "${name}-sdist.tar.gz" {
+      nativeBuildInputs = [ final.haskell-nix.cabal-install ];
     } ''
       tmp=$(mktemp -d)
       cp -r ${src}/* $tmp
@@ -15,13 +15,13 @@ let
       HOME=${emptyDotCabal} cabal new-sdist -o $tmp2
       cp $tmp2/*.tar.gz $out
     '';
-  callCabal2Nix = name: src: self.stdenv.mkDerivation {
+  callCabal2Nix = name: src: final.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
-    nativeBuildInputs = [ self.haskell-nix.nix-tools ];
+    nativeBuildInputs = [ final.haskell-nix.nix-tools ];
     phases = [ "unpackPhase" "buildPhase" ];
 
-    LOCALE_ARCHIVE = self.lib.optionalString (self.stdenv.hostPlatform.libc == "glibc") "${self.glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.hostPlatform.libc == "glibc") "${final.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
 
@@ -32,8 +32,8 @@ let
 
   # Combines multiple derivations into one to make them
   # easier to materialize.
-  combineFiles = name: ext: files: self.linkFarm name
-    (self.lib.mapAttrsToList (name: path: {
+  combineFiles = name: ext: files: final.linkFarm name
+    (final.lib.mapAttrsToList (name: path: {
       name = name + ext;
       inherit path;
     }) files);
@@ -57,11 +57,11 @@ let
         # processed yet by `nix-tools`, so we are not materializing the
         # ones that currently fail.
         # (we need to upgrade `nix-tools` to Cabal 3 for them to work)
-        skipBroken = self.lib.filterAttrs (pkgName: _:
+        skipBroken = final.lib.filterAttrs (pkgName: _:
           ghcName == "ghc865" || (pkgName != "base" && pkgName != "ghc-heap"));
         sha256 = ghc-boot-packages-nix-sha256."${ghcName}" or null;
         materializedPath = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
-      in (self.haskell-nix.materialize ({
+      in (final.haskell-nix.materialize ({
           inherit sha256;
           materialized = if sha256 != null && __pathExists materializedPath
             then materializedPath
@@ -100,9 +100,9 @@ let
   # The nix produced by `cabalProject` differs slightly depending on
   # what the platforms are.  There are currently 3 possible outputs.
   ghc-extra-projects-type =
-    if self.stdenv.hostPlatform.isWindows
+    if final.stdenv.hostPlatform.isWindows
       then "windows"
-      else if self.stdenv.buildPlatform != self.stdenv.hostPlatform
+      else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
         then "cross"
         else "default";
 
@@ -145,7 +145,7 @@ in rec {
   ghc-boot-packages-sdist-and-nix = builtins.mapAttrs
     (ghcName: value: builtins.mapAttrs
       (pkgName: dir: cabalToSdistAndNix ghcName pkgName "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
-    self.buildPackages.haskell-nix.compiler;
+    final.buildPackages.haskell-nix.compiler;
 
   # All the ghc boot package nix files for each ghc.
   ghc-boot-packages-nix = builtins.mapAttrs
@@ -166,14 +166,14 @@ in rec {
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
-        (self.lib.filterAttrs (n: _: n != "base" && n != "ghc-heap") ghc-extra-pkgs);
-    in self.stdenv.mkDerivation {
+        (final.lib.filterAttrs (n: _: n != "base" && n != "ghc-heap") ghc-extra-pkgs);
+    in final.stdenv.mkDerivation {
       name = "ghc-extra-pkgs-cabal-project-${name}";
       phases = [ "buildPhase" ];
       # Copy each cabal file from the configured ghc source and
       # add a suitable cabal.project file.
       buildPhase = ''
-        ${self.lib.concatStrings (self.lib.mapAttrsToList (_: dir: ''
+        ${final.lib.concatStrings (final.lib.mapAttrsToList (_: dir: ''
           mkdir -p $out/${dir}
           cp ${value.passthru.configured-src}/${dir}/*.cabal $out/${dir}
           # Remove references to libffi as the are not cross platform
@@ -181,7 +181,7 @@ in rec {
           sed -i 's|/nix/store/.*-libffi.*/include||' $out/${dir}/*.cabal
         '') package-locs)}
         cat >$out/cabal.project <<EOF
-        packages: ${self.lib.concatStringsSep " " (self.lib.attrValues package-locs)}
+        packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
         -- need this for libiserve as it doesn't build against 3.0 yet.
         constraints: network < 3.0,
                      ghc +ghci,
@@ -189,17 +189,17 @@ in rec {
                      libiserv +network
         EOF
       '';
-    }) self.buildPackages.haskell-nix.compiler;
+    }) final.buildPackages.haskell-nix.compiler;
 
   # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
     # Where to look for materialization files
     let materializedPath = ../materialized/ghc-extra-projects
                              + "/${ghc-extra-projects-type}/${ghcName}";
-    in self.haskell-nix.cabalProject' {
+    in final.haskell-nix.cabalProject' {
       name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
       src = proj;
-      index-state = self.haskell-nix.internalHackageIndexState;
+      index-state = final.haskell-nix.internalHackageIndexState;
       plan-sha256 =
         ghc-extra-projects-sha256."${ghc-extra-projects-type}"."${ghcName}"
           or null;
@@ -207,7 +207,7 @@ in rec {
         if ghc-extra-projects-sha256."${ghc-extra-projects-type}" ? "${ghcName}"
           then materializedPath
           else null;
-      ghc = self.buildPackages.haskell-nix.compiler.${ghcName};
+      ghc = final.buildPackages.haskell-nix.compiler.${ghcName};
       configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
