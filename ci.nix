@@ -47,11 +47,12 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         inherit (build) tests maintainer-scripts maintainer-script-cache;
         ghc = pkgs.recurseIntoAttrs compilers;
       } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
-        hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
         iserv-proxy = pkgs.recurseIntoAttrs (
           pkgs.lib.mapAttrs (ghcName: _:
             pkgs.ghc-extra-packages."${ghcName}".iserv-proxy.components.exes.iserv-proxy
           ) compilers);
+      } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
+        hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
       });
     }
     //
@@ -62,7 +63,6 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) {
         ghc = pkgs.recurseIntoAttrs compilers;
       } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
-        hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
         remote-iserv = pkgs.recurseIntoAttrs (
           pkgs.lib.mapAttrs (ghcName: _:
             pkgs.ghc-extra-packages."${ghcName}".remote-iserv.components.exes.remote-iserv
@@ -71,10 +71,14 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           pkgs.lib.mapAttrs (ghcName: _:
             pkgs.ghc-extra-packages."${ghcName}".iserv-proxy.components.exes.iserv-proxy
           ) compilers);
-      })
+      } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
+        hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
+      }
       //
       # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
-      pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") { inherit (build) tests; }
+      pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") {
+        inherit (build) tests;
+      })
     )
   )
 )
