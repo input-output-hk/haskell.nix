@@ -12,10 +12,13 @@
 # when tests are run.
 , extra-test-libs ? []
 , hostPlatform
+, symlinkJoin
 }:
 let
 
-  wineIservWrapper = writeScriptBin "iserv-wrapper" ''
+  configureFlags = lib.optional hostPlatform.isWindows "--disable-split-sections";
+
+  wineIservWrapperVanilla = writeScriptBin "iserv-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
     # unset the configureFlags.
@@ -32,6 +35,27 @@ let
     (>&2 echo "---> killing remote-iserv...")
     kill $RISERV_PID
   '';
+
+  wineIservWrapperProf = writeScriptBin "iserv-wrapper-prof" ''
+    #!${stdenv.shell}
+    set -euo pipefail
+    # unset the configureFlags.
+    # configure should have run already
+    # without restting it, wine might fail
+    # due to a too large environment.
+    unset configureFlags
+    PORT=$((5000 + $RANDOM % 5000))
+    (>&2 echo "---> Starting remote-iserv on port $PORT")
+    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 ${remote-iserv.override { enableExecutableProfiling = true; enableDebugRTS = true; }}/bin/remote-iserv.exe tmp $PORT &
+    (>&2 echo "---| remote-iserv should have started on $PORT")
+    RISERV_PID="$!"
+    ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
+    (>&2 echo "---> killing remote-iserv...")
+    kill $RISERV_PID
+  '';
+
+  wineIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ wineIservWrapperVanilla wineIservWrapperProf ]; };
+
   ################################################################################
   # Build logic (TH support via remote iserv via wine)
   #
@@ -89,4 +113,4 @@ let
     echo "================================================================================"
   '';
 
-in { inherit preCheck testWrapper postCheck setupBuildFlags; }
+in { inherit preCheck testWrapper postCheck setupBuildFlags configureFlags; }
