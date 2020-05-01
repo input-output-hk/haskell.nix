@@ -189,4 +189,4 @@ in { identifier, component, fullName, flags ? {} }:
     done
   '' + ''
     ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
-  '')
+  ''))

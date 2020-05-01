@@ -308,6 +308,42 @@ in {
                 cd lib
                 cp -R ${ghcjs865}/lib/ghcjs-8.6.5 ${targetPrefix}ghc-8.6.5
             '' + installDeps targetPrefix);
+            ghc883 = let buildGHC = self.buildPackages.haskell-nix.compiler.ghc883;
+                in let ghcjs883 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
+                ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
+                ghcjsVersion =  "8.8.0.1";
+                ghc = buildGHC;
+                cabal-install = self.buildPackages.haskell-nix.cabal-install;
+                # The alex from the bootstrap packages is apparently broken, and will fail with something like:
+                # > alex: /nix/store/f7b78rg9pmqgvxvsqfzh1przp7pxii5a-alex-3.2.4-exe-alex/share/x86_64-osx-ghc-8.4.4/alex-3.2.4-1pf5faR9dBuJ8mryql0DoA-alex/AlexTemplate-ghc-nopred: openFile: does not exist (No such file or directory)
+                # inherit (self.buildPackages.haskell-nix.bootstrap.packages) alex happy;
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in self.runCommand "${targetPrefix}ghc-8.8.3" {
+                passthru = {
+                    inherit targetPrefix;
+                    version = "8.8.3";
+                    isHaskellNixCompiler = true;
+                    inherit (ghcjs883) configured-src bundled-ghcjs;
+                    inherit buildGHC;
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        # setting gcc is stupid. non-emscripten ghcjs has no cc.
+                        # however cabal insists on compiling the c sources. m(
+                        "--with-gcc=${self.buildPackages.stdenv.cc}/bin/cc"
+                    ];
+                };
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
+                mkdir -p $out/bin
+                cd $out/bin
+                ln -s ${ghcjs883}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${ghcjs883}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
+                cd ..
+                mkdir lib
+                cd lib
+                cp -R ${ghcjs883}/lib/ghcjs-8.8.3 ${targetPrefix}ghc-8.8.3
+            '' + installDeps targetPrefix);
         })));
 
     ghc = self.haskell-nix.compiler.ghc865;
