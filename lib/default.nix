@@ -211,4 +211,12 @@ with haskellLib;
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
     && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl);
+
+  # Takes a version number or attr set of arguments (for cabalProject)
+  # and conversios it to an attr set of argments.  This allows
+  # the use of "1.0.0.0" or { version = "1.0.0.0"; ... }
+  versionOrArgsToArgs = versionOrArgs:
+    if lib.isAttrs versionOrArgs
+      then versionOrArgs
+      else { version = versionOrArgs; };
 }

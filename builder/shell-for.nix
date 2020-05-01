@@ -1,4 +1,4 @@
-{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib }:
+{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, buildGHC }:
 
 { packages ? ps:
     let
@@ -9,6 +9,7 @@
 , additional ? _: []
 , withHoogle ? true
 , exactDeps ? false
+, tools ? {}
 , ... } @ args:
 
 let
@@ -74,7 +75,7 @@ let
     # inherit (hsPkgs) hoogle;
   };
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
 in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
@@ -84,11 +85,16 @@ in
       ++ lib.optional withHoogle' hoogleIndex;
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
-      ++ mkDrvArgs.nativeBuildInputs or [];
+      ++ mkDrvArgs.nativeBuildInputs or []
+      ++ lib.attrValues (buildPackages.haskell-nix.toolsForGhc buildGHC tools);
     phases = ["installPhase"];
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
     LANG = "en_US.UTF-8";
     LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
+
+    # This helps tools like `ghcide` (that use the ghc api) to find
+    # the correct global package DB.
+    NIX_GHC_LIBDIR = ghcEnv + "/" + configFiles.libDir;
 
     passthru = (mkDrvArgs.passthru or {}) // {
       ghc = ghcEnv;

@@ -42,13 +42,7 @@
   # specific flavour and falls back to ghc default values.
   ghcFlavour ? stdenv.lib.optionalString haskell-nix.haskellLib.isCrossTarget (
     if useLLVM
-      then (
-        # TODO check if the issues with qemu and Aarch32 persist. See
-        # https://github.com/input-output-hk/haskell.nix/pull/411/commits/1986264683067198e7fdc1d665351622b664712e
-        if stdenv.targetPlatform.isAarch32
-          then "quick-cross"
-          else "perf-cross"
-      )
+      then "perf-cross"
       else "perf-cross-ncg"
     )
 
@@ -104,9 +98,6 @@ let
     GhcRtsHcOpts += -fPIC
   '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
-  '' + stdenv.lib.optionalString useLLVM ''
-    GhcStage2HcOpts += -fast-llvm
-    GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
@@ -218,13 +209,13 @@ in let configured-src = stdenv.mkDerivation (rec {
             "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
         ] ++ stdenv.lib.optionals (targetPlatform != hostPlatform) [
             "--enable-bootstrap-with-devel-snapshot"
+        ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
+            "--disable-large-address-space"
         ] ++ stdenv.lib.optionals (targetPlatform.isAarch32) [
             "CFLAGS=-fuse-ld=gold"
             "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
             "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-        ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
-            "--disable-large-address-space"
-        ];
+        ] ;
 
         outputs = [ "out" ];
         phases = [ "unpackPhase" "patchPhase" ]

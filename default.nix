@@ -1,6 +1,6 @@
 let haskellNix = rec {
     sources = {
-      inherit (import ./nixpkgs/default.nix) nixpkgs-1903 nixpkgs-1909 nixpkgs-default;
+      inherit (import ./nixpkgs/default.nix) nixpkgs-1909 nixpkgs-2003 nixpkgs-default;
     };
 
     config   = import ./config.nix;

@@ -1,11 +1,11 @@
 # Test a package set
-{ stdenv, util, haskell-nix, recurseIntoAttrs, haskellLib }:
+{ stdenv, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc }:
 
 with stdenv.lib;
 
 let
   project = haskell-nix.cabalProject' {
-    src = ./.;
+    src = testSrc "exe-only";
   };
 
   packages = project.hsPkgs;
