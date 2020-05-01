@@ -1,5 +1,6 @@
 { stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, nodejs }:
 
+lib.makeOverridable (
 { componentId
 , component
 , package
@@ -359,4 +360,4 @@ stdenv.mkDerivation ({
     preInstall postInstall preHaddock postHaddock;
 }
 // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
-))
+)))
