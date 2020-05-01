@@ -44,7 +44,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       # Native builds
       # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
       native = pkgs.recurseIntoAttrs ({
-        inherit (build) tests maintainer-scripts maintainer-script-cache;
+        inherit (build) tests tools maintainer-scripts maintainer-script-cache;
         ghc = pkgs.recurseIntoAttrs compilers;
       } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
         iserv-proxy = pkgs.recurseIntoAttrs (
@@ -62,6 +62,8 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           build = import ./build.nix { inherit pkgs ifdLevel; };
       in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) {
         ghc = pkgs.recurseIntoAttrs compilers;
+        # TODO: look into making tools work when cross compiling
+        # inherit (build) tools;
       } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
         remote-iserv = pkgs.recurseIntoAttrs (
           pkgs.lib.mapAttrs (ghcName: _:

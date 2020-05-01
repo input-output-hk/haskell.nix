@@ -16,6 +16,17 @@ let
 in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel; };
 
+  tools = pkgs.recurseIntoAttrs
+    (pkgs.lib.mapAttrs (_: ghc:
+      let
+        tool = name: version: pkgs.buildPackages.haskell-nix.tool name { inherit version ghc; };
+      in pkgs.recurseIntoAttrs {
+          cabal-32 = tool "cabal" "3.2.0.0";
+          ghcide   = tool "ghcide" "object-code";
+        } // pkgs.lib.optionalAttrs (ghc.version == "8.6.5") {
+          cabal-30 = tool "cabal" "3.0.0.0";
+        }) { inherit (pkgs.buildPackages.haskell-nix.compiler) ghc865 ghc883; });
+
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
