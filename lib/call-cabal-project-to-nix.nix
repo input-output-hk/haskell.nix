@@ -186,6 +186,55 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
+  dummy-ghc-data = pkgs.haskell-nix.materialize {
+    sha256 = null;
+    sha256Arg = "sha256";
+    materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
+    reasonNotSafe = null;
+    checkMaterialization = true;
+  } (
+  runCommand ("dummy-data-" + ghc.name) {
+    nativeBuildInputs = [ ghc ];
+  } ''
+    mkdir -p $out/ghc
+    mkdir -p $out/ghc-pkg
+    ${ghc.targetPrefix}ghc --numeric-version > $out/ghc/numeric-version
+    ${ghc.targetPrefix}ghc --info > $out/ghc/info
+    ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
+    ${ghc.targetPrefix}ghc --print-libdir > $out/ghc/print-libdir
+    ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
+    ${ghc.targetPrefix}ghc-pkg dump --global -v0 | grep -v /nix/store > $out/ghc-pkg/dump-global
+  '');
+
+  dummy-ghc = pkgs.writeTextFile {
+    name = "dummy-" + ghc.name;
+    executable = true;
+    destination = "/bin/${ghc.targetPrefix}ghc";
+    text = ''
+      if [ "'$*'" == "'--numeric-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-version;
+      elif [ "'$*'" == "'--supported-languages'" ]; then cat ${dummy-ghc-data}/ghc/supported-languages;
+      elif [ "'$*'" == "'--print-global-package-db'" ]; then echo $out/dumby-db;
+      elif [ "'$*'" == "'--info'" ]; then cat ${dummy-ghc-data}/ghc/info;
+      elif [ "'$*'" == "'--print-libdir'" ]; then cat ${dummy-ghc-data}/ghc/print-libdir;
+      else
+        false
+      fi
+    '';
+  };
+
+  dummy-ghc-pkg = pkgs.writeTextFile {
+    name = "dummy-pkg-" + ghc.name;
+    executable = true;
+    destination = "/bin/${ghc.targetPrefix}ghc-pkg";
+    text = ''
+      if [ "'$*'" == "'--version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/version;
+      elif [ "'$*'" == "'dump --global -v0'" ]; then cat ${dummy-ghc-data}/ghc-pkg/dump-global;
+      else
+        false
+      fi
+    '';
+  };
+
   plan-nix = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
@@ -198,7 +247,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install pkgs.rsync ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
