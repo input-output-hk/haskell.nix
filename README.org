@@ -1,6 +1,6 @@
 #+STARTUP: showall hidestars
 
-** :warning: Please use [[iohk.cachix.org]] instead of [[nix-tools.cachix.org]] :warning: 
+** :warning: Please use [[https://iohk.cachix.org][iohk.cachix.org]] instead of [[https://nix-tools.cachix.org][nix-tools.cachix.org]] :warning: 
 
 * Alternative Haskell Infrastructure for Nixpkgs
 
