@@ -104,4 +104,16 @@ printf "*** Checking the maintainer scripts...\n" >& 2
 nix build $NIX_BUILD_ARGS --no-link --keep-going -f ../build.nix maintainer-scripts
 echo >& 2
 
+printf "*** Checking that plan construction works with extra Hackages...\n" >& 2
+nix build $NIX_BUILD_ARGS --no-link \
+    -f /default.nix \
+    extra-hackage.plan-nix
+echo >& 2
+
+printf "*** Checking that package with extra Hackages can be build...\n" >& 2
+nix build $NIX_BUILD_ARGS --no-link \
+    -f /default.nix \
+    extra-hackage.hsPkgs.external-package-user.components.all
+echo >& 2
+
 printf "\n*** Finished successfully\n" >& 2

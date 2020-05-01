@@ -201,8 +201,12 @@ self: super: {
         dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? [], ... }@args:
             let
               allTarballs = [ (hackageTarball args) ] ++ extra-hackage-tarballs;
+              allNames = self.lib.concatMapStringsSep "-" (tarball: tarball.name) allTarballs;
+              # Main Hackage index-state is embedded in its name and thus will propagate to
+              # dotCabalName anyway.
+              dotCabalName = "dot-cabal-" + allNames;
             in
-            self.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
+            self.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${self.lib.concatStrings (
