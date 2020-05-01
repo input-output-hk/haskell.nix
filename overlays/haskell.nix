@@ -501,7 +501,6 @@ self: super: {
             happy = self.buildPackages.haskell-nix.bootstrap.packages.happy;
             hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
-            ghc882 = self.buildPackages.haskell-nix.compiler.ghc882;
             ghc883 = self.buildPackages.haskell-nix.compiler.ghc883;
             ghc-boot-packages-nix = self.recurseIntoAttrs
               (builtins.mapAttrs (_: self.recurseIntoAttrs)

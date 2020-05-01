@@ -37,31 +37,50 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
     let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
         build = import ./build.nix { inherit pkgs ifdLevel; };
         platformFilter = platformFilterGeneric pkgs system;
+        compilers = {
+          inherit (pkgs.haskell-nix.compiler) ghc865 ghc883;
+        };
     in filterAttrsOnlyRecursive (_: v: platformFilter v) {
       # Native builds
       # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
-      native = pkgs.recurseIntoAttrs {
+      native = pkgs.recurseIntoAttrs ({
         inherit (build) tests tools maintainer-scripts maintainer-script-cache;
+        ghc = pkgs.recurseIntoAttrs compilers;
+      } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
+        iserv-proxy = pkgs.recurseIntoAttrs (
+          pkgs.lib.mapAttrs (ghcName: _:
+            pkgs.ghc-extra-packages."${ghcName}".iserv-proxy.components.exes.iserv-proxy
+          ) compilers);
+      } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
-        iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
-        ghc = pkgs.recurseIntoAttrs pkgs.haskell-nix.compiler;
-      };
+      });
     }
     //
     dimension "Cross system" (crossSystems nixpkgsName genericPkgs system) (crossSystemName: crossSystem:
       # Cross builds
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
           build = import ./build.nix { inherit pkgs ifdLevel; };
-      in pkgs.recurseIntoAttrs {
+      in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) {
+        ghc = pkgs.recurseIntoAttrs compilers;
         # TODO: look into making tools work when cross compiling
         # inherit (build) tools;
+      } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
+        remote-iserv = pkgs.recurseIntoAttrs (
+          pkgs.lib.mapAttrs (ghcName: _:
+            pkgs.ghc-extra-packages."${ghcName}".remote-iserv.components.exes.remote-iserv
+          ) compilers);
+        iserv-proxy = pkgs.recurseIntoAttrs (
+          pkgs.lib.mapAttrs (ghcName: _:
+            pkgs.ghc-extra-packages."${ghcName}".iserv-proxy.components.exes.iserv-proxy
+          ) compilers);
+      } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
         hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
-        iserv-proxy = pkgs.ghc-extra-packages.ghc865.iserv-proxy.components.exes.iserv-proxy;
-        remote-iserv = pkgs.ghc-extra-packages.ghc865.remote-iserv.components.exes.remote-iserv;
       }
       //
       # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
-      pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") { inherit (build) tests; }
+      pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") {
+        inherit (build) tests;
+      })
     )
   )
 )
