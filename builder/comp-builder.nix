@@ -41,6 +41,9 @@ lib.makeOverridable (
 
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
+
+# Debug
+, enableDebugRTS ? false
 }:
 
 let
@@ -56,6 +59,7 @@ let
   configFiles = makeConfigFiles {
     inherit (package) identifier;
     inherit component fullName flags;
+    needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
   };
 
   enableFeature = enable: feature:
@@ -114,6 +118,7 @@ let
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ component.configureFlags
       ++ (ghc.extraConfigureFlags or [])
+      ++ lib.optional enableDebugRTS "--ghc-option=-debug"
     );
 
   setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc-options="${package.ghcOptions}"'';
