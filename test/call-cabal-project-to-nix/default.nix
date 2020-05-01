@@ -1,4 +1,4 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib }:
+{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc }:
 
 with stdenv.lib;
 
@@ -8,7 +8,7 @@ let
   plan = (importAndFilterProject (callCabalProjectToNix {
     index-state = "2019-04-30T00:00:00Z";
     # reuse the cabal-simple test project
-    src = ../cabal-simple;
+    src = testSrc "cabal-simple";
   }));
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = plan.pkgs;

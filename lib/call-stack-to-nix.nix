@@ -6,7 +6,11 @@
  * see also `call-cabal-project-to-nix`!
  */
 { runCommand, nix-tools, pkgs, mkCacheFile, materialize }:
-{ src, stackYaml ? null, ignorePackageYaml ? false, cache ? null
+{ name ? src.name or null # optional name for better error messages
+, src
+, stackYaml ? null
+, ignorePackageYaml ? false
+, cache ? null
 , stack-sha256 ? null
 , materialized ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
@@ -25,7 +29,7 @@ let
     reasonNotSafe = null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (runCommand "stack-to-nix-pkgs" {
+  }) (runCommand (if name == null then "stack-to-nix-pkgs" else name + "-stack-to-nix-pkgs") {
     nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";

@@ -42,13 +42,7 @@
   # specific flavour and falls back to ghc default values.
   ghcFlavour ? stdenv.lib.optionalString haskell-nix.haskellLib.isCrossTarget (
     if useLLVM
-      then (
-        # TODO check if the issues with qemu and Aarch32 persist. See
-        # https://github.com/input-output-hk/haskell.nix/pull/411/commits/1986264683067198e7fdc1d665351622b664712e
-        if stdenv.targetPlatform.isAarch32
-          then "quick-cross"
-          else "perf-cross"
-      )
+      then "perf-cross"
       else "perf-cross-ncg"
     )
 
@@ -73,9 +67,12 @@ let
   inherit (bootPkgs) ghc;
 
   # TODO check if this posible fix for segfaults works or not.
-  libffiStaticEnabled = if libffi == null || !stdenv.targetPlatform.isMusl
-    then libffi
-    else targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; });
+  targetLibffi =
+    if stdenv.targetPlatform.isMusl
+    then targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; })
+    else if targetPlatform != hostPlatform
+    then targetPackages.libffi
+    else libffi;
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -101,9 +98,6 @@ let
     GhcRtsHcOpts += -fPIC
   '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
-  '' + stdenv.lib.optionalString useLLVM ''
-    GhcStage2HcOpts += -fast-llvm
-    GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
@@ -116,7 +110,7 @@ let
 
   # Splicer will pull out correct variations
   libDeps = platform: stdenv.lib.optional enableTerminfo [ ncurses ]
-    ++ [libffiStaticEnabled]
+    ++ [targetLibffi]
     ++ stdenv.lib.optional (!enableIntegerSimple) gmp
     ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv;
 
@@ -208,20 +202,20 @@ in let configured-src = stdenv.mkDerivation (rec {
         configureFlags = [
             "--datadir=$doc/share/doc/ghc"
             "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
-        ] ++ stdenv.lib.optionals (libffiStaticEnabled != null) ["--with-system-libffi" "--with-ffi-includes=${libffiStaticEnabled.dev}/include" "--with-ffi-libraries=${libffiStaticEnabled.out}/lib"
+        ] ++ stdenv.lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
         ] ++ stdenv.lib.optional (!enableIntegerSimple) [
             "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
         ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
             "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
         ] ++ stdenv.lib.optionals (targetPlatform != hostPlatform) [
             "--enable-bootstrap-with-devel-snapshot"
+        ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
+            "--disable-large-address-space"
         ] ++ stdenv.lib.optionals (targetPlatform.isAarch32) [
             "CFLAGS=-fuse-ld=gold"
             "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
             "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-        ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
-            "--disable-large-address-space"
-        ];
+        ] ;
 
         outputs = [ "out" ];
         phases = [ "unpackPhase" "patchPhase" ]

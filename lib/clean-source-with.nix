@@ -94,7 +94,7 @@
                 #   * A default name that gives a hint as to why there is no name.
                 __trace (
                     "WARNING: `${caller}` called on ${toString src} without a `name`. "
-                    + "Consider adding `name = \"${baseNameOf src};\"`") "source";
+                    + "Consider adding `name = \"${baseNameOf src}\";`") "source";
     in {
       inherit origSrc origSubDir origSrcSubDir;
       filter = filter';

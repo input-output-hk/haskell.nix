@@ -2,6 +2,7 @@
 , stdenv, gmp6, openssl, zlib, libffi
 , buildPackages
 , recurseIntoAttrs
+, testSrc
 }:
 
 with stdenv.lib;
@@ -13,7 +14,7 @@ let
 
   # IFD stack-to-nix
   project = { gpl ? true }: stackProject' {
-    src = ./.;
+    src = testSrc "fully-static";
     pkg-def-extras = [];
     modules = [
       # Musl libc fully static build

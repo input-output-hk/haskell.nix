@@ -39,10 +39,9 @@ let
 
 
   hoogleLocal = let
-    # Use the latest default nixpkgs hoogle.nix, as the 19.03 one does not work with cross compilers
-    nixpkgsHoogleLocal = import ((import (import ../nixpkgs).nixpkgs-default {}).path + /pkgs/development/haskell-modules/hoogle.nix);
+    nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
   in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
-    haskellLib.weakCallPackage pkgs nixpkgsHoogleLocal {
+    haskellLib.weakCallPackage pkgs nixpkgsHoogle { 
       # For musl we can use haddock from the buildGHC
       ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl
         then ghc.buildGHC
@@ -52,8 +51,9 @@ let
 
   # Same as haskellPackages.shellFor in nixpkgs.
   shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {
-    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib;
+    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib buildPackages;
     inherit (buildPackages) glibcLocales;
+    buildGHC = ghc.passthru.buildGHC or ghc;
   };
 
   # Same as haskellPackages.ghcWithPackages and ghcWithHoogle in nixpkgs.

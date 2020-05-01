@@ -385,8 +385,7 @@ in {
                 ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "alex"; version = "3.2.4";
-                index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "1adn8s46msqm2rl6yf01z2r81maa2001qh441j491gpmc3ki36n0";
+                index-state = self.haskell-nix.internalHackageIndexState;
                 materialized = ../materialized/alex;
             };
             alex = bootstrap.packages.alex-project.hsPkgs.alex.components.exes.alex;
@@ -395,8 +394,7 @@ in {
                 ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "happy"; version = "1.19.11";
-                index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "0swpwhlym4p3209qv90mfgq6zsaw99ipznm4pvd32mxzwq9s5q8i";
+                index-state = self.haskell-nix.internalHackageIndexState;
                 materialized = ../materialized/happy;
             };
             happy = bootstrap.packages.happy-project.hsPkgs.happy.components.exes.happy;
@@ -405,8 +403,7 @@ in {
                 ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "hscolour"; version = "1.24.4";
-                index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "0cnkczsh1xy7cc60q3blwa51qrjhf5mc89s34y9ab3x702a26b75";
+                index-state = self.haskell-nix.internalHackageIndexState;
                 materialized = ../materialized/hscolour;
             };
             hscolour = bootstrap.packages.hscolour-project.hsPkgs.hscolour.components.exes.HsColour;

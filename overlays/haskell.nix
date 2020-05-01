@@ -198,11 +198,19 @@ self: super: {
                 HOME=$out cabal new-update cached
             '';
 
+        # Some of features of haskell.nix rely on using a hackage index
+        # to calculate a build plan.  To maintain stabity for caching and
+        # to allow the outputs to be materialized we pin this value here.
+        # If you want to update this value it important to check the
+        # materializations.  Turn `checkMaterialization` on below and
+        # check the CI results before turning it off again.
+        internalHackageIndexState = "2020-04-12T00:00:00Z";
+
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          inherit (self) nix;
+          inherit (self.buildPackages) nix;
           inherit (self.haskell-nix) checkMaterialization;
           pkgs = self.buildPackages.pkgs;
           inherit (self.buildPackages.pkgs) runCommand;
@@ -406,7 +414,9 @@ self: super: {
                 tar xzf ${tarball}
                 mv "${name}-${version}" $out
                 '';
-            in cabalProject' (builtins.removeAttrs args [ "version" ] // { inherit src; });
+          in cabalProject' (
+            (self.haskell-nix.hackageQuirks { inherit name version; }) // 
+              builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
@@ -420,7 +430,7 @@ self: super: {
                   modules = (args.modules or [])
                           ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in { inherit (pkg-set.config) hsPkgs; plan-nix = plan.nix; };
+            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
 
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // {
@@ -445,7 +455,7 @@ self: super: {
                              ++ (args.modules or [])
                              ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in { inherit (pkg-set.config) hsPkgs; stack-nix = stack.nix; };
+            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
@@ -491,15 +501,23 @@ self: super: {
             happy = self.buildPackages.haskell-nix.bootstrap.packages.happy;
             hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
-            ghc882 = self.buildPackages.haskell-nix.compiler.ghc882;
             ghc883 = self.buildPackages.haskell-nix.compiler.ghc883;
+            ghc-boot-packages-nix = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: self.recurseIntoAttrs)
+                (filterSupportedGhc self.ghc-boot-packages-nix));
             ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
               (filterSupportedGhc self.ghc-extra-projects));
           } // self.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             inherit (self.haskell-nix) nix-tools;
-            ghc-extra-packages = self.recurseIntoAttrs
-              (filterSupportedGhc self.ghc-extra-packages);
+            # These seem to be the only things we use from `ghc-extra-packages`
+            # in haskell.nix itself.
+            iserv-proxy = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: pkgs: pkgs.iserv-proxy.components.exes.iserv-proxy)
+                (filterSupportedGhc self.ghc-extra-packages));
+            remote-iserv = self.recurseIntoAttrs
+              (builtins.mapAttrs (_: pkgs: pkgs.remote-iserv.components.exes.remote-iserv)
+                (filterSupportedGhc self.ghc-extra-packages));
           });
     };
 }

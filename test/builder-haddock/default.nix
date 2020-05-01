@@ -1,4 +1,4 @@
-{ mkCabalProjectPkgSet, stdenv }:
+{ mkCabalProjectPkgSet, stdenv, testSrc }:
 
 with stdenv.lib;
 

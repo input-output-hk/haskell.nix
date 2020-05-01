@@ -30,16 +30,16 @@ in rec {
   # TODO: Surely this shouldn't be necessary. I think normal 'filterAttrsRecursive' will effectively cause infinite loops
   # if you keep derivations and your predicate forces the value of the attribute, as this then triggers a loop on the
   # 'out' attribute. Weird.
+  # To make this function faster, unwanted attributes are mapped to {} instead of being
+  # removed. This keeps the function lazy and avoids unwanted evaluation of sibling
+  # derivations.
   filterAttrsOnlyRecursive = pred: set:
-    lib.listToAttrs (
-      lib.concatMap (name:
-        let v = set.${name}; in
-        if pred name v then [
-          (lib.nameValuePair name (
-            if builtins.isAttrs v && !lib.isDerivation v then filterAttrsOnlyRecursive pred v
+    lib.mapAttrs (name: v:
+      if pred name v
+        then
+          if builtins.isAttrs v
+              && !lib.isDerivation v
+            then filterAttrsOnlyRecursive pred v
             else v
-          ))
-        ] else []
-      ) (builtins.attrNames set)
-    );
+        else {}) set;
 }

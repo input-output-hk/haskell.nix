@@ -1,11 +1,11 @@
-{ stdenv, cabalProject', recurseIntoAttrs, haskellLib }:
+{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
     index-state = "2019-04-30T00:00:00Z";
-    src = ./.;
+    src = testSrc "project-flags";
   };
   packages = project.hsPkgs;
 

@@ -1,10 +1,10 @@
-{ stdenv, stackProject', recurseIntoAttrs, haskellLib }:
+{ stdenv, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
 
 with stdenv.lib;
 
 let
   project = stackProject' {
-    src = ./.;
+    src = testSrc "project-flags";
   };
   packages = project.hsPkgs;
 
