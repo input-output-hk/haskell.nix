@@ -1,4 +1,4 @@
-{ stdenv, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc }:
+{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
 
 with stdenv.lib;
 
