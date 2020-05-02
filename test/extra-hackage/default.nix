@@ -1,5 +1,7 @@
 { stdenv, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc }:
 
+with stdenv.lib;
+
 let  
   
   hackage = import ./hackage;
