@@ -24,6 +24,7 @@ lib.makeOverridable (
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
 
+, build-tools ? component.build-tools
 , pkgconfig ? component.pkgconfig
 , platforms ? component.platforms
 , frameworks ? component.frameworks
@@ -134,7 +135,7 @@ let
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) component.build-tools) ++
+      else [c]) build-tools) ++
     lib.optional (pkgconfig != []) buildPackages.pkgconfig;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
