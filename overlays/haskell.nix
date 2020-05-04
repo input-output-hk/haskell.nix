@@ -523,7 +523,7 @@ self: super: {
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc882" || n == "ghc883");
+            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc883");
           in self.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
