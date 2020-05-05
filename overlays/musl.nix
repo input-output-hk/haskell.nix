@@ -7,4 +7,13 @@ self: super: super.lib.optionalAttrs super.stdenv.hostPlatform.isMusl {
     super.lib.optionalAttrs super.stdenv.hostPlatform.isx86_64 {
       configureScript = "./Configure linux-x86_64";
     });
+
+  # Fix infinite recursion between openssh and fetchcvs
+  openssh = super.openssh.override { withFIDO = false; };
+
+  # Prevent pkgsMusl.pkgsStatic chain
+  busybox-sandbox-shell = super.busybox-sandbox-shell.override { inherit (self) busybox; };
+
+  # Fails on cross compile
+  nix = super.nix.overrideAttrs (_: { doInstallCheck = false; });
 }

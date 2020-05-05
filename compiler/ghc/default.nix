@@ -68,11 +68,13 @@ let
 
   # TODO check if this posible fix for segfaults works or not.
   targetLibffi =
-    if stdenv.targetPlatform.isMusl
+    if stdenv.targetPlatform.isMusl && (targetPackages.libffi or null) != null
     then targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; })
     else if targetPlatform != hostPlatform
-    then targetPackages.libffi
+    then (targetPackages.libffi or libffi)
     else libffi;
+
+  targetGmp = (targetPackages.gmp or gmp);
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -195,16 +197,14 @@ in let configured-src = stdenv.mkDerivation (rec {
             done
         '';
 
-        # TODO(@Ericson2314): Always pass "--target" and always prefix.
-        configurePlatforms = [ "build" "host" ]
-            ++ stdenv.lib.optional (targetPlatform != hostPlatform) "target";
+        configurePlatforms = [ "build" "host" "target" ];
         # `--with` flags for libraries needed for RTS linker
         configureFlags = [
             "--datadir=$doc/share/doc/ghc"
             "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
         ] ++ stdenv.lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
         ] ++ stdenv.lib.optional (!enableIntegerSimple) [
-            "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
+            "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
         ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
             "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
         ] ++ stdenv.lib.optionals (targetPlatform != hostPlatform) [
@@ -322,6 +322,12 @@ in let configured-src = stdenv.mkDerivation (rec {
         -e '2i export PATH="$PATH:${stdenv.lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' \
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
+    done
+
+    # Use absolute path to ar when cross-compile
+    for file in $(find "$out" -name settings); do
+      substituteInPlace $file --replace '"${targetCC.bintools.targetPrefix}ar"' \
+        '"${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"'
     done
   '' + installDeps targetPrefix;
 

@@ -20,7 +20,7 @@ let
   docDir         = "$out/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
   haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl
-    then ghc.buildGHC
+    then (if stdenv.buildPlatform == stdenv.hostPlatform then ghc else ghc.buildGHC)
     else ghc;
 
 in runCommand "${componentName}-${ghc.name}-env" {
