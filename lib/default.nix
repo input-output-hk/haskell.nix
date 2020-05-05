@@ -195,10 +195,10 @@ with haskellLib;
   # In most cases we do not want to treat musl as a cross compiler.
   # For instance when building ghc we want to include ghci.
   isCrossHost = stdenv.hostPlatform != stdenv.buildPlatform
-    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl);
+    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl && stdenv.buildPlatform.isx86 && stdenv.hostPlatform.isx86);
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
-    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl);
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.isx86 && stdenv.targetPlatform.isx86);
 
   # Takes a version number or attr set of arguments (for cabalProject)
   # and conversios it to an attr set of argments.  This allows
