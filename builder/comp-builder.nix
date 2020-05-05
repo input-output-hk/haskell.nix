@@ -162,6 +162,12 @@ let
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
+  # Pass -j1 if cross-compiling to work around
+  # https://gitlab.haskell.org/ghc/ghc/issues/18024
+  jobCount = if stdenv.hostPlatform != stdenv.targetPlatform
+             then "1"
+             else "$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES))";
+
 in stdenv.lib.fix (drv:
 
 stdenv.mkDerivation ({
@@ -245,7 +251,7 @@ stdenv.mkDerivation ({
   buildPhase = ''
     runHook preBuild
     # https://gitlab.haskell.org/ghc/ghc/issues/9221
-    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
+    $SETUP_HS build ${haskellLib.componentTarget componentId} -j${jobCount} ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
     runHook postBuild
   '';
 
