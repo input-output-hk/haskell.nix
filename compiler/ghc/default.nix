@@ -67,14 +67,14 @@ let
   inherit (bootPkgs) ghc;
 
   # TODO check if this posible fix for segfaults works or not.
-  targetLibffi =
-    if stdenv.targetPlatform.isMusl && (targetPackages.libffi or null) != null
-    then targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; })
+  targetLibffi = let targetLibffi = targetPackages.libffi or libffi; # empty targetPackages in pkgsCross
+    in if stdenv.targetPlatform.isMusl
+    then targetLibffi.overrideAttrs (old: { dontDisableStatic = true; })
     else if targetPlatform != hostPlatform
-    then (targetPackages.libffi or libffi)
+    then targetLibffi
     else libffi;
 
-  targetGmp = (targetPackages.gmp or gmp);
+  targetGmp = targetPackages.gmp or gmp;
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -324,7 +324,7 @@ in let configured-src = stdenv.mkDerivation (rec {
         $i
     done
 
-    # Use absolute path to ar when cross-compile
+    # Use absolute path to ar when cross-compiling
     for file in $(find "$out" -name settings); do
       substituteInPlace $file --replace '"${targetCC.bintools.targetPrefix}ar"' \
         '"${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"'
