@@ -27,10 +27,10 @@ let
             ghcjs.components.exes.ghcjs
             ghcjs.components.exes.ghcjs-pkg
             ghcjs.components.exes.ghcjs-boot
-            ghcjs.components.exes.haddock
             ghcjs.components.exes.ghcjs-dumparchive
         ] ++ (if isGhcjs88
           then [
+            ghcjs.components.exes.haddock
             ghcjs.components.exes.private-ghcjs-run
             ghcjs.components.exes.private-ghcjs-unlit
             ghcjs.components.exes.private-ghcjs-hsc2hs
