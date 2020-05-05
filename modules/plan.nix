@@ -150,7 +150,7 @@ let
 
     profilingDetail = mkOption {
       type = nullOr uniqueStr;
-      default = (def.profilingDetail or "exported-functions");
+      default = (def.profilingDetail or "default");
     };
 
     keepSource = mkOption {

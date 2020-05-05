@@ -1,0 +1,15 @@
+{
+ "external-package-demo": {
+  "0.1.0.0": {
+   "revisions": {
+    "default": "r0",
+    "r0": {
+     "outPath": "external-package-demo-0.1.0.0-r0-3230db0813f2b468afb3ff7d8bbfcf570019a7faa4a0f59b2ea96743932105e7.nix",
+     "revNum": 0,
+     "sha256": "3230db0813f2b468afb3ff7d8bbfcf570019a7faa4a0f59b2ea96743932105e7"
+    }
+   },
+   "sha256": "1fce0685dcb89200ed286b9ae0983322ebc8a2d5de0541da55a5b82797dba740"
+  }
+ }
+}
