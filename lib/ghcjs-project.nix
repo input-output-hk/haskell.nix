@@ -26,6 +26,8 @@
 , ...
 }@args:
 let
+    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" > 0;
+
     # Inputs needed to configure the GHCJS source tree
     configureInputs = with pkgs; [
             perl
@@ -38,6 +40,15 @@ let
             alex
             cabal-install
         ];
+    # nixpkgs does not have an emsdk, this derivation uses symlinks to make something
+    # that matches enought for `ghcjs-boot` to work
+    emsdk = pkgs.linkFarm "emsdk" [
+      { name = "upstream/bin/clang"; path = pkgs.buildPackages.clang + "/bin/clang"; }
+      { name = "upstream/emscripten/emcc"; path = pkgs.buildPackages.emscripten + "/bin/emcc"; }
+      { name = "upstream/emscripten/emar"; path = pkgs.buildPackages.emscripten + "/bin/emar"; }
+      { name = "upstream/emscripten/emranlib"; path = pkgs.buildPackages.emscripten + "/bin/emranlib"; }
+      { name = "share"; path = pkgs.buildPackages.emscripten + "/share"; }
+    ];
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs; [
             nodejs
@@ -49,7 +60,8 @@ let
         ++ [ ghc cabal-install ]
         ++ lib.optionals stdenv.isDarwin [
           pkgs.buildPackages.gcc # https://github.com/ghcjs/ghcjs/issues/663
-        ];
+        ]
+        ++ lib.optional isGhcjs88 [ emscripten ];
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {
         buildInputs = configureInputs;
@@ -66,11 +78,15 @@ let
         sed -i 's/RELEASE=NO/RELEASE=YES/' ghc/configure.ac
         sed -i 's/${ghcjsVersion}/${ghcVersion}/' ghcjs.cabal
 
-        # TODO: How to actually fix this?
-        # Seems to work fine and produce the right files.
-        touch ghc/includes/ghcautoconf.h
-        mkdir -p ghc/compiler/vectorise
-        mkdir -p ghc/utils/haddock/haddock-library/vendor
+        ${
+          # TODO: How to actually fix this?
+          # Seems to work fine and produce the right files.
+          pkgs.lib.optionalString (!isGhcjs88) ''
+            touch ghc/includes/ghcautoconf.h
+            mkdir -p ghc/compiler/vectorise
+            mkdir -p ghc/utils/haddock/haddock-library/vendor
+          ''
+        }
 
         patchShebangs .
         sed -i 's/gcc /cc /g' utils/makePackages.sh
@@ -91,6 +107,8 @@ let
             (n: _: builtins.any (x: x == n)
                 ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"]) args) // {
         src = configured-src;
+        ghc = ghc.buildGHC;
+        configureArgs = pkgs.lib.optionalString isGhcjs88 "--constraint='Cabal >=3.0.2.0 && <3.1'";
         modules = [
             {
                 # we need ghc-boot in here for ghcjs.
@@ -99,8 +117,10 @@ let
                                          "ghc-boot" "binary" "bytestring" "filepath" "directory" "containers"
                                          "time" "unix" "Win32" ];
             }
-            {
+            (pkgs.lib.optionalAttrs (!isGhcjs88) {
                 packages.Cabal.patches = [ ./../overlays/patches/Cabal/fix-data-dir.patch ];
+            })
+            {
                 packages.ghcjs.doHaddock = false;
                 packages.haddock-ghcjs.doHaddock = false;
                 packages.haddock-api-ghcjs.doHaddock = false;
@@ -114,6 +134,7 @@ let
                 packages.ghc.flags.ghci = true;
                 packages.ghci.flags.ghci = true;
                 # packages.ghcjs.components.library.configureFlags = [ "-fno-wrapper-install" ];
+                packages.ghcjs.components.library.build-tools = [ alex ];
             }
         ];
     });
@@ -124,8 +145,9 @@ in ghcjsProject // {
         shellFor = args: (ghcjsProject.hsPkgs.shellFor args).overrideAttrs (drv: {
             buildInputs = (drv.buildInputs or []) ++ configureInputs;
             nativeBuildInputs = (drv.nativeBuildInputs or []) ++ bootInputs;
+            EMSDK = emsdk;
         });
     };
-    inherit configureInputs bootInputs configured-src;
+    inherit configureInputs bootInputs configured-src emsdk;
 }
 

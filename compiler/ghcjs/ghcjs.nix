@@ -9,10 +9,12 @@
 , cabal-install ? pkgs.buildPackages.cabal-install
 }:
 let
+    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" > 0;
+
     project = pkgs.buildPackages.haskell-nix.ghcjsProject {
         src = ghcjsSrc;
         inherit ghc ghcjsVersion ghcVersion happy alex cabal-install;
-        index-state = "2019-12-10T00:00:00Z";
+        index-state = "2020-04-25T00:00:00Z";
 #        plan-sha256 = "1wy2lr08maxyi7r8jiwf2gj6pdayk5vxxwh42bj4s2gg4035z0yc";
 #        materialized = ../../materialized/ghcjs;
     };
@@ -24,12 +26,20 @@ let
         paths = [
             ghcjs.components.exes.ghcjs
             ghcjs.components.exes.ghcjs-pkg
+            ghcjs.components.exes.ghcjs-boot
+            ghcjs.components.exes.haddock
+            ghcjs.components.exes.ghcjs-dumparchive
+        ] ++ (if isGhcjs88
+          then [
+            ghcjs.components.exes.private-ghcjs-run
+            ghcjs.components.exes.private-ghcjs-unlit
+            ghcjs.components.exes.private-ghcjs-hsc2hs
+          ]
+          else [
             ghcjs.components.exes.haddock-ghcjs
             ghcjs.components.exes.hsc2hs-ghcjs
-            ghcjs.components.exes.ghcjs-boot
             ghcjs.components.exes.ghcjs-run
-            ghcjs.components.exes.ghcjs-dumparchive
-        ];
+          ]);
     };
     libexec = "libexec/${builtins.replaceStrings ["darwin" "i686"] ["osx" "i386"] pkgs.stdenv.buildPlatform.system}-${ghc.name}/ghcjs-${ghcVersion}";
     booted-ghcjs = pkgs.stdenv.mkDerivation {
@@ -38,7 +48,7 @@ let
 
       nativeBuildInputs = project.bootInputs;
       passthru = {
-        inherit all-ghcjs bundled-ghcjs;
+        inherit all-ghcjs bundled-ghcjs project;
         inherit (project) configured-src;
         # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
         isHaskellNixCompiler = true;
@@ -50,7 +60,23 @@ let
           mkdir $HOME/.cabal
           touch $HOME/.cabal/config
           cd lib/boot
+      '' + (if isGhcjs88
+        then ''
+          mkdir -p $out/bin
+          mkdir -p $out/lib
+          lndir ${all-ghcjs}/bin $out/bin
+          chmod -R +w $out/bin
+          rm $out/bin/ghcjs-boot
+          cp ${ghcjs.components.exes.ghcjs-boot}/bin/ghcjs-boot $out/bin
 
+          wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib"
+          # wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib"
+          wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
+
+          env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk}
+          rm $out/bin/ghcjs-boot
+        ''
+        else ''
           mkdir -p $out/bin
           mkdir -p $out/lib/ghcjs-${ghcVersion}
           lndir ${all-ghcjs}/${libexec} $out/bin
@@ -60,7 +86,7 @@ let
           wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
 
           env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin
-      '';
+        '');
       # We hard code -j1 as a temporary workaround for
       # https://github.com/ghcjs/ghcjs/issues/654
       # enableParallelBuilding = true;
@@ -199,26 +225,26 @@ let
               $out/bin/ghcjs $out/bin/haddock-ghcjs $out/bin/ghcjs-pkg
 
             # Update the ghcjs and ghc settings files so that `cc` looked up in the PATH.
-            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/settings
+            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/settings
             sed -e 's|/nix/store/.*/bin/cc|cc|' \
-             < ${booted-ghcjs}/lib/ghcjs-8.6.5/settings \
-             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/settings
-            rm $out/$(basename ${ghc})/lib/ghc-8.6.5/settings
+             < ${booted-ghcjs}/lib/ghcjs-${ghcVersion}/settings \
+             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/settings
+            rm $out/$(basename ${ghc})/lib/ghc-${ghcVersion}/settings
             sed -e 's|/nix/store/.*/bin/cc|cc|' \
-             < ${ghc}/lib/ghc-8.6.5/settings \
-             > $out/$(basename ${ghc})/lib/ghc-8.6.5/settings
+             < ${ghc}/lib/ghc-${ghcVersion}/settings \
+             > $out/$(basename ${ghc})/lib/ghc-${ghcVersion}/settings
 
             # Update the ghcjs settings files so that `node` looked up in the PATH.
-            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/nodeSettings.json
+            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/nodeSettings.json
             sed -e 's|/nix/store/.*/bin/node|node|' \
-             < ${booted-ghcjs}/lib/ghcjs-8.6.5/nodeSettings.json \
-             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/nodeSettings.json
+             < ${booted-ghcjs}/lib/ghcjs-${ghcVersion}/nodeSettings.json \
+             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/nodeSettings.json
 
             # Update the ghcjs settings files so that `node` looked up in the PATH.
-            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/ghc_libdir
+            rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/ghc_libdir
             sed -e 's|/nix/store/|../../../|' \
-             < ${booted-ghcjs}/lib/ghcjs-8.6.5/ghc_libdir \
-             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-8.6.5/ghc_libdir
+             < ${booted-ghcjs}/lib/ghcjs-${ghcVersion}/ghc_libdir \
+             > $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/ghc_libdir
           '' + (pkgs.lib.optionalString (compilerName != "ghcjs") ''
             # Rename the wrappers based on the `compilerName` arg
             mv $out/bin/ghcjs         $out/bin/${compilerName}

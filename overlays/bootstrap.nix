@@ -286,7 +286,7 @@ in {
                     inherit targetPrefix;
                     version = "8.6.5";
                     isHaskellNixCompiler = true;
-                    inherit (ghcjs865) configured-src bundled-ghcjs;
+                    inherit (ghcjs865) configured-src bundled-ghcjs project;
                     inherit buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
@@ -313,6 +313,7 @@ in {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
                 ghcjsVersion =  "8.8.0.1";
                 ghc = buildGHC;
+                ghcVersion = "8.8.3";
                 cabal-install = self.buildPackages.haskell-nix.cabal-install;
                 # The alex from the bootstrap packages is apparently broken, and will fail with something like:
                 # > alex: /nix/store/f7b78rg9pmqgvxvsqfzh1przp7pxii5a-alex-3.2.4-exe-alex/share/x86_64-osx-ghc-8.4.4/alex-3.2.4-1pf5faR9dBuJ8mryql0DoA-alex/AlexTemplate-ghc-nopred: openFile: does not exist (No such file or directory)
@@ -322,7 +323,7 @@ in {
                     inherit targetPrefix;
                     version = "8.8.3";
                     isHaskellNixCompiler = true;
-                    inherit (ghcjs883) configured-src bundled-ghcjs;
+                    inherit (ghcjs883) configured-src bundled-ghcjs project;
                     inherit buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
