@@ -67,12 +67,14 @@ let
   inherit (bootPkgs) ghc;
 
   # TODO check if this posible fix for segfaults works or not.
-  targetLibffi = let targetLibffi = targetPackages.libffi or libffi; # empty targetPackages in pkgsCross
-    in if stdenv.targetPlatform.isMusl
+  targetLibffi =
+    # on native platforms targetPlatform.{libffi, gmp} do not exist; thus fall back
+    # to the non-targetPlatform version in those cases.
+    let targetLibffi = targetPackages.libffi or libffi; in
+    # we need to set `dontDisableStatic` for musl for libffi to work.
+    if stdenv.targetPlatform.isMusl
     then targetLibffi.overrideAttrs (old: { dontDisableStatic = true; })
-    else if targetPlatform != hostPlatform
-    then targetLibffi
-    else libffi;
+    else targetLibffi;
 
   targetGmp = targetPackages.gmp or gmp;
 
