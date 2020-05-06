@@ -68,9 +68,11 @@ let
           chmod -R +w $out/bin
           rm $out/bin/ghcjs-boot
           cp ${ghcjs.components.exes.ghcjs-boot}/bin/ghcjs-boot $out/bin
+          rm $out/bin/haddock
+          cp ${ghcjs.components.exes.haddock}/bin/haddock $out/bin
 
           wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib"
-          # wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib"
+          wrapProgram $out/bin/haddock --add-flags "-B$out/lib"
           wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
 
           env PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk}
