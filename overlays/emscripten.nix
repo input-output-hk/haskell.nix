@@ -1,4 +1,7 @@
 self: super: with self; {
+
+  binaryen = callPackage ./emscripten/binaryen.nix {};
+
   emscriptenVersion = "1.39.1";
 
   emscripten = callPackage ./emscripten { };

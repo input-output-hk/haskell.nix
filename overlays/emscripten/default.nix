@@ -5,7 +5,7 @@
 let
   rev = emscriptenVersion;
   appdir = "share/emscripten";
-  binaryenVersioned = binaryen.override { emscriptenRev = rev; };
+  binaryenVersioned = binaryen;
 in
 
 stdenv.mkDerivation {
@@ -14,8 +14,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "emscripten-core";
     repo = "emscripten";
-    sha256 = "1j3f0hpy05qskaiyv75l7wv4n0nzxhrh9b296zchx3f6f9h2rghq";
-    inherit rev;
+    sha256 = "10f2mlwh4s6v3rqghb7zdmv4ry0a4si915x4v17vp4nv7swkkwhn";
+    rev = "fc6a4bb97b421b6dcf5806d0dc42ab8ddd4da026";
   };
 
   buildInputs = [ nodejs cmake python ];
@@ -31,7 +31,7 @@ stdenv.mkDerivation {
     # fixes cmake support
     sed -i -e "s/print \('emcc (Emscript.*\)/sys.stderr.write(\1); sys.stderr.flush()/g" $out/${appdir}/emcc.py
     mkdir $out/bin
-    ln -s $out/${appdir}/{em++,em-config,emar,embuilder.py,emcc,emcmake,emconfigure,emlink.py,emmake,emranlib,emrun,emscons} $out/bin
+    ln -s $out/${appdir}/{em++,em-config,emar,emar.py,embuilder.py,emcc,emcc.py,emcmake,emconfigure,emlink.py,emmake,emranlib,emranlib.py,emrun,emscons} $out/bin
 
     echo "EMSCRIPTEN_ROOT = '$out/${appdir}'" > $out/${appdir}/config
     echo "LLVM_ROOT = '${emscriptenBackend}/bin'" >> $out/${appdir}/config
@@ -43,6 +43,7 @@ stdenv.mkDerivation {
     echo "JAVA = '${jre}/bin/java'" >> $out/${appdir}/config
     # to make the test(s) below work
     echo "SPIDERMONKEY_ENGINE = []" >> $out/${appdir}/config
+    echo "EMCC_FAST_COMPILER = 0" >> $out/${appdir}/config
   ''
   + stdenv.lib.optionalString enableWasm ''
     echo "BINARYEN_ROOT = '${binaryenVersioned}'" >> $out/share/emscripten/config

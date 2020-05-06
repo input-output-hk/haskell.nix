@@ -47,14 +47,12 @@ let
       emscriptenBackend = emscriptenupstream;
     };
     emsdk = pkgs.linkFarm "emsdk" [
-      { name = "upstream/bin/clang"; path = emscriptenupstream + "/bin/clang"; }
-      { name = "upstream/emscripten/emcc"; path = emscripten + "/bin/emcc"; }
-      { name = "upstream/emscripten/emar"; path = emscripten + "/bin/emar"; }
-      { name = "upstream/emscripten/emranlib"; path = emscripten + "/bin/emranlib"; }
+      { name = "upstream/bin"; path = emscriptenupstream + "/bin"; }
+      { name = "upstream/emscripten"; path = emscripten + "/bin"; }
       { name = "share"; path = emscripten + "/share"; }
     ];
     # Inputs needed to boot the GHCJS compiler
-    bootInputs = with pkgs; [
+    bootInputs = with pkgs.buildPackages; [
             nodejs
             makeWrapper
             xorg.lndir
