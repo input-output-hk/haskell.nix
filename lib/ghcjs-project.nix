@@ -42,12 +42,16 @@ let
         ];
     # nixpkgs does not have an emsdk, this derivation uses symlinks to make something
     # that matches enought for `ghcjs-boot` to work
+    emscriptenupstream = pkgs.buildPackages.emscriptenupstream;
+    emscripten = pkgs.buildPackages.emscripten.override {
+      emscriptenBackend = emscriptenupstream;
+    };
     emsdk = pkgs.linkFarm "emsdk" [
-      { name = "upstream/bin/clang"; path = pkgs.buildPackages.clang + "/bin/clang"; }
-      { name = "upstream/emscripten/emcc"; path = pkgs.buildPackages.emscripten + "/bin/emcc"; }
-      { name = "upstream/emscripten/emar"; path = pkgs.buildPackages.emscripten + "/bin/emar"; }
-      { name = "upstream/emscripten/emranlib"; path = pkgs.buildPackages.emscripten + "/bin/emranlib"; }
-      { name = "share"; path = pkgs.buildPackages.emscripten + "/share"; }
+      { name = "upstream/bin/clang"; path = emscriptenupstream + "/bin/clang"; }
+      { name = "upstream/emscripten/emcc"; path = emscripten + "/bin/emcc"; }
+      { name = "upstream/emscripten/emar"; path = emscripten + "/bin/emar"; }
+      { name = "upstream/emscripten/emranlib"; path = emscripten + "/bin/emranlib"; }
+      { name = "share"; path = emscripten + "/share"; }
     ];
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs; [
