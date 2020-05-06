@@ -325,12 +325,6 @@ in let configured-src = stdenv.mkDerivation (rec {
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
-
-    # Use absolute path to ar when cross-compiling
-    for file in $(find "$out" -name settings); do
-      substituteInPlace $file --replace '"${targetCC.bintools.targetPrefix}ar"' \
-        '"${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"'
-    done
   '' + installDeps targetPrefix;
 
   passthru = {
