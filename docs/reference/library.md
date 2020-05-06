@@ -366,9 +366,11 @@ shellFor =
 | Argument       | Type | Description         |
 |----------------|------|---------------------|
 | `packages`     | Function | Package selection function. It takes a list of [Haskell packages](#haskell-package) and returns a subset of these packages. |
-| `withHoogle` | Boolean | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
-| `exactDeps` | Boolean | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |
-| `{ ... }` | Attrset | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
+| `additional`   | Function | Similar to `packages`, but the selected packages are built and included in `ghc-pkg list` (not just their dependencies). |
+| `withHoogle`   | Boolean  | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
+| `exactDeps`    | Boolean  | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |
+| `tools`        | Function | AttrSet of tools to make available e.g. `{ cabal = "3.2.0.0"; }` or `{ cabal = { version = "3.2.0.0"; }; }` |
+| `{ ... }`      | Attrset  | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
 
 **Return value**: a derivation
 

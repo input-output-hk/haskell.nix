@@ -16,6 +16,18 @@ let
 in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel; };
 
+  tools = pkgs.lib.optionalAttrs (ifdLevel >= 3)
+    (pkgs.recurseIntoAttrs
+      (pkgs.lib.mapAttrs (_: ghc:
+        let
+          tool = name: version: pkgs.buildPackages.haskell-nix.tool name { inherit version ghc; };
+        in pkgs.recurseIntoAttrs {
+            cabal-32 = tool "cabal" "3.2.0.0";
+            ghcide   = tool "ghcide" "object-code";
+          } // pkgs.lib.optionalAttrs (ghc.version == "8.6.5") {
+            cabal-30 = tool "cabal" "3.0.0.0";
+          }) { inherit (pkgs.buildPackages.haskell-nix.compiler) ghc865 ghc883; }));
+
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
@@ -25,12 +37,7 @@ in rec {
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
-      generatedOptions = import ./scripts/options-doc.nix {
-        # nixpkgs 19.09 changes "Option has no description" from an
-        # error into a warning. That is quite helpful when hardly any
-        # of our options are documented, thanks @oxij.
-        pkgs = import (import ./nixpkgs/default.nix).nixpkgs-1909 {};
-      };
+      generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };
     };
     # Because this is going to be used to test caching on hydra, it must not
     # use the darcs package from the haskell.nix we are testing.  For that reason

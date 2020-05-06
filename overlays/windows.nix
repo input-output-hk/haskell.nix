@@ -34,6 +34,7 @@ final: prev:
           wine = pkgs.buildPackages.winePackages.minimal;
           inherit (pkgs.windows) mingw_w64_pthreads;
           inherit (pkgs) gmp;
+          inherit (pkgs.buildPackages) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
           inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;

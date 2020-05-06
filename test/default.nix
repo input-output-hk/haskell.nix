@@ -175,6 +175,7 @@ let
     exe-only = callTest ./exe-only { inherit util; };
     stack-source-repo = callTest ./stack-source-repo {};
     lookup-sha256 = callTest ./lookup-sha256 {};
+    extra-hackage = callTest ./extra-hackage {};
 
     unit = unitTests;
   };

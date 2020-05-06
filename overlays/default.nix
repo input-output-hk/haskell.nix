@@ -1,16 +1,17 @@
 let
   overlays = {
-    release1903 = import ./release-19.03.nix;
     wine = import ./wine.nix;
     #ghcjs = import ./ghcjs-asterius-triple.nix;
     #python = import ./python.nix;
     haskell = import ./haskell.nix;
+    hackage-quirks = import ./hackage-quirks.nix;
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
     musl = import ./musl.nix;
+    tools = import ./tools.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -27,15 +28,16 @@ let
       haskellPackages = { };
       haskell-nix-prev = prev;
     })
-    release1903
     wine
     haskell
+    hackage-quirks
     bootstrap
     ghc
     ghc-packages
     windows
     armv6l-linux
     musl
+    tools
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];

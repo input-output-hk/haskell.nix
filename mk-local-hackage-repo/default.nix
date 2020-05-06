@@ -14,10 +14,10 @@
 # nix would be pointless as we'd have to hardcode them to produce the same output
 # reproducably.
 #
-{ pkgs, hackageTarball }:
-{ index-state, sha256, ... }@args:
-let index = hackageTarball args; in
-pkgs.runCommand "hackage-repo-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ pkgs.buildPackages.nix ]; } ''
+pkgs:
+{ name, index }:
+
+pkgs.runCommand "hackage-repo-${name}" { nativeBuildInputs = [ pkgs.buildPackages.nix ]; } ''
 mkdir -p $out
 export expires="4000-01-01T00:00:00Z"
 

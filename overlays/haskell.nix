@@ -70,13 +70,19 @@ final: prev: {
             { pkg-def  # Base package set. Either from stackage (via stack-to-nix) or from a cabal projects plan file (via plan-to-nix)
             , pkg-def-extras ? [] # Additional packages to augment the Base package set `pkg-def` with.
             , modules ? []
+            , extra-hackages ? [] # Extra Hackage repositories to use besides main one.
             }@args:
 
-            import ../package-set.nix (args // {
+            let
+              hackageAll = builtins.foldl' (base: extra: base // extra) hackage extra-hackages;
+            in
+
+            import ../package-set.nix {
+                inherit (args) pkg-def pkg-def-extras;
                 modules = defaultModules ++ modules;
                 pkgs = final;
-                inherit hackage pkg-def;
-            });
+                hackage = hackageAll;
+            };
 
         # Some boot packages (libiserv) are in lts, but not in hackage,
         # so we should not try to get it from hackage based on the stackage
@@ -128,6 +134,7 @@ final: prev: {
             { plan-pkgs  # Path to the output of plan-to-nix
             , pkg-def-extras ? []
             , modules ? []
+            , extra-hackages ? []
             }@args:
 
             let
@@ -146,6 +153,7 @@ final: prev: {
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
                        ++ plan-pkgs.modules or [];
+                inherit extra-hackages;
             };
 
         # Package sets for all stackage snapshots.
@@ -169,33 +177,60 @@ final: prev: {
         nix-tools = final.buildPackages.haskell-nix.nix-tools-cross-compiled;
         # TODO perhaps there is a cleaner way to get a suitable nix-tools.
 
-            # Produce a fixed output derivation from a moving target (hackage index tarball)
+        # Produce a fixed output derivation from a moving target (hackage index tarball)
+        # Takes desired index-state and sha256 and produces a set { name, index }, where
+        # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
         hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools, ... }:
             assert sha256 != null;
-            final.fetchurl {
-                name = "01-index.tar.gz-at-${builtins.replaceStrings [":"] [""] index-state}";
+            let at = builtins.replaceStrings [":"] [""] index-state; in
+            { name = "hackage.haskell.org-at-${at}";
+              index = final.fetchurl {
+                name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
                 postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
 
                 outputHashAlgo = "sha256";
                 outputHash = sha256;
+              };
             };
 
-        mkLocalHackageRepo = import ../mk-local-hackage-repo { inherit hackageTarball; pkgs = final; };
+        # Creates Cabal local repository from { name, index } set.
+        mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
-        dotCabal = { index-state, sha256, cabal-install, ... }@args:
-            final.runCommand "dot-cabal-at-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ cabal-install ]; } ''
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? [], ... }@args:
+            let
+              allTarballs = [ (hackageTarball args) ] ++ extra-hackage-tarballs;
+              allNames = final.lib.concatMapStringsSep "-" (tarball: tarball.name) allTarballs;
+              # Main Hackage index-state is embedded in its name and thus will propagate to
+              # dotCabalName anyway.
+              dotCabalName = "dot-cabal-" + allNames;
+            in
+            final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
-                repository cached
-                    url: file:${mkLocalHackageRepo args}
-                    secure: True
-                    root-keys:
-                    key-threshold: 0
+                ${final.lib.concatStrings (
+                  map (tarball:
+                ''
+                repository ${tarball.name}
+                  url: file:${mkLocalHackageRepo tarball}
+                  secure: True
+                  root-keys:
+                  key-threshold: 0
+
+                '') allTarballs
+                )}
                 EOF
-                mkdir -p $out/.cabal/packages/cached
-                HOME=$out cabal new-update cached
+
+                # All repositories must be mkdir'ed before calling new-update on any repo,
+                # otherwise it fails.
+                ${final.lib.concatStrings (map ({ name, ... }: ''
+                  mkdir -p $out/.cabal/packages/${name}
+                '') allTarballs)}
+
+                ${final.lib.concatStrings (map ({ name, ... }: ''
+                  HOME=$out cabal new-update ${name}
+                '') allTarballs)}
             '';
 
         # Some of features of haskell.nix rely on using a hackage index
@@ -414,7 +449,9 @@ final: prev: {
                 tar xzf ${tarball}
                 mv "${name}-${version}" $out
                 '';
-            in cabalProject' (builtins.removeAttrs args [ "version" ] // { inherit src; });
+          in cabalProject' (
+            (final.haskell-nix.hackageQuirks { inherit name version; }) // 
+              builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
@@ -427,6 +464,7 @@ final: prev: {
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
                           ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                  extra-hackages = args.extra-hackages or [];
                 };
             in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
 
@@ -485,7 +523,7 @@ final: prev: {
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = final.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc882" || n == "ghc883");
+            let filterSupportedGhc = final.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc883");
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) nix-tools source-pins;
@@ -499,7 +537,6 @@ final: prev: {
             happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
             hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = final.buildPackages.haskell-nix.compiler.ghc865;
-            ghc882 = final.buildPackages.haskell-nix.compiler.ghc882;
             ghc883 = final.buildPackages.haskell-nix.compiler.ghc883;
             ghc-boot-packages-nix = final.recurseIntoAttrs
               (builtins.mapAttrs (_: final.recurseIntoAttrs)

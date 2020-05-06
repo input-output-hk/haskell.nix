@@ -59,15 +59,11 @@ let
         # (we need to upgrade `nix-tools` to Cabal 3 for them to work)
         skipBroken = final.lib.filterAttrs (pkgName: _:
           ghcName == "ghc865" || (pkgName != "base" && pkgName != "ghc-heap"));
-        sha256 = ghc-boot-packages-nix-sha256."${ghcName}" or null;
         materializedPath = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
       in (final.haskell-nix.materialize ({
-          inherit sha256;
-          materialized = if sha256 != null && __pathExists materializedPath
+          materialized = if __pathExists materializedPath
             then materializedPath
             else null;
-          sha256Arg = "ghc-boot-packages-nix-sha256";
-          reasonNotSafe = null;
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
           (_: sdistAndNix: sdistAndNix.nix) (skipBroken bootPackages))));
 
@@ -89,14 +85,6 @@ let
       iserv-proxy  = "utils/iserv-proxy";
     };
 
-  # Hashes needed to make ghc-boot-packages use fixed output derivations
-  # for the nix files.
-  ghc-boot-packages-nix-sha256 = {
-    ghc865 = "0n5bsi67mczbwch8a3dwf58hkignb8qswv7h707dqgc43himvq3b";
-    ghc882 = "1wpvy0f2m7l3h8fz0iag3q8zj6j4i7732x1f0lkxnr2whnv88dfb";
-    ghc883 = "147l5a7vm8dgyb2wz692p3n3fsvq8wbjn5wnjhabdgw4mxw0c2mm";
-  };
-
   # The nix produced by `cabalProject` differs slightly depending on
   # what the platforms are.  There are currently 3 possible outputs.
   ghc-extra-projects-type =
@@ -105,26 +93,6 @@ let
       else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
         then "cross"
         else "default";
-
-  # Hashes needed to make ghc-extra-projects use fixed output derivations
-  # for the nix files.
-  ghc-extra-projects-sha256 = {
-    default = {
-      ghc865 = "12mj0fmm0b0jys6pb2l7l9w2w5as5fiqkfav81mjlz9ic1rkqk92";
-      ghc882 = "0q4v1iryvd5xvnkb1s02a3v6x0lj73r8bsfxrs9bxipk22bcksm9";
-      ghc883 = "0dy6isqz41c0di5yf1mhyp0nbp6aw5m947b54l5074lkmc4f5alb";
-    };
-    windows = {
-      ghc865 = "1jizwsnmdr2iglispm9wmhhbdh2gh6yfvk8x1jbj0sk9pq21xwap";
-      ghc882 = "09ji5548bsqqa7iwphjxmc5i067ya6zh0v1hfls9acfrxax0sfgm";
-      ghc883 = "0gliadn1nj1i5y5hjz280h1kgzql97yfh4gy63k2g7xsldmzb57b";
-    };
-    cross = {
-      ghc865 = "10bckrm3qi1vymncjiv534b8nb8bgix8w8y91543xxwhzpmwml3f";
-      ghc882 = "0hamwh6x0vfki2c4kj132x2c2hqvr1r735cfd4yrygzf86drmyf0";
-      ghc883 = "0v8wq8i82c329kzi3yzv6ny63yaggbzdaaxbbklxwg16fawqn08p";
-    };
-  };
 
 # Given the ghc-extra-pkgs, we'll create a cabal.project
 # that contains all of them.  And then we call cabalProject
@@ -200,11 +168,8 @@ in rec {
       name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
       src = proj;
       index-state = final.haskell-nix.internalHackageIndexState;
-      plan-sha256 =
-        ghc-extra-projects-sha256."${ghc-extra-projects-type}"."${ghcName}"
-          or null;
       materialized =
-        if ghc-extra-projects-sha256."${ghc-extra-projects-type}" ? "${ghcName}"
+        if __pathExists materializedPath
           then materializedPath
           else null;
       ghc = final.buildPackages.haskell-nix.compiler.${ghcName};

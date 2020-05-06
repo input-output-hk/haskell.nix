@@ -23,6 +23,7 @@
                      #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
                      #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
                      #       ."${repo.location}"."${repo.tag}";
+, extra-hackage-tarballs ? []
 , ...
 }@args:
 # cabal-install versions before 2.4 will generate insufficient plan information.
@@ -41,7 +42,7 @@ let
       inherit src;
       filter = path: type:
         type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ]; }
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" ".freeze" "package.yaml" ]; }
     else src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
@@ -225,7 +226,7 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
-      inherit cabal-install nix-tools;
+      inherit cabal-install nix-tools extra-hackage-tarballs;
       index-state =
         builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
           index-state-found;

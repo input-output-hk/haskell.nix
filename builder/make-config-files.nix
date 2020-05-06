@@ -63,12 +63,13 @@ let
   libDir         = "lib/${ghcCommand}-${ghc.version}";
   packageCfgDir  = "${libDir}/package.conf.d";
 
-in { identifier, component, fullName, flags ? {} }:
+in { identifier, component, fullName, flags ? {}, needsProfiling ? false }:
   # Filters out only library packages that for this GHC target
   # TODO investigate why this is needed
   # TODO find out why p ? configFiles helps (for instance for `R1909.aarch64-unknown-linux-gnu.tests.cabal-22.run.x86_64-linux`)
-  let libDeps = lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
-        (map getLibComponent component.depends);
+  let libDeps = (if needsProfiling then (x: map (p: p.override { enableLibraryProfiling = true; }) x) else x: x)
+        (lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
+         (map getLibComponent component.depends));
       cfgFiles =
         let xs = map
           (p: "${p.configFiles}")
@@ -179,9 +180,5 @@ in { identifier, component, fullName, flags ? {} }:
       sed -i -E "/^ ./{H;$!d} ; x ; s,^dynamic-library-dirs:.*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    # Use ''${pkgroot} relative paths so that we can relocate the package database
-    # along with referenced packages and still have it work on systems with
-    # or without nix installed.
-    sed -i 's|/nix/store/|''${pkgroot}/../../../|' $out/${packageCfgDir}/*.conf
     ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
   '')
