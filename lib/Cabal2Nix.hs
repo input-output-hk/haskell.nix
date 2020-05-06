@@ -24,7 +24,7 @@ import Distribution.Types.PkgconfigDependency
 import Distribution.Types.PkgconfigName
 import Distribution.Types.VersionRange
 import Distribution.Compiler
-import Distribution.Types.PackageName (PackageName, mkPackageName)
+import Distribution.Types.PackageName (PackageName, mkPackageName, unPackageName)
 import Distribution.Simple.BuildToolDepends (desugarBuildTool)
 import Distribution.ModuleName (ModuleName)
 import qualified Distribution.ModuleName as ModuleName
@@ -44,6 +44,7 @@ import Cabal2Nix.Util (quoted, selectOr, mkThrow)
 
 data Src
   = Path FilePath
+  | PrivateHackage String
   | Git String String (Maybe String) (Maybe String)
   deriving Show
 
@@ -97,14 +98,18 @@ cabal2nix isLocal fileDetails src = \case
         (_, Right desc) -> pure desc
 
 gpd2nix :: Bool -> CabalDetailLevel -> Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
-gpd2nix isLocal fileDetails src extra gpd = mkLets errorFunctions $ mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd $//? (toNix <$> src) $//? extra
+gpd2nix isLocal fileDetails src extra gpd =
+  mkLets errorFunctions $ mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd
+    $//? (srcToNix (package $ packageDescription gpd) <$> src)
+    $//? extra
   where args :: Params NExpr
         args = mkParamset [ ("system", Nothing)
                           , ("compiler", Nothing)
                           , ("flags", Nothing)
                           , (pkgs, Nothing)
                           , (hsPkgs, Nothing)
-                          , (pkgconfPkgs, Nothing)]
+                          , (pkgconfPkgs, Nothing)
+                          , ("config", Nothing)]
                           True
 
 errorFunctions :: [Binding NExpr]
@@ -216,22 +221,6 @@ class ToNixExpr a where
 class ToNixBinding a where
   toNixBinding :: a -> Binding NExpr
 
-instance ToNixExpr Src where
-  toNix (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
-  toNix (Git url rev mbSha256 mbPath)
-    = mkNonRecSet $
-      [ "src" $= applyMkDefault (mkSym pkgs @. "fetchgit" @@ mkNonRecSet
-        [ "url"    $= mkStr (fromString url)
-        , "rev"    $= mkStr (fromString rev)
-        , "sha256" $= case mbSha256 of
-                        Just sha256 -> mkStr (fromString sha256)
-                        Nothing     -> mkNull
-        ])
-      ] <>
-      [ "postUnpack"
-        $= mkStr (fromString $ "sourceRoot+=/" <> root <> "; echo source root reset to $sourceRoot")
-      | Just root <- [mbPath] ]
-
 applyMkDefault :: NExpr -> NExpr
 applyMkDefault expr = mkSym pkgs @. "lib" @. "mkDefault" @@ expr
 
@@ -271,6 +260,35 @@ toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
         , "extraTmpFiles" $= toNix (extraTmpFiles pd)
         , "extraDocFiles" $= toNix (extraDocFiles pd)
         ]
+
+srcToNix :: PackageIdentifier -> Src -> NExpr
+srcToNix _ (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
+srcToNix pi' (PrivateHackage url)
+  = mkNonRecSet $
+    [ "src" $= applyMkDefault (mkSym pkgs @. "fetchurl" @@ mkNonRecSet
+      [ "url" $= mkStr (fromString $ mkPrivateHackageUrl url pi')
+      , "sha256" $= (mkSym "config" @. "sha256")
+      ])
+    ]
+srcToNix _ (Git url rev mbSha256 mbPath)
+  = mkNonRecSet $
+    [ "src" $= applyMkDefault (mkSym pkgs @. "fetchgit" @@ mkNonRecSet
+      [ "url"    $= mkStr (fromString url)
+      , "rev"    $= mkStr (fromString rev)
+      , "sha256" $= case mbSha256 of
+                      Just sha256 -> mkStr (fromString sha256)
+                      Nothing     -> mkNull
+      ])
+    ] <>
+    [ "postUnpack"
+      $= mkStr (fromString $ "sourceRoot+=/" <> root <> "; echo source root reset to $sourceRoot")
+    | Just root <- [mbPath] ]
+
+mkPrivateHackageUrl :: String -> PackageIdentifier -> String
+mkPrivateHackageUrl hackageUrl pi' =
+  hackageUrl <> "/package/" <> pkgNameVersion <> "/" <> pkgNameVersion <> ".tar.gz"
+  where
+    pkgNameVersion = unPackageName (pkgName pi') <> "-" <> show (disp (pkgVersion pi'))
 
 newtype SysDependency = SysDependency { unSysDependency :: String } deriving (Show, Eq, Ord)
 newtype BuildToolDependency = BuildToolDependency { unBuildToolDependency :: PackageName } deriving (Show, Eq, Ord)

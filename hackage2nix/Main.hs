@@ -46,8 +46,12 @@ import           System.FilePath                          ( (</>)
 
 main :: IO ()
 main = do
-  [out] <- getArgs
-  db    <- U.readTarball Nothing =<< hackageTarball
+  out:rest <- getArgs
+  (inp, src) <- case rest of
+                 [tarball, url] -> return (tarball, Just $ PrivateHackage url)
+                 [] -> hackageTarball >>= \tarball -> return (tarball, Nothing)
+
+  db    <- U.readTarball Nothing inp
 
   let (defaultJson, cabalFiles) =
         runState (fmap (object . toList . (Seq.sortOn fst)) $ foldMapWithKeyA package2json db) mempty
@@ -69,7 +73,7 @@ main = do
   createDirectoryIfMissing False (out </> "hackage")
 
   for_ cabalFiles $ \(cabalFile, pname, path) -> do
-    gpd <- cabal2nix False MinimalDetails Nothing $ InMemory Nothing pname $ BL.toStrict cabalFile
+    gpd <- cabal2nix False MinimalDetails src $ InMemory Nothing pname $ BL.toStrict cabalFile
     writeFile (out </> path) $ show $ prettyNix gpd
 
 type GPDWriter = State (Seq (BL.ByteString, String, FilePath))
