@@ -80,7 +80,7 @@ in { haskell-nix = prev.haskell-nix // {
             sha256 = "0d158xifwvz0y69ah98ckxakzqpz229mq7rpf2bpbmwhnpw3jmm6";
           };
           modules = [({config, ...}: {
-            packages.ghcide.configureFlags = lib.optional (!self.stdenv.targetPlatform.isMusl)
+            packages.ghcide.configureFlags = lib.optional (!final.stdenv.targetPlatform.isMusl)
                                               "--enable-executable-dynamic";
             nonReinstallablePkgs = [ "Cabal" "array" "base" "binary" "bytestring" "containers" "deepseq"
                                      "directory" "filepath" "ghc" "ghc-boot" "ghc-boot-th" "ghc-compact"
