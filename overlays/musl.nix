@@ -4,7 +4,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl {
   # are not built.  Because the `no_asm` configure flag is also not passed
   # the c versions of the functions are also not included.
   openssl = prev.openssl.overrideAttrs (attrs:
-    prev.lib.optionalAttrs super.stdenv.hostPlatform.isx86_64 {
+    prev.lib.optionalAttrs prev.stdenv.hostPlatform.isx86_64 {
       configureScript = "./Configure linux-x86_64";
     });
 

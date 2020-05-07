@@ -31,11 +31,11 @@
 #      ghc = haskell-nix.compiler.ghc883;
 #   }
 #
-self: super:
+final: prev:
 let
-  inherit (self) lib;
+  inherit (final) lib;
 
-in { haskell-nix = super.haskell-nix // {
+in { haskell-nix = prev.haskell-nix // {
 
   # Some times the package name in hackage is not the same as tool name.
   toolPackageName = {
@@ -43,37 +43,37 @@ in { haskell-nix = super.haskell-nix // {
   };
 
   hackage-tool = { name, ... }@args:
-    (self.haskell-nix.hackage-package
-      (args // { name = self.haskell-nix.toolPackageName."${name}" or name; }))
+    (final.haskell-nix.hackage-package
+      (args // { name = final.haskell-nix.toolPackageName."${name}" or name; }))
         .components.exes."${name}";
 
   tool = name: versionOrArgs:
     let
-      args = self.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
+      args = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
     in
-      (if self.haskell-nix.custom-tools ? "${name}"
-          && self.haskell-nix.custom-tools."${name}" ? "${args.version}"
-        then self.haskell-nix.custom-tools."${name}"."${args.version}"
-        else self.haskell-nix.hackage-tool) (args // { inherit name; });
+      (if final.haskell-nix.custom-tools ? "${name}"
+          && final.haskell-nix.custom-tools."${name}" ? "${args.version}"
+        then final.haskell-nix.custom-tools."${name}"."${args.version}"
+        else final.haskell-nix.hackage-tool) (args // { inherit name; });
 
-  tools = lib.mapAttrs self.haskell-nix.tool;
+  tools = lib.mapAttrs final.haskell-nix.tool;
 
   # Like `tools` but allows default ghc to be specified
   toolsForGhc = ghc: toolSet:
-    self.haskell-nix.tools (
+    final.haskell-nix.tools (
       lib.mapAttrs (name: versionOrArgs:
         # Add default ghc if not specified in the args
         { inherit ghc; }
-          // self.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs
+          // final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs
       ) toolSet
     );
 
   # Tools not in hackage yet
   custom-tools = {
     ghcide.object-code = args:
-        (self.haskell-nix.cabalProject (args // {
+        (final.haskell-nix.cabalProject (args // {
           name = "ghcide";
-          src = self.fetchFromGitHub {
+          src = final.fetchFromGitHub {
             owner = "mpickering";
             repo = "ghcide";
             rev = "706c59c97c25c66798815c1dc3ee6885a298918a";

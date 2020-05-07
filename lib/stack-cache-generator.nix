@@ -69,7 +69,6 @@ concatMap (dep:
                 }
                 else builtins.fetchGit {
                   inherit (dep) url rev;
-                  ref = "*";
                 };
         in map (subdir: {
                 name = cabalName "${pkgsrc}/${subdir}";

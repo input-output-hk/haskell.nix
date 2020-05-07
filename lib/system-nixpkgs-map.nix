@@ -76,6 +76,7 @@ pkgs:
      icui18n = pkgs.icu;
      icudata = pkgs.icu;
      vulkan = pkgs.vulkan-loader;
+     sodium = pkgs.libsodium;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
