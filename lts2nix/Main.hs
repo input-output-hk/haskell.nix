@@ -6,7 +6,7 @@ module Main where
 import System.Environment (getArgs,lookupEnv)
 import Data.Maybe (fromMaybe)
 
-import Distribution.Text (disp)
+import Distribution.Pretty (pretty)
 
 import Data.Yaml (decodeFileEither)
 
@@ -70,9 +70,9 @@ lts2plan compilerPackagesMap lts = Plan { packages, compilerVersion, compilerPac
       let (pkg, rev) = case (parsePackageIdentifier . Text.unpack $ v ^. key "hackage" . _String) of
                           Just p -> p
                           _ -> error $ "failed to parse: " ++ Text.unpack (v ^. key "hackage" . _String)
-          name = Text.pack (show (disp (pkgName pkg)))
+          name = Text.pack (show (pretty (pkgName pkg)))
       in (name, Just $ Package
-        { packageVersion = Text.pack (show (disp (pkgVersion pkg)))
+        { packageVersion = Text.pack (show (pretty (pkgVersion pkg)))
         , packageRevision = case rev of
             Just (Left sha) -> Just $ Text.pack sha
             _               -> Nothing

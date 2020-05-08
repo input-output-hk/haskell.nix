@@ -28,7 +28,8 @@ import Data.Text.Prettyprint.Doc.Render.Text (hPutDoc)
 import Distribution.Types.PackageId (PackageIdentifier(..))
 import Distribution.Nixpkgs.Fetch (DerivationSource(..), Source(..), Hash(..), fetch)
 import Distribution.Simple.Utils (shortRelativePath)
-import Distribution.Text (Text(..), simpleParse)
+import Distribution.Text (simpleParse)
+import Distribution.Pretty (Pretty(..))
 
 import Cabal2Nix hiding (Git)
 import qualified Cabal2Nix as C2N
@@ -112,8 +113,8 @@ extraDeps2nix pkgs =
      | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse
-        toText :: Text a => a -> T.Text
-        toText = fromString . show . disp
+        toText :: Pretty a => a -> T.Text
+        toText = fromString . show . pretty
 
 -- | Converts 'PackageFlags' into @{ packageName = { flags = { flagA = BOOL; flagB = BOOL; }; }; }@
 flags2nix :: PackageFlags -> [Binding NExpr]

@@ -1,3 +1,3 @@
 { haskellCompiler ? "ghc865" }:
-(import ./. { inherit haskellCompiler; }).shells.ghc
+(import ./. { inherit haskellCompiler; }).shell
     

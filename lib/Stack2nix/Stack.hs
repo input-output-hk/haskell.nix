@@ -27,8 +27,11 @@ import Data.Monoid (mempty)
 
 import Distribution.Types.PackageName
 import Distribution.Types.PackageId
-import Distribution.Compat.ReadP hiding (Parser)
 import Distribution.Text
+import Distribution.Pretty
+import Distribution.Parsec
+import Distribution.Compat.CharParsing
+import Distribution.Parsec.FieldLineStream
 import Distribution.Types.Version (nullVersion)
 
 import qualified Data.HashMap.Strict as HM
@@ -101,9 +104,11 @@ newtype CabalRev = CabalRev Int -- cabal revision 0,1,2,...
 type URL      = String -- Git/Hg/... URL
 type Rev      = String -- Git revision
 
-instance Text CabalRev where
-  disp (CabalRev rev) = "r" <> disp rev
-  parse = char 'r' *> (CabalRev <$> parse)
+instance Pretty CabalRev where
+  pretty (CabalRev rev) = "r" <> pretty rev
+
+instance Parsec CabalRev where
+  parsec = char 'r' *> (CabalRev <$> integral)
 
 --------------------------------------------------------------------------------
 -- Data Types
@@ -148,26 +153,26 @@ data Location
 
 --------------------------------------------------------------------------------
 -- Parsers for package indices
-sha256Suffix :: ReadP r Sha256
-sha256Suffix = string "@sha256:" *> many1 (satisfy (`elem` (['0'..'9']++['a'..'z']++['A'..'Z'])))
+sha256Suffix :: ParsecParser Sha256
+sha256Suffix = string "@sha256:" *> some (satisfy (`elem` (['0'..'9']++['a'..'z']++['A'..'Z'])))
                                  -- Stack supports optional cabal file size after revision's SHA value,
                                  -- we parse it but it doesn't get used
-                                 <* optional (char ',' <* many1 (satisfy isDigit))
+                                 <* optional (char ',' <* some (satisfy isDigit))
 
-revSuffix :: ReadP r CabalRev
-revSuffix = string "@rev:" *> (CabalRev . read <$> many1 (satisfy (`elem` ['0'..'9'])))
+revSuffix :: ParsecParser CabalRev
+revSuffix = string "@rev:" *> (CabalRev . read <$> some (satisfy (`elem` ['0'..'9'])))
 
-suffix :: ReadP r (Maybe (Either Sha256 CabalRev))
-suffix = option Nothing (Just <$> (Left <$> sha256Suffix) +++ (Right <$> revSuffix))
+suffix :: ParsecParser (Maybe (Either Sha256 CabalRev))
+suffix = option Nothing (Just <$> ((Left <$> sha256Suffix) <|> (Right <$> revSuffix)))
 
-pkgIndex :: ReadP r Dependency
-pkgIndex = PkgIndex <$> parse <*> suffix <* eof
-
+pkgIndex :: ParsecParser Dependency
+pkgIndex = PkgIndex <$> parsec <*> suffix <* eof
 
 parsePackageIdentifier :: String -> Maybe (PackageIdentifier, Maybe (Either Sha256 CabalRev))
-parsePackageIdentifier input = case readP_to_S pkgIndex input of
-  [(PkgIndex d rev,"")] -> Just (d, rev)
-  _ -> Nothing
+parsePackageIdentifier input =
+  case runParsecParser pkgIndex "<parsePackageIdentifier>" (fieldLineStreamFromString input) of
+    Right (PkgIndex d rev) -> Just (d, rev)
+    _ -> Nothing
 
 --------------------------------------------------------------------------------
 -- JSON/YAML destructors
@@ -209,12 +214,12 @@ instance FromJSON Dependency where
   --       to be ./foo-X.Y.Z
   parseJSON p = parsePkgIndex p <|> parseLocalPath p <|> parseDVCS p
     where parsePkgIndex = withText "Package Index" $ \pi ->
-            case [pi' | (pi',"") <- readP_to_S pkgIndex (T.unpack pi)] of
+            case parsePackageIdentifier (T.unpack pi) of
               -- Cabal will happily parse "foo" as a packageIdentifier,
               -- we however are only interested in those that have a version
               -- as well. Any valid version is larger than @nullVersion@, as
               -- such we can use that as a filter.
-              [pi'@(PkgIndex pkgIdent _)] | pkgVersion pkgIdent > nullVersion -> return $ pi'
+              (Just (pkgIdent, s)) | pkgVersion pkgIdent > nullVersion -> return $ PkgIndex pkgIdent s
               _ -> fail $ "invalid package index: " ++ show pi
           parseLocalPath = withText "Local Path" $
             return . LocalPath . dropTrailingSlash . T.unpack

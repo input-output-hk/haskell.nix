@@ -28,8 +28,8 @@ library
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
                      , Stack2nix.Stack
-  build-depends:       base >=4 && <4.13
-                     , Cabal >= 2.4 && <3
+  build-depends:       base >=4 && <4.15
+                     , Cabal >= 3.2 && <3.3
                      , aeson
                      , aeson-pretty
                      , base16-bytestring
@@ -41,7 +41,10 @@ library
                      , directory
                      , extra
                      , filepath
-                     , hnix
+-- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
+-- to work with the data-dir issues when building components.
+-- This commit is included since 0.6.5.
+                     , hnix >= 0.6.5
                      , hpack
                      , http-client
                      , http-client-tls
@@ -61,7 +64,7 @@ library
 executable cabal-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , transformers
                      , bytestring
                      , hpack
@@ -77,7 +80,7 @@ executable cabal-to-nix
 executable hashes-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , hnix
                      , nix-tools
                      , data-fix
@@ -98,7 +101,7 @@ executable plan-to-nix
                      , Plan2Nix.CLI
                      , Plan2Nix.Project
                      , Plan2Nix.Plan
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , nix-tools
                      , hnix
                      , Cabal >= 2.4
@@ -122,7 +125,7 @@ executable plan-to-nix
 executable hackage-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , nix-tools
                      , hackage-db
                      , hnix
@@ -144,7 +147,7 @@ executable hackage-to-nix
 executable lts-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , nix-tools
                      , hnix
                      , yaml
@@ -163,7 +166,7 @@ executable lts-to-nix
 executable stack-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , nix-tools
   hs-source-dirs:      stack2nix
   default-language:    Haskell2010
@@ -184,7 +187,7 @@ executable truncate-index
 executable stack-repos
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , nix-tools
   hs-source-dirs:      stack-repos
   default-language:    Haskell2010
@@ -192,7 +195,7 @@ executable stack-repos
 executable cabal-name
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.13
+  build-depends:       base >=4 && <4.15
                      , nix-tools
   hs-source-dirs:      cabal-name
   default-language:    Haskell2010

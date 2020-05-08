@@ -240,10 +240,11 @@ value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
 
 defaultNixContents = unlines $
   [ "{ haskellNixSrc ? builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz"
-  , ", nixpkgs ? haskellNixSrc + \"/nixpkgs\" }:"
+  , ", haskellNix ? import haskellNixSrc {}"
+  , ", nixpkgs ? haskellNix.sources.nixpkgs-default }:"
   , ""
   , "let"
-  , "  pkgs = import nixpkgs (import haskellNixSrc);"
+  , "  pkgs = import nixpkgs haskellNix.nixpkgsArgs;"
   , ""
   , "  pkgSet = pkgs.haskell-nix.mkCabalProjectPkgSet {"
   , "    plan-pkgs = import ./pkgs.nix;"

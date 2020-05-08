@@ -1,13 +1,35 @@
 { haskellNixSrc ? builtins.fetchTarball {
-      url = "https://github.com/input-output-hk/haskell.nix/archive/a84e3b55c642e7aec57c9677158cf446d90e9759.tar.gz";
-      sha256 = "0qnchf0f8d5k6363mcrqv936wz6zljs06bjvg1i6xmkg31bdj48m";
+      url = "https://github.com/input-output-hk/haskell.nix/archive/f78841c2d05c6c686d3888131104360944464dc2.tar.gz";
+      sha256 = "1zwhskx9drd0266kcrxf5vzcgs9vfiiibzkc2h3yarfb2xl7185q";
     }
-, nixpkgs ? haskellNixSrc + "/nixpkgs"
-, pkgs ? import nixpkgs (import haskellNixSrc)
-, haskellCompiler ? "ghc865"
+, nixpkgs ? (import haskellNixSrc {}).sources.nixpkgs-default
+, pkgs ? import nixpkgs (import haskellNixSrc {}).nixpkgsArgs
+, haskellCompiler ? "ghc883"
 }:
-  pkgs.haskell-nix.cabalProject {
-    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+let
+  project = pkgs.haskell-nix.cabalProject {
+    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; name = "nix-tools"; };
     ghc = pkgs.haskell-nix.compiler.${haskellCompiler};
+    modules = [{
+     nonReinstallablePkgs= [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+      "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+      # ghcjs custom packages
+      "ghcjs-prim" "ghcjs-th"
+      "ghc-boot"
+      "ghc" "Win32" "array" "binary" "bytestring" "containers"
+      "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+      # "ghci" "haskeline"
+      "hpc"
+      "mtl" "parsec" "process" "text" "time" "transformers"
+      "unix" "xhtml"
+      # "stm" "terminfo"
+     ];
+    }];
+  };
+in
+  project // {
+    shell = project.shellFor {
+      tools = { cabal = "3.2.0.0"; };
+    };
   }
 

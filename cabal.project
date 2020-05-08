@@ -1,20 +1,13 @@
-index-state: 2020-01-10T00:00:00Z
+index-state: 2020-05-03T00:00:00Z
 
 packages: .
 
--- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
--- to work with the data-dir issues when building components.
-
-constraints: hnix >= 0.6.1
-
 source-repository-package
     type: git
-    location: https://github.com/ElvishJerricco/hackage-db.git
-    tag: 84ca9fc75ad45a71880e938e0d93ea4bde05f5bd
-    --sha256: 0y3kw1hrxhsqmyx59sxba8npj4ya8dpgjljc21gkgdvdy9628q4c
+    location: https://github.com/hamishmack/hackage-db.git
+    tag: f1f528db7b02d90e9953297c716de5e046f3570f
+    --sha256: 0j86xkpndxn41sy2mchx029zc3isaxh61hdvnakpiflkcmfaji1w
 
-source-repository-package
-    type: git
-    location: https://github.com/galenhuntington/haskell-src-meta.git
-    tag: 109ee29d5fd0f4e23fdd2f80eb122d66341b64a9
-    --sha256: 08qw6y9br6fy3qkwl9v2kp38msprsq9v1ssym0fsnj2jm0vbnfrx
+-- hnix requires hnix-store-core < 0.2, however hnix-store-core-0.1 breaks
+-- plan construction.
+allow-newer: hnix-store-core

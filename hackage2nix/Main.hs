@@ -6,7 +6,7 @@ module Main where
 import           Cabal2Nix
 import           Control.Applicative                      ( liftA2 )
 import           Control.Monad.Trans.State.Strict
-import           Crypto.Hash.SHA256                       ( hashlazy )
+import           Crypto.Hash.SHA256                       ( hash )
 import           Data.Aeson
 import           Data.Aeson.Types                         ( Pair )
 import           Data.Aeson.Encode.Pretty
@@ -73,10 +73,10 @@ main = do
   createDirectoryIfMissing False (out </> "hackage")
 
   for_ cabalFiles $ \(cabalFile, pname, path) -> do
-    gpd <- cabal2nix False MinimalDetails src $ InMemory Nothing pname $ BL.toStrict cabalFile
+    gpd <- cabal2nix False MinimalDetails src $ InMemory Nothing pname $ cabalFile
     writeFile (out </> path) $ show $ prettyNix gpd
 
-type GPDWriter = State (Seq (BL.ByteString, String, FilePath))
+type GPDWriter = State (Seq (BS.ByteString, String, FilePath))
 
 newtype ApplicativeMonoid f a = ApplicativeMonoid { unApplicativeMonoid :: f a }
 instance (Applicative f, Semigroup a) => Sem.Semigroup (ApplicativeMonoid f a) where
@@ -116,7 +116,7 @@ version2json pname vnum (U.VersionData { U.cabalFileRevisions, U.metaFile }) =
 revBindingJson
   :: PackageName
   -> Version
-  -> BL.ByteString
+  -> BS.ByteString
   -> Integer
   -> GPDWriter (Text, Value)
 revBindingJson pname vnum cabalFile revNum = do
@@ -127,7 +127,7 @@ revBindingJson pname vnum cabalFile revNum = do
       revName     = "r" <> fromString (show revNum)
       revPath     = "." </> "hackage" </> qualifiedName <.> "nix"
       prettyPname = fromPretty pname
-      cabalHash   = Base16.encode $ hashlazy cabalFile
+      cabalHash   = Base16.encode $ hash cabalFile
   modify' $ mappend $ Seq.singleton
     (cabalFile, prettyPname ++ ".cabal", revPath)
   return $ revName .= object
