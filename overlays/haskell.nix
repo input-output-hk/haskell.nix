@@ -2,8 +2,8 @@
 #
 # for hygenic reasons we'll use haskell-nix as a prefix.
 # Using haskell.nix in nix is awkward as I needs to be quoted.
-self: super: {
-    haskell-nix = with self.haskell-nix; {
+final: prev: {
+    haskell-nix = with final.haskell-nix; {
 
         # Default modules, these will always be included.
         # They are here to be overridden/added to by other
@@ -13,7 +13,7 @@ self: super: {
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
         # here and be explicit about imports and dependencies.
-        callPackage = super.lib.callPackageWith (self // self.haskell-nix);
+        callPackage = prev.lib.callPackageWith (final // final.haskell-nix);
 
         # You can provide different pins for hackage.nix and stackage.nix if required.
         # It's also possible to override these sources with NIX_PATH.
@@ -32,7 +32,7 @@ self: super: {
         fetchExternal = import ../lib/fetch-external.nix;
 
         # Functions for cleaning Haskell source directories.
-        inherit (import ../lib/clean-source-haskell.nix { inherit (self) lib; })
+        inherit (import ../lib/clean-source-haskell.nix { inherit (final) lib; })
           haskellSourceFilter
           cleanSourceHaskell;
 
@@ -59,8 +59,8 @@ self: super: {
 
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
-            inherit (self) stdenv lib runCommand recurseIntoAttrs srcOnly;
-            inherit (self.buildPackages) git;
+            inherit (final) stdenv lib runCommand recurseIntoAttrs srcOnly;
+            inherit (final.buildPackages) git;
             haskellLib = hl;
         }; in hl;
 
@@ -80,7 +80,7 @@ self: super: {
             import ../package-set.nix {
                 inherit (args) pkg-def pkg-def-extras;
                 modules = defaultModules ++ modules;
-                pkgs = self;
+                pkgs = final;
                 hackage = hackageAll;
             };
 
@@ -89,10 +89,10 @@ self: super: {
         # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
         excludeBootPackages = pkg-def: hackage:
           let original = pkg-def hackage;
-              bootPkgNames = self.lib.attrNames
-                self.ghc-boot-packages.${(pkg-def hackage).compiler.nix-name};
+              bootPkgNames = final.lib.attrNames
+                final.ghc-boot-packages.${(pkg-def hackage).compiler.nix-name};
           in original // {
-            packages = self.lib.filterAttrs (n: _: self.lib.all (b: n != b) bootPkgNames)
+            packages = final.lib.filterAttrs (n: _: final.lib.all (b: n != b) bootPkgNames)
               original.packages;
           };
 
@@ -119,7 +119,7 @@ self: super: {
             in mkPkgSet {
                 pkg-def = excludeBootPackages pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
-                                   self.ghc-boot-packages.${compiler.nix-name}
+                                   final.ghc-boot-packages.${compiler.nix-name}
                                  ]
                               ++ pkg-def-extras;
                 # set doExactConfig = true. The stackage set should be consistent
@@ -145,7 +145,7 @@ self: super: {
             in mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   self.ghc-boot-packages.${compiler.nix-name}
+                                   final.ghc-boot-packages.${compiler.nix-name}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
@@ -157,7 +157,7 @@ self: super: {
             };
 
         # Package sets for all stackage snapshots.
-        snapshots = import ../snapshots.nix { inherit (self) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
+        snapshots = import ../snapshots.nix { inherit (final) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages = snapshots."lts-14.13";
 
@@ -165,26 +165,26 @@ self: super: {
         # files. This version of nix-tools may be cross compiled.
         # We probably never want to actually cross compile nix-tools on
         # it's own.
-        nix-tools-cross-compiled = self.lib.makeOverridable (import ../nix-tools) {
-            inherit (self) pkgs lib symlinkJoin makeWrapper
+        nix-tools-cross-compiled = final.lib.makeOverridable (import ../nix-tools) {
+            inherit (final) pkgs lib symlinkJoin makeWrapper
                            git nix nix-prefetch-git;
-            inherit (self.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
+            inherit (final.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
             hpack = null; # nix-tools does not use hpack project files
         };
         # While `nix-tools-cross-compiled` may be cross compiled,
         # getting it from `buildPackages` we should get
         # nix-tools suitable for running on the build system.
-        nix-tools = self.buildPackages.haskell-nix.nix-tools-cross-compiled;
+        nix-tools = final.buildPackages.haskell-nix.nix-tools-cross-compiled;
         # TODO perhaps there is a cleaner way to get a suitable nix-tools.
 
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
         # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
-        hackageTarball = { index-state, sha256, nix-tools ? self.haskell-nix.nix-tools, ... }:
+        hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools, ... }:
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { name = "hackage.haskell.org-at-${at}";
-              index = self.fetchurl {
+              index = final.fetchurl {
                 name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
@@ -196,20 +196,20 @@ self: super: {
             };
 
         # Creates Cabal local repository from { name, index } set.
-        mkLocalHackageRepo = import ../mk-local-hackage-repo self;
+        mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
         dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? [], ... }@args:
             let
               allTarballs = [ (hackageTarball args) ] ++ extra-hackage-tarballs;
-              allNames = self.lib.concatMapStringsSep "-" (tarball: tarball.name) allTarballs;
+              allNames = final.lib.concatMapStringsSep "-" (tarball: tarball.name) allTarballs;
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
             in
-            self.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
+            final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
-                ${self.lib.concatStrings (
+                ${final.lib.concatStrings (
                   map (tarball:
                 ''
                 repository ${tarball.name}
@@ -224,11 +224,11 @@ self: super: {
 
                 # All repositories must be mkdir'ed before calling new-update on any repo,
                 # otherwise it fails.
-                ${self.lib.concatStrings (map ({ name, ... }: ''
+                ${final.lib.concatStrings (map ({ name, ... }: ''
                   mkdir -p $out/.cabal/packages/${name}
                 '') allTarballs)}
 
-                ${self.lib.concatStrings (map ({ name, ... }: ''
+                ${final.lib.concatStrings (map ({ name, ... }: ''
                   HOME=$out cabal new-update ${name}
                 '') allTarballs)}
             '';
@@ -245,31 +245,31 @@ self: super: {
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          inherit (self.buildPackages) nix;
-          inherit (self.haskell-nix) checkMaterialization;
-          pkgs = self.buildPackages.pkgs;
-          inherit (self.buildPackages.pkgs) runCommand;
+          inherit (final.buildPackages) nix;
+          inherit (final.haskell-nix) checkMaterialization;
+          pkgs = final.buildPackages.pkgs;
+          inherit (final.buildPackages.pkgs) runCommand;
         };
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
-            inherit (self.haskell-nix) indexStateHashesPath nix-tools;
-            inherit (self) coreutils nix writeShellScriptBin stdenv curl;
+            inherit (final.haskell-nix) indexStateHashesPath nix-tools;
+            inherit (final) coreutils nix writeShellScriptBin stdenv curl;
         };
 
         # Function to call stackToNix
         callStackToNix = import ../lib/call-stack-to-nix.nix {
-            pkgs = self.buildPackages.pkgs;
-            inherit (self.buildPackages.pkgs) runCommand;
-            inherit (self.buildPackages.haskell-nix) nix-tools mkCacheFile materialize;
+            pkgs = final.buildPackages.pkgs;
+            inherit (final.buildPackages.pkgs) runCommand;
+            inherit (final.buildPackages.haskell-nix) nix-tools mkCacheFile materialize;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
         # to produce the nix representation of it.
         callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
-            self.buildPackages.pkgs.runCommand "${name}.nix" {
-                nativeBuildInputs = [ self.buildPackages.haskell-nix.nix-tools ];
+            final.buildPackages.pkgs.runCommand "${name}.nix" {
+                nativeBuildInputs = [ final.buildPackages.haskell-nix.nix-tools ];
 
-                LOCALE_ARCHIVE = self.lib.optionalString (self.stdenv.buildPlatform.libc == "glibc") "${self.buildPackages.glibcLocales}/lib/locale/locale-archive";
+                LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";
                 LANG = "en_US.UTF-8";
                 LC_ALL = "en_US.UTF-8";
             } ''
@@ -297,7 +297,7 @@ self: super: {
                 assert isNull sha256;
                 builtins.fetchGit
                   ({ inherit url rev; } //
-                      self.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
+                      final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                   )
               else
                 # Non-private repos must have sha256 set.
@@ -305,7 +305,7 @@ self: super: {
                 # pkgs.fetchgit doesn't have any way of fetching from a given
                 # ref.
                 assert isNull ref;
-                self.buildPackages.pkgs.fetchgit {
+                final.buildPackages.pkgs.fetchgit {
                   url = url;
                   rev = rev;
                   sha256 = sha256;
@@ -318,20 +318,20 @@ self: super: {
             nix-expr =
               if type == "cabal"
               then
-                self.buildPackages.haskell-nix.callCabalToNix {
+                final.buildPackages.haskell-nix.callCabalToNix {
                   src = repoWithSubdir;
                   inherit name cabal-file;
                 }
               else if type == "stack"
               then
-                (self.buildPackages.haskell-nix.callStackToNix {
+                (final.buildPackages.haskell-nix.callStackToNix {
                   src = repoWithSubdir;
                   inherit name subdir;
                 }).projectNix
               else
                 throw "Unknown type '${type}` for a cache entry";
 
-            sha256String = if isNull sha256 then self.buildPackages.lib.fakeSha256 else sha256;
+            sha256String = if isNull sha256 then final.buildPackages.lib.fakeSha256 else sha256;
 
           in {
             line = "${url} ${rev} ${subdir} ${sha256String} ${name}";
@@ -347,24 +347,24 @@ self: super: {
         # the results of `stack-to-nix` can be imported in restrected eval
         # mode.
         mkCacheFile = repos:
-          self.buildPackages.pkgs.runCommand "cache-file" {} ''
+          final.buildPackages.pkgs.runCommand "cache-file" {} ''
               mkdir -p $out
               touch $out/.stack-to-nix.cache
-              ${self.lib.concatStrings (
-                self.lib.lists.zipListsWith (n: repo:
+              ${final.lib.concatStrings (
+                final.lib.lists.zipListsWith (n: repo:
                   let l = mkCacheLine repo;
                   in ''
                     cp ${l.nix-expr} $out/.stack-to-nix.cache.${toString n}
                     echo ${l.line} .stack-to-nix.cache.${toString n} >> $out/.stack-to-nix.cache
                   '')
-                  (self.lib.lists.range 0 ((builtins.length repos) - 1))
+                  (final.lib.lists.range 0 ((builtins.length repos) - 1))
                   repos)
               }
           '';
 
         genStackCache = import ../lib/stack-cache-generator.nix {
-            inherit (self.buildPackages) pkgs;
-            inherit (self.buildPackages.haskell-nix) haskellLib nix-tools;
+            inherit (final.buildPackages) pkgs;
+            inherit (final.buildPackages.haskell-nix) haskellLib nix-tools;
         };
 
         mkCacheModule = cache:
@@ -391,11 +391,11 @@ self: super: {
                         then
                           builtins.fetchGit
                             ({ inherit url rev; } //
-                              self.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
+                              final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                             )
                         else
-                          self.buildPackages.pkgs.fetchgit { inherit url rev sha256; };
-                    } // self.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                          final.buildPackages.pkgs.fetchgit { inherit url rev sha256; };
+                    } // final.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                   };
 
                   cacheMap = builtins.map repoToAttr cache;
@@ -408,23 +408,23 @@ self: super: {
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
-            inherit (self.buildPackages.haskell-nix) dotCabal nix-tools haskellLib materialize;
-            pkgs = self.buildPackages.pkgs;
-            inherit (self.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
-            inherit (self.buildPackages.haskell-nix) cabal-install ghc;
-            inherit (self.buildPackages.pkgs) runCommand symlinkJoin cacert;
+            inherit (final.buildPackages.haskell-nix) dotCabal nix-tools haskellLib materialize;
+            pkgs = final.buildPackages.pkgs;
+            inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
+            inherit (final.buildPackages.haskell-nix) cabal-install ghc;
+            inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
         importAndFilterProject = import ../lib/import-and-filter-project.nix {
-            inherit (self.buildPackages.haskell-nix) haskellLib;
-            pkgs = self.buildPackages.pkgs;
+            inherit (final.buildPackages.haskell-nix) haskellLib;
+            pkgs = final.buildPackages.pkgs;
         };
 
         # References to the unpacked sources, for caching in a Hydra jobset.
         source-pins = import ../lib/make-source-pins.nix {
-            inherit (self) lib writeTextFile;
-            sources = [ hackageSrc stackageSrc self.path ];
+            inherit (final) lib writeTextFile;
+            sources = [ hackageSrc stackageSrc final.path ];
         };
 
         # -- IFDs --
@@ -440,17 +440,17 @@ self: super: {
             { name
             , version
             , ... }@args:
-            let tarball = self.pkgs.fetchurl {
+            let tarball = final.pkgs.fetchurl {
                 url = "mirror://hackage/${name}-${version}.tar.gz";
                 inherit (hackage.${name}.${version}) sha256; };
-            in let src = self.buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
+            in let src = final.buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
                 tmp=$(mktemp -d)
                 cd $tmp
                 tar xzf ${tarball}
                 mv "${name}-${version}" $out
                 '';
           in cabalProject' (
-            (self.haskell-nix.hackageQuirks { inherit name version; }) // 
+            (final.haskell-nix.hackageQuirks { inherit name version; }) // 
               builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
@@ -463,7 +463,7 @@ self: super: {
                 { plan-pkgs = plan.pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
-                          ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                          ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                   extra-hackages = args.extra-hackages or [];
                 };
             in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
@@ -487,9 +487,9 @@ self: super: {
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = stack.pkgs;
                   pkg-def-extras = (args.pkg-def-extras or []);
-                  modules =  self.lib.singleton (mkCacheModule cache)
+                  modules =  final.lib.singleton (mkCacheModule cache)
                              ++ (args.modules or [])
-                             ++ self.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                             ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
             in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
 
@@ -504,7 +504,7 @@ self: super: {
         # Like `cabalProject'`, but for building the GHCJS compiler.
         # This is exposed to allow GHCJS developers to work on the GHCJS
         # code in a nix-shell with `shellFor`.
-        ghcjsProject = import ../lib/ghcjs-project.nix { pkgs = self; };
+        ghcjsProject = import ../lib/ghcjs-project.nix { pkgs = final; };
 
         # The functions that return a plan-nix often have a lot of dependencies
         # that could be GCed and also will not make it into hydra cache.
@@ -513,47 +513,47 @@ self: super: {
         #   project = cabalProject' {...};
         # In your tests module add something that is effectively
         #   testProjectPlan = withInputs project.plan-nix;
-        withInputs = self.recurseIntoAttrs;
+        withInputs = final.recurseIntoAttrs;
   
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
-        haskellNixRoots = self.recurseIntoAttrs {
+        haskellNixRoots = final.recurseIntoAttrs {
           Level0 = haskellNixRoots' 0;
           Level1 = haskellNixRoots' 1;
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = self.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc883");
-          in self.recurseIntoAttrs ({
+            let filterSupportedGhc = final.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc883");
+          in final.recurseIntoAttrs ({
             # Things that require no IFD to build
-            inherit (self.buildPackages.haskell-nix) nix-tools source-pins;
-            bootstap-nix-tools = self.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
-            alex-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.alex-project.plan-nix;
-            happy-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
-            hscolour-plan-nix = withInputs self.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
-          } // self.lib.optionalAttrs (ifdLevel > 0) {
+            inherit (final.buildPackages.haskell-nix) nix-tools source-pins;
+            bootstap-nix-tools = final.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
+            alex-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.alex-project.plan-nix;
+            happy-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
+            hscolour-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
+          } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
-            alex = self.buildPackages.haskell-nix.bootstrap.packages.alex;
-            happy = self.buildPackages.haskell-nix.bootstrap.packages.happy;
-            hscolour = self.buildPackages.haskell-nix.bootstrap.packages.hscolour;
-            ghc865 = self.buildPackages.haskell-nix.compiler.ghc865;
-            ghc883 = self.buildPackages.haskell-nix.compiler.ghc883;
-            ghc-boot-packages-nix = self.recurseIntoAttrs
-              (builtins.mapAttrs (_: self.recurseIntoAttrs)
-                (filterSupportedGhc self.ghc-boot-packages-nix));
-            ghc-extra-projects = self.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
-              (filterSupportedGhc self.ghc-extra-projects));
-          } // self.lib.optionalAttrs (ifdLevel > 1) {
+            alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
+            happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
+            hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
+            ghc865 = final.buildPackages.haskell-nix.compiler.ghc865;
+            ghc883 = final.buildPackages.haskell-nix.compiler.ghc883;
+            ghc-boot-packages-nix = final.recurseIntoAttrs
+              (builtins.mapAttrs (_: final.recurseIntoAttrs)
+                (filterSupportedGhc final.ghc-boot-packages-nix));
+            ghc-extra-projects = final.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
+              (filterSupportedGhc final.ghc-extra-projects));
+          } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            inherit (self.haskell-nix) nix-tools;
+            inherit (final.haskell-nix) nix-tools;
             # These seem to be the only things we use from `ghc-extra-packages`
-            # in haskell.nix itself.
-            iserv-proxy = self.recurseIntoAttrs
+            # in haskell.nix itfinal.
+            iserv-proxy = final.recurseIntoAttrs
               (builtins.mapAttrs (_: pkgs: pkgs.iserv-proxy.components.exes.iserv-proxy)
-                (filterSupportedGhc self.ghc-extra-packages));
-            remote-iserv = self.recurseIntoAttrs
+                (filterSupportedGhc final.ghc-extra-packages));
+            remote-iserv = final.recurseIntoAttrs
               (builtins.mapAttrs (_: pkgs: pkgs.remote-iserv.components.exes.remote-iserv)
-                (filterSupportedGhc self.ghc-extra-packages));
+                (filterSupportedGhc final.ghc-extra-packages));
           });
     };
 }

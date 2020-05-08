@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, nodejs }:
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
 
 lib.makeOverridable (
 { componentId
@@ -118,6 +118,8 @@ let
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
       "--ghc-option=-optl=-L${gmp.override { withStatic = true; }}/lib"
+      "--ghc-option=-optl=-L${zlib.static}/lib"
+      "--ghc-option=-optl=-L${ncurses.override { enableStatic = true; }}/lib"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"

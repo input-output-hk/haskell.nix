@@ -199,6 +199,10 @@ with haskellLib;
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
     && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.isx86 && stdenv.targetPlatform.isx86);
+  # Native musl build-host-target combo
+  isNativeMusl = stdenv.hostPlatform.isMusl
+    && stdenv.buildPlatform == stdenv.hostPlatform
+    && stdenv.hostPlatform == stdenv.targetPlatform;
 
   # Takes a version number or attr set of arguments (for cabalProject)
   # and conversios it to an attr set of argments.  This allows
