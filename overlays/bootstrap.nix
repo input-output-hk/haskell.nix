@@ -21,7 +21,7 @@ let
       done
 
       mkdir -p $out/evalDeps
-      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9.]*//g'); do
+      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
         touch $out/evalDeps/$P
         if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
           echo "package-id $id" >> $out/evalDeps/$P
@@ -263,7 +263,10 @@ in {
 
                 ghc-patches = ghc-patches "8.8.3";
             };
-        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
+        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false) (
+         if self.hostPlatform.isGhcjs
+           then throw "An attempt was made to build ghcjs with ghcjs (perhaps use `buildPackages` when refering to ghc)"
+           else
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
                 # compiler defined below.  This is crucial to build packages
                 # with the current use of env and exact Deps.
@@ -345,7 +348,7 @@ in {
                 cd lib
                 cp -R ${ghcjs883}/lib/ghcjs-8.8.3 ${targetPrefix}ghc-8.8.3
             '' + installDeps targetPrefix);
-        })));
+        }))));
 
     ghc = self.haskell-nix.compiler.ghc865;
     inherit (self.buildPackages.haskell-nix.bootstrap.packages) cabal-install alex happy;
