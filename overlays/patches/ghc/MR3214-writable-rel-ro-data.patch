@@ -1,0 +1,13 @@
+diff --git a/compiler/cmm/Cmm.hs b/compiler/cmm/Cmm.hs
+index eb34618..f2cc32f 100644
+--- a/compiler/cmm/Cmm.hs
++++ b/compiler/cmm/Cmm.hs
+@@ -181,7 +181,7 @@ isSecConstant :: Section -> Bool
+ isSecConstant (Section t _) = case t of
+     Text                    -> True
+     ReadOnlyData            -> True
+-    RelocatableReadOnlyData -> True
++    RelocatableReadOnlyData -> False
+     ReadOnlyData16          -> True
+     CString                 -> True
+     Data                    -> False
