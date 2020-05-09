@@ -74,17 +74,20 @@ in
   };
 
   config.bootPkgs =  [
-     "rts" "ghc-boot-th"
-     "ghc-heap" # since ghc 8.6.
-  ]
-    ++ lib.optional (!config.reinstallableLibGhc) "ghc";
+      "rts" "ghc-boot-th"
+      "ghc-heap" # since ghc 8.6.
+    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc";
+
+  options.errorHandler = lib.mkOption {
+    type = lib.types.unspecified;
+  };
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
   };
 
   config.hsPkgs =
-    { inherit (builder) shellFor ghcWithPackages ghcWithHoogle pkgs-errors;
+    { inherit (builder) shellFor ghcWithPackages ghcWithHoogle;
       buildPackages = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
