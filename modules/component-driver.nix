@@ -78,10 +78,6 @@ in
       "ghc-heap" # since ghc 8.6.
     ] ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
-  options.errorHandler = lib.mkOption {
-    type = lib.types.unspecified;
-  };
-
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
   };
