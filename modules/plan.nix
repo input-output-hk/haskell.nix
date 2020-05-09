@@ -229,7 +229,7 @@ in {
       type =
         let mod_args = {
           inherit pkgs pkgconfPkgs haskellLib;
-          inherit (config) hsPkgs;
+          inherit (config) hsPkgs errorHandler;
           inherit (config.cabal) system compiler;
         }; in
           attrsOf (submodule (import ./package.nix {
