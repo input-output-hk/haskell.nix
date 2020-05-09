@@ -96,12 +96,13 @@ let
         ./utils/makePackages.sh copy
 
         echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
-
-        # nuke the HsBaseConfig.h from base.buildinfo.in; this will
-        # prevent it from being installed and provide incorrect values.
-        sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
-        cat lib/boot/pkg/base/base.buildinfo.in
-        '';
+        ${
+          # nuke the HsBaseConfig.h from base.buildinfo.in; this will
+          # prevent it from being installed and provide incorrect values.
+          pkgs.lib.optionalString (!isGhcjs88) ''
+            sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
+          ''
+        }'';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (

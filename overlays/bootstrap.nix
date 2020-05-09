@@ -314,7 +314,7 @@ in {
             ghc883 = let buildGHC = self.buildPackages.haskell-nix.compiler.ghc883;
                 in let ghcjs883 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
-                ghcjsVersion =  "8.8.0.1";
+                ghcjsVersion =  "8.8.0.0.1";
                 ghc = buildGHC;
                 ghcVersion = "8.8.3";
                 cabal-install = self.buildPackages.haskell-nix.cabal-install;
@@ -346,7 +346,7 @@ in {
                 cd ..
                 mkdir lib
                 cd lib
-                cp -R ${ghcjs883}/lib/ghcjs-8.8.3 ${targetPrefix}ghc-8.8.3
+                cp -R ${ghcjs883}/lib ${targetPrefix}ghc-8.8.3
             '' + installDeps targetPrefix);
         }))));
 
