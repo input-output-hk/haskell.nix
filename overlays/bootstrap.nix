@@ -21,7 +21,7 @@ let
       done
 
       mkdir -p $out/evalDeps
-      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9.]*//g'); do
+      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
         touch $out/evalDeps/$P
         if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
           echo "package-id $id" >> $out/evalDeps/$P
