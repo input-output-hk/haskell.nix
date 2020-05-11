@@ -12,24 +12,10 @@ let
     };
   };
 
-  # we need to patch Cabal, as its data directory logic is broken for component builds, which haskell.nix
-  # uses excessively. See issue https://github.com/haskell/cabal/issues/5862, and the fix for Cabal 3.0
-  # in https://github.com/haskell/cabal/pull/6055. We apply the haskell/cabal#6055 here.
-  cabalPatch = pkgs.fetchpatch {
-    url = "https://patch-diff.githubusercontent.com/raw/haskell/cabal/pull/6055.diff";
-    sha256 = "145g7s3z9q8d18pxgyngvixgsm6gmwh1rgkzkhacy4krqiq0qyvx";
-    stripLen = 1;
-  };
-
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = if args ? ghc
                 then import (./pkgs + "-${args.ghc.version}.nix")
                 else import ./pkgs.nix;
-    pkg-def-extras = [
-      # We need this, as we are going to *re-isntall* happy, and happy > 1.19.9 needs
-      # a patched lib:Cabal to be properly installed.
-      (hackage: { packages = { happy = hackage.happy."1.19.9".revisions.default; }; })
-    ];
     modules = [
       {
         packages.transformers-compat.components.library.doExactConfig = true;
@@ -41,9 +27,13 @@ let
         packages.nix-tools.src = src;
       }
 
-      {
-        packages.Cabal.patches = [ cabalPatch ];
-      }
+      # This is needed for ghc 8.4.4 to make sure a new version of Cabal
+      # is used to build setup for happy. The one that comes with ghc 8.4.4
+      # does not work for newer versions of happy and haskell.nix)
+      ({config, ...}: {
+        packages.happy.package.buildType = lib.mkForce "Custom";
+        packages.happy.package.setup-depends = [ config.hsPkgs.Cabal ];
+      })
 
       {
         # Make Cabal reinstallable
