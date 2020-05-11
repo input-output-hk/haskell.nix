@@ -16,11 +16,6 @@ let
     plan-pkgs = if args ? ghc
                 then import (./pkgs + "-${args.ghc.version}.nix")
                 else import ./pkgs.nix;
-    pkg-def-extras = [
-      # We need this, as we are going to *re-isntall* happy, and happy > 1.19.9 needs
-      # a patched lib:Cabal to be properly installed.
-      (hackage: { packages = { happy = hackage.happy."1.19.9".revisions.default; }; })
-    ];
     modules = [
       {
         packages.transformers-compat.components.library.doExactConfig = true;
@@ -31,6 +26,14 @@ let
       {
         packages.nix-tools.src = src;
       }
+
+      # This is needed for ghc 8.4.4 to make sure a new version of Cabal
+      # is used to build setup for happy. The one that comes with ghc 8.4.4
+      # does not work for newer versions of happy and haskell.nix)
+      ({config, ...}: {
+        packages.happy.package.buildType = lib.mkForce "Custom";
+        packages.happy.package.setup-depends = [ config.hsPkgs.Cabal ];
+      })
 
       {
         # Make Cabal reinstallable
