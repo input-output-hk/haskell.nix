@@ -48,9 +48,10 @@ data Src
   | Git String String (Maybe String) (Maybe String)
   deriving Show
 
-pkgs, hsPkgs, pkgconfPkgs, flags :: Text
+pkgs, hsPkgs, errorHandler, pkgconfPkgs, flags :: Text
 pkgs   = "pkgs"
 hsPkgs = "hsPkgs"
+errorHandler = "errorHandler"
 pkgconfPkgs = "pkgconfPkgs"
 flags  = "flags"
 
@@ -99,7 +100,7 @@ cabal2nix isLocal fileDetails src = \case
 
 gpd2nix :: Bool -> CabalDetailLevel -> Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
 gpd2nix isLocal fileDetails src extra gpd =
-  mkLets errorFunctions $ mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd
+  mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd
     $//? (srcToNix (package $ packageDescription gpd) <$> src)
     $//? extra
   where args :: Params NExpr
@@ -109,60 +110,9 @@ gpd2nix isLocal fileDetails src extra gpd =
                           , (pkgs, Nothing)
                           , (hsPkgs, Nothing)
                           , (pkgconfPkgs, Nothing)
+                          , (errorHandler, Nothing)
                           , ("config", Nothing)]
                           True
-
-errorFunctions :: [Binding NExpr]
-errorFunctions =
-  [ buildDepError $= mkFunction "pkg" (mkThrow $
-      Fix $ NStr $ Indented 0
-          [ Plain "The Haskell package set does not contain the package: "
-          , Antiquoted "pkg"
-          , Plain " (build dependency).\n\n"
-          , Plain haskellUpdateSnippet
-          ])
-  , sysDepError $= mkFunction "pkg" (mkThrow $
-      Fix $ NStr $ Indented 0
-          [ Plain "The Nixpkgs package set does not contain the package: "
-          , Antiquoted "pkg"
-          , Plain " (system dependency).\n\n"
-          , Plain systemUpdateSnippet
-          ])
-  , pkgConfDepError $= mkFunction "pkg" (mkThrow $
-      Fix $ NStr $ Indented 0
-          [ Plain "The pkg-conf packages does not contain the package: "
-          , Antiquoted "pkg"
-          , Plain " (pkg-conf dependency).\n\n"
-          , Plain "You may need to augment the pkg-conf package mapping in haskell.nix so that it can be found."
-          ])
-  , exeDepError $= mkFunction "pkg" (mkThrow $
-      Fix $ NStr $ Indented 0
-          [ Plain "The local executable components do not include the component: "
-          , Antiquoted "pkg"
-          , Plain " (executable dependency)."
-          ])
-  , legacyExeDepError $= mkFunction "pkg" (mkThrow $
-      Fix $ NStr $ Indented 0
-          [ Plain "The Haskell package set does not contain the package: "
-          , Antiquoted "pkg"
-          , Plain " (executable dependency).\n\n"
-          , Plain haskellUpdateSnippet
-          ])
-  , buildToolDepError $= mkFunction "pkg" (mkThrow $
-      Fix $ NStr $ Indented 0
-          [ Plain "Neither the Haskell package set or the Nixpkgs package set contain the package: "
-          , Antiquoted "pkg"
-          , Plain " (build tool dependency).\n\n"
-          , Plain "If this is a system dependency:\n"
-          , Plain systemUpdateSnippet
-          , Plain "\n\n"
-          , Plain "If this is a Haskell dependency:\n"
-          , Plain haskellUpdateSnippet
-          ])
-  ]
-  where
-    systemUpdateSnippet = "You may need to augment the system package mapping in haskell.nix so that it can be found."
-    haskellUpdateSnippet = "If you are using Stackage, make sure that you are using a snapshot that contains the package. Otherwise you may need to update the Hackage snapshot you are using, usually by updating haskell.nix."
 
 class IsComponent a where
   getBuildInfo :: a -> BuildInfo
@@ -344,22 +294,22 @@ toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
 -- WARNING: these use functions bound at he top level in the GPD expression, they won't work outside it
 
 instance ToNixExpr Dependency where
-  toNix d = selectOr (mkSym hsPkgs) (mkSelector $ quoted pkg) (mkSym buildDepError @@ mkStr pkg)
+  toNix d = selectOr (mkSym hsPkgs) (mkSelector $ quoted pkg) (mkSym errorHandler @. buildDepError @@ mkStr pkg)
     where
       pkg = fromString . show . pretty . depPkgName $ d
 
 instance ToNixExpr SysDependency where
-  toNix d = selectOr (mkSym pkgs) (mkSelector $ quoted pkg) (mkSym sysDepError @@ mkStr pkg)
+  toNix d = selectOr (mkSym pkgs) (mkSelector $ quoted pkg) (mkSym errorHandler @. sysDepError @@ mkStr pkg)
     where
       pkg = fromString . unSysDependency $ d
 
 instance ToNixExpr PkgconfigDependency where
-  toNix (PkgconfigDependency name _versionRange) = selectOr (mkSym pkgconfPkgs) (mkSelector $ quoted pkg) (mkSym pkgConfDepError @@ mkStr pkg)
+  toNix (PkgconfigDependency name _versionRange) = selectOr (mkSym pkgconfPkgs) (mkSelector $ quoted pkg) (mkSym errorHandler @. pkgConfDepError @@ mkStr pkg)
     where
       pkg = fromString . unPkgconfigName $ name
 
 instance ToNixExpr ExeDependency where
-  toNix (ExeDependency pkgName' _unqualCompName _versionRange) = selectOr (mkSym "exes") (mkSelector $ pkg) (mkSym exeDepError @@ mkStr pkg)
+  toNix (ExeDependency pkgName' _unqualCompName _versionRange) = selectOr (mkSym "exes") (mkSelector $ pkg) (mkSym errorHandler @. exeDepError @@ mkStr pkg)
     where
       pkg = fromString . show . pretty $ pkgName'
 
@@ -369,13 +319,13 @@ instance ToNixExpr BuildToolDependency where
       -- is reolved use something like:
       -- [nix| hsPkgs.buildPackages.$((pkgName)) or pkgs.buildPackages.$((pkgName)) ]
       selectOr (mkSym hsPkgs) buildPackagesDotName
-        (selectOr (mkSym pkgs) buildPackagesDotName (mkSym buildToolDepError @@ mkStr pkg))
+        (selectOr (mkSym pkgs) buildPackagesDotName (mkSym errorHandler @. buildToolDepError @@ mkStr pkg))
     where
       pkg = fromString . show . pretty $ pkgName'
       buildPackagesDotName = mkSelector "buildPackages" <> mkSelector pkg
 
 instance ToNixExpr LegacyExeDependency where
-  toNix (LegacyExeDependency name _versionRange) = selectOr (mkSym hsPkgs) (mkSelector $ quoted pkg) (mkSym legacyExeDepError @@ mkStr pkg)
+  toNix (LegacyExeDependency name _versionRange) = selectOr (mkSym hsPkgs) (mkSelector $ quoted pkg) (mkSym errorHandler @. legacyExeDepError @@ mkStr pkg)
     where
       pkg = fromString name
 
@@ -440,5 +390,3 @@ boolTreeToNix (CondNode True _c bs) =
 
 instance ToNixBinding Flag where
   toNixBinding (MkFlag name _desc def _manual) = (fromString . show . pretty $ name) $= mkBool def
-
-
