@@ -83,6 +83,9 @@ in pkgs.lib.evalModules {
 
     })
 
+    # Error handlers
+    ./modules/error-handler.nix
+    
     # Supplies metadata
     ./modules/cabal.nix
 

@@ -13,7 +13,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
 
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });
-} // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.version "20.03") {
+} // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.trivial.release "20.03") {
   # Fix infinite recursion between openssh and fetchcvs
   openssh = prev.openssh.override { withFIDO = false; };
 })
