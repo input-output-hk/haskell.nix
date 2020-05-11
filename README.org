@@ -10,8 +10,8 @@
 =haskell.nix= is an experimental new builder for Haskell packages.
 
 It works by automatically translating your Cabal or Stack project and
-its dependencies into Nix code.  It provides IFD (imports from derviation)
-functions that can minimize the amount of nix code you need to add.
+its dependencies into Nix code.  It provides IFD (import from derivation)
+functions that can minimize the amount of Nix code you need to add.
 
 For the documentation, see https://input-output-hk.github.io/haskell.nix/.
 
@@ -21,10 +21,10 @@ For =cabal.project= project add a =default.nix=:
 
 #+begin_src sh
 let 
-  # Fetch the latest haskell.nix and import its default.nix 
+  # Fetch the latest haskell.nix and import its default.nix
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
   # haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
-  # you will be more likely to get cache hits when using these. 
+  # you will be more likely to get cache hits when using these.
   # But you can also just use your own, e.g. '<nixpkgs>'
   nixpkgsSrc = haskellNix.sources.nixpkgs-1909;
   # haskell.nix provides some arguments to be passed to nixpkgs, including some patches
