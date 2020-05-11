@@ -260,7 +260,7 @@ in {
 
   config = let module = config.plan.pkg-def config.hackage.configs; in {
     inherit (module) compiler;
-    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
+    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, errorHandler, pkgconfPkgs, ... }@modArgs:
 
       let m = if revision == null
               then (abort "${name} has no revision!")
