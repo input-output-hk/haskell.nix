@@ -163,7 +163,7 @@ revSuffix :: ParsecParser CabalRev
 revSuffix = string "@rev:" *> (CabalRev . read <$> some (satisfy (`elem` ['0'..'9'])))
 
 suffix :: ParsecParser (Maybe (Either Sha256 CabalRev))
-suffix = option Nothing (Just <$> ((Left <$> sha256Suffix) <|> (Right <$> revSuffix)))
+suffix = option Nothing (Just <$> (try (Left <$> sha256Suffix) <|> (Right <$> revSuffix)))
 
 pkgIndex :: ParsecParser Dependency
 pkgIndex = PkgIndex <$> parsec <*> suffix <* eof
