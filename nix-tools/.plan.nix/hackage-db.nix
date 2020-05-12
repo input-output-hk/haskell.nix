@@ -75,7 +75,7 @@
     } // {
     src = (pkgs.lib).mkDefault (pkgs.fetchgit {
       url = "https://github.com/hamishmack/hackage-db.git";
-      rev = "f1f528db7b02d90e9953297c716de5e046f3570f";
-      sha256 = "0j86xkpndxn41sy2mchx029zc3isaxh61hdvnakpiflkcmfaji1w";
+      rev = "3f12730c0d6092efce142cad87264e7b7eb2b05a";
+      sha256 = "13nl8swdd3g1rh14f29v6nhnzaxgc8l70vs6hviw8qgdpbxvhs45";
       });
     }

@@ -82,7 +82,7 @@ writeShellScriptBin "update-nix-tools" ''
    rm -f nix-tools.cabal
    echo "--> Done."
    echo "******"
-   echo "*** please copy $TMP/* into haskell.nix/nix-tools"
+   echo "*** please copy $TMP/ into haskell.nix/nix-tools"
    echo "***"
    echo "***   cp -fr "$TMP/" ."
    echo "***"
