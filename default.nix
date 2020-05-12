@@ -1,6 +1,6 @@
 { haskellNixSrc ? builtins.fetchTarball {
-      url = "https://github.com/input-output-hk/haskell.nix/archive/3178c84e162dadc6e740eef3d56391d3a0f1c228.tar.gz";
-      sha256 = "0bwgibp8vaavnqxzw6iphhzrcr7mr59fgm9pa05csbx1paxzirim";
+      url = "https://github.com/input-output-hk/haskell.nix/archive/61b1c8a06c74a83c0d2dc7d937d8daa6b32b2a2f.tar.gz";
+      sha256 = "1vi8is7h85sb8acymjcnkjm39fp5pal2wq9p7zdv5cmillzs2sza";
     }
 , nixpkgs ? (import haskellNixSrc {}).sources.nixpkgs-default
 , pkgs ? import nixpkgs (import haskellNixSrc {}).nixpkgsArgs
