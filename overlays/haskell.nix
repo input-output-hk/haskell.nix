@@ -241,7 +241,7 @@ final: prev: {
         # check the CI results before turning it off again.
         internalHackageIndexState = "2020-04-12T00:00:00Z";
 
-        checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
+        checkMaterialization = true; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
