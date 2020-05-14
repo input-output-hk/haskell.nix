@@ -20,7 +20,26 @@ let
     };
   };
 in
-let plan-to-nix = (haskell-nix.cabalProject { name = "nix-tools"; inherit src; }).nix-tools.components.exes.plan-to-nix; in
+  let plan-to-nix = (haskell-nix.cabalProject {
+    name = "nix-tools";
+    inherit src;
+    modules = [{
+     # Remove Cabal from nonReinstallablePkgs to be able to pick Cabal-3.2.
+     nonReinstallablePkgs= [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+      "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+      # ghcjs custom packages
+      "ghcjs-prim" "ghcjs-th"
+      "ghc-boot"
+      "ghc" "Win32" "array" "binary" "bytestring" "containers"
+      "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+      # "ghci" "haskeline"
+      "hpc"
+      "mtl" "parsec" "process" "text" "time" "transformers"
+      "unix" "xhtml"
+      # "stm" "terminfo"
+     ];
+    }];
+  }).nix-tools.components.exes.plan-to-nix; in
 with builtins;
 with stdenv.lib;
 writeShellScriptBin "update-nix-tools" ''
@@ -37,9 +56,9 @@ writeShellScriptBin "update-nix-tools" ''
    # Build for ghc-8.4.4
    echo "--> Updating cabal index..."
    cabal v2-update -v0
-   echo "--> Configuring nix-tools for ${haskell-nix.compiler.ghc844.name}..."
-   cabal v2-configure -w ${getBin haskell-nix.compiler.ghc844}/bin/ghc -v0
-   echo "--> Running plan-to-nix for ${haskell-nix.compiler.ghc844.name}..."
+   echo "--> Configuring nix-tools for ${haskell-nix.bootstrap.compiler.ghc844.name}..."
+   cabal v2-configure -w ${getBin haskell-nix.bootstrap.compiler.ghc844}/bin/ghc -v0
+   echo "--> Running plan-to-nix for ${haskell-nix.bootstrap.compiler.ghc844.name}..."
    plan-to-nix -o . --plan-json=$(find . -name "plan.json")
 
    rm cabal.project.local
@@ -63,7 +82,7 @@ writeShellScriptBin "update-nix-tools" ''
    rm -f nix-tools.cabal
    echo "--> Done."
    echo "******"
-   echo "*** please copy $TMP/* into haskell.nix/nix-tools"
+   echo "*** please copy $TMP/ into haskell.nix/nix-tools"
    echo "***"
    echo "***   cp -fr "$TMP/" ."
    echo "***"

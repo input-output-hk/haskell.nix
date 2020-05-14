@@ -4,8 +4,10 @@ let haskellNix = rec {
     };
 
     config   = import ./config.nix;
-    overlays = import ./overlays;
-    nixpkgsArgs = { inherit overlays config; };
+    overlays = [ allOverlays.combined ];
+    allOverlays = import ./overlays;
+    nixpkgsArgs = { inherit config overlays; };
+    pkgs = import sources.nixpkgs-default nixpkgsArgs;
   };
 
   haskellNixV1 = haskellNix.nixpkgsArgs;
