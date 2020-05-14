@@ -200,11 +200,27 @@ let
     mkdir -p $out/ghc
     mkdir -p $out/ghc-pkg
     ${ghc.targetPrefix}ghc --numeric-version > $out/ghc/numeric-version
-    ${ghc.targetPrefix}ghc --info > $out/ghc/info
+    ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
     ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
-    ${ghc.targetPrefix}ghc --print-libdir > $out/ghc/print-libdir
     ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
-    ${ghc.targetPrefix}ghc-pkg dump --global -v0 | grep -v /nix/store > $out/ghc-pkg/dump-global
+    # The order of the `ghc-pkg dump` output seems to be non
+    # deterministic so we need to sort it so that it is always
+    # the same.
+    # Sort the output by spliting it on the --- separator line,
+    # sorting it, adding the --- separators back and removing the
+    # last line (the trailing ---)
+    ${ghc.targetPrefix}ghc-pkg dump --global -v0 \
+      | grep -v /nix/store \
+      | grep -v '^abi:' \
+      | tr '\n' '\r' \
+      | sed -e 's/\r\r*/\r/g' \
+      | sed -e 's/\r$//g' \
+      | sed -e 's/\r---\r/\n/g' \
+      | sort \
+      | sed -e 's/$/\r---/g' \
+      | tr '\r' '\n' \
+      | sed -e '$ d' \
+        > $out/ghc-pkg/dump-global
   '');
 
   dummy-ghc = pkgs.writeTextFile {
@@ -216,7 +232,7 @@ let
       elif [ "'$*'" == "'--supported-languages'" ]; then cat ${dummy-ghc-data}/ghc/supported-languages;
       elif [ "'$*'" == "'--print-global-package-db'" ]; then echo $out/dumby-db;
       elif [ "'$*'" == "'--info'" ]; then cat ${dummy-ghc-data}/ghc/info;
-      elif [ "'$*'" == "'--print-libdir'" ]; then cat ${dummy-ghc-data}/ghc/print-libdir;
+      elif [ "'$*'" == "'--print-libdir'" ]; then echo ${dummy-ghc-data}/ghc/libdir;
       else
         false
       fi
