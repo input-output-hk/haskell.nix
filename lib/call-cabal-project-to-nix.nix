@@ -187,13 +187,14 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
-  dummy-ghc-data = pkgs.haskell-nix.materialize {
+  dummy-ghc-data = pkgs.haskell-nix.materialize ({
     sha256 = null;
     sha256Arg = "sha256";
     materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
     reasonNotSafe = null;
-    checkMaterialization = true;
-  } (
+  } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
+    inherit checkMaterialization;
+  }) (
   runCommand ("dummy-data-" + ghc.name) {
     nativeBuildInputs = [ ghc ];
   } ''
