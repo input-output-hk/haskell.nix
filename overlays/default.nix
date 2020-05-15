@@ -12,6 +12,7 @@ let
     armv6l-linux = import ./armv6l-linux.nix;
     musl = import ./musl.nix;
     tools = import ./tools.nix;
+    emscripten = import ./emscripten.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -38,6 +39,7 @@ let
     armv6l-linux
     musl
     tools
+    emscripten
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
