@@ -68,11 +68,15 @@ let
 
   # TODO check if this posible fix for segfaults works or not.
   targetLibffi =
+    # on native platforms targetPlatform.{libffi, gmp} do not exist; thus fall back
+    # to the non-targetPlatform version in those cases.
+    let targetLibffi = targetPackages.libffi or libffi; in
+    # we need to set `dontDisableStatic` for musl for libffi to work.
     if stdenv.targetPlatform.isMusl
-    then targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; })
-    else if targetPlatform != hostPlatform
-    then targetPackages.libffi
-    else libffi;
+    then targetLibffi.overrideAttrs (old: { dontDisableStatic = true; })
+    else targetLibffi;
+
+  targetGmp = targetPackages.gmp or gmp;
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -98,6 +102,9 @@ let
     GhcRtsHcOpts += -fPIC
   '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
+  '' + stdenv.lib.optionalString useLLVM ''
+    GhcStage2HcOpts += -fast-llvm
+    GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
@@ -195,16 +202,14 @@ in let configured-src = stdenv.mkDerivation (rec {
             done
         '';
 
-        # TODO(@Ericson2314): Always pass "--target" and always prefix.
-        configurePlatforms = [ "build" "host" ]
-            ++ stdenv.lib.optional (targetPlatform != hostPlatform) "target";
+        configurePlatforms = [ "build" "host" "target" ];
         # `--with` flags for libraries needed for RTS linker
         configureFlags = [
             "--datadir=$doc/share/doc/ghc"
             "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
         ] ++ stdenv.lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
         ] ++ stdenv.lib.optional (!enableIntegerSimple) [
-            "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
+            "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
         ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
             "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
         ] ++ stdenv.lib.optionals (targetPlatform != hostPlatform) [

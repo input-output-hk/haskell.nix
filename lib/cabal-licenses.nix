@@ -7,6 +7,7 @@ lib: with lib.licenses;
   "LGPL-2.1-only"     = lgpl21;
   "LGPL-3.0-only"     = lgpl3;
   "GPL-2.0-only"      = gpl2;
+  "GPL-2.0-or-later"  = gpl2Plus;
   "GPL-3.0-only"      = gpl3;
   "AGPL-3.0-only"     = agpl3;
   "AGPL-3.0-or-later" = agpl3Plus;

@@ -187,6 +187,92 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
+  # The use of a the actual GHC can cause significant problems:
+  # * For hydra to assemble a list of jobs from `components.tests` it must
+  #   first have GHC that will be used. If a patch has been applied to the
+  #   GHC to be used it must be rebuilt before the list of jobs can be assembled.
+  #   If a lot of different GHCs are being tests that can be a lot of work all
+  #   happening in the eval stage where little feedback is available.
+  # * Once the jobs are running the compilation of the GHC needed (the eval
+  #   stage already must have done it, but the outputs there are apparently
+  #   not added to the cache) happens inside the IFD part of cabalProject.
+  #   This causes a very large amount of work to be done in the IFD and our
+  #   understanding is that this can cause problems on nix and/or hydra.
+  # * When using cabalProject we cannot examine the properties of the project without
+  #   building or downloading the GHC (less of an issue as we would normally need
+  #   it soon anyway).
+  #
+  # The solution here is to capture the GHC outputs that `cabal v2-configure`
+  # requests and materialize it so that the real GHC is only needed
+  # when `checkMaterialization` is set.
+  dummy-ghc-data = pkgs.haskell-nix.materialize ({
+    sha256 = null;
+    sha256Arg = "sha256";
+    materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
+    reasonNotSafe = null;
+  } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
+    inherit checkMaterialization;
+  }) (
+  runCommand ("dummy-data-" + ghc.name) {
+    nativeBuildInputs = [ ghc ];
+  } ''
+    mkdir -p $out/ghc
+    mkdir -p $out/ghc-pkg
+    ${ghc.targetPrefix}ghc --numeric-version > $out/ghc/numeric-version
+    ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
+    ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
+    ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
+    # The order of the `ghc-pkg dump` output seems to be non
+    # deterministic so we need to sort it so that it is always
+    # the same.
+    # Sort the output by spliting it on the --- separator line,
+    # sorting it, adding the --- separators back and removing the
+    # last line (the trailing ---)
+    ${ghc.targetPrefix}ghc-pkg dump --global -v0 \
+      | grep -v /nix/store \
+      | grep -v '^abi:' \
+      | tr '\n' '\r' \
+      | sed -e 's/\r\r*/\r/g' \
+      | sed -e 's/\r$//g' \
+      | sed -e 's/\r---\r/\n/g' \
+      | sort \
+      | sed -e 's/$/\r---/g' \
+      | tr '\r' '\n' \
+      | sed -e '$ d' \
+        > $out/ghc-pkg/dump-global
+  '');
+
+  # Dummy `ghc` that uses the captured output 
+  dummy-ghc = pkgs.writeTextFile {
+    name = "dummy-" + ghc.name;
+    executable = true;
+    destination = "/bin/${ghc.targetPrefix}ghc";
+    text = ''
+      if [ "'$*'" == "'--numeric-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-version;
+      elif [ "'$*'" == "'--supported-languages'" ]; then cat ${dummy-ghc-data}/ghc/supported-languages;
+      elif [ "'$*'" == "'--print-global-package-db'" ]; then echo $out/dumby-db;
+      elif [ "'$*'" == "'--info'" ]; then cat ${dummy-ghc-data}/ghc/info;
+      elif [ "'$*'" == "'--print-libdir'" ]; then echo ${dummy-ghc-data}/ghc/libdir;
+      else
+        false
+      fi
+    '';
+  };
+
+  # Dummy `ghc-pkg` that uses the captured output 
+  dummy-ghc-pkg = pkgs.writeTextFile {
+    name = "dummy-pkg-" + ghc.name;
+    executable = true;
+    destination = "/bin/${ghc.targetPrefix}ghc-pkg";
+    text = ''
+      if [ "'$*'" == "'--version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/version;
+      elif [ "'$*'" == "'dump --global -v0'" ]; then cat ${dummy-ghc-data}/ghc-pkg/dump-global;
+      else
+        false
+      fi
+    '';
+  };
+
   plan-nix = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
@@ -199,7 +285,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.buildPackages.rsync pkgs.buildPackages.git ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install pkgs.buildPackages.rsync ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";

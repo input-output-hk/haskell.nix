@@ -1,4 +1,4 @@
-self: super: with self; {
+final: prev: with final; {
 
   binaryen = callPackage ./emscripten/binaryen.nix {};
 
