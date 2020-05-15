@@ -94,11 +94,11 @@ If your project has a `cabal.project` you can add a `default.nix` like this:
 
 ```nix
 { pkgs ? import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs
-, haskellCompiler ? "ghc865"
+, compiler-nix-name ? "ghc865"
 }:
   pkgs.haskell-nix.cabalProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
-    ghc = pkgs.buildPackages.pkgs.haskell-nix.compiler.${haskellCompiler};
+    inherit compiler-nix-name;
     # pkg-def-extras = [
     #   # Additional packages ontop of all those listed in `cabal.project`
     # ];
