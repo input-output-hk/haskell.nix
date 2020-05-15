@@ -172,7 +172,7 @@ in rec {
         if __pathExists materializedPath
           then materializedPath
           else null;
-      ghc = final.buildPackages.haskell-nix.compiler.${ghcName};
+      ghcOverride = final.buildPackages.haskell-nix.compiler.${ghcName};
       configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;

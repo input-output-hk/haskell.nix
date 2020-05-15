@@ -7,7 +7,9 @@
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , cabalProject  ? null # Cabal project file (when null uses "${src}/cabal.project")
-, ghc           ? defaults.ghc
+, compiler-nix-name ? null # Nix name of the ghc compiler as a string eg. "ghc883"
+, ghc           ? null # Deprecated in favour of `compiler-nix-name`
+, ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , nix-tools     ? defaults.nix-tools
 , hpack         ? defaults.hpack
 , cabal-install ? defaults.cabal-install
@@ -31,11 +33,29 @@ assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
          then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
          else true);
 
-assert (if ghc.isHaskellNixCompiler or false then true
-  else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
-    + pkgs.lib.optionalString (name != null) (" for " + name)));
+let
+  forName = pkgs.lib.optionalString (name != null) (" for " + name);
+
+  ghc' =
+    if ghcOverride != null
+      then ghcOverride
+      else
+        if ghc != null
+          then __trace ("WARNING: A `ghc` argument was passed" + forName
+            + " this has been deprecated in favour of `compiler-nix-name`. "
+            + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
+          else
+            if compiler-nix-name != null
+              then pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}"
+              else defaults.ghc;
+
+in
+  assert (if ghc'.isHaskellNixCompiler or false then true
+    else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
+      + forName));
 
 let
+  ghc = ghc';
   maybeCleanedSource =
     if haskellLib.canCleanSource src
     then haskellLib.cleanSourceWith {
