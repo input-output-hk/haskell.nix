@@ -187,6 +187,24 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
+  # The use of a the actual GHC can cause significant problems:
+  # * For hydra to assemble a list of jobs from `components.tests` it must
+  #   first have GHC that will be used. If a patch has been applied to the
+  #   GHC to be used it must be rebuilt before the list of jobs can be assembled.
+  #   If a lot of different GHCs are being tests that can be a lot of work all
+  #   happening in the eval stage where little feedback is available.
+  # * Once the jobs are running the compilation of the GHC needed (the eval
+  #   stage already must have done it, but the outputs there are apparently
+  #   not added to the cache) happens inside the IFD part of cabalProject.
+  #   This causes a very large amount of work to be done in the IFD and our
+  #   understanding is that this can cause problems on nix and/or hydra.
+  # * When using cabalProject we cannot examine the properties of the project without
+  #   building or downloading the GHC (less of an issue as we would normally need
+  #   it soon anyway).
+  #
+  # The solution here is to capture the GHC outputs that `cabal v2-configure`
+  # requests and materialize it so that the real GHC is only needed
+  # when `checkMaterialization` is set.
   dummy-ghc-data = pkgs.haskell-nix.materialize ({
     sha256 = null;
     sha256Arg = "sha256";
@@ -224,6 +242,7 @@ let
         > $out/ghc-pkg/dump-global
   '');
 
+  # Dummy `ghc` that uses the captured output 
   dummy-ghc = pkgs.writeTextFile {
     name = "dummy-" + ghc.name;
     executable = true;
@@ -240,6 +259,7 @@ let
     '';
   };
 
+  # Dummy `ghc-pkg` that uses the captured output 
   dummy-ghc-pkg = pkgs.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
     executable = true;
