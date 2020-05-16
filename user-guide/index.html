@@ -282,11 +282,11 @@ to configure the <a href="https://nix-tools.cachix.org">nix-tools cachix</a> as 
 <h3 id="using-your-cabalproject-file">Using your cabal.project file<a class="headerlink" href="#using-your-cabalproject-file" title="Permanent link">&para;</a></h3>
 <p>If your project has a <code>cabal.project</code> you can add a <code>default.nix</code> like this:</p>
 <pre><code class="nix">{ pkgs ? import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs
-, haskellCompiler ? &quot;ghc865&quot;
+, compiler-nix-name ? &quot;ghc865&quot;
 }:
   pkgs.haskell-nix.cabalProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
-    ghc = pkgs.buildPackages.pkgs.haskell-nix.compiler.${haskellCompiler};
+    inherit compiler-nix-name;
     # pkg-def-extras = [
     #   # Additional packages ontop of all those listed in `cabal.project`
     # ];
