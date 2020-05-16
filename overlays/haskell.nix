@@ -463,7 +463,10 @@ final: prev: {
                 { plan-pkgs = plan.pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
-                          ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                          ++ final.lib.optional (args ? ghcOverride || args ? ghc)
+                              { ghc.package = args.ghcOverride or args.ghc; }
+                          ++ final.lib.optional (args ? compiler-nix-name)
+                              { compiler.nix-name = args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
             in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };

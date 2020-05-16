@@ -424,7 +424,7 @@ in {
             # to build ghcs from source.
             alex-project = hackage-project {
                 # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+                ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "alex"; version = "3.2.4";
                 index-state = final.haskell-nix.internalHackageIndexState;
@@ -433,7 +433,7 @@ in {
             alex = bootstrap.packages.alex-project.hsPkgs.alex.components.exes.alex;
             happy-project = hackage-project {
                 # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+                ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "happy"; version = "1.19.11";
                 index-state = final.haskell-nix.internalHackageIndexState;
@@ -442,7 +442,7 @@ in {
             happy = bootstrap.packages.happy-project.hsPkgs.happy.components.exes.happy;
             hscolour-project = hackage-project {
                 # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+                ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 name = "hscolour"; version = "1.24.4";
                 index-state = final.haskell-nix.internalHackageIndexState;

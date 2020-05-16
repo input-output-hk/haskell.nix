@@ -65,8 +65,8 @@ in
       # "ghci" "haskeline"
       "hpc"
       "mtl" "parsec" "process" "text" "time" "transformers"
-      "unix" "xhtml"
-      # "stm" "terminfo"
+      "unix" "xhtml" "terminfo"
+      # "stm"
     ];
 
   options.bootPkgs = lib.mkOption {
