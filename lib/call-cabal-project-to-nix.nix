@@ -43,6 +43,8 @@ let
         if ghc != null
           then __trace ("WARNING: A `ghc` argument was passed" + forName
             + " this has been deprecated in favour of `compiler-nix-name`. "
+            + "Using `ghc` will break cross compilation setups, as haskell.nix can not"
+            + "pick the correct `ghc` package from the respective buildPackages. "
             + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
           else
             if compiler-nix-name != null
