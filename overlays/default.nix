@@ -13,6 +13,7 @@ let
     musl = import ./musl.nix;
     tools = import ./tools.nix;
     emscripten = import ./emscripten.nix;
+    ghcjs = import ./ghcjs.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -40,6 +41,7 @@ let
     musl
     tools
     emscripten
+    ghcjs
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
