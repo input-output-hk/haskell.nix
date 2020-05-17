@@ -2,4 +2,4 @@
 module Main where
 
 main :: IO ()
-main = print __GLASGOW_HASKELL__
+main = putStr $ show __GLASGOW_HASKELL__
