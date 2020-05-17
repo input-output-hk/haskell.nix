@@ -1,3 +1,7 @@
+# IMPORTANT: This is for building ghcjs, not for building with
+# ghcjs. To build with ghcjs then just replace `haskell-nix`
+# with `pkgsCross.ghcjs.haskell-nix`.
+#
 # For the time being we can't really treat ghcjs like a
 # regular ghc (with different target). We need this as a
 # stop-gap measure until ghcjs can be treated like a regular
