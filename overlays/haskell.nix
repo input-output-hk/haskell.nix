@@ -60,7 +60,21 @@ final: prev: {
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
             inherit (final) stdenv lib runCommand recurseIntoAttrs srcOnly;
-            inherit (final.buildPackages) git;
+            # It turns out `git` depends on `gdb` in a round about way:
+            #  git -> openssh -> libfido2 -> systemd -> python libxml -> Cython -> gdb
+            # Somewhere in that chain there should perhaps be a `buildPackages` so
+            # that the `gdb` that is used is not the one for debugging code in
+            # the `final` (but instead the one for debugging code in
+            # `final.buildPackages`).
+            #
+            # Using `final.buildPackages.git` causes two problems:
+            #
+            #   * Multiple versions of `git` (and that dependency chain
+            #     to `gdb` are needed when cross compiling).
+            #   * When `gdb` does not exist for `js`, so when cross
+            #     compiling with ghcjs `final.buildPackages.git` fails
+            #     to build at all.
+            inherit (final.buildPackages.buildPackages) git;
             haskellLib = hl;
         }; in hl;
 
