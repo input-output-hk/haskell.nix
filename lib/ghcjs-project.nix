@@ -99,11 +99,11 @@ let
         cat utils/makePackages.sh
         ./utils/makePackages.sh copy
 
-        echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
         ${
           # nuke the HsBaseConfig.h from base.buildinfo.in; this will
           # prevent it from being installed and provide incorrect values.
           pkgs.lib.optionalString (!isGhcjs88) ''
+            echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
             sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
           ''
         }'';
