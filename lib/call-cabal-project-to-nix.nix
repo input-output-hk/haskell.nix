@@ -343,6 +343,8 @@ let
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests \
         --enable-benchmarks \
+        ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
+            "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc"} \
         ${configureArgs}
 
     mkdir -p $out
