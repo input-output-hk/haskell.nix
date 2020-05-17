@@ -114,7 +114,7 @@ let
             (n: _: builtins.any (x: x == n)
                 ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"]) args) // {
         src = configured-src;
-        ghc = ghc.buildGHC;
+        compiler-nix-name = if isGhcjs88 then "ghc883" else "ghc865";
         configureArgs = pkgs.lib.optionalString isGhcjs88 "--constraint='Cabal >=3.0.2.0 && <3.1'";
         modules = [
             {
