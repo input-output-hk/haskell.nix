@@ -32,6 +32,12 @@ final: prev:
             ./patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff
             ./patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff
           ];
+          testWrapper = [((final.writeScriptBin "node-wrapper" ''
+            set -euo pipefail
+            exe=$1
+            shift
+            ${final.buildPackages.nodejs}/bin/node $exe.jsexe/all.js $@
+          '') + "/bin/node-wrapper")];
         }
       )
     );
