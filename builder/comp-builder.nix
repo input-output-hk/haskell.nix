@@ -121,7 +121,6 @@ let
       "--ghc-option=-optl=-L${zlib.static}/lib"
       "--ghc-option=-optl=-L${ncurses.override { enableStatic = true; }}/lib"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
-      ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals haskellLib.isCrossHost (
@@ -152,9 +151,6 @@ let
                      if builtins.isFunction shellHook then shellHook { inherit package shellWrappers; }
                      else abort "shellHook should be a string or a function";
 
-  # the target dir for haddock documentation
-  docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
-
   doHaddock' = doHaddock
     && (haskellLib.isLibrary componentId)
     && !haskellLib.isCrossHost;
@@ -164,7 +160,103 @@ let
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
-in stdenv.lib.fix (drv:
+  # the target dir for haddock documentation
+  docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
+
+  docs = stdenv.lib.fix (drv: stdenv.mkDerivation ({
+    name = "${ghc.targetPrefix}${fullName}-docs";
+    src = cleanSrc;
+
+    LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
+    LC_ALL = "en_US.UTF-8";
+
+    passthru = {
+      # The directory containing the haddock documentation.
+      # `null' if no haddock documentation was built.
+      haddockDir = "${docdir drv}/html";
+    };
+
+    enableParallelBuilding = true;
+
+    buildInputs = component.libs
+      ++ frameworks
+      ++ builtins.concatLists pkgconfig
+      # Note: This is a hack until we can fix properly. See:
+      # https://github.com/haskell-gi/haskell-gi/issues/226
+      ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
+
+    nativeBuildInputs =
+      [shellWrappers buildPackages.removeReferencesTo]
+      ++ executableToolDepends;
+
+    SETUP_HS = setup + /bin/Setup;
+
+    configurePhase = ''
+      echo Configure flags:
+      printf "%q " ${finalConfigureFlags}
+      echo
+      $SETUP_HS configure ${finalConfigureFlags}
+    '';
+
+    buildPhase = ''
+      set -x
+      runHook preHaddock
+      # If we don't have any source files, no need to run haddock
+      [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
+
+      $SETUP_HS --version
+      $SETUP_HS haddock --help
+
+      $SETUP_HS haddock \
+        "--html" \
+        ${lib.optionalString doHoogle "--hoogle"} \
+        ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
+        ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
+      }
+      runHook postHaddock
+    '';
+
+    installPhase = ''
+      set -x
+      pwd
+      ls -l
+      ls -l dist/
+      ls -l dist/doc
+      ls -l dist/doc/html/
+      ls -l dist/doc/html/${package.identifier.name}
+      # html="dist/doc/html/${componentId.cname}"
+      html="dist/doc/html/${package.identifier.name}"
+
+      if [ -d "$html" ]; then
+         # Ensure that libraries are not pulled into the docs closure.
+         # As an example, the prettified source code of a
+         # Paths_package module will contain store paths of the library package.
+         for x in "$html/src/"*.html; do
+           remove-references-to -t $out $x
+         done
+
+         docdir="${docdir "$out"}"
+         mkdir -p "$docdir"
+
+         cp -R "$html" "$docdir"/html
+      fi
+      set +x
+    '';
+
+  }
+  # patches can (if they like) depend on the version and revision of the package.
+  // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
+  // haskellLib.optionalHooks {
+    inherit preUnpack postUnpack preConfigure postConfigure
+      preBuild postBuild preHaddock postHaddock
+      preInstall postInstall;
+  }
+  // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
+  ));
+
+in
+
+stdenv.lib.fix (drv:
 
 stdenv.mkDerivation ({
   name = "${ghc.targetPrefix}${fullName}";
@@ -181,10 +273,9 @@ stdenv.mkDerivation ({
     config = component;
     inherit configFiles executableToolDepends cleanSrc exeName;
     env = shellWrappers;
-
-    # The directory containing the haddock documentation.
-    # `null' if no haddock documentation was built.
-    haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
+  } // lib.optionalAttrs (haskellLib.isLibrary componentId) {
+    # add a docs derivation for libraries
+    inherit docs;
   };
 
   meta = {
@@ -218,11 +309,11 @@ stdenv.mkDerivation ({
 
   outputs = ["out" ]
     ++ (lib.optional enableSeparateDataOutput "data")
-    ++ (lib.optional doHaddock' "doc")
+    # ++ (lib.optional doHaddock' "doc")
     ++ (lib.optional keepSource "source");
 
   # Phases
-  preInstallPhases = lib.optional doHaddock' "haddockPhase";
+  # preInstallPhases = lib.optional doHaddock' "haddockPhase";
 
   prePatch = if (cabalFile != null)
      then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
@@ -238,9 +329,9 @@ stdenv.mkDerivation ({
     '') + ''
     runHook preConfigure
     echo Configure flags:
-    printf "%q " ${finalConfigureFlags}
+    printf "%q " ${finalConfigureFlags + lib.optionalString doHaddock' " --docdir=${docs.out}"}
     echo
-    $SETUP_HS configure ${finalConfigureFlags}
+    $SETUP_HS configure ${finalConfigureFlags + lib.optionalString doHaddock' " --docdir=${docs.out}"}
     runHook postConfigure
   '';
 
@@ -372,8 +463,8 @@ stdenv.mkDerivation ({
 // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
 // haskellLib.optionalHooks {
   inherit preUnpack postUnpack preConfigure postConfigure
-    preBuild postBuild
-    preInstall postInstall preHaddock postHaddock;
+    preBuild postBuild preHaddock postHaddock
+    preInstall postInstall;
 }
 // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
 )))
