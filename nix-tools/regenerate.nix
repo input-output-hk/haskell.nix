@@ -53,18 +53,8 @@ writeShellScriptBin "update-nix-tools" ''
    cp ${src}/cabal.project .
    cp ${specJSON} ./nix-tools-src.json
 
-   # Build for ghc-8.4.4
    echo "--> Updating cabal index..."
    cabal v2-update -v0
-   echo "--> Configuring nix-tools for ${haskell-nix.bootstrap.compiler.ghc844.name}..."
-   cabal v2-configure -w ${getBin haskell-nix.bootstrap.compiler.ghc844}/bin/ghc -v0
-   echo "--> Running plan-to-nix for ${haskell-nix.bootstrap.compiler.ghc844.name}..."
-   plan-to-nix -o . --plan-json=$(find . -name "plan.json")
-
-   rm cabal.project.local
-   rm -fR dist-newstyle
-
-   mv pkgs.nix pkgs-8.4.4.nix
 
    # build for the current ghc in haskell.nix
    echo "--> Configuring nix-tools for ${haskell-nix.ghc.name}..."
