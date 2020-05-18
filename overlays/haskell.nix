@@ -550,9 +550,6 @@ in {
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) nix-tools source-pins;
             bootstap-nix-tools = final.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
-            alex-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.alex-project.plan-nix;
-            happy-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
-            hscolour-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;

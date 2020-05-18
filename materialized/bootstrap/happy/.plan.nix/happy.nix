@@ -11,7 +11,7 @@
     flags = { small_base = true; };
     package = {
       specVersion = "1.8";
-      identifier = { name = "happy"; version = "1.19.12"; };
+      identifier = { name = "happy"; version = "1.19.11"; };
       license = "BSD-2-Clause";
       copyright = "(c) Andy Gill, Simon Marlow";
       maintainer = "Simon Marlow <marlowsd@gmail.com>";
@@ -20,26 +20,18 @@
       url = "";
       synopsis = "Happy is a parser generator for Haskell";
       description = "Happy is a parser generator for Haskell.  Given a grammar\nspecification in BNF, Happy generates Haskell code to parse the\ngrammar.  Happy works in a similar way to the @yacc@ tool for C.";
-      buildType = "Simple";
+      buildType = "Custom";
       isLocal = true;
+      setup-depends = [
+        (hsPkgs.buildPackages.Cabal or (pkgs.buildPackages.Cabal or (errorHandler.buildToolDepError "Cabal")))
+        (hsPkgs.buildPackages.base or (pkgs.buildPackages.base or (errorHandler.buildToolDepError "base")))
+        (hsPkgs.buildPackages.directory or (pkgs.buildPackages.directory or (errorHandler.buildToolDepError "directory")))
+        (hsPkgs.buildPackages.filepath or (pkgs.buildPackages.filepath or (errorHandler.buildToolDepError "filepath")))
+        ];
       detailLevel = "FullDetails";
       licenseFiles = [ "LICENSE" ];
-      dataDir = "data/";
-      dataFiles = [
-        "HappyTemplate"
-        "HappyTemplate-arrays"
-        "HappyTemplate-arrays-coerce"
-        "HappyTemplate-arrays-coerce-debug"
-        "HappyTemplate-arrays-debug"
-        "HappyTemplate-arrays-ghc"
-        "HappyTemplate-arrays-ghc-debug"
-        "HappyTemplate-coerce"
-        "HappyTemplate-ghc"
-        "GLR_Base"
-        "GLR_Lib"
-        "GLR_Lib-ghc"
-        "GLR_Lib-ghc-debug"
-        ];
+      dataDir = "";
+      dataFiles = [];
       extraSrcFiles = [
         "ANNOUNCE"
         "CHANGES"
@@ -117,6 +109,9 @@
         "examples/LexerTest.ly"
         "happy.spec"
         "src/ARRAY-NOTES"
+        "templates/GLR_Base.hs"
+        "templates/GenericTemplate.hs"
+        "templates/GLR_Lib.hs"
         "tests/AttrGrammar001.y"
         "tests/AttrGrammar002.y"
         "tests/Makefile"
@@ -188,9 +183,6 @@
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."process" or (errorHandler.buildDepError "process"))
-            ];
-          build-tools = [
-            (hsPkgs.buildPackages.happy or (pkgs.buildPackages.happy or (errorHandler.buildToolDepError "happy")))
             ];
           buildable = true;
           mainPath = [ "test.hs" ];

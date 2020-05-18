@@ -11,7 +11,7 @@
     flags = { small_base = true; };
     package = {
       specVersion = "1.8";
-      identifier = { name = "alex"; version = "3.2.5"; };
+      identifier = { name = "alex"; version = "3.2.4"; };
       license = "BSD-3-Clause";
       copyright = "(c) Chis Dornan, Simon Marlow";
       maintainer = "Simon Marlow <marlowsd@gmail.com>";

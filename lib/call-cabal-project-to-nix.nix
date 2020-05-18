@@ -28,10 +28,6 @@
 , extra-hackage-tarballs ? []
 , ...
 }@args:
-# cabal-install versions before 2.4 will generate insufficient plan information.
-assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
-         then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
-         else true);
 
 let
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
