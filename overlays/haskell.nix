@@ -29,7 +29,7 @@ let
   # Using boot-nix-tools avoids any chancde of need ing
   # to build or download ghc 8.6.5 (as the boot compiler installed
   # from a binary distro).
-  boot-nix-tools = final.haskell-nix.bootstrap.packages.nix-tools;
+  boot-nix-tools = final.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
 
 in {
     haskell-nix = with final.haskell-nix; {
