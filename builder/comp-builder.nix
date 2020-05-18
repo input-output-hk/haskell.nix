@@ -169,7 +169,7 @@ let
 in stdenv.lib.fix (drv:
 
 stdenv.mkDerivation ({
-  name = nameOnly;
+  pname = nameOnly;
   inherit (package.identifier) version;
 
   src = cleanSrc;
