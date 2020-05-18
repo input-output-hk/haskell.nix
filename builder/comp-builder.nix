@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
 
 lib.makeOverridable (
 { componentId
@@ -65,10 +65,11 @@ let
     then "${name}-all"
     else "${name}-${componentId.ctype}-${componentId.cname}";
 
+  needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
+
   configFiles = makeConfigFiles {
     inherit (package) identifier;
-    inherit component fullName flags;
-    needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
+    inherit component fullName flags needsProfiling;
   };
 
   enableFeature = enable: feature:
@@ -159,101 +160,6 @@ let
     if stdenv.hostPlatform.isWindows then ".exe" else "";
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
-
-  # the target dir for haddock documentation
-  docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
-
-  docs = stdenv.lib.fix (drv: stdenv.mkDerivation ({
-    name = "${ghc.targetPrefix}${fullName}-docs";
-    src = cleanSrc;
-
-    LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
-    LC_ALL = "en_US.UTF-8";
-
-    passthru = {
-      # The directory containing the haddock documentation.
-      # `null' if no haddock documentation was built.
-      haddockDir = "${docdir drv}/html";
-    };
-
-    enableParallelBuilding = true;
-
-    buildInputs = component.libs
-      ++ frameworks
-      ++ builtins.concatLists pkgconfig
-      # Note: This is a hack until we can fix properly. See:
-      # https://github.com/haskell-gi/haskell-gi/issues/226
-      ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
-
-    nativeBuildInputs =
-      [shellWrappers buildPackages.removeReferencesTo]
-      ++ executableToolDepends;
-
-    SETUP_HS = setup + /bin/Setup;
-
-    configurePhase = ''
-      echo Configure flags:
-      printf "%q " ${finalConfigureFlags}
-      echo
-      $SETUP_HS configure ${finalConfigureFlags}
-    '';
-
-    buildPhase = ''
-      set -x
-      runHook preHaddock
-      # If we don't have any source files, no need to run haddock
-      [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
-
-      $SETUP_HS --version
-      $SETUP_HS haddock --help
-
-      $SETUP_HS haddock \
-        "--html" \
-        ${lib.optionalString doHoogle "--hoogle"} \
-        ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-        ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
-      }
-      runHook postHaddock
-    '';
-
-    installPhase = ''
-      set -x
-      pwd
-      ls -l
-      ls -l dist/
-      ls -l dist/doc
-      ls -l dist/doc/html/
-      ls -l dist/doc/html/${package.identifier.name}
-      # html="dist/doc/html/${componentId.cname}"
-      html="dist/doc/html/${package.identifier.name}"
-
-      if [ -d "$html" ]; then
-         # Ensure that libraries are not pulled into the docs closure.
-         # As an example, the prettified source code of a
-         # Paths_package module will contain store paths of the library package.
-         for x in "$html/src/"*.html; do
-           remove-references-to -t $out $x
-         done
-
-         docdir="${docdir "$out"}"
-         mkdir -p "$docdir"
-
-         cp -R "$html" "$docdir"/html
-      fi
-      set +x
-    '';
-
-  }
-  # patches can (if they like) depend on the version and revision of the package.
-  // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
-  // haskellLib.optionalHooks {
-    inherit preUnpack postUnpack preConfigure postConfigure
-      preBuild postBuild preHaddock postHaddock
-      preInstall postInstall;
-  }
-  // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
-  ));
-
 in
 
 stdenv.lib.fix (drv:
@@ -274,8 +180,18 @@ stdenv.mkDerivation ({
     inherit configFiles executableToolDepends cleanSrc exeName;
     env = shellWrappers;
   } // lib.optionalAttrs (haskellLib.isLibrary componentId) {
-    # add a docs derivation for libraries
-    inherit docs;
+    docs = haddockBuilder {
+      inherit componentId component package name setup flags
+        patches revision configureFlags setupGhcOptions
+        doHoogle hyperlinkSource setupHaddockFlags
+        preUnpack postUnpack preConfigure postConfigure
+        preBuild postBuild preHaddock postHaddock
+        setupInstallFlags
+        needsProfiling configFiles;
+
+      src = cleanSrc;
+      componentDrv = drv;
+    };
   };
 
   meta = {
@@ -329,9 +245,9 @@ stdenv.mkDerivation ({
     '') + ''
     runHook preConfigure
     echo Configure flags:
-    printf "%q " ${finalConfigureFlags + lib.optionalString doHaddock' " --docdir=${docs.out}"}
+    printf "%q " ${finalConfigureFlags}
     echo
-    $SETUP_HS configure ${finalConfigureFlags + lib.optionalString doHaddock' " --docdir=${docs.out}"}
+    $SETUP_HS configure ${finalConfigureFlags}
     runHook postConfigure
   '';
 
@@ -344,34 +260,34 @@ stdenv.mkDerivation ({
 
   checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
 
-  haddockPhase = ''
-    runHook preHaddock
-    # If we don't have any source files, no need to run haddock
-    [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
-    docdir="${docdir "$doc"}"
-    mkdir -p "$docdir"
+  # haddockPhase = ''
+  #   runHook preHaddock
+  #   # If we don't have any source files, no need to run haddock
+  #   [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
+  #   docdir="${docdir "$doc"}"
+  #   mkdir -p "$docdir"
 
-    $SETUP_HS haddock \
-      "--html" \
-      ${lib.optionalString doHoogle "--hoogle"} \
-      ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-      ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
+  #   $SETUP_HS haddock \
+  #     "--html" \
+  #     ${lib.optionalString doHoogle "--hoogle"} \
+  #     ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
+  #     ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
 
-    html="dist/doc/html/${componentId.cname}"
+  #   html="dist/doc/html/${componentId.cname}"
 
-    if [ -d "$html" ]; then
-       # Ensure that libraries are not pulled into the docs closure.
-       # As an example, the prettified source code of a
-       # Paths_package module will contain store paths of the library package.
-       for x in "$html/src/"*.html; do
-         remove-references-to -t $out $x
-       done
+  #   if [ -d "$html" ]; then
+  #      # Ensure that libraries are not pulled into the docs closure.
+  #      # As an example, the prettified source code of a
+  #      # Paths_package module will contain store paths of the library package.
+  #      for x in "$html/src/"*.html; do
+  #        remove-references-to -t $out $x
+  #      done
 
-       cp -R "$html" "$docdir"/html
-    fi
-    }
-    runHook postHaddock
-  '';
+  #      cp -R "$html" "$docdir"/html
+  #   fi
+  #   }
+  #   runHook postHaddock
+  # '';
 
   # Note: Cabal does *not* copy test executables during the `install` phase.
   #

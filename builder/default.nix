@@ -3,7 +3,11 @@
 let
   # Builds a single component of a package.
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix {
-    inherit ghc haskellLib makeConfigFiles ghcForComponent hsPkgs;
+    inherit ghc haskellLib makeConfigFiles haddockBuilder ghcForComponent hsPkgs;
+  };
+
+  haddockBuilder = haskellLib.weakCallPackage pkgs ./haddock-builder.nix {
+    inherit ghc ghcForComponent haskellLib makeConfigFiles nonReinstallablePkgs;
   };
 
   setup-builder = haskellLib.weakCallPackage pkgs ./setup-builder.nix {
@@ -41,7 +45,7 @@ let
   hoogleLocal = let
     nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
   in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
-    haskellLib.weakCallPackage pkgs nixpkgsHoogle { 
+    haskellLib.weakCallPackage pkgs nixpkgsHoogle {
       # For musl we can use haddock from the buildGHC
       ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
         then ghc.buildGHC
