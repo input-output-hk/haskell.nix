@@ -21,6 +21,16 @@ let
   #     compiling with ghcjs `final.buildPackages.git` fails
   #     to build at all.
   inherit (final.buildPackages.buildPackages) git nix-prefetch-git;
+
+  # While it is possible to use `nix-tools` that version will be built
+  # with the default ghc (currently 8.6.5).  This introduces a
+  # dependency on that compiler in the a number of places.
+  # This can be frustrating if you are using ghc 8.8.3.
+  # Using boot-nix-tools avoids any chancde of need ing
+  # to build or download ghc 8.6.5 (as the boot compiler installed
+  # from a binary distro).
+  boot-nix-tools = final.haskell-nix.bootstrap.packages.nix-tools;
+
 in {
     haskell-nix = with final.haskell-nix; {
 
@@ -199,7 +209,7 @@ in {
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
         # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
-        hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools, ... }:
+        hackageTarball = { index-state, sha256, nix-tools ? boot-nix-tools, ... }:
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { name = "hackage.haskell.org-at-${at}";
@@ -207,7 +217,7 @@ in {
                 name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
-                postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+                postFetch = "${boot-nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
 
                 outputHashAlgo = "sha256";
                 outputHash = sha256;
@@ -271,7 +281,8 @@ in {
         };
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
-            inherit (final.haskell-nix) indexStateHashesPath nix-tools;
+            inherit (final.haskell-nix) indexStateHashesPath;
+            nix-tools = boot-nix-tools;
             inherit (final) coreutils nix writeShellScriptBin stdenv curl;
         };
 
@@ -279,14 +290,15 @@ in {
         callStackToNix = import ../lib/call-stack-to-nix.nix {
             pkgs = final.buildPackages.pkgs;
             inherit (final.buildPackages.pkgs) runCommand;
-            inherit (final.buildPackages.haskell-nix) nix-tools mkCacheFile materialize;
+            inherit (final.buildPackages.haskell-nix) mkCacheFile materialize;
+            nix-tools = boot-nix-tools;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
         # to produce the nix representation of it.
         callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
             final.buildPackages.pkgs.runCommand "${name}.nix" {
-                nativeBuildInputs = [ final.buildPackages.haskell-nix.nix-tools ];
+                nativeBuildInputs = [ boot-nix-tools ];
 
                 LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";
                 LANG = "en_US.UTF-8";
@@ -383,7 +395,8 @@ in {
 
         genStackCache = import ../lib/stack-cache-generator.nix {
             inherit (final.buildPackages) pkgs;
-            inherit (final.buildPackages.haskell-nix) haskellLib nix-tools;
+            inherit (final.buildPackages.haskell-nix) haskellLib;
+            nix-tools = boot-nix-tools;
         };
 
         mkCacheModule = cache:
@@ -427,9 +440,10 @@ in {
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
-            inherit (final.buildPackages.haskell-nix) dotCabal nix-tools haskellLib materialize;
+            inherit (final.buildPackages.haskell-nix) dotCabal haskellLib materialize;
+            nix-tools = boot-nix-tools;
             pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
+            inherit (final.haskell-nix.bootstrap.packages) hpack;
             inherit (final.buildPackages.haskell-nix) cabal-install ghc;
             inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
