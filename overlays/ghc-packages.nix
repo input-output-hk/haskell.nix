@@ -3,7 +3,12 @@ let
   callCabal2Nix = name: src: final.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
-    nativeBuildInputs = [ final.haskell-nix.nix-tools ];
+    nativeBuildInputs = [ (final.buildPackages.haskell-nix.nix-tools-set {
+      # It is not safe to checkk the nix-tools materialization here
+      # as we would need to run this code to do so leading to
+      # infinite recursion.
+      checkMaterialization = false;
+    }) ];
     phases = [ "unpackPhase" "buildPhase" ];
 
     LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.hostPlatform.libc == "glibc") "${final.glibcLocales}/lib/locale/locale-archive";

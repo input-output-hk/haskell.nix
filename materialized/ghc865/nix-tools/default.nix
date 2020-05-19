@@ -81,7 +81,7 @@
         "adjunctions".revision = (((hackage."adjunctions")."4.4").revisions).default;
         "cryptohash-md5".revision = (((hackage."cryptohash-md5")."0.11.100.1").revisions).default;
         "invariant".revision = (((hackage."invariant")."0.5.3").revisions).default;
-        "th-orphans".revision = (((hackage."th-orphans")."0.13.10").revisions).default;
+        "th-orphans".revision = (((hackage."th-orphans")."0.13.9").revisions).default;
         "pem".revision = (((hackage."pem")."0.2.4").revisions).default;
         "megaparsec".revision = (((hackage."megaparsec")."8.0.0").revisions).default;
         "megaparsec".flags.dev = false;
@@ -170,7 +170,7 @@
         "tagged".flags.deepseq = true;
         "x509".revision = (((hackage."x509")."1.7.5").revisions).default;
         "haskell-src-exts".revision = (((hackage."haskell-src-exts")."1.23.0").revisions).default;
-        "lens".revision = (((hackage."lens")."4.19.2").revisions).default;
+        "lens".revision = (((hackage."lens")."4.19.1").revisions).default;
         "lens".flags.j = false;
         "lens".flags.test-properties = true;
         "lens".flags.old-inline-pragmas = false;
@@ -231,7 +231,7 @@
         "assoc".revision = (((hackage."assoc")."1.0.1").revisions).default;
         "unordered-containers".revision = (((hackage."unordered-containers")."0.2.10.0").revisions).default;
         "unordered-containers".flags.debug = false;
-        "base64-bytestring".revision = (((hackage."base64-bytestring")."1.1.0.0").revisions).default;
+        "base64-bytestring".revision = (((hackage."base64-bytestring")."1.0.0.3").revisions).default;
         "aeson-pretty".revision = (((hackage."aeson-pretty")."0.8.8").revisions).default;
         "aeson-pretty".flags.lib-only = false;
         "base".revision = (((hackage."base")."4.12.0.0").revisions).default;
@@ -283,7 +283,7 @@
         "libyaml".revision = (((hackage."libyaml")."0.1.2").revisions).default;
         "libyaml".flags.system-libyaml = false;
         "libyaml".flags.no-unicode = false;
-        "resourcet".revision = (((hackage."resourcet")."1.2.4").revisions).default;
+        "resourcet".revision = (((hackage."resourcet")."1.2.3").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "cabal-doctest".revision = (((hackage."cabal-doctest")."1.0.8").revisions).default;
         "Glob".revision = (((hackage."Glob")."0.10.0").revisions).default;
@@ -295,7 +295,7 @@
         "aeson".flags.developer = false;
         "http-types".revision = (((hackage."http-types")."0.12.3").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.6.5").revisions).default;
-        "th-lift-instances".revision = (((hackage."th-lift-instances")."0.1.16").revisions).default;
+        "th-lift-instances".revision = (((hackage."th-lift-instances")."0.1.15").revisions).default;
         "base-orphans".revision = (((hackage."base-orphans")."0.8.2").revisions).default;
         "th-abstraction".revision = (((hackage."th-abstraction")."0.3.2.0").revisions).default;
         "memory".revision = (((hackage."memory")."0.15.0").revisions).default;
@@ -327,7 +327,6 @@
           "containers" = "0.6.0.1";
           "bytestring" = "0.10.8.2";
           "text" = "1.2.3.1";
-          "Cabal" = "2.4.0.1";
           "base" = "4.12.0.0";
           "time" = "1.8.0.2";
           "terminfo" = "0.4.1.2";

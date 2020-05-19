@@ -180,22 +180,6 @@ in {
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages = snapshots."lts-14.13";
 
-        # Programs for generating Nix expressions from Cabal and Stack
-        # files. This version of nix-tools may be cross compiled.
-        # We probably never want to actually cross compile nix-tools on
-        # it's own.
-        nix-tools-cross-compiled = final.lib.makeOverridable (import ../nix-tools) {
-            inherit (final) pkgs lib symlinkJoin makeWrapper nix;
-            inherit git nix-prefetch-git;
-            inherit (final.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
-            hpack = null; # nix-tools does not use hpack project files
-        };
-        # While `nix-tools-cross-compiled` may be cross compiled,
-        # getting it from `buildPackages` we should get
-        # nix-tools suitable for running on the build system.
-        nix-tools = final.buildPackages.haskell-nix.nix-tools-cross-compiled;
-        # TODO perhaps there is a cleaner way to get a suitable nix-tools.
-
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
         # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
@@ -549,7 +533,6 @@ in {
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) nix-tools source-pins;
-            bootstap-nix-tools = final.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
