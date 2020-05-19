@@ -124,11 +124,14 @@ let
   calculateUseMaterialized =
     assert materialized != null;
     assert __pathExists materialized;
-    runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
-      cp -r ${materialized} $out
-      # Make sure output files can be removed from the sandbox
-      chmod -R +w $out
-    '';
+    if sha256 == null
+      then materialized
+      else
+        runCommand name hashArgs ''
+          cp -r ${materialized} $out
+          # Make sure output files can be removed from the sandbox
+          chmod -R +w $out
+        '';
 
   # Materialized location was specified, but the files are not there.
   missingMaterialized = materialized != null && !__pathExists materialized;
