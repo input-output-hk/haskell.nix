@@ -78,8 +78,8 @@ in {
 
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
-            inherit (final) stdenv lib runCommand recurseIntoAttrs srcOnly;
-            inherit git;
+            pkgs = final;
+            inherit (final) stdenv lib recurseIntoAttrs srcOnly;
             haskellLib = hl;
         }; in hl;
 
@@ -407,14 +407,21 @@ in {
 
             };
 
+        # This is like a version of final with just haskell.nix
+        # overlays and it is for the currentSystem
+        currentSystemPkgs = import final.path (import ../. {
+          inherit (final.haskell-nix) defaultCompilerNixName;
+        }).nixpkgsArgs;
+
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
-            inherit (final.buildPackages.haskell-nix) dotCabal nix-tools haskellLib materialize;
+            inherit (final.buildPackages.haskell-nix) haskellLib materialize;
             pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
-            inherit (final.buildPackages.haskell-nix) cabal-install ghc;
+            inherit (final.haskell-nix.currentSystemPkgs.haskell-nix.haskellPackages.hpack.components.exes) hpack;
+            inherit (final.buildPackages.haskell-nix) ghc;
+            inherit (final.haskell-nix.currentSystemPkgs.haskell-nix) cabal-install dotCabal nix-tools;
             inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
 
