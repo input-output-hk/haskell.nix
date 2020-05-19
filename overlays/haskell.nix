@@ -187,7 +187,7 @@ in {
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { name = "hackage.haskell.org-at-${at}";
-              index = final.fetchurl {
+              index = (import final.path {}).fetchurl {
                 name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
@@ -209,7 +209,7 @@ in {
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
             in
-            final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
+            (import final.path {}).runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
