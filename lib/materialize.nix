@@ -125,7 +125,7 @@ let
     assert materialized != null;
     assert __pathExists materialized;
     if sha256 == null
-      then materialized
+      then "${materialized}"
       else
         runCommand name hashArgs ''
           cp -r ${materialized} $out
