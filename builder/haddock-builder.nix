@@ -69,7 +69,7 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=${componentDrv}"
-      "--docdir=$out"
+      "--docdir=${docdir "$out"}"
       "${haskellLib.componentTarget componentId}"
       "$(cat ${docsConfigFiles}/configure-flags)"
       # GHC
@@ -77,51 +77,8 @@ let
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
     ]
-    # ] ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
-    # ( # CC
-    #   [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
-    #   ] ++
-    #   # BINTOOLS
-    #   (if stdenv.hostPlatform.isLinux
-    #     # use gold as the linker on linux to improve link times
-    #     then [
-    #       "--with-ld=${stdenv.cc.bintools.targetPrefix}ld.gold"
-    #       "--ghc-option=-optl-fuse-ld=gold"
-    #       "--ld-option=-fuse-ld=gold"
-    #     ] else [
-    #       "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
-    #     ]
-    #   ) ++ [
-    #     "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
-    #     "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
-    #   ]
-    # ) ++ [ # other flags
-    #   (disableFeature dontStrip "executable-stripping")
-    #   (disableFeature dontStrip "library-stripping")
-    #   (enableFeature enableLibraryProfiling "library-profiling")
-    #   (enableFeature enableExecutableProfiling "executable-profiling")
-    #   (enableFeature enableStatic "static")
-    #   (enableFeature enableShared "shared")
-    # ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
-    #   # These flags will make sure the resulting executable is statically linked.
-    #   # If it uses other libraries it may be necessary for to add more
-    #   # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
-    #   # component.
-    #   "--disable-executable-dynamic"
-    #   "--ghc-option=-optl=-pthread"
-    #   "--ghc-option=-optl=-static"
-    #   "--ghc-option=-optl=-L${gmp.override { withStatic = true; }}/lib"
-    #   "--ghc-option=-optl=-L${zlib.static}/lib"
-    #   "--ghc-option=-optl=-L${ncurses.override { enableStatic = true; }}/lib"
-    # ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
-    #   ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
-    #   ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
-    #   ++ lib.optionals haskellLib.isCrossHost (
-    #     map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
-    #     ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
-      # ++ lib.optional enableDebugRTS "--ghc-option=-debug"
     );
 
   shellWrappers = ghcForComponent {
@@ -139,19 +96,12 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation ({
   passthru = {
     configFiles = docsConfigFiles;
 
-  #   # The directory containing the haddock documentation.
-  #   # `null' if no haddock documentation was built.
+    # The directory containing the haddock documentation.
+    # `null' if no haddock documentation was built.
     haddockDir = "${docdir drv}/html";
   };
 
   enableParallelBuilding = true;
-
-  # buildInputs = component.libs
-  #   ++ frameworks
-  #   ++ builtins.concatLists pkgconfig
-  #   # Note: This is a hack until we can fix properly. See:
-  #   # https://github.com/haskell-gi/haskell-gi/issues/226
-  #   ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
 
   nativeBuildInputs =
     [ shellWrappers buildPackages.removeReferencesTo ]
@@ -185,56 +135,37 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation ({
       target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
     in ''
       set -x
-      docdir="${docdir "$out"}"
-      mkdir -p "$docdir"
-      cp -R dist/doc/html/ "$docdir"
-      exit 1
+      html="dist/doc/html/${package.identifier.name}"
+
+      ls $html
+
+      if [ -d "$html" ]; then
+         # Ensure that libraries are not pulled into the docs closure.
+         # As an example, the prettified source code of a
+         # Paths_package module will contain store paths of the library package.
+         for x in "$html/src/"*.html; do
+           remove-references-to -t $out $x
+         done
+
+         docdir="${docdir "$out"}"
+         mkdir -p "$docdir"
+
+         cp -R "$html" "$docdir"/html
+      fi
+
+      ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
+
+      for i in "${componentDrv}/package.conf.d"/*.conf; do
+        pkg=$(basename "$i")
+        sed -e "s|haddock-interfaces:.*|haddock-interfaces: $docdir/html/${componentId.cname}.haddock|" -e "s|haddock-html:.*|haddock-html: $docdir/html/|" "$i" > "$pkg"
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${docsConfigFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
+      done
+
+      cp -Rv ${componentDrv}/exactDep $out/exactDep
+      cp -Rv ${componentDrv}/envDep $out/envDep
+
+      set +x
     '';
-
-  # buildPhase = ''
-  #   set -x
-  #   runHook preHaddock
-  #   # If we don't have any source files, no need to run haddock
-  #   [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
-
-  #   $SETUP_HS --version
-  #   $SETUP_HS haddock --help
-
-  #   $SETUP_HS haddock \
-  #     "--html" \
-  #     ${lib.optionalString doHoogle "--hoogle"} \
-  #     ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-  #     ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
-  #   }
-  #   runHook postHaddock
-  # '';
-
-  # installPhase = ''
-  #   set -x
-  #   pwd
-  #   ls -l
-  #   ls -l dist/
-  #   ls -l dist/doc
-  #   ls -l dist/doc/html/
-  #   ls -l dist/doc/html/${package.identifier.name}
-  #   # html="dist/doc/html/${componentId.cname}"
-  #   html="dist/doc/html/${package.identifier.name}"
-
-  #   if [ -d "$html" ]; then
-  #      # Ensure that libraries are not pulled into the docs closure.
-  #      # As an example, the prettified source code of a
-  #      # Paths_package module will contain store paths of the library package.
-  #      for x in "$html/src/"*.html; do
-  #        remove-references-to -t $out $x
-  #      done
-
-  #      docdir="${docdir "$out"}"
-  #      mkdir -p "$docdir"
-
-  #      cp -R "$html" "$docdir"/html
-  #   fi
-  #   set +x
-  # '';
 }
 # patches can (if they like) depend on the version and revision of the package.
 // lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
