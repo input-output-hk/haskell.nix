@@ -2,26 +2,7 @@
 #
 # for hygenic reasons we'll use haskell-nix as a prefix.
 # Using haskell.nix in nix is awkward as I needs to be quoted.
-final: prev:
-let
-  # Why `final.buildPackages.buildPackages.git`?
-  #
-  # It turns out `git` depends on `gdb` in a round about way:
-  #  git -> openssh -> libfido2 -> systemd -> python libxml -> Cython -> gdb
-  # Somewhere in that chain there should perhaps be a `buildPackages` so
-  # that the `gdb` that is used is not the one for debugging code in
-  # the `final` (but instead the one for debugging code in
-  # `final.buildPackages`).
-  #
-  # Using `final.buildPackages.git` causes two problems:
-  #
-  #   * Multiple versions of `git` (and that dependency chain
-  #     to `gdb` are needed when cross compiling).
-  #   * When `gdb` does not exist for `js`, so when cross
-  #     compiling with ghcjs `final.buildPackages.git` fails
-  #     to build at all.
-  inherit (final.buildPackages.buildPackages) git nix-prefetch-git;
-in {
+final: prev: {
     haskell-nix = with final.haskell-nix; {
 
         # Default modules, these will always be included.
