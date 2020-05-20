@@ -172,7 +172,10 @@ final: prev: {
         # Package sets for all stackage snapshots.
         snapshots = import ../snapshots.nix { inherit (final) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
         # Pick a recent LTS snapshot to be our "default" package set.
-        haskellPackages = snapshots."lts-14.13";
+        haskellPackages =
+            if final.targetPlatform.isAarch64
+            then snapshots."lts-15.13"
+            else snapshots."lts-14.13";
 
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where

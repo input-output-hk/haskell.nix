@@ -266,6 +266,7 @@ let
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc";
     text = ''
+      #!${pkgs.buildPackages.runtimeShell}
       if [ "'$*'" == "'--numeric-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-version;
       elif [ "'$*'" == "'--supported-languages'" ]; then cat ${dummy-ghc-data}/ghc/supported-languages;
       elif [ "'$*'" == "'--print-global-package-db'" ]; then echo $out/dumby-db;
@@ -283,6 +284,7 @@ let
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc-pkg";
     text = ''
+      #!${pkgs.buildPackages.runtimeShell}
       if [ "'$*'" == "'--version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/version;
       elif [ "'$*'" == "'dump --global -v0'" ]; then cat ${dummy-ghc-data}/ghc-pkg/dump-global;
       else
