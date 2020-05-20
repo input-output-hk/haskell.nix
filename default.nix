@@ -1,11 +1,11 @@
 let haskellNix = {
       sourcesOverride ? {},
-      ... }: rec {
+      ... }@args: rec {
     sources = (import ./nix/sources.nix) // sourcesOverride;
 
     config   = import ./config.nix;
     overlays = [ allOverlays.combined ];
-    allOverlays = import ./overlays;
+    allOverlays = import ./overlays args;
     nixpkgsArgs = { inherit config overlays; };
     pkgs = import sources.nixpkgs-default nixpkgsArgs;
   };
