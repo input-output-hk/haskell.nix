@@ -333,9 +333,9 @@ in {
       index-state = final.haskell-nix.internalHackageIndexState;
       # When building cabal-install (only happens when checking materialization)
       # disable checking of the tools used to avoid infinite recursion.
-      cabal-install = final.haskell-nix.currentSystemPkgs.haskell-nix.cabal-install-tool
+      cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
         (args // { checkMaterialization = false; });
-      nix-tools = final.haskell-nix.currentSystemPkgs.haskell-nix.nix-tools-set
+      nix-tools = final.evalPackages.haskell-nix.nix-tools-set
         (args // { checkMaterialization = false; });
       materialized = ../materialized + "/${
           args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
@@ -355,9 +355,9 @@ in {
             index-state = final.haskell-nix.internalHackageIndexState;
             # When building cabal-install (only happens when checking materialization)
             # disable checking of the tools used to avoid infinite recursion.
-            cabal-install = final.haskell-nix.currentSystemPkgs.haskell-nix.cabal-install-tool
+            cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
               (args // { checkMaterialization = false; });
-            nix-tools = final.haskell-nix.currentSystemPkgs.haskell-nix.nix-tools-set
+            nix-tools = final.evalPackages.haskell-nix.nix-tools-set
               (args // { checkMaterialization = false; });
             materialized = ../materialized + "/${
                 args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
