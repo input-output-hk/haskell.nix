@@ -4,7 +4,7 @@ lib.makeOverridable (
 { componentId
 , component
 , package
-, name
+, name # This is the package name
 , setup
 , src
 , flags
@@ -61,9 +61,11 @@ let
     then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
     else haskellLib.cleanCabalComponent package component src;
 
-  fullName = if haskellLib.isAll componentId
-    then "${name}-all"
-    else "${name}-${componentId.ctype}-${componentId.cname}";
+  nameOnly = if haskellLib.isAll componentId
+    then "${package.identifier.name}-all"
+    else "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
+
+  fullName = "${nameOnly}-${package.identifier.version}";
 
   configFiles = makeConfigFiles {
     inherit (package) identifier;
@@ -167,7 +169,8 @@ let
 in stdenv.lib.fix (drv:
 
 stdenv.mkDerivation ({
-  name = "${ghc.targetPrefix}${fullName}";
+  pname = nameOnly;
+  inherit (package.identifier) version;
 
   src = cleanSrc;
 
