@@ -22,6 +22,13 @@
       description = "A set of tools to aid in trating stack and cabal projects into nix expressions.";
       buildType = "Simple";
       isLocal = true;
+      detailLevel = "FullDetails";
+      licenseFiles = [ "LICENSE" ];
+      dataDir = "";
+      dataFiles = [];
+      extraSrcFiles = [ "ChangeLog.md" ];
+      extraTmpFiles = [];
+      extraDocFiles = [];
       };
     components = {
       "library" = {
@@ -53,6 +60,23 @@
           (hsPkgs."yaml" or (errorHandler.buildDepError "yaml"))
           ];
         buildable = true;
+        modules = [
+          "Cabal2Nix"
+          "Cabal2Nix/Util"
+          "Cabal2Nix/Plan"
+          "CabalName"
+          "CabalName/CLI"
+          "Distribution/Nixpkgs/Fetch"
+          "StackRepos"
+          "StackRepos/CLI"
+          "Stack2nix"
+          "Stack2nix/Cache"
+          "Stack2nix/CLI"
+          "Stack2nix/External/Resolve"
+          "Stack2nix/Project"
+          "Stack2nix/Stack"
+          ];
+        hsSourceDirs = [ "lib" ];
         };
       exes = {
         "cabal-to-nix" = {
@@ -69,6 +93,8 @@
             (hsPkgs."prettyprinter" or (errorHandler.buildDepError "prettyprinter"))
             ];
           buildable = true;
+          hsSourceDirs = [ "cabal2nix" ];
+          mainPath = [ "Main.hs" ];
           };
         "hashes-to-nix" = {
           depends = [
@@ -84,6 +110,8 @@
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             ];
           buildable = true;
+          hsSourceDirs = [ "hashes2nix" ];
+          mainPath = [ "Main.hs" ];
           };
         "plan-to-nix" = {
           depends = [
@@ -107,6 +135,15 @@
             (hsPkgs."extra" or (errorHandler.buildDepError "extra"))
             ];
           buildable = true;
+          modules = [
+            "Plan2Nix"
+            "Plan2Nix/Cache"
+            "Plan2Nix/CLI"
+            "Plan2Nix/Project"
+            "Plan2Nix/Plan"
+            ];
+          hsSourceDirs = [ "plan2nix" ];
+          mainPath = [ "Main.hs" ];
           };
         "hackage-to-nix" = {
           depends = [
@@ -128,6 +165,8 @@
             (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
             ];
           buildable = true;
+          hsSourceDirs = [ "hackage2nix" ];
+          mainPath = [ "Main.hs" ];
           };
         "lts-to-nix" = {
           depends = [
@@ -146,6 +185,8 @@
             (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
             ];
           buildable = true;
+          hsSourceDirs = [ "lts2nix" ];
+          mainPath = [ "Main.hs" ];
           };
         "stack-to-nix" = {
           depends = [
@@ -153,6 +194,8 @@
             (hsPkgs."nix-tools" or (errorHandler.buildDepError "nix-tools"))
             ];
           buildable = true;
+          hsSourceDirs = [ "stack2nix" ];
+          mainPath = [ "Main.hs" ];
           };
         "truncate-index" = {
           depends = [
@@ -164,6 +207,8 @@
             (hsPkgs."time" or (errorHandler.buildDepError "time"))
             ];
           buildable = true;
+          hsSourceDirs = [ "truncate-index" ];
+          mainPath = [ "Main.hs" ];
           };
         "stack-repos" = {
           depends = [
@@ -171,6 +216,8 @@
             (hsPkgs."nix-tools" or (errorHandler.buildDepError "nix-tools"))
             ];
           buildable = true;
+          hsSourceDirs = [ "stack-repos" ];
+          mainPath = [ "Main.hs" ];
           };
         "cabal-name" = {
           depends = [
@@ -178,6 +225,8 @@
             (hsPkgs."nix-tools" or (errorHandler.buildDepError "nix-tools"))
             ];
           buildable = true;
+          hsSourceDirs = [ "cabal-name" ];
+          mainPath = [ "Main.hs" ];
           };
         };
       };

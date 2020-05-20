@@ -1,24 +1,14 @@
 final: prev:
 let
-  emptyDotCabal = final.runCommand "empty-dot-cabal" {} ''
-      mkdir -p $out/.cabal
-      cat <<EOF > $out/.cabal/config
-      EOF
-    '';
-  callCabalSdist = name: src: final.runCommand "${name}-sdist.tar.gz" {
-      nativeBuildInputs = [ final.haskell-nix.cabal-install ];
-    } ''
-      tmp=$(mktemp -d)
-      cp -r ${src}/* $tmp
-      cd $tmp
-      tmp2=$(mktemp -d)
-      HOME=${emptyDotCabal} cabal new-sdist -o $tmp2
-      cp $tmp2/*.tar.gz $out
-    '';
   callCabal2Nix = name: src: final.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
-    nativeBuildInputs = [ final.haskell-nix.nix-tools ];
+    nativeBuildInputs = [ (final.buildPackages.haskell-nix.nix-tools-set {
+      # It is not safe to checkk the nix-tools materialization here
+      # as we would need to run this code to do so leading to
+      # infinite recursion.
+      checkMaterialization = false;
+    }) ];
     phases = [ "unpackPhase" "buildPhase" ];
 
     LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.hostPlatform.libc == "glibc") "${final.glibcLocales}/lib/locale/locale-archive";
@@ -38,17 +28,6 @@ let
       inherit path;
     }) files);
 
-  # Calculate the `cabal sdist` of a single boot package as well as
-  # the output of cabal-to-nix.
-  cabalToSdistAndNix = ghcName: pkgName: src:
-    # build the source dist
-    let sdist = callCabalSdist "${ghcName}-${pkgName}" src;
-    # and generate the nix expression corresponding to the source dist
-    in {
-      inherit sdist;
-      nix = callCabal2Nix "${ghcName}-${pkgName}" sdist;
-    };
-
   # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
   combineAndMaterialize = ghcName: bootPackages:
@@ -65,11 +44,11 @@ let
             then materializedPath
             else null;
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
-          (_: sdistAndNix: sdistAndNix.nix) (skipBroken bootPackages))));
+          (_: srcAndNix: srcAndNix.nix) (skipBroken bootPackages))));
 
-  # Import the nix and fix the src to the sdist as well.
-  importSdistAndNix = sdistAndNix:
-      args: (import sdistAndNix.nix args) // { src = sdistAndNix.sdist; };
+  # Import the nix and src.
+  importSrcAndNix = srcAndNix:
+      args: (import srcAndNix.nix args) // { inherit (srcAndNix) src; };
 
   # The packages in GHC source and the locations of them
   ghc-extra-pkgs = {
@@ -110,24 +89,27 @@ let
 # as part of patches we applied to the GHC tree.
 
 in rec {
-  ghc-boot-packages-sdist-and-nix = builtins.mapAttrs
+  ghc-boot-packages-src-and-nix = builtins.mapAttrs
     (ghcName: value: builtins.mapAttrs
-      (pkgName: dir: cabalToSdistAndNix ghcName pkgName "${value.passthru.configured-src}/${dir}") ghc-extra-pkgs)
+      (pkgName: dir: rec {
+        src = "${value.passthru.configured-src}/${dir}";
+        nix = callCabal2Nix "${ghcName}-${pkgName}" src;
+      }) ghc-extra-pkgs)
     final.buildPackages.haskell-nix.compiler;
 
   # All the ghc boot package nix files for each ghc.
   ghc-boot-packages-nix = builtins.mapAttrs
     combineAndMaterialize
-      ghc-boot-packages-sdist-and-nix;
+      ghc-boot-packages-src-and-nix;
 
-  # The import nix results for each ghc boot package for each ghc (with src=sdist).
+  # The import nix results for each ghc boot package for each ghc.
   ghc-boot-packages = builtins.mapAttrs
     (ghcName: value: builtins.mapAttrs
-      (pkgName: sdistAndNix: importSdistAndNix {
-        inherit (sdistAndNix) sdist;
+      (pkgName: srcAndNix: importSrcAndNix {
+        inherit (srcAndNix) src;
         nix = ghc-boot-packages-nix."${ghcName}" + "/${pkgName}.nix";
       }) value)
-        ghc-boot-packages-sdist-and-nix;
+        ghc-boot-packages-src-and-nix;
 
   # Derivation with cabal.project for use with `cabalProject'` for each ghc. 
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:

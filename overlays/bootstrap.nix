@@ -34,7 +34,15 @@ in {
     compiler =
         let bootPkgs = with final.buildPackages; {
                 ghc = buildPackages.haskell-nix.bootstrap.compiler.ghc844;
-                inherit (final.haskell-nix.bootstrap.packages) alex happy hscolour;
+                alex = final.haskell-nix.bootstrap.packages.alex-tool {
+                  checkMaterialization = false;
+                };
+                happy = final.haskell-nix.bootstrap.packages.happy-tool {
+                  checkMaterialization = false;
+                };
+                hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {
+                  checkMaterialization = false;
+                };
             };
             sphinx = with final.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
             hsc2hs-align-conditionals-patch = final.fetchpatch {
@@ -312,8 +320,97 @@ in {
             '' + installDeps targetPrefix);
         })));
 
-    ghc = final.haskell-nix.compiler.ghc865;
-    inherit (final.buildPackages.haskell-nix.bootstrap.packages) cabal-install alex happy;
+    defaultCompilerNixName = "ghc865";
+    ghc = final.haskell-nix.compiler."${final.haskell-nix.defaultCompilerNixName}";
+    # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
+    # to check materialized results.  We need to take care that when
+    # it is doing this we do not check the materialization of the
+    # tools used or there will be infinite recursion.
+    # always has `checkMaterialization = false` to avoid infinite
+    # recursion.
+    cabal-install-tool = args: final.haskell-nix.tool "cabal" ({
+      version = "3.2.0.0";
+      index-state = final.haskell-nix.internalHackageIndexState;
+      # When building cabal-install (only happens when checking materialization)
+      # disable checking of the tools used to avoid infinite recursion.
+      cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
+        (args // { checkMaterialization = false; });
+      nix-tools = final.evalPackages.haskell-nix.nix-tools-set
+        (args // { checkMaterialization = false; });
+      materialized = ../materialized + "/${
+          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+        }/cabal-install";
+    } // args);
+    cabal-install = final.buildPackages.haskell-nix.cabal-install-tool {};
+    nix-tools-set = args:
+      let
+        exes =
+          (final.haskell-nix.cabalProject ({
+            name = "nix-tools";
+            src = final.haskell-nix.fetchExternal {
+              name     = "nix-tools-src";
+              specJSON = ../nix-tools/nix-tools-src.json;
+              override = "nix-tools-src";
+            };
+            index-state = final.haskell-nix.internalHackageIndexState;
+            # When building cabal-install (only happens when checking materialization)
+            # disable checking of the tools used to avoid infinite recursion.
+            cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
+              (args // { checkMaterialization = false; });
+            nix-tools = final.evalPackages.haskell-nix.nix-tools-set
+              (args // { checkMaterialization = false; });
+            materialized = ../materialized + "/${
+                args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+              }/nix-tools";
+            modules = [{
+              packages.transformers-compat.components.library.doExactConfig = true;
+              packages.time-compat.components.library.doExactConfig = true;
+              packages.time-locale-compat.components.library.doExactConfig = true;
+              # Make Cabal reinstallable
+              nonReinstallablePkgs =
+                [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+                  "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+                  "ghc-boot"
+                  "ghc" "Win32" "array" "binary" "bytestring" "containers"
+                  "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+                  "hpc"
+                  "mtl" "parsec" "process" "text" "time" "transformers"
+                  "unix" "xhtml"
+                ];
+            }];
+          } // args)).nix-tools.components.exes;
+        tools = [ final.git final.buildPackages.nix final.buildPackages.nix-prefetch-git ];
+    in
+      final.symlinkJoin {
+        name = "nix-tools";
+        paths = builtins.attrValues exes;
+        buildInputs = [ final.makeWrapper ];
+        meta.platforms = final.lib.platforms.all;
+        # We wrap the -to-nix executables with the executables from `tools` (e.g. nix-prefetch-git)
+        # so that consumers of `nix-tools` won't have to provide those tools.
+        postBuild = ''
+          for prog in stack-to-nix cabal-to-nix plan-to-nix; do
+            wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
+          done
+        '';
+      };
+    nix-tools = final.buildPackages.haskell-nix.nix-tools-set {};
+    alex-tool = args: final.haskell-nix.tool "alex" ({
+      version = "3.2.5";
+      index-state = final.haskell-nix.internalHackageIndexState;
+      materialized = ../materialized + "/${
+          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+        }/alex";
+    } // args);
+    alex = final.buildPackages.haskell-nix.alex-tool {};
+    happy-tool = args: final.haskell-nix.tool "happy" ({
+      version = "1.19.12";
+      index-state = final.haskell-nix.internalHackageIndexState;
+      materialized = ../materialized + "/${
+          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+        }/happy";
+    } // args);
+    happy = final.buildPackages.haskell-nix.happy-tool {};
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
@@ -358,57 +455,41 @@ in {
           (import ../compiler/old-ghc-nix { pkgs = final; });
 
         packages = {
-            # cabal has it's own bootstrap script which we'll use.
-            cabal-install = import ../compiler/bootstrap/cabal-install.nix {
-                inherit (final) fetchurl stdenv zlib;
-                inherit hackage ghc;
-                src = final.fetchurl {
-                    url = "https://github.com/haskell/cabal/archive/Cabal-v3.0.0.0-rc3.tar.gz";
-                    sha256 = "1zl2mgg8307ykq3v8nmafc6zdhhj1cw7w8ffpap16dsm65lbnx33";
-                };
-                version = "3.0.0.0";
-            };
-
-            # disable hpack support during bootstrap
-            hpack = null;
-            nix-tools = nix-tools.override {
-                # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) hpack;
-            };
-
             # now that we have nix-tools and hpack, we can just
             # use `hackage-package` to build any package from
             # hackage with haskell.nix.  For alex and happy we
             # need to use the boot strap compiler as we need them
             # to build ghcs from source.
-            alex-project = hackage-project {
+            # guardMaterializationChecks is used here so we
+            # can turn off materialization checks when
+            # building ghc itself (since GHC is a dependency
+            # of the materialization check it would cause
+            # infinite recusion).
+            alex-tool = args: tool "alex" ({
+                version = "3.2.4";
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) cabal-install nix-tools hpack;
-                name = "alex"; version = "3.2.4";
                 index-state = final.haskell-nix.internalHackageIndexState;
-                materialized = ../materialized/alex;
-            };
-            alex = bootstrap.packages.alex-project.hsPkgs.alex.components.exes.alex;
-            happy-project = hackage-project {
+                materialized = ../materialized/bootstrap/alex;
+            } // args);
+            alex = bootstrap.packages.alex-tool {};
+            happy-tool = args: tool "happy" ({
+                version = "1.19.11";
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) cabal-install nix-tools hpack;
-                name = "happy"; version = "1.19.11";
                 index-state = final.haskell-nix.internalHackageIndexState;
-                materialized = ../materialized/happy;
-            };
-            happy = bootstrap.packages.happy-project.hsPkgs.happy.components.exes.happy;
-            hscolour-project = hackage-project {
+                materialized = ../materialized/bootstrap/happy;
+            } // args);
+            happy = bootstrap.packages.happy-tool {};
+            hscolour-tool = args: (hackage-package ({
+                name = "hscolour";
+                version = "1.24.4";
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) cabal-install nix-tools hpack;
-                name = "hscolour"; version = "1.24.4";
                 index-state = final.haskell-nix.internalHackageIndexState;
-                materialized = ../materialized/hscolour;
-            };
-            hscolour = bootstrap.packages.hscolour-project.hsPkgs.hscolour.components.exes.HsColour;
+                materialized = ../materialized/bootstrap/hscolour;
+            } // args)).components.exes.HsColour;
+            hscolour = bootstrap.packages.hscolour-tool {};
         };
     };
   };
