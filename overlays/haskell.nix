@@ -29,6 +29,11 @@ in {
         # overlays.
         defaultModules = [];
 
+        # Niv based source pins.  See https://github.com/nmattia/niv#niv
+        # for details on how to update this using the niv tool
+        # or edit nix/sources.json manually if you prefer.
+        sources = import ../nix/sources.nix;
+
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
         # here and be explicit about imports and dependencies.
