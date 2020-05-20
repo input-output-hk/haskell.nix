@@ -182,7 +182,8 @@ with haskellLib;
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
-    inherit lib pkgs cleanSourceWith;
+    inherit lib cleanSourceWith;
+    inherit (pkgs.evalPackages) runCommand git;
   };
 
   # Check a test component

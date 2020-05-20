@@ -116,7 +116,7 @@ let
   calculateUseHash =
     # Use `cp -r` here to get rid of symlinks so we know the result
     # can be safely materialized (no symlinks to the store).
-    (import pkgs.path {}).runCommand name hashArgs ''
+    runCommand name hashArgs ''
       cp -r ${derivation} $out
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out
@@ -124,7 +124,7 @@ let
   calculateUseMaterialized =
     assert materialized != null;
     assert __pathExists materialized;
-    (import pkgs.path {}).runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
+    runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
       cp -r ${materialized} $out
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out

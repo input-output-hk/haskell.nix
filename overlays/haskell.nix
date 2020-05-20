@@ -187,7 +187,7 @@ in {
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { name = "hackage.haskell.org-at-${at}";
-              index = (import final.path {}).fetchurl {
+              index = final.evalPackages.fetchurl {
                 name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
@@ -209,7 +209,7 @@ in {
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
             in
-            (import final.path {}).runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
+            final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
@@ -248,10 +248,10 @@ in {
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          inherit (final.buildPackages) nix;
+          inherit (final.evalPackages) nix;
           inherit (final.haskell-nix) checkMaterialization;
-          pkgs = final.buildPackages.pkgs;
-          inherit (final.buildPackages.pkgs) runCommand;
+          pkgs = final.evalPackages.pkgs;
+          inherit (final.evalPackages.pkgs) runCommand;
         };
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
@@ -407,21 +407,15 @@ in {
 
             };
 
-        # This is like a version of final with just haskell.nix
-        # overlays and it is for the currentSystem
-        currentSystemPkgs = import final.path (import ../. {
-          inherit (final.haskell-nix) defaultCompilerNixName;
-        }).nixpkgsArgs;
-
         # Takes a haskell src directory runs cabal new-configure and plan-to-nix.
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
             inherit (final.buildPackages.haskell-nix) haskellLib materialize;
             pkgs = final.buildPackages.pkgs;
-            inherit (final.haskell-nix.currentSystemPkgs.haskell-nix.haskellPackages.hpack.components.exes) hpack;
+            inherit (final.evalPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
             inherit (final.buildPackages.haskell-nix) ghc;
-            inherit (final.haskell-nix.currentSystemPkgs.haskell-nix) cabal-install dotCabal nix-tools;
+            inherit (final.evalPackages.haskell-nix) cabal-install dotCabal nix-tools;
             inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
 

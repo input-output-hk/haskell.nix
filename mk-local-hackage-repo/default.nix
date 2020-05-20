@@ -17,7 +17,7 @@
 pkgs:
 { name, index }:
 
-(import pkgs.path {}).runCommand "hackage-repo-${name}" { nativeBuildInputs = [ (import pkgs.path {}).nix ]; } ''
+pkgs.evalPackages.runCommand "hackage-repo-${name}" { nativeBuildInputs = [ pkgs.evalPackages.nix ]; } ''
 mkdir -p $out
 export expires="4000-01-01T00:00:00Z"
 

@@ -261,7 +261,7 @@ let
   '');
 
   # Dummy `ghc` that uses the captured output 
-  dummy-ghc = (import pkgs.path {}).writeTextFile {
+  dummy-ghc = pkgs.evalPackages.writeTextFile {
     name = "dummy-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc";
@@ -278,7 +278,7 @@ let
   };
 
   # Dummy `ghc-pkg` that uses the captured output 
-  dummy-ghc-pkg = (import pkgs.path {}).writeTextFile {
+  dummy-ghc-pkg = pkgs.evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc-pkg";
@@ -302,8 +302,8 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) ((import pkgs.path {}).runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install (import pkgs.path {}).rsync ];
+  }) (pkgs.evalPackages.runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install pkgs.evalPackages.rsync ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
