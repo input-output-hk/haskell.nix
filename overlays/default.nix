@@ -13,6 +13,8 @@ let
     musl = import ./musl.nix;
     tools = import ./tools.nix;
     emscripten = import ./emscripten.nix;
+    eval-on-current = import ./eval-on-current.nix;
+    eval-on-build = import ./eval-on-build.nix;
     ghcjs = import ./ghcjs.nix;
   };
 
@@ -45,5 +47,8 @@ let
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
-  combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
+  combined = builtins.foldl' composeExtensions (_: _: { })
+    (ordered ++ [overlays.eval-on-current]);
+  combined-eval-on-build = builtins.foldl' composeExtensions (_: _: { })
+    (ordered ++ [overlays.eval-on-build]);
 in overlays // { inherit combined; }

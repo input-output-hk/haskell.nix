@@ -4,3 +4,4 @@
 nix-tools/.plan.nix/*.nix linguist-generated=true
 nix-tools/pkgs.nix linguist-generated=true
 .stack-to-nix.cache linguist-generated=true
+materialized/**/* linguist-generated=true

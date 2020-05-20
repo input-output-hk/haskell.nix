@@ -78,8 +78,8 @@ in {
 
         # Utility functions for working with the component builder.
         haskellLib = let hl = import ../lib {
-            inherit (final) stdenv lib runCommand recurseIntoAttrs srcOnly;
-            inherit git;
+            pkgs = final;
+            inherit (final) stdenv lib recurseIntoAttrs srcOnly;
             haskellLib = hl;
         }; in hl;
 
@@ -180,22 +180,6 @@ in {
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages = snapshots."lts-14.13";
 
-        # Programs for generating Nix expressions from Cabal and Stack
-        # files. This version of nix-tools may be cross compiled.
-        # We probably never want to actually cross compile nix-tools on
-        # it's own.
-        nix-tools-cross-compiled = final.lib.makeOverridable (import ../nix-tools) {
-            inherit (final) pkgs lib symlinkJoin makeWrapper nix;
-            inherit git nix-prefetch-git;
-            inherit (final.haskell-nix) fetchExternal cleanSourceHaskell mkCabalProjectPkgSet;
-            hpack = null; # nix-tools does not use hpack project files
-        };
-        # While `nix-tools-cross-compiled` may be cross compiled,
-        # getting it from `buildPackages` we should get
-        # nix-tools suitable for running on the build system.
-        nix-tools = final.buildPackages.haskell-nix.nix-tools-cross-compiled;
-        # TODO perhaps there is a cleaner way to get a suitable nix-tools.
-
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
         # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
@@ -203,7 +187,7 @@ in {
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { name = "hackage.haskell.org-at-${at}";
-              index = final.fetchurl {
+              index = final.evalPackages.fetchurl {
                 name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
@@ -225,7 +209,7 @@ in {
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
             in
-            final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
+            final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
@@ -264,10 +248,10 @@ in {
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          inherit (final.buildPackages) nix;
+          inherit (final.evalPackages) nix;
           inherit (final.haskell-nix) checkMaterialization;
-          pkgs = final.buildPackages.pkgs;
-          inherit (final.buildPackages.pkgs) runCommand;
+          pkgs = final.evalPackages.pkgs;
+          inherit (final.evalPackages.pkgs) runCommand;
         };
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
@@ -427,10 +411,11 @@ in {
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
-            inherit (final.buildPackages.haskell-nix) dotCabal nix-tools haskellLib materialize;
+            inherit (final.buildPackages.haskell-nix) haskellLib materialize;
             pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
-            inherit (final.buildPackages.haskell-nix) cabal-install ghc;
+            inherit (final.evalPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
+            inherit (final.buildPackages.haskell-nix) ghc;
+            inherit (final.evalPackages.haskell-nix) cabal-install dotCabal nix-tools;
             inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
 
@@ -549,10 +534,6 @@ in {
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) nix-tools source-pins;
-            bootstap-nix-tools = final.buildPackages.haskell-nix.bootstrap.packages.nix-tools;
-            alex-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.alex-project.plan-nix;
-            happy-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.happy-project.plan-nix;
-            hscolour-plan-nix = withInputs final.buildPackages.haskell-nix.bootstrap.packages.hscolour-project.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;

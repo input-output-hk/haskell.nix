@@ -22,6 +22,13 @@
       description = "This library provides convenient access to the local copy of the Hackage\ndatabase that \\\"cabal update\\\" creates. Check out\n<https://github.com/peti/hackage-db/tree/master/example/> for a collection\nof simple example programs that demonstrate how to use this code.";
       buildType = "Simple";
       isLocal = true;
+      detailLevel = "FullDetails";
+      licenseFiles = [ "LICENSE" ];
+      dataDir = "";
+      dataFiles = [];
+      extraSrcFiles = [];
+      extraTmpFiles = [];
+      extraDocFiles = [];
       };
     components = {
       "library" = {
@@ -39,6 +46,18 @@
           (hsPkgs."utf8-string" or (errorHandler.buildDepError "utf8-string"))
           ];
         buildable = true;
+        modules = [
+          "Paths_hackage_db"
+          "Distribution/Hackage/DB"
+          "Distribution/Hackage/DB/Builder"
+          "Distribution/Hackage/DB/Errors"
+          "Distribution/Hackage/DB/MetaData"
+          "Distribution/Hackage/DB/Parsed"
+          "Distribution/Hackage/DB/Path"
+          "Distribution/Hackage/DB/Unparsed"
+          "Distribution/Hackage/DB/Utility"
+          ];
+        hsSourceDirs = [ "src" ];
         };
       exes = {
         "list-known-versions" = {
@@ -50,6 +69,8 @@
             (hsPkgs."hackage-db" or (errorHandler.buildDepError "hackage-db"))
             ];
           buildable = if flags.install-examples then true else false;
+          hsSourceDirs = [ "example" ];
+          mainPath = [ "list-known-versions.hs" ] ++ [ "" ];
           };
         "show-meta-data" = {
           depends = (pkgs.lib).optionals (flags.install-examples) [
@@ -60,6 +81,8 @@
             (hsPkgs."utf8-string" or (errorHandler.buildDepError "utf8-string"))
             ];
           buildable = if flags.install-examples then true else false;
+          hsSourceDirs = [ "example" ];
+          mainPath = [ "show-meta-data.hs" ] ++ [ "" ];
           };
         "show-package-versions" = {
           depends = (pkgs.lib).optionals (flags.install-examples) [
@@ -69,13 +92,9 @@
             (hsPkgs."hackage-db" or (errorHandler.buildDepError "hackage-db"))
             ];
           buildable = if flags.install-examples then true else false;
+          hsSourceDirs = [ "example" ];
+          mainPath = [ "show-package-versions.hs" ] ++ [ "" ];
           };
         };
       };
-    } // {
-    src = (pkgs.lib).mkDefault (pkgs.fetchgit {
-      url = "https://github.com/hamishmack/hackage-db.git";
-      rev = "3f12730c0d6092efce142cad87264e7b7eb2b05a";
-      sha256 = "13nl8swdd3g1rh14f29v6nhnzaxgc8l70vs6hviw8qgdpbxvhs45";
-      });
-    }
+    } // rec { src = (pkgs.lib).mkDefault .././.source-repository-packages/0; }
