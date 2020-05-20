@@ -28,10 +28,6 @@
 , extra-hackage-tarballs ? []
 , ...
 }@args:
-# cabal-install versions before 2.4 will generate insufficient plan information.
-assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
-         then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
-         else true);
 
 let
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
@@ -265,7 +261,7 @@ let
   '');
 
   # Dummy `ghc` that uses the captured output 
-  dummy-ghc = pkgs.writeTextFile {
+  dummy-ghc = pkgs.evalPackages.writeTextFile {
     name = "dummy-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc";
@@ -282,7 +278,7 @@ let
   };
 
   # Dummy `ghc-pkg` that uses the captured output 
-  dummy-ghc-pkg = pkgs.writeTextFile {
+  dummy-ghc-pkg = pkgs.evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc-pkg";
@@ -306,8 +302,8 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install pkgs.rsync ];
+  }) (pkgs.evalPackages.runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install pkgs.evalPackages.rsync ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";

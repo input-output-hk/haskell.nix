@@ -1,6 +1,21 @@
-#
 # Update script to update nix-tools.
 #
+# This scipt might still come in handy, but it should now be possible to update
+# the nix-tools materialization without it.
+#
+# Without this script:
+# 1. run `nix-prefetch-git https://github.com/input-output-hk/nix-tools > nix-tools-src-new.json`
+# 2. run `nix-build -E '(import ./. { checkMaterialization = true; }).pkgs.haskell-nix.nix-tools'`
+# 3. If it fails apply the fixes from the log (there should be rm, cp and chmod commands)
+#
+# To bootstap materialization files for a new compiler (e.g. for ghc 8.8.3)
+#
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.cabal-install-tool { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.nix-tools-set { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.alex-tool { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.happy-tool { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+#
+# Using the script:
 # 1. run `nix-prefetch-git https://github.com/input-output-hk/nix-tools > nix-tools-src-new.json`
 # 2. run `nix-build regenerate.nix --show-trace --arg specJSON ./nix-tools-src-new.json`
 # 3. run `./result/bin/update-nix-tools` and follow the instructions.
@@ -53,18 +68,8 @@ writeShellScriptBin "update-nix-tools" ''
    cp ${src}/cabal.project .
    cp ${specJSON} ./nix-tools-src.json
 
-   # Build for ghc-8.4.4
    echo "--> Updating cabal index..."
    cabal v2-update -v0
-   echo "--> Configuring nix-tools for ${haskell-nix.bootstrap.compiler.ghc844.name}..."
-   cabal v2-configure -w ${getBin haskell-nix.bootstrap.compiler.ghc844}/bin/ghc -v0
-   echo "--> Running plan-to-nix for ${haskell-nix.bootstrap.compiler.ghc844.name}..."
-   plan-to-nix -o . --plan-json=$(find . -name "plan.json")
-
-   rm cabal.project.local
-   rm -fR dist-newstyle
-
-   mv pkgs.nix pkgs-8.4.4.nix
 
    # build for the current ghc in haskell.nix
    echo "--> Configuring nix-tools for ${haskell-nix.ghc.name}..."
@@ -77,14 +82,14 @@ writeShellScriptBin "update-nix-tools" ''
 
    # we don't want the default.nix that plan-to-nix generates to
    # update the custom one in nix-tools
-   rm default.nix
+   mv pkgs.nix default.nix
 
    rm -f nix-tools.cabal
    echo "--> Done."
    echo "******"
-   echo "*** please copy $TMP/ into haskell.nix/nix-tools"
+   echo "*** please copy $TMP/ into haskell.nix/materialized/GHCVER/nix-tools"
    echo "***"
-   echo "***   cp -fr "$TMP/" ."
+   echo "***   cp -fr "$TMP/" ../materialized/GHCVER/nix-tools/"
    echo "***"
    echo "******"
 ''

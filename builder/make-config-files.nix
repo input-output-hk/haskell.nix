@@ -33,28 +33,6 @@ let
        dep.components.library # Regular package dependency
     or dep;                   # or a sublib
 
-  catPkgExactDep = p: ''
-    cat ${p}/exactDep/configure-flags >> $out/configure-flags
-    cat ${p}/exactDep/cabal.config >> $out/cabal.config
-  '';
-
-  catGhcPkgExactDep = p: ''
-    if [ -e ${ghc}/exactDeps/${p} ]; then
-      cat ${ghc}/exactDeps/${p}/configure-flags >> $out/configure-flags
-      cat ${ghc}/exactDeps/${p}/cabal.config >> $out/cabal.config
-    fi
-  '';
-
-  catPkgEnvDep = p: ''
-    cat ${p}/envDep >> $out/ghc-environment
-  '';
-
-  catGhcPkgEnvDep = p: ''
-    if [ -e ${ghc}/envDeps/${p} ]; then
-      cat ${ghc}/envDeps/${p} >> $out/ghc-environment
-    fi
-  '';
-
   # Work our suitable packageCfgDir subdirectory
   isGhcjs        = ghc.isGhcjs or false;
   ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
@@ -94,10 +72,13 @@ in { identifier, component, fullName, flags ? {}, needsProfiling ? false }:
       "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
     })}
 
-    # Copy over the nonReinstallablePkgs from the global package db.
-    ${lib.concatMapStringsSep "\n" (p: ''
-      find ${ghc}/lib/${ghc.name}/package.conf.d -name '${p}*.conf' -exec cp -f {} $out/${packageCfgDir} \;
-    '') nonReinstallablePkgs}
+    ghc=${ghc}
+    ${ # Copy over the nonReinstallablePkgs from the global package db.
+    ''
+      for p in ${lib.concatStringsSep " " nonReinstallablePkgs}; do
+        find $ghc/lib/${ghc.name}/package.conf.d -name $p'*.conf' -exec cp -f {} $out/${packageCfgDir} \;
+      done
+    ''}
 
     for l in "${cfgFiles}"; do
       if [ -n "$l" ]; then
@@ -110,29 +91,49 @@ in { identifier, component, fullName, flags ? {}, needsProfiling ? false }:
       fi
     done
 
-    # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
-    ${flagsAndConfig "package-db" ["clear" "$out/${packageCfgDir}"]}
+    ${ # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
+      flagsAndConfig "package-db" ["clear" "$out/${packageCfgDir}"]
+    }
 
     echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
 
-    # Provide a cabal config without remote package repositories
-    echo "write-ghc-environment-files: never" >> $out/cabal.config
+    ${ # Provide a cabal config without remote package repositories
+    ''
+      echo "write-ghc-environment-files: never" >> $out/cabal.config
+    ''}
 
-    # Provide a GHC environment file
-    cat > $out/ghc-environment <<EOF
-    package-db $out/${packageCfgDir}
-    EOF
+    ${ # Provide a GHC environment file
+    ''
+      cat > $out/ghc-environment <<EOF
+      package-db $out/${packageCfgDir}
+      EOF
+    ''}
 
-    ${lib.concatMapStringsSep "\n" catPkgEnvDep libDeps}
-    ${lib.concatMapStringsSep "\n" catGhcPkgEnvDep (lib.remove "ghc" nonReinstallablePkgs)}
+    ${ lib.optionalString component.doExactConfig ''
+      echo "--exact-configuration" >> $out/configure-flags
+      echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
+      echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
+    ''}
+
+    for p in ${lib.concatStringsSep " " libDeps}; do
+      cat $p/envDep >> $out/ghc-environment
+      ${ lib.optionalString component.doExactConfig ''
+        cat $p/exactDep/configure-flags >> $out/configure-flags
+        cat $p/exactDep/cabal.config >> $out/cabal.config
+      ''}
+    done
+    for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs)}; do
+      if [ -e $ghc/envDeps/$p ]; then
+        cat $ghc/envDeps/$p >> $out/ghc-environment
+      fi
+    done
   '' + lib.optionalString component.doExactConfig ''
-    echo "--exact-configuration" >> $out/configure-flags
-    echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
-    echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
-
-    ${lib.concatMapStringsSep "\n" catPkgExactDep libDeps}
-    ${lib.concatMapStringsSep "\n" catGhcPkgExactDep nonReinstallablePkgs}
-
+    for p in ${lib.concatStringsSep " " nonReinstallablePkgs}; do
+      if [ -e $ghc/exactDeps/$p ]; then
+        cat $ghc/exactDeps/$p/configure-flags >> $out/configure-flags
+        cat $ghc/exactDeps/$p/cabal.config >> $out/cabal.config
+      fi
+    done 
   ''
   # This code originates in the `generic-builder.nix` from nixpkgs.  However GHC has been fixed
   # to drop unused libraries referneced from libraries; and this patch is usually included in the
@@ -156,12 +157,13 @@ in { identifier, component, fullName, flags ? {}, needsProfiling ? false }:
   #   's/ /\n/g ; s/\n\n*/\n/g; s/^\n//;'      Puts each field on its own line.
   #   's|/nix/store/|''${pkgroot}/../../../|'  Convert store path to pkgroot relative path
   #   's|''${pkgroot}/../../../|/nix/store/|'  Convert pkgroot relative path to store path
-  + lib.optionalString stdenv.isDarwin ''
+
     # Work around a limit in the macOS Sierra linker on the number of paths
     # referenced by any one dynamic library:
     #
     # Create a local directory with symlinks of the *.dylib (macOS shared
     # libraries) from all the dependencies.
+  + lib.optionalString stdenv.isDarwin ''
     local dynamicLinksDir="$out/lib/links"
     mkdir -p $dynamicLinksDir
     # Enumerate dynamic-library-dirs with ''${pkgroot} expanded.
