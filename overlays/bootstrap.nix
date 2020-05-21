@@ -417,7 +417,12 @@ in {
                 ];
             }];
           } // args)).nix-tools.components.exes;
-        tools = [ final.git final.buildPackages.nix final.buildPackages.nix-prefetch-git ];
+        # Make sure nix-prefetch-git uses `gitMinimal` (`git` includes python and
+        # causes caching issues)
+        inherit (final.buildPackages.callPackages
+          (final.path + "/pkgs/tools/package-management/nix-prefetch-scripts")
+          { git = final.buildPackages.gitMinimal; }) nix-prefetch-git;
+        tools = [ final.buildPackages.gitMinimal final.buildPackages.nix nix-prefetch-git ];
     in
       final.symlinkJoin {
         name = "nix-tools";

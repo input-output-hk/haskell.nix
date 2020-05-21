@@ -306,7 +306,7 @@ final: prev: {
                 # pkgs.fetchgit doesn't have any way of fetching from a given
                 # ref.
                 assert isNull ref;
-                final.buildPackages.pkgs.fetchgit {
+                final.evalPackages.fetchgit {
                   url = url;
                   rev = rev;
                   sha256 = sha256;
@@ -395,7 +395,7 @@ final: prev: {
                               final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                             )
                         else
-                          final.buildPackages.pkgs.fetchgit { inherit url rev sha256; };
+                          final.evalPackages.fetchgit { inherit url rev sha256; };
                     } // final.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                   };
 

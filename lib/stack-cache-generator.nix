@@ -64,7 +64,7 @@ concatMap (dep:
             is-private = private dep.url;
             pkgsrc =
               if !is-private && dep.sha256 != null
-                then pkgs.fetchgit {
+                then pkgs.evalPackages.fetchgit {
                   inherit (dep) url rev sha256;
                 }
                 else builtins.fetchGit {
