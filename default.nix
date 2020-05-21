@@ -3,7 +3,7 @@ let haskellNix = {
       defaultCompilerNixName ? null, # Quick way to override the default compiler e.g. "ghc883"
       system ? builtins.currentSystem,
       sourcesOverride ? {},
-      ... }: rec {
+      ... }@args: rec {
     sources = (import ./nix/sources.nix) // sourcesOverride;
 
     config   = import ./config.nix;
