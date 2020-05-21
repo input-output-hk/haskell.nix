@@ -531,7 +531,8 @@ final: prev: {
             let filterSupportedGhc = final.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc883");
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
-            inherit (final.buildPackages.haskell-nix) nix-tools source-pins gitMinimal;
+            inherit (final.buildPackages) gitMinimal;
+            inherit (final.buildPackages.haskell-nix) nix-tools source-pins;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
