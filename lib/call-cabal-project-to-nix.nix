@@ -44,7 +44,7 @@ let
             + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
           else
             if compiler-nix-name != null
-              then pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}"
+              then pkgs.haskell-nix.compiler."${compiler-nix-name}"
               else defaults.ghc;
 
 in
@@ -240,6 +240,11 @@ let
     ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
     ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
     ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
+    ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+      ${ghc.targetPrefix}ghc --numeric-ghc-version > $out/ghc/numeric-ghc-version
+      ${ghc.targetPrefix}ghc --numeric-ghcjs-version > $out/ghc/numeric-ghcjs-version
+      ${ghc.targetPrefix}ghc-pkg --numeric-ghcjs-version > $out/ghc-pkg/numeric-ghcjs-version
+    ''}
     # The order of the `ghc-pkg dump` output seems to be non
     # deterministic so we need to sort it so that it is always
     # the same.
@@ -267,6 +272,10 @@ let
     destination = "/bin/${ghc.targetPrefix}ghc";
     text = ''
       if [ "'$*'" == "'--numeric-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-version;
+      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+        elif [ "'$*'" == "'--numeric-ghc-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-ghc-version;
+        elif [ "'$*'" == "'--numeric-ghcjs-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-ghcjs-version;
+      ''}
       elif [ "'$*'" == "'--supported-languages'" ]; then cat ${dummy-ghc-data}/ghc/supported-languages;
       elif [ "'$*'" == "'--print-global-package-db'" ]; then echo $out/dumby-db;
       elif [ "'$*'" == "'--info'" ]; then cat ${dummy-ghc-data}/ghc/info;
@@ -284,6 +293,9 @@ let
     destination = "/bin/${ghc.targetPrefix}ghc-pkg";
     text = ''
       if [ "'$*'" == "'--version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/version;
+      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+        elif [ "'$*'" == "'--numeric-ghcjs-version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/numeric-ghcjs-version;
+      ''}
       elif [ "'$*'" == "'dump --global -v0'" ]; then cat ${dummy-ghc-data}/ghc-pkg/dump-global;
       else
         false
@@ -340,7 +352,7 @@ let
         --enable-tests \
         --enable-benchmarks \
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
-            "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc"} \
+            "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg -v3"} \
         ${configureArgs}
 
     mkdir -p $out

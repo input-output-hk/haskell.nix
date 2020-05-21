@@ -1,11 +1,17 @@
-{ sourcesOverride ? {}
-,  ... }:
+{ defaultCompilerNixName ? "ghc865" # This is the version of ghc that will is used by default
+, checkMaterialization   ? false    # Set it to true and test all the materialized files
+, sourcesOverride        ? {}
+, ... }:
 # The haskell.nix infrastructure
 #
 # for hygenic reasons we'll use haskell-nix as a prefix.
 # Using haskell.nix in nix is awkward as I needs to be quoted.
 final: prev: {
     haskell-nix = with final.haskell-nix; {
+        inherit defaultCompilerNixName checkMaterialization;
+
+        # Use `defaultCompilerNixName` to set `ghc`
+        ghc = final.haskell-nix.compiler."${final.haskell-nix.defaultCompilerNixName}";
 
         # Default modules, these will always be included.
         # They are here to be overridden/added to by other
@@ -237,8 +243,6 @@ final: prev: {
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
         internalHackageIndexState = "2020-04-12T00:00:00Z";
-
-        checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {

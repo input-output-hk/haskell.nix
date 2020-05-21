@@ -360,8 +360,6 @@ in {
             '' + installDeps targetPrefix);
         }))));
 
-    defaultCompilerNixName = "ghc865";
-    ghc = final.haskell-nix.compiler."${final.haskell-nix.defaultCompilerNixName}";
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
     # to check materialized results.  We need to take care that when
     # it is doing this we do not check the materialization of the
