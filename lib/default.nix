@@ -24,7 +24,7 @@ let
   #   * When `gdb` does not exist for `js`, so when cross
   #     compiling with ghcjs `final.buildPackages.git` fails
   #     to build at all.
-  inherit (final.evalPackages.buildPackages) git;
+  inherit (pkgs.evalPackages.buildPackages) git;
 
 in {
   # Within the package components, these are the attribute names of

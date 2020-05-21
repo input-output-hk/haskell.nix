@@ -1,3 +1,5 @@
+{ sourcesOverride ? {}
+,  ... }:
 # The haskell.nix infrastructure
 #
 # for hygenic reasons we'll use haskell-nix as a prefix.
@@ -9,6 +11,26 @@ final: prev: {
         # They are here to be overridden/added to by other
         # overlays.
         defaultModules = [];
+
+        # Niv based source pins.  See https://github.com/nmattia/niv#niv
+        # for details on how to update this using the niv tool
+        # or edit nix/sources.json manually if you prefer.
+        sources = {
+          # Hackage and stackage still updated by scripts
+          # that predate our use of niv.  We have moved them
+          # here though so that you can still use the
+          # sourcesOverride arg or `niv add` to replace them.
+          hackage = fetchExternal {
+            name     = "hackage-exprs-source";
+            specJSON = hackageSourceJSON;
+            override = "hackage";
+          };
+          stackage = fetchExternal {
+            name     = "stackage-snapshot-source";
+            specJSON = stackageSourceJSON;
+            override = "stackage";
+          };
+        } // (import ../nix/sources.nix) // sourcesOverride;
 
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
@@ -37,11 +59,7 @@ final: prev: {
           cleanSourceHaskell;
 
         # All packages from Hackage as Nix expressions
-        hackageSrc = fetchExternal {
-            name     = "hackage-exprs-source";
-            specJSON = hackageSourceJSON;
-            override = "hackage";
-        };
+        hackageSrc = sources.hackage;
         hackage = import hackageSrc;
 
         # Contains the hashes of the cabal 01-index.tar.gz for given
@@ -49,12 +67,7 @@ final: prev: {
         indexStateHashesPath = hackageSrc + "/index-state-hashes.nix";
 
         # The set of all Stackage snapshots
-        stackageSrc = fetchExternal {
-            name     = "stackage-snapshot-source";
-            specJSON = stackageSourceJSON;
-            override = "stackage";
-        };
-
+        stackageSrc = sources.stackage;
         stackage = import stackageSrc;
 
         # Utility functions for working with the component builder.
