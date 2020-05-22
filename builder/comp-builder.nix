@@ -166,7 +166,7 @@ let
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
-stdenv.lib.fix (drv:
+in stdenv.lib.fix (drv:
 stdenv.mkDerivation ({
   pname = nameOnly;
   inherit (package.identifier) version;
