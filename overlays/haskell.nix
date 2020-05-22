@@ -411,9 +411,8 @@ final: prev: {
             index-state-hashes = import indexStateHashesPath;
             inherit (final.buildPackages.haskell-nix) haskellLib materialize;
             pkgs = final.buildPackages.pkgs;
-            inherit (final.evalPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
             inherit (final.buildPackages.haskell-nix) ghc;
-            inherit (final.evalPackages.haskell-nix) cabal-install dotCabal nix-tools;
+            inherit (final.evalPackages.haskell-nix) cabal-install dotCabal nix-tools hpack;
             inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
 
@@ -531,8 +530,9 @@ final: prev: {
             let filterSupportedGhc = final.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc883");
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
-            inherit (final.buildPackages) gitMinimal;
-            inherit (final.buildPackages.haskell-nix) nix-tools source-pins;
+            inherit (final.evalPackages) gitMinimal;   # Used by default
+            inherit (final.buildPackages) gitMinimal;  # Used in flakes
+            inherit (final.buildPackages.haskell-nix) source-pins;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
@@ -547,7 +547,7 @@ final: prev: {
               (filterSupportedGhc final.ghc-extra-projects));
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            inherit (final.haskell-nix) nix-tools;
+            inherit (final.haskell-nix) nix-tools cabal-install alex happy hpack;
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itfinal.
             iserv-proxy = final.recurseIntoAttrs

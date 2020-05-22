@@ -454,6 +454,15 @@ in {
         }/happy";
     } // args);
     happy = final.buildPackages.haskell-nix.happy-tool {};
+    hpack-tool = args: final.haskell-nix.tool "hpack" ({
+      version = "0.34.1";
+      index-state = final.haskell-nix.internalHackageIndexState;
+      materialized = ../materialized + "/${
+          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+        }/hpack";
+      hpack = null;
+    } // args);
+    hpack = final.buildPackages.haskell-nix.hpack-tool {};
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
