@@ -102,9 +102,6 @@ let
     GhcRtsHcOpts += -fPIC
   '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
-  '' + stdenv.lib.optionalString useLLVM ''
-    GhcStage2HcOpts += -fast-llvm
-    GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
