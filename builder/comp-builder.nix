@@ -188,6 +188,7 @@ stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
+    profiled = drv.override { enableLibraryProfiling = true; };    
   };
 
   meta = {
