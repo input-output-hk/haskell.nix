@@ -1,6 +1,6 @@
 { stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
-stdenv.lib.fix (drv:
 lib.makeOverridable (
+let self = 
 { componentId
 , component
 , package
@@ -53,7 +53,7 @@ lib.makeOverridable (
 
 # Debug
 , enableDebugRTS ? false
-}:
+}@drvArgs:
 
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
@@ -166,7 +166,8 @@ let
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
-in stdenv.mkDerivation ({
+stdenv.lib.fix (drv:
+stdenv.mkDerivation ({
   pname = nameOnly;
   inherit (package.identifier) version;
 
@@ -186,7 +187,7 @@ in stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
-    profiled = drv.override { enableLibraryProfiling = true; };    
+    profiled = self (drvArgs // { enableLibraryProfiling = true; });
   };
 
   meta = {
@@ -378,4 +379,4 @@ in stdenv.mkDerivation ({
     preInstall postInstall preHaddock postHaddock;
 }
 // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
-)))
+)) in self)
