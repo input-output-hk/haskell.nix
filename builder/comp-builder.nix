@@ -1,4 +1,5 @@
 { stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
+
 lib.makeOverridable (
 let self = 
 { componentId
@@ -167,6 +168,7 @@ let
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
 in stdenv.lib.fix (drv:
+
 stdenv.mkDerivation ({
   pname = nameOnly;
   inherit (package.identifier) version;
