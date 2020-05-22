@@ -13,7 +13,8 @@ let
 
     project = pkgs.buildPackages.haskell-nix.ghcjsProject {
         src = ghcjsSrc;
-        inherit ghc ghcjsVersion ghcVersion happy alex cabal-install;
+        inherit ghcjsVersion ghcVersion happy alex cabal-install;
+        compiler-nix-name = if isGhcjs88 then "ghc883" else "ghc865";
         index-state = "2020-04-25T00:00:00Z";
 #        plan-sha256 = "1wy2lr08maxyi7r8jiwf2gj6pdayk5vxxwh42bj4s2gg4035z0yc";
 #        materialized = ../../materialized/ghcjs;
@@ -75,8 +76,8 @@ let
           wrapProgram $out/bin/haddock --add-flags "-B$out/lib"
           wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
 
-          env PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk}
-          rm $out/bin/ghcjs-boot
+          echo env PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk}
+          echo rm $out/bin/ghcjs-boot
         ''
         else ''
           mkdir -p $out/bin
