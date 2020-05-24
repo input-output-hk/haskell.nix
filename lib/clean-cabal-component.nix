@@ -70,6 +70,7 @@ in
             traceReason "directory is needed" (
               lib.any (d: lib.strings.hasPrefix (rPath + "/") d) (
                    dirsNeeded
+                ++ package.licenseFiles
                 ++ package.extraSrcFiles
                 ++ component.extraSrcFiles
                 ++ package.extraDocFiles
