@@ -95,11 +95,21 @@ let
             ;
   };
 
-in rec {
-  components = haskellLib.applyComponents buildComp pkg;
-  checks = pkgs.recurseIntoAttrs (builtins.mapAttrs
+  cabal-check = haskellLib.cabal-check {
+    inherit name;
+    inherit (buildPackages) cabal-install runCommand;
+    src = pkg.src.outPath;
+  };
+
+  package-checks = components: pkgs.recurseIntoAttrs (builtins.mapAttrs
     (_: d: haskellLib.check d)
       (lib.filterAttrs (_: d: d.config.doCheck) components.tests));
+
+in rec {
+  components = haskellLib.applyComponents buildComp pkg;
+  checks = package-checks components // {
+    inherit cabal-check;
+  };
   inherit (package) identifier detailLevel isLocal;
   inherit setup cabalFile;
   isHaskell = true;
