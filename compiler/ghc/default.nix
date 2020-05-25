@@ -272,7 +272,7 @@ in let configured-src = stdenv.mkDerivation (rec {
   enableParallelBuilding = true;
   postPatch = "patchShebangs .";
 
-  outputs = [ "out" "doc" ];
+  outputs = [ "out" "doc" "generated" ];
 
   # Make sure we never relax`$PATH` and hooks support for compatability.
   strictDeps = true;
@@ -325,6 +325,18 @@ in let configured-src = stdenv.mkDerivation (rec {
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
+
+    # File for ghcjs to use when building ghcjs
+    mkdir -p $generated/ghc/includes/dist-derivedconstants/header
+    cp includes/dist-derivedconstants/header/GHCConstantsHaskellExports.hs \
+       includes/dist-derivedconstants/header/GHCConstantsHaskellType.hs \
+       includes/dist-derivedconstants/header/GHCConstantsHaskellWrappers.hs \
+       $generated/ghc/includes/dist-derivedconstants/header
+    cp includes/ghcplatform.h $generated/ghc/includes
+    mkdir -p $generated/ghc/compiler/stage2/build
+    cp ghc/compiler/stage2/build/Config.hs $generated/ghc/compiler/stage2/build || true
+    mkdir -p $generated/ghc/rts/build
+    cp rts/build/config.hs-incl $generated/rts/build || true
   '' + installDeps targetPrefix;
 
   passthru = {

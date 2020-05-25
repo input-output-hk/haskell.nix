@@ -21,9 +21,10 @@
 # of the project.
 { pkgs }:
 { src
-, ghc ? pkgs.ghc
-, ghcjsVersion ? "8.6.0.1" # TODO get this from the source?
-, ghcVersion ? "8.6.5"     # TODO get this from the ghc arg?
+, compiler-nix-name
+, ghc ? pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}"
+, ghcjsVersion
+, ghcVersion ? ghc.version
 , happy ? pkgs.haskellPackages.happy
 , alex ? pkgs.haskellPackages.alex
 , cabal-install ? pkgs.cabal-install
@@ -67,7 +68,7 @@ let
         ++ lib.optionals stdenv.isDarwin [
           pkgs.buildPackages.gcc # https://github.com/ghcjs/ghcjs/issues/663
         ]
-        ++ lib.optional isGhcjs88 [ emscripten ];
+        ++ lib.optional isGhcjs88 [ emsdk ];
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {
         buildInputs = configureInputs;
@@ -94,9 +95,11 @@ let
           ''
         }
 
+        rm -rf utils/pkg-cache
+        cp -r ${ghc.generated} utils/pkg-cache
+
         patchShebangs .
         sed -i 's/gcc /cc /g' utils/makePackages.sh
-        cat utils/makePackages.sh
         ./utils/makePackages.sh copy
 
         ${
@@ -155,6 +158,6 @@ in ghcjsProject // {
             EMSDK = emsdk;
         });
     };
-    inherit configureInputs bootInputs configured-src emsdk;
+    inherit configureInputs bootInputs configured-src emscriptenupstream emscripten emsdk;
 }
 
