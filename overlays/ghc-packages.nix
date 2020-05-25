@@ -58,6 +58,7 @@ let
       ghci         = "libraries/ghci";
       ghc-boot     = "libraries/ghc-boot";
       ghc-heap     = "libraries/ghc-heap";
+      hpc          = "libraries/hpc";
       libiserv     = "libraries/libiserv";
       unix         = "libraries/unix";
       iserv        = "utils/iserv";
