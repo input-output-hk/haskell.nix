@@ -362,6 +362,7 @@ in {
                 # with the current use of env and exact Deps.
                 (builtins.mapAttrs
                     (_: v: v // {
+                        useLLVM = false;
                         isHaskellNixBootCompiler = true;
                     })
           ({
@@ -571,6 +572,7 @@ in {
             v.overrideAttrs (drv: {
               postInstall = (drv.postInstall or "") + installDeps "";
             }) // {
+              useLLVM = false;
               isHaskellNixBootCompiler = true;
             }
           )
