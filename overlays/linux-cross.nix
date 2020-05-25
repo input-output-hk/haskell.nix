@@ -35,23 +35,22 @@ let
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting remote-iserv on port $PORT")
-    ${qemu}/bin/qemu-${qemuSuffix} ${remote-iserv}/bin/remote-iserv tmp $PORT &
+    ${qemu}/bin/qemu-${qemuSuffix} ${remote-iserv.override { enableDebugRTS = true; enableDWARF = true; }}/bin/remote-iserv tmp $PORT &
     (>&2 echo "---| remote-iserv should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
-    (>&2 echo "---> killing remote-iserve...")
+    (>&2 echo "---> killing remote-iserv...")
     kill $RISERV_PID
     '';
   configureFlags = lib.optional hostPlatform.isAarch32 "--disable-split-sections";
-  setupBuildFlags = map (opt: "--ghc-option=" + opt) ((lib.optionals isLinuxCross
+  setupBuildFlags = (map (opt: "--ghc-option=" + opt) (lib.optionals isLinuxCross
     [ "-fexternal-interpreter"
       "-pgmi" "${qemuIservWrapper}/bin/iserv-wrapper"
       "-L${gmp}/lib"
          # Required to work-around https://gitlab.haskell.org/ghc/ghc/issues/15275
-    ] ++ lib.optionals hostPlatform.isAarch64 ["-fPIC"]))
-    ++ lib.optionals hostPlatform.isAarch32 (map (opt: "--gcc-option=" + opt) [ "-fno-pic" "-fno-plt" ])
-       # Also for GHC #15275
-    ++ lib.optionals hostPlatform.isAarch64 ["--gcc-option=-fPIC"];
+    ])) ++ (map (opt: "--gcc-option=" + opt) (lib.optionals (hostPlatform.isAarch32 || hostPlatform.isAarch64)
+    [ "-fPIC" "-fno-plt" ]));
+
   qemuTestWrapper = writeScriptBin "test-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
