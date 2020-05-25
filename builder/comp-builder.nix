@@ -56,6 +56,9 @@ let self =
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 
+# Prelinked ghci libraries; will make iserv faster; especially for static builds.
+, enableLibraryForGhci ? true
+
 # Debug
 , enableDebugRTS ? false
 }@drvArgs:
@@ -118,6 +121,7 @@ let
       (enableFeature enableExecutableProfiling "executable-profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
+      (enableFeature enableLibraryForGhci "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more

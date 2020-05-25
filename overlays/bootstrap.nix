@@ -125,6 +125,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.4.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.buildPlatform != final.stdenv.targetPlatform) ./patches/ghc/ghc-no-system-linker.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4") ./patches/ghc/Cabal-3886.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
