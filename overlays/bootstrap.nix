@@ -112,7 +112,7 @@ in {
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
                 ++ always                    ./patches/ghc/respect-ar-path.patch
-                ++ until             "8.10"  ./patches/ghc/MR2537-use-one-shot-kqueue-on-macos.patch
+                ++ until             "8.12"  ./patches/ghc/MR2537-use-one-shot-kqueue-on-macos.patch
                 ++ final.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
                 ++ final.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
@@ -125,6 +125,9 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.4.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.buildPlatform != final.stdenv.targetPlatform) ./patches/ghc/ghc-no-system-linker.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.buildPlatform != final.stdenv.targetPlatform) ./patches/ghc/ghci-no-dynamic-linking.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.buildPlatform != final.stdenv.targetPlatform) ./patches/ghc/aarch64-linker.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.buildPlatform != final.stdenv.targetPlatform) ./patches/ghc/llvm-emit-nonlazybind.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4") ./patches/ghc/Cabal-3886.patch
                 ;
         in ({
