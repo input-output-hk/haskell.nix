@@ -1,7 +1,7 @@
 { stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
 
 lib.makeOverridable (
-let self = 
+let self =
 { componentId
 , component
 , package
@@ -60,6 +60,10 @@ let self =
 
 # Debug
 , enableDebugRTS ? false
+, enableDWARF ? false
+
+# LLVM
+, useLLVM ? ghc.useLLVM
 }@drvArgs:
 
 let
@@ -137,6 +141,10 @@ let
       ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
+      ++ lib.optional enableDWARF "--ghc-option=-g"
+      ++ lib.optionals useLLVM [
+        "--ghc-option=-fPIC" "--gcc-option=-fPIC"
+        ]
     );
 
   setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc-options="${package.ghcOptions}"'';
