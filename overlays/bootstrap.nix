@@ -141,6 +141,7 @@ in {
                 # hadrian one.
                 ++ fromUntil "8.8" "8.12"      ./patches/ghc/bec76733b818b0489ffea0834ab6b1560207577c.patch
                 ++ fromUntil "8.8" "8.12"      ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.buildPlatform != final.stdenv.targetPlatform) ./patches/ghc/ghc-no-system-linker.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
