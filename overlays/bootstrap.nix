@@ -353,6 +353,7 @@ in {
     cabal-install-tool = args: final.haskell-nix.tool "cabal" ({
       version = "3.2.0.0";
       index-state = final.haskell-nix.internalHackageIndexState;
+      configureArgs = "--allow-newer 'Cabal:base'"; # needed for ghc 8.10.1 to build hackage Cabal
       # When building cabal-install (only happens when checking materialization)
       # disable checking of the tools used to avoid infinite recursion.
       cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
@@ -375,6 +376,7 @@ in {
               override = "nix-tools-src";
             };
             index-state = final.haskell-nix.internalHackageIndexState;
+            configureArgs = "--allow-newer 'Cabal:base'";
             # When building cabal-install (only happens when checking materialization)
             # disable checking of the tools used to avoid infinite recursion.
             cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
