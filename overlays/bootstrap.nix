@@ -123,18 +123,8 @@ in {
                 ++ fromUntil "8.8.2" "8.9"                ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
-                ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
-                ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
-                # backport of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3227
-                # the first one is a prerequisite.
-                # both are trimmed to only include the make build system part and not the
-                # hadrian one.
-                ++ fromUntil "8.8"  "8.10.2"   ./patches/ghc/bec76733b818b0489ffea0834ab6b1560207577c.patch
-                ++ fromUntil "8.8"  "8.8.4"    ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
-                ++ fromUntil "8.10" "8.10.2"   ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
-                ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
-
-                ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
+                ++ final.lib.optional (versionAtLeast "8.4.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.buildPlatform != final.stdenv.targetPlatform) ./patches/ghc/ghc-no-system-linker.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
