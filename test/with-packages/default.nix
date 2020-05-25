@@ -1,4 +1,4 @@
-{ stdenv, util, mkPkgSet, recurseIntoAttrs }:
+{ stdenv, util, mkPkgSet, recurseIntoAttrs, testSrc }:
 
 with stdenv.lib;
 with util;

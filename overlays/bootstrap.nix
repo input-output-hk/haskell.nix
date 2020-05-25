@@ -1,4 +1,4 @@
-self: super:
+final: prev:
 let
     installDeps = targetPrefix: ''
       for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
@@ -21,7 +21,7 @@ let
       done
 
       mkdir -p $out/evalDeps
-      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9.]*//g'); do
+      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
         touch $out/evalDeps/$P
         if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
           echo "package-id $id" >> $out/evalDeps/$P
@@ -29,26 +29,34 @@ let
       done
     '';
 in {
-  haskell-nix = super.haskell-nix // {
+  haskell-nix = prev.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
-        let bootPkgs = with self.buildPackages; {
+        let bootPkgs = with final.buildPackages; {
                 ghc = buildPackages.haskell-nix.bootstrap.compiler.ghc844;
-                inherit (self.haskell-nix.bootstrap.packages) alex happy hscolour;
+                alex = final.haskell-nix.bootstrap.packages.alex-tool {
+                  checkMaterialization = false;
+                };
+                happy = final.haskell-nix.bootstrap.packages.happy-tool {
+                  checkMaterialization = false;
+                };
+                hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {
+                  checkMaterialization = false;
+                };
             };
-            sphinx = with self.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
-            hsc2hs-align-conditionals-patch = self.fetchpatch {
+            sphinx = with final.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
+            hsc2hs-align-conditionals-patch = final.fetchpatch {
                 url = "https://git.haskell.org/hsc2hs.git/patch/738f3666c878ee9e79c3d5e819ef8b3460288edf";
                 sha256 = "0plzsbfaq6vb1023lsarrjglwgr9chld4q3m99rcfzx0yx5mibp3";
                 extraPrefix = "utils/hsc2hs/";
                 stripLen = 1;
             };
-            D5123-patch = self.fetchpatch rec { # https://phabricator.haskell.org/D5123
+            D5123-patch = final.fetchpatch rec { # https://phabricator.haskell.org/D5123
                 url = "http://tarballs.nixos.org/sha256/${sha256}";
                 name = "D5123.diff";
                 sha256 = "0nhqwdamf2y4gbwqxcgjxs0kqx23w9gv5kj0zv6450dq19rji82n";
             };
-            haddock-900-patch = self.fetchpatch rec { # https://github.com/haskell/haddock/issues/900
+            haddock-900-patch = final.fetchpatch rec { # https://github.com/haskell/haddock/issues/900
                 url = "https://patch-diff.githubusercontent.com/raw/haskell/haddock/pull/983.diff";
                 name = "loadpluginsinmodules.diff";
                 sha256 = "0bvvv0zsfq2581zsir97zfkggc1kkircbbajc2fz3b169ycpbha1";
@@ -60,10 +68,10 @@ in {
                 versionLessThan = ver: builtins.compareVersions ver version == 1;
                 # Returns true iff this derivation's verion is greater than or equal to ver.
                 versionAtLeast = ver: !versionLessThan ver;
-                from = start: self.lib.optional (versionAtLeast start);
-                fromUntil = start: end: self.lib.optional (versionAtLeast start && versionLessThan end);
-                until = end: self.lib.optional (versionLessThan end);
-                always = self.lib.optional true;
+                from = start: final.lib.optional (versionAtLeast start);
+                fromUntil = start: end: final.lib.optional (versionAtLeast start && versionLessThan end);
+                until = end: final.lib.optional (versionLessThan end);
+                always = final.lib.optional true;
                 # Try to avoid reordering the patches unless a patch is added or changed that
                 # will be applied to most versions of the GHC anyway (reordering the patches
                 # results in rebuilds of GHC and reduces sharing in /nix/store).
@@ -100,27 +108,29 @@ in {
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
-
-                ++ self.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
-                ++ self.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-atomic-arm-arch.patch
-                ++ self.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
+                ++ always                    ./patches/ghc/respect-ar-path.patch
+                ++ until             "8.12"  ./patches/ghc/MR2537-use-one-shot-kqueue-on-macos.patch 
+                ++ final.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
+                ++ final.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
+                ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
+                ++ final.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
+                ++ final.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-atomic-arm-arch.patch
+                ++ final.lib.optional (version == "8.6.5") ./patches/ghc/MR3214-writable-rel-ro-data.patch
+                ++ final.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
                 ++ fromUntil "8.8.2" "8.9"                ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
-                ++ self.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
-                ++ self.lib.optional (versionAtLeast "8.6.4" && self.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
-                ++ self.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && self.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
-                ++ self.lib.optional (versionAtLeast "8.10.1" && self.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
+                ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 ;
         in ({
-            ghc844 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc844; };
+            ghc844 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc844; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_5;
-                llvmPackages = self.llvmPackages_5;
+                buildLlvmPackages = final.buildPackages.llvmPackages_5;
+                llvmPackages = final.llvmPackages_5;
 
                 src-spec = rec {
                     version = "8.4.4";
@@ -130,15 +140,15 @@ in {
 
                 ghc-patches = ghc-patches "8.4.4"
                             ++ [ hsc2hs-align-conditionals-patch D5123-patch ]
-                            ++ self.lib.optional self.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
+                            ++ final.lib.optional final.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
             };
-            ghc861 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc861; };
+            ghc861 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc861; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_6;
-                llvmPackages = self.llvmPackages_6;
+                buildLlvmPackages = final.buildPackages.llvmPackages_6;
+                llvmPackages = final.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.1";
@@ -148,13 +158,13 @@ in {
 
                 ghc-patches = [ D5123-patch ];
             };
-            ghc862 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc862; };
+            ghc862 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc862; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_6;
-                llvmPackages = self.llvmPackages_6;
+                buildLlvmPackages = final.buildPackages.llvmPackages_6;
+                llvmPackages = final.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.2";
@@ -165,13 +175,13 @@ in {
                 ghc-patches = ghc-patches "8.6.2"
                             ++ [ D5123-patch ];
             };
-            ghc863 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc863; };
+            ghc863 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc863; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_6;
-                llvmPackages = self.llvmPackages_6;
+                buildLlvmPackages = final.buildPackages.llvmPackages_6;
+                llvmPackages = final.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.3";
@@ -182,13 +192,13 @@ in {
                 ghc-patches = ghc-patches "8.6.3"
                             ++ [ D5123-patch ];
             };
-            ghc864 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc864; };
+            ghc864 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc864; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_6;
-                llvmPackages = self.llvmPackages_6;
+                buildLlvmPackages = final.buildPackages.llvmPackages_6;
+                llvmPackages = final.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.4";
@@ -199,13 +209,13 @@ in {
                 ghc-patches = ghc-patches "8.6.4"
                             ++ [ D5123-patch ];
             };
-            ghc865 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc865; };
+            ghc865 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_6;
-                llvmPackages = self.llvmPackages_6;
+                buildLlvmPackages = final.buildPackages.llvmPackages_6;
+                llvmPackages = final.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.5";
@@ -216,13 +226,13 @@ in {
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
             };
-            ghc881 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc881; };
+            ghc881 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc881; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_7;
-                llvmPackages = self.llvmPackages_7;
+                buildLlvmPackages = final.buildPackages.llvmPackages_7;
+                llvmPackages = final.llvmPackages_7;
 
                 src-spec = rec {
                     version = "8.8.1";
@@ -232,13 +242,13 @@ in {
 
                 ghc-patches = ghc-patches "8.8.1";
             };
-            ghc882 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc882; };
+            ghc882 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc882; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_7;
-                llvmPackages = self.llvmPackages_7;
+                buildLlvmPackages = final.buildPackages.llvmPackages_7;
+                llvmPackages = final.llvmPackages_7;
 
                 src-spec = rec {
                     version = "8.8.2";
@@ -248,13 +258,13 @@ in {
 
                 ghc-patches = ghc-patches "8.8.2";
             };
-            ghc883 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc883; };
+            ghc883 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc883; };
 
                 inherit bootPkgs sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_7;
-                llvmPackages = self.llvmPackages_7;
+                buildLlvmPackages = final.buildPackages.llvmPackages_7;
+                llvmPackages = final.llvmPackages_7;
 
                 src-spec = rec {
                     version = "8.8.3";
@@ -264,18 +274,18 @@ in {
 
                 ghc-patches = ghc-patches "8.8.3";
             };
-            ghc8101 = self.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = self.buildPackages.haskell-nix.compiler.ghc8101; };
+            ghc8101 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = self.buildPackages.haskell-nix.compiler.ghc883;
-                  alex = self.haskell-nix.haskellPackages.alex.components.exes.alex;
-                  happy = self.haskell-nix.haskellPackages.happy.components.exes.happy;
+                  ghc = final.buildPackages.haskell-nix.compiler.ghc883;
+                  alex = final.haskell-nix.haskellPackages.alex.components.exes.alex;
+                  happy = final.haskell-nix.haskellPackages.happy.components.exes.happy;
                 };
                 inherit sphinx installDeps;
 
-                buildLlvmPackages = self.buildPackages.llvmPackages_7;
-                llvmPackages = self.llvmPackages_7;
+                buildLlvmPackages = final.buildPackages.llvmPackages_7;
+                llvmPackages = final.llvmPackages_7;
 
                 src-spec = rec {
                     version = "8.10.1";
@@ -285,7 +295,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.1";
             };
-        } // self.lib.optionalAttrs (self.targetPlatform.isGhcjs or false)
+        } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
                 # compiler defined below.  This is crucial to build packages
                 # with the current use of env and exact Deps.
@@ -294,16 +304,16 @@ in {
                         isHaskellNixBootCompiler = true;
                     })
           ({
-            ghc865 = let buildGHC = self.buildPackages.haskell-nix.compiler.ghc865;
-                in let ghcjs865 = self.callPackage ../compiler/ghcjs/ghcjs.nix {
+            ghc865 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc865;
+                in let ghcjs865 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.1";
                 ghc = buildGHC;
-                cabal-install = self.buildPackages.haskell-nix.cabal-install;
+                cabal-install = final.buildPackages.haskell-nix.cabal-install;
                 # The alex from the bootstrap packages is apparently broken, and will fail with something like:
                 # > alex: /nix/store/f7b78rg9pmqgvxvsqfzh1przp7pxii5a-alex-3.2.4-exe-alex/share/x86_64-osx-ghc-8.4.4/alex-3.2.4-1pf5faR9dBuJ8mryql0DoA-alex/AlexTemplate-ghc-nopred: openFile: does not exist (No such file or directory)
-                # inherit (self.buildPackages.haskell-nix.bootstrap.packages) alex happy;
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in self.runCommand "${targetPrefix}ghc-8.6.5" {
+                # inherit (final.buildPackages.haskell-nix.bootstrap.packages) alex happy;
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.6.5" {
                 passthru = {
                     inherit targetPrefix;
                     version = "8.6.5";
@@ -315,7 +325,7 @@ in {
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
                         # setting gcc is stupid. non-emscripten ghcjs has no cc.
                         # however cabal insists on compiling the c sources. m(
-                        "--with-gcc=${self.buildPackages.stdenv.cc}/bin/cc"
+                        "--with-gcc=${final.buildPackages.stdenv.cc}/bin/cc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -332,8 +342,97 @@ in {
             '' + installDeps targetPrefix);
         })));
 
-    ghc = self.haskell-nix.compiler.ghc865;
-    inherit (self.buildPackages.haskell-nix.bootstrap.packages) cabal-install alex happy;
+    defaultCompilerNixName = "ghc865";
+    ghc = final.haskell-nix.compiler."${final.haskell-nix.defaultCompilerNixName}";
+    # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
+    # to check materialized results.  We need to take care that when
+    # it is doing this we do not check the materialization of the
+    # tools used or there will be infinite recursion.
+    # always has `checkMaterialization = false` to avoid infinite
+    # recursion.
+    cabal-install-tool = args: final.haskell-nix.tool "cabal" ({
+      version = "3.2.0.0";
+      index-state = final.haskell-nix.internalHackageIndexState;
+      # When building cabal-install (only happens when checking materialization)
+      # disable checking of the tools used to avoid infinite recursion.
+      cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
+        (args // { checkMaterialization = false; });
+      nix-tools = final.evalPackages.haskell-nix.nix-tools-set
+        (args // { checkMaterialization = false; });
+      materialized = ../materialized + "/${
+          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+        }/cabal-install";
+    } // args);
+    cabal-install = final.buildPackages.haskell-nix.cabal-install-tool {};
+    nix-tools-set = args:
+      let
+        exes =
+          (final.haskell-nix.cabalProject ({
+            name = "nix-tools";
+            src = final.haskell-nix.fetchExternal {
+              name     = "nix-tools-src";
+              specJSON = ../nix-tools/nix-tools-src.json;
+              override = "nix-tools-src";
+            };
+            index-state = final.haskell-nix.internalHackageIndexState;
+            # When building cabal-install (only happens when checking materialization)
+            # disable checking of the tools used to avoid infinite recursion.
+            cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
+              (args // { checkMaterialization = false; });
+            nix-tools = final.evalPackages.haskell-nix.nix-tools-set
+              (args // { checkMaterialization = false; });
+            materialized = ../materialized + "/${
+                args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+              }/nix-tools";
+            modules = [{
+              packages.transformers-compat.components.library.doExactConfig = true;
+              packages.time-compat.components.library.doExactConfig = true;
+              packages.time-locale-compat.components.library.doExactConfig = true;
+              # Make Cabal reinstallable
+              nonReinstallablePkgs =
+                [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+                  "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+                  "ghc-boot"
+                  "ghc" "Win32" "array" "binary" "bytestring" "containers"
+                  "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+                  "hpc"
+                  "mtl" "parsec" "process" "text" "time" "transformers"
+                  "unix" "xhtml"
+                ];
+            }];
+          } // args)).nix-tools.components.exes;
+        tools = [ final.git final.buildPackages.nix final.buildPackages.nix-prefetch-git ];
+    in
+      final.symlinkJoin {
+        name = "nix-tools";
+        paths = builtins.attrValues exes;
+        buildInputs = [ final.makeWrapper ];
+        meta.platforms = final.lib.platforms.all;
+        # We wrap the -to-nix executables with the executables from `tools` (e.g. nix-prefetch-git)
+        # so that consumers of `nix-tools` won't have to provide those tools.
+        postBuild = ''
+          for prog in stack-to-nix cabal-to-nix plan-to-nix; do
+            wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
+          done
+        '';
+      };
+    nix-tools = final.buildPackages.haskell-nix.nix-tools-set {};
+    alex-tool = args: final.haskell-nix.tool "alex" ({
+      version = "3.2.5";
+      index-state = final.haskell-nix.internalHackageIndexState;
+      materialized = ../materialized + "/${
+          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+        }/alex";
+    } // args);
+    alex = final.buildPackages.haskell-nix.alex-tool {};
+    happy-tool = args: final.haskell-nix.tool "happy" ({
+      version = "1.19.12";
+      index-state = final.haskell-nix.internalHackageIndexState;
+      materialized = ../materialized + "/${
+          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
+        }/happy";
+    } // args);
+    happy = final.buildPackages.haskell-nix.happy-tool {};
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
@@ -342,7 +441,7 @@ in {
     # haskellPackages = with import ../. {}; {
     #     hpack = null;
     #     hello = (hackage-package {
-    #         inherit (self) cabal-install;
+    #         inherit (final) cabal-install;
     #         name = "hello"; version = "1.0.0.2";
     #     }).components.exes.hello;
     # };
@@ -361,7 +460,7 @@ in {
 
 
     # the bootstrap infra structure (pre-compiled ghc; bootstrapped cabal-install, ...)
-    bootstrap = with self.haskell-nix; let ghc = self.buildPackages.haskell-nix.bootstrap.compiler.ghc844; in {
+    bootstrap = with final.haskell-nix; let ghc = final.buildPackages.haskell-nix.bootstrap.compiler.ghc844; in {
         # XXX: import ../. will throw away all other overlays, config values, ...
         #      this is not ideal!
         # get binary compilers for bootstrapping.  We'll put the eventual proper
@@ -375,63 +474,44 @@ in {
               isHaskellNixBootCompiler = true;
             }
           )
-          (import ../compiler/old-ghc-nix { pkgs = self; });
+          (import ../compiler/old-ghc-nix { pkgs = final; });
 
         packages = {
-            # cabal has it's own bootstrap script which we'll use.
-            cabal-install = import ../compiler/bootstrap/cabal-install.nix {
-                inherit (self) fetchurl stdenv zlib;
-                inherit hackage ghc;
-                src = self.fetchurl {
-                    url = "https://github.com/haskell/cabal/archive/Cabal-v3.0.0.0-rc3.tar.gz";
-                    sha256 = "1zl2mgg8307ykq3v8nmafc6zdhhj1cw7w8ffpap16dsm65lbnx33";
-                };
-                version = "3.0.0.0";
-            };
-
-            # disable hpack support during bootstrap
-            hpack = null;
-            nix-tools = nix-tools.override {
-                # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) hpack;
-            };
-
             # now that we have nix-tools and hpack, we can just
             # use `hackage-package` to build any package from
             # hackage with haskell.nix.  For alex and happy we
             # need to use the boot strap compiler as we need them
             # to build ghcs from source.
-            alex-project = hackage-project {
+            # guardMaterializationChecks is used here so we
+            # can turn off materialization checks when
+            # building ghc itself (since GHC is a dependency
+            # of the materialization check it would cause
+            # infinite recusion).
+            alex-tool = args: tool "alex" ({
+                version = "3.2.4";
                 # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) cabal-install nix-tools hpack;
-                name = "alex"; version = "3.2.4";
-                index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "1adn8s46msqm2rl6yf01z2r81maa2001qh441j491gpmc3ki36n0";
-                materialized = ../materialized/alex;
-            };
-            alex = bootstrap.packages.alex-project.hsPkgs.alex.components.exes.alex;
-            happy-project = hackage-project {
+                ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+                index-state = final.haskell-nix.internalHackageIndexState;
+                materialized = ../materialized/bootstrap/alex;
+            } // args);
+            alex = bootstrap.packages.alex-tool {};
+            happy-tool = args: tool "happy" ({
+                version = "1.19.11";
                 # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) cabal-install nix-tools hpack;
-                name = "happy"; version = "1.19.11";
-                index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "0swpwhlym4p3209qv90mfgq6zsaw99ipznm4pvd32mxzwq9s5q8i";
-                materialized = ../materialized/happy;
-            };
-            happy = bootstrap.packages.happy-project.hsPkgs.happy.components.exes.happy;
-            hscolour-project = hackage-project {
+                ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+                index-state = final.haskell-nix.internalHackageIndexState;
+                materialized = ../materialized/bootstrap/happy;
+            } // args);
+            happy = bootstrap.packages.happy-tool {};
+            hscolour-tool = args: (hackage-package ({
+                name = "hscolour";
+                version = "1.24.4";
                 # Only a boot compiler is suitable here
-                ghc = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) cabal-install nix-tools hpack;
-                name = "hscolour"; version = "1.24.4";
-                index-state = "2019-10-20T00:00:00Z";
-                plan-sha256 = "0cnkczsh1xy7cc60q3blwa51qrjhf5mc89s34y9ab3x702a26b75";
-                materialized = ../materialized/hscolour;
-            };
-            hscolour = bootstrap.packages.hscolour-project.hsPkgs.hscolour.components.exes.HsColour;
+                ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+                index-state = final.haskell-nix.internalHackageIndexState;
+                materialized = ../materialized/bootstrap/hscolour;
+            } // args)).components.exes.HsColour;
+            hscolour = bootstrap.packages.hscolour-tool {};
         };
     };
   };

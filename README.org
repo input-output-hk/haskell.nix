@@ -1,7 +1,5 @@
 #+STARTUP: showall hidestars
 
-** :warning: Please use [[iohk.cachix.org]] instead of [[nix-tools.cachix.org]] :warning: 
-
 * Alternative Haskell Infrastructure for Nixpkgs
 
 [[https://buildkite.com/input-output-hk/haskell-dot-nix][https://badge.buildkite.com/d453edcd29bd2f8f3f3b32c9b7d6777a33773d9671c37a6ccc.svg?branch=master]]
@@ -10,8 +8,8 @@
 =haskell.nix= is an experimental new builder for Haskell packages.
 
 It works by automatically translating your Cabal or Stack project and
-its dependencies into Nix code.  It provides IFD (imports from derviation)
-functions that can minimize the amount of nix code you need to add.
+its dependencies into Nix code.  It provides IFD (import from derivation)
+functions that can minimize the amount of Nix code you need to add.
 
 For the documentation, see https://input-output-hk.github.io/haskell.nix/.
 
@@ -21,10 +19,10 @@ For =cabal.project= project add a =default.nix=:
 
 #+begin_src sh
 let 
-  # Fetch the latest haskell.nix and import its default.nix 
+  # Fetch the latest haskell.nix and import its default.nix
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
   # haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
-  # you will be more likely to get cache hits when using these. 
+  # you will be more likely to get cache hits when using these.
   # But you can also just use your own, e.g. '<nixpkgs>'
   nixpkgsSrc = haskellNix.sources.nixpkgs-1909;
   # haskell.nix provides some arguments to be passed to nixpkgs, including some patches
@@ -37,8 +35,8 @@ in
 # 'cabalProject' generates a package set based on a cabal.project (and the corresponding .cabal files)
 pkgs.haskell-nix.cabalProject {
   # 'cleanGit' cleans a source directory based on the files known by git
-  src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
-  ghc = pkgs.buildPackages.pkgs.haskell-nix.compiler.${haskellCompiler};
+  src = pkgs.haskell-nix.haskellLib.cleanGit { name = "haskell-nix-project"; src = ./.; };
+  compiler-nix-name = haskellCompiler;
 }
 #+end_src
 

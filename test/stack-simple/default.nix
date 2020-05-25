@@ -1,4 +1,4 @@
-{ stdenv, pkgs, mkStackPkgSet, haskellLib }:
+{ stdenv, pkgs, mkStackPkgSet, haskellLib, testSrc }:
 
 with stdenv.lib;
 

@@ -1,9 +1,11 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, nodejs }:
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
 
+lib.makeOverridable (
+let self = 
 { componentId
 , component
 , package
-, name
+, name # This is the package name
 , setup
 , src
 , flags
@@ -13,12 +15,20 @@
 , patches ? []
 
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
+, configureFlags ? component.configureFlags
 , preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
+, setupBuildFlags ? component.setupBuildFlags
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preCheck ? component.preCheck , postCheck ? component.postCheck
+, setupInstallFlags ? component.setupInstallFlags
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
+
+, build-tools ? component.build-tools
+, pkgconfig ? component.pkgconfig
+, platforms ? component.platforms
+, frameworks ? component.frameworks
 
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
@@ -32,6 +42,7 @@
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 , keepSource ? component.keepSource  # Build from `source` output in the store then delete `dist`
+, setupHaddockFlags ? component.setupHaddockFlags
 
 # Profiling
 , enableLibraryProfiling ? component.enableLibraryProfiling
@@ -40,7 +51,10 @@
 
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
-}:
+
+# Debug
+, enableDebugRTS ? false
+}@drvArgs:
 
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
@@ -48,13 +62,16 @@ let
     then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
     else haskellLib.cleanCabalComponent package component src;
 
-  fullName = if haskellLib.isAll componentId
-    then "${name}-all"
-    else "${name}-${componentId.ctype}-${componentId.cname}";
+  nameOnly = if haskellLib.isAll componentId
+    then "${package.identifier.name}-all"
+    else "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
+
+  fullName = "${nameOnly}-${package.identifier.version}";
 
   configFiles = makeConfigFiles {
     inherit (package) identifier;
     inherit component fullName flags;
+    needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
   };
 
   enableFeature = enable: feature:
@@ -104,6 +121,8 @@ let
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
       "--ghc-option=-optl=-L${gmp.override { withStatic = true; }}/lib"
+      "--ghc-option=-optl=-L${zlib.static}/lib"
+      "--ghc-option=-optl=-L${ncurses.override { enableStatic = true; }}/lib"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
@@ -111,8 +130,9 @@ let
       ++ lib.optionals haskellLib.isCrossHost (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
-      ++ component.configureFlags
+      ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
+      ++ lib.optional enableDebugRTS "--ghc-option=-debug"
     );
 
   setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc-options="${package.ghcOptions}"'';
@@ -120,8 +140,8 @@ let
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) component.build-tools) ++
-    lib.optional (component.pkgconfig != []) buildPackages.pkgconfig;
+      else [c]) build-tools) ++
+    lib.optional (pkgconfig != []) buildPackages.pkgconfig;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
@@ -150,7 +170,8 @@ let
 in stdenv.lib.fix (drv:
 
 stdenv.mkDerivation ({
-  name = "${ghc.targetPrefix}${fullName}";
+  pname = nameOnly;
+  inherit (package.identifier) version;
 
   src = cleanSrc;
 
@@ -168,6 +189,7 @@ stdenv.mkDerivation ({
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
     haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
+    profiled = self (drvArgs // { enableLibraryProfiling = true; });
   };
 
   meta = {
@@ -178,7 +200,7 @@ stdenv.mkDerivation ({
         license-map = import ../lib/cabal-licenses.nix lib;
       in license-map.${package.license} or
         (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
-    platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
+    platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
   };
 
   LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
@@ -187,8 +209,8 @@ stdenv.mkDerivation ({
   enableParallelBuilding = true;
 
   buildInputs = component.libs
-    ++ component.frameworks
-    ++ builtins.concatLists component.pkgconfig
+    ++ frameworks
+    ++ builtins.concatLists pkgconfig
     # Note: This is a hack until we can fix properly. See:
     # https://github.com/haskell-gi/haskell-gi/issues/226
     ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
@@ -230,7 +252,7 @@ stdenv.mkDerivation ({
   buildPhase = ''
     runHook preBuild
     # https://gitlab.haskell.org/ghc/ghc/issues/9221
-    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (component.setupBuildFlags ++ setupGhcOptions)}
+    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
     runHook postBuild
   '';
 
@@ -247,7 +269,7 @@ stdenv.mkDerivation ({
       "--html" \
       ${lib.optionalString doHoogle "--hoogle"} \
       ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-      ${lib.concatStringsSep " " (component.setupHaddockFlags ++ setupGhcOptions)}
+      ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
 
     html="dist/doc/html/${componentId.cname}"
 
@@ -277,7 +299,7 @@ stdenv.mkDerivation ({
       target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
     in ''
     runHook preInstall
-    $SETUP_HS copy ${lib.concatStringsSep " " component.setupInstallFlags}
+    $SETUP_HS copy ${lib.concatStringsSep " " setupInstallFlags}
     ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
       $SETUP_HS register --gen-pkg-config=${name}.conf
       ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -359,4 +381,4 @@ stdenv.mkDerivation ({
     preInstall postInstall preHaddock postHaddock;
 }
 // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
-))
+)); in self)

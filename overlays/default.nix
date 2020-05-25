@@ -1,18 +1,54 @@
-[
+args:
+
+let
+  overlays = {
+    wine = import ./wine.nix;
+    #ghcjs = import ./ghcjs-asterius-triple.nix;
+    #python = import ./python.nix;
+    haskell = import ./haskell.nix args;
+    hackage-quirks = import ./hackage-quirks.nix;
+    bootstrap = import ./bootstrap.nix;
+    ghc = import ./ghc.nix;
+    ghc-packages = import ./ghc-packages.nix;
+    windows = import ./windows.nix;
+    armv6l-linux = import ./armv6l-linux.nix;
+    musl = import ./musl.nix;
+    tools = import ./tools.nix;
+    emscripten = import ./emscripten.nix;
+    eval-on-current = import ./eval-on-current.nix;
+    eval-on-build = import ./eval-on-build.nix;
+  };
+
+  composeExtensions = f: g: final: prev:
+    let
+      fApplied = f final prev;
+      prev' = prev // fApplied;
+    in fApplied // g final prev';
+
+  ordered = with overlays; [
     # Hide nixpkgs haskell and haskellPackages from the haskell-nix overlays.
     # This should prevent us inadvertantly depending on them.
-    (_: super: { haskell = {}; haskellPackages = {}; haskell-nix-super = super; })
-    (import ./release-19.03.nix)
-    (import ./wine.nix)
-    #(import ./ghcjs-asterius-triple.nix)
-    #(import ./python.nix)
-    (import ./haskell.nix)
-    (import ./bootstrap.nix)
-    (import ./ghc.nix)
-    (import ./ghc-packages.nix)
-    (import ./windows.nix)
-    (import ./armv6l-linux.nix)
-    (import ./musl.nix)
+    (_: prev: {
+      haskell = { };
+      haskellPackages = { };
+      haskell-nix-prev = prev;
+    })
+    wine
+    haskell
+    hackage-quirks
+    bootstrap
+    ghc
+    ghc-packages
+    windows
+    armv6l-linux
+    musl
+    tools
+    emscripten
     # Restore nixpkgs haskell and haskellPackages
-    (_: super: { inherit (super.haskell-nix-super) haskell haskellPackages; })
-]
+    (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
+  ];
+  combined = builtins.foldl' composeExtensions (_: _: { })
+    (ordered ++ [overlays.eval-on-current]);
+  combined-eval-on-build = builtins.foldl' composeExtensions (_: _: { })
+    (ordered ++ [overlays.eval-on-build]);
+in overlays // { inherit combined; }

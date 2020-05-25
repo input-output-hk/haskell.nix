@@ -83,6 +83,7 @@ pkgs:
     "libqrencode"                        = [ pkgs."qrencode" ];
     "libR"                               = [ pkgs."R" ];
     "librsvg-2.0"                        = [ pkgs."librsvg" ];
+    "libsecp256k1"                       = [ pkgs."secp256k1" ];
     "libsoup-2.4"                        = [ pkgs."libsoup" ];
     "libsoup-gnome-2.4"                  = [ pkgs."libsoup" ];
     "libsystemd"                         = [ pkgs."systemd" ];

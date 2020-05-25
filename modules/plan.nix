@@ -150,7 +150,7 @@ let
 
     profilingDetail = mkOption {
       type = nullOr uniqueStr;
-      default = (def.profilingDetail or "exported-functions");
+      default = (def.profilingDetail or "default");
     };
 
     keepSource = mkOption {
@@ -229,7 +229,7 @@ in {
       type =
         let mod_args = {
           inherit pkgs pkgconfPkgs haskellLib;
-          inherit (config) hsPkgs;
+          inherit (config) hsPkgs errorHandler;
           inherit (config.cabal) system compiler;
         }; in
           attrsOf (submodule (import ./package.nix {
@@ -260,7 +260,7 @@ in {
 
   config = let module = config.plan.pkg-def config.hackage.configs; in {
     inherit (module) compiler;
-    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
+    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, errorHandler, pkgconfPkgs, ... }@modArgs:
 
       let m = if revision == null
               then (abort "${name} has no revision!")

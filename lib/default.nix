@@ -1,8 +1,32 @@
-{ stdenv, lib, haskellLib, runCommand, git, recurseIntoAttrs, srcOnly }:
+{ pkgs, stdenv, lib, haskellLib, recurseIntoAttrs, srcOnly }:
+
 
 with haskellLib;
 
-{
+let
+  # Why `final.evalPackages.buildPackages.git`?
+  # Why not just final.evalPackages.git?
+  #
+  # A problem arises when `evalPackages` is `buildPackages`.i
+  # As may be the case in a flake.
+  #
+  # It turns out `git` depends on `gdb` in a round about way:
+  #  git -> openssh -> libfido2 -> systemd -> python libxml -> Cython -> gdb
+  # Somewhere in that chain there should perhaps be a `buildPackages` so
+  # that the `gdb` that is used is not the one for debugging code in
+  # the `final` (but instead the one for debugging code in
+  # `final.buildPackages`).
+  #
+  # Using `final.buildPackages.git` causes two problems:
+  #
+  #   * Multiple versions of `git` (and that dependency chain
+  #     to `gdb` are needed when cross compiling).
+  #   * When `gdb` does not exist for `js`, so when cross
+  #     compiling with ghcjs `final.buildPackages.git` fails
+  #     to build at all.
+  inherit (pkgs.evalPackages.buildPackages) git;
+
+in {
   # Within the package components, these are the attribute names of
   # nested attrsets.
   subComponentTypes = [
@@ -32,9 +56,8 @@ with haskellLib;
     lib.optional c.buildable c ++ acc) [];
 
   componentPrefix = {
-    # Are all of these right?
     sublibs = "lib";
-    foreignlibs = "foreignlib";
+    foreignlibs = "flib";
     exes = "exe";
     tests = "test";
     benchmarks = "bench";
@@ -181,7 +204,8 @@ with haskellLib;
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
-    inherit lib runCommand git cleanSourceWith;
+    inherit lib git cleanSourceWith;
+    inherit (pkgs.evalPackages) runCommand;
   };
 
   # Check a test component
@@ -195,8 +219,20 @@ with haskellLib;
   # In most cases we do not want to treat musl as a cross compiler.
   # For instance when building ghc we want to include ghci.
   isCrossHost = stdenv.hostPlatform != stdenv.buildPlatform
-    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl);
+    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl && stdenv.buildPlatform.isx86 && stdenv.hostPlatform.isx86);
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
-    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl);
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.isx86 && stdenv.targetPlatform.isx86);
+  # Native musl build-host-target combo
+  isNativeMusl = stdenv.hostPlatform.isMusl
+    && stdenv.buildPlatform == stdenv.hostPlatform
+    && stdenv.hostPlatform == stdenv.targetPlatform;
+
+  # Takes a version number or attr set of arguments (for cabalProject)
+  # and conversios it to an attr set of argments.  This allows
+  # the use of "1.0.0.0" or { version = "1.0.0.0"; ... }
+  versionOrArgsToArgs = versionOrArgs:
+    if lib.isAttrs versionOrArgs
+      then versionOrArgs
+      else { version = versionOrArgs; };
 }

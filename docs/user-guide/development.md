@@ -66,8 +66,14 @@ in
     withHoogle = true;
 
     # You might want some extra tools in the shell (optional).
+
+    # Some common tools can be added with the `tools` argument
+    tools = { cabal = "3.2.0.0"; hlint = "2.2.11"; };
+    # See overlays/tools.nix for more details
+
+    # Some you may need to get some other way.
     buildInputs = with pkgs.haskellPackages;
-      [ hlint stylish-haskell ghcid ];
+      [ ghcid ];
 
     # Prevents cabal from choosing alternate plans, so that
     # *all* dependencies are provided by Nix.
@@ -109,7 +115,7 @@ selects packages from the larger package set.
 # shell.nix
 let
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
+  nixpkgs = import haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
   haskell.haskellPackages.ghcWithPackages (ps: with ps;
@@ -128,7 +134,7 @@ project.
 ```nix
 let
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
+  nixpkgs = import haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
   haskell.snapshots."lts-13.18".alex.components.exes.alex

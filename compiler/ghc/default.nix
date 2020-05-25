@@ -42,13 +42,7 @@
   # specific flavour and falls back to ghc default values.
   ghcFlavour ? stdenv.lib.optionalString haskell-nix.haskellLib.isCrossTarget (
     if useLLVM
-      then (
-        # TODO check if the issues with qemu and Aarch32 persist. See
-        # https://github.com/input-output-hk/haskell.nix/pull/411/commits/1986264683067198e7fdc1d665351622b664712e
-        if stdenv.targetPlatform.isAarch32
-          then "quick-cross"
-          else "perf-cross"
-      )
+      then "perf-cross"
       else "perf-cross-ncg"
     )
 
@@ -73,9 +67,16 @@ let
   inherit (bootPkgs) ghc;
 
   # TODO check if this posible fix for segfaults works or not.
-  libffiStaticEnabled = if libffi == null || !stdenv.targetPlatform.isMusl
-    then libffi
-    else targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; });
+  targetLibffi =
+    # on native platforms targetPlatform.{libffi, gmp} do not exist; thus fall back
+    # to the non-targetPlatform version in those cases.
+    let targetLibffi = targetPackages.libffi or libffi; in
+    # we need to set `dontDisableStatic` for musl for libffi to work.
+    if stdenv.targetPlatform.isMusl
+    then targetLibffi.overrideAttrs (old: { dontDisableStatic = true; })
+    else targetLibffi;
+
+  targetGmp = targetPackages.gmp or gmp;
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -101,9 +102,6 @@ let
     GhcRtsHcOpts += -fPIC
   '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
-  '' + stdenv.lib.optionalString useLLVM ''
-    GhcStage2HcOpts += -fast-llvm
-    GhcLibHcOpts += -fast-llvm
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
@@ -116,7 +114,7 @@ let
 
   # Splicer will pull out correct variations
   libDeps = platform: stdenv.lib.optional enableTerminfo [ ncurses ]
-    ++ [libffiStaticEnabled]
+    ++ [targetLibffi]
     ++ stdenv.lib.optional (!enableIntegerSimple) gmp
     ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv;
 
@@ -201,27 +199,25 @@ in let configured-src = stdenv.mkDerivation (rec {
             done
         '';
 
-        # TODO(@Ericson2314): Always pass "--target" and always prefix.
-        configurePlatforms = [ "build" "host" ]
-            ++ stdenv.lib.optional (targetPlatform != hostPlatform) "target";
+        configurePlatforms = [ "build" "host" "target" ];
         # `--with` flags for libraries needed for RTS linker
         configureFlags = [
             "--datadir=$doc/share/doc/ghc"
             "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
-        ] ++ stdenv.lib.optionals (libffiStaticEnabled != null) ["--with-system-libffi" "--with-ffi-includes=${libffiStaticEnabled.dev}/include" "--with-ffi-libraries=${libffiStaticEnabled.out}/lib"
+        ] ++ stdenv.lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
         ] ++ stdenv.lib.optional (!enableIntegerSimple) [
-            "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
+            "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
         ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
             "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
         ] ++ stdenv.lib.optionals (targetPlatform != hostPlatform) [
             "--enable-bootstrap-with-devel-snapshot"
+        ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
+            "--disable-large-address-space"
         ] ++ stdenv.lib.optionals (targetPlatform.isAarch32) [
             "CFLAGS=-fuse-ld=gold"
             "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
             "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-        ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
-            "--disable-large-address-space"
-        ];
+        ] ;
 
         outputs = [ "out" ];
         phases = [ "unpackPhase" "patchPhase" ]

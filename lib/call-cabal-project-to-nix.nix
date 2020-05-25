@@ -1,5 +1,5 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
-{ name          ? src.name or (baseNameOf src) # optional name for better error messages
+{ name          ? src.name or null # optional name for better error messages
 , src
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
 , index-sha256  ? null # The hash of the truncated hackage index-state
@@ -7,7 +7,9 @@
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , cabalProject  ? null # Cabal project file (when null uses "${src}/cabal.project")
-, ghc           ? defaults.ghc
+, compiler-nix-name ? null # Nix name of the ghc compiler as a string eg. "ghc883"
+, ghc           ? null # Deprecated in favour of `compiler-nix-name`
+, ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , nix-tools     ? defaults.nix-tools
 , hpack         ? defaults.hpack
 , cabal-install ? defaults.cabal-install
@@ -16,25 +18,49 @@
                      # If the tests and benchmarks are not needed and they
                      # causes the wrong plan to be choosen, then we can use
                      # `configureArgs = "--disable-tests --disable-benchmarks";`
+, lookupSha256  ? _: null
+                     # Use the as an alternative to adding `--sha256` comments into the
+                     # cabal.project file:
+                     #   lookupSha256 = repo:
+                     #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
+                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
+                     #       ."${repo.location}"."${repo.tag}";
+, extra-hackage-tarballs ? []
 , ...
 }@args:
-# cabal-install versions before 2.4 will generate insufficient plan information.
-assert (if (builtins.compareVersions cabal-install.version "2.4.0.0") < 0
-         then throw "cabal-install (current version: ${cabal-install.version}) needs to be at least 2.4 for plan-to-nix to work without cabal-to-nix"
-         else true);
-
-assert (if ghc.isHaskellNixCompiler or false then true
-  else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
-    + pkgs.lib.optionalString (name != null) (" for " + name)));
 
 let
+  forName = pkgs.lib.optionalString (name != null) (" for " + name);
+
+  ghc' =
+    if ghcOverride != null
+      then ghcOverride
+      else
+        if ghc != null
+          then __trace ("WARNING: A `ghc` argument was passed" + forName
+            + " this has been deprecated in favour of `compiler-nix-name`. "
+            + "Using `ghc` will break cross compilation setups, as haskell.nix can not"
+            + "pick the correct `ghc` package from the respective buildPackages. "
+            + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
+          else
+            if compiler-nix-name != null
+              then pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}"
+              else defaults.ghc;
+
+in
+  assert (if ghc'.isHaskellNixCompiler or false then true
+    else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
+      + forName));
+
+let
+  ghc = ghc';
   maybeCleanedSource =
     if haskellLib.canCleanSource src
     then haskellLib.cleanSourceWith {
       inherit src;
       filter = path: type:
         type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" "package.yaml" ]; }
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" ".freeze" "package.yaml" ]; }
     else src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
@@ -94,21 +120,38 @@ let
           (builtins.head pair)
           (builtins.elemAt pair 1))) blockLines);
 
-  fetchRepo = repo: (pkgs.fetchgit {
-    url = repo.location;
-    rev = repo.tag;
-    sha256 = repo."--sha256";
-  }) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
+  hashPath = path:
+    builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
+      "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
 
-  # Parse a source-repository-package and fetch it if it containts
-  # a line of the form
-  #   --shar256: <<SHA256>>
+  # Use pkgs.fetchgit if we have a sha256. Add comment like this
+  #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
+  # otherwise use __fetchGit.
+  fetchRepo = repo:
+    let sha256 = repo."--sha256" or (lookupSha256 repo);
+    in (if sha256 != null
+      then pkgs.fetchgit {
+          url = repo.location;
+          rev = repo.tag;
+          inherit sha256;
+        }
+      else
+        let drv = builtins.fetchGit {
+              url = repo.location;
+              ref = repo.tag;
+            };
+        in  __trace "WARNING: No sha256 found for source-repository-package ${repo.location} ${repo.tag} download may fail in restricted mode (hydra)"
+           (__trace "Consider adding `--sha256: ${hashPath drv}` to the cabal.project file or passing in a lookupSha256 argument"
+            drv)
+    ) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
+
+  # Parse a source-repository-package and fetch it if has `type: git`
   parseBlock = block:
     let
       x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
       attrs = parseBlockLines x.fst;
     in
-      if attrs."--sha256" or "" == ""
+      if attrs."type" or "" != "git"
         then {
           sourceRepo = [];
           otherText = "\nsource-repository-package\n" + block;
@@ -162,6 +205,92 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
+  # The use of a the actual GHC can cause significant problems:
+  # * For hydra to assemble a list of jobs from `components.tests` it must
+  #   first have GHC that will be used. If a patch has been applied to the
+  #   GHC to be used it must be rebuilt before the list of jobs can be assembled.
+  #   If a lot of different GHCs are being tests that can be a lot of work all
+  #   happening in the eval stage where little feedback is available.
+  # * Once the jobs are running the compilation of the GHC needed (the eval
+  #   stage already must have done it, but the outputs there are apparently
+  #   not added to the cache) happens inside the IFD part of cabalProject.
+  #   This causes a very large amount of work to be done in the IFD and our
+  #   understanding is that this can cause problems on nix and/or hydra.
+  # * When using cabalProject we cannot examine the properties of the project without
+  #   building or downloading the GHC (less of an issue as we would normally need
+  #   it soon anyway).
+  #
+  # The solution here is to capture the GHC outputs that `cabal v2-configure`
+  # requests and materialize it so that the real GHC is only needed
+  # when `checkMaterialization` is set.
+  dummy-ghc-data = pkgs.haskell-nix.materialize ({
+    sha256 = null;
+    sha256Arg = "sha256";
+    materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
+    reasonNotSafe = null;
+  } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
+    inherit checkMaterialization;
+  }) (
+  runCommand ("dummy-data-" + ghc.name) {
+    nativeBuildInputs = [ ghc ];
+  } ''
+    mkdir -p $out/ghc
+    mkdir -p $out/ghc-pkg
+    ${ghc.targetPrefix}ghc --numeric-version > $out/ghc/numeric-version
+    ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
+    ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
+    ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
+    # The order of the `ghc-pkg dump` output seems to be non
+    # deterministic so we need to sort it so that it is always
+    # the same.
+    # Sort the output by spliting it on the --- separator line,
+    # sorting it, adding the --- separators back and removing the
+    # last line (the trailing ---)
+    ${ghc.targetPrefix}ghc-pkg dump --global -v0 \
+      | grep -v /nix/store \
+      | grep -v '^abi:' \
+      | tr '\n' '\r' \
+      | sed -e 's/\r\r*/\r/g' \
+      | sed -e 's/\r$//g' \
+      | sed -e 's/\r---\r/\n/g' \
+      | sort \
+      | sed -e 's/$/\r---/g' \
+      | tr '\r' '\n' \
+      | sed -e '$ d' \
+        > $out/ghc-pkg/dump-global
+  '');
+
+  # Dummy `ghc` that uses the captured output 
+  dummy-ghc = pkgs.evalPackages.writeTextFile {
+    name = "dummy-" + ghc.name;
+    executable = true;
+    destination = "/bin/${ghc.targetPrefix}ghc";
+    text = ''
+      if [ "'$*'" == "'--numeric-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-version;
+      elif [ "'$*'" == "'--supported-languages'" ]; then cat ${dummy-ghc-data}/ghc/supported-languages;
+      elif [ "'$*'" == "'--print-global-package-db'" ]; then echo $out/dumby-db;
+      elif [ "'$*'" == "'--info'" ]; then cat ${dummy-ghc-data}/ghc/info;
+      elif [ "'$*'" == "'--print-libdir'" ]; then echo ${dummy-ghc-data}/ghc/libdir;
+      else
+        false
+      fi
+    '';
+  };
+
+  # Dummy `ghc-pkg` that uses the captured output 
+  dummy-ghc-pkg = pkgs.evalPackages.writeTextFile {
+    name = "dummy-pkg-" + ghc.name;
+    executable = true;
+    destination = "/bin/${ghc.targetPrefix}ghc-pkg";
+    text = ''
+      if [ "'$*'" == "'--version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/version;
+      elif [ "'$*'" == "'dump --global -v0'" ]; then cat ${dummy-ghc-data}/ghc-pkg/dump-global;
+      else
+        false
+      fi
+    '';
+  };
+
   plan-nix = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
@@ -173,8 +302,8 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools ghc hpack cabal-install pkgs.rsync pkgs.git ];
+  }) (pkgs.evalPackages.runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install pkgs.evalPackages.rsync ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
@@ -201,7 +330,7 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
-      inherit cabal-install nix-tools;
+      inherit cabal-install nix-tools extra-hackage-tarballs;
       index-state =
         builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
           index-state-found;
@@ -241,7 +370,7 @@ let
       chmod +w -R $out/.source-repository-packages
       rm -rf $out/.source-repository-packages
     fi
-    find $out -type f ! -name '*.nix' -delete
+    find $out \( -type f -or -type l \) ! -name '*.nix' -delete
     # Remove empty dirs
     find $out -type d -empty -delete
 
