@@ -32,9 +32,8 @@ with haskellLib;
     lib.optional c.buildable c ++ acc) [];
 
   componentPrefix = {
-    # Are all of these right?
     sublibs = "lib";
-    foreignlibs = "foreignlib";
+    foreignlibs = "flib";
     exes = "exe";
     tests = "test";
     benchmarks = "bench";
