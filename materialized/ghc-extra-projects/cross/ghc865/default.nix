@@ -4,7 +4,6 @@
       packages = {
         "binary".revision = (((hackage."binary")."0.8.8.0").revisions).default;
         "ghc-prim".revision = (((hackage."ghc-prim")."0.5.3").revisions).default;
-        "unix".revision = (((hackage."unix")."2.7.2.2").revisions).default;
         "ghc-heap".revision = (((hackage."ghc-heap")."8.6.5").revisions).default;
         "mtl".revision = (((hackage."mtl")."2.2.2").revisions).default;
         "rts".revision = (((hackage."rts")."1.0").revisions).default;
@@ -58,6 +57,7 @@
         bytestring = ./.plan.nix/bytestring.nix;
         remote-iserv = ./.plan.nix/remote-iserv.nix;
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
+        unix = ./.plan.nix/unix.nix;
         libiserv = ./.plan.nix/libiserv.nix;
         ghc-boot = ./.plan.nix/ghc-boot.nix;
         ghci = ./.plan.nix/ghci.nix;
@@ -82,6 +82,7 @@
             };
           "remote-iserv" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
+          "unix" = { flags = {}; };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
           "ghc-boot" = { flags = {}; };
           "ghci" = { flags = { "ghci" = lib.mkOverride 900 true; }; };

@@ -56,6 +56,7 @@
         bytestring = ./.plan.nix/bytestring.nix;
         remote-iserv = ./.plan.nix/remote-iserv.nix;
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
+        unix = ./.plan.nix/unix.nix;
         libiserv = ./.plan.nix/libiserv.nix;
         ghc-boot = ./.plan.nix/ghc-boot.nix;
         ghci = ./.plan.nix/ghci.nix;
@@ -82,6 +83,7 @@
             };
           "remote-iserv" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
+          "unix" = { flags = {}; };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
           "ghc-boot" = { flags = {}; };
           "ghci" = { flags = { "ghci" = lib.mkOverride 900 true; }; };
