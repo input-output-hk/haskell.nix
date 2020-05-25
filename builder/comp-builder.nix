@@ -34,7 +34,10 @@ let self =
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared && !haskellLib.isCrossHost
+, enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
+               # on x86 we'll use shared libraries, even with musl m(
+               # ghc's internal linker seems to be broken on x86.
+               && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
