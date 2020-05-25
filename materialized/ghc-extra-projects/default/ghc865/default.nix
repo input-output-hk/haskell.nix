@@ -21,7 +21,7 @@
         "happy".revision = (((hackage."happy")."1.19.12").revisions).default;
         "happy".flags.small_base = true;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
-        "process".revision = (((hackage."process")."1.6.8.2").revisions).default;
+        "process".revision = (((hackage."process")."1.6.9.0").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.6.5").revisions).default;
         "array".revision = (((hackage."array")."0.5.3.0").revisions).default;

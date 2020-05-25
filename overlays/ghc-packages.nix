@@ -157,7 +157,7 @@ in rec {
           then materializedPath
           else null;
       ghcOverride = final.buildPackages.haskell-nix.compiler.${ghcName};
-      configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
+      configureArgs = "--disable-tests --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
 
