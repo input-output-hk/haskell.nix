@@ -6,7 +6,8 @@
 , plan-sha256   ? null # The hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation)
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
-, cabalProject  ? null # Cabal project file (when null uses "${src}/cabal.project")
+, cabalProject  ? null # Contents of cabal.project file (when null uses "${src}/cabal.project")
+, cabalProjectLocal ? null # Contents of cabal.project.local file (when null uses "${src}/cabal.project.local")
 , compiler-nix-name ? null # Nix name of the ghc compiler as a string eg. "ghc883"
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
@@ -63,7 +64,7 @@ let
         src = src.origSrc;
         filter = path: type: src.filter path type && (
           type == "directory" ||
-          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" ".freeze" "package.yaml" ]); })
+          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "${subDir'}/cabal.project.freeze" "package.yaml" ]); })
       else src.origSrc or src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
@@ -72,11 +73,19 @@ let
   rawCabalProject =
     let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
     in if cabalProject != null
-    then cabalProject
+    then cabalProject + rawCabalProjectLocal
     else
       if ((builtins.readDir origSrcDir)."cabal.project" or "") == "regular"
-        then builtins.readFile (origSrcDir + "/cabal.project")
+        then builtins.readFile (origSrcDir + "/cabal.project") + rawCabalProjectLocal
         else null;
+  rawCabalProjectLocal =
+    let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
+    in if cabalProjectLocal != null
+    then cabalProjectLocal
+    else
+      if ((builtins.readDir origSrcDir)."cabal.project.local" or "") == "regular"
+        then builtins.readFile (origSrcDir + "/cabal.project.local")
+        else "";
 
   # Look for a index-state: field in the cabal.project file
   parseIndexState = rawCabalProject:
