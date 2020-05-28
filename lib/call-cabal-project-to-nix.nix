@@ -54,20 +54,23 @@ in
 
 let
   ghc = ghc';
+  subDir' = src.origSubDir or "";
+  subDir = pkgs.lib.strings.removePrefix "/" subDir';
   maybeCleanedSource =
     if haskellLib.canCleanSource src
-    then haskellLib.cleanSourceWith {
-      inherit src;
-      filter = path: type:
-        type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" ".freeze" "package.yaml" ]; }
-    else src;
+      then (haskellLib.cleanSourceWith {
+        name = src.name + "-root-cabal-files";
+        src = src.origSrc;
+        filter = path: type: src.filter path type && (
+          type == "directory" ||
+          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" ".freeze" "package.yaml" ]); })
+      else src.origSrc or src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
   # access to the store is restricted.  If origSrc was already in the store
   # you can pass the project in as a string.
   rawCabalProject =
-    let origSrcDir = maybeCleanedSource.origSrcSubDir or maybeCleanedSource;
+    let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
     in if cabalProject != null
     then cabalProject
     else
@@ -333,12 +336,13 @@ let
     fi
     cp -r ${maybeCleanedSource}/* .
     chmod +w -R .
-    ${fixedProject.makeFixedProjectFile}
     # warning: this may not generate the proper cabal file.
     # hpack allows globbing, and turns that into module lists
     # without the source available (we cleaneSourceWith'd it),
     # this may not produce the right result.
     find . -name package.yaml -exec hpack "{}" \;
+    ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
+    ${fixedProject.makeFixedProjectFile}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
@@ -371,24 +375,24 @@ let
 
     # make sure the path's in the plan.json are relative to $out instead of $tmp
     # this is necessary so that plan-to-nix relative path logic can work.
-    substituteInPlace $tmp/dist-newstyle/cache/plan.json --replace "$tmp" "$out"
+    substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace "$tmp" "$out"
 
     # run `plan-to-nix` in $out.  This should produce files right there with the
     # proper relative paths.
-    (cd $out && plan-to-nix --full --plan-json $tmp/dist-newstyle/cache/plan.json -o .)
+    (cd $out${subDir'} && plan-to-nix --full --plan-json $tmp${subDir'}/dist-newstyle/cache/plan.json -o .)
 
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly
     # without affecting the nix).
-    if [ -d $out/.source-repository-packages ]; then
-      chmod +w -R $out/.source-repository-packages
-      rm -rf $out/.source-repository-packages
+    if [ -d $out${subDir'}/.source-repository-packages ]; then
+      chmod +w -R $out${subDir'}/.source-repository-packages
+      rm -rf $out${subDir'}/.source-repository-packages
     fi
     find $out \( -type f -or -type l \) ! -name '*.nix' -delete
     # Remove empty dirs
     find $out -type d -empty -delete
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
-    mv $out/pkgs.nix $out/default.nix
+    mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
   '');
 in { projectNix = plan-nix; inherit src; inherit (fixedProject) sourceRepos; }
