@@ -223,6 +223,53 @@ in a change to the <code>.cabal</code> file the test will still be built the sam
     filter = ...
 };
 </code></pre>
+
+<h2 id="multiple-git-repositories-with-cleangits">Multiple Git Repositories with cleanGits<a class="headerlink" href="#multiple-git-repositories-with-cleangits" title="Permanent link">&para;</a></h2>
+<p>Some times it is handy to temporarily use a relative path between git
+repos.  If the repos are individually cleaned this is not possible
+(since the cleaned version of one repo will never include the files
+of the other).</p>
+<p>There are 3 options:</p>
+<ul>
+<li>
+<p>We could <code>symlinkJoin</code> the cleaned directories together, but the
+  result could not be cleaned and any change would to either
+  repo would result in a rebuild of everything.</p>
+</li>
+<li>
+<p>We could add one repo to the other as a submodule,
+  but adding and then removing a submodule is a pain and it does not
+  work well if you have more than one repo that needs to share the
+  submodule.</p>
+</li>
+<li>
+<p>We could add a <code>source-repository-package</code> but then we would have
+  to commit each change before testing.</p>
+</li>
+</ul>
+<p><code>cleanGits</code> allows us to specify a root directory and any number of
+sub directories containing git repos.</p>
+<p>For example if <code>repoA</code> and <code>repoB</code> are two git repos with
+cabal packages and want to use the <code>repoB</code> package when building
+<code>repoA.  First we can add</code>../repoB<code>to</code>repoA/cabal.project`:</p>
+<pre><code>packages:
+  ./.
+  ../repoB
+</code></pre>
+
+<p>Then in <code>repoA/default.nix</code> we can use:</p>
+<pre><code>haskell-nix.cabalProject {
+  src = haskell-nix.haskellLib.cleanSourceWith {
+    src = haskell-nix.haskellLib.cleanGits {
+      name = &quot;root&quot;;
+      src = ../.;    # Parent dir that contains repoA and repoB
+      gitDirs = [ &quot;repoA&quot; &quot;repoB&quot; ];
+    };
+    subDir = &quot;repoA&quot;;       # Where to look for the `cabal.project`
+    includeSiblings = true; # Tells it not to exclude `repoB` dir
+  };
+}
+</code></pre>
               
             </div>
           </div>
