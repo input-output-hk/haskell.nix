@@ -40,7 +40,7 @@ let
   } (''
     mkdir -p $out${subDir'}
   '' + pkgs.lib.optionalString (cache != null) ''
-    cp ${mkCacheFile cache}/.stack-to-nix.cache* $out
+    cp ${mkCacheFile cache}/.stack-to-nix.cache* $out${subDir'}
   '' + ''
     (cd $out${subDir'} && stack-to-nix ${stackToNixArgs})
 
