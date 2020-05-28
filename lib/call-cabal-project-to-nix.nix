@@ -174,7 +174,7 @@ let
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map parseBlock (pkgs.lib.lists.drop 1 blocks);
       sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
-      otherText = pkgs.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
+      otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
     in {
