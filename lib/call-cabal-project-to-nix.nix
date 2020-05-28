@@ -81,10 +81,18 @@ let
   rawCabalProjectLocal =
     let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
     in if cabalProjectLocal != null
-    then cabalProjectLocal
+    then ''
+
+      -- Added from cabalProjectLocal argument to cabalProject
+      ${cabalProjectLocal}
+    ''
     else
       if ((builtins.readDir origSrcDir)."cabal.project.local" or "") == "regular"
-        then builtins.readFile (origSrcDir + "/cabal.project.local")
+        then ''
+        
+          -- Added from cabal.project.local file
+          ${builtins.readFile (origSrcDir + "/cabal.project.local")}
+        ''
         else "";
 
   # Look for a index-state: field in the cabal.project file
