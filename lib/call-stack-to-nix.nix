@@ -16,6 +16,7 @@
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , ... }:
 let
+  subDir' = src.origSubDir or "";
   stackToNixArgs = builtins.concatStringsSep " " [
     "--full"
     "--stack-yaml=${src}/${if stackYaml == null then "stack.yaml" else stackYaml}"
@@ -37,11 +38,11 @@ let
     LC_ALL = "en_US.UTF-8";
     preferLocalBuild = false;
   } (''
-    mkdir -p $out
+    mkdir -p $out${subDir'}
   '' + pkgs.lib.optionalString (cache != null) ''
     cp ${mkCacheFile cache}/.stack-to-nix.cache* $out
   '' + ''
-    (cd $out && stack-to-nix ${stackToNixArgs})
+    (cd $out${subDir'} && stack-to-nix ${stackToNixArgs})
 
     # We need to strip out any references to $src, as those won't
     # be accessable in restricted mode.
@@ -50,6 +51,6 @@ let
     done
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
-    mv $out/pkgs.nix $out/default.nix
+    mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
   ''));
 in { projectNix = stack; inherit src; sourceRepos = []; }
