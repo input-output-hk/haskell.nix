@@ -35,6 +35,10 @@
   #             It will be as if `src = src + "/${subDir}` and filters
   #             already applied to `src` will be respected.
   #
+  #   includeSiblings: By default the siblings trees of `subDir` are excluded.
+  #             In some cases it is useful to include these so that
+  #             relative references to those siblings will work.
+  #
   #   name:     Optional name to use as part of the store path.
   #             If you do not provide a `name` it wil be derived
   #             from the `subDir`. You should provide `name` or
@@ -47,7 +51,7 @@
   #             the message to the use more meaningful.
   #
   cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null
-      , caller ? "cleanSourceWith" }:
+      , caller ? "cleanSourceWith", includeSiblings ? false }:
     let
       subDir' = if subDir == "" then "" else "/" + subDir;
       subDirName = __replaceStrings ["/"] ["-"] subDir;
@@ -61,12 +65,16 @@
         then path: type: src.filter path type
         else path: type: true;
       filter' = path: type:
-        # Include parent paths based on the parent filter
-           (lib.strings.hasPrefix (path + "/") (origSrcSubDir + "/")
-            && parentFilter path type)
-        # Children only if both filters return true
-        || (lib.strings.hasPrefix (origSrcSubDir + "/") path
-            && (filter path type && parentFilter path type));
+        # Respect the parent filter
+        parentFilter path type && (
+           # Must include parent paths of the subdir.
+           (lib.strings.hasPrefix (path + "/") (origSrcSubDir + "/"))
+           ||
+           # Everything else is either the child tree or sibling tree.
+           ((includeSiblings || lib.strings.hasPrefix (origSrcSubDir + "/") path)
+             && filter path type # Use the filter function to decide if we need it
+           )
+        );
       name' = if name != null
         then name
         else

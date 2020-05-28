@@ -38,3 +38,53 @@ components.tests.test.src = haskell-nix.haskellLib.cleanSourceWith {
 };
 ```
 
+## Multiple Git Repositories with cleanGits
+
+Some times it is handy to temporarily use a relative path between git
+repos.  If the repos are individually cleaned this is not possible
+(since the cleaned version of one repo will never include the files
+of the other).
+
+There are 3 options:
+
+* We could `symlinkJoin` the cleaned directories together, but the
+  result could not be cleaned and any change would to either
+  repo would result in a rebuild of everything.
+
+* We could add one repo to the other as a submodule,
+  but adding and then removing a submodule is a pain and it does not
+  work well if you have more than one repo that needs to share the
+  submodule.
+
+* We could add a `source-repository-package` but then we would have
+  to commit each change before testing.
+
+`cleanGits` allows us to specify a root directory and any number of
+sub directories containing git repos.
+
+For example if `repoA` and `repoB` are two git repos with
+cabal packages and want to use the `repoB` package when building
+`repoA.  First we can add `../repoB` to `repoA/cabal.project`:
+
+```
+packages:
+  ./.
+  ../repoB
+```
+
+Then in `repoA/default.nix` we can use:
+
+```
+haskell-nix.cabalProject {
+  src = haskell-nix.haskellLib.cleanSourceWith {
+    src = haskell-nix.haskellLib.cleanGits {
+      name = "root";
+      src = ../.;    # Parent dir that contains repoA and repoB
+      gitDirs = [ "repoA" "repoB" ];
+    };
+    subDir = "repoA";       # Where to look for the `cabal.project`
+    includeSiblings = true; # Tells it not to exclude `repoB` dir
+  };
+}
+```
+
