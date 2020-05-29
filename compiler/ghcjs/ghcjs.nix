@@ -88,7 +88,7 @@ let
           wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
           wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
 
-          env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin -v 1
+          env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j4 --with-ghcjs-bin $out/bin
         '');
       # We hard code -j1 as a temporary workaround for
       # https://github.com/ghcjs/ghcjs/issues/654
