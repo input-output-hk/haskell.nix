@@ -111,5 +111,5 @@ Haskell packages in Nix. It depends on other repos, which are:
 
 ## IRC Channel
 
-Join the [#haskell.nix]([https://www.irccloud.com/invite?channel=%23haskell.nix&hostname=irc.freenode.net&port=6697&ssl=1]) channel on [irc.freenode.net](https://freenode.net/]) to get help or discuss
+Join the [#haskell.nix](https://www.irccloud.com/invite?channel=%23haskell.nix&hostname=irc.freenode.net&port=6697&ssl=1) channel on [irc.freenode.net](https://freenode.net/) to get help or discuss
 the development of `haskell.nix` and `nix-tools`.
