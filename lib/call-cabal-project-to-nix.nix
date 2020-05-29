@@ -6,8 +6,10 @@
 , plan-sha256   ? null # The hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation)
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
+, cabalProjectFileName ? "cabal.project"
 , cabalProject  ? null # Contents of cabal.project file (when null uses "${src}/cabal.project")
-, cabalProjectLocal ? null # Contents of cabal.project.local file (when null uses "${src}/cabal.project.local")
+, cabalProjectLocal ? null  # Contents of cabal.project.local file (when null uses "${src}/cabal.project.local")
+, cabalProjectFreeze ? null # Contents of cabal.project.freeze file (when null uses "${src}/cabal.project.freeze")
 , compiler-nix-name ? null # Nix name of the ghc compiler as a string eg. "ghc883"
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
@@ -64,7 +66,7 @@ let
         src = src.origSrc;
         filter = path: type: src.filter path type && (
           type == "directory" ||
-          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "${subDir'}/cabal.project.freeze" "package.yaml" ]); })
+          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); })
       else src.origSrc or src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
@@ -75,8 +77,8 @@ let
     in if cabalProject != null
     then cabalProject + rawCabalProjectLocal
     else
-      if ((builtins.readDir origSrcDir)."cabal.project" or "") == "regular"
-        then builtins.readFile (origSrcDir + "/cabal.project") + rawCabalProjectLocal
+      if ((builtins.readDir origSrcDir)."${cabalProjectFileName}" or "") == "regular"
+        then builtins.readFile (origSrcDir + "/${cabalProjectFileName}") + rawCabalProjectLocal
         else null;
   rawCabalProjectLocal =
     let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
@@ -87,13 +89,21 @@ let
       ${cabalProjectLocal}
     ''
     else
-      if ((builtins.readDir origSrcDir)."cabal.project.local" or "") == "regular"
+      if ((builtins.readDir origSrcDir)."${cabalProjectFileName}.local" or "") == "regular"
         then ''
         
-          -- Added from cabal.project.local file
-          ${builtins.readFile (origSrcDir + "/cabal.project.local")}
+          -- Added from ${cabalProjectFileName}.local file
+          ${builtins.readFile (origSrcDir + "/${cabalProjectFileName}.local")}
         ''
         else "";
+  rawCabalProjectFreeze =
+    let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
+    in if cabalProjectFreeze != null
+    then cabalProjectFreeze
+    else
+      if ((builtins.readDir origSrcDir)."${cabalProjectFileName}.freeze" or "") == "regular"
+        then builtins.readFile (origSrcDir + "/${cabalProjectFileName}.freeze")
+        else null;
 
   # Look for a index-state: field in the cabal.project file
   parseIndexState = rawCabalProject:
@@ -124,7 +134,7 @@ let
 
 in
   assert (if index-state-found == null
-    then throw "No index state passed and none found in cabal.project" else true);
+    then throw "No index state passed and none found in ${cabalProjectFileName}" else true);
   assert (if index-sha256-found == null
     then throw "provided sha256 for index-state ${index-state-found} is null!" else true);
 
@@ -161,7 +171,7 @@ let
               ref = repo.tag;
             };
         in  __trace "WARNING: No sha256 found for source-repository-package ${repo.location} ${repo.tag} download may fail in restricted mode (hydra)"
-           (__trace "Consider adding `--sha256: ${hashPath drv}` to the cabal.project file or passing in a lookupSha256 argument"
+           (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
             drv)
     ) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
 
@@ -348,6 +358,10 @@ let
     find . -name package.yaml -exec hpack "{}" \;
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${fixedProject.makeFixedProjectFile}
+    ${pkgs.lib.optionalString (rawCabalProjectFreeze != null) ''
+      cp ${pkgs.evalPackages.writeText "cabal.project.freeze" rawCabalProjectFreeze} \
+        cabal.project.freeze
+    };
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
