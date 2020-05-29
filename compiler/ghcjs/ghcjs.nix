@@ -88,7 +88,7 @@ let
           done
           } &
           # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
-          env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock
+          env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock \
             || (echo failed > $TMP/done; false)
           echo ok > $TMP/done
         ''
