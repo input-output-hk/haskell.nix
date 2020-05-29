@@ -76,8 +76,15 @@ let
           wrapProgram $out/bin/haddock --add-flags "-B$out/lib"
           wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
 
+          # Avoid timeouts while unix package runs hsc2hs (it does not print anything
+          # for more than 900 seconds).
+          { for n in {1..20}; do sleep 600; echo Keep alive $n; done } &
           # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
-          env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j4 --with-emsdk=${project.emsdk}
+          { env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j4 --with-emsdk=${project.emsdk}; } &
+          # Wait for one process to exit
+          wait -n
+          # Kill the other
+          pkill -P $$          
         ''
         else ''
           mkdir -p $out/bin
