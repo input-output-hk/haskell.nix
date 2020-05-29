@@ -80,7 +80,7 @@ let
           # for more than 900 seconds).
           { for n in {1..20}; do sleep 600; echo Keep alive $n; done } &
           # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
-          { env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j4 --with-emsdk=${project.emsdk}; } &
+          { env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j4 --with-emsdk=${project.emsdk} --no-prof --no-haddock; } &
           # Wait for one process to exit
           wait -n
           # Kill the other
