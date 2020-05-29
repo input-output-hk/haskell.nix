@@ -252,6 +252,11 @@ which needs a patch to build.</p>
 package set. Your project will have a <a href="../../reference/library/#mkstackpkgset"><code>mkStackPkgSet</code></a> or
 <a href="../../reference/library/#mkcabalprojectpkgset"><code>mkCabalProjectPkgSet</code></a>. It is there where you must add
 <a href="../../reference/modules/">module options</a> for setting compiler flags, adding patches, and so on.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that <code>haskell.nix</code> will automatically use <code>qemu</code> to emulate the target
+when necessary to run Template Haskell splices.</p>
+</div>
 <h3 id="static-executables-with-musl-libc">Static executables with Musl libc<a class="headerlink" href="#static-executables-with-musl-libc" title="Permanent link">&para;</a></h3>
 <p>Another application of cross-compiling is to produce fully static
 binaries for Linux. For information about how to do that with the
