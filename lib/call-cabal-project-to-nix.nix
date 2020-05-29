@@ -361,7 +361,7 @@ let
     ${pkgs.lib.optionalString (rawCabalProjectFreeze != null) ''
       cp ${pkgs.evalPackages.writeText "cabal.project.freeze" rawCabalProjectFreeze} \
         cabal.project.freeze
-    };
+    ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
