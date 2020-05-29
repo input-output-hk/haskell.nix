@@ -47,7 +47,8 @@ let
       name = "ghcjs-${ghcVersion}";
       src = project.configured-src;
 
-      nativeBuildInputs = project.bootInputs;
+      nativeBuildInputs = project.bootInputs
+       ++ pkgs.lib.optional isGhcjs88 pkgs.buildPackages.procps;
       passthru = {
         inherit all-ghcjs bundled-ghcjs project;
         inherit (project) configured-src;
