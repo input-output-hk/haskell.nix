@@ -77,7 +77,7 @@ let
           wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
 
           # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
-          env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk}
+          env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j4 --with-emsdk=${project.emsdk}
         ''
         else ''
           mkdir -p $out/bin
