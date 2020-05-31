@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Architecture - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Motivation - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Architecture";
-    var mkdocs_page_input_path = "architecture.md";
+    var mkdocs_page_name = "Motivation";
+    var mkdocs_page_input_path = "motivation.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -53,32 +53,38 @@
     <a class="" href="..">Introduction</a>
 	    </li>
           
-            <li class="toctree-l1">
-		
-    <a class="" href="../motivation/">Motivation</a>
-	    </li>
-          
             <li class="toctree-l1 current">
 		
-    <a class="current" href="./">Architecture</a>
+    <a class="current" href="./">Motivation</a>
     <ul class="subnav">
             
-    <li class="toctree-l2"><a href="#architecture">Architecture</a></li>
+    <li class="toctree-l2"><a href="#motivation">Motivation</a></li>
     
         <ul>
         
-            <li><a class="toctree-l3" href="#nix-tools">nix-tools</a></li>
+            <li><a class="toctree-l3" href="#cross-compilation">Cross compilation</a></li>
         
-            <li><a class="toctree-l3" href="#haskellnix">haskell.nix</a></li>
+            <li><a class="toctree-l3" href="#package-sets">Package sets</a></li>
         
-            <li><a class="toctree-l3" href="#hackagenix">hackage.nix</a></li>
+            <li><a class="toctree-l3" href="#per-component-level-control">Per component level control</a></li>
         
-            <li><a class="toctree-l3" href="#stackagenix">stackage.nix</a></li>
+            <li><a class="toctree-l3" href="#cyclic-dependencies">Cyclic dependencies</a></li>
+        
+            <li><a class="toctree-l3" href="#build-times">Build times</a></li>
+        
+            <li><a class="toctree-l3" href="#more-logic-in-nix">More logic in nix</a></li>
+        
+            <li><a class="toctree-l3" href="#decoupling">Decoupling</a></li>
         
         </ul>
     
 
     </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -201,10 +207,10 @@
     
       
     
-    <li>Architecture</li>
+    <li>Motivation</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/architecture.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/motivation.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -214,64 +220,69 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
-<p>There are multiple components that play a part in the haskell.nix
-infrastructure.  These are <code>nix-tools</code>, <code>haskell.nix</code>, <code>hackage.nix</code>,
-and <code>stackage.nix</code>.</p>
-<pre><code class="no-highlight">                                             .-------------.     .-------------.
-.- nix-tools ------.                         | haskell.nix |  .- | hackage.nix |
-| .--------------. |   .----------------.    '-------------'  |  '-------------'
-| | stack-to-nix |---&gt; | stack-pkgs.nix |-.         |         |         |
-| '--------------' |   '----------------' |         v         |         v
-| .-------------.  |   .----------.       '--&gt; .----------. &lt;-'  .--------------.
-| | plan-to-nix |----&gt; | plan.nix |------.---&gt; | pkgs.nix | &lt;--- | stackage.nix |
-| '-------------'  |   '----------'      |     '----------'      '--------------'
-| .--------------. |   .--------------.  |          |
-| | cabal-to-nix |---&gt; | $package.nix |--'          v
-| '--------------' |   '--------------'       .-------------.
-'------------------'                          | default.nix |
-                                              '-------------'
-                                                    |
-                                                    v
-                                              .-------------.
-                                              | release.nix |
-                                              '-------------'
-</code></pre>
-
-<p>haskell.nix diagram</p>
-<h2 id="nix-tools"><a href="https://github.com/input-output-hk/nix-tools">nix-tools</a><a class="headerlink" href="#nix-tools" title="Permanent link">&para;</a></h2>
-<p>nix-tools is a Haskell package that provides the following tools:</p>
-<ul>
-<li>
-<p><code>cabal-to-nix</code>: a <code>.cabal</code> to <code>.nix</code> transformer that retains
-  conditional expressions.</p>
-</li>
-<li>
-<p><code>stack-to-nix</code>: a <code>stack.yaml</code> to <code>.nix</code> transformer that will read
-  in a <code>stack.yaml</code> expression an generate a <code>pkgs.nix</code> file suited for
-  use with <code>haskell.nix</code>.</p>
-</li>
-<li>
-<p><code>plan-to-nix</code>: a <code>plan.json</code> to <code>.nix</code> transformer that will read in
-  a <code>plan.json</code> file and generate a <code>pkgs.nix</code> file suited for use
-  with <code>haskell.nix</code>.</p>
-</li>
-</ul>
-<p>as well as a few other tools used to generate <code>hackage.nix</code> and <code>stackage.nix</code>.</p>
-<h2 id="haskellnix"><a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a><a class="headerlink" href="#haskellnix" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> is the runtime system for this Haskell infrastructure.
-It contains the component builder, as well as the system package and
-license mapping.  Without haskell.nix the expressions generated by
-either of the <code>nix-tools</code> tools make little sense on their own.</p>
-<h2 id="hackagenix"><a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a><a class="headerlink" href="#hackagenix" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> provides all cabal expressions from hackage as nix
-expressions.  It is periodically updated to keep in sync with the set
-of packages available on hackage.</p>
-<h2 id="stackagenix"><a href="https://github.com/input-output-hk/stackage.nix">stackage.nix</a><a class="headerlink" href="#stackagenix" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/input-output-hk/stackage.nix">stackage.nix</a> is similar to hackage.nix but provides all stackage
-snapshots (lts, and nightly) as nix expressions.  It naturally depends
-on hackage.nix to resolve package names, versions and revisions to the
-repsective packages from hackage.nix.</p>
+                <h1 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h1>
+<p>Why do we need another Haskell infrastructure for Nix?  </p>
+<p>Doesn't nixpkgs
+provide a sufficiently good Haskell infrastructure already? </p>
+<p>Problems with
+the nixpkgs haskell infrastructure are covered in the following sections:</p>
+<h2 id="cross-compilation">Cross compilation<a class="headerlink" href="#cross-compilation" title="Permanent link">&para;</a></h2>
+<p><code>nixpkgs</code> has quite good support for cross compilation, however the
+Haskell infrastructure suffers from the fact that it heavily relies on
+the <code>cabal2nix</code> tool.  <code>cabal2nix</code> (as well as tools that depend on it
+like <code>stack2nix</code>) flattens the <code>.cabal</code> file at conversion time to a
+given os/arch/flags configuration.  Thus to make cross compilation
+work with <code>cabal2nix</code> you will have to generate a separate <code>nix</code>
+expression for each configuration.  This becomes a major maintenance
+burden over time.  Therefore the tooling that translates cabal files
+into nix-expressions for use with Haskell.nix retains the full
+conditional tree from the cabal file and exposes it to <code>nix</code>.  In
+addition it will also expose the <code>build-type</code> value, which allows us
+to cache the <code>Setup.hs</code> for build-type simple and not have to rebuild
+it every time.</p>
+<h2 id="package-sets">Package sets<a class="headerlink" href="#package-sets" title="Permanent link">&para;</a></h2>
+<p>We often rely on either package sets as provided by stackage or
+computed by cabal.  <code>nixpkgs</code> provides its own curated package set
+which might or might not work for the projects we work on.
+<code>stack2nix</code> tries to solve this issue, here we go one step further and
+provide the infrastructure to allow any form of package set.</p>
+<h2 id="per-component-level-control">Per component level control<a class="headerlink" href="#per-component-level-control" title="Permanent link">&para;</a></h2>
+<p>The Haskell builder in <code>nixpkgs</code> provides control over executables and
+libraries, to build a specific executable only however is rather
+tricky to do.  This also leads to the cyclic dependencies issue.</p>
+<h2 id="cyclic-dependencies">Cyclic dependencies<a class="headerlink" href="#cyclic-dependencies" title="Permanent link">&para;</a></h2>
+<p>The Haskell builder in <code>nixpkgs</code> exposes packages at the
+package level. If packages mutually depend on each other through tests
+and libraries, this leads to cyclic dependencies that nix can't resolve. By
+exposing the components to nix as separate derivations this will only
+occur if you have mutually dependent components.</p>
+<h2 id="build-times">Build times<a class="headerlink" href="#build-times" title="Permanent link">&para;</a></h2>
+<p>The Haskell builder in nixpkgs builds a package sequentially, first the
+library then the executables and finally the tests.  It then executes
+the tests before the package is considered done.  The upshot of this
+is that packages are only considered done if the test-suites
+passed.  The downside is that if you have to compile multiple packages
+the likelihood of them failing is low, you have unnecessarily
+serialized your build.  In a more aggressive setting libraries could
+start building as early as their dependent libraries are built.  Of
+course they will have to be invalidated later should the test-suites
+of their dependencies fail, but this way we can make use of parallel
+building.  In an ideal scenario this will reduce build times close to
+the optimum.</p>
+<h2 id="more-logic-in-nix">More logic in nix<a class="headerlink" href="#more-logic-in-nix" title="Permanent link">&para;</a></h2>
+<p>The <code>cabal2nix</code> tool has a resolver that resolves system dependencies
+and licenses to values in <code>nixpkgs</code>.  This logic ends up being a simple
+dictionary lookup and therefore can be a simple nix expression. This also
+offloads some of the work the cabal to nix translation tool needs to
+do into nix, and as such if changes are necessary (or needed to be
+performed ad hoc) there is no need to rebuild the conversion tool and
+subsequently mark every derived expression as out of date.</p>
+<h2 id="decoupling">Decoupling<a class="headerlink" href="#decoupling" title="Permanent link">&para;</a></h2>
+<p>Finally, by treating Haskell.nix and nixpkgs as separate entities we
+can decouple the Haskell packages and infrastructure from the nixpkgs
+package set, and rely on it to provide us with system packages while
+staying up to date with Haskell packages from hackage while retaining
+a stable (or known to be good) nixpkgs revision.</p>
               
             </div>
           </div>
@@ -279,10 +290,10 @@ repsective packages from hackage.nix.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../user-guide/" class="btn btn-neutral float-right" title="Getting Started">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../architecture/" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../motivation/" class="btn btn-neutral" title="Motivation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href=".." class="btn btn-neutral" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -310,10 +321,10 @@ repsective packages from hackage.nix.</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../motivation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../user-guide/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../architecture/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
