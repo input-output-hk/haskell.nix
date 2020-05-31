@@ -16,6 +16,7 @@ repo_url: https://github.com/input-output-hk/haskell.nix
 permalink: true
 markdown_extensions:
   - admonition
+  - footnotes
   - toc:
       permalink: true
 
@@ -23,9 +24,10 @@ markdown_extensions:
 # right now is 0.17.5
 pages:
   - 'Introduction': index.md
+  - 'Motivation': motivation.md
   - 'Architecture': architecture.md
+  - 'Getting Started': user-guide.md
   - 'User Guide':
-    - 'General': user-guide.md
     - 'Creating Nix builds for your projects': user-guide/projects.md
     - 'Stack Projects': user-guide/stack-projects.md
     - 'Cabal Projects': user-guide/cabal-projects.md
