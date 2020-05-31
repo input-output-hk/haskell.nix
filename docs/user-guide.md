@@ -49,7 +49,7 @@ produce derivations that we can `nix build`.
 To build the latest `nix-tools` and store the result at `./nt`, run:
 
 ```bash
-nix build '(with import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs; haskell-nix.nix-tools)' --out-link nt
+nix build 'let haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}; in (import haskellNix.sources.nixpkgs-2003 haskellNix.nixpkgsArgs).haskell-nix.nix-tools' --out-link nt
 ```
 
 If you would like to then install `nix-tools` into your profile, run:
@@ -75,7 +75,7 @@ nix build -f . haskell-nix.nix-tools --out-link nt
 
 CI pushes to [cachix](https://cachix.org) so you can benefit from the cache if
 you pin a combination of `haskell.nix` and `nixpkgs` built by CI. You'll need
-to configure the [nix-tools cachix](https://nix-tools.cachix.org) as a
+to configure the [iohk cachix](https://iohk.cachix.org) as a
 `substituter` for `nix` and add the public key found at the url to
 `trusted-public-keys`.
 
