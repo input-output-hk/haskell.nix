@@ -239,6 +239,7 @@ let
   } ''
     mkdir -p $out/ghc
     mkdir -p $out/ghc-pkg
+    ${ghc.targetPrefix}ghc --version > $out/ghc/version
     ${ghc.targetPrefix}ghc --numeric-version > $out/ghc/numeric-version
     ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
     ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
@@ -269,14 +270,32 @@ let
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc";
     text = ''
-      if [ "'$*'" == "'--numeric-version'" ]; then cat ${dummy-ghc-data}/ghc/numeric-version;
-      elif [ "'$*'" == "'--supported-languages'" ]; then cat ${dummy-ghc-data}/ghc/supported-languages;
-      elif [ "'$*'" == "'--print-global-package-db'" ]; then echo $out/dumby-db;
-      elif [ "'$*'" == "'--info'" ]; then cat ${dummy-ghc-data}/ghc/info;
-      elif [ "'$*'" == "'--print-libdir'" ]; then echo ${dummy-ghc-data}/ghc/libdir;
-      else
-        false
-      fi
+      #!${pkgs.evalPackages.runtimeShell}
+      case "$*" in
+        --version)
+          cat ${dummy-ghc-data}/ghc/version
+          ;;
+        --numeric-version)
+          cat ${dummy-ghc-data}/ghc/numeric-version
+          ;;
+        --supported-languages)
+          cat ${dummy-ghc-data}/ghc/supported-languages
+          ;;
+        --print-global-package-db)
+          echo "$out/dumby-db"
+          ;;
+        --info)
+          cat ${dummy-ghc-data}/ghc/info
+          ;;
+        --print-libdir)
+          echo ${dummy-ghc-data}/ghc/libdir
+          ;;
+        *)
+          echo "Unknown argment '$*'" >&2
+          exit 1
+          ;;
+        esac
+      exit 0
     '';
   };
 
@@ -286,11 +305,20 @@ let
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc-pkg";
     text = ''
-      if [ "'$*'" == "'--version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/version;
-      elif [ "'$*'" == "'dump --global -v0'" ]; then cat ${dummy-ghc-data}/ghc-pkg/dump-global;
-      else
-        false
-      fi
+      #!${pkgs.evalPackages.runtimeShell}
+      case "$*" in
+        --version)
+          cat ${dummy-ghc-data}/ghc-pkg/version
+          ;;
+        'dump --global -v0')
+          cat ${dummy-ghc-data}/ghc-pkg/dump-global
+          ;;
+        *)
+          echo "Unknown argment '$*'" >&2
+          exit 1
+          ;;
+        esac
+      exit 0
     '';
   };
 
