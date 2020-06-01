@@ -305,11 +305,20 @@ let
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc-pkg";
     text = ''
-      if [ "'$*'" == "'--version'" ]; then cat ${dummy-ghc-data}/ghc-pkg/version;
-      elif [ "'$*'" == "'dump --global -v0'" ]; then cat ${dummy-ghc-data}/ghc-pkg/dump-global;
-      else
-        false
-      fi
+      #!${pkgs.evalPackages.runtimeShell}
+      case "$*" in
+        --version)
+          cat ${dummy-ghc-data}/ghc-pkg/version
+          ;;
+        'dump --global -v0')
+          cat ${dummy-ghc-data}/ghc-pkg/dump-global
+          ;;
+        *)
+          echo "Unknown argment '$*'" >&2
+          exit 1
+          ;;
+        esac
+      exit 0
     '';
   };
 
