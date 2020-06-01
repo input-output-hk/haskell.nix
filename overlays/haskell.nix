@@ -543,7 +543,7 @@ final: prev: {
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
-            inherit (final.buildPackages.haskell-nix) cabal-install dotCabal nix-tools alex happy hscolour;
+            inherit (final.buildPackages.haskell-nix) cabal-install dotCabal nix-tools alex happy;
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itfinal.
             iserv-proxy = final.recurseIntoAttrs
