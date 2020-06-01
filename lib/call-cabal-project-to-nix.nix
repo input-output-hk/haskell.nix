@@ -1,4 +1,11 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
+let readIfExists = src: fileName:
+      let origSrcDir = src.origSrcSubDir or src;
+      in
+        if ((__readDir origSrcDir)."${fileName}" or "") == "regular"
+          then __readFile (origSrcDir + "/${fileName}")
+          else null;
+in
 { name          ? src.name or null # optional name for better error messages
 , src
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
@@ -7,9 +14,9 @@
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , cabalProjectFileName ? "cabal.project"
-, cabalProject  ? null # Contents of cabal.project file (when null uses "${src}/cabal.project")
-, cabalProjectLocal ? null  # Contents of cabal.project.local file (when null uses "${src}/cabal.project.local")
-, cabalProjectFreeze ? null # Contents of cabal.project.freeze file (when null uses "${src}/cabal.project.freeze")
+, cabalProject         ? readIfExists src cabalProjectFileName
+, cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
+, cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
 , compiler-nix-name ? null # Nix name of the ghc compiler as a string eg. "ghc883"
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
@@ -73,37 +80,17 @@ let
   # access to the store is restricted.  If origSrc was already in the store
   # you can pass the project in as a string.
   rawCabalProject =
-    let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
-    in if cabalProject != null
-    then cabalProject + rawCabalProjectLocal
-    else
-      if ((builtins.readDir origSrcDir)."${cabalProjectFileName}" or "") == "regular"
-        then builtins.readFile (origSrcDir + "/${cabalProjectFileName}") + rawCabalProjectLocal
-        else null;
-  rawCabalProjectLocal =
-    let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
-    in if cabalProjectLocal != null
-    then ''
+    if cabalProject != null
+      then cabalProject + (
+        if cabalProjectLocal != null
+          then ''
 
-      -- Added from cabalProjectLocal argument to cabalProject
-      ${cabalProjectLocal}
-    ''
-    else
-      if ((builtins.readDir origSrcDir)."${cabalProjectFileName}.local" or "") == "regular"
-        then ''
-        
-          -- Added from ${cabalProjectFileName}.local file
-          ${builtins.readFile (origSrcDir + "/${cabalProjectFileName}.local")}
-        ''
-        else "";
-  rawCabalProjectFreeze =
-    let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
-    in if cabalProjectFreeze != null
-    then cabalProjectFreeze
-    else
-      if ((builtins.readDir origSrcDir)."${cabalProjectFileName}.freeze" or "") == "regular"
-        then builtins.readFile (origSrcDir + "/${cabalProjectFileName}.freeze")
-        else null;
+            -- Added from cabalProjectLocal argument to cabalProject
+            ${cabalProjectLocal}
+          ''
+          else ""
+      )
+      else null;
 
   # Look for a index-state: field in the cabal.project file
   parseIndexState = rawCabalProject:
@@ -358,8 +345,8 @@ let
     find . -name package.yaml -exec hpack "{}" \;
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${fixedProject.makeFixedProjectFile}
-    ${pkgs.lib.optionalString (rawCabalProjectFreeze != null) ''
-      cp ${pkgs.evalPackages.writeText "cabal.project.freeze" rawCabalProjectFreeze} \
+    ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
+      cp ${pkgs.evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
         cabal.project.freeze
     ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
