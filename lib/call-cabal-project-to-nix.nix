@@ -1,4 +1,11 @@
 { dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
+let readIfExists = src: fileName:
+      let origSrcDir = src.origSrcSubDir or src;
+      in
+        if ((__readDir origSrcDir)."${fileName}" or "") == "regular"
+          then __readFile (origSrcDir + "/${fileName}")
+          else null;
+in
 { name          ? src.name or null # optional name for better error messages
 , src
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
@@ -6,7 +13,10 @@
 , plan-sha256   ? null # The hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation)
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
-, cabalProject  ? null # Cabal project file (when null uses "${src}/cabal.project")
+, cabalProjectFileName ? "cabal.project"
+, cabalProject         ? readIfExists src cabalProjectFileName
+, cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
+, cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
 , compiler-nix-name ? null # Nix name of the ghc compiler as a string eg. "ghc883"
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
@@ -63,20 +73,24 @@ let
         src = src.origSrc;
         filter = path: type: src.filter path type && (
           type == "directory" ||
-          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".project" ".cabal" ".freeze" "package.yaml" ]); })
+          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); })
       else src.origSrc or src;
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
   # access to the store is restricted.  If origSrc was already in the store
   # you can pass the project in as a string.
   rawCabalProject =
-    let origSrcDir = (maybeCleanedSource.origSrcSubDir or maybeCleanedSource) + subDir';
-    in if cabalProject != null
-    then cabalProject
-    else
-      if ((builtins.readDir origSrcDir)."cabal.project" or "") == "regular"
-        then builtins.readFile (origSrcDir + "/cabal.project")
-        else null;
+    if cabalProject != null
+      then cabalProject + (
+        if cabalProjectLocal != null
+          then ''
+
+            -- Added from cabalProjectLocal argument to cabalProject
+            ${cabalProjectLocal}
+          ''
+          else ""
+      )
+      else null;
 
   # Look for a index-state: field in the cabal.project file
   parseIndexState = rawCabalProject:
@@ -107,7 +121,7 @@ let
 
 in
   assert (if index-state-found == null
-    then throw "No index state passed and none found in cabal.project" else true);
+    then throw "No index state passed and none found in ${cabalProjectFileName}" else true);
   assert (if index-sha256-found == null
     then throw "provided sha256 for index-state ${index-state-found} is null!" else true);
 
@@ -144,7 +158,7 @@ let
               ref = repo.tag;
             };
         in  __trace "WARNING: No sha256 found for source-repository-package ${repo.location} ${repo.tag} download may fail in restricted mode (hydra)"
-           (__trace "Consider adding `--sha256: ${hashPath drv}` to the cabal.project file or passing in a lookupSha256 argument"
+           (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
             drv)
     ) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
 
@@ -359,6 +373,10 @@ let
     find . -name package.yaml -exec hpack "{}" \;
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${fixedProject.makeFixedProjectFile}
+    ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
+      cp ${pkgs.evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
+        cabal.project.freeze
+    ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
     HOME=${dotCabal {
