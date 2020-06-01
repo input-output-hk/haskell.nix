@@ -62,7 +62,8 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
             build = import ./build.nix { inherit pkgs ifdLevel; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) {
-          ghc = pkgs.haskell-nix.compiler."${compilerNixName}";
+          # TODO: look into cross compiling ghc itself
+          # ghc = pkgs.haskell-nix.compiler."${compilerNixName}";
           # TODO: look into making tools work when cross compiling
           # inherit (build) tools;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
