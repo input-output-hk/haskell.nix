@@ -292,6 +292,7 @@ let
           ;;
         *)
           echo "Unknown argment '$*'" >&2
+          exit 1
           ;;
         esac
       exit 0
