@@ -376,7 +376,10 @@ in {
               override = "nix-tools-src";
             };
             index-state = final.haskell-nix.internalHackageIndexState;
-            configureArgs = "--allow-newer 'Cabal:base'";
+            cabalProjectLocal = ''
+              allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
+              index-state: ${final.haskell-nix.internalHackageIndexState}
+            '';
             # When building cabal-install (only happens when checking materialization)
             # disable checking of the tools used to avoid infinite recursion.
             cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
