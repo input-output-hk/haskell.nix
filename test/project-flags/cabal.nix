@@ -4,7 +4,7 @@ with stdenv.lib;
 
 let
   project = cabalProject' {
-    index-state = "2019-04-30T00:00:00Z";
+    index-state = "2020-05-25T00:00:00Z";
     src = testSrc "project-flags";
   };
   packages = project.hsPkgs;

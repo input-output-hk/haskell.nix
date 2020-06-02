@@ -33,7 +33,9 @@ let
 
       whitelist_set = listToAttrs (
         concatMap (p:
-          let full_path = toString (root + "/${p}"); in
+          # Using `origSrcSubDir` (if present) makes it possible to cleanGit src that
+          # has already been cleaned with cleanSrcWith.
+          let full_path = root.origSrcSubDir or (toString root) + "/${p}"; in
           map (p': { name = p'; value = true; }) (all_paren_dirs full_path)
         ) files
       );
