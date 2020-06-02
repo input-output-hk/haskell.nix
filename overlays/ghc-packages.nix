@@ -60,7 +60,6 @@ let
       ghc-heap     = "libraries/ghc-heap";
       hpc          = "libraries/hpc";
       libiserv     = "libraries/libiserv";
-      unix         = "libraries/unix";
       iserv        = "utils/iserv";
       remote-iserv = "utils/remote-iserv";
       iserv-proxy  = "utils/iserv-proxy";
