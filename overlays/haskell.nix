@@ -534,9 +534,9 @@ final: prev: {
             inherit (final.buildPackages.haskell-nix) source-pins;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
-            alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
-            happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
-            hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
+            boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
+            boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
+            boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
             ghc865 = final.buildPackages.haskell-nix.compiler.ghc865;
             ghc883 = final.buildPackages.haskell-nix.compiler.ghc883;
             ghc-boot-packages-nix = final.recurseIntoAttrs
@@ -546,7 +546,8 @@ final: prev: {
               (filterSupportedGhc final.ghc-extra-projects));
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            inherit (final.haskell-nix) nix-tools cabal-install alex happy hpack;
+            inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
+            inherit (final.buildPackages.haskell-nix) cabal-install dotCabal nix-tools alex happy;
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itfinal.
             iserv-proxy = final.recurseIntoAttrs

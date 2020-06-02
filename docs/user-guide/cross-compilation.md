@@ -57,6 +57,9 @@ package set. Your project will have a [`mkStackPkgSet`](../reference/library.md#
 [`mkCabalProjectPkgSet`](../reference/library.md#mkcabalprojectpkgset). It is there where you must add
 [module options](../reference/modules.md) for setting compiler flags, adding patches, and so on.
 
+!!! note
+    Note that `haskell.nix` will automatically use `qemu` to emulate the target
+    when necessary to run Template Haskell splices.
 
 ### Static executables with Musl libc
 
