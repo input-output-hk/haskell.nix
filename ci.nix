@@ -12,11 +12,13 @@
     "R1909" = "nixpkgs-1909";
     "R2003" = "nixpkgs-2003";
   };
-  compilerNixNames = builtins.mapAttrs (defaultCompilerNixName: _:
-    (import ./default.nix { inherit checkMaterialization defaultCompilerNixName; }).nixpkgsArgs) {
+  compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (defaultCompilerNixName: _:
+    (import ./default.nix { inherit checkMaterialization defaultCompilerNixName; }).nixpkgsArgs) ({
     ghc865 = {};
+  } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
     ghc883 = {};
-  };
+    ghc8101 = {};
+  });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
     linux = "x86_64-linux";
@@ -39,7 +41,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
       # We need this for generic nixpkgs stuff at the right version
       genericPkgs = import pinnedNixpkgsSrc {};
-  in dimension "GHC version" compilerNixNames (compilerNixName: nixpkgsArgs:
+  in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compilerNixName: nixpkgsArgs:
     dimension "System" (systems genericPkgs) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs ifdLevel; };
@@ -49,7 +51,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.recurseIntoAttrs ({
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
-          ghc = pkgs.haskell-nix.compiler."${compilerNixName}";
+          ghc = pkgs.buildPackages.haskell-nix.compiler."${compilerNixName}";
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
           iserv-proxy = pkgs.ghc-extra-packages."${compilerNixName}".iserv-proxy.components.exes.iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
@@ -62,6 +64,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
             build = import ./build.nix { inherit pkgs ifdLevel; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) {
+          ghc = pkgs.buildPackages.haskell-nix.compiler."${compilerNixName}";
           # TODO: look into cross compiling ghc itself
           # ghc = pkgs.haskell-nix.compiler."${compilerNixName}";
           # TODO: look into making tools work when cross compiling
