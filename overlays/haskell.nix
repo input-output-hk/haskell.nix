@@ -259,9 +259,9 @@ final: prev: {
 
         # Function to call stackToNix
         callStackToNix = import ../lib/call-stack-to-nix.nix {
-            pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.pkgs) runCommand;
-            inherit (final.buildPackages.haskell-nix) nix-tools mkCacheFile materialize;
+            pkgs = final.evalPackages.pkgs;
+            inherit (final.evalPackages.pkgs) runCommand;
+            inherit (final.evalPackages.haskell-nix) nix-tools mkCacheFile materialize;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
