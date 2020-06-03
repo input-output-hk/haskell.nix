@@ -274,13 +274,16 @@ in {
 
                 ghc-patches = ghc-patches "8.8.3";
             };
-            ghc8101 = final.callPackage ../compiler/ghc {
+            ghc8101 =
+              let
+                buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
+              in final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = final.buildPackages.haskell-nix.compiler.ghc883;
-                  alex = final.haskell-nix.haskellPackages.alex.components.exes.alex;
-                  happy = final.haskell-nix.haskellPackages.happy.components.exes.happy;
+                  ghc = buildPkgs.haskell-nix.compiler.ghc883;
+                  alex = buildPkgs.haskell-nix.haskellPackages.alex.components.exes.alex;
+                  happy = buildPkgs.haskell-nix.haskellPackages.happy.components.exes.happy;
                 };
                 inherit sphinx installDeps;
 
@@ -350,20 +353,24 @@ in {
     # tools used or there will be infinite recursion.
     # always has `checkMaterialization = false` to avoid infinite
     # recursion.
-    cabal-install-tool = args: final.haskell-nix.tool "cabal" ({
-      version = "3.2.0.0";
-      index-state = final.haskell-nix.internalHackageIndexState;
-      configureArgs = "--allow-newer 'Cabal:base'"; # needed for ghc 8.10.1 to build hackage Cabal
-      # When building cabal-install (only happens when checking materialization)
-      # disable checking of the tools used to avoid infinite recursion.
-      cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
-        (args // { checkMaterialization = false; });
-      nix-tools = final.evalPackages.haskell-nix.nix-tools-set
-        (args // { checkMaterialization = false; });
-      materialized = ../materialized + "/${
-          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
-        }/cabal-install";
-    } // args);
+    cabal-install-tool = args:
+      # Hackage version of cabal-install does not compiler with ghc 8.10.1 yet.
+      let cabal-nix-name = args.compiler-nix-name or
+            (if final.haskell-nix.defaultCompilerNixName == "ghc8101"
+              then "ghc883"
+              else final.haskell-nix.defaultCompilerNixName);
+      in final.haskell-nix.tool "cabal" ({
+        version = "3.2.0.0";
+        index-state = final.haskell-nix.internalHackageIndexState;
+        inherit cabal-nix-name;
+        # When building cabal-install (only happens when checking materialization)
+        # disable checking of the tools used to avoid infinite recursion.
+        cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
+          (args // { checkMaterialization = false; });
+        nix-tools = final.evalPackages.haskell-nix.nix-tools-set
+          (args // { checkMaterialization = false; });
+        materialized = ../materialized + "/${cabal-nix-name}/cabal-install";
+      } // args);
     cabal-install = final.buildPackages.haskell-nix.cabal-install-tool {};
     nix-tools-set = args:
       let
