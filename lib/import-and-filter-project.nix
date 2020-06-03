@@ -4,7 +4,21 @@
 { pkgs, haskellLib }:
 { projectNix, sourceRepos, src }:
 let
-  project = import "${projectNix}";
+  # Full source including possible relartive paths form the
+  # project directory.
+  srcRoot =
+    if haskellLib.canCleanSource src
+      then haskellLib.cleanSourceWith {
+        name = src.name + "-root";
+        src = src.origSrc or src;
+        inherit (src) filter;
+      }
+      else src.origSrc or src;
+  # The sub directory containing the cabal.project or stack.yaml file
+  projectSubDir' = src.origSubDir or "";                                     # With leading /
+  projectSubDir = pkgs.lib.strings.removePrefix "/" projectSubDir';          # Without /
+  projectSubDir'' = if projectSubDir == "" then "" else projectSubDir + "/"; # With trailing /
+  project = import "${projectNix}${projectSubDir'}";
 in {
   nix = projectNix;
   pkgs = project // {
@@ -20,14 +34,14 @@ in {
                     subDir = pkgs.lib.strings.removePrefix "/" (
                       pkgs.lib.strings.removePrefix (toString projectNix)
                         (toString oldPkg.src.content));
-                    srcRepoPrefix = ".source-repository-packages/";
+                    srcRepoPrefix = projectSubDir'' + ".source-repository-packages/";
                     in if pkgs.lib.strings.hasPrefix srcRepoPrefix subDir
                       then
                         pkgs.lib.lists.elemAt sourceRepos (
                           pkgs.lib.strings.toInt (pkgs.lib.strings.removePrefix srcRepoPrefix subDir))
-                      else if haskellLib.canCleanSource src
-                        then haskellLib.cleanSourceWith { inherit src subDir; }
-                        else src + (if subDir == "" then "" else "/" + subDir);
+                      else if haskellLib.canCleanSource srcRoot
+                        then haskellLib.cleanSourceWith { src = srcRoot; inherit subDir; }
+                        else srcRoot + (if subDir == "" then "" else "/" + subDir);
             in oldPkg // {
               src = (pkgs.lib).mkDefault packageSrc;
             }) old;

@@ -56,9 +56,8 @@ in {
     lib.optional c.buildable c ++ acc) [];
 
   componentPrefix = {
-    # Are all of these right?
     sublibs = "lib";
-    foreignlibs = "foreignlib";
+    foreignlibs = "flib";
     exes = "exe";
     tests = "test";
     benchmarks = "bench";
@@ -208,6 +207,31 @@ in {
     inherit lib git cleanSourceWith;
     inherit (pkgs.evalPackages) runCommand;
   };
+
+  # Some times it is handy to temporarily use a relative path between git
+  # repos.  If the repos are individually cleaned this is not possible
+  # (since the cleaned version of one repo will never include the files
+  # of the other).
+  #
+  # `cleanGits` allows us to specify a root directory and any number of
+  # sub directories containing git repos.
+  #
+  # See docs/user-guide/clean-git.md for details of how to use this
+  # with `cabalProject`.
+  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }@args:
+    let
+      # List of filters, one for each git directory.
+      filters = builtins.map (subDir:
+        (pkgs.haskell-nix.haskellLib.cleanGit {
+          src = pkgs.haskell-nix.haskellLib.cleanSourceWith {
+            inherit src subDir;
+          };
+        }).filter) gitDirs;
+    in pkgs.haskell-nix.haskellLib.cleanSourceWith {
+      inherit src name caller;
+      # Keep files that match any of the filters
+      filter = path: type: pkgs.lib.any (f: f path type) filters;
+    };
 
   # Check a test component
   check = import ./check.nix {
