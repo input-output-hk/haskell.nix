@@ -58,51 +58,61 @@ let
       dontConfigure = true;
       dontInstall = true;
       buildPhase = ''
-          export HOME=$TMP
-          mkdir $HOME/.cabal
-          touch $HOME/.cabal/config
-          cd lib/boot
-      '' + (if isGhcjs88
-        then ''
-          mkdir -p $out/bin
-          mkdir -p $out/lib
-          lndir ${all-ghcjs}/bin $out/bin
-          chmod -R +w $out/bin
-          rm $out/bin/ghcjs-boot
-          cp ${ghcjs.components.exes.ghcjs-boot}/bin/ghcjs-boot $out/bin
-          rm $out/bin/haddock
-          cp ${ghcjs.components.exes.haddock}/bin/haddock $out/bin
+        export HOME=$TMP
+        mkdir $HOME/.cabal
+        touch $HOME/.cabal/config
+        cd lib/boot
+        ${if isGhcjs88
+          then ''
+            mkdir -p $out/bin
+            mkdir -p $out/lib
+            lndir ${all-ghcjs}/bin $out/bin
+            chmod -R +w $out/bin
+            rm $out/bin/ghcjs-boot
+            cp ${ghcjs.components.exes.ghcjs-boot}/bin/ghcjs-boot $out/bin
+            rm $out/bin/haddock
+            cp ${ghcjs.components.exes.haddock}/bin/haddock $out/bin
 
-          wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib"
-          wrapProgram $out/bin/haddock --add-flags "-B$out/lib"
-          wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
+            wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib"
+            wrapProgram $out/bin/haddock --add-flags "-B$out/lib"
+            wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
+          ''
+          else ''
+            mkdir -p $out/bin
+            mkdir -p $out/lib/ghcjs-${ghcVersion}
+            lndir ${all-ghcjs}/${libexec} $out/bin
 
-          # Avoid timeouts while unix package runs hsc2hs (it does not print anything
-          # for more than 900 seconds).
-          {
-          for n in {1..50}; do
-            if [ ! -f $TMP/done ]; then
-              sleep 300
-              echo Keep alive $n
-            fi
-          done
-          } &
-          # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
-          env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH PYTHON=${pkgs.buildPackages.python3}/bin/python3 $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock \
-            || (echo failed > $TMP/done; false)
-          echo ok > $TMP/done
-        ''
-        else ''
-          mkdir -p $out/bin
-          mkdir -p $out/lib/ghcjs-${ghcVersion}
-          lndir ${all-ghcjs}/${libexec} $out/bin
-
-          wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-          wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-          wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
-
-          env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin
-        '');
+            wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
+            wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
+            wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
+          ''
+        }
+        # Avoid timeouts while unix package runs hsc2hs (it does not print anything
+        # for more than 900 seconds).
+        {
+        for n in {1..50}; do
+          if [ ! -f $TMP/done ]; then
+            sleep 300
+            echo Keep alive $n
+          fi
+        done
+        } &
+        ${ if isGhcjs88
+          then
+            # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
+            ''
+            env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
+              PYTHON=${pkgs.buildPackages.python3}/bin/python3 \
+              $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock \
+              || (echo failed > $TMP/done; false)
+            ''
+          else ''
+            env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin \
+              || (echo failed > $TMP/done; false)
+          ''
+        }
+        echo ok > $TMP/done
+      '';
       # We hard code -j1 as a temporary workaround for
       # https://github.com/ghcjs/ghcjs/issues/654
       # enableParallelBuilding = true;
