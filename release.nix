@@ -1,13 +1,14 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluting
 # on a machine with e.g. no way to build the Darwin IFDs you need! 
 { supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
-, ifdLevel ? 1 }:
+, ifdLevel ? 1
+, checkMaterialization ? false }:
 
 let
   inherit (import ./ci-lib.nix) stripAttrsForHydra filterDerivations;
   genericPkgs = import (import ./nixpkgs/default.nix).nixpkgs-default {};
   lib = genericPkgs.lib;
-  ci = import ./ci.nix { inherit supportedSystems ifdLevel; restrictEval = true; };
+  ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
 in allJobs // {
     # On IOHK Hydra, "required" is a special job that updates the
