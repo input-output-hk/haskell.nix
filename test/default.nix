@@ -178,7 +178,7 @@ let
 
     unit = unitTests;
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
-    lookup-sha256 = pkcallTest ./lookup-sha256 {};
+    lookup-sha256 = callTest ./lookup-sha256 {};
     fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
   };
 
