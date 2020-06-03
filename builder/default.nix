@@ -21,7 +21,7 @@ let
   # Wraps GHC to provide dependencies in a way that works for both the
   # component builder and for nix-shells.
   ghcForComponent = import ./ghc-for-component-wrapper.nix {
-    inherit lib ghc;
+    inherit lib ghc haskellLib;
     inherit (buildPackages) stdenv runCommand makeWrapper;
     inherit (buildPackages.xorg) lndir;
   };
