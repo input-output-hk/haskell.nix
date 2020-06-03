@@ -76,6 +76,7 @@ in
   config.bootPkgs =  [
       "rts" "ghc-boot-th"
       "ghc-heap" # since ghc 8.6.
+      "ghcjs-prim"
     ] ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
   options.hsPkgs = lib.mkOption {

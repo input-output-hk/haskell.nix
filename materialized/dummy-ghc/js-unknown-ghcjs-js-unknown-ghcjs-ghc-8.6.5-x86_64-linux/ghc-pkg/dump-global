@@ -235,7 +235,7 @@ exposed-modules:
     Foreign.Storable GHC.Arr GHC.Base GHC.ByteOrder GHC.Char GHC.Clock
     GHC.Conc GHC.Conc.IO GHC.Conc.Signal GHC.Conc.Sync
     GHC.ConsoleHandler GHC.Constants GHC.Desugar GHC.Enum
-    GHC.Environment GHC.Err GHC.Exception GHC.Exception.Type
+    GHC.Environment GHC.Err GHC.Event GHC.Exception GHC.Exception.Type
     GHC.ExecutionStack GHC.ExecutionStack.Internal GHC.Exts
     GHC.Fingerprint GHC.Fingerprint.Type GHC.Float
     GHC.Float.ConversionUtils GHC.Float.RealFracMethods GHC.Foreign

@@ -169,16 +169,17 @@ let
     buildable = callTest ./buildable {};
     project-flags-cabal = callTest ./project-flags/cabal.nix {};
     project-flags-stack = callTest ./project-flags/stack.nix {};
-    fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
     ghc-options-cabal = callTest ./ghc-options/cabal.nix {};
     ghc-options-stack = callTest ./ghc-options/stack.nix {};
     exe-only = callTest ./exe-only { inherit util; };
     stack-source-repo = callTest ./stack-source-repo {};
-    lookup-sha256 = callTest ./lookup-sha256 {};
     extra-hackage = callTest ./extra-hackage {};
     compiler-nix-name = callTest ./compiler-nix-name {};
 
     unit = unitTests;
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
+    lookup-sha256 = pkcallTest ./lookup-sha256 {};
+    fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the
