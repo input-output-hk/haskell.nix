@@ -77,7 +77,7 @@ let
       if materialized != null && !__pathExists materialized
         then ''
           echo "Materialized nix used for ${name} is missing. To fix run :" >> $ERR
-          echo "    cp -r ${calculateNoHash} ${toString materialized}"      >> $ERR
+          echo "    cp -Lr ${calculateNoHash} ${toString materialized}"     >> $ERR
           echo "    chmod -R +w ${toString materialized}"                   >> $ERR
           cat $ERR
           false
@@ -91,7 +91,7 @@ let
               diff -ru ${materialized} ${calculateNoHash} || true
               echo "Materialized nix used for ${name} incorrect. To fix run :" >> $ERR
               echo "    rm -rf ${toString materialized}"                       >> $ERR
-              echo "    cp -r ${calculateNoHash} ${toString materialized}"     >> $ERR
+              echo "    cp -Lr ${calculateNoHash} ${toString materialized}"    >> $ERR
               echo "    chmod -R +w ${toString materialized}"                  >> $ERR
             fi
           '')
@@ -100,7 +100,7 @@ let
               cat $ERR
               false
             else
-              cp -r ${unchecked} $out
+              cp -Lr ${unchecked} $out
               # Make sure output files can be removed from the sandbox
               chmod -R +w $out
             fi
@@ -114,10 +114,10 @@ let
   };
   calculateNoHash = derivation;
   calculateUseHash =
-    # Use `cp -r` here to get rid of symlinks so we know the result
+    # Use `cp -Lr` here to get rid of symlinks so we know the result
     # can be safely materialized (no symlinks to the store).
     runCommand name hashArgs ''
-      cp -r ${derivation} $out
+      cp -Lr ${derivation} $out
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out
     '';
@@ -125,7 +125,7 @@ let
     assert materialized != null;
     assert __pathExists materialized;
     runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
-      cp -r ${materialized} $out
+      cp -Lr ${materialized} $out
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out
     '';

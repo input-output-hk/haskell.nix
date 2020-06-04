@@ -22,11 +22,18 @@ let
 
   # Combines multiple derivations into one to make them
   # easier to materialize.
-  combineFiles = name: ext: files: final.linkFarm name
-    (final.lib.mapAttrsToList (name: path: {
-      name = name + ext;
-      inherit path;
-    }) files);
+  # Using `cp -Lr` here follows the symlinks and prevents
+  # `access to path is forbidden in restricted mode`
+  # errors on hydra when the materialized files are not present.
+  combineFiles = name: ext: files:
+    let links = final.linkFarm name
+      (final.lib.mapAttrsToList (name: path: {
+        name = name + ext;
+        inherit path;
+      }) files);
+    in final.evalPackages.runCommand "${name}${ext}" {} ''
+      cp -Lr ${links} $out
+    '';
 
   # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
