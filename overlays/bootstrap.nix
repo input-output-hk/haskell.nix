@@ -28,12 +28,30 @@ let
         fi
       done
     '';
+    # For each architecture, we need to know two (somewhat ad-hoc) things:
+    # - What GHC version we should use for bootstrapping.
+    # - What Happy version we should use for bootstrapping.
+    buildBootstrapper =
+        if final.targetPlatform.isAarch64
+        then {
+            ghc = final.buildPackages.haskell-nix.bootstrap.compiler.ghc882;
+            happyVersion = "1.19.12";
+        }
+        else {
+            ghc = final.buildPackages.haskell-nix.bootstrap.compiler.ghc844;
+            happyVersion = "1.19.11";
+        };
+    # For buildPackages.buildPackages, we just care about the GHC version:
+    buildBuildBootstrapper =
+        if final.targetPlatform.isAarch64
+        then final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler.ghc882
+        else final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler.ghc844;
 in {
   haskell-nix = prev.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = with final.buildPackages; {
-                ghc = buildPackages.haskell-nix.bootstrap.compiler.ghc844;
+                ghc = buildBuildBootstrapper;
                 alex = final.haskell-nix.bootstrap.packages.alex-tool {
                   checkMaterialization = false;
                 };
@@ -320,7 +338,11 @@ in {
             '' + installDeps targetPrefix);
         })));
 
-    defaultCompilerNixName = "ghc865";
+    # Need to use something from 8.8.x as the default on aarch64:
+    defaultCompilerNixName =
+        if final.targetPlatform.isAarch64
+        then "ghc883"
+        else "ghc865";
     ghc = final.haskell-nix.compiler."${final.haskell-nix.defaultCompilerNixName}";
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
     # to check materialized results.  We need to take care that when
@@ -404,7 +426,7 @@ in {
     } // args);
     alex = final.buildPackages.haskell-nix.alex-tool {};
     happy-tool = args: final.haskell-nix.tool "happy" ({
-      version = "1.19.12";
+      version = buildBootstrapper.happyVersion;
       index-state = final.haskell-nix.internalHackageIndexState;
       materialized = ../materialized + "/${
           args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
@@ -438,7 +460,7 @@ in {
 
 
     # the bootstrap infra structure (pre-compiled ghc; bootstrapped cabal-install, ...)
-    bootstrap = with final.haskell-nix; let ghc = final.buildPackages.haskell-nix.bootstrap.compiler.ghc844; in {
+    bootstrap = with final.haskell-nix; let ghc = buildBootstrapper.ghc; in {
         # XXX: import ../. will throw away all other overlays, config values, ...
         #      this is not ideal!
         # get binary compilers for bootstrapping.  We'll put the eventual proper
@@ -474,9 +496,10 @@ in {
             } // args);
             alex = bootstrap.packages.alex-tool {};
             happy-tool = args: tool "happy" ({
-                version = "1.19.11";
+                version = buildBootstrapper.happyVersion;
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+                inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 index-state = final.haskell-nix.internalHackageIndexState;
                 materialized = ../materialized/bootstrap/happy;
             } // args);
