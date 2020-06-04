@@ -251,12 +251,15 @@ let
               $out/bin/ghcjs $out/bin/haddock-ghcjs $out/bin/ghcjs-pkg
 
             # Update the ghcjs and ghc settings files so that `cc` looked up in the PATH.
+            # Also make sure the "Host platform" is correct.
             rm $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/settings
             sed -e 's|/nix/store/.*/bin/cc|cc|' \
+                -e 's|"Host platform","[^"]*"|"Host platform","js-unknown-ghcjs"|' \
              < ${booted-ghcjs}/lib/ghcjs-${ghcVersion}/settings \
              > $out/$(basename ${booted-ghcjs})/lib/ghcjs-${ghcVersion}/settings
             rm $out/$(basename ${ghc})/lib/ghc-${ghcVersion}/settings
             sed -e 's|/nix/store/.*/bin/cc|cc|' \
+                -e 's|"Host platform","[^"]*"|"Host platform","js-unknown-ghcjs"|' \
              < ${ghc}/lib/ghc-${ghcVersion}/settings \
              > $out/$(basename ${ghc})/lib/ghc-${ghcVersion}/settings
 
