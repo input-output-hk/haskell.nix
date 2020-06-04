@@ -54,7 +54,11 @@ in
       # "stm" "terminfo"
      ];
     }];
-  }).nix-tools.components.exes.plan-to-nix; in
+  }).nix-tools.components.exes.plan-to-nix;
+  bootstrap = if pkgs.targetPlatform.isAarch64
+              then haskell-nix.bootstrap.compiler.ghc882
+              else haskell-nix.bootstrap.compiler.ghc844;
+  in
 with builtins;
 with stdenv.lib;
 writeShellScriptBin "update-nix-tools" ''
