@@ -77,7 +77,7 @@ let
       if materialized != null && !__pathExists materialized
         then ''
           echo "Materialized nix used for ${name} is missing. To fix run :" >> $ERR
-          echo "    cp -Lr ${calculateNoHash} ${toString materialized}"     >> $ERR
+          echo "    cp -r ${calculateNoHash} ${toString materialized}"     >> $ERR
           echo "    chmod -R +w ${toString materialized}"                   >> $ERR
           cat $ERR
           false
@@ -91,7 +91,7 @@ let
               diff -ru ${materialized} ${calculateNoHash} || true
               echo "Materialized nix used for ${name} incorrect. To fix run :" >> $ERR
               echo "    rm -rf ${toString materialized}"                       >> $ERR
-              echo "    cp -Lr ${calculateNoHash} ${toString materialized}"    >> $ERR
+              echo "    cp -r ${calculateNoHash} ${toString materialized}"    >> $ERR
               echo "    chmod -R +w ${toString materialized}"                  >> $ERR
             fi
           '')
