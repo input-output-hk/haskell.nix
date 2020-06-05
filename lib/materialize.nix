@@ -1,4 +1,4 @@
-{ pkgs, nix, runCommand, checkMaterialization }@defaults:
+{ pkgs, nix, runCommand, writeShellScript, checkMaterialization }@defaults:
 { sha256 ? null  # Has to make this a fixed output derivation
 , sha256Arg ? "sha256"
                  # Name of the sha256 argument for more meaningful
@@ -76,9 +76,7 @@ let
     + (
       if materialized != null && !__pathExists materialized
         then ''
-          echo "Materialized nix used for ${name} is missing. To fix run :" >> $ERR
-          echo "    cp -r ${calculateNoHash} ${toString materialized}"     >> $ERR
-          echo "    chmod -R +w ${toString materialized}"                   >> $ERR
+          echo "Materialized nix used for ${name} is missing. To fix run: ${fixMaterialized}" >> $ERR
           cat $ERR
           false
         ''
@@ -89,10 +87,7 @@ let
               else
               echo Changes to plan not reflected in materialized nix for ${name}
               diff -ru ${materialized} ${calculateNoHash} || true
-              echo "Materialized nix used for ${name} incorrect. To fix run :" >> $ERR
-              echo "    rm -rf ${toString materialized}"                       >> $ERR
-              echo "    cp -r ${calculateNoHash} ${toString materialized}"    >> $ERR
-              echo "    chmod -R +w ${toString materialized}"                  >> $ERR
+              echo "Materialized nix used for ${name} incorrect. To fix run: ${fixMaterialized}" >> $ERR
             fi
           '')
         + ''
@@ -130,12 +125,23 @@ let
       chmod -R +w $out
     '';
 
+  fixMaterialized =
+    assert materialized != null;
+    writeShellScript "fixMaterialized" ''
+      rm -rf ${toString materialized}
+      cp -r ${calculateNoHash} ${toString materialized}
+      chmod -R +w ${toString materialized}
+  '';
+
   # Materialized location was specified, but the files are not there.
   missingMaterialized = materialized != null && !__pathExists materialized;
 
-in
   # Use the checked version if requested or if the `materialized` version
   # is missing (perhaps deleted or not created yet).
-  if checkMaterialization || missingMaterialized
+  result = if checkMaterialization || missingMaterialized
     then checked
-    else unchecked
+    else unchecked;
+
+in result
+   # Also include the script to fix the materialization files in passthru.
+   // { passthru = (result.passthru or {}) // { inherit fixMaterialized; }; }
