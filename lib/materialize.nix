@@ -60,7 +60,7 @@ let
       ''
     + (pkgs.lib.optionalString (sha256 != null) ''
         NEW_HASH=$(${calculateMaterializedSha})
-        if [ "${sha256}" != "$NEW_HASH" ]; then
+        if [[ ${sha256} != $NEW_HASH ]]; then
           echo Changes to ${name} not reflected in ${sha256Arg}
           diff -ru ${calculateUseHash} ${calculateNoHash} || true
           echo "Calculated hash for ${name} was not ${sha256}. New hash is :" >> $ERR
@@ -87,7 +87,7 @@ let
             fi
           '')
         + ''
-            if [ -e $ERR ]; then
+            if [[ -e $ERR ]]; then
               cat $ERR
               false
             else
