@@ -36,7 +36,7 @@ let
   unchecked =
     let
       sha256message = "To make this a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of ${calculateMaterializedSha}";
-      materializeMessage = "To materialize the output entirely, point `materialized` to a copy of " + toString calculateUseHash;
+      materializeMessage = "To materialize the output entirely, point `materialized` to a writable path and pass the path to ${updateMaterialized}";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
@@ -72,7 +72,7 @@ let
     + (
       if materialized != null && !__pathExists materialized
         then ''
-          echo "Materialized nix used for ${name} is missing. To fix run: ${fixMaterialized}" >> $ERR
+          echo "Materialized nix used for ${name} is missing. To fix run: ${updateMaterialized}" >> $ERR
           cat $ERR
           false
         ''
@@ -83,7 +83,7 @@ let
               else
               echo Changes to plan not reflected in materialized nix for ${name}
               diff -ru ${materialized} ${calculateNoHash} || true
-              echo "Materialized nix used for ${name} incorrect. To fix run: ${fixMaterialized}" >> $ERR
+              echo "Materialized nix used for ${name} incorrect. To fix run: ${updateMaterialized}" >> $ERR
             fi
           '')
         + ''
@@ -125,12 +125,22 @@ let
       nix-hash --base32 --type sha256 ${calculateNoHash}
   '';
 
-  fixMaterialized =
+  updateMaterialized =
     assert materialized != null;
     writeShellScript "fixMaterialized" ''
-      rm -rf ${toString materialized}
-      cp -r ${calculateNoHash} ${toString materialized}
-      chmod -R +w ${toString materialized}
+      # The target is either the argument to the script if there is one, or else the current location of the materialized files
+      TARGET=''${1:-${toString materialized}}
+
+      # Crudely try and guard people from writing to the Nix store accidentally
+      if [[ ''${TARGET##/nix/store/} != $TARGET ]]; then
+         echo "Attempted to write to $TARGET in the Nix store! Put your materialized files somewhere else!"
+         exit 1
+      fi
+
+      # Update the files
+      rm -rf $TARGET
+      cp -r ${calculateNoHash} "$TARGET"
+      chmod -R +w "$TARGET"
   '';
 
   # Materialized location was specified, but the files are not there.
@@ -144,4 +154,4 @@ let
 
 in result
    # Also include the script to fix the materialization files in passthru.
-   // { passthru = (result.passthru or {}) // { inherit fixMaterialized calculateMaterializedSha; }; }
+   // { passthru = (result.passthru or {}) // { inherit updateMaterialized calculateMaterializedSha; }; }
