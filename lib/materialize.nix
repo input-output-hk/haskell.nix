@@ -53,9 +53,7 @@ let
         builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
-  checked = runCommand name {
-    buildInputs = [ nix ];
-  } (''
+  checked = runCommand name {} (''
         ERR=$(mktemp -d)/errors.txt
       ''
     + (pkgs.lib.optionalString (sha256 != null) ''
@@ -121,9 +119,7 @@ let
       chmod -R +w $out
     '';
   calculateMaterializedSha =
-    writeShellScript "calculateSha" ''
-      nix-hash --base32 --type sha256 ${calculateNoHash}
-  '';
+    writeShellScript "calculateSha" ''${nix}/nix-hash --base32 --type sha256 ${calculateNoHash}'';
 
   updateMaterialized =
     assert materialized != null;
