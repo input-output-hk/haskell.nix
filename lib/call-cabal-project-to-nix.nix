@@ -2,7 +2,7 @@
 let readIfExists = src: fileName:
       let origSrcDir = src.origSrcSubDir or src;
       in
-        if ((__readDir origSrcDir)."${fileName}" or "") == "regular"
+        if builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
           then __readFile (origSrcDir + "/${fileName}")
           else null;
 in
