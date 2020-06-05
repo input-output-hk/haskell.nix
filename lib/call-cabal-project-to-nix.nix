@@ -147,7 +147,7 @@ let
   fetchRepo = repo:
     let sha256 = repo."--sha256" or (lookupSha256 repo);
     in (if sha256 != null
-      then pkgs.fetchgit {
+      then pkgs.evalPackages.fetchgit {
           url = repo.location;
           rev = repo.tag;
           inherit sha256;
