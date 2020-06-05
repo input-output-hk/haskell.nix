@@ -55,7 +55,7 @@ in
      ];
     }];
   }).nix-tools.components.exes.plan-to-nix;
-  bootstrap = if pkgs.targetPlatform.isAarch64
+  bootstrap = if pkgs.targetPlatform.isAarch64 && pkgs.buildPlatform.isAarch64
               then haskell-nix.bootstrap.compiler.ghc882
               else haskell-nix.bootstrap.compiler.ghc844;
   in
