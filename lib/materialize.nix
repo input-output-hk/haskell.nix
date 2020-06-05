@@ -34,26 +34,23 @@ let
       else x;
 
   unchecked =
-    if reasonNotSafe != null
+    let
+      sha256message = "To make this a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of ${calculateMaterializedSha}";
+      materializeMessage = "To materialize the output entirely, point `materialized` to a copy of " + toString calculateUseHash;
+    in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
         traceIgnoringSha256 reasonNotSafe
           (traceIgnoringMaterialized reasonNotSafe calculateNoHash)
-    else if sha256 == null && materialized == null
+    else if materialized != null
+      then calculateUseMaterialized
+    else if sha256 != null
       then
-        # Let the user know how to calculate a sha256 to use to make this
-        # a fixed output derivation.
-        builtins.trace ("Get `${sha256Arg}` with ${calculateMaterializedSha}")
-          (traceIgnoringMaterialized "${sha256Arg} is not set" calculateNoHash)
-    else if materialized == null
-      then
-        # To avoid any IFD dependencies add a `materialized` copy somewhere
-        # and pass it in.
-        builtins.trace ("To materialize, point `materialized` to a copy of " + toString calculateUseHash)
-          calculateUseHash
-    else
-      # Everything is in place we can safely use the sha256 and materialized
-      calculateUseMaterialized;
+        # Let the user know how to materialize if they want to.
+        builtins.trace materializeMessage calculateUseHash
+    else # materialized == null && sha256 == null
+        # Let the user know how to calculate a sha256 or materialize if they want to.
+        builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
   checked = runCommand name {
