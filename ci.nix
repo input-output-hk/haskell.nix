@@ -54,7 +54,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           ghc = pkgs.buildPackages.haskell-nix.compiler."${compilerNixName}";
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
           iserv-proxy = pkgs.ghc-extra-packages."${compilerNixName}".iserv-proxy.components.exes.iserv-proxy;
-        } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
+        } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
         });
       }
