@@ -43,9 +43,8 @@ let
       then
         # Let the user know how to calculate a sha256 to use to make this
         # a fixed output derivation.
-        builtins.trace ("Get `${sha256Arg}` with `nix-hash --base32 --type sha256 "
-          + toString calculateNoHash + "/`") (traceIgnoringMaterialized
-            "${sha256Arg} is not set" calculateNoHash)
+        builtins.trace ("Get `${sha256Arg}` with ${calculateMaterializedSha}")
+          (traceIgnoringMaterialized "${sha256Arg} is not set" calculateNoHash)
     else if materialized == null
       then
         # To avoid any IFD dependencies add a `materialized` copy somewhere
@@ -63,7 +62,7 @@ let
         ERR=$(mktemp -d)/errors.txt
       ''
     + (pkgs.lib.optionalString (sha256 != null) ''
-        NEW_HASH=$(nix-hash --base32 --type sha256 ${calculateNoHash})
+        NEW_HASH=$(${calculateMaterializedSha})
         if [ "${sha256}" != "$NEW_HASH" ]; then
           echo Changes to ${name} not reflected in ${sha256Arg}
           diff -ru ${calculateUseHash} ${calculateNoHash} || true
@@ -124,6 +123,10 @@ let
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out
     '';
+  calculateMaterializedSha =
+    writeShellScript "calculateSha" ''
+      nix-hash --base32 --type sha256 ${calculateNoHash}
+  '';
 
   fixMaterialized =
     assert materialized != null;
@@ -144,4 +147,4 @@ let
 
 in result
    # Also include the script to fix the materialization files in passthru.
-   // { passthru = (result.passthru or {}) // { inherit fixMaterialized; }; }
+   // { passthru = (result.passthru or {}) // { inherit fixMaterialized calculateMaterializedSha; }; }
