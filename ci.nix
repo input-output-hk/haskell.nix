@@ -24,11 +24,11 @@
     linux = "x86_64-linux";
     darwin = "x86_64-darwin";
   };
-  crossSystems = nixpkgsName: nixpkgs: system:
+  crossSystems = nixpkgsName: nixpkgs: compilerNixName: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (system == "x86_64-linux") {
+    in lib.optionalAttrs (system == "x86_64-linux" && compilerNixName != "ghc8101") {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux") {
@@ -59,7 +59,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         });
       }
       //
-      dimension "Cross system" (crossSystems nixpkgsName genericPkgs system) (crossSystemName: crossSystem:
+      dimension "Cross system" (crossSystems nixpkgsName genericPkgs compilerNixName system) (crossSystemName: crossSystem:
         # Cross builds
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
             build = import ./build.nix { inherit pkgs ifdLevel; };
