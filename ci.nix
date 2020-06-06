@@ -73,7 +73,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           tests =
             if (crossSystemName != "aarch64-multiplatform")
               then build.tests
-              else {
+              else pkgs.recurseIntoAttrs {
                 # Even on aarch64 we still want to build the pinned files
                 inherit (build.tests) haskellNixRoots;
               };
