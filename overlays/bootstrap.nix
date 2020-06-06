@@ -430,7 +430,11 @@ in {
                 ];
             }];
           } // args)).nix-tools.components.exes;
-        tools = [ final.git final.buildPackages.nix final.buildPackages.nix-prefetch-git ];
+        tools = [
+          final.buildPackages.nix
+          # Double buildPackages is intentional, see comment in lib/default.nix for details.
+          final.buildPackages.buildPackages.gitMinimal
+          final.buildPackages.buildPackages.nix-prefetch-git ];
     in
       final.symlinkJoin {
         name = "nix-tools";

@@ -531,6 +531,12 @@ final: prev: {
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) source-pins;
+            # Double buildPackages (since evalPackages implies buildPackages) is intentional,
+            # see comment in lib/default.nix for details.
+            inherit (final.evalPackages.buildPackages) gitMinimal nix-prefetch-git;
+            inherit (final.evalPackages) nix;
+          } // final.lib.optionalAttrs (final.stdenv.buildPlatform.libc == "glibc") {
+            inherit (final.buildPackages) glibcLocales;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
