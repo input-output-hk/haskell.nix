@@ -72,7 +72,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
           tests =
             if (crossSystemName != "aarch64-multiplatform")
-              then build.tests;
+              then build.tests
               else {
                 # Even on aarch64 we still want to build the pinned files
                 inherit (build.tests) haskellNixRoots;
