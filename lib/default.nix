@@ -4,8 +4,8 @@
 with haskellLib;
 
 let
-  # Why `final.evalPackages.buildPackages.git`?
-  # Why not just final.evalPackages.git?
+  # Why `final.evalPackages.buildPackages.gitMinimal`?
+  # Why not just final.evalPackages.gitMinimal?
   #
   # A problem arises when `evalPackages` is `buildPackages`.i
   # As may be the case in a flake.
@@ -24,7 +24,7 @@ let
   #   * When `gdb` does not exist for `js`, so when cross
   #     compiling with ghcjs `final.buildPackages.git` fails
   #     to build at all.
-  inherit (pkgs.evalPackages.buildPackages) git;
+  inherit (pkgs.evalPackages.buildPackages) gitMinimal;
 
 in {
   # Within the package components, these are the attribute names of
@@ -204,7 +204,8 @@ in {
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
-    inherit lib git cleanSourceWith;
+    inherit lib cleanSourceWith;
+    git = gitMinimal;
     inherit (pkgs.evalPackages) runCommand;
   };
 
