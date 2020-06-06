@@ -2,7 +2,7 @@
 # on a machine with e.g. no way to build the Darwin IFDs you need! 
 { supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
 , ifdLevel ? 3
-, checkMaterialization ? false }:
+, checkMaterialization ? true }:
 
 let
   inherit (import ./ci-lib.nix) stripAttrsForHydra filterDerivations;
