@@ -1524,7 +1524,7 @@ maintainer:      glasgow-haskell-users@haskell.org
 exposed:         True
 library-dirs:
 hs-libraries:    HSrts
-extra-libraries: m rt dl ffi
+extra-libraries: m rt dl ffi numa
 include-dirs:
 includes:        Stg.h
 ld-options:
