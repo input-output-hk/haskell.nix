@@ -69,16 +69,19 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           # ghc = pkgs.haskell-nix.compiler."${compilerNixName}";
           # TODO: look into making tools work when cross compiling
           # inherit (build) tools;
+          # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
+          tests =
+            if (crossSystemName != "aarch64-multiplatform")
+              then build.tests;
+              else {
+                # Even on aarch64 we still want to build the pinned files
+                inherit (build.tests) haskellNixRoots;
+              };
         } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
           remote-iserv = pkgs.ghc-extra-packages."${compilerNixName}".remote-iserv.components.exes.remote-iserv;
           iserv-proxy = pkgs.ghc-extra-packages."${compilerNixName}".iserv-proxy.components.exes.iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
-        }
-        //
-        # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
-        pkgs.lib.optionalAttrs (crossSystemName != "aarch64-multiplatform") {
-          inherit (build) tests;
         })
       )
     )
