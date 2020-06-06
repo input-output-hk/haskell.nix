@@ -534,7 +534,6 @@ in {
                 version = buildBootstrapper.happyVersion;
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
-                inherit (bootstrap.packages) cabal-install nix-tools hpack;
                 index-state = final.haskell-nix.internalHackageIndexState;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${buildBootstrapper.happyVersion}";
             } // args);
