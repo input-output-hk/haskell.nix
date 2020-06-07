@@ -13,20 +13,21 @@ in
 
 let
   haskell = pkgs.haskell-nix;
+  buildHaskell = pkgs.buildPackages.haskell-nix;
+  tool = buildHaskell.tool;
 in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel; };
 
-  tools = pkgs.lib.optionalAttrs (ifdLevel >= 3)
-    (pkgs.recurseIntoAttrs
-      (pkgs.lib.mapAttrs (_: ghc:
-        let
-          tool = name: version: pkgs.buildPackages.haskell-nix.tool name { inherit version ghc; };
-        in pkgs.recurseIntoAttrs {
-            cabal-32 = tool "cabal" "3.2.0.0";
-            ghcide   = tool "ghcide" "object-code";
-          } // pkgs.lib.optionalAttrs (ghc.version == "8.6.5") {
-            cabal-30 = tool "cabal" "3.0.0.0";
-          }) { inherit (pkgs.buildPackages.haskell-nix.compiler) ghc865 ghc883; }));
+  tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
+    pkgs.recurseIntoAttrs {
+      ghcide-020 = tool "ghcide" "0.2.0";
+    } // pkgs.lib.optionalAttrs (buildHaskell.defaultCompilerNixName == "ghc865") {
+      cabal-30 = tool "cabal" "3.0.0.0";
+    } // pkgs.lib.optionalAttrs (buildHaskell.defaultCompilerNixName != "ghc8101") {
+      cabal-32 = tool "cabal" "3.2.0.0";
+      ghcide-object-code = tool "ghcide" "object-code";
+    }
+  );
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
