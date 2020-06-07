@@ -478,7 +478,10 @@ final: prev: {
         addProjectAndPackageAttrs = rawProject:
           final.lib.fix (project: rawProject // {
             hsPkgs = final.lib.mapAttrs (n: package:
-              if n == "shellFor"
+              if package == null
+                  || n == "shellFor"
+                  || n == "ghcWithHoogle"
+                  || n == "ghcWithPackages"
                 then package # shellFor is not really a package
                 else
                   package // {
