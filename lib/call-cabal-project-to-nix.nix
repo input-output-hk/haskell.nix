@@ -286,22 +286,22 @@ let
     text = ''
       #!${pkgs.evalPackages.runtimeShell}
       case "$*" in
-        --version)
+        --version*)
           cat ${dummy-ghc-data}/ghc/version
           ;;
-        --numeric-version)
+        --numeric-version*)
           cat ${dummy-ghc-data}/ghc/numeric-version
           ;;
-        --supported-languages)
+        --supported-languages*)
           cat ${dummy-ghc-data}/ghc/supported-languages
           ;;
-        --print-global-package-db)
+        --print-global-package-db*)
           echo "$out/dumby-db"
           ;;
-        --info)
+        --info*)
           cat ${dummy-ghc-data}/ghc/info
           ;;
-        --print-libdir)
+        --print-libdir*)
           echo ${dummy-ghc-data}/ghc/libdir
           ;;
         *)
