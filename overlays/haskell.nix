@@ -483,7 +483,7 @@ final: prev: {
                 else
                   package // {
                     components = final.lib.mapAttrs (n: v:
-                      if n == "library"
+                      if n == "library" || n == "all"
                         then v // { inherit project package; }
                         else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
                 ) package.components;
