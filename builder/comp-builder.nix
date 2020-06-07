@@ -1,5 +1,11 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, nodejs }:
-
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+let
+   # These are here to avoid multiple calls to override
+   gmpStatic = gmp.override { withStatic = true; };
+   zlibStatic = zlib.static;
+   ncursesStatic = ncurses.override { enableStatic = true; };
+   numactlStatic = numactl.overrideAttrs (_: { configureFlags = "--enable-static"; });
+in
 lib.makeOverridable (
 let self = 
 { componentId
@@ -120,9 +126,10 @@ let
       "--disable-executable-dynamic"
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
-      "--ghc-option=-optl=-L${gmp.override { withStatic = true; }}/lib"
-      "--ghc-option=-optl=-L${zlib.static}/lib"
-      "--ghc-option=-optl=-L${ncurses.override { enableStatic = true; }}/lib"
+      "--ghc-option=-optl=-L${gmpStatic}/lib"
+      "--ghc-option=-optl=-L${zlibStatic}/lib"
+      "--ghc-option=-optl=-L${ncursesStatic}/lib"
+      "--ghc-option=-optl=-L${numactlStatic}/lib"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"

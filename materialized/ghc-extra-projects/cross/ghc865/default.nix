@@ -21,9 +21,8 @@
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;
         "happy".revision = (((hackage."happy")."1.19.12").revisions).default;
         "happy".flags.small_base = true;
-        "hpc".revision = (((hackage."hpc")."0.6.0.3").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
-        "process".revision = (((hackage."process")."1.6.8.2").revisions).default;
+        "process".revision = (((hackage."process")."1.6.9.0").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.6.5").revisions).default;
         "array".revision = (((hackage."array")."0.5.3.0").revisions).default;
@@ -58,6 +57,7 @@
         bytestring = ./.plan.nix/bytestring.nix;
         remote-iserv = ./.plan.nix/remote-iserv.nix;
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
+        hpc = ./.plan.nix/hpc.nix;
         libiserv = ./.plan.nix/libiserv.nix;
         ghc-boot = ./.plan.nix/ghc-boot.nix;
         ghci = ./.plan.nix/ghci.nix;
@@ -82,6 +82,7 @@
             };
           "remote-iserv" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
+          "hpc" = { flags = {}; };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
           "ghc-boot" = { flags = {}; };
           "ghci" = { flags = { "ghci" = lib.mkOverride 900 true; }; };

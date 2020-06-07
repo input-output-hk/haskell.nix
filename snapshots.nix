@@ -19,10 +19,11 @@ let
       ++ [(hackage: ghc-boot-packages.${(pkg-def hackage).compiler.nix-name})];
     modules = [
       { reinstallableLibGhc = true; } # Allow ghc library to be installed for packages that need it
-      { packages.Cabal.patches = [ ./overlays/patches/Cabal/fix-data-dir.patch ]; }
       { packages.alex.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
       { packages.happy.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
-    ];
+    ] ++ optional (ltsInRange "1" "15" name) {
+        packages.Cabal.patches = [ ./overlays/patches/Cabal/fix-data-dir.patch ];
+    };
   }; in pkgSet).config.hsPkgs;
 
   # Tests whether snapshot name is an LTS within

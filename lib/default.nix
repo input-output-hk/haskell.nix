@@ -2,7 +2,30 @@
 
 with haskellLib;
 
-{
+let
+  # Why `final.evalPackages.buildPackages.gitMinimal`?
+  # Why not just final.evalPackages.gitMinimal?
+  #
+  # A problem arises when `evalPackages` is `buildPackages`.i
+  # As may be the case in a flake.
+  #
+  # It turns out `git` depends on `gdb` in a round about way:
+  #  git -> openssh -> libfido2 -> systemd -> python libxml -> Cython -> gdb
+  # Somewhere in that chain there should perhaps be a `buildPackages` so
+  # that the `gdb` that is used is not the one for debugging code in
+  # the `final` (but instead the one for debugging code in
+  # `final.buildPackages`).
+  #
+  # Using `final.buildPackages.git` causes two problems:
+  #
+  #   * Multiple versions of `git` (and that dependency chain
+  #     to `gdb` are needed when cross compiling).
+  #   * When `gdb` does not exist for `js`, so when cross
+  #     compiling with ghcjs `final.buildPackages.git` fails
+  #     to build at all.
+  inherit (pkgs.evalPackages.buildPackages) gitMinimal;
+
+in {
   # Within the package components, these are the attribute names of
   # nested attrsets.
   subComponentTypes = [
@@ -180,11 +203,8 @@ with haskellLib;
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
-    # Use the minamal version of git that does not inclyde python
-    # as that caused problems when cross compiling.  This is the
-    # same version used by `fetchgit`. 
-    git = pkgs.evalPackages.gitMinimal;
     inherit lib cleanSourceWith;
+    git = gitMinimal;
     inherit (pkgs.evalPackages) runCommand;
   };
 

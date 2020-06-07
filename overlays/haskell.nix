@@ -178,7 +178,10 @@ final: prev: {
         # Package sets for all stackage snapshots.
         snapshots = import ../snapshots.nix { inherit (final) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
         # Pick a recent LTS snapshot to be our "default" package set.
-        haskellPackages = snapshots."lts-14.13";
+        haskellPackages =
+            if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
+            then snapshots."lts-15.13"
+            else snapshots."lts-14.13";
 
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
@@ -242,7 +245,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2020-04-12T00:00:00Z";
+        internalHackageIndexState = "2020-05-31T00:00:00Z";
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
@@ -364,8 +367,8 @@ final: prev: {
           '';
 
         genStackCache = import ../lib/stack-cache-generator.nix {
-            inherit (final.buildPackages) pkgs;
-            inherit (final.buildPackages.haskell-nix) haskellLib nix-tools;
+            inherit (final.evalPackages) pkgs;
+            inherit (final.evalPackages.haskell-nix) haskellLib nix-tools;
         };
 
         mkCacheModule = cache:
@@ -527,35 +530,37 @@ final: prev: {
         };
 
         haskellNixRoots' = ifdLevel:
-            let filterSupportedGhc = final.lib.filterAttrs (n: _: n == "ghc865" || n == "ghc883");
+          let inherit (final.haskell-nix) defaultCompilerNixName;
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.evalPackages) gitMinimal;
             inherit (final.buildPackages.haskell-nix) source-pins;
+            # Double buildPackages (since evalPackages implies buildPackages) is intentional,
+            # see comment in lib/default.nix for details.
+            inherit (final.evalPackages.buildPackages) gitMinimal nix-prefetch-git;
+            inherit (final.evalPackages) nix;
+          } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
+            inherit (final) glibcLocales;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
             boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
             boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
             boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
-            ghc865 = final.buildPackages.haskell-nix.compiler.ghc865;
-            ghc883 = final.buildPackages.haskell-nix.compiler.ghc883;
+            ghc = final.buildPackages.haskell-nix.ghc;
             ghc-boot-packages-nix = final.recurseIntoAttrs
-              (builtins.mapAttrs (_: final.recurseIntoAttrs)
-                (filterSupportedGhc final.ghc-boot-packages-nix));
-            ghc-extra-projects = final.recurseIntoAttrs (builtins.mapAttrs (_: proj: withInputs proj.plan-nix)
-              (filterSupportedGhc final.ghc-extra-projects));
+              final.ghc-boot-packages-nix."${defaultCompilerNixName}";
+            ghc-extra-projects-nix =
+              final.ghc-extra-projects."${defaultCompilerNixName}".plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
             inherit (final.buildPackages.haskell-nix) cabal-install dotCabal nix-tools alex happy;
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itfinal.
-            iserv-proxy = final.recurseIntoAttrs
-              (builtins.mapAttrs (_: pkgs: pkgs.iserv-proxy.components.exes.iserv-proxy)
-                (filterSupportedGhc final.ghc-extra-packages));
-            remote-iserv = final.recurseIntoAttrs
-              (builtins.mapAttrs (_: pkgs: pkgs.remote-iserv.components.exes.remote-iserv)
-                (filterSupportedGhc final.ghc-extra-packages));
+            inherit (final.ghc-extra-packages."${defaultCompilerNixName}"
+              .iserv-proxy.components.exes) iserv-proxy;
+            inherit (final.ghc-extra-packages."${defaultCompilerNixName}"
+              .remote-iserv.components.exes) remote-iserv;
           });
     };
 }

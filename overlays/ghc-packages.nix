@@ -22,11 +22,18 @@ let
 
   # Combines multiple derivations into one to make them
   # easier to materialize.
-  combineFiles = name: ext: files: final.linkFarm name
-    (final.lib.mapAttrsToList (name: path: {
-      name = name + ext;
-      inherit path;
-    }) files);
+  # Using `cp -Lr` here follows the symlinks and prevents
+  # `access to path is forbidden in restricted mode`
+  # errors on hydra when the materialized files are not present.
+  combineFiles = name: ext: files:
+    let links = final.linkFarm name
+      (final.lib.mapAttrsToList (name: path: {
+        name = name + ext;
+        inherit path;
+      }) files);
+    in final.evalPackages.runCommand "${name}${ext}" {} ''
+      cp -Lr ${links} $out
+    '';
 
   # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
@@ -58,6 +65,7 @@ let
       ghci         = "libraries/ghci";
       ghc-boot     = "libraries/ghc-boot";
       ghc-heap     = "libraries/ghc-heap";
+      hpc          = "libraries/hpc";
       libiserv     = "libraries/libiserv";
       iserv        = "utils/iserv";
       remote-iserv = "utils/remote-iserv";
@@ -155,7 +163,7 @@ in rec {
           then materializedPath
           else null;
       ghcOverride = final.buildPackages.haskell-nix.compiler.${ghcName};
-      configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
+      configureArgs = "--disable-tests --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
 
