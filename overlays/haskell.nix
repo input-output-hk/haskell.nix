@@ -533,7 +533,6 @@ final: prev: {
           let inherit (final.haskell-nix) defaultCompilerNixName;
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
-            inherit (final.evalPackages) gitMinimal;
             inherit (final.buildPackages.haskell-nix) source-pins;
             # Double buildPackages (since evalPackages implies buildPackages) is intentional,
             # see comment in lib/default.nix for details.
