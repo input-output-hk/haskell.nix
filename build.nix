@@ -21,11 +21,11 @@ in rec {
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs {
       ghcide-020 = tool "ghcide" "0.2.0";
-      ghcide-object-code = tool "ghcide" "object-code";
     } // pkgs.lib.optionalAttrs (buildHaskell.defaultCompilerNixName == "ghc865") {
       cabal-30 = tool "cabal" "3.0.0.0";
     } // pkgs.lib.optionalAttrs (buildHaskell.defaultCompilerNixName != "ghc8101") {
       cabal-32 = tool "cabal" "3.2.0.0";
+      ghcide-object-code = tool "ghcide" "object-code";
     }
   );
 
