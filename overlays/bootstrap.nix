@@ -28,12 +28,25 @@ let
         fi
       done
     '';
+    # For each architecture, we need to know two (somewhat ad-hoc) things:
+    # - What GHC version we should use for bootstrapping.
+    # - What Happy version we should use for bootstrapping.
+    buildBootstrapper =
+        if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
+        then {
+            compilerNixName = "ghc882";
+            happyVersion = "1.19.12";
+        }
+        else {
+            compilerNixName = "ghc844";
+            happyVersion = "1.19.11";
+        };
 in {
   haskell-nix = prev.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = with final.buildPackages; {
-                ghc = buildPackages.haskell-nix.bootstrap.compiler.ghc844;
+                ghc = final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
                 alex = final.haskell-nix.bootstrap.packages.alex-tool {
                   checkMaterialization = false;
                 };
@@ -98,18 +111,18 @@ in {
                 ++ until             "8.8"   ./patches/ghc/ghc-8.4.3-Cabal2201-response-file-support.patch       # https://github.com/haskell/cabal/pulls/5996            -- merged; cabal-3.0.0 (ghc-8.8.1)
                 ++ until             "8.8"   ./patches/ghc/ghc-8.6-Cabal-fix-datadir.patch                       # https://github.com/haskell/cabal/issues/5862
                 ++ until             "8.8"   ./patches/ghc/MR196--ghc-pkg-shut-up.patch                          # https://gitlab.haskell.org/ghc/ghc/merge_requests/196  -- merged; ghc-8.8.1
-                ++ from      "8.6"           ./patches/ghc/mistuke-ghc-err_clean_up_error_handler-8ab1a89af89848f1713e6849f189de66c0ed7898.diff # this is part of Phyx- revamped io-manager.
-                ++ always                    ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
-                ++ always                    ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
+                ++ fromUntil "8.6"   "8.10"  ./patches/ghc/mistuke-ghc-err_clean_up_error_handler-8ab1a89af89848f1713e6849f189de66c0ed7898.diff # this is part of Phyx- revamped io-manager.
+                ++ until             "8.10"  ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
+                ++ until             "8.10"  ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
                 ++ always                    ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
                 ++ always                    ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
-                ++ always                    ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
+                ++ until             "8.10"  ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
                 ++ from      "8.8"           ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
                 ++ always                    ./patches/ghc/respect-ar-path.patch
-                ++ until             "8.12"  ./patches/ghc/MR2537-use-one-shot-kqueue-on-macos.patch 
+                ++ until             "8.10"  ./patches/ghc/MR2537-use-one-shot-kqueue-on-macos.patch
                 ++ final.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
                 ++ final.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
@@ -120,7 +133,8 @@ in {
                 ++ fromUntil "8.8.2" "8.9"                ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
-                ++ final.lib.optional (versionAtLeast "8.4.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
@@ -273,6 +287,30 @@ in {
 
                 ghc-patches = ghc-patches "8.8.3";
             };
+            ghc8101 =
+              let
+                buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
+              in final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = buildPkgs.haskell-nix.compiler.ghc883;
+                  alex = buildPkgs.haskell-nix.haskellPackages.alex.components.exes.alex;
+                  happy = buildPkgs.haskell-nix.haskellPackages.happy.components.exes.happy;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_7;
+                llvmPackages = final.llvmPackages_7;
+
+                src-spec = rec {
+                    version = "8.10.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "1xgdl6ig5jzli3bg054vfryfkg0y6wggf68g66c32sr67bw0ffsf";
+                };
+
+                ghc-patches = ghc-patches "8.10.1";
+            };
         } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
                 # compiler defined below.  This is crucial to build packages
@@ -320,7 +358,11 @@ in {
             '' + installDeps targetPrefix);
         })));
 
-    defaultCompilerNixName = "ghc865";
+    # Need to use something from 8.8.x as the default to build aarch64 native compiler:
+    defaultCompilerNixName =
+        if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
+        then "ghc883"
+        else "ghc865";
     ghc = final.haskell-nix.compiler."${final.haskell-nix.defaultCompilerNixName}";
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
     # to check materialized results.  We need to take care that when
@@ -328,19 +370,24 @@ in {
     # tools used or there will be infinite recursion.
     # always has `checkMaterialization = false` to avoid infinite
     # recursion.
-    cabal-install-tool = args: final.haskell-nix.tool "cabal" ({
-      version = "3.2.0.0";
-      index-state = final.haskell-nix.internalHackageIndexState;
-      # When building cabal-install (only happens when checking materialization)
-      # disable checking of the tools used to avoid infinite recursion.
-      cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
-        (args // { checkMaterialization = false; });
-      nix-tools = final.evalPackages.haskell-nix.nix-tools-set
-        (args // { checkMaterialization = false; });
-      materialized = ../materialized + "/${
-          args.compiler-nix-name or final.haskell-nix.defaultCompilerNixName
-        }/cabal-install";
-    } // args);
+    cabal-install-tool = args:
+      # Hackage version of cabal-install does not compiler with ghc 8.10.1 yet.
+      let compiler-nix-name = args.compiler-nix-name or
+            (if final.haskell-nix.defaultCompilerNixName == "ghc8101"
+              then "ghc883"
+              else final.haskell-nix.defaultCompilerNixName);
+      in final.haskell-nix.tool "cabal" ({
+        version = "3.2.0.0";
+        index-state = final.haskell-nix.internalHackageIndexState;
+        inherit compiler-nix-name;
+        # When building cabal-install (only happens when checking materialization)
+        # disable checking of the tools used to avoid infinite recursion.
+        cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
+          (args // { checkMaterialization = false; });
+        nix-tools = final.evalPackages.haskell-nix.nix-tools-set
+          (args // { checkMaterialization = false; });
+        materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
+      } // args);
     cabal-install = final.buildPackages.haskell-nix.cabal-install-tool {};
     nix-tools-set = args:
       let
@@ -353,6 +400,10 @@ in {
               override = "nix-tools-src";
             };
             index-state = final.haskell-nix.internalHackageIndexState;
+            cabalProjectLocal = ''
+              allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
+              index-state: ${final.haskell-nix.internalHackageIndexState}
+            '';
             # When building cabal-install (only happens when checking materialization)
             # disable checking of the tools used to avoid infinite recursion.
             cabal-install = final.evalPackages.haskell-nix.cabal-install-tool
@@ -379,7 +430,11 @@ in {
                 ];
             }];
           } // args)).nix-tools.components.exes;
-        tools = [ final.git final.buildPackages.nix final.buildPackages.nix-prefetch-git ];
+        tools = [
+          final.buildPackages.nix
+          # Double buildPackages is intentional, see comment in lib/default.nix for details.
+          final.buildPackages.buildPackages.gitMinimal
+          final.buildPackages.buildPackages.nix-prefetch-git ];
     in
       final.symlinkJoin {
         name = "nix-tools";
@@ -438,7 +493,9 @@ in {
 
 
     # the bootstrap infra structure (pre-compiled ghc; bootstrapped cabal-install, ...)
-    bootstrap = with final.haskell-nix; let ghc = final.buildPackages.haskell-nix.bootstrap.compiler.ghc844; in {
+    bootstrap = with final.haskell-nix;
+      let ghc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
+      in {
         # XXX: import ../. will throw away all other overlays, config values, ...
         #      this is not ideal!
         # get binary compilers for bootstrapping.  We'll put the eventual proper
@@ -470,15 +527,15 @@ in {
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 index-state = final.haskell-nix.internalHackageIndexState;
-                materialized = ../materialized/bootstrap/alex;
+                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
             } // args);
             alex = bootstrap.packages.alex-tool {};
             happy-tool = args: tool "happy" ({
-                version = "1.19.11";
+                version = buildBootstrapper.happyVersion;
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 index-state = final.haskell-nix.internalHackageIndexState;
-                materialized = ../materialized/bootstrap/happy;
+                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${buildBootstrapper.happyVersion}";
             } // args);
             happy = bootstrap.packages.happy-tool {};
             hscolour-tool = args: (hackage-package ({
@@ -487,7 +544,7 @@ in {
                 # Only a boot compiler is suitable here
                 ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
                 index-state = final.haskell-nix.internalHackageIndexState;
-                materialized = ../materialized/bootstrap/hscolour;
+                materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
             } // args)).components.exes.HsColour;
             hscolour = bootstrap.packages.hscolour-tool {};
         };

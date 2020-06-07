@@ -2,7 +2,7 @@
 let readIfExists = src: fileName:
       let origSrcDir = src.origSrcSubDir or src;
       in
-        if ((__readDir origSrcDir)."${fileName}" or "") == "regular"
+        if builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
           then __readFile (origSrcDir + "/${fileName}")
           else null;
 in
@@ -147,7 +147,7 @@ let
   fetchRepo = repo:
     let sha256 = repo."--sha256" or (lookupSha256 repo);
     in (if sha256 != null
-      then pkgs.fetchgit {
+      then pkgs.evalPackages.fetchgit {
           url = repo.location;
           rev = repo.tag;
           inherit sha256;

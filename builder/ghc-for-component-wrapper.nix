@@ -6,7 +6,7 @@
 # GHC automatically configured with the dependencies in the package
 # database.
 
-{ lib, stdenv, ghc, runCommand, lndir, makeWrapper
+{ lib, stdenv, ghc, runCommand, lndir, makeWrapper, haskellLib
 }:
 
 { componentName  # Full derivation name of the component
@@ -19,7 +19,7 @@ let
   libDir         = "$out/${configFiles.libDir}";
   docDir         = "$out/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
-  haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !(stdenv.buildPlatform == stdenv.hostPlatform)
+  haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
     then ghc.buildGHC
     else ghc;
 

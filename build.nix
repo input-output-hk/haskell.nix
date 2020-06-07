@@ -46,7 +46,12 @@ in rec {
     # use)
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
-      inherit (haskell) nix-tools;
+      # Includes cabal-install and hpack since these are commonly used.
+      nix-tools = pkgs.linkFarm "common-tools" [
+        { name = "nix-tools";     path = haskell.nix-tools; }
+        { name = "cabal-install"; path = haskell.cabal-install; }
+        { name = "hpack";         path = haskell.haskellPackages.hpack.components.exes.hpack; }
+      ];
     };
   };
 
