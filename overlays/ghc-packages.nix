@@ -65,6 +65,7 @@ let
       ghci         = "libraries/ghci";
       ghc-boot     = "libraries/ghc-boot";
       ghc-heap     = "libraries/ghc-heap";
+      hpc          = "libraries/hpc";
       libiserv     = "libraries/libiserv";
       iserv        = "utils/iserv";
       remote-iserv = "utils/remote-iserv";
@@ -162,7 +163,7 @@ in rec {
           then materializedPath
           else null;
       ghcOverride = final.buildPackages.haskell-nix.compiler.${ghcName};
-      configureArgs = "--disable-tests"; # avoid failures satisfying bytestring package tests dependencies
+      configureArgs = "--disable-tests --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
 
