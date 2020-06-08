@@ -36,7 +36,7 @@ let
   unchecked =
     let
       sha256message = "To make this a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of ${calculateMaterializedSha}";
-      materializeMessage = "To materialize the output entirely, point `materialized` to a writable path and pass the path to ${updateMaterialized}";
+      materializeMessage = "To materialize the output entirely, pass a writable path as the `materialized` argument and pass that path to ${generateMaterialized}";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
@@ -121,11 +121,10 @@ let
   calculateMaterializedSha =
     writeShellScript "calculateSha" ''${nix}/nix-hash --base32 --type sha256 ${calculateNoHash}'';
 
-  updateMaterialized =
-    assert materialized != null;
-    writeShellScript "fixMaterialized" ''
-      # The target is either the argument to the script if there is one, or else the current location of the materialized files
-      TARGET=''${1:-${toString materialized}}
+  # Generate the materialized files in a particular path.
+  generateMaterialized =
+    writeShellScript "generateMaterialized" ''
+      TARGET=$1
 
       # Crudely try and guard people from writing to the Nix store accidentally
       if [[ ''${TARGET##/nix/store/} != $TARGET ]]; then
@@ -133,11 +132,15 @@ let
          exit 1
       fi
 
-      # Update the files
+      # Generate the files
       rm -rf $TARGET
       cp -r ${calculateNoHash} "$TARGET"
       chmod -R +w "$TARGET"
   '';
+  # Update the materialized files at 'materialized', which must already be set.
+  updateMaterialized =
+    assert materialized != null;
+    writeShellScript "updateMaterialized" ''${generateMaterialized} ${toString materialized}'';
 
   # Materialized location was specified, but the files are not there.
   missingMaterialized = materialized != null && !__pathExists materialized;
@@ -149,5 +152,5 @@ let
     else unchecked;
 
 in result
-   # Also include the script to fix the materialization files in passthru.
-   // { passthru = (result.passthru or {}) // { inherit updateMaterialized calculateMaterializedSha; }; }
+   # Also include the scripts for fixing materialization files in passthru.
+   // { passthru = (result.passthru or {}) // { inherit generateMaterialized updateMaterialized calculateMaterializedSha; }; }
