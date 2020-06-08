@@ -248,7 +248,7 @@ final: prev: {
           inherit (final.evalPackages) nix;
           inherit (final.haskell-nix) checkMaterialization;
           pkgs = final.evalPackages.pkgs;
-          inherit (final.evalPackages.pkgs) runCommand;
+          inherit (final.evalPackages.pkgs) runCommand writeShellScript;
         };
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
