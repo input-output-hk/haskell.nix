@@ -477,12 +477,9 @@ final: prev: {
         # a `.package` attribute on the components.
         addProjectAndPackageAttrs = rawProject:
           final.lib.fix (project: rawProject // {
-            hsPkgs = final.lib.mapAttrs (n: package:
+            hsPkgs = (final.lib.mapAttrs (n: package:
               if package == null
-                  || n == "shellFor"
-                  || n == "ghcWithHoogle"
-                  || n == "ghcWithPackages"
-                then package # shellFor is not really a package
+                then null
                 else
                   package // {
                     components = final.lib.mapAttrs (n: v:
@@ -490,7 +487,11 @@ final: prev: {
                         then v // { inherit project package; }
                         else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
                 ) package.components;
-              }) rawProject.hsPkgs;
+              }) rawProject.hsPkgs
+              // {
+                # These are functions not packages
+                inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
+              });
           });
 
         cabalProject = args: let p = cabalProject' args;
