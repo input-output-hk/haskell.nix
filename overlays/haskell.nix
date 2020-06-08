@@ -470,7 +470,31 @@ final: prev: {
                               { compiler.nix-name = args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
-            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
+            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
+
+        # Take `hsPkgs` from the `rawProject` and update all the packages and
+        # components so they have a `.project` attribute and as well as
+        # a `.package` attribute on the components.
+        addProjectAndPackageAttrs = rawProject:
+          final.lib.fix (project: rawProject // {
+            hsPkgs = (final.lib.mapAttrs (n: package:
+              if package == null
+                then null
+                else
+                  package // {
+                    components = final.lib.mapAttrs (n: v:
+                      if n == "library" || n == "all"
+                        then v // { inherit project package; }
+                        else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
+                    ) package.components;
+                    inherit project;
+                  }
+              ) rawProject.hsPkgs
+              // {
+                # These are functions not packages
+                inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
+              });
+          });
 
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // {
@@ -495,7 +519,7 @@ final: prev: {
                              ++ (args.modules or [])
                              ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
+            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
