@@ -486,8 +486,10 @@ final: prev: {
                       if n == "library" || n == "all"
                         then v // { inherit project package; }
                         else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
-                ) package.components;
-              }) rawProject.hsPkgs
+                    ) package.components;
+                    inherit project;
+                  }
+              ) rawProject.hsPkgs
               // {
                 # These are functions not packages
                 inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
