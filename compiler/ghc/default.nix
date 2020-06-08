@@ -333,7 +333,11 @@ in let configured-src = stdenv.mkDerivation (rec {
        includes/dist-derivedconstants/header/GHCConstantsHaskellType.hs \
        includes/dist-derivedconstants/header/GHCConstantsHaskellWrappers.hs \
        $generated/ghc/includes/dist-derivedconstants/header
-    cp includes/ghcplatform.h $generated/ghc/includes
+    if [[ -f includes/ghcplatform.h ]]; then
+      cp includes/ghcplatform.h $generated/ghc/includes
+    elif [[ -f includes/dist-install/build/ghcplatform.h ]]; then
+      cp includes/dist-install/build/ghcplatform.h $generated/ghc/includes
+    fi
     mkdir -p $generated/ghc/compiler/stage2/build
     cp ghc/compiler/stage2/build/Config.hs $generated/ghc/compiler/stage2/build || true
     mkdir -p $generated/ghc/rts/build
