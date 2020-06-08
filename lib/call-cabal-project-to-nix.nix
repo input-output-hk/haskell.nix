@@ -305,7 +305,7 @@ let
           echo ${dummy-ghc-data}/ghc/libdir
           ;;
         *)
-          echo "Unknown argment '$*'" >&2
+          echo "Unknown argument '$*'" >&2
           exit 1
           ;;
         esac
@@ -328,7 +328,9 @@ let
           cat ${dummy-ghc-data}/ghc-pkg/dump-global
           ;;
         *)
-          echo "Unknown argment '$*'" >&2
+          echo "Unknown argument '$*'. " >&2
+          echo "Additional ghc-pkg-options are not currently supported." >&2
+          echo "See https://github.com/input-output-hk/haskell.nix/pull/658" >&2
           exit 1
           ;;
         esac
