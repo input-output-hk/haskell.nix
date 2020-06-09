@@ -451,7 +451,7 @@ final: prev: {
                 mv "${name}-${version}" $out
                 '';
           in cabalProject' (
-            (final.haskell-nix.hackageQuirks { inherit name version; }) // 
+            (final.haskell-nix.hackageQuirks { inherit name version; }) //
               builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
@@ -542,7 +542,7 @@ final: prev: {
         # In your tests module add something that is effectively
         #   testProjectPlan = withInputs project.plan-nix;
         withInputs = final.recurseIntoAttrs;
-  
+
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
         haskellNixRoots = final.recurseIntoAttrs {
