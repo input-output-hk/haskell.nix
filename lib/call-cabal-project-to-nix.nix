@@ -54,7 +54,7 @@ let
             + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
           else
             if compiler-nix-name != null
-              then pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}"
+              then pkgs.haskell-nix.compiler."${compiler-nix-name}"
               else defaults.ghc;
 
 in
@@ -278,7 +278,7 @@ let
         > $out/ghc-pkg/dump-global
   '');
 
-  # Dummy `ghc` that uses the captured output 
+  # Dummy `ghc` that uses the captured output
   dummy-ghc = pkgs.evalPackages.writeTextFile {
     name = "dummy-" + ghc.name;
     executable = true;
@@ -313,7 +313,7 @@ let
     '';
   };
 
-  # Dummy `ghc-pkg` that uses the captured output 
+  # Dummy `ghc-pkg` that uses the captured output
   dummy-ghc-pkg = pkgs.evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
     executable = true;
