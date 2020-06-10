@@ -77,6 +77,7 @@ pkgs:
      icudata = pkgs.icu;
      vulkan = pkgs.vulkan-loader;
      sodium = pkgs.libsodium;
+     gfortran = pkgs.gfortran.cc.lib;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
