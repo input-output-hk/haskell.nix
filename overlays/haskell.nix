@@ -477,13 +477,13 @@ final: prev: {
         # a `.package` attribute on the components.
         addProjectAndPackageAttrs = rawProject:
           final.lib.fix (project':
-            let project = final.lib.dontRecurseIntoAttrs project';
+            let project = project' // { recurseForDerivations = false; };
             in rawProject // {
               hsPkgs = (final.lib.mapAttrs (n: package':
                 if package' == null
                   then null
                   else
-                    let package = final.lib.dontRecurseIntoAttrs package';
+                    let package = package' // { recurseForDerivations = false; };
                     in package' // {
                       components = final.lib.mapAttrs (n: v:
                         if n == "library" || n == "all"
