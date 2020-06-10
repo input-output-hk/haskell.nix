@@ -248,7 +248,7 @@ final: prev: {
           inherit (final.evalPackages) nix;
           inherit (final.haskell-nix) checkMaterialization;
           pkgs = final.evalPackages.pkgs;
-          inherit (final.evalPackages.pkgs) runCommand;
+          inherit (final.evalPackages.pkgs) runCommand writeShellScript;
         };
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
@@ -451,7 +451,7 @@ final: prev: {
                 mv "${name}-${version}" $out
                 '';
           in cabalProject' (
-            (final.haskell-nix.hackageQuirks { inherit name version; }) // 
+            (final.haskell-nix.hackageQuirks { inherit name version; }) //
               builtins.removeAttrs args [ "version" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
@@ -470,7 +470,34 @@ final: prev: {
                               { compiler.nix-name = args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
-            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
+            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
+
+        # Take `hsPkgs` from the `rawProject` and update all the packages and
+        # components so they have a `.project` attribute and as well as
+        # a `.package` attribute on the components.
+        addProjectAndPackageAttrs = rawProject:
+          final.lib.fix (project':
+            let project = project' // { recurseForDerivations = false; };
+            in rawProject // {
+              hsPkgs = (final.lib.mapAttrs (n: package':
+                if package' == null
+                  then null
+                  else
+                    let package = package' // { recurseForDerivations = false; };
+                    in package' // {
+                      components = final.lib.mapAttrs (n: v:
+                        if n == "library" || n == "all"
+                          then v // { inherit project package; }
+                          else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
+                      ) package'.components;
+                      inherit project;
+                    }
+                ) rawProject.hsPkgs
+                // {
+                  # These are functions not packages
+                  inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
+              });
+          });
 
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // {
@@ -495,7 +522,7 @@ final: prev: {
                              ++ (args.modules or [])
                              ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
+            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
@@ -518,7 +545,7 @@ final: prev: {
         # In your tests module add something that is effectively
         #   testProjectPlan = withInputs project.plan-nix;
         withInputs = final.recurseIntoAttrs;
-  
+
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
         haskellNixRoots = final.recurseIntoAttrs {

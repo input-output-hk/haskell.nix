@@ -54,7 +54,15 @@ let
             + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
           else
             if compiler-nix-name != null
-              then pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}"
+              # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
+              # call to this file. And thus `pkgs` here is the proper `buildPackages`
+              # set and we do not need, nor should pick the compiler from another level
+              # of `buildPackages`, lest we want to get confusing errors about the Win32
+              # package.
+              #
+              # > The option `packages.Win32.package.identifier.name' is used but not defined.
+              #
+              then pkgs.haskell-nix.compiler."${compiler-nix-name}"
               else defaults.ghc;
 
 in
@@ -278,7 +286,7 @@ let
         > $out/ghc-pkg/dump-global
   '');
 
-  # Dummy `ghc` that uses the captured output 
+  # Dummy `ghc` that uses the captured output
   dummy-ghc = pkgs.evalPackages.writeTextFile {
     name = "dummy-" + ghc.name;
     executable = true;
@@ -286,26 +294,26 @@ let
     text = ''
       #!${pkgs.evalPackages.runtimeShell}
       case "$*" in
-        --version)
+        --version*)
           cat ${dummy-ghc-data}/ghc/version
           ;;
-        --numeric-version)
+        --numeric-version*)
           cat ${dummy-ghc-data}/ghc/numeric-version
           ;;
-        --supported-languages)
+        --supported-languages*)
           cat ${dummy-ghc-data}/ghc/supported-languages
           ;;
-        --print-global-package-db)
+        --print-global-package-db*)
           echo "$out/dumby-db"
           ;;
-        --info)
+        --info*)
           cat ${dummy-ghc-data}/ghc/info
           ;;
-        --print-libdir)
+        --print-libdir*)
           echo ${dummy-ghc-data}/ghc/libdir
           ;;
         *)
-          echo "Unknown argment '$*'" >&2
+          echo "Unknown argument '$*'" >&2
           exit 1
           ;;
         esac
@@ -313,7 +321,7 @@ let
     '';
   };
 
-  # Dummy `ghc-pkg` that uses the captured output 
+  # Dummy `ghc-pkg` that uses the captured output
   dummy-ghc-pkg = pkgs.evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
     executable = true;
@@ -328,7 +336,9 @@ let
           cat ${dummy-ghc-data}/ghc-pkg/dump-global
           ;;
         *)
-          echo "Unknown argment '$*'" >&2
+          echo "Unknown argument '$*'. " >&2
+          echo "Additional ghc-pkg-options are not currently supported." >&2
+          echo "See https://github.com/input-output-hk/haskell.nix/pull/658" >&2
           exit 1
           ;;
         esac
