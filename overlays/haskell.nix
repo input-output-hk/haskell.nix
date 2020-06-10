@@ -476,23 +476,26 @@ final: prev: {
         # components so they have a `.project` attribute and as well as
         # a `.package` attribute on the components.
         addProjectAndPackageAttrs = rawProject:
-          final.lib.fix (project: rawProject // {
-            hsPkgs = (final.lib.mapAttrs (n: package:
-              if package == null
-                then null
-                else
-                  package // {
-                    components = final.lib.mapAttrs (n: v:
-                      if n == "library" || n == "all"
-                        then v // { inherit project package; }
-                        else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
-                    ) package.components;
-                    inherit project;
-                  }
-              ) rawProject.hsPkgs
-              // {
-                # These are functions not packages
-                inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
+          final.lib.fix (project':
+            let project = final.lib.dontRecurseIntoAttrs project';
+            in rawProject // {
+              hsPkgs = (final.lib.mapAttrs (n: package':
+                if package' == null
+                  then null
+                  else
+                    let package = final.lib.dontRecurseIntoAttrs package';
+                    in package' // {
+                      components = final.lib.mapAttrs (n: v:
+                        if n == "library" || n == "all"
+                          then v // { inherit project package; }
+                          else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
+                      ) package'.components;
+                      inherit project;
+                    }
+                ) rawProject.hsPkgs
+                // {
+                  # These are functions not packages
+                  inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
               });
           });
 
