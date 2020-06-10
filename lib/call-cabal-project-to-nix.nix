@@ -131,7 +131,7 @@ in
   assert (if index-state-found == null
     then throw "No index state passed and none found in ${cabalProjectFileName}" else true);
   assert (if index-sha256-found == null
-    then throw "provided sha256 for index-state ${index-state-found} is null!" else true);
+    then throw "Unknown index-state ${index-state-found}, the latest index-state I know about is ${pkgs.lib.last (builtins.attrNames index-state-hashes)}. You may need to update to a newer hackage.nix." else true);
 
 let
   span = pred: list:
