@@ -4,7 +4,7 @@
 [![](https://img.shields.io/buildkite/c8d5a20d3ff0f440f82adb9190b43c16c91e5e47e8adfa867a/master.svg?label=nightly%20updates)](https://buildkite.com/input-output-hk/haskell-dot-nix-nightly-updates)
 
 `haskell.nix` can automatically translate your Cabal or Stack project and
-its dependencies into Nix code.  
+its dependencies into Nix code.
 
 ## [Documentation](https://input-output-hk.github.io/haskell.nix/)
 
@@ -70,6 +70,8 @@ pkgs.haskell-nix.stackProject {
 }
 ```
 
+### Working with a project
+
 To build the library component of a package in the project run:
 
 ```shell
@@ -90,24 +92,23 @@ cabal new-build your-package-name
 cabal new-repl your-package-name:library:your-package-name
 ```
 
-## Using binary Cache to speed up compilation
+## Using a binary cache
 
 To use precompiled binaries you'll need:
 
-- to configure a binary cache by following instructions on [iohk.cachix.org](https://iohk.cachix.org).
-- to pin `nixpkgs` according to [nix/sources.json](nix/sources.json).
-
+- To configure the IOHK binary cache by following the instructions on [iohk.cachix.org](https://iohk.cachix.org).
+- To pin your `nixpkgs` to match one of the revisions built by our CI: these can be found inside the `sources` attribute (see the quickstart above for an example).
 
 ## Related repos
 
 The `haskell.nix` repository contains the runtime system for building
 Haskell packages in Nix. It depends on other repos, which are:
 
-- [nix-tools](https://github.com/input-output-hk/nix-tools) — provides the programs for generating Nix expressions from  Haskell projects.
+- [`nix-tools`](https://github.com/input-output-hk/nix-tools) — provides the programs for generating Nix expressions from  Haskell projects.
 
-- [hackage.nix](https://github.com/input-output-hk/hackage.nix) — the latest contents of the [Hackage](https://hackage.haskell.org/) databases, converted to Nix expressions.
+- [`hackage.nix`](https://github.com/input-output-hk/hackage.nix) — the latest contents of the [Hackage](https://hackage.haskell.org/) databases, converted to Nix expressions.
 
-- [stackage.nix](https://github.com/input-output-hk/stackage.nix) — all of the [Stackage](https://www.stackage.org/) snapshots, converted to Nix expressions.
+- [`stackage.nix`](https://github.com/input-output-hk/stackage.nix) — all of the [Stackage](https://www.stackage.org/) snapshots, converted to Nix expressions.
 
 ## IRC Channel
 
