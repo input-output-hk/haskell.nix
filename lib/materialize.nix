@@ -119,7 +119,7 @@ let
       chmod -R +w $out
     '';
   calculateMaterializedSha =
-    writeShellScript "calculateSha" ''${nix}/nix-hash --base32 --type sha256 ${calculateNoHash}'';
+    writeShellScript "calculateSha" ''${nix}/bin/nix-hash --base32 --type sha256 ${calculateNoHash}'';
 
   # Generate the materialized files in a particular path.
   generateMaterialized =
