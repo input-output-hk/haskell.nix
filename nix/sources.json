@@ -11,6 +11,18 @@
         "url": "https://github.com/nmattia/niv/archive/f73bf8d584148677b01859677a63191c31911eae.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "nix-tools": {
+        "branch": "master",
+        "description": "Translate Cabals Generic Package Description to a Nix expression",
+        "homepage": null,
+        "owner": "input-output-hk",
+        "repo": "nix-tools",
+        "rev": "53cd6d984ef2be1ae1b4e4a2e79703affa63565c",
+        "sha256": "0ja9c8n2251ricmbg586vr3l3lwv3967v0g1yfwwsz4d08k5q5fw",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/nix-tools/archive/53cd6d984ef2be1ae1b4e4a2e79703affa63565c.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "nixpkgs-1909": {
         "branch": "nixpkgs-19.09-darwin",
         "description": "Nix Packages collection",

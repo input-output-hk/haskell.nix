@@ -394,11 +394,7 @@ in {
         exes =
           (final.haskell-nix.cabalProject ({
             name = "nix-tools";
-            src = final.haskell-nix.fetchExternal {
-              name     = "nix-tools-src";
-              specJSON = ../nix-tools/nix-tools-src.json;
-              override = "nix-tools-src";
-            };
+            src = final.haskell-nix.sources.nix-tools;
             index-state = final.haskell-nix.internalHackageIndexState;
             cabalProjectLocal = ''
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
