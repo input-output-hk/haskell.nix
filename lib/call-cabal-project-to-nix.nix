@@ -122,14 +122,39 @@ let
           else builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
             (pkgs.lib.last (builtins.attrNames index-state-hashes));
 
-  # Lookup hash for the index state we found
-  index-sha256-found = if index-sha256 != null
-    then index-sha256
-    else index-state-hashes.${index-state-found} or null;
-
 in
   assert (if index-state-found == null
     then throw "No index state passed and none found in ${cabalProjectFileName}" else true);
+
+  assert (if index-sha256 == null && !(pkgs.lib.hasSuffix "Z" index-state-found)
+    then throw "Index state found was ${index-state-found} and no `index-sha256` was provided. "
+      "The index hash lookup code requires zulu time zone (ends in a Z)" else true);
+
+let
+  # If a hash was not specified find a suitable cached index state to
+  # use that will contain all the packages we need.  By using the
+  # first one after the desired index-state we can avoid recalculating
+  # when new index-state-hashes are added.
+  # See https://github.com/input-output-hk/haskell.nix/issues/672
+  cached-index-state = if index-sha256 != null
+    then index-state-found
+    else
+      let
+        suitable-index-states =
+          builtins.filter
+            (s: s >= index-state-found) # This compare is why we need zulu time
+            (builtins.attrNames index-state-hashes);
+      in
+        if builtins.length suitable-index-states == 0
+          then index-state-found
+          else pkgs.lib.head suitable-index-states;
+
+  # Lookup hash for the index state we found
+  index-sha256-found = if index-sha256 != null
+    then index-sha256
+    else index-state-hashes.${cached-index-state} or null;
+
+in
   assert (if index-sha256-found == null
     then throw "Unknown index-state ${index-state-found}, the latest index-state I know about is ${pkgs.lib.last (builtins.attrNames index-state-hashes)}. You may need to update to a newer hackage.nix." else true);
 
@@ -389,12 +414,23 @@ let
     ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
-    HOME=${dotCabal {
-      inherit cabal-install nix-tools extra-hackage-tarballs;
-      index-state =
-        builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
-          index-state-found;
-      sha256 = index-sha256-found; }} cabal v2-configure \
+    HOME=${
+      # This creates `.cabal` directory that is as it would have
+      # been at the time `cached-index-state`.  We may include
+      # some packages that will be excluded by `index-state-found`
+      # which is used by cabal (cached-index-state >= index-state-found).  
+      dotCabal {
+        inherit cabal-install nix-tools extra-hackage-tarballs;
+        index-state = cached-index-state;
+        sha256 = index-sha256-found;
+      }
+    } cabal v2-configure \
+        --index-state=${
+            # Setting the desired `index-state` here in case it was not
+            # from the cabal.project file. This will further restrict the
+            # packages used by the solver (cached-index-state >= index-state-found).
+            builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
+              index-state-found} \
         --with-ghc=${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests \
@@ -437,4 +473,9 @@ let
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
   '');
-in { projectNix = plan-nix; inherit src; inherit (fixedProject) sourceRepos; }
+in {
+  projectNix = plan-nix;
+  index-state = index-state-found;
+  inherit src;
+  inherit (fixedProject) sourceRepos;
+}

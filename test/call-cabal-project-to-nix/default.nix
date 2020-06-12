@@ -5,19 +5,21 @@ with stdenv.lib;
 let
   # This test could use cabalProject', but it does so that it
   # tests using callCabalProjectToNix and importAndFilterProject
-  plan = (importAndFilterProject (callCabalProjectToNix {
+  callProjectResults = callCabalProjectToNix {
     index-state = "2020-05-25T00:00:00Z";
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
-  }));
+  };
   pkgSet = mkCabalProjectPkgSet {
-    plan-pkgs = plan.pkgs;
+    plan-pkgs = importAndFilterProject {
+      inherit (callProjectResults) projectNix sourceRepos src;
+    };
   };
   packages = pkgSet.config.hsPkgs;
 
 in recurseIntoAttrs {
   ifdInputs = {
-    plan-nix = plan.nix;
+    plan-nix = callProjectResults.projectNix;
   };
   run = stdenv.mkDerivation {
     name = "call-cabal-project-to-nix-test";

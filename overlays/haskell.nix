@@ -459,9 +459,12 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
             { ... }@args:
-            let plan = importAndFilterProject (callCabalProjectToNix args);
+            let
+              callProjectResults = callCabalProjectToNix args;
             in let pkg-set = mkCabalProjectPkgSet
-                { plan-pkgs = plan.pkgs;
+                { plan-pkgs = importAndFilterProject {
+                    inherit (callProjectResults) projectNix sourceRepos src;
+                  };
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
                           ++ final.lib.optional (args ? ghcOverride || args ? ghc)
@@ -470,7 +473,12 @@ final: prev: {
                               { compiler.nix-name = args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
-            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
+            in addProjectAndPackageAttrs {
+              inherit (pkg-set.config) hsPkgs;
+              inherit pkg-set;
+              plan-nix = callProjectResults.projectNix;
+              inherit (callProjectResults) index-state;
+            };
 
         # Take `hsPkgs` from the `rawProject` and update all the packages and
         # components so they have a `.project` attribute and as well as
@@ -509,20 +517,24 @@ final: prev: {
 
         stackProject' =
             { ... }@args:
-            let stack = importAndFilterProject (callStackToNix ({ inherit cache; } // args));
+            let callProjectResults = callStackToNix ({ inherit cache; } // args);
                 generatedCache = genStackCache {
                     inherit (args) src;
                     stackYaml = args.stackYaml or "stack.yaml";
                 };
                 cache = args.cache or generatedCache;
             in let pkg-set = mkStackPkgSet
-                { stack-pkgs = stack.pkgs;
+                { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules =  final.lib.singleton (mkCacheModule cache)
                              ++ (args.modules or [])
                              ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
+            in addProjectAndPackageAttrs {
+              inherit (pkg-set.config) hsPkgs;
+              inherit pkg-set;
+              stack-nix = callProjectResults.projectNix;
+            };
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
