@@ -175,13 +175,15 @@ let
     stack-source-repo = callTest ./stack-source-repo {};
     extra-hackage = callTest ./extra-hackage {};
     compiler-nix-name = callTest ./compiler-nix-name {};
-    index-state = callTest ./index-state {};
 
     unit = unitTests;
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && pkgs.haskell-nix.defaultCompilerNixName != "ghc8101" ) {
     # Pandoc does not build with ghcjs or ghc 8.10.1 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 {};
     fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
+  } // lib.optionalAttrs (!pkgs.haskell-nix.defaultCompilerNixName != "ghc865" ) {
+    # This test makes a plan for building cabal 3.2 and that does not work with ghc 8.6.5
+    index-state = callTest ./index-state {};
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the
