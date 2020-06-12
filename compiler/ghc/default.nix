@@ -35,6 +35,8 @@
   # platform). Static libs are always built.
   enableShared ? !haskell-nix.haskellLib.isCrossTarget
 
+, enableLibraryProfiling ? true
+
 , # Whetherto build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
@@ -110,6 +112,8 @@ let
   # profiling.
   + stdenv.lib.optionalString targetPlatform.isWindows ''
     SplitSections = NO
+  '' + stdenv.lib.optionalString (!enableLibraryProfiling) ''
+    BUILD_PROF_LIBS = NO
   '';
 
   # Splicer will pull out correct variations
