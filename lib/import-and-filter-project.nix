@@ -19,9 +19,7 @@ let
   projectSubDir = pkgs.lib.strings.removePrefix "/" projectSubDir';          # Without /
   projectSubDir'' = if projectSubDir == "" then "" else projectSubDir + "/"; # With trailing /
   project = import "${projectNix}${projectSubDir'}";
-in {
-  nix = projectNix;
-  pkgs = project // {
+in project // {
     extras = hackage: let old = (project.extras hackage).packages; in {
       packages = pkgs.lib.attrsets.mapAttrs (name: value:
         if builtins.isFunction value
@@ -46,5 +44,4 @@ in {
               src = (pkgs.lib).mkDefault packageSrc;
             }) old;
     };
-  };
-}
+  }

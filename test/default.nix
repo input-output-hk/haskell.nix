@@ -181,6 +181,10 @@ let
     # Pandoc does not build with ghcjs or ghc 8.10.1 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 {};
     fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
+  } // lib.optionalAttrs (pkgs.haskell-nix.defaultCompilerNixName != "ghc8101") {
+    # This test makes a plan for building cabal 3.2 using index-states that will
+    # never work with ghc 8.10.1
+    index-state = callTest ./index-state {};
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the
