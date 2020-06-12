@@ -175,7 +175,7 @@ let
     stack-source-repo = callTest ./stack-source-repo {};
     extra-hackage = callTest ./extra-hackage {};
     compiler-nix-name = callTest ./compiler-nix-name {};
-    index-state = callTest ./index-state { inherit util; };
+    index-state = callTest ./index-state {};
 
     unit = unitTests;
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && pkgs.haskell-nix.defaultCompilerNixName != "ghc8101" ) {
