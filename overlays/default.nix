@@ -53,4 +53,4 @@ let
     (ordered ++ [overlays.eval-on-current]);
   combined-eval-on-build = builtins.foldl' composeExtensions (_: _: { })
     (ordered ++ [overlays.eval-on-build]);
-in overlays // { inherit combined; }
+in overlays // { inherit combined combined-eval-on-build; }
