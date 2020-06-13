@@ -330,7 +330,26 @@ in let configured-src = stdenv.mkDerivation (rec {
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
-  '' + installDeps targetPrefix;
+    ${installDeps targetPrefix}
+
+    # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
+    if [[ ! -f "$out/bin/${targetPrefix}ghc" ]]; then
+      echo "ERROR: Missing file $out/bin/${targetPrefix}ghc"
+      exit 0
+    fi
+    if [[ ! -f "$out/bin/${targetPrefix}ghc-pkg" ]]; then
+      echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
+      exit 0
+    fi    
+    if [[ ! -d "$out/lib/ghc-${version}" ]]; then
+      echo "ERROR: Missing directory $out/lib/ghc-${version}"
+      exit 0
+    fi    
+    if (( $(ls -1 "$out/lib/ghc-${version}" | wc -l) < 30 )); then
+      echo "ERROR: Expected more files in $out/lib/ghc-${version}"
+      exit 0
+    fi    
+  '';
 
   passthru = {
     inherit bootPkgs targetPrefix;
