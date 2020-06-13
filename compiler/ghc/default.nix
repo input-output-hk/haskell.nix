@@ -181,7 +181,7 @@ in let configured-src = stdenv.mkDerivation (rec {
             echo -n "${buildMK}" > mk/build.mk
             sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
         '' + stdenv.lib.optionalString (!stdenv.isDarwin) ''
-            export NIX_LDFLAGS+=" -rpath $out/lib/ghc-${version}"
+            export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${version}"
         '' + stdenv.lib.optionalString stdenv.isDarwin ''
             export NIX_LDFLAGS+=" -no_dtrace_dof"
         '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
@@ -341,12 +341,12 @@ in let configured-src = stdenv.mkDerivation (rec {
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 0
     fi    
-    if [[ ! -d "$out/lib/ghc-${version}" ]]; then
-      echo "ERROR: Missing directory $out/lib/ghc-${version}"
+    if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
+      echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
       exit 0
     fi    
-    if (( $(ls -1 "$out/lib/ghc-${version}" | wc -l) < 30 )); then
-      echo "ERROR: Expected more files in $out/lib/ghc-${version}"
+    if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
+      echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
       exit 0
     fi    
   '';
