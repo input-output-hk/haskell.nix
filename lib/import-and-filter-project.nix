@@ -2,7 +2,7 @@
 # `callStackToNix`.  It imports the projectNix that was produced
 # and combines it with the original source.
 { pkgs, haskellLib }:
-{ projectNix, sourceRepos, src }:
+{ projectNix, sourceRepos, src, index-state }:
 let
   # Full source including possible relartive paths form the
   # project directory.
