@@ -181,7 +181,7 @@ in let configured-src = stdenv.mkDerivation (rec {
             echo -n "${buildMK}" > mk/build.mk
             sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
         '' + stdenv.lib.optionalString (!stdenv.isDarwin) ''
-            export NIX_LDFLAGS+=" -rpath $out/lib/ghc-${version}"
+            export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${version}"
         '' + stdenv.lib.optionalString stdenv.isDarwin ''
             export NIX_LDFLAGS+=" -no_dtrace_dof"
         '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
@@ -330,7 +330,26 @@ in let configured-src = stdenv.mkDerivation (rec {
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
-  '' + installDeps targetPrefix;
+    ${installDeps targetPrefix}
+
+    # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
+    if [[ ! -f "$out/bin/${targetPrefix}ghc" ]]; then
+      echo "ERROR: Missing file $out/bin/${targetPrefix}ghc"
+      exit 0
+    fi
+    if [[ ! -f "$out/bin/${targetPrefix}ghc-pkg" ]]; then
+      echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
+      exit 0
+    fi    
+    if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
+      echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
+      exit 0
+    fi    
+    if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
+      echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
+      exit 0
+    fi    
+  '';
 
   passthru = {
     inherit bootPkgs targetPrefix;
