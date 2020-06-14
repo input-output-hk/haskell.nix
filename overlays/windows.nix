@@ -62,7 +62,7 @@ final: prev:
           # dependencies) and then placing them somewhere where wine+remote-iserv
           # will find them.
           remote-iserv.postInstall = pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
-            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp ]; in ''
+            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp pkgs.libsodium ]; in ''
             for p in ${lib.concatStringsSep " "extra-libs}; do
               find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
               find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
