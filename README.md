@@ -66,7 +66,7 @@ in
 { pkgs ? import nixpkgsSrc nixpkgsArgs
 }:
 pkgs.haskell-nix.stackProject {
-  src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+  src = pkgs.haskell-nix.haskellLib.cleanGit { name = "haskell-nix-project"; src = ./.; };
 }
 ```
 
