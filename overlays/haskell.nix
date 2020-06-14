@@ -258,9 +258,9 @@ final: prev: {
 
         # Function to call stackToNix
         callStackToNix = import ../lib/call-stack-to-nix.nix {
-            pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.pkgs) runCommand;
-            inherit (final.buildPackages.haskell-nix) nix-tools mkCacheFile materialize;
+            pkgs = final.evalPackages.pkgs;
+            inherit (final.evalPackages.pkgs) runCommand;
+            inherit (final.evalPackages.haskell-nix) nix-tools mkCacheFile materialize;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
@@ -563,6 +563,9 @@ final: prev: {
         haskellNixRoots = final.recurseIntoAttrs {
           Level0 = haskellNixRoots' 0;
           Level1 = haskellNixRoots' 1;
+          # Should be safe to use this now we have materialized everything
+          # except the tests
+          Level2 = haskellNixRoots' 2;
         };
 
         haskellNixRoots' = ifdLevel:
@@ -570,10 +573,12 @@ final: prev: {
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) source-pins;
-            # Double buildPackages (since evalPackages implies buildPackages) is intentional,
+            # Double buildPackages is intentional,
             # see comment in lib/default.nix for details.
-            inherit (final.evalPackages.buildPackages) gitMinimal nix-prefetch-git;
-            inherit (final.evalPackages) nix;
+            # Using buildPackages rather than evalPackages so both darwin and linux
+            # versions will get pinned (evalPackages on darwin systems will be for darwin).
+            inherit (final.buildPackages.buildPackages) gitMinimal nix-prefetch-git;
+            inherit (final.buildPackages) nix;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
@@ -591,7 +596,7 @@ final: prev: {
             inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
             inherit (final.buildPackages.haskell-nix) cabal-install dotCabal nix-tools alex happy;
             # These seem to be the only things we use from `ghc-extra-packages`
-            # in haskell.nix itfinal.
+            # in haskell.nix itself.
             inherit (final.ghc-extra-packages."${defaultCompilerNixName}"
               .iserv-proxy.components.exes) iserv-proxy;
             inherit (final.ghc-extra-packages."${defaultCompilerNixName}"
