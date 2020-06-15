@@ -16,8 +16,8 @@
     (import ./default.nix { inherit checkMaterialization defaultCompilerNixName; }).nixpkgsArgs) ({
     ghc865 = {};
   } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
-    ghc883 = {};
-    ghc8101 = {};
+#    ghc883 = {};
+#    ghc8101 = {};
   });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
