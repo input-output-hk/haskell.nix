@@ -201,10 +201,11 @@ packages2nix args pkgs =
 defaultNixContents :: String
 defaultNixContents = unlines
   [ "{ haskellNixSrc ? builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz"
-  , ", nixpkgs ? haskellNixSrc + \"/nixpkgs\" }:"
+  , "}:"
   , ""
   , "let"
-  , "  pkgs = import nixpkgs (import haskellNixSrc);"
+  , "  haskellNix = import haskellNixSrc { };"
+  , "  pkgs = import haskellNix.sources.nixpkgs-2003 haskellNix.nixpkgsArgs;"
   , ""
   , "  pkgSet = pkgs.haskell-nix.mkStackPkgSet {"
   , "    stack-pkgs = import ./pkgs.nix;"
