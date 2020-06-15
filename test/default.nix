@@ -175,6 +175,8 @@ let
     stack-source-repo = callTest ./stack-source-repo {};
     extra-hackage = callTest ./extra-hackage {};
     compiler-nix-name = callTest ./compiler-nix-name {};
+    hls-cabal = callTest ./haskell-language-server/cabal.nix {};
+    hls-stack = callTest ./haskell-language-server/stack.nix {};
 
     unit = unitTests;
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && pkgs.haskell-nix.defaultCompilerNixName != "ghc8101" ) {
