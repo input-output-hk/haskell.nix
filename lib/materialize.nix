@@ -23,6 +23,17 @@
 let
   inherit (derivation) name;
 
+  # This function takes a derivation, and gets the store path for that derivation, while ensuring that the derivation is also *built* when this is evaluated.
+  #
+  # In this way it differs from `${drv}`, since that will only get the store path as a string. This is usually fine if you e.g. antiquote into part of
+  # a derivation builder, since Nix's string-scanning will then pick it up as a dependency. But if you, say, use the path in a *trace* message, then it's just
+  # a string and nothing ensures that it will be built (and if you're printing it out to the user, they may well expect it to be there!).
+  # `getDerivationPathAndBuild` solves this by forcing the derivation to be built at eval time (which is when you're tracing).
+  getDerivationPathAndBuild = drv:
+    # Make a text file containing the store path as a Nix string literal, and import that. That gets us the very same string back again, but we're forced to
+    # evaluate the derivation that builds the text file, which builds the derivation we passed in too.
+    import (pkgs.writeText "drv" ''"${drv}"'');
+
   traceIgnoringSha256 = reason: x:
     if sha256 != null
       then builtins.trace ("Warning: ignoring sha256 for " + name + " " + reason) x
@@ -35,8 +46,8 @@ let
 
   unchecked =
     let
-      sha256message = "To make this a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of ${calculateMaterializedSha}";
-      materializeMessage = "To materialize the output entirely, pass a writable path as the `materialized` argument and pass that path to ${generateMaterialized}";
+      sha256message = "To make this a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of ${getDerivationPathAndBuild calculateMaterializedSha}";
+      materializeMessage = "To materialize the output entirely, pass a writable path as the `materialized` argument and pass that path to ${getDerivationPathAndBuild generateMaterialized}";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
