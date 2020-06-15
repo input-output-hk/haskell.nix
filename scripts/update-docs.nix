@@ -23,8 +23,7 @@ in
     cd $(git rev-parse --show-toplevel)
 
     echo "Preprocessing..."
-    cat docs/reference/modules-preamble.md ${generatedOptions} |
-      sed -e "s,$PWD/\?,," > docs/reference/modules.md
+    cat ${generatedOptions} > docs/reference/modules.md
 
     echo "Building..."
     rm -rf site
