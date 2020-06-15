@@ -258,9 +258,9 @@ final: prev: {
 
         # Function to call stackToNix
         callStackToNix = import ../lib/call-stack-to-nix.nix {
-            pkgs = final.buildPackages.pkgs;
-            inherit (final.buildPackages.pkgs) runCommand;
-            inherit (final.buildPackages.haskell-nix) nix-tools mkCacheFile materialize;
+            pkgs = final.evalPackages.pkgs;
+            inherit (final.evalPackages.pkgs) runCommand;
+            inherit (final.evalPackages.haskell-nix) nix-tools mkCacheFile materialize;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
@@ -459,9 +459,12 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
             { ... }@args:
-            let plan = importAndFilterProject (callCabalProjectToNix args);
+            let
+              callProjectResults = callCabalProjectToNix args;
             in let pkg-set = mkCabalProjectPkgSet
-                { plan-pkgs = plan.pkgs;
+                { plan-pkgs = importAndFilterProject {
+                    inherit (callProjectResults) projectNix sourceRepos src;
+                  };
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
                           ++ final.lib.optional (args ? ghcOverride || args ? ghc)
@@ -470,7 +473,12 @@ final: prev: {
                               { compiler.nix-name = args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
-            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; plan-nix = plan.nix; };
+            in addProjectAndPackageAttrs {
+              inherit (pkg-set.config) hsPkgs;
+              inherit pkg-set;
+              plan-nix = callProjectResults.projectNix;
+              inherit (callProjectResults) index-state;
+            };
 
         # Take `hsPkgs` from the `rawProject` and update all the packages and
         # components so they have a `.project` attribute and as well as
@@ -509,20 +517,24 @@ final: prev: {
 
         stackProject' =
             { ... }@args:
-            let stack = importAndFilterProject (callStackToNix ({ inherit cache; } // args));
+            let callProjectResults = callStackToNix ({ inherit cache; } // args);
                 generatedCache = genStackCache {
                     inherit (args) src;
                     stackYaml = args.stackYaml or "stack.yaml";
                 };
                 cache = args.cache or generatedCache;
             in let pkg-set = mkStackPkgSet
-                { stack-pkgs = stack.pkgs;
+                { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules =  final.lib.singleton (mkCacheModule cache)
                              ++ (args.modules or [])
                              ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
                 };
-            in addProjectAndPackageAttrs { inherit (pkg-set.config) hsPkgs; inherit pkg-set; stack-nix = stack.nix; };
+            in addProjectAndPackageAttrs {
+              inherit (pkg-set.config) hsPkgs;
+              inherit pkg-set;
+              stack-nix = callProjectResults.projectNix;
+            };
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
@@ -551,6 +563,9 @@ final: prev: {
         haskellNixRoots = final.recurseIntoAttrs {
           Level0 = haskellNixRoots' 0;
           Level1 = haskellNixRoots' 1;
+          # Should be safe to use this now we have materialized everything
+          # except the tests
+          Level2 = haskellNixRoots' 2;
         };
 
         haskellNixRoots' = ifdLevel:
@@ -558,10 +573,12 @@ final: prev: {
           in final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) source-pins;
-            # Double buildPackages (since evalPackages implies buildPackages) is intentional,
+            # Double buildPackages is intentional,
             # see comment in lib/default.nix for details.
-            inherit (final.evalPackages.buildPackages) gitMinimal nix-prefetch-git;
-            inherit (final.evalPackages) nix;
+            # Using buildPackages rather than evalPackages so both darwin and linux
+            # versions will get pinned (evalPackages on darwin systems will be for darwin).
+            inherit (final.buildPackages.buildPackages) gitMinimal nix-prefetch-git;
+            inherit (final.buildPackages) nix;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
@@ -579,7 +596,7 @@ final: prev: {
             inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
             inherit (final.buildPackages.haskell-nix) cabal-install dotCabal nix-tools alex happy;
             # These seem to be the only things we use from `ghc-extra-packages`
-            # in haskell.nix itfinal.
+            # in haskell.nix itself.
             inherit (final.ghc-extra-packages."${defaultCompilerNixName}"
               .iserv-proxy.components.exes) iserv-proxy;
             inherit (final.ghc-extra-packages."${defaultCompilerNixName}"

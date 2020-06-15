@@ -1,4 +1,4 @@
-{ stdenv, writeScript, coreutils, time, gnutar, gzip, hydra, jq }:
+{ stdenv, writeScript, coreutils, time, gnutar, gzip, hydra-migration, jq }:
 
 with stdenv.lib;
 
@@ -7,7 +7,7 @@ writeScript "check-hydra.sh" ''
 
   set -euo pipefail
 
-  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra jq ]}"
+  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra-migration jq ]}"
 
   echo '~~~ Evaluating release.nix with --arg ifdLevel '$1
   command time --format '%e' -o eval-time.txt \
