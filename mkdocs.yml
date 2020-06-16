@@ -31,7 +31,7 @@ pages:
     - 'Creating Nix builds for your projects': user-guide/projects.md
     - 'Stack Projects': user-guide/stack-projects.md
     - 'Cabal Projects': user-guide/cabal-projects.md
-    - 'Hackage and Stackage': user-guide/hackage-and-stackage.md
+    - 'Bumping Hackage and Stackage snapshots': user-guide/hackage-stackage.md
     - 'How to create a development environment': user-guide/development.md
     - 'How to cross-compile your project': user-guide/cross-compilation.md
   - 'Reference':
