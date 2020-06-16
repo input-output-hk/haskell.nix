@@ -28,3 +28,8 @@ steps:
       - ./update-docs.sh
     agents:
       system: x86_64-linux
+
+  - label: 'Make sure materialize function does not limit concurrency'
+    command:
+      - nix-build build.nix -A maintainer-scripts.check-materialization-concurrency -o check-materialization-concurrency.sh
+      - ./check-materialization-concurrency.sh
