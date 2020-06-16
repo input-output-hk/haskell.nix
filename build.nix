@@ -54,6 +54,7 @@ in rec {
         { name = "hpack";         path = haskell.haskellPackages.hpack.components.exes.hpack; }
       ];
     };
+    check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra
