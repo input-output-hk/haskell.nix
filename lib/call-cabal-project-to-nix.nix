@@ -28,13 +28,16 @@ in
                      # If the tests and benchmarks are not needed and they
                      # causes the wrong plan to be choosen, then we can use
                      # `configureArgs = "--disable-tests --disable-benchmarks";`
-, lookupSha256  ? _: null
-                     # Use the as an alternative to adding `--sha256` comments into the
+, sha256map     ? null
+                     # An alternative to adding `--sha256` comments into the
                      # cabal.project file:
-                     #   lookupSha256 = repo:
+                     #   sha256map =
                      #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
-                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
-                     #       ."${repo.location}"."${repo.tag}";
+                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
+, lookupSha256  ?
+  if sha256map != null
+    then { location, tag, ...}: sha256map."${location}"."${tag}"
+    else _: null
 , extra-hackage-tarballs ? []
 , ...
 }@args:

@@ -1,7 +1,20 @@
 # Generate cache entries for dependencies of package defined in `src`
 
 { pkgs, haskellLib, nix-tools }:
-{ src, stackYaml ? "stack.yaml" }:
+{ src
+, stackYaml    ? "stack.yaml"
+, sha256map    ? null
+                     # An alternative to adding `# nix-sha256:` comments into the
+                     # stack.yaml file:
+                     #   sha256map =
+                     #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
+                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
+, lookupSha256 ?
+  if sha256map != null
+    then { location, tag, ...}: sha256map."${location}"."${tag}"
+    else _: null
+, ...
+}:
 let
     # We only care about the stackYaml file.  If src is a local directory
     # we want to avoid recalculating the cache unless the stack.yaml file
@@ -62,10 +75,17 @@ in with pkgs.lib;
 concatMap (dep:
         let
             is-private = private dep.url;
+            sha256 = if dep.sha256 != null
+              then dep.sha256
+              else lookupSha256 {
+                  location = dep.url;
+                  tag = dep.rev;
+                };
             pkgsrc =
-              if !is-private && dep.sha256 != null
+              if !is-private && sha256 != null
                 then pkgs.fetchgit {
-                  inherit (dep) url rev sha256;
+                  inherit (dep) url rev;
+                  inherit sha256;
                 }
                 else builtins.fetchGit {
                   inherit (dep) url rev;

@@ -518,10 +518,7 @@ final: prev: {
         stackProject' =
             { ... }@args:
             let callProjectResults = callStackToNix ({ inherit cache; } // args);
-                generatedCache = genStackCache {
-                    inherit (args) src;
-                    stackYaml = args.stackYaml or "stack.yaml";
-                };
+                generatedCache = genStackCache args;
                 cache = args.cache or generatedCache;
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
