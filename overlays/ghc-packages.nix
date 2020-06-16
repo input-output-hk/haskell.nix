@@ -100,7 +100,21 @@ in rec {
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
     (ghcName: value: builtins.mapAttrs
       (pkgName: dir: rec {
-        src = "${value.passthru.configured-src}/${dir}";
+        src =
+          # Add in the generated files needed by ghc-boot
+          if dir == "libraries/ghc-boot"
+            then final.evalPackages.runCommand "ghc-boot-src" {} ''
+              cp -Lr ${value.passthru.configured-src}/${dir} $out
+              chmod -R +w $out/GHC
+              cp -Lr ${value.generated}/libraries/ghc-boot/dist-install/build/GHC/* $out/GHC
+            ''
+            else if dir == "compiler"
+            then final.evalPackages.runCommand "ghc-src" {} ''
+              cp -Lr ${value.passthru.configured-src}/${dir} $out
+              chmod -R +w $out
+              cp -Lr ${value.generated}/compiler/stage2/build/Config.hs $out
+            ''
+            else "${value.passthru.configured-src}/${dir}";
         nix = callCabal2Nix "${ghcName}-${pkgName}" src;
       }) ghc-extra-pkgs)
     final.buildPackages.haskell-nix.compiler;

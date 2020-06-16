@@ -277,7 +277,7 @@ in let configured-src = stdenv.mkDerivation (rec {
   enableParallelBuilding = true;
   postPatch = "patchShebangs .";
 
-  outputs = [ "out" "doc" ];
+  outputs = [ "out" "doc" "generated" ];
 
   # Make sure we never relax`$PATH` and hooks support for compatability.
   strictDeps = true;
@@ -330,6 +330,32 @@ in let configured-src = stdenv.mkDerivation (rec {
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
+
+    # Save generated files for needed when building ghcjs
+    mkdir -p $generated/includes/dist-derivedconstants/header
+    cp includes/dist-derivedconstants/header/GHCConstantsHaskellExports.hs \
+       includes/dist-derivedconstants/header/GHCConstantsHaskellType.hs \
+       includes/dist-derivedconstants/header/GHCConstantsHaskellWrappers.hs \
+       $generated/includes/dist-derivedconstants/header
+    if [[ -f includes/ghcplatform.h ]]; then
+      cp includes/ghcplatform.h $generated/includes
+    elif [[ -f includes/dist-install/build/ghcplatform.h ]]; then
+      cp includes/dist-install/build/ghcplatform.h $generated/includes
+    fi
+    mkdir -p $generated/compiler/stage2/build
+    cp compiler/stage2/build/Config.hs $generated/compiler/stage2/build || true
+    mkdir -p $generated/rts/build
+    cp rts/build/config.hs-incl $generated/rts/build || true
+
+    # Save generated files for needed when building ghc-boot
+    mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
+    if [[ -f libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
+      cp libraries/ghc-boot/dist-install/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
+    fi
+    if [[ -f libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
+      cp libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
+    fi
+
     ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
