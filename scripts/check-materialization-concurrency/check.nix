@@ -16,7 +16,7 @@ writeScript "check-materialization-concurrency.sh" ''
   echo EVENT end hello >> $WORK/expected.txt
   echo EVENT end world >> $WORK/expected.txt
 
-  nix-build scripts/check-materialization-concurrency --arg n "\"$(date)\"" 2>&1 | grep '^EVENT' > $WORK/actual.txt
+  nix-build -j2 scripts/check-materialization-concurrency --arg n "\"$(date)\"" 2>&1 | grep '^EVENT' > $WORK/actual.txt
 
   diff -u $WORK/expected.txt $WORK/actual.txt
 ''
