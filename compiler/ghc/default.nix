@@ -132,7 +132,7 @@ let
   targetCC = builtins.head toolsForTarget;
 
   configured-src = import ./configured-src {
-    stdenv fetchurl
+    inherit stdenv fetchurl
     ghc-version ghc-patches src-spec
     targetPrefix
     targetPlatform hostPlatform
