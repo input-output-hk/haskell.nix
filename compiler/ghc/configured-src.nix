@@ -11,6 +11,7 @@
 , enableIntegerSimple, targetGmp
 , ncurses, targetLibffi, libiconv
 , disableLargeAddressSpace
+, buildMK
 }:
 stdenv.mkDerivation (rec {
 
