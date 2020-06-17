@@ -1,6 +1,6 @@
-{ stdenv, fetchurl,
+{ stdenv, fetchurl
 , ghc-version, ghc-patches, src-spec
-, targetPrefix,
+, targetPrefix
 , targetPlatform, hostPlatform
 , targetPackages
 , perl, autoconf, automake, m4, python3, sphinx, ghc, bootPkgs
