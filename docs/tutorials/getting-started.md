@@ -64,12 +64,15 @@ else pkgs.haskell-nix.cabalProject
 
 ### Working with a project
 
+Top-level attributes are Haskell packages (incl. dependencies) part of your project.
+
 To build the library component of a package in the project run:
 
 ```shell
 nix-build -A your-package-name.components.library
 ```
 
+There are also other components such as `exes`, `tests`, `benchmarks` and `all`.
 To build an executable:
 
 ```shell
