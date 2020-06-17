@@ -6,98 +6,10 @@
 `haskell.nix` can automatically translate your Cabal or Stack project and
 its dependencies into Nix code.
 
-## [Documentation](https://input-output-hk.github.io/haskell.nix/)
+## Documentation
 
-## Getting started
-
-### a) Using `cabal.project`
-
-Add a `default.nix`:
-
-```nix
-let 
-  # Fetch the latest haskell.nix and import its default.nix
-  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-
-  # haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
-  # you will be more likely to get cache hits when using these.
-  # But you can also just use your own, e.g. '<nixpkgs>'
-  nixpkgsSrc = haskellNix.sources.nixpkgs-2003;
-
-  # haskell.nix provides some arguments to be passed to nixpkgs, including some patches
-  # and also the haskell.nix functionality itself as an overlay.
-  nixpkgsArgs = haskellNix.nixpkgsArgs;
-in
-{ pkgs ? import nixpkgsSrc nixpkgsArgs
-, haskellCompiler ? "ghc865"
-}:
-
-# 'cabalProject' generates a package set based on a cabal.project (and the corresponding .cabal files)
-pkgs.haskell-nix.cabalProject {
-  # 'cleanGit' cleans a source directory based on the files known by git
-  src = pkgs.haskell-nix.haskellLib.cleanGit { name = "haskell-nix-project"; src = ./.; };
-  compiler-nix-name = haskellCompiler;
-}
-```
-
-Note that you'll need to add a comment specifying the expected sha256
-output for your `source-repository-packages` in your `cabal.project`
-file:
-
-```
-source-repository-package
-  type: git
-  location: https://github.com/input-output-hk/iohk-monitoring-framework
-  subdir:   plugins/backend-editor
-  tag: 4956b32f039579a0e7e4fd10793f65b4c77d9044
-  --sha256: 03lyb2m4i6p7rpjqarnhsx21nx48fwk6rzsrx15k6274a4bv0pix
-```
-
-### b) Using `stack.yaml`
-
-Add a `default.nix`:
-
-```nix
-let 
-  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgsSrc = haskellNix.sources.nixpkgs-2003;
-  nixpkgsArgs = haskellNix.nixpkgsArgs;
-in
-{ pkgs ? import nixpkgsSrc nixpkgsArgs
-}:
-pkgs.haskell-nix.stackProject {
-  src = pkgs.haskell-nix.haskellLib.cleanGit { name = "haskell-nix-project"; src = ./.; };
-}
-```
-
-### Working with a project
-
-To build the library component of a package in the project run:
-
-```shell
-nix build -f . your-package-name.components.library
-```
-
-To build an executable:
-
-```shell
-nix build -f . your-package-name.components.exes.your-exe-name
-```
-
-To open a shell for use with `cabal` run:
-
-```shell
-nix-shell -A shellFor
-cabal new-build your-package-name
-cabal new-repl your-package-name:library:your-package-name
-```
-
-## Using a binary cache
-
-To use precompiled binaries you'll need:
-
-- To configure the IOHK binary cache by following the instructions on [iohk.cachix.org](https://iohk.cachix.org).
-- To pin your `nixpkgs` to match one of the revisions built by our CI: these can be found inside the `sources` attribute (see the quickstart above for an example).
+- [Introduction](https://input-output-hk.github.io/haskell.nix/)
+- [Getting Started](https://input-output-hk.github.io/haskell.nix/getting-started/)
 
 ## Related repos
 

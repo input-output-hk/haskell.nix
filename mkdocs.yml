@@ -28,13 +28,13 @@ pages:
   - 'Architecture': architecture.md
   - 'Tutorials':
     - 'Getting Started': tutorials/getting-started.md
-    - 'Mapping non-Haskell dependencies to Nixpkgs': dev/pkg-map.md
-    - 'Creating Nix builds for your projects': tutorials/projects.md
-    - 'Stack Projects': tutorials/stack-projects.md
-    - 'Cabal Projects': tutorials/cabal-projects.md
-    - 'How to create a development environment': tutorials/development.md
+    - 'Creating a development environment': tutorials/development.md
+    - 'Sourcing files only part of git repository using cleanGit': tutorials/clean-git.md
+    - 'Mapping non-Haskell dependencies to Nixpkgs': tutorials/pkg-map.md
     - 'Bumping Hackage and Stackage snapshots': tutorials/hackage-stackage.md
     - 'Cross-compiling your project': tutorials/cross-compilation.md
+    - 'Installing nix-tools': tutorials/installing-nix-tools.md
+    - 'Manually generating Nix expressions': tutorials/manually-generating-nix-expressions.md
   - 'Reference':
     - 'Command-line tools': reference/commands.md
     - 'Haskell.nix Library': reference/library.md
