@@ -144,7 +144,9 @@ let
     targetCC
     enableIntegerSimple targetGmp
     ncurses targetLibffi libiconv
-    disableLargeAddressSpace;
+    disableLargeAddressSpace
+    buildMK
+    ;
   };
 in
 stdenv.mkDerivation (rec {
