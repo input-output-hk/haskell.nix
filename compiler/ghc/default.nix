@@ -131,7 +131,7 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
-  configured-src = import ./configured-src {
+  configured-src = import ./configured-src.nix {
     inherit stdenv fetchurl
     ghc-version ghc-patches src-spec
     targetPrefix
