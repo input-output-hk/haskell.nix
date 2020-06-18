@@ -570,7 +570,7 @@ final: prev: {
             assert (
               if selectedFileName != null then true
               else throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
-                + "set `projectFileName = \"stack.yaml;\"` or `projectFileName = \"cabal.project\";`"));
+                + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`"));
             if final.lib.hasSuffix ".yaml" selectedFileName
               then stackProject' (args // { stackYaml            = selectedFileName; })
               else cabalProject' (args // { cabalProjectFileName = selectedFileName; });
