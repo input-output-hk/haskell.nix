@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc }:
 
 with stdenv.lib;
 
@@ -12,7 +12,7 @@ let
      }
   ];
 
-  project = cabalProject' {
+  project = project' {
     src = testSrc "cabal-simple";
     inherit modules;
   };
