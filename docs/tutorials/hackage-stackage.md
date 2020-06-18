@@ -32,34 +32,3 @@ in ...
 This way you can change the revisions of `hackage.nix` and `stackage.nix` are fetched from without changing `haskell.nix`.
 
 However, bear in mind that Stackage refers to Hackage, so your Stackage should never be newer than Hackage.
-
-### Pinning the Hackage version
-
-Sometimes you might want to use a chosen version of Haskell.nix with a
-recent update of Hackage or Stackage. This can be done with JSON pins:
-
-```bash
-nix-prefetch-git https://github.com/input-output-hk/hackage.nix | tee hackage-src.json
-nix-prefetch-git https://github.com/input-output-hk/stackage.nix | tee stackage-src.json
-```
-
-The resulting JSON files will correspond to the latest revision of
-[hackage.nix][] and [stackage.nix][]. See
-[Architecture](../architecture.md) for more information about how
-these Git repositories correspond to the actual Hackage and Stackage.
-
-[hackage.nix]: https://github.com/input-output-hk/hackage.nix
-[stackage.nix]: https://github.com/input-output-hk/stackage.nix
-
-```nix
-{ pkgs ? import <nixpkgs> (haskellNixArgs // { overlays = haskellNixArgs.overlays ++ [
-  (self: super: {
-    haskell-nix = super.haskell-nix // {
-      hackageSourceJSON  = ./hackage-src.json;
-      stackageSourceJSON = ./stackage-src.json;
-    };
-  })]; })
-, haskellNixArgs ? (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs
-}:
-  pkgs
-```
