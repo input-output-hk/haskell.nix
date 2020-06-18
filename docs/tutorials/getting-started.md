@@ -46,9 +46,13 @@ Add `default.nix`:
     name = "haskell-nix-project";
     src = ./.;
   }
+, hasStack ? builtins.pathExists (./. + "/cabal.project")
+, hasCabalProject ? builtins.pathExists (./. + "/stack.yaml")
 }:
 
-if builtins.pathExists (./. + "/stack.yaml")
+assert (if hasStack && hasCabalProject then throw "This project has both stack.yaml and cabal.project. Edit default.nix to pick the one you'd like to use." else true);
+
+if hasStack
 then pkgs.haskell-nix.stackProject
   { inherit src;
   }
