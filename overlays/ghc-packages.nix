@@ -112,7 +112,9 @@ in rec {
             then final.evalPackages.runCommand "ghc-src" {} ''
               cp -Lr ${value.passthru.configured-src}/${dir} $out
               chmod -R +w $out
-              cp -Lr ${value.generated}/compiler/stage2/build/Config.hs $out
+              if [[ -f ${value.generated}/compiler/stage2/build/Config.hs ]]; then
+                cp -Lr ${value.generated}/compiler/stage2/build/Config.hs $out
+              fi
             ''
             else "${value.passthru.configured-src}/${dir}";
         nix = callCabal2Nix "${ghcName}-${pkgName}" src;
