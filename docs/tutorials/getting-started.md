@@ -24,10 +24,13 @@ otherwise fallback to `cabal.project`.
 Add `default.nix`:
 
 ```nix
-{ haskellCompiler ? "ghc865"
+{ # Compiler to use for the project by default
+  defaultCompilerNixName ? "ghc865"
 
 # Fetch the latest haskell.nix and import its default.nix
-, haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+, haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
+  inherit defaultCompilerNixName;
+}
 
 # haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
 # you will be more likely to get cache hits when using these.
@@ -46,19 +49,20 @@ Add `default.nix`:
     name = "haskell-nix-project";
     src = ./.;
   }
-, hasStack ? builtins.pathExists (./. + "/cabal.project")
-, hasCabalProject ? builtins.pathExists (./. + "/stack.yaml")
-}:
-
-assert (if hasStack && hasCabalProject then throw "This project has both stack.yaml and cabal.project. Edit default.nix to pick the one you'd like to use." else true);
-
-if hasStack
-then pkgs.haskell-nix.stackProject
+}: pkgs.haskell-nix.project
   { inherit src;
   }
-else pkgs.haskell-nix.cabalProject
+```
+
+Or a shorter `default.nix` that uses the default nixpkgs and ghc:
+```
+{ haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+, src ? haskellNix.pkgs.haskell-nix.haskellLib.cleanGit {
+    name = "haskell-nix-project";
+    src = ./.;
+  }
+}: haskellNix.pkgs.haskell-nix.project
   { inherit src;
-    compiler-nix-name = haskellCompiler;
   }
 ```
 

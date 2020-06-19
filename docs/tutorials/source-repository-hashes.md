@@ -7,8 +7,8 @@ that we wish to use.  This is mostly handled automatically by
 system that is configured to use restricted mode (typically hydra)
 it will need an aditionaly hash.
 
-When using `cabalProject` or `stackProject` functions you can include
-the hash needed in a comment.
+When using `project`, `cabalProject` or `stackProject` functions
+you can include the hash needed in a comment.
 
 To calculate the hash use `nix-prefetch-git`:
 
@@ -24,7 +24,7 @@ $ nix-prefetch-git https://github.com/input-output-hk/haskell.nix.git bc01ebc05a
 }
 ```
 
-If you are using `cabalProject` add a `--sha256` comment to the
+If you have a cabal project add a `--sha256` comment to the
 `cabal.project` file:
 
 ```
@@ -36,7 +36,7 @@ source-repository-package
   --sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 ```
 
-If you are using `stackProject` add a `# nix-sha256` comment to the
+If you have a stack project add a `# nix-sha256` comment to the
 `stack.yaml` file:
 
 ```

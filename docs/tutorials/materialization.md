@@ -8,9 +8,9 @@ of an IFD (import from derviation).
 
 ## Why use materialization?
 
-Using functions like `cabalProject`, `stackProject` and `hackage-package`
-results in a lot of dependencies (all the dependencies of nix-tools
-for instance).
+Using functions like `project`, `cabalProject`, `stackProject`
+and `hackage-package` results in a lot of dependencies (all the
+dependencies of nix-tools for instance).
 
 * They can be slow to calculate (even if no work needs to be done it
   is not unusual for it to take 5 seconds per project).
@@ -59,8 +59,8 @@ trace: Using index-state: 2020-04-15T00:00:00Z for hlint
 ```
 
 To materialize the nix files we need to take care to pin down the
-inputs.  For `cabalProject` and `hackage-package` this means
-we must specify the `index-state` of hackage we want to use:
+inputs.  For cabal projects this means we must specify the
+`index-state` of hackage we want to use:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
@@ -88,7 +88,7 @@ $ nix-hash --base32 --type sha256 /nix/store/8z6p4237rin3c6c1lmjwshmj8rdqrhw2-hl
 ```
 
 We can add the hash as `plan-sha256` or (`stack-sha256` for
-`stackProject`)
+stack projects)
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
@@ -191,10 +191,10 @@ the time, we would be better off just removing `materialized` and `plan-sha256`.
 
 ## How can we update the nix files with a script?
 
-There are versions of the functions (`cabalProject'`, `stackProject'`
-and `hackage-project`) that also return the nix as `plan-nix` or
-`stack-nix`.  By calling one of these functions without the
-hash and materialized nix we can find out what nix files should be.
+There are versions of the functions (`project'`, `cabalProject'`,
+`stackProject'` and `hackage-project`) that also return the nix as
+`plan-nix` or `stack-nix`.  By calling one of these functions without
+the hash and materialized nix we can find out what nix files should be.
 For instance:
 
 ```nix

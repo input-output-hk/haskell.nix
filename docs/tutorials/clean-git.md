@@ -75,7 +75,7 @@ packages:
 Then in `repoA/default.nix` we can use:
 
 ```
-haskell-nix.cabalProject {
+haskell-nix.project {
   src = haskell-nix.haskellLib.cleanSourceWith {
     src = haskell-nix.haskellLib.cleanGits {
       name = "root";
