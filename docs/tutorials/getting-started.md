@@ -43,28 +43,26 @@ Add `default.nix`:
 
 # import nixpkgs with overlays
 , pkgs ? import nixpkgsSrc nixpkgsArgs
-
-# 'cleanGit' cleans a source directory based on the files known by git
-, src ? pkgs.haskell-nix.haskellLib.cleanGit {
+}: pkgs.haskell-nix.project {
+  # 'cleanGit' cleans a source directory based on the files known by git
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
     src = ./.;
-  }
-}: pkgs.haskell-nix.project
-  { inherit src;
-  }
+  };
+}
 ```
 
 Or a shorter `default.nix` that uses the default nixpkgs and default GHC:
 
 ```nix
 { haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
-, src ? haskellNix.pkgs.haskell-nix.haskellLib.cleanGit {
+, pkgs ? haskellNix.pkgs
+}: pkgs.haskell-nix.project {
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
     src = ./.;
-  }
-}: haskellNix.pkgs.haskell-nix.project
-  { inherit src;
-  }
+  };
+}
 ```
 
 !!! note "git dependencies"
