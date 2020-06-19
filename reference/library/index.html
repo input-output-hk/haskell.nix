@@ -65,36 +65,39 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../../user-guide/">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../user-guide/projects/">Creating Nix builds for your projects</a>
+    <a class="" href="../../tutorials/getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/stack-projects/">Stack Projects</a>
+    <a class="" href="../../tutorials/development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/cabal-projects/">Cabal Projects</a>
+    <a class="" href="../../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/hackage-and-stackage.md">Hackage and Stackage</a>
+    <a class="" href="../../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/development/">How to create a development environment</a>
+    <a class="" href="../../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../../tutorials/cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -219,10 +222,6 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
-                </li>
-                <li class="">
-                    
     <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
@@ -283,7 +282,7 @@
                 <p><a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> contains a library of functions for creating buildable
 package sets from their Nix expression descriptions. The library is
 what you get when importing <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>. It might be helpful to
-load the library in the <a href="../../user-guide/#using-nix-repl">Nix REPL</a> to
+load the library in the <a href="../../tutorials/development/#using-nix-repl">Nix REPL</a> to
 test things.</p>
 <ul>
 <li><a href="#types">Types</a> — the kinds of data that you will encounter working with <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>.</li>
@@ -386,7 +385,7 @@ attrset of package descriptions.</p>
 <p>Modules are the primary method of configuring building of the package
 set. They are either:</p>
 <ol>
-<li>an attrset containing <a href="./options.md">option declarations</a>, or</li>
+<li>an attrset containing <a href="../modules/">option declarations</a>, or</li>
 <li>a function that returns an attrset containing option declarations.</li>
 </ol>
 <p>If using the function form of a module, the following named parameters
@@ -744,7 +743,7 @@ they execute.</p>
 <h1 id="package-set-functions">Package-set functions<a class="headerlink" href="#package-set-functions" title="Permanent link">&para;</a></h1>
 <p>These functions exist within the <code>hsPkgs</code> package set.</p>
 <h2 id="shellfor">shellFor<a class="headerlink" href="#shellfor" title="Permanent link">&para;</a></h2>
-<p>Create a <code>nix-shell</code> <a href="../../user-guide/development/">development
+<p>Create a <code>nix-shell</code> <a href="../../tutorials/development/">development
 environment</a> for developing one or more
 packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).</p>
 <pre><code>shellFor =
@@ -802,7 +801,7 @@ which we would like to solve. Use <code>exactDeps = false</code> if this is a
 problem.</p>
 </div>
 <h2 id="ghcwithpackages">ghcWithPackages<a class="headerlink" href="#ghcwithpackages" title="Permanent link">&para;</a></h2>
-<p>Creates a <code>nix-shell</code> <a href="../../user-guide/development/">development
+<p>Creates a <code>nix-shell</code> <a href="../../tutorials/development/">development
 environment</a> including the given
 packages selected from this package set.</p>
 <p><strong>Parameter</strong>: a package selection function.</p>

@@ -65,36 +65,39 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../../user-guide/">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../user-guide/projects/">Creating Nix builds for your projects</a>
+    <a class="" href="../../tutorials/getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/stack-projects/">Stack Projects</a>
+    <a class="" href="../../tutorials/development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/cabal-projects/">Cabal Projects</a>
+    <a class="" href="../../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/hackage-and-stackage.md">Hackage and Stackage</a>
+    <a class="" href="../../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/development/">How to create a development environment</a>
+    <a class="" href="../../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../../tutorials/cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -152,10 +155,6 @@
                 <li class="">
                     
     <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
@@ -235,7 +234,7 @@ Available options:
 
 <p>Use this for stack projects. If a <code>default.nix</code> does not exist in the
 output directory, it will create a basic one with a
-<a href="../../user-guide/stack-projects/"><code>mkStackPkgSet</code></a> function.</p>
+<a href="../manually-generating-nix-expressions#Using-Stack"><code>mkStackPkgSet</code></a> function.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you find that there are missing files which should have been
@@ -261,7 +260,7 @@ Available options:
 
 <p>Use this for Cabal new-build projects (even if you don't have a
 <code>cabal.project</code>). Before running, you need to create a plan. For more
-information, see <a href="../../user-guide/cabal-projects/">Cabal Projects</a> in the user
+information, see <a href="../manually-generating-nix-expressions#Using-Cabal">Cabal Projects</a> in the user
 guide.</p>
 <p>It will create a template <code>default.nix</code> in the output directory,
 unless that file already exists.</p>
@@ -293,7 +292,7 @@ by <code>stack-to-nix</code> and <code>plan-to-nix</code>.</p>
         <a href="../library/" class="btn btn-neutral float-right" title="Haskell.nix Library">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../../user-guide/cross-compilation/" class="btn btn-neutral" title="How to cross-compile your project"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../tutorials/manually-generating-nix-expressions/" class="btn btn-neutral" title="Manually generating Nix expressions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -321,7 +320,7 @@ by <code>stack-to-nix</code> and <code>plan-to-nix</code>.</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../../user-guide/cross-compilation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../tutorials/manually-generating-nix-expressions/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../library/" style="color: #fcfcfc">Next &raquo;</a></span>

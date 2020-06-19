@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Creating Nix builds for your projects - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Bumping Hackage and Stackage snapshots - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Creating Nix builds for your projects";
-    var mkdocs_page_input_path = "user-guide/projects.md";
+    var mkdocs_page_name = "Bumping Hackage and Stackage snapshots";
+    var mkdocs_page_input_path = "tutorials/hackage-stackage.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -65,42 +65,51 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../getting-started/">Getting Started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../development/">Creating a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+                </li>
                 <li class=" current">
                     
-    <a class="current" href="./">Creating Nix builds for your projects</a>
+    <a class="current" href="./">Bumping Hackage and Stackage snapshots</a>
     <ul class="subnav">
             
-    <li class="toctree-l3"><a href="#how-to-replace-ifds-with-intermediate-nix-files">How to replace IFDs with intermediate nix files</a></li>
+    <li class="toctree-l3"><a href="#bumping-hackage-and-stackage-snapshots">Bumping Hackage and Stackage snapshots</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#updating-and-pinning-hackagenix-and-stackagenix">Updating and pinning hackage.nix and stackage.nix</a></li>
+        
+        </ul>
     
 
     </ul>
                 </li>
                 <li class="">
                     
-    <a class="" href="../stack-projects/">Stack Projects</a>
+    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cabal-projects/">Cabal Projects</a>
+    <a class="" href="../installing-nix-tools/">Installing nix-tools</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../hackage-and-stackage.md">Hackage and Stackage</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../development/">How to create a development environment</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -149,10 +158,6 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
-                </li>
-                <li class="">
-                    
     <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
@@ -193,14 +198,14 @@
     
       
         
-          <li>User Guide &raquo;</li>
+          <li>Tutorials &raquo;</li>
         
       
     
-    <li>Creating Nix builds for your projects</li>
+    <li>Bumping Hackage and Stackage snapshots</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/projects.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/hackage-stackage.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -210,81 +215,33 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="how-to-replace-ifds-with-intermediate-nix-files">How to replace IFDs with intermediate nix files<a class="headerlink" href="#how-to-replace-ifds-with-intermediate-nix-files" title="Permanent link">&para;</a></h1>
-<p>We believe that imports from derivations (IFDs) provide tremendous
-value in nix and the aversion towards them stems mostly from 
-poor tooling and ci support for them.  We do not believe
-that poor tooling or ci support should cripple nix capability
-of abstraction.  Hence haskell.nix makes excessive use of
-IFDs.</p>
-<p>We do note however that there are users who prefer to
-have IFD-free expressions.  For this group of users we
-detail how to expand the IFD dependent high level functions
-into their IFD free building blocks.</p>
-<p>The general structure will be the same, independent of the use of
-Stack or Cabal.</p>
-<p>Let us assume for now that we have already generated a <code>pkgs.nix</code>
-expression (see the links bellow). The following file then produces a package set:</p>
-<pre><code class="nix"># default.nix
-let
-  # Import the Haskell.nix library,
-  pkgs = import &lt;nixpkgs&gt; (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs;
+                <h1 id="bumping-hackage-and-stackage-snapshots">Bumping Hackage and Stackage snapshots<a class="headerlink" href="#bumping-hackage-and-stackage-snapshots" title="Permanent link">&para;</a></h1>
+<p><code>haskell.nix</code> relies on some generated data providing information about packages in Hackage and Stackage snapshots.
+These are kept in <a href="https://github.com/input-output-hk/hackage.nix"><code>hackage.nix</code></a> and <a href="https://github.com/input-output-hk/stackage.nix"><code>stackage.nix</code></a> respectively.
+If your project depends on a Hackage package, then the <code>hackage.nix</code> revision used must be new enough to contain that, and likewise for Stackage snaphots and <code>stackage.nix</code>.</p>
+<h2 id="updating-and-pinning-hackagenix-and-stackagenix">Updating and pinning <code>hackage.nix</code> and <code>stackage.nix</code><a class="headerlink" href="#updating-and-pinning-hackagenix-and-stackagenix" title="Permanent link">&para;</a></h2>
+<p><code>haskell.nix</code> pins particular revisions of these repositories internally, both for our own usage in testing, and so that users have a sensible default when getting started. 
+These revisions are updated nightly, so you can get newer revisions of <code>hackage.nix</code> and <code>stackage.nix</code> by updating your revision of <code>haskell.nix</code> itself.</p>
+<p>However, this exposes you to changes in <code>haskell.nix</code> which you may not want, such as changes that force compiler rebuilds, or the occasional bug.
+Instead, you can pin <code>hackage.nix</code> and <code>stackage.nix</code> independently. For example:</p>
+<pre><code class="nix">let 
+  # You can use a tool like `niv` to manage this boilerplate
+  hackageSrc = builtins.fetchTarball https://github.com/input-output-hk/hackage.nix/archive/master.tar.gz;
+  stackageSrc = builtins.fetchTarball https://github.com/input-output-hk/stackage.nix/archive/master.tar.gz;
+  haskellSrc = builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz;
 
-  # Import the file you will create in the stack-to-nix or cabal-to-nix step.
-  my-pkgs = import ./pkgs.nix;
-
-  # Stack projects use this:
-  pkgSet = pkgs.haskell-nix.mkStackPkgSet {
-    stack-pkgs = my-pkgs;
-    pkg-def-extras = [
-      # these extras will provide additional packages
-      # ontop of the package set.  E.g. extra-deps
-      # for stack packages. or local packages for
-      # cabal.projects
-    ];
-    modules = [
-      # specific package overrides would go here
-      # example:
-      #  packages.cbors.package.ghcOptions = &quot;-Werror&quot;;
-      #  packages.cbors.patches = [ ./one.patch ];
-      #  packages.cbors.flags.optimize-gmp = false;
-      # It may be better to set flags in stack.yaml instead
-      # (`stack-to-nix` will include them as defaults).
-    ];
+  haskellNix = import haskellSrc {
+    # This allows you to override the pins used by `haskell.nix` internally
+    sourcesOverride = {
+      hackage = hackageSrc;
+      stackage = stackageSrc;
+    };
   };
-
-  # Cabal projects use this:
-  pkgSet = pkgs.haskell-nix.mkCabalProjectPkgSet {
-    plan-pkgs = my-pkgs;
-    pkg-def-extras = [];
-    modules = [
-      # specific package overrides would go here
-      # example:
-      #  packages.cbors.package.ghcOptions = &quot;-Werror&quot;;
-      #  packages.cbors.patches = [ ./one.patch ];
-      #  packages.cbors.flags.optimize-gmp = false;
-      # It may be better to set flags in `cabal.project` instead
-      # (`plan-to-nix` will include them as defaults).
-    ];
-  };
-
-in pkgSet.config.hsPkgs // { _config = pkgSet.config; }
+in ...
 </code></pre>
 
-<p>With this setup you can then start building the components of
-interest:</p>
-<pre><code class="bash">nix build -f default.nix $pkg.components.library
-</code></pre>
-
-<p>to build the library for <code>$pkg</code> or</p>
-<pre><code class="bash">nix build -f default.nix $pkg.components.exes.$exe
-</code></pre>
-
-<p>to build a specific executable. The same holds for test suites and benchmarks.</p>
-<ul>
-<li><a href="../stack-projects/">Generating a <code>pkgs.nix</code> for a Stack project</a></li>
-<li><a href="../cabal-projects/">Generating a <code>pkgs.nix</code> for a Cabal project</a></li>
-</ul>
+<p>This way you can change the revisions of <code>hackage.nix</code> and <code>stackage.nix</code> are fetched from without changing <code>haskell.nix</code>.</p>
+<p>However, bear in mind that Stackage refers to Hackage, so your Stackage should never be newer than Hackage.</p>
               
             </div>
           </div>
@@ -292,10 +249,10 @@ interest:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../stack-projects/" class="btn btn-neutral float-right" title="Stack Projects">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../cross-compilation/" class="btn btn-neutral float-right" title="Cross-compiling your project">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../" class="btn btn-neutral" title="Getting Started"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../pkg-map/" class="btn btn-neutral" title="Mapping non-Haskell dependencies to Nixpkgs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -323,10 +280,10 @@ interest:</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../pkg-map/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../stack-projects/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../cross-compilation/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

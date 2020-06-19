@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>cleanGit - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Installing nix-tools - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "cleanGit";
-    var mkdocs_page_input_path = "user-guide/clean-git.md";
+    var mkdocs_page_name = "Installing nix-tools";
+    var mkdocs_page_input_path = "tutorials/installing-nix-tools.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -65,36 +65,48 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../projects/">Creating Nix builds for your projects</a>
+    <a class="" href="../getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../stack-projects/">Stack Projects</a>
+    <a class="" href="../development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cabal-projects/">Cabal Projects</a>
+    <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../hackage-and-stackage.md">Hackage and Stackage</a>
+    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../development/">How to create a development environment</a>
+    <a class="" href="../hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Installing nix-tools</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#installing-nix-tools">Installing nix-tools</a></li>
+    
+
+    <li class="toctree-l3"><a href="#optional-installing-via-haskellnix-source">Optional: Installing via [Haskell.nix][] source</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -143,10 +155,6 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
-                </li>
-                <li class="">
-                    
     <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
@@ -186,11 +194,15 @@
     <li><a href="../..">Docs</a> &raquo;</li>
     
       
+        
+          <li>Tutorials &raquo;</li>
+        
+      
     
-    <li>cleanGit</li>
+    <li>Installing nix-tools</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/clean-git.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/installing-nix-tools.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -200,90 +212,37 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="cleangit">cleanGit<a class="headerlink" href="#cleangit" title="Permanent link">&para;</a></h1>
-<p>To filter out just the files in your git index use
-<code>haskell-nix.haskellLib.cleanGit { src = ./.; }</code> where <code>./.</code> is the
-root of your git repo (or a git work tree).</p>
-<p>First it filters just the files needed to run <code>git index</code>, then
-it uses the results of that to filter your directory.  It does not
-need to parse the <code>.gitignore</code> files at all, but we do need to
-<code>git add</code> our files before they will be included.
-<a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/clean-git.nix">cleanGit source</a>.</p>
-<p>In addition haskell.nix (including <code>cleanGit</code>) uses a version
-of <a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/clean-source-with.nix"><code>cleanSourceWith</code></a>
-with a <code>subdir</code> argument to filter out just the package it is
-building.  Then it uses the info from the <code>cabal</code> file to filter
-just the source dirs for the component it is building.  That way
-if we modify a test in a package nix will not rebuild the library
-in that package (or anything that depends on that package's library).</p>
-<p>There is a downside to this though.  If we have a test that depends
-on something outside the scope of what is described in its entry in
-the in the <code>.cabal</code> file it will not see it.  For instance perhaps
-it needs to run <code>hlint</code> or <code>doctest</code> on the library source.  There
-are ways to fix this with a module:</p>
-<p>Use <code>extraSrcFiles</code> to add dirs the test needs (this will not result
-in a change to the <code>.cabal</code> file the test will still be built the same).</p>
-<pre><code>components.tests.test.extraSrcFiles = [ &quot;subdir-needed-by-test&quot; ];
+                <h2 id="installing-nix-tools">Installing <code>nix-tools</code><a class="headerlink" href="#installing-nix-tools" title="Permanent link">&para;</a></h2>
+<p>To build the latest <code>nix-tools</code> and store the result at <code>./nt</code>, run:</p>
+<pre><code class="bash">nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz pkgs.haskell-nix.nix-tools --out-link nt
 </code></pre>
 
-<p>Or alternatively, override the source with a suitable filter function. </p>
-<pre><code>components.tests.test.src = haskell-nix.haskellLib.cleanSourceWith {
-    inherit src;
-    subdir = &quot;path-to-package&quot;;
-    filter = ...
-};
+<p>If you would like to then install <code>nix-tools</code> into your profile, run:</p>
+<pre><code class="bash">nix-env -i ./nt
 </code></pre>
 
-<h2 id="multiple-git-repositories-with-cleangits">Multiple Git Repositories with cleanGits<a class="headerlink" href="#multiple-git-repositories-with-cleangits" title="Permanent link">&para;</a></h2>
-<p>Some times it is handy to temporarily use a relative path between git
-repos.  If the repos are individually cleaned this is not possible
-(since the cleaned version of one repo will never include the files
-of the other).</p>
-<p>There are 3 options:</p>
-<ul>
-<li>
-<p>We could <code>symlinkJoin</code> the cleaned directories together, but the
-  result could not be cleaned and any change would to either
-  repo would result in a rebuild of everything.</p>
-</li>
-<li>
-<p>We could add one repo to the other as a submodule,
-  but adding and then removing a submodule is a pain and it does not
-  work well if you have more than one repo that needs to share the
-  submodule.</p>
-</li>
-<li>
-<p>We could add a <code>source-repository-package</code> but then we would have
-  to commit each change before testing.</p>
-</li>
-</ul>
-<p><code>cleanGits</code> allows us to specify a root directory and any number of
-sub directories containing git repos.</p>
-<p>For example if <code>repoA</code> and <code>repoB</code> are two git repos with
-cabal packages and want to use the <code>repoB</code> package when building
-<code>repoA.  First we can add</code>../repoB<code>to</code>repoA/cabal.project`:</p>
-<pre><code>packages:
-  ./.
-  ../repoB
-</code></pre>
-
-<p>Then in <code>repoA/default.nix</code> we can use:</p>
-<pre><code>haskell-nix.cabalProject {
-  src = haskell-nix.haskellLib.cleanSourceWith {
-    src = haskell-nix.haskellLib.cleanGits {
-      name = &quot;root&quot;;
-      src = ../.;    # Parent dir that contains repoA and repoB
-      gitDirs = [ &quot;repoA&quot; &quot;repoB&quot; ];
-    };
-    subDir = &quot;repoA&quot;;       # Where to look for the `cabal.project`
-    includeSiblings = true; # Tells it not to exclude `repoB` dir
-  };
-}
+<h2 id="optional-installing-via-haskellnix-source">Optional: Installing via [Haskell.nix][] source<a class="headerlink" href="#optional-installing-via-haskellnix-source" title="Permanent link">&para;</a></h2>
+<p>The [Haskell.nix][] and <code>nix-tools</code> source will be useful if you would
+like to contribute improvements, or read the source code to fully
+understand something that the documentation doesn't cover.</p>
+<pre><code class="bash">git clone https://github.com/input-output-hk/nix-tools
+git clone https://github.com/input-output-hk/haskell.nix
+cd haskell.nix
+nix build -f . pkgs.haskell-nix.nix-tools --arg sourcesOverride '{ nix-tools = ../nix-tools; }' --out-link nt
 </code></pre>
               
             </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../manually-generating-nix-expressions/" class="btn btn-neutral float-right" title="Manually generating Nix expressions">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../cross-compilation/" class="btn btn-neutral" title="Cross-compiling your project"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -309,6 +268,10 @@ cabal packages and want to use the <code>repoB</code> package when building
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
+        <span><a href="../cross-compilation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../manually-generating-nix-expressions/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

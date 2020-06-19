@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Stack Projects - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Build a specific package from hackage or a [stackage][] lts or nightly set. - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Stack Projects";
-    var mkdocs_page_input_path = "user-guide/stack-projects.md";
+    var mkdocs_page_name = "Build a specific package from hackage or a [stackage][] lts or nightly set.";
+    var mkdocs_page_input_path = "tutorials/building-package-from-stackage-hackage.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -65,45 +65,39 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../projects/">Creating Nix builds for your projects</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">Stack Projects</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#using-stack-to-nix">Using stack-to-nix</a></li>
-    
-
-    <li class="toctree-l3"><a href="#creating-the-package-set">Creating the package set</a></li>
-    
-
-    </ul>
+    <a class="" href="../getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cabal-projects/">Cabal Projects</a>
+    <a class="" href="../development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../hackage-and-stackage.md">Hackage and Stackage</a>
+    <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../development/">How to create a development environment</a>
+    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -152,10 +146,6 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
-                </li>
-                <li class="">
-                    
     <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
@@ -195,15 +185,11 @@
     <li><a href="../..">Docs</a> &raquo;</li>
     
       
-        
-          <li>User Guide &raquo;</li>
-        
-      
     
-    <li>Stack Projects</li>
+    <li>Build a specific package from hackage or a [stackage][] lts or nightly set.</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/stack-projects.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/building-package-from-stackage-hackage.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -213,68 +199,35 @@
           <div role="main">
             <div class="section">
               
-                <p>Here we will look into how to generate the <code>pkgs.nix</code> file for a
-<code>stack.yaml</code> project. For the full integration see the
-<a href="../projects/">previous page</a>.</p>
-<h2 id="using-stack-to-nix">Using <code>stack-to-nix</code><a class="headerlink" href="#using-stack-to-nix" title="Permanent link">&para;</a></h2>
-<p>With <a href="../">nix-tools installed</a>, we can simply run the
-following command on a stack project:</p>
-<pre><code class="bash">stack-to-nix --output . --stack-yaml stack.yaml
+                <h1 id="build-a-specific-package-from-hackage-or-a-stackage-lts-or-nightly-set">Build a specific package from hackage or a <a href="https://stackage.org">stackage</a> lts or nightly set.<a class="headerlink" href="#build-a-specific-package-from-hackage-or-a-stackage-lts-or-nightly-set" title="Permanent link">&para;</a></h1>
+<p>To build a package, say <a href="https://hackage.haskell.org/package/lens">lens</a>, from a stackage snapshot, say <a href="https://www.stackage.org/lts-13.28">lts-13.28</a>,
+you could run</p>
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; haskell-nix.snapshots.&quot;lts-13.28&quot;).lens.components.library'
 </code></pre>
 
-<p>This will produce a <code>pkgs.nix</code> file that looks like the following:</p>
-<pre><code class="nix">{
-  resolver = &quot;lts-12.17&quot;;
-  extras = hackage:
-    {
-      packages = {
-        &quot;o-clock&quot; = hackage.o-clock.&quot;0.1.1&quot;.revisions.default;
-        ...
-      } // {
-        my-package = ./my-package.nix;
-        ...
-      };
-    };
-}
+<p>which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the lens package as fixed
+by the <a href="https://www.stackage.org/lts-13.28">lts-13.28</a> stackage snapshot.</p>
+<h2 id="specific-version">Specific version<a class="headerlink" href="#specific-version" title="Permanent link">&para;</a></h2>
+<p>To build any package from hackage, say <a href="https://hackage.haskell.org/package/lens">lens</a>, in version, say 4.17.1, you
+could run</p>
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; })).components.library'
 </code></pre>
 
-<p>This file contains the stackage resolver, as well as set of extra
-packages.  The extras specifies which <code>extra-deps</code> (here:
-<code>o-clock-0.1.1</code>) we wanted to add over the stackage snapshot, and what
-local packages we want (here: <code>my-package</code>).</p>
-<h2 id="creating-the-package-set">Creating the package set<a class="headerlink" href="#creating-the-package-set" title="Permanent link">&para;</a></h2>
-<p>Import the generated <code>pkgs.nix</code> and pass to
-<a href="../../reference/library/#mkstackpkgset"><code>mkStackPkgSet</code></a> to
-instantiate a package set.</p>
-<pre><code class="nix"># default.nix
-let
-  # Import the Haskell.nix library,
-  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = import haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
-  haskell = nixpkgs.haskell-nix;
-
-  # Instantiate a package set using the generated file.
-  pkgSet = haskell.mkStackPkgSet {
-    stack-pkgs = import ./pkgs.nix;
-    pkg-def-overlays = [];
-    modules = [];
-  };
-in
-  pkgSet.config.hsPkgs
+<p>which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package
+from hackage.  </p>
+<h2 id="pinning-hackage-index">Pinning hackage index<a class="headerlink" href="#pinning-hackage-index" title="Permanent link">&para;</a></h2>
+<p>The dependencies would be solved against the most recent 
+<a href="https://github.com/input-output-hk/hackage.nix/blob/master/index-state-hashes.nix">hackage-index-state</a> that comes via the <a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> pin with your
+[haskell.nix][] checkout.  A specific one can be specified as well:</p>
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; index-state = &quot;2019-07-14T00:00:00Z&quot;; })).components.library'
 </code></pre>
+
+<p>which would use the hackage index as of <code>2019-07-14T00:00:00Z</code> to produce a build plan
+for the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package.</p>
               
             </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../cabal-projects/" class="btn btn-neutral float-right" title="Cabal Projects">Next <span class="icon icon-circle-arrow-right"></span></a>
-      
-      
-        <a href="../projects/" class="btn btn-neutral" title="Creating Nix builds for your projects"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -300,10 +253,6 @@ in
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../projects/" style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../cabal-projects/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

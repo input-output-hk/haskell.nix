@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Mapping non-Haskell dependencies to Nixpkgs - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Source Repository Hashes - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Mapping non-Haskell dependencies to Nixpkgs";
-    var mkdocs_page_input_path = "dev/pkg-map.md";
+    var mkdocs_page_name = "Source Repository Hashes";
+    var mkdocs_page_input_path = "tutorials/source-repository-hashes.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -65,36 +65,39 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../../user-guide/">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../user-guide/projects/">Creating Nix builds for your projects</a>
+    <a class="" href="../getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/stack-projects/">Stack Projects</a>
+    <a class="" href="../development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/cabal-projects/">Cabal Projects</a>
+    <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/hackage-and-stackage.md">Hackage and Stackage</a>
+    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/development/">How to create a development environment</a>
+    <a class="" href="../hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../user-guide/cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -135,41 +138,23 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../dev-architecture/">Architecture</a>
+    <a class="" href="../../dev/dev-architecture/">Architecture</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">Mapping non-Haskell dependencies to Nixpkgs</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#mapping-non-haskell-dependencies-to-nixpkgs">Mapping non-Haskell dependencies to Nixpkgs</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l4" href="#nixpkgs-overlay">Nixpkgs overlay</a></li>
-        
-            <li><a class="toctree-l4" href="#mapping-in-haskellnix">Mapping in Haskell.nix</a></li>
-        
-        </ul>
-    
-
-    </ul>
+    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../nixpkgs-pin/">Nixpkgs Pin</a>
+    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tests/">Test Suite</a>
+    <a class="" href="../../dev/tests/">Test Suite</a>
                 </li>
     </ul>
 	    </li>
@@ -200,15 +185,11 @@
     <li><a href="../..">Docs</a> &raquo;</li>
     
       
-        
-          <li>Dev Notes &raquo;</li>
-        
-      
     
-    <li>Mapping non-Haskell dependencies to Nixpkgs</li>
+    <li>Source Repository Hashes</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/dev/pkg-map.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/source-repository-hashes.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -218,55 +199,72 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="mapping-non-haskell-dependencies-to-nixpkgs">Mapping non-Haskell dependencies to Nixpkgs<a class="headerlink" href="#mapping-non-haskell-dependencies-to-nixpkgs" title="Permanent link">&para;</a></h1>
-<p>Cabal files may contain dependencies to external non-Haskell
-dependencies via:
-* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-build-tool-depends"><code>build-tool-depends</code></a> 
-* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-pkgconfig-depends"><code>pkgconfig-depends</code></a>.
-* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-frameworks"><code>frameworks</code></a>
-* <a href="https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-extra-libraries"><code>extra-libraries</code></a></p>
-<p>If there is a <code>pkgs</code> attribute in Nixpkgs that matches the name given
-in the Cabal file, then it will be added as a dependency (see the
-output of <code>cabal-to-nix</code>). Otherwise, there needs to be a mapping from
-Cabal file names (decided by the package author) to Nix package
-identifiers.</p>
-<h3 id="nixpkgs-overlay">Nixpkgs overlay<a class="headerlink" href="#nixpkgs-overlay" title="Permanent link">&para;</a></h3>
-<p>The user may solve it by themself by overriding Nixpkgs and adding a
-package alias. For example:</p>
-<pre><code class="nix">nixpkgs.overlays = [
-  (self: super: {
-    icuuc = self.icu;
-    icui18n = self.icu;
-    icudata = self.icu;
-  })
-];
+                <h1 id="source-repository-hashes">Source Repository Hashes<a class="headerlink" href="#source-repository-hashes" title="Permanent link">&para;</a></h1>
+<p>Both <code>stack.yaml</code> and <code>cabal.project</code> files can contain references
+to git repositories containing the version of a particular package
+that we wish to use.  This is mostly handled automatically by
+<code>nix-tools</code> and <code>haskell.nix</code> however when we want to use a nix
+system that is configured to use restricted mode (typically hydra)
+it will need an aditionaly hash.</p>
+<p>When using <code>cabalProject</code> or <code>stackProject</code> functions you can include
+the hash needed in a comment.</p>
+<p>To calculate the hash use <code>nix-prefetch-git</code>:</p>
+<pre><code>$ nix-prefetch-git https://github.com/input-output-hk/haskell.nix.git bc01ebc05a8105035c9449943046b46c8364b932
+...
+{
+  &quot;url&quot;: &quot;https://github.com/input-output-hk/haskell.nix.git&quot;,
+  &quot;rev&quot;: &quot;bc01ebc05a8105035c9449943046b46c8364b932&quot;,
+  &quot;date&quot;: &quot;2019-05-30T13:13:18+08:00&quot;,
+  &quot;sha256&quot;: &quot;003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z&quot;,
+  &quot;fetchSubmodules&quot;: false
+}
 </code></pre>
 
-<h3 id="mapping-in-haskellnix">Mapping in Haskell.nix<a class="headerlink" href="#mapping-in-haskellnix" title="Permanent link">&para;</a></h3>
-<p>Alternatively, if the name is commonly used, an alias can be added to
-the Haskell.nix sources, so that it's solved for all users.</p>
-<ul>
-<li><a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/pkgconf-nixpkgs-map.nix"><code>lib/pkgconf-nixpkgs-map.nix</code></a> - for <code>pkgconfig-depends</code></li>
-<li><a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/system-nixpkgs-map.nix"><code>lib/system-nixpkgs-map.nix</code></a> - for <code>build-tool-depends</code>, <code>frameworks</code>, <code>extra-libraries</code>, etc.</li>
-</ul>
-<div class="admonition tip">
-<p class="admonition-title">Open a PR</p>
-<p>Please go ahead and open a <a href="https://github.com/input-output-hk/haskell.nix/pulls">pull request</a>
-to improve the package mappings.</p>
-</div>
+<p>If you are using <code>cabalProject</code> add a <code>--sha256</code> comment to the
+<code>cabal.project</code> file:</p>
+<pre><code>source-repository-package
+  type: git
+  location: https://github.com/input-output-hk/haskell.nix.git
+  tag: bc01ebc05a8105035c9449943046b46c8364b932
+  subdir: test/cabal-simple
+  --sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
+</code></pre>
+
+<p>If you are using <code>stackProject</code> add a <code># nix-sha256</code> comment to the
+<code>stack.yaml</code> file:</p>
+<pre><code>extra-deps:
+- git: https://github.com/input-output-hk/haskell.nix.git
+  commit: bc01ebc05a8105035c9449943046b46c8364b932
+  subdirs:
+    - test/cabal-simple
+  # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
+</code></pre>
+
+<h2 id="lookupsha256">lookupSha256<a class="headerlink" href="#lookupsha256" title="Permanent link">&para;</a></h2>
+<p>In some cases we cannot modify the <code>cabal.project</code> file to add the
+<code>--sha256</code> comments. As an alternative we can pass in a <code>lookupSha256</code>
+function to get them.  For instance pandoc includes a <code>cabal.project</code>
+file in hackage includes a <code>source-package-reference</code> to <code>pandoc-citeproc</code>:</p>
+<pre><code>{ haskell-nix, testSrc } :
+let
+  pandoc = haskell-nix.hackage-package {
+    name         = &quot;pandoc&quot;;
+    version      = &quot;2.9.2.1&quot;;
+    index-state  = &quot;2020-04-15T00:00:00Z&quot;; 
+    # Function that returns a sha256 string by looking up the location
+    # and tag in a nested attrset
+    lookupSha256 = { location, tag, ... }:
+      { &quot;https://github.com/jgm/pandoc-citeproc&quot;.&quot;0.17&quot;
+          = &quot;0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q&quot;; }
+        .&quot;${location}&quot;.&quot;${tag}&quot;;
+  };
+in
+  pandoc.components.exes.pandoc
+</code></pre>
               
             </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../nixpkgs-pin/" class="btn btn-neutral float-right" title="Nixpkgs Pin">Next <span class="icon icon-circle-arrow-right"></span></a>
-      
-      
-        <a href="../maintainer-scripts/" class="btn btn-neutral" title="Maintainer Scripts"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -292,10 +290,6 @@ to improve the package mappings.</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../maintainer-scripts/" style="color: #fcfcfc;">&laquo; Previous</a></span>
-      
-      
-        <span style="margin-left: 15px"><a href="../nixpkgs-pin/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

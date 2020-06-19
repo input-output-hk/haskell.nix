@@ -77,36 +77,39 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="user-guide/">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="user-guide/projects/">Creating Nix builds for your projects</a>
+    <a class="" href="tutorials/getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="user-guide/stack-projects/">Stack Projects</a>
+    <a class="" href="tutorials/development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="user-guide/cabal-projects/">Cabal Projects</a>
+    <a class="" href="tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="user-guide/hackage-and-stackage.md">Hackage and Stackage</a>
+    <a class="" href="tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="user-guide/development/">How to create a development environment</a>
+    <a class="" href="tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="user-guide/cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="tutorials/cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="tutorials/installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="tutorials/manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -152,10 +155,6 @@
                 <li class="">
                     
     <a class="" href="dev/maintainer-scripts/">Maintainer Scripts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
@@ -216,17 +215,17 @@
 <p><code>haskell.nix</code> is an alternative Haskell infrastructure for Nix<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li>autogenerate Nix expressions for Cabal project</li>
-<li>autogenerate Nix expressions for Stack</li>
-<li>overridable configuration</li>
-<li>cross-compilation</li>
+<li>Drop-in support for Cabal projects</li>
+<li>Drop-in support for Stack projects</li>
+<li>Build any package of specific version in Stackage or Hackage</li>
+<li>Overridable configuration</li>
+<li>Cross compile Haskell packages</li>
 </ul>
 <div class="footnote">
 <hr />
 <ol>
 <li id="fn:1">
-<p>See [Nixpkgs current Users' Guide to Haskell Infrastructure][nixpkgs] for comparison.
-[nixpkgs]: https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>See <a href="https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure">Nixpkgs current Users' Guide to Haskell Infrastructure</a> for comparison.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Cabal Projects - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Sourcing files only part of git repository using cleanGit - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Cabal Projects";
-    var mkdocs_page_input_path = "user-guide/cabal-projects.md";
+    var mkdocs_page_name = "Sourcing files only part of git repository using cleanGit";
+    var mkdocs_page_input_path = "tutorials/clean-git.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -65,48 +65,51 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../">Getting Started</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">User Guide</span>
+    <span class="caption-text">Tutorials</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../projects/">Creating Nix builds for your projects</a>
+    <a class="" href="../getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../stack-projects/">Stack Projects</a>
+    <a class="" href="../development/">Creating a development environment</a>
                 </li>
                 <li class=" current">
                     
-    <a class="current" href="./">Cabal Projects</a>
+    <a class="current" href="./">Sourcing files only part of git repository using cleanGit</a>
     <ul class="subnav">
             
-    <li class="toctree-l3"><a href="#generating-planjson">Generating plan.json</a></li>
+    <li class="toctree-l3"><a href="#cleangit">cleanGit</a></li>
     
-
-    <li class="toctree-l3"><a href="#using-plan-to-nix">Using plan-to-nix</a></li>
-    
-
-    <li class="toctree-l3"><a href="#creating-the-package-set">Creating the package set</a></li>
+        <ul>
+        
+            <li><a class="toctree-l4" href="#multiple-git-repositories-with-cleangits">Multiple Git Repositories with cleanGits</a></li>
+        
+        </ul>
     
 
     </ul>
                 </li>
                 <li class="">
                     
-    <a class="" href="../hackage-and-stackage.md">Hackage and Stackage</a>
+    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../development/">How to create a development environment</a>
+    <a class="" href="../hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cross-compilation/">How to cross-compile your project</a>
+    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
     </ul>
 	    </li>
@@ -155,10 +158,6 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
-                </li>
-                <li class="">
-                    
     <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
@@ -199,14 +198,14 @@
     
       
         
-          <li>User Guide &raquo;</li>
+          <li>Tutorials &raquo;</li>
         
       
     
-    <li>Cabal Projects</li>
+    <li>Sourcing files only part of git repository using cleanGit</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/user-guide/cabal-projects.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/clean-git.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -216,85 +215,85 @@
           <div role="main">
             <div class="section">
               
-                <p>Here we will look into how to generate the <code>pkgs.nix</code> file for a
-<code>cabal.project</code> project. For the full integration see the <a href="../projects/">previous
-page</a>.</p>
-<p>Generating package sets for Cabal projects, is slightly more involved,
-because you need to let Cabal calculate a build plan for the
-dependencies of your package(s).</p>
-<h2 id="generating-planjson">Generating <code>plan.json</code><a class="headerlink" href="#generating-planjson" title="Permanent link">&para;</a></h2>
-<p>To get a plan, you need Cabal and GHC. See the <a href="https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler">How to install a
-compiler section of the Nixpkgs Manual</a> for information
-about how to choose a specific compiler version.</p>
-<div class="admonition note">
-<p class="admonition-title">Cabal version</p>
-<p>The minimum Cabal version is 2.4. This version is available
-in the NixOS 19.03 release.</p>
-</div>
-<p>For this example, we will run a <code>nix-shell</code> with the default GHC
-version for Nixpkgs.</p>
-<pre><code class="bash">nix-shell -p haskellPackages.cabal-install haskellPackages.ghc \
-    --run &quot;cabal new-configure&quot;
+                <h1 id="cleangit">cleanGit<a class="headerlink" href="#cleangit" title="Permanent link">&para;</a></h1>
+<p>To filter out just the files in your git index use
+<code>haskell-nix.haskellLib.cleanGit { src = ./.; }</code> where <code>./.</code> is the
+root of your git repo (or a git work tree).</p>
+<p>First it filters just the files needed to run <code>git index</code>, then
+it uses the results of that to filter your directory.  It does not
+need to parse the <code>.gitignore</code> files at all, but we do need to
+<code>git add</code> our files before they will be included.
+<a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/clean-git.nix">cleanGit source</a>.</p>
+<p>In addition haskell.nix (including <code>cleanGit</code>) uses a version
+of <a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/clean-source-with.nix"><code>cleanSourceWith</code></a>
+with a <code>subdir</code> argument to filter out just the package it is
+building.  Then it uses the info from the <code>cabal</code> file to filter
+just the source dirs for the component it is building.  That way
+if we modify a test in a package nix will not rebuild the library
+in that package (or anything that depends on that package's library).</p>
+<p>There is a downside to this though.  If we have a test that depends
+on something outside the scope of what is described in its entry in
+the in the <code>.cabal</code> file it will not see it.  For instance perhaps
+it needs to run <code>hlint</code> or <code>doctest</code> on the library source.  There
+are ways to fix this with a module:</p>
+<p>Use <code>extraSrcFiles</code> to add dirs the test needs (this will not result
+in a change to the <code>.cabal</code> file the test will still be built the same).</p>
+<pre><code>components.tests.test.extraSrcFiles = [ &quot;subdir-needed-by-test&quot; ];
 </code></pre>
 
-<p>If all goes well, you should now have the file
-<code>dist-newstyle/cache/plan.json</code>.</p>
-<div class="admonition tip">
-<p class="admonition-title">Specifying the GHC version</p>
-<p>To use a specific compiler version, replace <code>haskellPackages.ghc</code>
-with something like <code>haskell-nix.compiler.ghc865</code>. The given compiler
-must exist in your Nixpkgs version, of course. See also the
-<a href="https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler">Nixpkgs Manual</a>.</p>
-</div>
-<h2 id="using-plan-to-nix">Using <code>plan-to-nix</code><a class="headerlink" href="#using-plan-to-nix" title="Permanent link">&para;</a></h2>
-<p>With <a href="../">nix-tools installed</a>, we can then run the
-following command on a Cabal project and its build plan. Omit the
-<code>--cabal-project</code> option if you don't have a project file.</p>
-<pre><code class="bash"># convert the plan.json file into a pkgs.nix file
-plan-to-nix --output . \
-    --plan-json dist-newstyle/cache/plan.json
-    --cabal-project cabal.project
+<p>Or alternatively, override the source with a suitable filter function. </p>
+<pre><code>components.tests.test.src = haskell-nix.haskellLib.cleanSourceWith {
+    inherit src;
+    subdir = &quot;path-to-package&quot;;
+    filter = ...
+};
 </code></pre>
 
-<p>This will produce a <code>pkgs.nix</code> file that looks like the following:</p>
-<pre><code class="nix">{
-  pkgs = hackage:
-    {
-      packages = {
-        &quot;o-clock&quot; = hackage.o-clock.&quot;0.1.1&quot;.revisions.default;
-        ...
-      };
-      compiler = { ... };
+<h2 id="multiple-git-repositories-with-cleangits">Multiple Git Repositories with cleanGits<a class="headerlink" href="#multiple-git-repositories-with-cleangits" title="Permanent link">&para;</a></h2>
+<p>Some times it is handy to temporarily use a relative path between git
+repos.  If the repos are individually cleaned this is not possible
+(since the cleaned version of one repo will never include the files
+of the other).</p>
+<p>There are 3 options:</p>
+<ul>
+<li>
+<p>We could <code>symlinkJoin</code> the cleaned directories together, but the
+  result could not be cleaned and any change would to either
+  repo would result in a rebuild of everything.</p>
+</li>
+<li>
+<p>We could add one repo to the other as a submodule,
+  but adding and then removing a submodule is a pain and it does not
+  work well if you have more than one repo that needs to share the
+  submodule.</p>
+</li>
+<li>
+<p>We could add a <code>source-repository-package</code> but then we would have
+  to commit each change before testing.</p>
+</li>
+</ul>
+<p><code>cleanGits</code> allows us to specify a root directory and any number of
+sub directories containing git repos.</p>
+<p>For example if <code>repoA</code> and <code>repoB</code> are two git repos with
+cabal packages and want to use the <code>repoB</code> package when building
+<code>repoA.  First we can add</code>../repoB<code>to</code>repoA/cabal.project`:</p>
+<pre><code>packages:
+  ./.
+  ../repoB
+</code></pre>
+
+<p>Then in <code>repoA/default.nix</code> we can use:</p>
+<pre><code>haskell-nix.cabalProject {
+  src = haskell-nix.haskellLib.cleanSourceWith {
+    src = haskell-nix.haskellLib.cleanGits {
+      name = &quot;root&quot;;
+      src = ../.;    # Parent dir that contains repoA and repoB
+      gitDirs = [ &quot;repoA&quot; &quot;repoB&quot; ];
     };
-
-  extras = hackage:
-    { packages = { my-package = ./.plan.nix/my-package.nix; }; };
-}
-</code></pre>
-
-<p>It has converted Cabal's build plan into a Nix expression that selects
-dependencies from <code>hackage.nix</code>. All local packages in the project are
-generated with <code>cabal-to-nix</code> and added to the package set
-description.</p>
-<h2 id="creating-the-package-set">Creating the package set<a class="headerlink" href="#creating-the-package-set" title="Permanent link">&para;</a></h2>
-<p>Import the generated <code>pkgs.nix</code> and pass to
-<a href="../../reference/library/#mkcabalprojectpkgset"><code>mkCabalPkgSet</code></a> to
-instantiate a package set.</p>
-<pre><code class="nix"># default.nix
-let
-  # Import the Haskell.nix library,
-  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = import haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
-  haskell = nixpkgs.haskell-nix;
-
-  # Instantiate a package set using the generated file.
-  pkgSet = haskell.mkCabalProjectPkgSet {
-    plan-pkgs = import ./pkgs.nix;
-    pkg-def-extras = [];
-    modules = [];
+    subDir = &quot;repoA&quot;;       # Where to look for the `cabal.project`
+    includeSiblings = true; # Tells it not to exclude `repoB` dir
   };
-in
-  pkgSet.config.hsPkgs
+}
 </code></pre>
               
             </div>
@@ -303,10 +302,10 @@ in
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../development/" class="btn btn-neutral float-right" title="How to create a development environment">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../pkg-map/" class="btn btn-neutral float-right" title="Mapping non-Haskell dependencies to Nixpkgs">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../stack-projects/" class="btn btn-neutral" title="Stack Projects"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../development/" class="btn btn-neutral" title="Creating a development environment"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -334,10 +333,10 @@ in
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../stack-projects/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../development/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../development/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../pkg-map/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
