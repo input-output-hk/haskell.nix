@@ -558,11 +558,11 @@ final: prev: {
             cabalProjectExists = exists "cabal.project";
             selectedFileName =
               if projectFileName != null
-                then throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
-                  + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`")
+                then projectFileName  # Prefer the user selected project file name
                 else
                   if stackYamlExists && cabalProjectExists
-                    then null # If both exist we will throw an error
+                    then throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
+                      + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`")
                     else
                       if stackYamlExists
                         then "stack.yaml"      # stack needs a stack.yaml
