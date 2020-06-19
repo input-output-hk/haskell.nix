@@ -558,7 +558,8 @@ final: prev: {
             cabalProjectExists = exists "cabal.project";
             selectedFileName =
               if projectFileName != null
-                then projectFileName  # Prefer the user selected project file name
+                then throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
+                  + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`")
                 else
                   if stackYamlExists && cabalProjectExists
                     then null # If both exist we will throw an error
@@ -567,10 +568,6 @@ final: prev: {
                         then "stack.yaml"      # stack needs a stack.yaml
                         else "cabal.project";  # the cabal.project file is optional
           in
-            assert (
-              if selectedFileName != null then true
-              else throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
-                + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`"));
             if final.lib.hasSuffix ".yaml" selectedFileName
               then stackProject' (args // { stackYaml            = selectedFileName; })
               else cabalProject' (args // { cabalProjectFileName = selectedFileName; });
