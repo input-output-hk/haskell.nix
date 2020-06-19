@@ -30,6 +30,7 @@ pages:
     - 'Getting Started': tutorials/getting-started.md
     - 'Creating a development environment': tutorials/development.md
     - 'Sourcing files only part of git repository using cleanGit': tutorials/clean-git.md
+    - 'Handling git repositories in projects': tutorials/source-repository-hashes.md
     - 'Mapping non-Haskell dependencies to Nixpkgs': tutorials/pkg-map.md
     - 'Bumping Hackage and Stackage snapshots': tutorials/hackage-stackage.md
     - 'Materialization: Speeding up Nix evaluation': tutorials/materialization.md
