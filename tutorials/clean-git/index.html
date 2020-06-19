@@ -283,7 +283,7 @@ cabal packages and want to use the <code>repoB</code> package when building
 </code></pre>
 
 <p>Then in <code>repoA/default.nix</code> we can use:</p>
-<pre><code>haskell-nix.cabalProject {
+<pre><code>haskell-nix.project {
   src = haskell-nix.haskellLib.cleanSourceWith {
     src = haskell-nix.haskellLib.cleanGits {
       name = &quot;root&quot;;

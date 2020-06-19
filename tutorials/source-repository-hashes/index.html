@@ -206,8 +206,8 @@ that we wish to use.  This is mostly handled automatically by
 <code>nix-tools</code> and <code>haskell.nix</code> however when we want to use a nix
 system that is configured to use restricted mode (typically hydra)
 it will need an aditionaly hash.</p>
-<p>When using <code>cabalProject</code> or <code>stackProject</code> functions you can include
-the hash needed in a comment.</p>
+<p>When using <code>project</code>, <code>cabalProject</code> or <code>stackProject</code> functions
+you can include the hash needed in a comment.</p>
 <p>To calculate the hash use <code>nix-prefetch-git</code>:</p>
 <pre><code>$ nix-prefetch-git https://github.com/input-output-hk/haskell.nix.git bc01ebc05a8105035c9449943046b46c8364b932
 ...
@@ -220,7 +220,7 @@ the hash needed in a comment.</p>
 }
 </code></pre>
 
-<p>If you are using <code>cabalProject</code> add a <code>--sha256</code> comment to the
+<p>If you have a cabal project add a <code>--sha256</code> comment to the
 <code>cabal.project</code> file:</p>
 <pre><code>source-repository-package
   type: git
@@ -230,7 +230,7 @@ the hash needed in a comment.</p>
   --sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 </code></pre>
 
-<p>If you are using <code>stackProject</code> add a <code># nix-sha256</code> comment to the
+<p>If you have a stack project add a <code># nix-sha256</code> comment to the
 <code>stack.yaml</code> file:</p>
 <pre><code>extra-deps:
 - git: https://github.com/input-output-hk/haskell.nix.git
@@ -240,11 +240,11 @@ the hash needed in a comment.</p>
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 </code></pre>
 
-<h2 id="lookupsha256">lookupSha256<a class="headerlink" href="#lookupsha256" title="Permanent link">&para;</a></h2>
-<p>In some cases we cannot modify the <code>cabal.project</code> file to add the
-<code>--sha256</code> comments. As an alternative we can pass in a <code>lookupSha256</code>
-function to get them.  For instance pandoc includes a <code>cabal.project</code>
-file in hackage includes a <code>source-package-reference</code> to <code>pandoc-citeproc</code>:</p>
+<h2 id="sha256map">sha256map<a class="headerlink" href="#sha256map" title="Permanent link">&para;</a></h2>
+<p>In some cases we cannot modify the <code>cabal.project</code> or <code>stack.yaml</code> file
+to add sha256 comments. As an alternative we can pass in a <code>sha256map</code>
+For instance pandoc includes a <code>cabal.project</code> file in hackage includes a
+<code>source-package-reference</code> to <code>pandoc-citeproc</code>:</p>
 <pre><code>{ haskell-nix, testSrc } :
 let
   pandoc = haskell-nix.hackage-package {
@@ -253,10 +253,9 @@ let
     index-state  = &quot;2020-04-15T00:00:00Z&quot;; 
     # Function that returns a sha256 string by looking up the location
     # and tag in a nested attrset
-    lookupSha256 = { location, tag, ... }:
+    sha256map =
       { &quot;https://github.com/jgm/pandoc-citeproc&quot;.&quot;0.17&quot;
-          = &quot;0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q&quot;; }
-        .&quot;${location}&quot;.&quot;${tag}&quot;;
+          = &quot;0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q&quot;; };
   };
 in
   pandoc.components.exes.pandoc

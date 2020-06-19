@@ -205,9 +205,9 @@
 not need to be built (or checked).  This allows us to cache the input
 of an IFD (import from derviation).</p>
 <h2 id="why-use-materialization">Why use materialization?<a class="headerlink" href="#why-use-materialization" title="Permanent link">&para;</a></h2>
-<p>Using functions like <code>cabalProject</code>, <code>stackProject</code> and <code>hackage-package</code>
-results in a lot of dependencies (all the dependencies of nix-tools
-for instance).</p>
+<p>Using functions like <code>project</code>, <code>cabalProject</code>, <code>stackProject</code>
+and <code>hackage-package</code> results in a lot of dependencies (all the
+dependencies of nix-tools for instance).</p>
 <ul>
 <li>
 <p>They can be slow to calculate (even if no work needs to be done it
@@ -258,8 +258,8 @@ trace: Using index-state: 2020-04-15T00:00:00Z for hlint
 </code></pre>
 
 <p>To materialize the nix files we need to take care to pin down the
-inputs.  For <code>cabalProject</code> and <code>hackage-package</code> this means
-we must specify the <code>index-state</code> of hackage we want to use:</p>
+inputs.  For cabal projects this means we must specify the
+<code>index-state</code> of hackage we want to use:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
@@ -283,7 +283,7 @@ $ nix-hash --base32 --type sha256 /nix/store/8z6p4237rin3c6c1lmjwshmj8rdqrhw2-hl
 </code></pre>
 
 <p>We can add the hash as <code>plan-sha256</code> or (<code>stack-sha256</code> for
-<code>stackProject</code>)</p>
+stack projects)</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs-default nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
@@ -369,10 +369,10 @@ error: build of '/nix/store/a5zmgfjfxahapw0q8hd2da5bg7knqvbx-hlint-plan-to-nix-p
 avoids.  So while it might be tempting to leave <code>checkMaterialization = true</code> all
 the time, we would be better off just removing <code>materialized</code> and <code>plan-sha256</code>.</p>
 <h2 id="how-can-we-update-the-nix-files-with-a-script">How can we update the nix files with a script?<a class="headerlink" href="#how-can-we-update-the-nix-files-with-a-script" title="Permanent link">&para;</a></h2>
-<p>There are versions of the functions (<code>cabalProject'</code>, <code>stackProject'</code>
-and <code>hackage-project</code>) that also return the nix as <code>plan-nix</code> or
-<code>stack-nix</code>.  By calling one of these functions without the
-hash and materialized nix we can find out what nix files should be.
+<p>There are versions of the functions (<code>project'</code>, <code>cabalProject'</code>,
+<code>stackProject'</code> and <code>hackage-project</code>) that also return the nix as
+<code>plan-nix</code> or <code>stack-nix</code>.  By calling one of these functions without
+the hash and materialized nix we can find out what nix files should be.
 For instance:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs-default nixpkgsArgs;
