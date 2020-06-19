@@ -1,4 +1,4 @@
-# Source Repository Hashes
+# Handling git repositories in projects
 
 Both `stack.yaml` and `cabal.project` files can contain references
 to git repositories containing the version of a particular package
@@ -24,8 +24,9 @@ $ nix-prefetch-git https://github.com/input-output-hk/haskell.nix.git bc01ebc05a
 }
 ```
 
-If you have a cabal project add a `--sha256` comment to the
-`cabal.project` file:
+## Cabal.project
+
+Add a `--sha256` comment to the `cabal.project` file:
 
 ```
 source-repository-package
@@ -36,8 +37,9 @@ source-repository-package
   --sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 ```
 
-If you have a stack project add a `# nix-sha256` comment to the
-`stack.yaml` file:
+## Stack
+
+Add a `# nix-sha256` comment to the `stack.yaml` file:
 
 ```
 extra-deps:
@@ -48,14 +50,14 @@ extra-deps:
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 ```
 
-## sha256map
+## Avoding modifying cabal.project and stack.yaml
 
 In some cases we cannot modify the `cabal.project` or `stack.yaml` file
 to add sha256 comments. As an alternative we can pass in a `sha256map`
 For instance pandoc includes a `cabal.project` file in hackage includes a
 `source-package-reference` to `pandoc-citeproc`:
 
-```
+```nix
 { haskell-nix, testSrc } :
 let
   pandoc = haskell-nix.hackage-package {
