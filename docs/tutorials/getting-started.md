@@ -18,16 +18,19 @@ $ cachix use iohk
 
 ## Scaffolding
 
-The following configuration will use `stack.yaml` if it exists,
-otherwise fallback to `cabal.project`.
+The following work with `stack.yaml` and `cabal.project` based
+projects.
 
 Add `default.nix`:
 
 ```nix
-{ haskellCompiler ? "ghc865"
+{ # Default version of GHC to use (when not otherwise specified)
+  defaultCompilerNixName ? "ghc865"
 
 # Fetch the latest haskell.nix and import its default.nix
-, haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+, haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
+  inherit defaultCompilerNixName;
+}
 
 # haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
 # you will be more likely to get cache hits when using these.
@@ -40,26 +43,26 @@ Add `default.nix`:
 
 # import nixpkgs with overlays
 , pkgs ? import nixpkgsSrc nixpkgsArgs
-
-# 'cleanGit' cleans a source directory based on the files known by git
-, src ? pkgs.haskell-nix.haskellLib.cleanGit {
+}: pkgs.haskell-nix.project {
+  # 'cleanGit' cleans a source directory based on the files known by git
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
     src = ./.;
-  }
-, hasStack ? builtins.pathExists (./. + "/cabal.project")
-, hasCabalProject ? builtins.pathExists (./. + "/stack.yaml")
-}:
+  };
+}
+```
 
-assert (if hasStack && hasCabalProject then throw "This project has both stack.yaml and cabal.project. Edit default.nix to pick the one you'd like to use." else true);
+Or a shorter `default.nix` that uses the default nixpkgs and default GHC:
 
-if hasStack
-then pkgs.haskell-nix.stackProject
-  { inherit src;
-  }
-else pkgs.haskell-nix.cabalProject
-  { inherit src;
-    compiler-nix-name = haskellCompiler;
-  }
+```nix
+{ haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
+, pkgs ? haskellNix.pkgs
+}: pkgs.haskell-nix.project {
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
+    name = "haskell-nix-project";
+    src = ./.;
+  };
+}
 ```
 
 !!! note "git dependencies"

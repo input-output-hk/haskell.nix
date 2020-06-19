@@ -541,6 +541,47 @@ final: prev: {
               shells.ghc = p.hsPkgs.shellFor {};
             };
 
+        # `project'` and `project` automatically select between `cabalProject`
+        # and `stackProject` (when possible) by looking for `stack.yaml` or
+        # `cabal.project` files.  If both exist we can pass in one of:
+        #     `projectFileName = "stack.yaml;"`
+        #     `projectFileName = "cabal.project";`
+        # to let it know which to choose (or pick another name).  If the
+        # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
+        # If niether `stack.yaml` nor `cabal.project` exist `cabalProject` is
+        # used (as it will use a default `cabal.project`).
+        project' = { src, projectFileName ? null, ... }@args: 
+          let
+            dir = __readDir (src.origSrcSubDir or src);
+            exists = fileName: builtins.elem (dir.${fileName} or "") ["regular" "symlink"];
+            stackYamlExists    = exists "stack.yaml";
+            cabalProjectExists = exists "cabal.project";
+            selectedFileName =
+              if projectFileName != null
+                then projectFileName  # Prefer the user selected project file name
+                else
+                  if stackYamlExists && cabalProjectExists
+                    then throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
+                      + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`")
+                    else
+                      if stackYamlExists
+                        then "stack.yaml"      # stack needs a stack.yaml
+                        else "cabal.project";  # the cabal.project file is optional
+          in
+            if final.lib.hasSuffix ".yaml" selectedFileName
+              then stackProject' (args // { stackYaml            = selectedFileName; })
+              else cabalProject' (args // { cabalProjectFileName = selectedFileName; });
+
+        # This is the same as the `cabalPackage` and `stackPackage` wrappers
+        # for `cabalPackage` and `stackPackage`.
+        project = args: let p = project' args;
+            in p.hsPkgs // {
+              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
+              # But we should encourage use of `nix-shell -A shellFor`
+              shells.ghc = p.hsPkgs.shellFor {};
+            } // final.lib.optionalAttrs (p ? stack-nix) { inherit (p) stack-nix; }
+              // final.lib.optionalAttrs (p ? plan-nix ) { inherit (p) plan-nix;  };
+
         # Like `cabalProject'`, but for building the GHCJS compiler.
         # This is exposed to allow GHCJS developers to work on the GHCJS
         # code in a nix-shell with `shellFor`.

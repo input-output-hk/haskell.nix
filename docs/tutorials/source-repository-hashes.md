@@ -7,8 +7,8 @@ that we wish to use.  This is mostly handled automatically by
 system that is configured to use restricted mode (typically hydra)
 it will need an aditionaly hash.
 
-When using `cabalProject` or `stackProject` functions you can include
-the hash needed in a comment.
+When using `project`, `cabalProject` or `stackProject` functions
+you can include the hash needed in a comment.
 
 To calculate the hash use `nix-prefetch-git`:
 
@@ -24,7 +24,7 @@ $ nix-prefetch-git https://github.com/input-output-hk/haskell.nix.git bc01ebc05a
 }
 ```
 
-If you are using `cabalProject` add a `--sha256` comment to the
+If you have a cabal project add a `--sha256` comment to the
 `cabal.project` file:
 
 ```
@@ -36,7 +36,7 @@ source-repository-package
   --sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 ```
 
-If you are using `stackProject` add a `# nix-sha256` comment to the
+If you have a stack project add a `# nix-sha256` comment to the
 `stack.yaml` file:
 
 ```
@@ -48,12 +48,12 @@ extra-deps:
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 ```
 
-## lookupSha256
+## sha256map
 
-In some cases we cannot modify the `cabal.project` file to add the
-`--sha256` comments. As an alternative we can pass in a `lookupSha256`
-function to get them.  For instance pandoc includes a `cabal.project`
-file in hackage includes a `source-package-reference` to `pandoc-citeproc`:
+In some cases we cannot modify the `cabal.project` or `stack.yaml` file
+to add sha256 comments. As an alternative we can pass in a `sha256map`
+For instance pandoc includes a `cabal.project` file in hackage includes a
+`source-package-reference` to `pandoc-citeproc`:
 
 ```
 { haskell-nix, testSrc } :
@@ -64,10 +64,9 @@ let
     index-state  = "2020-04-15T00:00:00Z"; 
     # Function that returns a sha256 string by looking up the location
     # and tag in a nested attrset
-    lookupSha256 = { location, tag, ... }:
+    sha256map =
       { "https://github.com/jgm/pandoc-citeproc"."0.17"
-          = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
-        ."${location}"."${tag}";
+          = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
   };
 in
   pandoc.components.exes.pandoc
