@@ -139,6 +139,8 @@ in let configured-src = stdenv.mkDerivation (rec {
 
         name = "${targetPrefix}ghc-${ghc-version}-configured-src";
 
+  # Make sure we never relax`$PATH` and hooks support for compatability.
+  strictDeps = true;
 
   nativeBuildInputs = [
     perl autoconf automake m4 python3 sphinx
