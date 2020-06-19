@@ -32,9 +32,8 @@ pages:
     - 'Sourcing files only part of git repository using cleanGit': tutorials/clean-git.md
     - 'Mapping non-Haskell dependencies to Nixpkgs': tutorials/pkg-map.md
     - 'Bumping Hackage and Stackage snapshots': tutorials/hackage-stackage.md
+    - 'Materialization: Speeding up Nix evaluation': tutorials/materialization.md
     - 'Cross-compiling your project': tutorials/cross-compilation.md
-    - 'Installing nix-tools': tutorials/installing-nix-tools.md
-    - 'Manually generating Nix expressions': tutorials/manually-generating-nix-expressions.md
   - 'Reference':
     - 'Command-line tools': reference/commands.md
     - 'Haskell.nix Library': reference/library.md
@@ -43,6 +42,8 @@ pages:
     - 'IOHKs nix library': iohk-nix.md
   - 'Dev Notes':
     - 'Architecture': dev/dev-architecture.md
+    - 'Installing nix-tools': dev/installing-nix-tools.md
+    - 'Manually generating Nix expressions': dev/manually-generating-nix-expressions.md
     - 'Maintainer Scripts': dev/maintainer-scripts.md
     - 'Nixpkgs Pin': dev/nixpkgs-pin.md
     - 'Removing withPackage wrapper': dev/removing-with-package-wrapper.md
