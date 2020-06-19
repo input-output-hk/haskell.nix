@@ -11,7 +11,7 @@ Every dependency will be cached in your Nix store. If you have set up
 Hydra CI, then your team can share pre-built dependencies.
 
 These examples assume that you have created your package set as
-described in [Creating Nix builds for your projects](projects.md) and
+described in [Creating Nix builds for your projects](getting-started.md) and
 it exists in a file called `default.nix`.
 
 !!! note
@@ -179,3 +179,38 @@ Emacs to use it. The way I do it is:
 4. For [`haskell‑mode`](https://github.com/haskell/haskell-mode)
    interactive Haskell, set `haskell‑process‑type` to
    `cabal‑new‑repl`.
+
+## Using `nix repl`
+
+It's sometimes useful to load [Haskell.nix][] in the REPL to explore
+attrsets and try examples. 
+
+```
+# example.nix
+{ nixpkgs ? <nixpkgs> }:
+rec {
+  haskell = import nixpkgs (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs;
+  pkgNames = haskell.pkgs.lib.attrNames haskell.haskell-nix.snapshots."lts-13.18";
+}
+```
+
+Load the example file:
+
+```
+$ nix repl '<nixpkgs>' example.nix
+Welcome to Nix version 2.3pre6631_e58a7144. Type :? for help.
+
+Loading '<nixpkgs>'...
+Added 10403 variables.
+
+Loading 'example.nix'...
+Added 2 variables.
+
+nix-repl> lib.take 5 pkgNames
+[ "ALUT" "ANum" "Allure" "Boolean" "BoundedChan" ]
+
+nix-repl> 
+```
+
+Now that you have `nix-tools` and are able to import [Haskell.nix][],
+you can continue to the next chapter.

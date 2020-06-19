@@ -1,7 +1,7 @@
 [Haskell.nix][] contains a library of functions for creating buildable
 package sets from their Nix expression descriptions. The library is
 what you get when importing [Haskell.nix][]. It might be helpful to
-load the library in the [Nix REPL](../user-guide.md#using-nix-repl) to
+load the library in the [Nix REPL](../tutorials/development.md#using-nix-repl) to
 test things.
 
  * [Types](#types) — the kinds of data that you will encounter working with [Haskell.nix][].
@@ -98,7 +98,7 @@ attrset of package descriptions.
 Modules are the primary method of configuring building of the package
 set. They are either:
 
-1. an attrset containing [option declarations](./options.md), or
+1. an attrset containing [option declarations](./modules.md), or
 2. a function that returns an attrset containing option declarations.
 
 If using the function form of a module, the following named parameters
@@ -354,7 +354,7 @@ These functions exist within the `hsPkgs` package set.
 ## shellFor
 
 Create a `nix-shell` [development
-environment](../user-guide/development.md) for developing one or more
+environment](../tutorials/development.md) for developing one or more
 packages with `ghci` or `cabal v2-build` (but not Stack).
 
 ```
@@ -386,7 +386,7 @@ shellFor =
 ## ghcWithPackages
 
 Creates a `nix-shell` [development
-environment](../user-guide/development.md) including the given
+environment](../tutorials/development.md) including the given
 packages selected from this package set.
 
 **Parameter**: a package selection function.

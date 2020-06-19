@@ -1,4 +1,4 @@
-# Hackage and Stackage
+# Bumping Hackage and Stackage snapshots
 
 `haskell.nix` relies on some generated data providing information about packages in Hackage and Stackage snapshots.
 These are kept in [`hackage.nix`](https://github.com/input-output-hk/hackage.nix) and [`stackage.nix`](https://github.com/input-output-hk/stackage.nix) respectively.
@@ -12,7 +12,7 @@ These revisions are updated nightly, so you can get newer revisions of `hackage.
 However, this exposes you to changes in `haskell.nix` which you may not want, such as changes that force compiler rebuilds, or the occasional bug.
 Instead, you can pin `hackage.nix` and `stackage.nix` independently. For example:
 
-```
+```nix
 let 
   # You can use a tool like `niv` to manage this boilerplate
   hackageSrc = builtins.fetchTarball https://github.com/input-output-hk/hackage.nix/archive/master.tar.gz;
@@ -29,6 +29,6 @@ let
 in ...
 ```
 
-You can then change the revisions that `hackage.nix` and `stackage.nix` are fetched from without changing `haskell.nix`.
+This way you can change the revisions of `hackage.nix` and `stackage.nix` are fetched from without changing `haskell.nix`.
 
 However, bear in mind that Stackage refers to Hackage, so your Stackage should never be newer than Hackage.
