@@ -1,8 +1,9 @@
 # Getting started
 
-`haskell.nix` can automatically translate your Cabal or Stack project and its dependencies into Nix code.
-
-This tutorial will teach you how to setup your project
+`haskell.nix` can automatically translate your
+[Cabal](https://cabal.readthedocs.io/en/latest/cabal-project.html)
+or [Stack](https://docs.haskellstack.org/en/stable/README/#quick-start-guide)
+project and its dependencies into Nix code.
 
 Assuming you have [Nix installed](https://nixos.org/download.html), you can start setting up your project.
 
@@ -13,7 +14,12 @@ so you can benefit from the binary cache built by CI:
 
 ```bash
 $ nix-env -iA cachix -f https://cachix.org/api/v1/install
+installing 'cachix-0.3.8'
+building '/nix/store/bh176xhpk4wrjm56iahm86wf85jaz23v-user-environment.drv'...
+created 42 symlinks in user environment
+
 $ cachix use iohk
+Configured https://iohk.cachix.org binary cache in ~/.config/nix/nix.conf
 ```
 
 ## Scaffolding
@@ -24,13 +30,8 @@ projects.
 Add `default.nix`:
 
 ```nix
-{ # Default version of GHC to use (when not otherwise specified)
-  defaultCompilerNixName ? "ghc865"
-
-# Fetch the latest haskell.nix and import its default.nix
-, haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {
-  inherit defaultCompilerNixName;
-}
+{ # Fetch the latest haskell.nix and import its default.nix
+  haskellNix ? import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}
 
 # haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
 # you will be more likely to get cache hits when using these.
@@ -45,19 +46,6 @@ Add `default.nix`:
 , pkgs ? import nixpkgsSrc nixpkgsArgs
 }: pkgs.haskell-nix.project {
   # 'cleanGit' cleans a source directory based on the files known by git
-  src = pkgs.haskell-nix.haskellLib.cleanGit {
-    name = "haskell-nix-project";
-    src = ./.;
-  };
-}
-```
-
-Or a shorter `default.nix` that uses the default nixpkgs and default GHC:
-
-```nix
-{ haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
-, pkgs ? haskellNix.pkgs
-}: pkgs.haskell-nix.project {
   src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
     src = ./.;
@@ -106,42 +94,20 @@ However, in your own project, you may wish to pin [Haskell.nix][] (as
 you would pin Nixpkgs). This will make your builds reproducible, more
 predictable, and faster (because the fixed version is cached).
 
-One way of doing this is to use `nix-prefetch-git` to get a JSON file
-with a revision and SHA-256 hash of [Haskell.nix][].
-
-```
-$ nix-prefetch-git --quiet https://github.com/input-output-hk/haskell.nix | tee haskell-nix-src.json
-{
-  "url": "https://github.com/input-output-hk/haskell.nix",
-  "rev": "f1a94a4c82a2ab999a67c3b84269da78d89f0075",
-  "date": "2019-06-05T01:06:12+00:00",
-  "sha256": "0ggxsppjlb6q6a83y12cwgrdnqnw1s128rpibgzs5p1966bdfqla",
-  "fetchSubmodules": false
-}
-```
-
-(The `tee` command is just to show you the result.)
-Use the following expression to import that version:
+Straightforward way of doing this is to change branch name to a revision.
 
 ```nix
-{ nixpkgs ? <nixpkgs> }:
+{ # Fetch the latest haskell.nix and import its default.nix
+ haskellNix ? import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz") {}
 
-let
-  spec = builtins.fromJSON (builtins.readFile ./haskell-nix-src.json);
-  haskell-nix-src = (import nixpkgs {}).fetchgit {
-    name = "haskell-lib";
-    inherit (spec) url rev sha256 fetchSubmodules;
-  };
-in
-  import nixpkgs (import haskell-nix-src)
+...
 ```
 
 There are other possible schemes for pinning. See
-[`haskell.nix/lib/fetch-external.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/fetch-external.nix),
-the [niv](https://github.com/nmattia/niv) tool, or the Nix Flakes
-proposal.
+[Bumping Hackage and Stackage snapshots](./hackage-stackage.md) and
+[Nix tutorial on reproducibility using pinning](https://nix.dev/tutorials/towards-reproducibility-pinning-nixpkgs.html).
 
-# Going forward
+## Going forward
 
 There are a number of things to explore further in the tutorials section.
 
