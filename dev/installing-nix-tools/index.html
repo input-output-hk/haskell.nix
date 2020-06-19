@@ -18,7 +18,7 @@
   <script>
     // Current page data
     var mkdocs_page_name = "Installing nix-tools";
-    var mkdocs_page_input_path = "tutorials/installing-nix-tools.md";
+    var mkdocs_page_input_path = "dev/installing-nix-tools.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -69,44 +69,31 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../getting-started/">Getting Started</a>
+    <a class="" href="../../tutorials/getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../development/">Creating a development environment</a>
+    <a class="" href="../../tutorials/development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
+    <a class="" href="../../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+    <a class="" href="../../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
+    <a class="" href="../../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">Installing nix-tools</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#installing-nix-tools">Installing nix-tools</a></li>
-    
-
-    <li class="toctree-l3"><a href="#optional-installing-via-haskellnix-source">Optional: Installing via [Haskell.nix][] source</a></li>
-    
-
-    </ul>
+    <a class="" href="../../tutorials/materialization/">Materialization: Speeding up Nix evaluation</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
+    <a class="" href="../../tutorials/cross-compilation/">Cross-compiling your project</a>
                 </li>
     </ul>
 	    </li>
@@ -147,23 +134,40 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../dev/dev-architecture/">Architecture</a>
+    <a class="" href="../dev-architecture/">Architecture</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Installing nix-tools</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#installing-nix-tools">Installing nix-tools</a></li>
+    
+
+    <li class="toctree-l3"><a href="#optional-installing-via-haskellnix-source">Optional: Installing via [Haskell.nix][] source</a></li>
+    
+
+    </ul>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
+    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
+    <a class="" href="../nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../dev/tests/">Test Suite</a>
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../tests/">Test Suite</a>
                 </li>
     </ul>
 	    </li>
@@ -195,14 +199,14 @@
     
       
         
-          <li>Tutorials &raquo;</li>
+          <li>Dev Notes &raquo;</li>
         
       
     
     <li>Installing nix-tools</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/installing-nix-tools.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/dev/installing-nix-tools.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -240,7 +244,7 @@ nix build -f . pkgs.haskell-nix.nix-tools --arg sourcesOverride '{ nix-tools = .
         <a href="../manually-generating-nix-expressions/" class="btn btn-neutral float-right" title="Manually generating Nix expressions">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../cross-compilation/" class="btn btn-neutral" title="Cross-compiling your project"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../dev-architecture/" class="btn btn-neutral" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -268,7 +272,7 @@ nix build -f . pkgs.haskell-nix.nix-tools --arg sourcesOverride '{ nix-tools = .
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../cross-compilation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../dev-architecture/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../manually-generating-nix-expressions/" style="color: #fcfcfc">Next &raquo;</a></span>
