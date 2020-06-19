@@ -2,7 +2,8 @@
 # Typically we want to make these available in a nix-shell
 # created with shellFor.  In most cases the package name
 # will be the same as the executable, but we have a
-# `toolPackageName` mapping to help when it is not.
+# `toolPackageName` and `packageToolName` mapping to help
+# when it is not.
 #
 # To get a single tool:
 #   haskell-nix.tool "cabal" "3.2.0.0"
@@ -38,14 +39,22 @@ let
 in { haskell-nix = prev.haskell-nix // {
 
   # Some times the package name in hackage is not the same as tool name.
+  # Tools better known by their exe name.
   toolPackageName = {
     cabal = "cabal-install";
   };
 
+  # Packages that are better known by their package name.  We are not
+  # reusing toolPackageName here as perhaps the more one package
+  # will have the same exe name.
+  packageToolName = {
+    cabal-install = "cabal";
+  };
+
   hackage-tool = { name, ... }@args:
     (final.haskell-nix.hackage-package
-      (args // { name = final.haskell-nix.toolPackageName."${name}" or name; }))
-        .components.exes."${name}";
+      (args // { name = final.haskell-nix.toolPackageName.${name} or name; }))
+        .components.exes."${final.haskell-nix.packageToolName.${name} or name}";
 
   tool = name: versionOrArgs:
     let
