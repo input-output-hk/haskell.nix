@@ -18,13 +18,13 @@ $ cachix use iohk
 
 ## Scaffolding
 
-The following configuration will use `stack.yaml` if it exists,
-otherwise fallback to `cabal.project`.
+The following work with `stack.yaml` and `cabal.project` based
+projects.
 
 Add `default.nix`:
 
 ```nix
-{ # Compiler to use for the project by default
+{ # Default version of GHC to use (when not otherwise specified)
   defaultCompilerNixName ? "ghc865"
 
 # Fetch the latest haskell.nix and import its default.nix
@@ -54,8 +54,9 @@ Add `default.nix`:
   }
 ```
 
-Or a shorter `default.nix` that uses the default nixpkgs and ghc:
-```
+Or a shorter `default.nix` that uses the default nixpkgs and default GHC:
+
+```nix
 { haskellNix ? import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}
 , src ? haskellNix.pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
