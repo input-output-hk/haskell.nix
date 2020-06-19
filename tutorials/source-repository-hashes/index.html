@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Source Repository Hashes - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Handling git repositories in projects - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,7 +17,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Source Repository Hashes";
+    var mkdocs_page_name = "Handling git repositories in projects";
     var mkdocs_page_input_path = "tutorials/source-repository-hashes.md";
     var mkdocs_page_url = null;
   </script>
@@ -78,6 +78,26 @@
                 <li class="">
                     
     <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Handling git repositories in projects</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#handling-git-repositories-in-projects">Handling git repositories in projects</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#cabalproject">Cabal.project</a></li>
+        
+            <li><a class="toctree-l4" href="#stack">Stack</a></li>
+        
+            <li><a class="toctree-l4" href="#avoding-modifying-cabalproject-and-stackyaml">Avoding modifying cabal.project and stack.yaml</a></li>
+        
+        </ul>
+    
+
+    </ul>
                 </li>
                 <li class="">
                     
@@ -189,8 +209,12 @@
     <li><a href="../..">Docs</a> &raquo;</li>
     
       
+        
+          <li>Tutorials &raquo;</li>
+        
+      
     
-    <li>Source Repository Hashes</li>
+    <li>Handling git repositories in projects</li>
     <li class="wy-breadcrumbs-aside">
       
         <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/source-repository-hashes.md"
@@ -203,7 +227,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="source-repository-hashes">Source Repository Hashes<a class="headerlink" href="#source-repository-hashes" title="Permanent link">&para;</a></h1>
+                <h1 id="handling-git-repositories-in-projects">Handling git repositories in projects<a class="headerlink" href="#handling-git-repositories-in-projects" title="Permanent link">&para;</a></h1>
 <p>Both <code>stack.yaml</code> and <code>cabal.project</code> files can contain references
 to git repositories containing the version of a particular package
 that we wish to use.  This is mostly handled automatically by
@@ -224,8 +248,8 @@ you can include the hash needed in a comment.</p>
 }
 </code></pre>
 
-<p>If you have a cabal project add a <code>--sha256</code> comment to the
-<code>cabal.project</code> file:</p>
+<h2 id="cabalproject">Cabal.project<a class="headerlink" href="#cabalproject" title="Permanent link">&para;</a></h2>
+<p>Add a <code>--sha256</code> comment to the <code>cabal.project</code> file:</p>
 <pre><code>source-repository-package
   type: git
   location: https://github.com/input-output-hk/haskell.nix.git
@@ -234,8 +258,8 @@ you can include the hash needed in a comment.</p>
   --sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 </code></pre>
 
-<p>If you have a stack project add a <code># nix-sha256</code> comment to the
-<code>stack.yaml</code> file:</p>
+<h2 id="stack">Stack<a class="headerlink" href="#stack" title="Permanent link">&para;</a></h2>
+<p>Add a <code># nix-sha256</code> comment to the <code>stack.yaml</code> file:</p>
 <pre><code>extra-deps:
 - git: https://github.com/input-output-hk/haskell.nix.git
   commit: bc01ebc05a8105035c9449943046b46c8364b932
@@ -244,12 +268,12 @@ you can include the hash needed in a comment.</p>
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 </code></pre>
 
-<h2 id="sha256map">sha256map<a class="headerlink" href="#sha256map" title="Permanent link">&para;</a></h2>
+<h2 id="avoding-modifying-cabalproject-and-stackyaml">Avoding modifying cabal.project and stack.yaml<a class="headerlink" href="#avoding-modifying-cabalproject-and-stackyaml" title="Permanent link">&para;</a></h2>
 <p>In some cases we cannot modify the <code>cabal.project</code> or <code>stack.yaml</code> file
 to add sha256 comments. As an alternative we can pass in a <code>sha256map</code>
 For instance pandoc includes a <code>cabal.project</code> file in hackage includes a
 <code>source-package-reference</code> to <code>pandoc-citeproc</code>:</p>
-<pre><code>{ haskell-nix, testSrc } :
+<pre><code class="nix">{ haskell-nix, testSrc } :
 let
   pandoc = haskell-nix.hackage-package {
     name         = &quot;pandoc&quot;;
@@ -268,6 +292,15 @@ in
             </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../pkg-map/" class="btn btn-neutral float-right" title="Mapping non-Haskell dependencies to Nixpkgs">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../clean-git/" class="btn btn-neutral" title="Sourcing files only part of git repository using cleanGit"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -293,6 +326,10 @@ in
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
+        <span><a href="../clean-git/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../pkg-map/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
