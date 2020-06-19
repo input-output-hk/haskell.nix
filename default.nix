@@ -40,7 +40,7 @@ let haskellNix = {
 # If no arguments, then you get V1
 # I'd like to make importing directly issue a warning, but I couldn't figure out a way to make it happen
 in haskellNixV1 // {
-  __functor = _: { version ? 2, ... }@args:
+  __functor = _: { version ? 2, sourcesOverride ? {}, ... }@args:
     if version == 1
     then builtins.trace v1DeprecationMessage haskellNixV1
     else if version == 2
