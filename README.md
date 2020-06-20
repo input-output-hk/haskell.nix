@@ -9,7 +9,7 @@ its dependencies into Nix code.
 ## Documentation
 
 - [Introduction](https://input-output-hk.github.io/haskell.nix/)
-- [Getting Started](https://input-output-hk.github.io/haskell.nix/getting-started/)
+- [Getting Started](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started/)
 
 ## Related repos
 
