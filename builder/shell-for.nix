@@ -43,7 +43,8 @@ let
 
   # Add the system libraries and build tools of the selected haskell
   # packages to the shell.
-  systemInputs = removeSelectedInputs (lib.concatMap (p: p.components.all.buildInputs) selected);
+  systemInputs = removeSelectedInputs (lib.concatMap
+    (p: p.components.all.buildInputs ++ p.components.all.propagatedBuildInputs) selected);
   nativeBuildInputs = removeSelected
     (lib.concatMap (p: p.components.all.executableToolDepends) selected);
 
