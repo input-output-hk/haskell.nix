@@ -30,7 +30,7 @@ final: prev: {
             specJSON = stackageSourceJSON;
             override = "stackage";
           };
-        } // (import ../nix/sources.nix) // sourcesOverride;
+        } // { nixpkgs-default = sources.nixpkgs; } // (import ../nix/sources.nix) // sourcesOverride;
 
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
@@ -550,7 +550,7 @@ final: prev: {
         # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
         # If niether `stack.yaml` nor `cabal.project` exist `cabalProject` is
         # used (as it will use a default `cabal.project`).
-        project' = { src, projectFileName ? null, ... }@args: 
+        project' = { src, projectFileName ? null, ... }@args:
           let
             dir = __readDir (src.origSrcSubDir or src);
             exists = fileName: builtins.elem (dir.${fileName} or "") ["regular" "symlink"];

@@ -43,6 +43,13 @@ let
         };
 in {
   haskell-nix = prev.haskell-nix // {
+    ghc-865-iohk = import ../compiler/ghc/source-dist.nix {
+      inherit (final) stdenv;
+      pkgs = final;
+      inherit (final.haskell-nix.compiler.ghc865.bootPkgs) alex happy hscolour ghc;
+      src = final.haskell-nix.sources."ghc-8.6.5-iohk";
+      version = "8.6.5-iohk";
+    };
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = with final.buildPackages; {
