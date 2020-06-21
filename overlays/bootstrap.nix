@@ -135,6 +135,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
+                # backport of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3227
+                ++ fromUntil "8.8" "8.12"      ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
