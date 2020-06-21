@@ -215,12 +215,14 @@ stdenv.mkDerivation ({
 
   enableParallelBuilding = true;
 
+  propagatedBuildInputs =
+       frameworks # Frameworks will be needed at link time
+    # Not sure why pkgconfig needs to be propagatedBuildInputs but
+    # for gi-gtk-hs it seems to help.
+    ++ builtins.concatLists pkgconfig;
+  
   buildInputs = component.libs
-    ++ frameworks
-    ++ builtins.concatLists pkgconfig
-    # Note: This is a hack until we can fix properly. See:
-    # https://github.com/haskell-gi/haskell-gi/issues/226
-    ++ lib.optional (lib.strings.hasPrefix "gi-" fullName) gobject-introspection;
+    ++ map (d: d.components.library or d) component.depends;
 
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]
