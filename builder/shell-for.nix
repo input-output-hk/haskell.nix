@@ -28,6 +28,12 @@ let
   # because cabal will end up ignoring that built version;
   removeSelected = lib.filter
     (input: lib.all (cfg: (input.identifier or null) != cfg.identifier) selected);
+  # Also since a will include the library component of b in its buildInputs
+  # (to make `propagatedBuildInputs` of `pkgconfig-depends` work) those should
+  # also be excluded (the pkgconfig depends of b will still be included in the
+  # system shells buildInputs via b's own buildInputs).
+  removeSelectedInputs = lib.filter
+    (input: lib.all (cfg: input != cfg.components.library or null) selected);
 
   packageInputs = removeSelected
     (lib.concatMap (cfg: cfg.depends) selectedConfigs
@@ -37,7 +43,7 @@ let
 
   # Add the system libraries and build tools of the selected haskell
   # packages to the shell.
-  systemInputs = lib.concatMap (p: p.components.all.buildInputs) selected;
+  systemInputs = removeSelectedInputs (lib.concatMap (p: p.components.all.buildInputs) selected);
   nativeBuildInputs = removeSelected
     (lib.concatMap (p: p.components.all.executableToolDepends) selected);
 
