@@ -1,0 +1,43 @@
+From bec76733b818b0489ffea0834ab6b1560207577c Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Wed, 15 Jan 2020 14:57:08 -0500
+Subject: [PATCH] Fix GhcThreaded setting
+
+This adopts a patch from NetBSD's packaging fixing the `GhcThreaded`
+option of the make build system. In addition we introduce a `ghcThreaded`
+option in hadrian's `Flavour` type.
+
+Also fix Hadrian's treatment of the `Use Threaded` entry in `settings`.
+Previously it would incorrectly claim `Use Threaded = True` if we were
+building the `threaded` runtime way. However, this is inconsistent with
+the `make` build system, which defines it to be whether the `ghc`
+executable is linked against the threaded runtime.
+
+Fixes #17692.
+---
+ ghc/ghc.mk                       | 6 ++++++
+ hadrian/doc/user-settings.md     | 2 ++
+ hadrian/src/Flavour.hs           | 2 ++
+ hadrian/src/Rules/Generate.hs    | 2 +-
+ hadrian/src/Settings/Default.hs  | 1 +
+ hadrian/src/Settings/Packages.hs | 4 +++-
+ 6 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/ghc/ghc.mk b/ghc/ghc.mk
+index 3bff2f58c93..8c112a054f9 100644
+--- a/ghc/ghc.mk
++++ b/ghc/ghc.mk
+@@ -61,7 +61,13 @@ ifeq "$(GhcThreaded)" "YES"
+ # Use threaded RTS with GHCi, so threads don't get blocked at the prompt.
+ ghc_stage2_MORE_HC_OPTS += -threaded
+ ghc_stage3_MORE_HC_OPTS += -threaded
++else
++# Opt out from threaded GHC. See ghc-bin.cabal.in
++ghc_stage2_CONFIGURE_OPTS += -f-threaded
++ghc_stage3_CONFIGURE_OPTS += -f-threaded
+ endif
++# Stage-0 compiler isn't guaranteed to have a threaded RTS.
++ghc_stage1_CONFIGURE_OPTS += -f-threaded
+
+ ifeq "$(GhcProfiled)" "YES"
+ ghc_stage2_PROGRAM_WAY = p

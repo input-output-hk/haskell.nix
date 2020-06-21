@@ -136,6 +136,10 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 # backport of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3227
+                # the first one is a prerequisite.
+                # both are trimmed to only include the make build system part and not the
+                # hadrian one.
+                ++ fromUntil "8.8" "8.12"      ./patches/ghc/bec76733b818b0489ffea0834ab6b1560207577c.patch
                 ++ fromUntil "8.8" "8.12"      ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
                 ;
         in ({
