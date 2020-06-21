@@ -68,12 +68,15 @@ in { haskell-nix = prev.haskell-nix // {
   tools = lib.mapAttrs final.haskell-nix.tool;
 
   # Like `tools` but allows default ghc to be specified
-  toolsForGhc = ghc: toolSet:
+  toolsForGhc = ghcOverride: toolSet:
     final.haskell-nix.tools (
       lib.mapAttrs (name: versionOrArgs:
-        # Add default ghc if not specified in the args
-        { inherit ghc; }
-          // final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs
+        let args = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
+        in
+          # Add default ghc if not specified in the args
+          (lib.optionalAttrs (!(args ? "compiler-nix-name" || args ? "ghc"))
+            { inherit ghcOverride; }
+          ) // args
       ) toolSet
     );
 
