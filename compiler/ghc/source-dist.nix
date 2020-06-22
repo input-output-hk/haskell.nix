@@ -23,7 +23,7 @@ stdenv.mkDerivation {
     export happy_datadir=$(find ${happy}/share -name "happy-*" -type d -and -not -path "*doc*")
 
     # We need to --skip-url-rewrites, ghc is a bit too strict here.
-    ./boot --skip-url-rewrites
+    python3 ./boot --skip-url-rewrites
     # let's not flood the screen with garbage.
     ./configure --silent
 
