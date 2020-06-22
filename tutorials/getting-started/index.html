@@ -232,10 +232,12 @@
 <a href="https://cabal.readthedocs.io/en/latest/cabal-project.html">Cabal</a>
 or <a href="https://docs.haskellstack.org/en/stable/README/#quick-start-guide">Stack</a>
 project and its dependencies into Nix code.</p>
-<p>Assuming you have <a href="https://nixos.org/download.html">Nix installed</a>, you can start setting up your project.</p>
+<p>Assuming you have <a href="https://nixos.org/download.html">Nix</a> installed, you can
+start setting up your project.</p>
 <h2 id="setting-up-the-cachix-binary-cache">Setting up the Cachix binary cache<a class="headerlink" href="#setting-up-the-cachix-binary-cache" title="Permanent link">&para;</a></h2>
-<p>You can <strong>avoid compiling GHC and nix-tools</strong> by configuring <a href="https://cachix.org">Cachix</a>
-so you can benefit from the binary cache built by CI:</p>
+<p>You can <strong>avoid compiling GHC and nix-tools</strong> by configuring
+<a href="https://cachix.org">Cachix</a> so you can benefit from the binary cache built by
+CI:</p>
 <pre><code class="bash">$ nix-env -iA cachix -f https://cachix.org/api/v1/install
 installing 'cachix-0.3.8'
 building '/nix/store/bh176xhpk4wrjm56iahm86wf85jaz23v-user-environment.drv'...
@@ -252,13 +254,13 @@ projects.</p>
 <pre><code class="nix">{ # Fetch the latest haskell.nix and import its default.nix
   haskellNix ? import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz&quot;) {}
 
-# haskell.nix provides access to the nixpkgs pins which are used by our CI, hence
-# you will be more likely to get cache hits when using these.
-# But you can also just use your own, e.g. '&lt;nixpkgs&gt;'
+# haskell.nix provides access to the nixpkgs pins which are used by our CI,
+# hence you will be more likely to get cache hits when using these.
+# But you can also just use your own, e.g. '&lt;nixpkgs&gt;'.
 , nixpkgsSrc ? haskellNix.sources.nixpkgs-2003
 
-# haskell.nix provides some arguments to be passed to nixpkgs, including some patches
-# and also the haskell.nix functionality itself as an overlay.
+# haskell.nix provides some arguments to be passed to nixpkgs, including some
+# patches and also the haskell.nix functionality itself as an overlay.
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 
 # import nixpkgs with overlays
@@ -295,15 +297,15 @@ cabal new-build your-package-name
 </code></pre>
 
 <p>To open a shell for use with <code>stack</code> see <a href="https://github.com/input-output-hk/haskell.nix/issues/689#issuecomment-643832619">the following issue</a>.</p>
-<h3 id="pinning-the-haskellnix-version">Pinning the <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> version<a class="headerlink" href="#pinning-the-haskellnix-version" title="Permanent link">&para;</a></h3>
+<h3 id="pinning-the-haskellnix-version">Pinning the <a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a> version<a class="headerlink" href="#pinning-the-haskellnix-version" title="Permanent link">&para;</a></h3>
 <p>For simplicity's sake we will use <code>fetchTarball</code> for the examples in
 this documentation. This will always get the latest version, and is
 similar to an auto-updating Nix channel.</p>
-<p>However, in your own project, you may wish to pin <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> (as
+<p>However, in your own project, you may wish to pin <a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a> (as
 you would pin Nixpkgs). This will make your builds reproducible, more
 predictable, and faster (because the fixed version is cached).</p>
-<p>Straightforward way of doing this is to change branch name to a revision.</p>
-<pre><code class="nix">{ # Fetch the latest haskell.nix and import its default.nix
+<p>Straightforward way of doing this is to change the branch name to a revision.</p>
+<pre><code class="nix">{ # Fetch a specific haskell.nix and import its default.nix
  haskellNix ? import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz&quot;) {}
 
 ...

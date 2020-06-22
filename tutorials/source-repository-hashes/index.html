@@ -92,7 +92,7 @@
         
             <li><a class="toctree-l4" href="#stack">Stack</a></li>
         
-            <li><a class="toctree-l4" href="#avoding-modifying-cabalproject-and-stackyaml">Avoding modifying cabal.project and stack.yaml</a></li>
+            <li><a class="toctree-l4" href="#avoiding-modifying-cabalproject-and-stackyaml">Avoiding modifying cabal.project and stack.yaml</a></li>
         
         </ul>
     
@@ -268,11 +268,11 @@ you can include the hash needed in a comment.</p>
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 </code></pre>
 
-<h2 id="avoding-modifying-cabalproject-and-stackyaml">Avoding modifying cabal.project and stack.yaml<a class="headerlink" href="#avoding-modifying-cabalproject-and-stackyaml" title="Permanent link">&para;</a></h2>
-<p>In some cases we cannot modify the <code>cabal.project</code> or <code>stack.yaml</code> file
-to add sha256 comments. As an alternative we can pass in a <code>sha256map</code>
-For instance pandoc includes a <code>cabal.project</code> file in hackage includes a
-<code>source-package-reference</code> to <code>pandoc-citeproc</code>:</p>
+<h2 id="avoiding-modifying-cabalproject-and-stackyaml">Avoiding modifying cabal.project and stack.yaml<a class="headerlink" href="#avoiding-modifying-cabalproject-and-stackyaml" title="Permanent link">&para;</a></h2>
+<p>In some cases we cannot modify the <code>cabal.project</code> or <code>stack.yaml</code> file to add
+sha256 comments. As an alternative we can pass in a <code>sha256map</code>. For instance,
+pandoc includes a <code>cabal.project</code> file on hackage which includes a
+<code>source-repository-package</code> stanza for <code>pandoc-citeproc</code>:</p>
 <pre><code class="nix">{ haskell-nix, testSrc } :
 let
   pandoc = haskell-nix.hackage-package {

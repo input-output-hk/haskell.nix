@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Build a specific package from hackage or a [stackage][] lts or nightly set. - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Build a specific package from Hackage or Stackage - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,7 +17,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Build a specific package from hackage or a [stackage][] lts or nightly set.";
+    var mkdocs_page_name = "Build a specific package from Hackage or Stackage";
     var mkdocs_page_input_path = "tutorials/building-package-from-stackage-hackage.md";
     var mkdocs_page_url = null;
   </script>
@@ -194,7 +194,7 @@
     
       
     
-    <li>Build a specific package from hackage or a [stackage][] lts or nightly set.</li>
+    <li>Build a specific package from Hackage or Stackage</li>
     <li class="wy-breadcrumbs-aside">
       
         <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/building-package-from-stackage-hackage.md"
@@ -207,31 +207,33 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="build-a-specific-package-from-hackage-or-a-stackage-lts-or-nightly-set">Build a specific package from hackage or a <a href="https://stackage.org">stackage</a> lts or nightly set.<a class="headerlink" href="#build-a-specific-package-from-hackage-or-a-stackage-lts-or-nightly-set" title="Permanent link">&para;</a></h1>
-<p>To build a package, say <a href="https://hackage.haskell.org/package/lens">lens</a>, from a stackage snapshot, say <a href="https://www.stackage.org/lts-13.28">lts-13.28</a>,
-you could run</p>
-<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; haskell-nix.snapshots.&quot;lts-13.28&quot;).lens.components.library'
+                <h1 id="build-a-specific-package-from-hackage-or-stackage">Build a specific package from Hackage or Stackage<a class="headerlink" href="#build-a-specific-package-from-hackage-or-stackage" title="Permanent link">&para;</a></h1>
+<h2 id="from-a-stackage-snapshot">From a <a href="https://stackage.org">Stackage</a> snapshot<a class="headerlink" href="#from-a-stackage-snapshot" title="Permanent link">&para;</a></h2>
+<p>To build a package, say <a href="https://hackage.haskell.org/package/lens">lens</a>, from a Stackage snapshot, say
+<a href="https://www.stackage.org/lts-13.28">lts-13.28</a>, you could run:</p>
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz&quot;)).nixpkgsArgs; haskell-nix.snapshots.&quot;lts-13.28&quot;).lens.components.library'
 </code></pre>
 
-<p>which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the lens package as fixed
-by the <a href="https://www.stackage.org/lts-13.28">lts-13.28</a> stackage snapshot.</p>
-<h2 id="specific-version">Specific version<a class="headerlink" href="#specific-version" title="Permanent link">&para;</a></h2>
-<p>To build any package from hackage, say <a href="https://hackage.haskell.org/package/lens">lens</a>, in version, say 4.17.1, you
-could run</p>
-<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; })).components.library'
+<p>This would build the (public) library component of the <a href="https://hackage.haskell.org/package/lens">lens</a> package as
+fixed by the <a href="https://www.stackage.org/lts-13.28">lts-13.28</a> stackage snapshot. Nightly snapshots like
+<code>nightly-2020-06-21</code> are also available.</p>
+<h2 id="a-specific-version-from-hackage">A specific version from Hackage<a class="headerlink" href="#a-specific-version-from-hackage" title="Permanent link">&para;</a></h2>
+<p>To build any package from hackage, say <a href="https://hackage.haskell.org/package/lens">lens</a>, at any version, say 4.17.1,
+you could run:</p>
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz&quot;)).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; })).components.library'
 </code></pre>
 
-<p>which would build the <a href="https://hackage.haskell.org/package/lens">lens</a> library component from the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package
+<p>This would build the (public) library component of the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package
 from hackage.  </p>
-<h2 id="pinning-hackage-index">Pinning hackage index<a class="headerlink" href="#pinning-hackage-index" title="Permanent link">&para;</a></h2>
-<p>The dependencies would be solved against the most recent 
-<a href="https://github.com/input-output-hk/hackage.nix/blob/master/index-state-hashes.nix">hackage-index-state</a> that comes via the <a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> pin with your
-[haskell.nix][] checkout.  A specific one can be specified as well:</p>
-<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import ./. {}).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; index-state = &quot;2019-07-14T00:00:00Z&quot;; })).components.library'
+<h3 id="pinning-hackage-index">Pinning hackage index<a class="headerlink" href="#pinning-hackage-index" title="Permanent link">&para;</a></h3>
+<p>The dependencies would be resolved against the most recent
+<a href="https://github.com/input-output-hk/hackage.nix/blob/master/index-state-hashes.nix">hackage-index-state</a> which comes with your <a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a> checkout via the
+<a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> pin.  A specific one can be specified as well:</p>
+<pre><code class="bash">nix build '(with import &lt;nixpkgs&gt; (import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz&quot;)).nixpkgsArgs; (haskell-nix.hackage-package { name = &quot;lens&quot;; version = &quot;4.17.1&quot;; index-state = &quot;2019-07-14T00:00:00Z&quot;; })).components.library'
 </code></pre>
 
-<p>which would use the hackage index as of <code>2019-07-14T00:00:00Z</code> to produce a build plan
-for the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package.</p>
+<p>This would use the hackage index as of <code>2019-07-14T00:00:00Z</code> to produce a
+build plan for the <a href="https://hackage.haskell.org/package/lens-4.17.1">lens-4.17.1</a> package.</p>
               
             </div>
           </div>
