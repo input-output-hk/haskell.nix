@@ -50,12 +50,12 @@ extra-deps:
   # nix-sha256: 003lm3pm024vhbfmii7xcdd9v2rczpflxf7gdl2pyxia7p014i8z
 ```
 
-## Avoding modifying cabal.project and stack.yaml
+## Avoiding modifying cabal.project and stack.yaml
 
-In some cases we cannot modify the `cabal.project` or `stack.yaml` file
-to add sha256 comments. As an alternative we can pass in a `sha256map`
-For instance pandoc includes a `cabal.project` file in hackage includes a
-`source-package-reference` to `pandoc-citeproc`:
+In some cases we cannot modify the `cabal.project` or `stack.yaml` file to add
+sha256 comments. As an alternative we can pass in a `sha256map`. For instance,
+pandoc includes a `cabal.project` file on hackage which includes a
+`source-repository-package` stanza for `pandoc-citeproc`:
 
 ```nix
 { haskell-nix, testSrc } :
