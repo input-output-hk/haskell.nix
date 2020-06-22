@@ -40,7 +40,9 @@ stdenv.mkDerivation (rec {
 
     postPatch = "patchShebangs .";
 
-    src = fetchurl { inherit (src-spec) url sha256; };
+    src = if src-spec ? file
+        then src-spec.file
+        else fetchurl { inherit (src-spec) url sha256; };
 
     # GHC is a bit confused on its cross terminology.
     preConfigure = ''

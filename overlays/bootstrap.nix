@@ -43,12 +43,14 @@ let
         };
 in {
   haskell-nix = prev.haskell-nix // {
-    ghc-865-iohk = import ../compiler/ghc/source-dist.nix {
-      inherit (final) stdenv;
-      pkgs = final;
-      inherit (final.haskell-nix.compiler.ghc865.bootPkgs) alex happy hscolour ghc;
-      src = final.haskell-nix.sources."ghc-8.6.5-iohk";
-      version = "8.6.5-iohk";
+    sources = {
+      ghc-865-iohk = import ../compiler/ghc/source-dist.nix {
+        inherit (final) stdenv;
+        pkgs = final;
+        inherit (final.haskell-nix.compiler.ghc865.bootPkgs) alex happy hscolour ghc;
+        src = final.haskell-nix.sources."ghc-8.6.5-iohk";
+        version = "8.6.5-iohk";
+      };
     };
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
@@ -245,6 +247,19 @@ in {
 
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
+            };
+            ghc865-iohk = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865-iohk; };
+
+                inherit bootPkgs sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_6;
+                llvmPackages = final.llvmPackages_6;
+
+                src-spec = rec {
+                    version = "8.6.5";
+                    file = "${final.haskell-nix.sources.ghc-865-iohk}/src.tar.xz";
+                };
             };
             ghc881 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc881; };
