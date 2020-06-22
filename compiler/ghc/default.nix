@@ -284,15 +284,15 @@ stdenv.mkDerivation (rec {
     if [[ ! -f "$out/bin/${targetPrefix}ghc-pkg" ]]; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 0
-    fi
+    fi    
     if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
       echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
       exit 0
-    fi
+    fi    
     if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
       echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
       exit 0
-    fi
+    fi    
   '';
 
   passthru = {
