@@ -29,6 +29,8 @@ let
 in ...
 ```
 
-This way you can change the revisions of `hackage.nix` and `stackage.nix` are fetched from without changing `haskell.nix`.
+This way you can change the revisions of `hackage.nix` and `stackage.nix`
+without changing `haskell.nix`.
 
-However, bear in mind that Stackage refers to Hackage, so your Stackage should never be newer than Hackage.
+However, bear in mind that Stackage refers to Hackage, so your Stackage pin
+should never be newer than your Hackage pin.
