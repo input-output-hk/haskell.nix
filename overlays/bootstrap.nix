@@ -43,15 +43,6 @@ let
         };
 in {
   haskell-nix = prev.haskell-nix // {
-    sources = {
-      ghc-865-iohk = import ../compiler/ghc/source-dist.nix {
-        inherit (final) stdenv;
-        pkgs = final;
-        inherit (final.haskell-nix.compiler.ghc865.bootPkgs) alex happy hscolour ghc;
-        src = final.haskell-nix.sources."ghc-8.6.5-iohk";
-        version = "8.6.5-iohk";
-      };
-    };
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = with final.buildPackages; {
@@ -146,6 +137,16 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 ;
         in ({
+            sources = {
+              ghc-865-iohk = import ../compiler/ghc/source-dist.nix {
+                inherit (final) stdenv;
+                pkgs = final;
+                inherit (final.haskell-nix.compiler.ghc865.bootPkgs) alex happy hscolour ghc;
+                src = final.haskell-nix.sources."ghc-8.6.5-iohk";
+                version = "8.6.5-iohk";
+              };
+            };
+
             ghc844 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc844; };
 
@@ -258,7 +259,7 @@ in {
 
                 src-spec = rec {
                     version = "8.6.5";
-                    file = "${final.haskell-nix.sources.ghc-865-iohk}/src.tar.xz";
+                    file = "${final.haskell-nix.compiler.sources.ghc-865-iohk}/src.tar.xz";
                 };
             };
             ghc881 = final.callPackage ../compiler/ghc {

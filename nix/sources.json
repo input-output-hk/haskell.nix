@@ -1,14 +1,14 @@
 {
     "ghc-8.6.5-iohk": {
         "branch": "release/8.6.5-iohk",
+        "deepClone": true,
         "description": "IOHK's ghc fork. See release/X.Y.Z-iohk branches.",
         "homepage": "",
         "owner": "input-output-hk",
-        "repo": "https://github.com/input-output-hk/ghc.git",
-        "rev": "25bc4648ac80939950c527cc39c806dec7c8cd89",
         "ref": "release/8.6.5-iohk",
-        "deepClone": true,
-        "sha256": "0mm3xc9f4nw4iw08jf84br88kspbay43hxgsazwbbb5mrxvbyq5a",
+        "repo": "https://github.com/input-output-hk/ghc.git",
+        "rev": "09411a716172cf6a0cdf190715a344234e1924f7",
+        "sha256": "0q97sscn97ikp4fpcfwczzs3w6ydhwwybv14ivsf1wwarg6cs45d",
         "type": "git",
         "url": "https://github.com/input-output-hk/ghc.git",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
@@ -37,6 +37,18 @@
         "url": "https://github.com/input-output-hk/nix-tools/archive/595ca11bfe79fd929c1a18e07a4fdc0e3363eb82.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "nixpkgs": {
+        "branch": "nixpkgs-20.03-darwin",
+        "description": "Nix Packages collection",
+        "homepage": null,
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "db31e48c5c8d99dcaf4e5883a96181f6ac4ad6f6",
+        "sha256": "1j5j7vbnq2i5zyl8498xrf490jca488iw6hylna3lfwji6rlcaqr",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/db31e48c5c8d99dcaf4e5883a96181f6ac4ad6f6.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "nixpkgs-1909": {
         "branch": "nixpkgs-19.09-darwin",
         "description": "Nix Packages collection",
@@ -50,18 +62,6 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs-2003": {
-        "branch": "nixpkgs-20.03-darwin",
-        "description": "Nix Packages collection",
-        "homepage": null,
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "db31e48c5c8d99dcaf4e5883a96181f6ac4ad6f6",
-        "sha256": "1j5j7vbnq2i5zyl8498xrf490jca488iw6hylna3lfwji6rlcaqr",
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/db31e48c5c8d99dcaf4e5883a96181f6ac4ad6f6.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "nixpkgs": {
         "branch": "nixpkgs-20.03-darwin",
         "description": "Nix Packages collection",
         "homepage": null,
