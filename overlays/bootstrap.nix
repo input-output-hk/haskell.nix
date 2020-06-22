@@ -250,7 +250,8 @@ in {
             #                 ++ [ D5123-patch haddock-900-patch ];
             # };
             # this should be ghc865-iohk; let's see what breaks.
-            ghc865 = final.callPackage ../compiler/ghc {
+            ghc865 = final.haskell-nix.compiler.ghc865-iohk;
+            ghc865-iohk = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865-iohk; };
 
                 inherit bootPkgs sphinx installDeps;
