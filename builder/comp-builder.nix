@@ -1,13 +1,6 @@
 { stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
-let
-   # These are here to avoid multiple calls to override
-   gmpStatic = gmp.override { withStatic = true; };
-   zlibStatic = zlib.static;
-   ncursesStatic = ncurses.override { enableStatic = true; };
-   numactlStatic = numactl.overrideAttrs (_: { configureFlags = "--enable-static"; });
-in
 lib.makeOverridable (
-let self = 
+let self =
 { componentId
 , component
 , package
@@ -40,7 +33,10 @@ let self =
 , dontStrip ? component.dontStrip
 
 , enableStatic ? component.enableStatic
-, enableShared ? component.enableShared && !haskellLib.isCrossHost
+, enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
+               # on x86 we'll use shared libraries, even with musl m(
+               # ghc's internal linker seems to be broken on x86.
+               && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
@@ -126,10 +122,6 @@ let
       "--disable-executable-dynamic"
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
-      "--ghc-option=-optl=-L${gmpStatic}/lib"
-      "--ghc-option=-optl=-L${zlibStatic}/lib"
-      "--ghc-option=-optl=-L${ncursesStatic}/lib"
-      "--ghc-option=-optl=-L${numactlStatic}/lib"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional doHaddock' "--docdir=${docdir "$doc"}"
       ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"

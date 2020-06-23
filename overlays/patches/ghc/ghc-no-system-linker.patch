@@ -1,0 +1,78 @@
+diff --git a/compiler/ghc.cabal.in b/compiler/ghc.cabal.in
+index 01628dcad1..209704d034 100644
+--- a/compiler/ghc.cabal.in
++++ b/compiler/ghc.cabal.in
+@@ -45,6 +45,11 @@ Flag terminfo
+     Default: True
+     Manual: True
+
++Flag dynamic-system-linker
++    Description: The system can load dynamic code. This is not the case for musl.
++    Default: True
++    Manual: False
++
+ Library
+     Default-Language: Haskell2010
+     Exposed: False
+@@ -84,6 +89,9 @@ Library
+         CPP-Options: -DGHCI
+         Include-Dirs: ../rts/dist/build @FFIIncludeDir@
+
++    if flag(dynamic-system-linker)
++        CPP-Options: -DCAN_LOAD_DLL
++
+     Other-Extensions:
+         BangPatterns
+         CPP
+diff --git a/compiler/ghci/Linker.hs b/compiler/ghci/Linker.hs
+index 3b030be2d3..879c5c19ee 100644
+--- a/compiler/ghci/Linker.hs
++++ b/compiler/ghci/Linker.hs
+@@ -1295,13 +1295,13 @@ linkPackage hsc_env pkg
+
+         maybePutStr dflags
+             ("Loading package " ++ sourcePackageIdString pkg ++ " ... ")
+-
+         -- See comments with partOfGHCi
++#if defined(CAN_LOAD_DLL)
+         when (packageName pkg `notElem` partOfGHCi) $ do
+             loadFrameworks hsc_env platform pkg
+             mapM_ (load_dyn hsc_env)
+               (known_dlls ++ map (mkSOName platform) dlls)
+-
++#endif
+         -- After loading all the DLLs, we can load the static objects.
+         -- Ordering isn't important here, because we do one final link
+         -- step to resolve everything.
+@@ -1382,10 +1382,15 @@ locateLib hsc_env is_hs lib_dirs gcc_dirs lib
+     --   O(n). Loading an import library is also O(n) so in general we prefer
+     --   shared libraries because they are simpler and faster.
+     --
+-  = findDll   user `orElse`
++  =
++#if defined(CAN_LOAD_DLL)
++    findDll   user `orElse`
++#endif
+     tryImpLib user `orElse`
++#if defined(CAN_LOAD_DLL)
+     findDll   gcc  `orElse`
+     findSysDll     `orElse`
++#endif
+     tryImpLib gcc  `orElse`
+     findArchive    `orElse`
+     tryGcc         `orElse`
+@@ -1452,7 +1457,13 @@ locateLib hsc_env is_hs lib_dirs gcc_dirs lib
+                          full     = dllpath $ search lib_so_name lib_dirs
+                          gcc name = liftM (fmap Archive) $ search name lib_dirs
+                          files    = import_libs ++ arch_files
+-                     in apply $ short : full : map gcc files
++                         dlls     = [short, full]
++                         archives = map gcc files
++                     in apply $
++#if defined(CAN_LOAD_DLL)
++                          dlls ++
++#endif
++                          archives
+      tryImpLib re = case os of
+                        OSMinGW32 ->
+                         let dirs' = if re == user then lib_dirs else gcc_dirs
