@@ -7,8 +7,8 @@
         "owner": "input-output-hk",
         "ref": "release/8.6.5-iohk",
         "repo": "https://github.com/input-output-hk/ghc.git",
-        "rev": "ca0a71704b21b3b8269ea9939c27acd3b384c5a4",
-        "sha256": "0zahv6ism8msss2dzc213v1pwafc7h3idk1g31ivv7gjdklbkc8m",
+        "rev": "1b20bd0193d3a7d586384e151b35121ba3976ff7",
+        "sha256": "0x54v3qkakc4s28fqj6v6pjb824v3f6m8y8zqhc58nh9f1lf5pbh",
         "type": "git",
         "url": "https://github.com/input-output-hk/ghc.git",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
