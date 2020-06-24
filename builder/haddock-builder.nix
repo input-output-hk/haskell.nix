@@ -38,8 +38,8 @@ let
   packageCfgDir = configFiles.packageCfgDir;
 
   fullName = if haskellLib.isAll componentId
-    then "${name}-docs-all"
-    else "${name}-${componentId.ctype}-${componentId.cname}-docs";
+    then "${name}-haddock-all"
+    else "${name}-${componentId.ctype}-${componentId.cname}-haddock";
 
   docsConfigFiles = makeConfigFiles {
     inherit (package) identifier;
