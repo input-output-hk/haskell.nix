@@ -71,9 +71,9 @@ let
   hoogleIndex = let
     # Get the doc package for a component, and add attributes that
     # hoogle.nix expects.
-    docPackage = p: lib.getOutput "doc" p // {
+    docPackage = p: lib.getOutput "doc" p.docs // {
       pname = p.identifier.name;
-      haddockDir = lib.const p.haddockDir;
+      haddockDir = lib.const (__trace p.docs.haddockDir p.docs.haddockDir);
     };
   in hoogleLocal {
     packages = map docPackage (haskellLib.flatLibDepends component);

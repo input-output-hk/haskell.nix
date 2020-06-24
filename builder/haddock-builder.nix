@@ -69,7 +69,7 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=${componentDrv}"
-      "--docdir=${docdir "$out"}"
+      "--docdir=${docdir "$doc"}"
       "${haskellLib.componentTarget componentId}"
       "$(cat ${docsConfigFiles}/configure-flags)"
       # GHC
@@ -98,8 +98,10 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation ({
 
     # The directory containing the haddock documentation.
     # `null' if no haddock documentation was built.
-    haddockDir = "${docdir drv}/html";
+    haddockDir = "${docdir drv.doc}/html";
   };
+
+  outputs = ["out" "doc"];
 
   enableParallelBuilding = true;
 
@@ -147,7 +149,7 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation ({
            remove-references-to -t $out $x
          done
 
-         docdir="${docdir "$out"}"
+         docdir="${docdir "$doc"}"
          mkdir -p "$docdir"
 
          cp -R "$html" "$docdir"/html

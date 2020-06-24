@@ -57,6 +57,7 @@ let
       libDeps;
     in lib.concatStringsSep "\" \"" xs;
   libs     = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
+in
   runCommand "${ghc.targetPrefix}${fullName}-config" {
       nativeBuildInputs = [ghc];
       passthru = {
