@@ -44,7 +44,11 @@ let
 
   hoogleLocal = let
     nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "hoogle" "5.0.17.15" }:
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "hoogle" {
+        version = "5.0.17.15";
+        index-state = pkgs.haskell-nix.internalHackageIndexState;
+      }
+    }:
     haskellLib.weakCallPackage pkgs nixpkgsHoogle {
       # For musl we can use haddock from the buildGHC
       ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
