@@ -184,7 +184,7 @@ stdenv.mkDerivation ({
     env = shellWrappers;
     profiled = self (drvArgs // { enableLibraryProfiling = true; });
   } // lib.optionalAttrs (haskellLib.isLibrary componentId) {
-    docs = haddockBuilder {
+    haddock = haddockBuilder {
       inherit componentId component package name setup flags
         patches revision configureFlags setupGhcOptions
         doHoogle hyperlinkSource setupHaddockFlags
@@ -231,11 +231,7 @@ stdenv.mkDerivation ({
 
   outputs = ["out" ]
     ++ (lib.optional enableSeparateDataOutput "data")
-    # ++ (lib.optional doHaddock' "doc")
     ++ (lib.optional keepSource "source");
-
-  # Phases
-  # preInstallPhases = lib.optional doHaddock' "haddockPhase";
 
   prePatch = if (cabalFile != null)
      then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
@@ -265,35 +261,6 @@ stdenv.mkDerivation ({
   '';
 
   checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
-
-  # haddockPhase = ''
-  #   runHook preHaddock
-  #   # If we don't have any source files, no need to run haddock
-  #   [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
-  #   docdir="${docdir "$doc"}"
-  #   mkdir -p "$docdir"
-
-  #   $SETUP_HS haddock \
-  #     "--html" \
-  #     ${lib.optionalString doHoogle "--hoogle"} \
-  #     ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
-  #     ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
-
-  #   html="dist/doc/html/${componentId.cname}"
-
-  #   if [ -d "$html" ]; then
-  #      # Ensure that libraries are not pulled into the docs closure.
-  #      # As an example, the prettified source code of a
-  #      # Paths_package module will contain store paths of the library package.
-  #      for x in "$html/src/"*.html; do
-  #        remove-references-to -t $out $x
-  #      done
-
-  #      cp -R "$html" "$docdir"/html
-  #   fi
-  #   }
-  #   runHook postHaddock
-  # '';
 
   # Note: Cabal does *not* copy test executables during the `install` phase.
   #

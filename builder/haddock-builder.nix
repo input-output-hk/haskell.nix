@@ -44,7 +44,7 @@ let
   docsConfigFiles = makeConfigFiles {
     inherit (package) identifier;
     inherit component fullName flags needsProfiling;
-    chooseDrv = p: p.docs;
+    chooseDrv = p: p.haddock;
   };
 
   # let
