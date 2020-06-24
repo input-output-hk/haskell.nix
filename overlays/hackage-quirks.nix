@@ -44,12 +44,6 @@ in { haskell-nix = prev.haskell-nix // {
             sha256 = "0jcpja4s4cylmg9rddyakb1p1fb4l41ffwmy0njpb1dxc5z3v618";
           };
         })
-        # Musl needs static zlib
-        (lib.optionalAttrs final.stdenv.hostPlatform.isMusl {
-          packages.pandoc.components.exes.pandoc.configureFlags = [
-            "--ghc-option=-optl=-L${final.zlib.static}/lib"
-          ];
-        })
       ];
     };
 

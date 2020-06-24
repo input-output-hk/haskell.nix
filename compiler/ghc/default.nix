@@ -107,6 +107,11 @@ let
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
+  # musl doesn't have a system-linker. Only on x86, and on x86 we need it, as
+  # our elf linker for x86_64 is broken.
+  + stdenv.lib.optionalString (targetPlatform.isMusl && !targetPlatform.isx86) ''
+    compiler_CONFIGURE_OPTS += --flags=-dynamic-system-linker
+  ''
   # While split sections are now enabled by default in ghc 8.8 for windows,
   # the seem to lead to `too many sections` errors when building base for
   # profiling.
@@ -284,15 +289,15 @@ stdenv.mkDerivation (rec {
     if [[ ! -f "$out/bin/${targetPrefix}ghc-pkg" ]]; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 0
-    fi    
+    fi
     if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
       echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
       exit 0
-    fi    
+    fi
     if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
       echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
       exit 0
-    fi    
+    fi
   '';
 
   passthru = {
