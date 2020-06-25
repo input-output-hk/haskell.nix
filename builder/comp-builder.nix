@@ -173,6 +173,12 @@ let
       enableParallelBuilding = true;
 
       SETUP_HS = setup + /bin/Setup;
+
+      prePatch = if (cabalFile != null)
+         then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
+         else lib.optionalString (cabal-generator == "hpack") ''
+           ${buildPackages.haskell-nix.haskellPackages.hpack.components.exes.hpack}/bin/hpack
+         '';
     }
     # patches can (if they like) depend on the version and revision of the package.
     // lib.optionalAttrs (patches != []) {
@@ -253,12 +259,6 @@ stdenv.mkDerivation (commonAttrs // {
   outputs = ["out" ]
     ++ (lib.optional enableSeparateDataOutput "data")
     ++ (lib.optional keepSource "source");
-
-  prePatch = if (cabalFile != null)
-     then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
-     else lib.optionalString (cabal-generator == "hpack") ''
-       ${buildPackages.haskell-nix.haskellPackages.hpack.components.exes.hpack}/bin/hpack
-     '';
 
   configurePhase =
     (lib.optionalString keepSource ''
