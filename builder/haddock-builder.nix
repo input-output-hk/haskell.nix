@@ -95,7 +95,6 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
     let
       target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
     in ''
-      set -x
       html="dist/doc/html/${package.identifier.name}"
 
       ls $html
