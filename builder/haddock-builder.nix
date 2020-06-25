@@ -106,6 +106,7 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
          # Paths_package module will contain store paths of the library package.
          for x in "$html/src/"*.html; do
            remove-references-to -t $out $x
+           remove-references-to -t ${componentDrv} $x
          done
 
          docdir="${docdir "$doc"}"
