@@ -8,7 +8,7 @@ let
     {
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
-      # packages.cabal-sublib.doHaddock = false;
+      packages.cabal-sublib.doHaddock = false;
     }
   ];
 
