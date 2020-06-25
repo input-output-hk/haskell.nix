@@ -162,15 +162,53 @@ let
     if stdenv.hostPlatform.isWindows then ".exe" else "";
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
+
+  # Attributes that are common to both the build and haddock derivations
+  commonAttrs = {
+      src = cleanSrc;
+
+      LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
+      LC_ALL = "en_US.UTF-8";
+
+      enableParallelBuilding = true;
+
+      SETUP_HS = setup + /bin/Setup;
+    }
+    # patches can (if they like) depend on the version and revision of the package.
+    // lib.optionalAttrs (patches != []) {
+      patches = map (p:
+        if builtins.isFunction p
+          then p { inherit (package.identifier) version; inherit revision; }
+          else p
+        ) patches;
+    }
+    // haskellLib.optionalHooks {
+      inherit preUnpack postUnpack preConfigure postConfigure
+        preBuild postBuild preHaddock postHaddock
+        preInstall postInstall;
+    }
+    // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
+      LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
+    };
+
 in
 
 stdenv.lib.fix (drv:
 
-stdenv.mkDerivation ({
+let
+  haddock = haddockBuilder {
+    inherit componentId component package flags
+      commonAttrs revision configureFlags setupGhcOptions
+      doHoogle hyperlinkSource setupHaddockFlags
+      needsProfiling configFiles;
+
+    componentDrv = drv;
+  };
+in
+
+stdenv.mkDerivation (commonAttrs // {
   pname = nameOnly;
   inherit (package.identifier) version;
-
-  src = cleanSrc;
 
   doCheck = false;
   doCrossCheck = false;
@@ -184,18 +222,8 @@ stdenv.mkDerivation ({
     env = shellWrappers;
     profiled = self (drvArgs // { enableLibraryProfiling = true; });
   } // lib.optionalAttrs (haskellLib.isLibrary componentId) {
-    haddock = haddockBuilder {
-      inherit componentId component package name setup flags
-        patches revision configureFlags setupGhcOptions
-        doHoogle hyperlinkSource setupHaddockFlags
-        preUnpack postUnpack preConfigure postConfigure
-        preBuild postBuild preHaddock postHaddock
-        setupInstallFlags
-        needsProfiling configFiles;
-
-      src = cleanSrc;
-      componentDrv = drv;
-    };
+    inherit haddock;
+    inherit (haddock) doc haddockDir;
   };
 
   meta = {
@@ -209,11 +237,6 @@ stdenv.mkDerivation ({
     platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
   };
 
-  LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
-  LC_ALL = "en_US.UTF-8";
-
-  enableParallelBuilding = true;
-
   propagatedBuildInputs =
        frameworks # Frameworks will be needed at link time
     # Not sure why pkgconfig needs to be propagatedBuildInputs but
@@ -226,8 +249,6 @@ stdenv.mkDerivation ({
   nativeBuildInputs =
     [shellWrappers buildPackages.removeReferencesTo]
     ++ executableToolDepends;
-
-  SETUP_HS = setup + /bin/Setup;
 
   outputs = ["out" ]
     ++ (lib.optional enableSeparateDataOutput "data")
@@ -348,12 +369,4 @@ stdenv.mkDerivation ({
     ${shellHookApplied}
   '';
 }
-# patches can (if they like) depend on the version and revision of the package.
-// lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
-// haskellLib.optionalHooks {
-  inherit preUnpack postUnpack preConfigure postConfigure
-    preBuild postBuild preHaddock postHaddock
-    preInstall postInstall;
-}
-// lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
 )); in self)

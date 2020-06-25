@@ -3,23 +3,10 @@
 { componentId
 , component
 , package
-, name
-, setup
-, src
 , flags
 , revision
-, patches
-
-, preUnpack
-, postUnpack
+, commonAttrs
 , configureFlags
-, preConfigure
-, postConfigure
-, preBuild
-, postBuild
-, preHaddock
-, postHaddock
-, setupInstallFlags
 
 , doHoogle
 , hyperlinkSource
@@ -37,35 +24,13 @@ let
 
   packageCfgDir = configFiles.packageCfgDir;
 
-  fullName = if haskellLib.isAll componentId
-    then "${name}-haddock-all"
-    else "${name}-${componentId.ctype}-${componentId.cname}-haddock";
+  fullName = "${componentDrv.name}-haddock";
 
   docsConfigFiles = makeConfigFiles {
     inherit (package) identifier;
     inherit component fullName flags needsProfiling;
     chooseDrv = p: p.haddock;
   };
-
-  # let
-  #   # depDocConfig = map (x: x.configFiles) (haskellLib.flatLibDepends component);
-  # in runCommand "${ghc.targetPrefix}${fullName}-docs-config" {
-  #   nativeBuildInputs = [ghc];
-  # } (''
-  #   mkdir -p $out
-
-  #   for i in cabal.config configure-flags ghc-environment; do
-  #     substitute "${configFiles}/$i" "$out/$i"  --replace "${configFiles}" "$out"
-  #   done
-
-  #   mkdir -p $out/${packageCfgDir}
-
-  #   # Copy over the nonReinstallablePkgs from the global package db.
-  #   ${lib.concatMapStringsSep "\n" (p: ''
-  #     find ${ghc}/lib/${ghc.name}/package.conf.d -name '${p}*.conf' -exec cp -f {} $out/${packageCfgDir} \;
-  #   '') nonReinstallablePkgs}
-
-  # '');
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=${componentDrv}"
@@ -86,30 +51,24 @@ let
     configFiles = docsConfigFiles;
   };
 
-in stdenv.lib.fix (drv: stdenv.mkDerivation ({
-  name = "${ghc.targetPrefix}${fullName}";
-  inherit src;
-
-  LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
-  LC_ALL = "en_US.UTF-8";
+in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
+  name = fullName;
 
   passthru = {
     configFiles = docsConfigFiles;
 
     # The directory containing the haddock documentation.
-    # `null' if no haddock documentation was built.
     haddockDir = "${docdir drv.doc}/html";
   };
 
+  # `out` contains the `package.conf.d` files used for building the
+  # haddock files.
+  # `doc` contains just the haddock output files.
   outputs = ["out" "doc"];
-
-  enableParallelBuilding = true;
 
   nativeBuildInputs =
     [ shellWrappers buildPackages.removeReferencesTo ]
     ++ componentDrv.executableToolDepends;
-
-  SETUP_HS = setup + /bin/Setup;
 
   configurePhase = ''
     echo Configure flags:
@@ -169,12 +128,5 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation ({
       set +x
     '';
 }
-# patches can (if they like) depend on the version and revision of the package.
-// lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; }
-// haskellLib.optionalHooks {
-  inherit preUnpack postUnpack preConfigure postConfigure
-    preBuild postBuild preHaddock postHaddock;
-}
-// lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc"){ LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive"; }
 ))
 
