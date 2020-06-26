@@ -40,7 +40,7 @@ let self =
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
-, doHaddock ? component.doHaddock  # Not used any more.  Should we use it?
+, doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 , quickjump ? component.doQuickjump # Generate an index for interactive documentation navigation
@@ -87,6 +87,9 @@ let
     [ "--prefix=$out"
       "${haskellLib.componentTarget componentId}"
       "$(cat ${configFiles}/configure-flags)"
+    ] ++ commonConfigureFlags);
+
+  commonConfigureFlags = ([
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
@@ -198,12 +201,10 @@ stdenv.lib.fix (drv:
 
 let
   haddock = haddockBuilder {
-    inherit componentId component package flags
-      commonAttrs revision setupGhcOptions
+    inherit componentId component package flags commonConfigureFlags
+      commonAttrs revision setupGhcOptions doHaddock
       doHoogle hyperlinkSource quickjump setupHaddockFlags
       needsProfiling configFiles preHaddock postHaddock;
-
-    buildConfigureFlags = finalConfigureFlags;
 
     componentDrv = drv;
   };
@@ -224,10 +225,14 @@ stdenv.mkDerivation (commonAttrs // {
     inherit configFiles executableToolDepends cleanSrc exeName;
     env = shellWrappers;
     profiled = self (drvArgs // { enableLibraryProfiling = true; });
-  } // lib.optionalAttrs (haskellLib.isLibrary componentId) {
-    inherit haddock;
-    inherit (haddock) doc haddockDir;
-  };
+  } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
+      inherit haddock;
+      inherit (haddock) haddockDir; # This is null if `doHaddock = false`
+    } // lib.optionalAttrs (haddock ? doc) {
+      # `doHaddock = false` turns the doc of haddock output off
+      inherit (haddock) doc;
+    }
+  );
 
   meta = {
     homepage = package.homepage;

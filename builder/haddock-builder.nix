@@ -8,8 +8,9 @@
 , commonAttrs
 , preHaddock
 , postHaddock
-, buildConfigureFlags
+, commonConfigureFlags
 
+, doHaddock
 , doHoogle
 , hyperlinkSource
 , quickjump
@@ -22,6 +23,10 @@
 }:
 
 let
+  doHaddock' = doHaddock
+    && (haskellLib.isLibrary componentId)
+    && !haskellLib.isCrossHost;
+
   # the target dir for haddock documentation
   docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
 
@@ -38,8 +43,13 @@ let
     chooseDrv = p: p.haddock;
   };
 
-  finalConfigureFlags = buildConfigureFlags
-    + " --docdir=${docdir "$doc"} $(cat ${docsConfigFiles}/configure-flags)";
+  finalConfigureFlags = lib.concatStringsSep " " (
+    [ "--prefix=${componentDrv}"
+      "${haskellLib.componentTarget componentId}"
+      "$(cat ${docsConfigFiles}/configure-flags)"
+    ]
+    ++ commonConfigureFlags
+    ++ lib.optional doHaddock' " --docdir=${docdir "$doc"}");
 
   shellWrappers = ghcForComponent {
     componentName = fullName;
@@ -53,13 +63,14 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
     configFiles = docsConfigFiles;
 
     # The directory containing the haddock documentation.
-    haddockDir = "${docdir drv.doc}/html";
+    haddockDir = if doHaddock' then "${docdir drv.doc}/html" else null;
   };
 
   # `out` contains the `package.conf.d` files used for building the
   # haddock files.
   # `doc` contains just the haddock output files.
-  outputs = ["out" "doc"];
+  outputs = ["out"]
+    ++ lib.optional doHaddock' "doc";
 
   nativeBuildInputs =
     [ shellWrappers buildPackages.removeReferencesTo ]
@@ -73,6 +84,8 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
   '';
 
   buildPhase = ''
+    mkdir -p $out
+  '' + lib.optionalString doHaddock' ''
     runHook preHaddock
     # If we don't have any source files, no need to run haddock
     [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
@@ -92,8 +105,6 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
       target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
     in ''
       html="dist/doc/html/${package.identifier.name}"
-
-      ls $html
 
       if [ -d "$html" ]; then
          # Ensure that libraries are not pulled into the docs closure.
