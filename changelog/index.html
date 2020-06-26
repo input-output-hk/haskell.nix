@@ -172,6 +172,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#june-25-2019">June 25, 2019</a></li>
+    
+
     <li class="toctree-l2"><a href="#december-27-2019">December 27, 2019</a></li>
     
 
@@ -251,6 +254,13 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="june-25-2019">June 25, 2019<a class="headerlink" href="#june-25-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Haddock docs are now built in their own derivation when needed (not as part
+  of the component build).
+  They should build automatically when something (such as <code>shellFor</code>) attempts
+  to accesses the <code>.doc</code> attribute of component.</li>
+</ul>
 <h2 id="december-27-2019">December 27, 2019<a class="headerlink" href="#december-27-2019" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Fix overlays/bootstrap.nix to provide LLVM 6, not LLVM 5, to ghc-8.6.X compilers.</li>
