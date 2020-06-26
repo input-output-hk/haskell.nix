@@ -1,6 +1,12 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## June 25, 2019
+* Haddock docs are now built in their own derivation when needed (not as part
+  of the component build).
+  They should build automatically when something (such as `shellFor`) attempts
+  to accesses the `.doc` attribute of component.
+
 ## December 27, 2019
 * Fix overlays/bootstrap.nix to provide LLVM 6, not LLVM 5, to ghc-8.6.X compilers.
 

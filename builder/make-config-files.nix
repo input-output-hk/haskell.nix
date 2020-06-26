@@ -1,5 +1,7 @@
 { stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }:
 
+{ identifier, component, fullName, flags ? {}, needsProfiling ? false, chooseDrv ? drv: drv }:
+
 let
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
     echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
@@ -41,20 +43,21 @@ let
   libDir         = "lib/${ghcCommand}-${ghc.version}";
   packageCfgDir  = "${libDir}/package.conf.d";
 
-in { identifier, component, fullName, flags ? {}, needsProfiling ? false }:
   # Filters out only library packages that for this GHC target
   # TODO investigate why this is needed
   # TODO find out why p ? configFiles helps (for instance for `R1909.aarch64-unknown-linux-gnu.tests.cabal-22.run.x86_64-linux`)
-  let libDeps = (if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
-        (lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
-         (map getLibComponent component.depends));
-      cfgFiles =
-        let xs = map
-          (p: "${p.configFiles}")
-          libDeps;
-        in lib.concatStringsSep "\" \"" xs;
-      libs     = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
-  in
+  libDeps = map chooseDrv (
+    (if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
+    (lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
+    (map getLibComponent component.depends))
+  );
+  cfgFiles =
+    let xs = map
+      (p: "${p.configFiles}")
+      libDeps;
+    in lib.concatStringsSep "\" \"" xs;
+  libs     = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
+in
   runCommand "${ghc.targetPrefix}${fullName}-config" {
       nativeBuildInputs = [ghc];
       passthru = {
