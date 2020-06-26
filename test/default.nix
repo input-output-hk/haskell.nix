@@ -154,7 +154,6 @@ let
     cabal-simple = callTest ./cabal-simple { inherit util; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
     cabal-sublib = callTest ./cabal-sublib { inherit util; };
-    sublib-docs = callTest ./sublib-docs { inherit util; };
     cabal-22 = callTest ./cabal-22 { inherit util; };
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
@@ -188,6 +187,9 @@ let
     # This test makes a plan for building cabal 3.2 using index-states that will
     # never work with ghc 8.10.1
     index-state = callTest ./index-state {};
+  } // lib.optionalAttrs (pkgs.haskell-nix.haskellLib.isCrossHost) {
+    # Haddock is not included with cross compilers currently
+    sublib-docs = callTest ./sublib-docs { inherit util; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the
