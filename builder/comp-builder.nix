@@ -189,6 +189,7 @@ let
         ) patches;
     }
     // haskellLib.optionalHooks {
+      # These are hooks are needed to set up the source for building and running haddock
       inherit preUnpack postUnpack preConfigure postConfigure;
     }
     // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
@@ -372,6 +373,8 @@ stdenv.mkDerivation (commonAttrs // {
   '';
 }
 // haskellLib.optionalHooks {
+  # These are the hooks that are not needed by haddock (see commonAttrs for the ones that
+  # are shared with the haddock derivation)
   inherit
     preBuild postBuild
     preInstall postInstall;
