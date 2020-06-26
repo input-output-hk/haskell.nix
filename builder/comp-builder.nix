@@ -40,9 +40,10 @@ let self =
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
 # Options for Haddock generation
-, doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
+, doHaddock ? component.doHaddock  # Not used any more.  Should we use it?
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
+, quickjump ? component.doQuickjump # Generate an index for interactive documentation navigation
 , keepSource ? component.keepSource  # Build from `source` output in the store then delete `dist`
 , setupHaddockFlags ? component.setupHaddockFlags
 
@@ -154,10 +155,6 @@ let
                      if builtins.isFunction shellHook then shellHook { inherit package shellWrappers; }
                      else abort "shellHook should be a string or a function";
 
-  doHaddock' = doHaddock
-    && (haskellLib.isLibrary componentId)
-    && !haskellLib.isCrossHost;
-
   exeExt = if stdenv.hostPlatform.isGhcjs then ".jsexe/all.js" else
     if stdenv.hostPlatform.isWindows then ".exe" else "";
   exeName = componentId.cname + exeExt;
@@ -189,9 +186,7 @@ let
         ) patches;
     }
     // haskellLib.optionalHooks {
-      inherit preUnpack postUnpack preConfigure postConfigure
-        preBuild postBuild preHaddock postHaddock
-        preInstall postInstall;
+      inherit preUnpack postUnpack preConfigure postConfigure;
     }
     // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
       LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
@@ -204,9 +199,11 @@ stdenv.lib.fix (drv:
 let
   haddock = haddockBuilder {
     inherit componentId component package flags
-      commonAttrs revision configureFlags setupGhcOptions
-      doHoogle hyperlinkSource setupHaddockFlags
-      needsProfiling configFiles;
+      commonAttrs revision setupGhcOptions
+      doHoogle hyperlinkSource quickjump setupHaddockFlags
+      needsProfiling configFiles preHaddock postHaddock;
+
+    buildConfigureFlags = finalConfigureFlags;
 
     componentDrv = drv;
   };
@@ -368,5 +365,10 @@ stdenv.mkDerivation (commonAttrs // {
     export PATH="${shellWrappers}/bin:$PATH"
     ${shellHookApplied}
   '';
+}
+// haskellLib.optionalHooks {
+  inherit
+    preBuild postBuild
+    preInstall postInstall;
 }
 )); in self)

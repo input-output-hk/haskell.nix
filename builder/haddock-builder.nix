@@ -6,10 +6,13 @@
 , flags
 , revision
 , commonAttrs
-, configureFlags
+, preHaddock
+, postHaddock
+, buildConfigureFlags
 
 , doHoogle
 , hyperlinkSource
+, quickjump
 , setupHaddockFlags
 , setupGhcOptions
 
@@ -26,25 +29,17 @@ let
 
   fullName = "${componentDrv.name}-haddock";
 
+  # These config files are like the one used in the build derivation,
+  # but `chooseDrv` will be used to map all the references to libraries
+  # to their haddock derivation.
   docsConfigFiles = makeConfigFiles {
     inherit (package) identifier;
     inherit component fullName flags needsProfiling;
     chooseDrv = p: p.haddock;
   };
 
-  finalConfigureFlags = lib.concatStringsSep " " (
-    [ "--prefix=${componentDrv}"
-      "--docdir=${docdir "$doc"}"
-      "${haskellLib.componentTarget componentId}"
-      "$(cat ${docsConfigFiles}/configure-flags)"
-      # GHC
-      "--with-ghc=${ghc.targetPrefix}ghc"
-      "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
-      "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ]
-      ++ configureFlags
-      ++ (ghc.extraConfigureFlags or [])
-    );
+  finalConfigureFlags = buildConfigureFlags
+    + " --docdir=${docdir "$doc"} $(cat ${docsConfigFiles}/configure-flags)";
 
   shellWrappers = ghcForComponent {
     componentName = fullName;
@@ -86,6 +81,7 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
       "--html" \
       ${lib.optionalString doHoogle "--hoogle"} \
       ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
+      ${lib.optionalString quickjump "--quickjump"} \
       ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
     }
     runHook postHaddock
@@ -117,16 +113,21 @@ in stdenv.lib.fix (drv: stdenv.mkDerivation (commonAttrs // {
       ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
 
       for i in "${componentDrv}/package.conf.d"/*.conf; do
+        # Copy the .conf files from the build derivation, but replace the `haddock-intefaces:`
+        # field with correct location for haddocks (now it is known).  This will insure that
+        # the other haddock derivations build to reference this one will have the correct
+        # working hyper links.
         pkg=$(basename "$i")
         sed -e "s|haddock-interfaces:.*|haddock-interfaces: $docdir/html/${componentId.cname}.haddock|" -e "s|haddock-html:.*|haddock-html: $docdir/html/|" "$i" > "$pkg"
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${docsConfigFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
       done
 
-      cp -Rv ${componentDrv}/exactDep $out/exactDep
-      cp -Rv ${componentDrv}/envDep $out/envDep
-
-      set +x
+      ln -s ${componentDrv}/exactDep $out/exactDep
+      ln -s ${componentDrv}/envDep $out/envDep
     '';
+}
+// haskellLib.optionalHooks {
+  inherit preHaddock postHaddock;
 }
 ))
 

@@ -101,7 +101,12 @@ let
           doHyperlinkSource = mkOption {
             description = "Link documentation to the source code.";
             type = bool;
-            default = (def.doHoogle or true);
+            default = (def.doHyperlinkSource or true);
+          };
+          doQuickjump = mkOption {
+            description = "Generate an index for interactive documentation navigation.";
+            type = bool;
+            default = (def.doQuickjump or true);
           };
           dontPatchELF = mkOption {
             description = "If set, the patchelf command is not used to remove unnecessary RPATH entries. Only applies to Linux.";

@@ -64,9 +64,7 @@ in
         inherit (ghc) targetPrefix;
         inherit ghcCommand ghcCommandCaps libDir packageCfgDir;
       };
-    } (
-      # (lib.optionalString (lib.hasSuffix "-docs" fullName) "set -x; ") +
-      ''
+    } (''
     mkdir -p $out
 
     ${target-pkg} init $out/${packageCfgDir}
