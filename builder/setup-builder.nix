@@ -32,8 +32,7 @@ let
       else [c]) component.build-tools) ++
     lib.optional (component.pkgconfig != []) pkgconfig;
 
-in
- stdenv.lib.fix (drv:
+  drv =
     stdenv.mkDerivation ({
       name = "${ghc.targetPrefix}${fullName}";
       src = cleanSrc;
@@ -86,4 +85,5 @@ in
     }
     // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
     // hooks
-  ))
+  );
+in drv

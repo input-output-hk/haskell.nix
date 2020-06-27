@@ -196,11 +196,6 @@ let
       LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
     };
 
-in
-
-stdenv.lib.fix (drv:
-
-let
   haddock = haddockBuilder {
     inherit componentId component package flags commonConfigureFlags
       commonAttrs revision setupGhcOptions doHaddock
@@ -209,174 +204,173 @@ let
 
     componentDrv = drv;
   };
-in
 
-stdenv.mkDerivation (commonAttrs // {
-  pname = nameOnly;
-  inherit (package.identifier) version;
+  drv = stdenv.mkDerivation (commonAttrs // {
+    pname = nameOnly;
+    inherit (package.identifier) version;
 
-  doCheck = false;
-  doCrossCheck = false;
+    doCheck = false;
+    doCrossCheck = false;
 
-  inherit dontPatchELF dontStrip;
+    inherit dontPatchELF dontStrip;
 
-  passthru = {
-    inherit (package) identifier;
-    config = component;
-    inherit configFiles executableToolDepends cleanSrc exeName;
-    env = shellWrappers;
-    profiled = self (drvArgs // { enableLibraryProfiling = true; });
-  } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
-      inherit haddock;
-      inherit (haddock) haddockDir; # This is null if `doHaddock = false`
-    } // lib.optionalAttrs (haddock ? doc) {
-      # `doHaddock = false` turns the doc of haddock output off
-      inherit (haddock) doc;
-    }
-  );
+    passthru = {
+      inherit (package) identifier;
+      config = component;
+      inherit configFiles executableToolDepends cleanSrc exeName;
+      env = shellWrappers;
+      profiled = self (drvArgs // { enableLibraryProfiling = true; });
+    } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
+        inherit haddock;
+        inherit (haddock) haddockDir; # This is null if `doHaddock = false`
+      } // lib.optionalAttrs (haddock ? doc) {
+        # `doHaddock = false` turns the doc of haddock output off
+        inherit (haddock) doc;
+      }
+    );
 
-  meta = {
-    homepage = package.homepage;
-    description = package.synopsis;
-    license =
-      let
-        license-map = import ../lib/cabal-licenses.nix lib;
-      in license-map.${package.license} or
-        (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
-    platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
-  };
+    meta = {
+      homepage = package.homepage;
+      description = package.synopsis;
+      license =
+        let
+          license-map = import ../lib/cabal-licenses.nix lib;
+        in license-map.${package.license} or
+          (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
+      platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
+    };
 
-  propagatedBuildInputs =
-       frameworks # Frameworks will be needed at link time
-    # Not sure why pkgconfig needs to be propagatedBuildInputs but
-    # for gi-gtk-hs it seems to help.
-    ++ builtins.concatLists pkgconfig;
+    propagatedBuildInputs =
+         frameworks # Frameworks will be needed at link time
+      # Not sure why pkgconfig needs to be propagatedBuildInputs but
+      # for gi-gtk-hs it seems to help.
+      ++ builtins.concatLists pkgconfig;
   
-  buildInputs = component.libs
-    ++ map (d: d.components.library or d) component.depends;
+    buildInputs = component.libs
+      ++ map (d: d.components.library or d) component.depends;
 
-  nativeBuildInputs =
-    [shellWrappers buildPackages.removeReferencesTo]
-    ++ executableToolDepends;
+    nativeBuildInputs =
+      [shellWrappers buildPackages.removeReferencesTo]
+      ++ executableToolDepends;
 
-  outputs = ["out" ]
-    ++ (lib.optional enableSeparateDataOutput "data")
-    ++ (lib.optional keepSource "source");
+    outputs = ["out" ]
+      ++ (lib.optional enableSeparateDataOutput "data")
+      ++ (lib.optional keepSource "source");
 
-  configurePhase =
-    (lib.optionalString keepSource ''
-      cp -r . $source
-      cd $source
-      chmod -R +w .
-    '') + ''
-    runHook preConfigure
-    echo Configure flags:
-    printf "%q " ${finalConfigureFlags}
-    echo
-    $SETUP_HS configure ${finalConfigureFlags}
-    runHook postConfigure
-  '';
+    configurePhase =
+      (lib.optionalString keepSource ''
+        cp -r . $source
+        cd $source
+        chmod -R +w .
+      '') + ''
+      runHook preConfigure
+      echo Configure flags:
+      printf "%q " ${finalConfigureFlags}
+      echo
+      $SETUP_HS configure ${finalConfigureFlags}
+      runHook postConfigure
+    '';
 
-  buildPhase = ''
-    runHook preBuild
-    # https://gitlab.haskell.org/ghc/ghc/issues/9221
-    $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
-    runHook postBuild
-  '';
+    buildPhase = ''
+      runHook preBuild
+      # https://gitlab.haskell.org/ghc/ghc/issues/9221
+      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
+      runHook postBuild
+    '';
 
-  checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
+    checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
 
-  # Note: Cabal does *not* copy test executables during the `install` phase.
-  #
-  # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
-  #         folder isntead of a file for the configuration.  Therfore if the result is a folder,
-  #         we need to register each and every element of that folder.
-  #
-  # Note 3: if a package has no libs SETUP will not generate anything.  This can
-  #         happen when building the `all` component of a package.
-  installPhase = let
-      target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
-    in ''
-    runHook preInstall
-    $SETUP_HS copy ${lib.concatStringsSep " " setupInstallFlags}
-    ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
-      $SETUP_HS register --gen-pkg-config=${name}.conf
-      ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-      if [ -d "${name}.conf" ]; then
-        for pkg in ${name}.conf/*; do
-          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
-        done
-      elif [ -e "${name}.conf" ]; then
-        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
-      fi
-
-      mkdir -p $out/exactDep
-      touch $out/exactDep/configure-flags
-      touch $out/exactDep/cabal.config
-
-      if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
-        echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
-      elif id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
-        name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
-        # so we are dealing with a sublib. As we build sublibs separately, the above
-        # query should be safe.
-        echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
-      fi
-      if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
-        echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
-        echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
-      fi
-
-      touch $out/envDep
-      if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
-        echo "package-id $id" >> $out/envDep
-      fi
-    ''}
-    ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
-      mkdir -p $out/bin
-      if [ -f ${testExecutable} ]; then
-        mkdir -p $(dirname $out/bin/${exeName})
-        ${if stdenv.hostPlatform.isGhcjs then ''
-          cat <(echo \#!${lib.getBin buildPackages.nodejs}/bin/node) ${testExecutable} >| $out/bin/${exeName}
-          chmod +x $out/bin/${exeName}
-        '' else ''
-           cp -r ${testExecutable} $(dirname $out/bin/${exeName})
-        ''}
-      fi
-    '')
-    # In case `setup copy` did not creat this
-    + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
-    + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
-      echo "Symlink libffi and gmp .dlls ..."
-      for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
-        find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
-      done
-      # symlink all .dlls into the local directory.
-      # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
-      # to symlink over dlls as needed.
-      echo "Symlink library dependencies..."
-      for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
-        if [ -d "$libdir" ]; then
-          find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
+    # Note: Cabal does *not* copy test executables during the `install` phase.
+    #
+    # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
+    #         folder isntead of a file for the configuration.  Therfore if the result is a folder,
+    #         we need to register each and every element of that folder.
+    #
+    # Note 3: if a package has no libs SETUP will not generate anything.  This can
+    #         happen when building the `all` component of a package.
+    installPhase = let
+        target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
+      in ''
+      runHook preInstall
+      $SETUP_HS copy ${lib.concatStringsSep " " setupInstallFlags}
+      ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
+        $SETUP_HS register --gen-pkg-config=${name}.conf
+        ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
+        if [ -d "${name}.conf" ]; then
+          for pkg in ${name}.conf/*; do
+            ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
+          done
+        elif [ -e "${name}.conf" ]; then
+          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
         fi
-      done
-    '')
-    }
-    runHook postInstall
-  '' + (lib.optionalString keepSource ''
-    rm -rf dist
-  '');
 
-  shellHook = ''
-    export PATH="${shellWrappers}/bin:$PATH"
-    ${shellHookApplied}
-  '';
-}
-// haskellLib.optionalHooks {
-  # These are the hooks that are not needed by haddock (see commonAttrs for the ones that
-  # are shared with the haddock derivation)
-  inherit
-    preBuild postBuild
-    preInstall postInstall;
-}
-)); in self)
+        mkdir -p $out/exactDep
+        touch $out/exactDep/configure-flags
+        touch $out/exactDep/cabal.config
+
+        if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
+          echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
+        elif id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
+          name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
+          # so we are dealing with a sublib. As we build sublibs separately, the above
+          # query should be safe.
+          echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+        fi
+        if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
+          echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
+          echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
+        fi
+
+        touch $out/envDep
+        if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
+          echo "package-id $id" >> $out/envDep
+        fi
+      ''}
+      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
+        mkdir -p $out/bin
+        if [ -f ${testExecutable} ]; then
+          mkdir -p $(dirname $out/bin/${exeName})
+          ${if stdenv.hostPlatform.isGhcjs then ''
+            cat <(echo \#!${lib.getBin buildPackages.nodejs}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+            chmod +x $out/bin/${exeName}
+          '' else ''
+             cp -r ${testExecutable} $(dirname $out/bin/${exeName})
+          ''}
+        fi
+      '')
+      # In case `setup copy` did not creat this
+      + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
+      + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
+        echo "Symlink libffi and gmp .dlls ..."
+        for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
+          find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
+        done
+        # symlink all .dlls into the local directory.
+        # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
+        # to symlink over dlls as needed.
+        echo "Symlink library dependencies..."
+        for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
+          if [ -d "$libdir" ]; then
+            find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
+          fi
+        done
+      '')
+      }
+      runHook postInstall
+    '' + (lib.optionalString keepSource ''
+      rm -rf dist
+    '');
+
+    shellHook = ''
+      export PATH="${shellWrappers}/bin:$PATH"
+      ${shellHookApplied}
+    '';
+  }
+  // haskellLib.optionalHooks {
+    # These are the hooks that are not needed by haddock (see commonAttrs for the ones that
+    # are shared with the haddock derivation)
+    inherit
+      preBuild postBuild
+      preInstall postInstall;
+  });
+in drv; in self)
