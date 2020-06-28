@@ -8,6 +8,7 @@
 , commonAttrs
 , preHaddock
 , postHaddock
+, pkgconfig
 , commonConfigureFlags
 
 , doHaddock
@@ -72,6 +73,11 @@ let
     outputs = ["out"]
     ++ lib.optional doHaddock' "doc";
 
+    propagatedBuildInputs = builtins.concatLists pkgconfig;
+  
+    buildInputs = component.libs
+      ++ map (d: d.components.library.haddock or d) component.depends;
+
     nativeBuildInputs =
       [ shellWrappers buildPackages.removeReferencesTo ]
       ++ componentDrv.executableToolDepends;
@@ -89,6 +95,8 @@ let
       runHook preHaddock
       # If we don't have any source files, no need to run haddock
       [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
+      docdir="${docdir "$doc"}"
+      mkdir -p "$docdir"
 
       $SETUP_HS haddock \
         "--html" \
