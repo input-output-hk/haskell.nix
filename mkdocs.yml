@@ -39,6 +39,7 @@ pages:
     - 'Command-line tools': reference/commands.md
     - 'Haskell.nix Library': reference/library.md
     - 'Module options': reference/modules.md
+  - 'Troubleshooting': troubleshooting.md
   - 'Templates / Abstraction':
     - 'IOHKs nix library': iohk-nix.md
   - 'Dev Notes':
