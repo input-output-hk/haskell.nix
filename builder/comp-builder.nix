@@ -200,7 +200,7 @@ let
     inherit componentId component package flags commonConfigureFlags
       commonAttrs revision setupGhcOptions doHaddock
       doHoogle hyperlinkSource quickjump setupHaddockFlags
-      needsProfiling configFiles preHaddock postHaddock;
+      needsProfiling configFiles preHaddock postHaddock pkgconfig;
 
     componentDrv = drv;
   };
