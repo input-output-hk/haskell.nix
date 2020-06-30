@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Architecture - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Troubleshooting - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Architecture";
-    var mkdocs_page_input_path = "architecture.md";
+    var mkdocs_page_name = "Troubleshooting";
+    var mkdocs_page_input_path = "troubleshooting.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -58,27 +58,9 @@
     <a class="" href="../motivation/">Motivation</a>
 	    </li>
           
-            <li class="toctree-l1 current">
+            <li class="toctree-l1">
 		
-    <a class="current" href="./">Architecture</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#architecture">Architecture</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#nix-tools">nix-tools</a></li>
-        
-            <li><a class="toctree-l3" href="#haskellnix">haskell.nix</a></li>
-        
-            <li><a class="toctree-l3" href="#hackagenix">hackage.nix</a></li>
-        
-            <li><a class="toctree-l3" href="#stackagenix">stackage.nix</a></li>
-        
-        </ul>
-    
-
-    </ul>
+    <a class="" href="../architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -139,9 +121,23 @@
     </ul>
 	    </li>
           
-            <li class="toctree-l1">
+            <li class="toctree-l1 current">
 		
-    <a class="" href="../troubleshooting/">Troubleshooting</a>
+    <a class="current" href="./">Troubleshooting</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#troubleshooting">Troubleshooting</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#general-troubleshooting-when-using-cabalprojectstackprojectproject">General troubleshooting when using cabalProject/stackProject/project</a></li>
+        
+            <li><a class="toctree-l3" href="#specific-issues">Specific issues</a></li>
+        
+        </ul>
+    
+
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -217,10 +213,10 @@
     
       
     
-    <li>Architecture</li>
+    <li>Troubleshooting</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/architecture.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/troubleshooting.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -230,64 +226,52 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
-<p>There are multiple components that play a part in the haskell.nix
-infrastructure.  These are <code>nix-tools</code>, <code>haskell.nix</code>, <code>hackage.nix</code>,
-and <code>stackage.nix</code>.</p>
-<pre><code class="no-highlight">                                             .-------------.     .-------------.
-.- nix-tools ------.                         | haskell.nix |  .- | hackage.nix |
-| .--------------. |   .----------------.    '-------------'  |  '-------------'
-| | stack-to-nix |---&gt; | stack-pkgs.nix |-.         |         |         |
-| '--------------' |   '----------------' |         v         |         v
-| .-------------.  |   .----------.       '--&gt; .----------. &lt;-'  .--------------.
-| | plan-to-nix |----&gt; | plan.nix |------.---&gt; | pkgs.nix | &lt;--- | stackage.nix |
-| '-------------'  |   '----------'      |     '----------'      '--------------'
-| .--------------. |   .--------------.  |          |
-| | cabal-to-nix |---&gt; | $package.nix |--'          v
-| '--------------' |   '--------------'       .-------------.
-'------------------'                          | default.nix |
-                                              '-------------'
-                                                    |
-                                                    v
-                                              .-------------.
-                                              | release.nix |
-                                              '-------------'
-</code></pre>
-
-<p>haskell.nix diagram</p>
-<h2 id="nix-tools"><a href="https://github.com/input-output-hk/nix-tools">nix-tools</a><a class="headerlink" href="#nix-tools" title="Permanent link">&para;</a></h2>
-<p>nix-tools is a Haskell package that provides the following tools:</p>
+                <h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
+<h2 id="general-troubleshooting-when-using-cabalprojectstackprojectproject">General troubleshooting when using <code>cabalProject</code>/<code>stackProject</code>/<code>project</code><a class="headerlink" href="#general-troubleshooting-when-using-cabalprojectstackprojectproject" title="Permanent link">&para;</a></h2>
+<h3 id="does-the-cabalstack-build-work">Does the cabal/stack build work?<a class="headerlink" href="#does-the-cabalstack-build-work" title="Permanent link">&para;</a></h3>
+<p>In <code>haskell.nix</code>, we strive to take the build configuration from the cabal/stack configuration files.
+So if you have a problem with your cabal/stack configuration, it is likely that you will have a problem with the <code>haskell.nix</code> build too.</p>
+<p>So the first thing to do is make sure that the build works with <code>cabal</code> or <code>stack</code> as normal.
+If it <em>does</em> work, then the <code>haskell.nix</code> one should as well.
+If, on the other hand, there is a failure, the <code>cabal</code> or <code>stack</code> build is usually easier to debug (or at least it is no longer a <code>haskell.nix</code> problem).</p>
+<h3 id="is-the-haskellnix-configuration-completely-in-line-with-the-cabalstack-configuration">Is the <code>haskell.nix</code> configuration completely in line with the cabal/stack configuration?<a class="headerlink" href="#is-the-haskellnix-configuration-completely-in-line-with-the-cabalstack-configuration" title="Permanent link">&para;</a></h3>
+<p>The <code>haskell.nix</code> configuration can come apart from the cabal/stack configuration in a number of ways:</p>
+<h4 id="compiler-version">Compiler version<a class="headerlink" href="#compiler-version" title="Permanent link">&para;</a></h4>
+<p>(Cabal users only. For stack users this comes from the snapshot, so stack and <code>haskell.nix</code> will agree.)</p>
+<p>The compiler version used by <code>haskell.nix</code> is selected by the <code>compiler-nix-name</code> argument; or if you do not specify it, by some default version (we recommend specifying it!).
+Cabal does not provide an easy way to pin a <em>version</em> of the compiler (<code>with-compiler</code> lets you pick a particular executable, which is nearly but not quite what we want).
+Hence, the two can come apart.</p>
+<p>Make sure you are using the same compiler for the cabal build as for the <code>haskell.nix</code> build.</p>
+<h4 id="hackage-index-state">Hackage index state<a class="headerlink" href="#hackage-index-state" title="Permanent link">&para;</a></h4>
+<p>(Cabal users only. For stack users, package versions come from the snapshot, so stack and <code>haskell.nix</code> will agree.)</p>
+<p>Cabal has the concept of the Hackage "index state". 
+This is a timestamp, and it tells Cabal to behave "as if" it was seeing Hackage at that point in time.
+Pinning it is generally good for reproducibility regardless of whether you use <code>haskell.nix</code> (you can do so in <code>cabal.project</code>).</p>
+<p>If you do not set an <code>index-state</code> in <code>cabal.project</code>, then Cabal will use the latest one based on when you last called <code>cabal update</code>, and <code>haskell.nix</code> will use the latest one it knows about from <code>hackage.nix</code>.
+These may not be the same!
+So if you use <code>haskell.nix</code> we strongly recommend pinning the <code>index-state</code>.</p>
+<h4 id="nix-only-configuration-options">Nix-only configuration options<a class="headerlink" href="#nix-only-configuration-options" title="Permanent link">&para;</a></h4>
+<p>You can set configuration options in your Nix code that are not present in the cabal/stack configuration.
+For example, you might enable profiling.</p>
+<p>Where possible, try to do the configuration in your cabal/stack configuration, e.g. setting <code>profiling: true</code> in <code>cabal.project</code>.
+This will ensure that the two builds agree.</p>
+<p>If you want or need to set some of them in Nix, try bringing the two into sync temporarily for troubleshooting.</p>
+<h2 id="specific-issues">Specific issues<a class="headerlink" href="#specific-issues" title="Permanent link">&para;</a></h2>
+<h3 id="why-am-i-building-ghc">Why am I building GHC?<a class="headerlink" href="#why-am-i-building-ghc" title="Permanent link">&para;</a></h3>
+<p>It's easier to list the reverse: when will you <em>not</em> build GHC?</p>
 <ul>
-<li>
-<p><code>cabal-to-nix</code>: a <code>.cabal</code> to <code>.nix</code> transformer that retains
-  conditional expressions.</p>
-</li>
-<li>
-<p><code>stack-to-nix</code>: a <code>stack.yaml</code> to <code>.nix</code> transformer that will read
-  in a <code>stack.yaml</code> expression an generate a <code>pkgs.nix</code> file suited for
-  use with <code>haskell.nix</code>.</p>
-</li>
-<li>
-<p><code>plan-to-nix</code>: a <code>plan.json</code> to <code>.nix</code> transformer that will read in
-  a <code>plan.json</code> file and generate a <code>pkgs.nix</code> file suited for use
-  with <code>haskell.nix</code>.</p>
-</li>
+<li>You have configured the <a href="../tutorials/getting-started/">binary caches</a> correctly.</li>
+<li>You are using one of the GHC versions built by our CI (have a look in <a href="../ci.nix">ci.nix</a> to see what gets built).</li>
+<li>You are using one of the nixpkgs versions used by our CI (you can access the sources for these <a href="../tutorials/getting-started/">through haskell.nix</a>.</li>
 </ul>
-<p>as well as a few other tools used to generate <code>hackage.nix</code> and <code>stackage.nix</code>.</p>
-<h2 id="haskellnix"><a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a><a class="headerlink" href="#haskellnix" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> is the runtime system for this Haskell infrastructure.
-It contains the component builder, as well as the system package and
-license mapping.  Without haskell.nix the expressions generated by
-either of the <code>nix-tools</code> tools make little sense on their own.</p>
-<h2 id="hackagenix"><a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a><a class="headerlink" href="#hackagenix" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/input-output-hk/hackage.nix">hackage.nix</a> provides all cabal expressions from hackage as nix
-expressions.  It is periodically updated to keep in sync with the set
-of packages available on hackage.</p>
-<h2 id="stackagenix"><a href="https://github.com/input-output-hk/stackage.nix">stackage.nix</a><a class="headerlink" href="#stackagenix" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/input-output-hk/stackage.nix">stackage.nix</a> is similar to hackage.nix but provides all stackage
-snapshots (lts, and nightly) as nix expressions.  It naturally depends
-on hackage.nix to resolve package names, versions and revisions to the
-repsective packages from hackage.nix.</p>
+<p>If you think you are doing all of these and you still find you're building GHC, drop us a line.</p>
+<h3 id="why-am-i-building-lots-of-haskell-packages">Why am I building lots of Haskell packages?<a class="headerlink" href="#why-am-i-building-lots-of-haskell-packages" title="Permanent link">&para;</a></h3>
+<p>We don't generally cache much of Hackage (there's a lot of it!), except for the parts which are used by our tests.
+So this is expected, unfortunately.</p>
+<h3 id="how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected">How do I prevent the evaluation-time dependencies of my project from being garbage-collected?<a class="headerlink" href="#how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected" title="Permanent link">&para;</a></h3>
+<p>The <code>haskellNixRoots</code> attribute should include all the evaluation-time dependencies.
+So you can add that to the relevant GC root.
+In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in <code>release.nix</code>/<code>ci.nix</code>.</p>
               
             </div>
           </div>
@@ -295,10 +279,10 @@ repsective packages from hackage.nix.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../tutorials/getting-started/" class="btn btn-neutral float-right" title="Getting Started">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../iohk-nix/" class="btn btn-neutral float-right" title="IOHKs nix library">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../motivation/" class="btn btn-neutral" title="Motivation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../reference/modules/" class="btn btn-neutral" title="Module options"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -326,10 +310,10 @@ repsective packages from hackage.nix.</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../motivation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../reference/modules/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../tutorials/getting-started/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../iohk-nix/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
