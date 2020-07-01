@@ -93,13 +93,14 @@ let
       mkdir -p $out
     '' + lib.optionalString doHaddock' ''
       runHook preHaddock
-      # If we don't have any source files, no need to run haddock
-      [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
+
       docdir="${docdir "$doc"}"
-      # This mkdir needed for packages like bytestring-builder which
-      # is empty when `bytestring >= 0.10.4`
+      # This mkdir needed for packages like base-noprelude and bytestring-builder
+      # (which is also empty when `bytestring >= 0.10.4`)
       mkdir -p "$docdir"
 
+      # If we don't have any source files, no need to run haddock
+      [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
       $SETUP_HS haddock \
         "--html" \
         ${lib.optionalString doHoogle "--hoogle"} \
