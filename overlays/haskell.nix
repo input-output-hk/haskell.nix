@@ -30,6 +30,10 @@ final: prev: {
             specJSON = stackageSourceJSON;
             override = "stackage";
           };
+          # Niv likes to have a nixpkgs so we are using
+          # that to replace nixpkgs-default. This is
+          # here for backwards compatibility.
+          nixpkgs-default = sources.nixpkgs;
         } // (import ../nix/sources.nix) // sourcesOverride;
 
         # We provide a `callPackage` function to consumers for

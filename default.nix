@@ -3,7 +3,9 @@ let haskellNix = {
       system ? builtins.currentSystem,
       sourcesOverride ? {},
       ... }@args: rec {
-    sources = (import ./nix/sources.nix) // sourcesOverride;
+    sources = { nixpkgs-default = sources.nixpkgs; }
+      // (import ./nix/sources.nix)
+      // sourcesOverride;
 
     config   = import ./config.nix;
     overlays = [ allOverlays.combined ] ++ (
