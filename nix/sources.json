@@ -1,6 +1,7 @@
 {
     "cabal-32": {
         "branch": "3.2",
+        "builtin": false,
         "description": "Official upstream development repository for Cabal and cabal-install",
         "homepage": "https://haskell.org/cabal",
         "owner": "haskell",
@@ -13,6 +14,7 @@
     },
     "niv": {
         "branch": "master",
+        "builtin": false,
         "description": "Easy dependency management for Nix projects",
         "homepage": "https://github.com/nmattia/niv",
         "owner": "nmattia",
@@ -25,6 +27,7 @@
     },
     "nix-tools": {
         "branch": "master",
+        "builtin": false,
         "description": "Translate Cabals Generic Package Description to a Nix expression",
         "homepage": null,
         "owner": "input-output-hk",
@@ -37,6 +40,7 @@
     },
     "nixpkgs-1909": {
         "branch": "nixpkgs-19.09-darwin",
+        "builtin": false,
         "description": "Nix Packages collection",
         "homepage": null,
         "owner": "NixOS",
@@ -49,6 +53,7 @@
     },
     "nixpkgs-2003": {
         "branch": "nixpkgs-20.03-darwin",
+        "builtin": false,
         "description": "Nix Packages collection",
         "homepage": null,
         "owner": "NixOS",
@@ -61,6 +66,7 @@
     },
     "nixpkgs-default": {
         "branch": "nixpkgs-20.03-darwin",
+        "builtin": false,
         "description": "Nix Packages collection",
         "homepage": null,
         "owner": "NixOS",
