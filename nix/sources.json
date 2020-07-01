@@ -1,4 +1,16 @@
 {
+    "cabal-32": {
+        "branch": "3.2",
+        "description": "Official upstream development repository for Cabal and cabal-install",
+        "homepage": "https://haskell.org/cabal",
+        "owner": "haskell",
+        "repo": "cabal",
+        "rev": "94aaa8e4720081f9c75497e2735b90f6a819b08e",
+        "sha256": "09m59w794zk4mxk1m3qkkmf5ydi0zhh89a7jk1wglrgxxadfndmh",
+        "type": "tarball",
+        "url": "https://github.com/haskell/cabal/archive/94aaa8e4720081f9c75497e2735b90f6a819b08e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "niv": {
         "branch": "master",
         "description": "Easy dependency management for Nix projects",

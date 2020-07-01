@@ -1,6 +1,13 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## July ?, 2019
+* Removes most internal use of defaultCompilerNixName and adds warnings
+  advising how to do the same to code that uses haskell.nix.
+  Code using `haskell-nix` attributes `cabal-install`, `nix-tools`, `alex`,
+  `happy` must be updated to use one of `haskell-nix.cabal-install.ghc865`,
+  `p.tool "cabal" "3.2.0.0"` or `shellFor { tools = { cabal = "3.2.0.0"; } }`
+
 ## June 25, 2019
 * Haddock docs are now built in their own derivation when needed (not as part
   of the component build).

@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, nix-tools, cabal-install, ghc, hpack, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
+{ dotCabal, pkgs, runCommand, evalPackages, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
 let readIfExists = src: fileName:
       let origSrcDir = src.origSrcSubDir or src;
       in
@@ -17,12 +17,15 @@ in
 , cabalProject         ? readIfExists src cabalProjectFileName
 , cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
 , cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
-, compiler-nix-name ? null # Nix name of the ghc compiler as a string eg. "ghc883"
+, caller               ? "callCabalProjectToNix" # Name of the calling funcion for better warning messages
+, compiler-nix-name ? # Nix name of the ghc compiler as a string eg. "ghc883"
+    pkgs.haskell-nix.defaultCompilerNixNameWithWarning (default:
+        "WARNING: No compiler version specified for building ${if name != null then "${name} " else ""}(using ${default}).  "
+      + "Please consider adding `compiler-nix-name = \"${default}\";` to the call to `${caller}`.")
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
-, nix-tools     ? defaults.nix-tools
-, hpack         ? defaults.hpack
-, cabal-install ? defaults.cabal-install
+, nix-tools     ? evalPackages.haskell-nix.nix-tools.${compiler-nix-name}
+, cabal-install ? evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
                      # If the tests and benchmarks are not needed and they
@@ -56,7 +59,6 @@ let
             + "pick the correct `ghc` package from the respective buildPackages. "
             + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
           else
-            if compiler-nix-name != null
               # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
               # call to this file. And thus `pkgs` here is the proper `buildPackages`
               # set and we do not need, nor should pick the compiler from another level
@@ -65,8 +67,7 @@ let
               #
               # > The option `packages.Win32.package.identifier.name' is used but not defined.
               #
-              then pkgs.haskell-nix.compiler."${compiler-nix-name}"
-              else defaults.ghc;
+              pkgs.haskell-nix.compiler."${compiler-nix-name}";
 
 in
   assert (if ghc'.isHaskellNixCompiler or false then true
@@ -386,7 +387,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (pkgs.evalPackages.runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg hpack cabal-install pkgs.evalPackages.rsync ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";

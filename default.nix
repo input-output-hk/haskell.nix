@@ -1,6 +1,5 @@
 let haskellNix = {
       checkMaterialization ? false,  # Allows us to easily switch on materialization checking
-      defaultCompilerNixName ? null, # Quick way to override the default compiler e.g. "ghc883"
       system ? builtins.currentSystem,
       sourcesOverride ? {},
       ... }@args: rec {
@@ -18,11 +17,11 @@ let haskellNix = {
         )]
         else []
     ) ++ (
-      if defaultCompilerNixName != null
+      if args ? defaultCompilerNixName
         then [(
           final: prev: {
             haskell-nix = prev.haskell-nix // {
-              inherit defaultCompilerNixName;
+              userCompilerNixName = args.defaultCompilerNixName;
             };
           }
         )]
@@ -44,7 +43,6 @@ in haskellNixV1 // {
   __functor = _: {
       version ? 2,
       checkMaterialization ? false,  # Allows us to easily switch on materialization checking
-      defaultCompilerNixName ? null, # Quick way to override the default compiler e.g. "ghc883"
       system ? builtins.currentSystem,
       sourcesOverride ? {},
       ... }@args:

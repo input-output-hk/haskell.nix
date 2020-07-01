@@ -260,14 +260,14 @@ final: prev: {
         callStackToNix = import ../lib/call-stack-to-nix.nix {
             pkgs = final.evalPackages.pkgs;
             inherit (final.evalPackages.pkgs) runCommand;
-            inherit (final.evalPackages.haskell-nix) nix-tools mkCacheFile materialize;
+            inherit (final.evalPackages.haskell-nix) mkCacheFile materialize;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
         # to produce the nix representation of it.
-        callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
+        callCabalToNix = { name, src, cabal-file ? "${name}.cabal", compiler-nix-name ? final.haskell-nix.defaultCompilerNixName }:
             final.buildPackages.pkgs.runCommand "${name}.nix" {
-                nativeBuildInputs = [ final.buildPackages.haskell-nix.nix-tools ];
+                nativeBuildInputs = [ (final.buildPackages.haskell-nix.nix-tools-set { inherit compiler-nix-name; }) ];
 
                 LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";
                 LANG = "en_US.UTF-8";
@@ -364,7 +364,7 @@ final: prev: {
 
         genStackCache = import ../lib/stack-cache-generator.nix {
             inherit (final.evalPackages) pkgs;
-            inherit (final.evalPackages.haskell-nix) haskellLib nix-tools;
+            inherit (final.evalPackages.haskell-nix) haskellLib;
         };
 
         mkCacheModule = cache:
@@ -410,9 +410,8 @@ final: prev: {
             index-state-hashes = import indexStateHashesPath;
             inherit (final.buildPackages.haskell-nix) haskellLib materialize;
             pkgs = final.buildPackages.pkgs;
-            inherit (final.evalPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
-            inherit (final.buildPackages.haskell-nix) ghc;
-            inherit (final.evalPackages.haskell-nix) cabal-install dotCabal nix-tools;
+            inherit (final) evalPackages;
+            inherit (final.evalPackages.haskell-nix) dotCabal;
             inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
         };
 
@@ -436,12 +435,15 @@ final: prev: {
         # the index-state-hashes is used.  This guarantees reproducability wrt
         # to the haskell.nix revision.  If reproducability beyond haskell.nix
         # is required, a specific index-state should be provided!
-        hackage-package = { name, ... }@args: (hackage-project args).hsPkgs.${name};
+        hackage-package = { name, ... }@args':
+          let args = { caller = "hackage-package"; } // args';
+          in (hackage-project args).hsPkgs.${name};
         hackage-project =
             { name
             , version
-            , ... }@args:
-            let tarball = final.pkgs.fetchurl {
+            , ... }@args':
+            let args = { caller = "hackage-project"; } // args';
+                tarball = final.pkgs.fetchurl {
                 url = "mirror://hackage/${name}-${version}.tar.gz";
                 inherit (hackage.${name}.${version}) sha256; };
             in let src = final.buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
@@ -458,8 +460,9 @@ final: prev: {
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
-            { ... }@args:
+            { ... }@args':
             let
+              args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
             in let pkg-set = mkCabalProjectPkgSet
                 { plan-pkgs = importAndFilterProject {
@@ -478,6 +481,9 @@ final: prev: {
               inherit pkg-set;
               plan-nix = callProjectResults.projectNix;
               inherit (callProjectResults) index-state;
+              tool = final.buildPackages.haskell-nix.tool' pkg-set.config.compiler.nix-name;
+              tools = final.buildPackages.haskell-nix.tools' pkg-set.config.compiler.nix-name;
+              roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
             };
 
         # Take `hsPkgs` from the `rawProject` and update all the packages and
@@ -507,9 +513,12 @@ final: prev: {
               });
           });
 
-        cabalProject = args: let p = cabalProject' args;
+        cabalProject = args':
+            let
+              args = { caller = "hackage-package"; } // args';
+              p = cabalProject' args;
             in p.hsPkgs // {
-              inherit (p) plan-nix;
+              inherit (p) plan-nix index-state tool tools roots;
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
               shells.ghc = p.hsPkgs.shellFor {};
@@ -531,11 +540,14 @@ final: prev: {
               inherit (pkg-set.config) hsPkgs;
               inherit pkg-set;
               stack-nix = callProjectResults.projectNix;
-            };
+              tool = final.buildPackages.haskell-nix.tool' pkg-set.config.compiler.nix-name;
+              tools = final.buildPackages.haskell-nix.tools' pkg-set.config.compiler.nix-name;
+              roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+           };
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
-              inherit (p) stack-nix;
+              inherit (p) stack-nix tool tools roots;
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
               shells.ghc = p.hsPkgs.shellFor {};
@@ -550,8 +562,9 @@ final: prev: {
         # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
         # If niether `stack.yaml` nor `cabal.project` exist `cabalProject` is
         # used (as it will use a default `cabal.project`).
-        project' = { src, projectFileName ? null, ... }@args: 
+        project' = { src, projectFileName ? null, ... }@args': 
           let
+            args = { caller = "project'"; } // args';
             dir = __readDir (src.origSrcSubDir or src);
             exists = fileName: builtins.elem (dir.${fileName} or "") ["regular" "symlink"];
             stackYamlExists    = exists "stack.yaml";
@@ -574,8 +587,11 @@ final: prev: {
 
         # This is the same as the `cabalPackage` and `stackPackage` wrappers
         # for `cabalPackage` and `stackPackage`.
-        project = args: let p = project' args;
-            in p.hsPkgs // {
+        project = args':
+          let
+            args = { caller = "project'"; } // args';
+            p = project' args;
+          in p.hsPkgs // {
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
               shells.ghc = p.hsPkgs.shellFor {};
@@ -598,17 +614,18 @@ final: prev: {
 
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
-        haskellNixRoots = final.recurseIntoAttrs {
-          Level0 = haskellNixRoots' 0;
-          Level1 = haskellNixRoots' 1;
+        haskellNixRoots = final.haskell-nix.roots final.haskell-nix.defaultCompilerNixName;
+        roots = compiler-nix-name: final.recurseIntoAttrs {
+          Level0 = roots' compiler-nix-name 0;
+          Level1 = roots' compiler-nix-name 1;
           # Should be safe to use this now we have materialized everything
           # except the tests
-          Level2 = haskellNixRoots' 2;
+          Level2 = roots' compiler-nix-name 2;
         };
 
-        haskellNixRoots' = ifdLevel:
-          let inherit (final.haskell-nix) defaultCompilerNixName;
-          in final.recurseIntoAttrs ({
+        haskellNixRoots' = final.haskell-nix.roots' final.haskell-nix.defaultCompilerNixName;
+        roots' = compiler-nix-name: ifdLevel:
+          	final.recurseIntoAttrs ({
             # Things that require no IFD to build
             inherit (final.buildPackages.haskell-nix) source-pins;
             # Double buildPackages is intentional,
@@ -624,20 +641,22 @@ final: prev: {
             boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
             boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
             boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
-            ghc = final.buildPackages.haskell-nix.ghc;
+            ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
-              final.ghc-boot-packages-nix."${defaultCompilerNixName}";
+              final.ghc-boot-packages-nix.${compiler-nix-name};
             ghc-extra-projects-nix =
-              final.ghc-extra-projects."${defaultCompilerNixName}".plan-nix;
+              final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            inherit (final.buildPackages.haskell-nix.haskellPackages.hpack.components.exes) hpack;
-            inherit (final.buildPackages.haskell-nix) cabal-install dotCabal nix-tools alex happy;
+            nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
+            cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
+            alex = final.buildPackages.haskell-nix.alex.${compiler-nix-name};
+            happy = final.buildPackages.haskell-nix.happy.${compiler-nix-name};
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
-            inherit (final.ghc-extra-packages."${defaultCompilerNixName}"
+            inherit (final.ghc-extra-packages."${compiler-nix-name}"
               .iserv-proxy.components.exes) iserv-proxy;
-            inherit (final.ghc-extra-packages."${defaultCompilerNixName}"
+            inherit (final.ghc-extra-packages."${compiler-nix-name}"
               .remote-iserv.components.exes) remote-iserv;
           });
     };

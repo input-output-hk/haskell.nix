@@ -1,10 +1,10 @@
-let
-  haskellNix = (import ../default.nix {});
-in
-{ pkgs ? import nixpkgs nixpkgsArgs
+{ haskellNix ? import ../default.nix { defaultCompilerNixName = compiler-nix-name; inherit checkMaterialization; }
+, pkgs ? import nixpkgs nixpkgsArgs
 , nixpkgs ? haskellNix.sources.nixpkgs-default
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
+, compiler-nix-name ? pkgs.haskell-nix.defaultCompilerNixName
+, checkMaterialization ? false
 }:
 
 with pkgs;
@@ -44,7 +44,7 @@ let
         else val
       );
 
-  util = import ./util.nix { inherit (pkgs.haskell-nix) cabal-install; };
+  util = import ./util.nix { cabal-install = pkgs.evalPackages.haskell-nix.cabal-install.${compiler-nix-name}; };
 
   # Map the values in an association list over the withIfdInputs function.
   #
@@ -174,16 +174,17 @@ let
     exe-only = callTest ./exe-only { inherit util; };
     stack-source-repo = callTest ./stack-source-repo {};
     extra-hackage = callTest ./extra-hackage {};
-    compiler-nix-name = callTest ./compiler-nix-name {};
+  #  compiler-nix-name = callTest ./compiler-nix-name {};
     hls-cabal = callTest ./haskell-language-server/cabal.nix {};
     hls-stack = callTest ./haskell-language-server/stack.nix {};
+    cabal-hpack = callTest ./cabal-hpack { inherit util; };
 
     unit = unitTests;
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && pkgs.haskell-nix.defaultCompilerNixName != "ghc8101" ) {
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" ) {
     # Pandoc does not build with ghcjs or ghc 8.10.1 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 {};
     fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
-  } // lib.optionalAttrs (pkgs.haskell-nix.defaultCompilerNixName != "ghc8101") {
+  } // lib.optionalAttrs (compiler-nix-name != "ghc8101") {
     # This test makes a plan for building cabal 3.2 using index-states that will
     # never work with ghc 8.10.1
     index-state = callTest ./index-state {};
@@ -217,7 +218,7 @@ let
 in
 
 pkgs.recurseIntoAttrs {
-  haskellNixRoots = haskell-nix.haskellNixRoots' ifdLevel;
+  haskellNixRoots = haskell-nix.roots' compiler-nix-name ifdLevel;
 } // optionalIfdTests ifdLevel
 
 ## more possible test cases

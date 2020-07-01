@@ -1,6 +1,6 @@
 # Generate cache entries for dependencies of package defined in `src`
 
-{ pkgs, haskellLib, nix-tools }:
+{ pkgs, haskellLib }:
 { src
 , stackYaml    ? "stack.yaml"
 , sha256map    ? null
@@ -13,6 +13,11 @@
   if sha256map != null
     then { location, tag, ...}: sha256map."${location}"."${tag}"
     else _: null
+, checkMaterialization ? null
+, compiler-nix-name ? pkgs.haskell-nix.defaultCompilerNixNameTODO # We should get this from stack.yaml
+, nix-tools ? pkgs.haskell-nix.nix-tools-set {
+    inherit compiler-nix-name checkMaterialization;
+  }
 , ...
 }:
 let

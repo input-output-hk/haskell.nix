@@ -5,7 +5,7 @@
  *
  * see also `call-cabal-project-to-nix`!
  */
-{ runCommand, nix-tools, pkgs, mkCacheFile, materialize }:
+{ runCommand, pkgs, mkCacheFile, materialize }:
 { name ? src.name or null # optional name for better error messages
 , src
 , stackYaml ? null
@@ -14,6 +14,10 @@
 , stack-sha256 ? null
 , materialized ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
+, compiler-nix-name ? pkgs.haskell-nix.defaultCompilerNixNameTODO # We should get this from stack.yaml
+, nix-tools ? pkgs.haskell-nix.nix-tools-set {
+    inherit compiler-nix-name checkMaterialization;
+  }
 , ... }:
 let
   subDir' = src.origSubDir or "";

@@ -23,6 +23,11 @@
 # When used in shellFor the tools will be compiled with the same version
 # of ghc used in the shell (the build ghc in the case of cross compilation).
 #
+# To get tools for use with project `p` without using shellFor:
+#   p.tool "cabal" "3.2.0.0"
+#   p.tools { cabal = "3.2.0.0"; hlint = "2.2.11"; }
+# (the ghc version used to build it will match the one used in the project)
+#
 # Instead of a version string we can use an attr set containing
 # arguments that will be passed to `cabalProject`.
 #
@@ -51,14 +56,28 @@ in { haskell-nix = prev.haskell-nix // {
     cabal-install = "cabal";
   };
 
-  hackage-tool = { name, ... }@args:
-    (final.haskell-nix.hackage-package
-      (args // { name = final.haskell-nix.toolPackageName.${name} or name; }))
-        .components.exes."${final.haskell-nix.packageToolName.${name} or name}";
+  hackage-tool = { name, ... }@args':
+    let
+      args = { caller = "hackage-tool"; } // args';
+    in
+      (final.haskell-nix.hackage-package
+        (args // { name = final.haskell-nix.toolPackageName.${name} or name; }))
+          .components.exes."${final.haskell-nix.packageToolName.${name} or name}";
 
   tool = name: versionOrArgs:
     let
-      args = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
+      args' = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
+      args = {
+          compiler-nix-name = final.haskell-nix.defaultCompilerNixNameWithWarning (default:
+              "WARNING: No compiler version specified for building the ${name} tool (using ${default}).  "
+            + "Please consider using the `p.tool` or `p.tools` function on your project `p` (they will "
+            + "use the same ghc as the project) or using the `tools` argument of `shellFor` or "
+            + (if final.lib.isAttrs versionOrArgs
+                then "adding `compiler-nix-name = \"${default}\";`"
+                else "replacing `\"${versionOrArgs}\"` with "
+                  + "`{ version = \"${versionOrArgs}\"; compiler-nix-name = \"${default}\"; }`."
+              ));
+        } // args';
     in
       (if final.haskell-nix.custom-tools ? "${name}"
           && final.haskell-nix.custom-tools."${name}" ? "${args.version}"
@@ -66,6 +85,16 @@ in { haskell-nix = prev.haskell-nix // {
         else final.haskell-nix.hackage-tool) (args // { inherit name; });
 
   tools = lib.mapAttrs final.haskell-nix.tool;
+
+  # Like `tool` but allows default ghc to be specified by nix name
+  tool' = compiler-nix-name: name: versionOrArgs:
+    let args = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
+    in
+      # Add default ghc if not specified in the args
+      final.haskell-nix.tool name (args // { inherit compiler-nix-name; });
+
+  # Like `tools` but allows default ghc to be specified by nix name
+  tools' = compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' compiler-nix-name);
 
   # Like `tools` but allows default ghc to be specified
   toolsForGhc = ghcOverride: toolSet:
