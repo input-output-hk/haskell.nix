@@ -4,8 +4,8 @@ your Haskell package dependencies, but also the required system
 libraries and build tools.
 
 Inside the development shell, you can run commands such as `ghc`,
-`ghci`, or `cabal new‑build`, and they will have all dependencies
-available.
+`ghci`, or `cabal new‑build` (`cabal build` on Cabal 3.0),
+and they will have all dependencies available.
 
 Every dependency will be cached in your Nix store. If you have set up
 Hydra CI, then your team can share pre-built dependencies.
@@ -21,7 +21,8 @@ it exists in a file called `default.nix`.
     rebuild all dependencies, even though they are available in the
     shell. However, if you have a Stack project, you can generate the
     package set with Haskell.nix, then use `cabal new‑build` to work
-    on it.
+    on it.  Starting Cabal 3.0 `cabal build` will work out of the box, as
+    new style builds are the default.
 
 ## How to get a development shell for a package
 
