@@ -22,16 +22,22 @@ in stdenv.mkDerivation ({
 
   inherit (component) doCheck doCrossCheck;
 
+  # When tests fail, the job is marked as failed in Hydra, but the
+  # derivation actually succeeds to build. Useful information for
+  # debugging can then be saved in the $out directory by tests.
+  succeedOnFailure = true;
+
   phases = ["unpackPhase" "buildPhase"];
 
   # If doCheck or doCrossCheck are false we may still build this
   # component and we want it to quietly succeed.
   buildPhase = ''
-    touch $out
+    mkdir $out
+    touch $out/log
 
     runHook preCheck
 
-    ${toString component.testWrapper} ${drv}/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out
+    ${toString component.testWrapper} ${drv}/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} |& tee $out/log
 
     runHook postCheck
   '';
