@@ -83,10 +83,12 @@ let
       ++ componentDrv.executableToolDepends;
 
     configurePhase = ''
+      runHook preConfigure
       echo Configure flags:
       printf "%q " ${finalConfigureFlags}
       echo
       $SETUP_HS configure ${finalConfigureFlags}
+      runHook postConfigure
     '';
 
     buildPhase = ''
