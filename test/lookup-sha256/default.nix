@@ -1,5 +1,6 @@
-{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib } :
+{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name } :
   (haskell-nix.hackage-package {
+    inherit compiler-nix-name;
     name         = "pandoc";
     version      = "2.9.2.1";
     index-state  = "2020-05-25T00:00:00Z"; 

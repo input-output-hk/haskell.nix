@@ -1,6 +1,7 @@
-{ testSrc, evalPackages, buildPackages }:
+{ testSrc, evalPackages, buildPackages, compiler-nix-name }:
 
 (buildPackages.haskell-nix.project {
+  inherit compiler-nix-name;
   src = evalPackages.fetchgit {
     url = "https://github.com/haskell/haskell-language-server.git";
     fetchSubmodules = true;

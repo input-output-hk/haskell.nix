@@ -1,9 +1,10 @@
-{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
+    inherit compiler-nix-name;
     index-state = "2020-05-25T00:00:00Z";
     src = testSrc "ghc-options";
     # TODO find a way to get the ghc-options into plan.json so we can use it in plan-to-nix

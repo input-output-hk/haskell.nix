@@ -9,23 +9,22 @@ in
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , ifdLevel ? 1000
+, compiler-nix-name
 }:
 
 let
   haskell = pkgs.haskell-nix;
   buildHaskell = pkgs.buildPackages.haskell-nix;
-  tool = buildHaskell.tool;
+  tool = buildHaskell.tool';
 in rec {
-  tests = import ./test/default.nix { inherit pkgs ifdLevel; };
+  tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs {
-      ghcide-020 = tool "ghcide" "0.2.0";
-    } // pkgs.lib.optionalAttrs (buildHaskell.defaultCompilerNixName == "ghc865") {
-      cabal-30 = tool "cabal" "3.0.0.0";
-    } // pkgs.lib.optionalAttrs (buildHaskell.defaultCompilerNixName != "ghc8101") {
-      cabal-32 = tool "cabal" "3.2.0.0";
-      ghcide-object-code = tool "ghcide" "object-code";
+      ghcide-020 = tool compiler-nix-name "ghcide" "0.2.0";
+      cabal-32 = tool compiler-nix-name "cabal" "3.2.0.0";
+    } // pkgs.lib.optionalAttrs (buildHaskell.defaddultCompilerNixName != "ghc8101") {
+      ghcide-object-code = tool compiler-nix-name "ghcide" "object-code";
     }
   );
 
@@ -47,11 +46,10 @@ in rec {
     # use)
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
-      # Includes cabal-install and hpack since these are commonly used.
+      # Includes cabal-install since this is commonly used.
       nix-tools = pkgs.linkFarm "common-tools" [
-        { name = "nix-tools";     path = haskell.nix-tools; }
-        { name = "cabal-install"; path = haskell.cabal-install; }
-        { name = "hpack";         path = haskell.haskellPackages.hpack.components.exes.hpack; }
+        { name = "nix-tools";     path = haskell.nix-tools.${compiler-nix-name}; }
+        { name = "cabal-install"; path = haskell.cabal-install.${compiler-nix-name}; }
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};

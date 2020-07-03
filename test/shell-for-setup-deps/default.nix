@@ -1,9 +1,10 @@
-{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "shell-for-setup-deps";
     modules = [{
       # Package has no exposed modules which causes

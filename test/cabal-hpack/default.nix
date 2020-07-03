@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
@@ -13,6 +13,7 @@ let
   ];
 
   project = project' {
+    inherit compiler-nix-name;
     src = testSrc "cabal-hpack";
     inherit modules;
   };

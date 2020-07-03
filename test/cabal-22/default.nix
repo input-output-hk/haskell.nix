@@ -1,9 +1,10 @@
-{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc }:
+{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "cabal-22";
   };
 

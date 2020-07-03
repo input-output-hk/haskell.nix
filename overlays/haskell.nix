@@ -323,12 +323,14 @@ final: prev: {
               if type == "cabal"
               then
                 final.buildPackages.haskell-nix.callCabalToNix {
+                  compiler-nix-name = final.haskell-nix.defaultCompilerNixNameTODO;
                   src = repoWithSubdir;
                   inherit name cabal-file;
                 }
               else if type == "stack"
               then
                 (final.buildPackages.haskell-nix.callStackToNix {
+                  compiler-nix-name = final.haskell-nix.defaultCompilerNixNameTODO;
                   src = repoWithSubdir;
                   inherit name subdir;
                 }).projectNix

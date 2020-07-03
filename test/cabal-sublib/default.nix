@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
@@ -14,6 +14,7 @@ let
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
   project = cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "cabal-sublib";
     inherit modules;
   };

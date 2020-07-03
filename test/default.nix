@@ -1,9 +1,9 @@
-{ haskellNix ? import ../default.nix { defaultCompilerNixName = compiler-nix-name; inherit checkMaterialization; }
+{ haskellNix ? import ../default.nix { inherit checkMaterialization; }
 , pkgs ? import nixpkgs nixpkgsArgs
 , nixpkgs ? haskellNix.sources.nixpkgs-default
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
-, compiler-nix-name ? pkgs.haskell-nix.defaultCompilerNixName
+, compiler-nix-name
 , checkMaterialization ? false
 }:
 
@@ -151,46 +151,43 @@ let
 
   # All tests.
   allTests = {
-    cabal-simple = callTest ./cabal-simple { inherit util; };
-    cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
-    cabal-sublib = callTest ./cabal-sublib { inherit util; };
-    cabal-22 = callTest ./cabal-22 { inherit util; };
+    cabal-simple = callTest ./cabal-simple { inherit util compiler-nix-name; };
+    cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
+    cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
+    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
     stack-local-resolver = callTest ./stack-local-resolver {};
     snapshots = callTest ./snapshots {};
     shell-for = callTest ./shell-for {};
-    shell-for-setup-deps = callTest ./shell-for-setup-deps {};
-    setup-deps = import ./setup-deps { inherit pkgs; };
+    shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
+    setup-deps = import ./setup-deps { inherit pkgs compiler-nix-name; };
     callStackToNix = callTest ./call-stack-to-nix {};
-    callCabalProjectToNix = callTest ./call-cabal-project-to-nix {};
-    cabal-source-repo = callTest ./cabal-source-repo {};
-    buildable = callTest ./buildable {};
-    project-flags-cabal = callTest ./project-flags/cabal.nix {};
+    callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit compiler-nix-name; };
+    cabal-source-repo = callTest ./cabal-source-repo { inherit compiler-nix-name; };
+    buildable = callTest ./buildable { inherit compiler-nix-name; };
+    project-flags-cabal = callTest ./project-flags/cabal.nix { inherit compiler-nix-name; };
     project-flags-stack = callTest ./project-flags/stack.nix {};
-    ghc-options-cabal = callTest ./ghc-options/cabal.nix {};
+    ghc-options-cabal = callTest ./ghc-options/cabal.nix { inherit compiler-nix-name; };
     ghc-options-stack = callTest ./ghc-options/stack.nix {};
-    exe-only = callTest ./exe-only { inherit util; };
+    exe-only = callTest ./exe-only { inherit util compiler-nix-name; };
     stack-source-repo = callTest ./stack-source-repo {};
-    extra-hackage = callTest ./extra-hackage {};
-  #  compiler-nix-name = callTest ./compiler-nix-name {};
-    hls-cabal = callTest ./haskell-language-server/cabal.nix {};
-    hls-stack = callTest ./haskell-language-server/stack.nix {};
-    cabal-hpack = callTest ./cabal-hpack { inherit util; };
+    extra-hackage = callTest ./extra-hackage { inherit compiler-nix-name; };
+    compiler-nix-name = callTest ./compiler-nix-name {};
+    hls-cabal = callTest ./haskell-language-server/cabal.nix { inherit compiler-nix-name; };
+    hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
+    cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
+    index-state = callTest ./index-state { inherit compiler-nix-name; };
 
     unit = unitTests;
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" ) {
     # Pandoc does not build with ghcjs or ghc 8.10.1 yet (lookup-sha256 and fully-static build pandoc)
-    lookup-sha256 = callTest ./lookup-sha256 {};
+    lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
     fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
-  } // lib.optionalAttrs (compiler-nix-name != "ghc8101") {
-    # This test makes a plan for building cabal 3.2 using index-states that will
-    # never work with ghc 8.10.1
-    index-state = callTest ./index-state {};
   } // lib.optionalAttrs (!pkgs.haskell-nix.haskellLib.isCrossHost) {
     # Haddock is not included with cross compilers currently
-    sublib-docs = callTest ./sublib-docs { inherit util; };
+    sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the

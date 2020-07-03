@@ -1,10 +1,11 @@
-{ pkgs }:
+{ pkgs, compiler-nix-name }:
 
 with pkgs;
 with stdenv.lib;
 
 let
   project = haskell-nix.cabalProject' {
+    inherit compiler-nix-name;
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ../..; name = "setup-deps"; subDir = "test/setup-deps"; };
     modules = [{
       # Package has no exposed modules which causes

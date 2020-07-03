@@ -14,10 +14,7 @@
 , stack-sha256 ? null
 , materialized ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
-, compiler-nix-name ? pkgs.haskell-nix.defaultCompilerNixNameTODO # We should get this from stack.yaml
-, nix-tools ? pkgs.haskell-nix.nix-tools-set {
-    inherit compiler-nix-name checkMaterialization;
-  }
+, nix-tools ? pkgs.haskell-nix.nix-tools.${pkgs.haskell-nix.defaultCompilerNixNameTODO}
 , ... }:
 let
   subDir' = src.origSubDir or "";
