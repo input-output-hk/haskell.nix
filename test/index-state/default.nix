@@ -10,6 +10,10 @@ let
       inherit compiler-nix-name;
       version = "3.2.0.0";
       inherit index-state;
+      cabalProject = ''
+        packages: .
+        allow-newer: cabal-install:base, hackage-security:*
+      '';
     }).project.hsPkgs.hackage-security.components.library.version;
   version-before = version-used-at "2020-04-06T20:54:34Z";
   version-after = version-used-at "2020-04-06T20:54:35Z";
