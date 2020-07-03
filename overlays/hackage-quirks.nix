@@ -13,6 +13,10 @@ in { haskell-nix = prev.haskell-nix // {
     # but also for
     # https://github.com/input-output-hk/haskell.nix/issues/422
     cabal-install = {
+      cabalProject = ''
+        packages: .
+        allow-newer: cabal-install:base
+      '';
       modules = [ 
         { reinstallableLibGhc = true; }
         # Version of of cabal-install in hacakge is borken for GHC 8.10.1
