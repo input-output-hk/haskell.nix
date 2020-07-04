@@ -261,4 +261,9 @@ in {
     if lib.isAttrs versionOrArgs
       then versionOrArgs
       else { version = versionOrArgs; };
+
+  # Find the resolver in the stack.yaml file and fetch it if a sha256 value is provided
+  fetchResolver = import ./fetch-resolver.nix {
+    inherit (pkgs.evalPackages) pkgs;
+  }; 
 }
