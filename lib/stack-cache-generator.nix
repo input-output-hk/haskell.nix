@@ -13,6 +13,7 @@
   if sha256map != null
     then { location, tag, ...}: sha256map."${location}"."${tag}"
     else _: null
+, resolverSha256 ? null
 , checkMaterialization ? null
 , compiler-nix-name ? pkgs.haskell-nix.defaultCompilerNixNameTODO # We should get this from stack.yaml
 , nix-tools ? pkgs.haskell-nix.nix-tools-set {
@@ -25,21 +26,9 @@ let
     # we want to avoid recalculating the cache unless the stack.yaml file
     # changes.
 
-    # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
-    # access to the store is restricted.  If origSrc was already in the store
-    # you can pass the project in as a string.
-    rawStackYaml = builtins.readFile ((src.origSrcSubDir or src) + ("/" + stackYaml));
-
-    # Determine the resolver as it may point to another file we need
-    # to look at.
-    resolver =
-      let
-        rs = pkgs.lib.lists.concatLists (
-          pkgs.lib.lists.filter (l: l != null)
-            (builtins.map (l: builtins.match "^resolver: *(.*)" l)
-              (pkgs.lib.splitString "\n" rawStackYaml)));
-      in
-        pkgs.lib.lists.head (rs ++ [ null ]);
+    inherit (haskellLib.fetchResolver {
+        inherit src stackYaml resolverSha256;
+      }) resolver fetchedResolver;
 
     # Filter just the stack yaml file and any reolver yaml file it points to.
     maybeCleanedSource =
@@ -63,6 +52,9 @@ let
         cp -r "${maybeCleanedSource}/." $TMP
         chmod -R +w $TMP
         substituteInPlace ${stackYaml} --replace "# nix-sha256:" "nix-sha256:"
+        ${pkgs.lib.optionalString (fetchedResolver != null) ''
+          substituteInPlace ${stackYaml} --replace "${resolver}" "${fetchedResolver}"
+        ''}
         stack-repos --stack-yaml ${stackYaml}
         cp repos.json $out
       ''));

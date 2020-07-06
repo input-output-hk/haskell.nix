@@ -159,6 +159,7 @@ let
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
     stack-local-resolver = callTest ./stack-local-resolver {};
+    stack-remote-resolver = callTest ./stack-remote-resolver {};
     snapshots = callTest ./snapshots {};
     shell-for = callTest ./shell-for {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };

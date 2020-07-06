@@ -35,11 +35,12 @@ let
   removeSelectedInputs = lib.filter
     (input: lib.all (cfg: input != cfg.components.library or null) selected);
 
-  packageInputs = removeSelected
-    (lib.concatMap (cfg: cfg.depends) selectedConfigs
-    ++ additionalSelected
-    ++ lib.concatMap (cfg: cfg.setup.config.depends or []) selected
-    );
+  packageInputs =
+    removeSelected
+      (lib.concatMap (cfg: cfg.depends) selectedConfigs
+      ++ lib.concatMap (cfg: cfg.setup.config.depends or []) selected
+      )
+    ++ additionalSelected;
 
   # Add the system libraries and build tools of the selected haskell
   # packages to the shell.
