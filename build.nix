@@ -33,8 +33,8 @@ in rec {
   # as not all of them can work in restricted eval mode (as they
   # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
-    update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
-    update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
+    update-hackage = haskell.callPackage ./scripts/update-hackage.nix { inherit compiler-nix-name; };
+    update-stackage = haskell.callPackage ./scripts/update-stackage.nix { inherit compiler-nix-name; };
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };

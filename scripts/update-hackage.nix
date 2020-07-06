@@ -1,6 +1,7 @@
 { stdenv, writeScript, coreutils, glibc, git, openssh
 , nix-tools, cabal-install, nix-prefetch-git
 , gawk, bash, curl, findutils
+, compiler-nix-name
 , update-index-state-hashes }@args:
 
 import ./update-external.nix
@@ -29,6 +30,6 @@ import ./update-external.nix
 
     cd hackage.nix
 
-    ${update-index-state-hashes}/bin/update-index-state-hashes > index-state-hashes.nix
+    ${update-index-state-hashes compiler-nix-name}/bin/update-index-state-hashes > index-state-hashes.nix
   '';
 }

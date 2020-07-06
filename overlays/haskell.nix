@@ -255,9 +255,10 @@ final: prev: {
           inherit (final.evalPackages.pkgs) runCommand writeShellScript;
         };
 
-        update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
-            inherit (final.haskell-nix) indexStateHashesPath nix-tools;
+        update-index-state-hashes = compiler-nix-name: import ../scripts/update-index-state-hashes.nix {
+            inherit (final.haskell-nix) indexStateHashesPath;
             inherit (final) coreutils nix writeShellScriptBin stdenv curl;
+            nix-tools =  final.haskell-nix.nix-tools.${compiler-nix-name};
         };
 
         # Function to call stackToNix

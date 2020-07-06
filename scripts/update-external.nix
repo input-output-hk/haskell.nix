@@ -1,6 +1,6 @@
 { stdenv, writeScript, glibc, coreutils, git, openssh
 , nix-tools, cabal-install, nix-prefetch-git
-, bash, curl, findutils, gawk }:
+, bash, curl, findutils, gawk, compiler-nix-name }:
 
 { name, script }:
 
@@ -16,7 +16,7 @@ in
 
     set -euo pipefail
 
-    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools cabal-install nix-prefetch-git ] ++ optional stdenv.isLinux glibc)}"
+    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools.${compiler-nix-name} cabal-install.${compiler-nix-name} nix-prefetch-git ] ++ optional stdenv.isLinux glibc)}"
 
     ${script}
 
