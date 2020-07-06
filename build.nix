@@ -9,7 +9,7 @@ in
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , ifdLevel ? 1000
-, compiler-nix-name
+, compiler-nix-name ? "ghc865"
 }:
 
 let
