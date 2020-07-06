@@ -20,7 +20,7 @@ in
 , caller               ? "callCabalProjectToNix" # Name of the calling funcion for better warning messages
 , compiler-nix-name ? # Nix name of the ghc compiler as a string eg. "ghc883"
     pkgs.haskell-nix.defaultCompilerNixNameWithWarning (default:
-        "WARNING: No compiler version specified for building ${if name != null then "${name} " else ""}(using ${default}).  "
+        "While building ${if name != null then "${name} " else ""}(using ${default}).  "
       + "Please consider adding `compiler-nix-name = \"${default}\";` to the call to `${caller}`.")
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping

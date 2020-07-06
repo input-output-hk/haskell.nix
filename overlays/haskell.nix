@@ -620,7 +620,9 @@ final: prev: {
 
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
-        haskellNixRoots = final.haskell-nix.roots final.haskell-nix.defaultCompilerNixName;
+        haskellNixRoots = final.haskell-nix.roots (final.haskell-nix.defaultCompilerNixNameWithWarning (default:
+            "Please consider replacing `haskellNixRoots` with `p.roots` on your project "
+          + "or using `haskell-nix.roots \"${default}\"`."));
         roots = compiler-nix-name: final.recurseIntoAttrs {
           Level0 = roots' compiler-nix-name 0;
           Level1 = roots' compiler-nix-name 1;
@@ -629,7 +631,9 @@ final: prev: {
           Level2 = roots' compiler-nix-name 2;
         };
 
-        haskellNixRoots' = final.haskell-nix.roots' final.haskell-nix.defaultCompilerNixName;
+        haskellNixRoots' = final.haskell-nix.roots' (final.haskell-nix.defaultCompilerNixNameWithWarning (default:
+            "Please consider replacing `haskellNixRoots'` with `p.roots'` on your project "
+          + "or using `haskell-nix.roots' \"${default}\"`."));
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({
             # Things that require no IFD to build

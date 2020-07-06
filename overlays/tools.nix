@@ -69,8 +69,8 @@ in { haskell-nix = prev.haskell-nix // {
       args' = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
       args = {
           compiler-nix-name = final.haskell-nix.defaultCompilerNixNameWithWarning (default:
-              "WARNING: No compiler version specified for building the ${name} tool (using ${default}).  "
-            + "Please consider using the `p.tool` or `p.tools` function on your project `p` (they will "
+              "While building the ${name} tool (using ${default}).  "
+            + "Please consider using the `p.tool` or `p.tools` function on your project (they will "
             + "use the same ghc as the project) or using the `tools` argument of `shellFor` or "
             + (if final.lib.isAttrs versionOrArgs
                 then "adding `compiler-nix-name = \"${default}\";`"

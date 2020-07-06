@@ -378,25 +378,27 @@ in {
         })));
 
     # Use this where we still have not good way to choose GHC version
-    defaultCompilerNixNameTODO =
-      # Need to use something from 8.8.x as the default to build aarch64 native compiler:
-      if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
-        then "ghc883"
-        else "ghc865";
+    internalDefaultCompilerNixName = "ghc883";
 
     # Use this when we are happy with a general warning
     defaultCompilerNixName = final.haskell-nix.defaultCompilerNixNameWithWarning
-      (default:
-            "WARNING: No compiler nix name specified! "
-          + "Defaulting to ${default}.  "
-          + "Please consider specifying a ghc explicitly.");
+      (default: "Please consider specifying ${default} explicitly.");
 
     #  when we can provide a better message
     defaultCompilerNixNameWithWarning = warning:
       if final.haskell-nix ? userCompilerNixName
-        then final.haskell-nix.userCompilerNixName
-        else __trace (warning final.haskell-nix.defaultCompilerNixNameTODO)
-          final.haskell-nix.defaultCompilerNixNameTODO;
+        then
+          __trace ("WARNING: defaultCompilerNixName is deprecated!  "
+            + warning final.haskell-nix.userCompilerNixName)
+            final.haskell-nix.userCompilerNixName
+        else
+          # Need to use something from 8.8.x as the default to build aarch64 native compiler:
+          let compiler-nix-name =
+            if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
+              then "ghc883"
+              else "ghc865";
+          in __trace ("WARNING: No compiler nix name specified!  "
+            + warning compiler-nix-name) compiler-nix-name;
 
     ghc = final.haskell-nix.compiler."${
       final.haskell-nix.defaultCompilerNixNameWithWarning (default:
