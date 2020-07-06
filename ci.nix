@@ -14,10 +14,10 @@
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: _:
     (import ./default.nix { inherit checkMaterialization; }).nixpkgsArgs) ({
-#    ghc865 = {};
+    ghc865 = {};
   } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
     ghc883 = {};
-#    ghc8101 = {};
+    ghc8101 = {};
   });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!

@@ -15,7 +15,8 @@ let
 
 in recurseIntoAttrs {
   ifdInputs = {
-    stack-nix = callProjectResults.projectNix;
+    # TODO figure out why this breaks hydra eval!?!
+    # stack-nix = callProjectResults.projectNix;
   };
   run = stdenv.mkDerivation {
     name = "callStackToNix-test";
