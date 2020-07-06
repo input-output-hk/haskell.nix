@@ -28,7 +28,7 @@ let
   };
   packages = project.hsPkgs;
 
-in project // (recurseIntoAttrs {
+in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -67,4 +67,4 @@ in project // (recurseIntoAttrs {
       inherit project;
     };  
   };
-})
+}
