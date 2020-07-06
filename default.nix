@@ -28,7 +28,14 @@ let haskellNix = {
           }
         )]
         else []
-    );
+    ) ++ [(
+      final: prev: {
+        haskell-nix = prev.haskell-nix // {
+          inherit overlays;
+          sources = prev.haskell-nix.sources // sourcesOverride;
+        };
+      }
+    )];
     allOverlays = import ./overlays args;
     nixpkgsArgs = { inherit config overlays system; };
     pkgs = import sources.nixpkgs-default nixpkgsArgs;

@@ -15,10 +15,7 @@
     else _: null
 , resolverSha256 ? null
 , checkMaterialization ? null
-, compiler-nix-name ? pkgs.haskell-nix.defaultCompilerNixNameTODO # We should get this from stack.yaml
-, nix-tools ? pkgs.haskell-nix.nix-tools-set {
-    inherit compiler-nix-name checkMaterialization;
-  }
+, nix-tools ? pkgs.haskell-nix.nix-tools.${pkgs.haskell-nix.internalDefaultCompilerNixName}
 , ...
 }:
 let

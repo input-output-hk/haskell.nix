@@ -269,9 +269,9 @@ final: prev: {
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
         # to produce the nix representation of it.
-        callCabalToNix = { name, src, cabal-file ? "${name}.cabal", compiler-nix-name ? final.haskell-nix.defaultCompilerNixName }:
+        callCabalToNix = { name, src, cabal-file ? "${name}.cabal", compiler-nix-name }:
             final.buildPackages.pkgs.runCommand "${name}.nix" {
-                nativeBuildInputs = [ (final.buildPackages.haskell-nix.nix-tools-set { inherit compiler-nix-name; }) ];
+                nativeBuildInputs = [ (final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name}) ];
 
                 LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";
                 LANG = "en_US.UTF-8";
@@ -323,14 +323,13 @@ final: prev: {
               if type == "cabal"
               then
                 final.buildPackages.haskell-nix.callCabalToNix {
-                  compiler-nix-name = final.haskell-nix.defaultCompilerNixNameTODO;
+                  compiler-nix-name = final.haskell-nix.internalDefaultCompilerNixName;
                   src = repoWithSubdir;
                   inherit name cabal-file;
                 }
               else if type == "stack"
               then
                 (final.buildPackages.haskell-nix.callStackToNix {
-                  compiler-nix-name = final.haskell-nix.defaultCompilerNixNameTODO;
                   src = repoWithSubdir;
                   inherit name subdir;
                 }).projectNix
