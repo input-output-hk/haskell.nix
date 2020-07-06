@@ -73,6 +73,7 @@
               "stage1" = lib.mkOverride 900 false;
               "stage2" = lib.mkOverride 900 true;
               "stage3" = lib.mkOverride 900 false;
+              "dynamic-system-linker" = lib.mkOverride 900 true;
               "ghci" = lib.mkOverride 900 true;
               "terminfo" = lib.mkOverride 900 true;
               };
