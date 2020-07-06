@@ -3,7 +3,7 @@
 , nixpkgs ? haskellNix.sources.nixpkgs-default
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
-, compiler-nix-name
+, compiler-nix-name ? "ghc865"
 , checkMaterialization ? false
 }:
 
