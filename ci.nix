@@ -14,10 +14,10 @@
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: _:
     (import ./default.nix { inherit checkMaterialization; }).nixpkgsArgs) ({
-    ghc865 = {};
+#    ghc865 = {};
   } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
     ghc883 = {};
-    ghc8101 = {};
+#    ghc8101 = {};
   });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
@@ -55,7 +55,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
           iserv-proxy = pkgs.ghc-extra-packages."${compiler-nix-name}".iserv-proxy.components.exes.iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).components.exes.hello;
         });
       }
       //
@@ -81,7 +81,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           remote-iserv = pkgs.ghc-extra-packages."${compiler-nix-name}".remote-iserv.components.exes.remote-iserv;
           iserv-proxy = pkgs.ghc-extra-packages."${compiler-nix-name}".iserv-proxy.components.exes.iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; }).components.exes.hello;
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).components.exes.hello;
         })
       )
     )
