@@ -78,7 +78,7 @@ let
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
   maybeCleanedSource =
-    if src.name && src.filter && haskellLib.canCleanSource src
+    if src ? name && src ? filter && haskellLib.canCleanSource src
       then (haskellLib.cleanSourceWith {
         name = "${src.name}-root-cabal-files";
         src = src.origSrc or src;
