@@ -80,7 +80,7 @@ let
   maybeCleanedSource =
     if haskellLib.canCleanSource src
       then (haskellLib.cleanSourceWith {
-        name = let nameOrUnknown = name or "unknown"; in "${nameOrUnknown}-root-cabal-files";
+        name = if name then "${name}-root-cabal-files" else "source-root-cabal-files";
         src = src.origSrc or src;
         filter = path: type: src.filter path type && (
           type == "directory" ||
