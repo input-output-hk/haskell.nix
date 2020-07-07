@@ -33,3 +33,8 @@ steps:
     command:
       - nix-build build.nix -A maintainer-scripts.check-materialization-concurrency -o check-materialization-concurrency.sh
       - ./check-materialization-concurrency.sh
+
+  - label: 'Make sure non store paths like can be used as src'
+    command:
+      - nix-build build.nix -A maintainer-scripts.check-path-support -o check-path-support.sh
+      - ./check-path-support.sh
