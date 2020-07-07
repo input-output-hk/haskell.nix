@@ -11,7 +11,7 @@ let
       then haskellLib.cleanSourceWith {
         name = if src ? name then "${src.name}-root" else "source-root";
         src = src.origSrc or src;
-        inherit (src) filter;
+        filter = src.filter or (_: _: true);
       }
       else src.origSrc or src;
   # The sub directory containing the cabal.project or stack.yaml file
