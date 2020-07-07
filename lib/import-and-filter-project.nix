@@ -9,7 +9,7 @@ let
   srcRoot =
     if haskellLib.canCleanSource src
       then haskellLib.cleanSourceWith {
-        name = if src ? name then + "${src.name}-root" else "source-root";
+        name = if src ? name then "${src.name}-root" else "source-root";
         src = src.origSrc or src;
         inherit (src) filter;
       }
