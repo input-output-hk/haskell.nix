@@ -5,7 +5,7 @@
 let
   haskellNix = (import ./default.nix {});
 in
-{ nixpkgs ? haskellNix.sources.nixpkgs-default
+{ nixpkgs ? haskellNix.sources.nixpkgs
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , ifdLevel ? 1000
@@ -15,7 +15,7 @@ in
 let
   haskell = pkgs.haskell-nix;
   buildHaskell = pkgs.buildPackages.haskell-nix;
-  tool = buildHaskell.tool';
+  tool = buildHaskell.tool;
 in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
 
@@ -33,8 +33,8 @@ in rec {
   # as not all of them can work in restricted eval mode (as they
   # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
-    update-hackage = haskell.callPackage ./scripts/update-hackage.nix { inherit compiler-nix-name; };
-    update-stackage = haskell.callPackage ./scripts/update-stackage.nix { inherit compiler-nix-name; };
+    update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
+    update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };

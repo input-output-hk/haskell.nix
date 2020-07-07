@@ -1,5 +1,5 @@
 let inherit (import ../. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default (nixpkgsArgs // { crossSystem.config = "armv6l-unknown-linux-gnueabihf"; });
+    pkgs = import sources.nixpkgs (nixpkgsArgs // { crossSystem.config = "armv6l-unknown-linux-gnueabihf"; });
     Cabal = pkgs.buildPackages.haskell-nix.hackage-package {
     name = "Cabal"; version = "2.4.1.0";
     modules = [

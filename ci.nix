@@ -75,7 +75,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
               then build.tests
               else pkgs.recurseIntoAttrs {
                 # Even on aarch64 we still want to build the pinned files
-                inherit (build.tests) haskellNixRoots;
+                inherit (build.tests) roots;
               };
         } // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
           remote-iserv = pkgs.ghc-extra-packages."${compiler-nix-name}".remote-iserv.components.exes.remote-iserv;

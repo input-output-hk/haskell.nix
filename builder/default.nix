@@ -44,8 +44,7 @@ let
 
   hoogleLocal = let
     nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "hoogle" {
-        compiler-nix-name = compiler.nix-name;
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool compiler.nix-name "hoogle" {
         version = "5.0.17.15";
         index-state = pkgs.haskell-nix.internalHackageIndexState;
       }

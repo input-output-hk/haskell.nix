@@ -377,34 +377,6 @@ in {
             '' + installDeps targetPrefix);
         })));
 
-    # Use this where we still have not good way to choose GHC version
-    internalDefaultCompilerNixName = "ghc883";
-
-    # Use this when we are happy with a general warning
-    defaultCompilerNixName = final.haskell-nix.defaultCompilerNixNameWithWarning
-      (default: "Please consider specifying ${default} explicitly.");
-
-    #  when we can provide a better message
-    defaultCompilerNixNameWithWarning = warning:
-      if final.haskell-nix ? userCompilerNixName
-        then
-          __trace ("WARNING: defaultCompilerNixName is deprecated!  "
-            + warning final.haskell-nix.userCompilerNixName)
-            final.haskell-nix.userCompilerNixName
-        else
-          # Need to use something from 8.8.x as the default to build aarch64 native compiler:
-          let compiler-nix-name =
-            if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
-              then "ghc883"
-              else "ghc865";
-          in __trace ("WARNING: No compiler nix name specified!  "
-            + warning compiler-nix-name) compiler-nix-name;
-
-    ghc = final.haskell-nix.compiler."${
-      final.haskell-nix.defaultCompilerNixNameWithWarning (default:
-          "WARNING: `haskell-nix.ghc` used. "
-        + "Please consider specifying the GHC version by using `haskell-nix.compiler.${default}`")
-      }";
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
     # to check materialized results.  We need to take care that when
     # it is doing this we do not check the materialization of the
@@ -412,20 +384,22 @@ in {
     # always has `checkMaterialization = false` to avoid infinite
     # recursion.
     cabal-install-tool = {compiler-nix-name, ...}@args:
-      final.haskell-nix.tool "cabal" ({
+      (final.haskell-nix.hackage-package ({
+        name = "cabal-install";
         version = "3.2.0.0";
         index-state = final.haskell-nix.internalHackageIndexState;
-        inherit compiler-nix-name;
         # When building cabal-install (only happens when checking materialization)
         # disable checking of the tools used to avoid infinite recursion.
         cabal-install = final.evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
         nix-tools = final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
-      } // args);
+      } // args)).components.exes.cabal;
     cabal-install = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.cabal-install-tool { inherit compiler-nix-name; }) final.haskell-nix.compiler;
     cabal-install-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.cabal-install-tool { inherit compiler-nix-name; checkMaterialization = false; }) final.haskell-nix.compiler;
+    # Use this where we still have not good way to choose GHC version
+    internal-cabal-install = final.haskell-nix.cabal-install.ghc883;
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
         project =
@@ -483,20 +457,8 @@ in {
       final.haskell-nix.nix-tools-set { inherit compiler-nix-name; }) final.haskell-nix.compiler;
     nix-tools-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.nix-tools-set { inherit compiler-nix-name; checkMaterialization = false; }) final.haskell-nix.compiler;
-    alex-tool = { compiler-nix-name, ... }@args: final.haskell-nix.tool "alex" ({
-      version = "3.2.5";
-      index-state = final.haskell-nix.internalHackageIndexState;
-      materialized = ../materialized + "/${compiler-nix-name}/alex";
-    } // args);
-    alex = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.alex-tool { inherit compiler-nix-name; }) final.haskell-nix.compiler;
-    happy-tool = { compiler-nix-name, ... }@args: final.haskell-nix.tool "happy" ({
-      version = "1.19.12";
-      index-state = final.haskell-nix.internalHackageIndexState;
-      materialized = ../materialized + "/${compiler-nix-name}/happy";
-    } // args);
-    happy = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.happy-tool { inherit compiler-nix-name; }) final.haskell-nix.compiler;
+    # Use this where we still have not good way to choose GHC version
+    internal-nix-tools = final.haskell-nix.nix-tools.ghc883;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
@@ -562,14 +524,14 @@ in {
             # building ghc itself (since GHC is a dependency
             # of the materialization check it would cause
             # infinite recusion).
-            alex-tool = args: tool "alex" ({
+            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({
                 version = "3.2.4";
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
             } // args);
             alex = bootstrap.packages.alex-tool {};
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
-            happy-tool = { version ? "1.19.12", ... }@args: tool "happy" ({
+            happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy" ({
                 inherit version ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
             } // args);
@@ -579,6 +541,7 @@ in {
             happy-old = bootstrap.packages.happy-tool { version = "1.19.11"; };
             happy-old-unchecked = bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
             hscolour-tool = args: (hackage-package ({
+                compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";
                 version = "1.24.4";
                 inherit ghcOverride nix-tools cabal-install index-state;

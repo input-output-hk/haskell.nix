@@ -40,8 +40,9 @@ file that looks like this:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = "ghc883";
       name = "hlint";
       version = "2.2.11";
     };
@@ -64,8 +65,9 @@ inputs.  For cabal projects this means we must specify the
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = "ghc883";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";
@@ -92,8 +94,9 @@ stack projects)
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = "ghc883";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";
@@ -121,8 +124,9 @@ To capture the nix we can do something like:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = "ghc883";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";
@@ -155,8 +159,9 @@ If we choose to add the `checkMaterialization` flag you would have:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = "ghc883";
       name = "hlint";
       version = "2.2.10";
       index-state = "2020-04-15T00:00:00Z";
@@ -199,8 +204,9 @@ For instance:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-project {
+      compiler-nix-name = "ghc883";
       name = "hlint";
       version = "2.2.10";
       index-state = "2020-04-15T00:00:00Z";
@@ -236,9 +242,10 @@ a non-existing path is now an error:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlintPlan = /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = "ghc883";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";

@@ -22,7 +22,7 @@
           value = f name;
         }) lst);
     in genAttrs [ "x86_64-linux" "x86_64-darwin" ] (system:
-      import self.sources.nixpkgs-default
+      import self.sources.nixpkgs
       (self.nixpkgsArgs // { localSystem = { inherit system; }; }));
   };
 }

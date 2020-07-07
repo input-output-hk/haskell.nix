@@ -1,6 +1,6 @@
 { haskellNix ? import ../default.nix { inherit checkMaterialization; }
 , pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? haskellNix.sources.nixpkgs-default
+, nixpkgs ? haskellNix.sources.nixpkgs
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name ? "ghc865"
@@ -216,7 +216,7 @@ let
 in
 
 pkgs.recurseIntoAttrs {
-  haskellNixRoots = haskell-nix.roots' compiler-nix-name ifdLevel;
+  roots = haskell-nix.roots' compiler-nix-name ifdLevel;
 } // optionalIfdTests ifdLevel
 
 ## more possible test cases

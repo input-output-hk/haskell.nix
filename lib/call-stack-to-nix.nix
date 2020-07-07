@@ -15,7 +15,7 @@
 , resolverSha256 ? null
 , materialized ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
-, nix-tools ? pkgs.haskell-nix.nix-tools.${pkgs.haskell-nix.internalDefaultCompilerNixName}
+, nix-tools ? pkgs.haskell-nix.internal-nix-tools
 , ... }:
 let
   inherit (haskellLib.fetchResolver {

@@ -1,6 +1,6 @@
 { stdenv, writeScript, coreutils, glibc, git, openssh
-, nix-tools, cabal-install, nix-prefetch-git
-, gawk, bash, curl, findutils, compiler-nix-name }@args:
+, internal-nix-tools, internal-cabal-install, nix-prefetch-git
+, gawk, bash, curl, findutils }@args:
 
 import ./update-external.nix args {
   name = "stackage";

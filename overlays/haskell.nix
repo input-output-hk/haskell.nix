@@ -30,10 +30,6 @@ final: prev: {
             specJSON = stackageSourceJSON;
             override = "stackage";
           };
-          # Niv likes to have a nixpkgs so we are using
-          # that to replace nixpkgs-default. This is
-          # here for backwards compatibility.
-          nixpkgs-default = sources.nixpkgs;
         } // (import ../nix/sources.nix) // sourcesOverride;
 
         # We provide a `callPackage` function to consumers for
@@ -255,10 +251,9 @@ final: prev: {
           inherit (final.evalPackages.pkgs) runCommand writeShellScript;
         };
 
-        update-index-state-hashes = compiler-nix-name: import ../scripts/update-index-state-hashes.nix {
-            inherit (final.haskell-nix) indexStateHashesPath;
+        update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
+            inherit (final.haskell-nix) indexStateHashesPath internal-nix-tools;
             inherit (final) coreutils nix writeShellScriptBin stdenv curl;
-            nix-tools =  final.haskell-nix.nix-tools.${compiler-nix-name};
         };
 
         # Function to call stackToNix
@@ -270,9 +265,9 @@ final: prev: {
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
         # to produce the nix representation of it.
-        callCabalToNix = { name, src, cabal-file ? "${name}.cabal", compiler-nix-name }:
+        callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
             final.buildPackages.pkgs.runCommand "${name}.nix" {
-                nativeBuildInputs = [ (final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name}) ];
+                nativeBuildInputs = [ final.buildPackages.haskell-nix.internal-nix-tools ];
 
                 LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";
                 LANG = "en_US.UTF-8";
@@ -324,7 +319,6 @@ final: prev: {
               if type == "cabal"
               then
                 final.buildPackages.haskell-nix.callCabalToNix {
-                  compiler-nix-name = final.haskell-nix.internalDefaultCompilerNixName;
                   src = repoWithSubdir;
                   inherit name cabal-file;
                 }
@@ -441,11 +435,13 @@ final: prev: {
         # the index-state-hashes is used.  This guarantees reproducability wrt
         # to the haskell.nix revision.  If reproducability beyond haskell.nix
         # is required, a specific index-state should be provided!
-        hackage-package = { name, ... }@args':
+        hackage-package =
+          { name, compiler-nix-name, ... }@args':
           let args = { caller = "hackage-package"; } // args';
           in (hackage-project args).hsPkgs.${name};
         hackage-project =
             { name
+            , compiler-nix-name
             , version
             , ... }@args':
             let args = { caller = "hackage-project"; } // args';
@@ -466,7 +462,7 @@ final: prev: {
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
-            { ... }@args':
+            { src, compiler-nix-name, ... }@args':
             let
               args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
@@ -487,8 +483,8 @@ final: prev: {
               inherit pkg-set;
               plan-nix = callProjectResults.projectNix;
               inherit (callProjectResults) index-state;
-              tool = final.buildPackages.haskell-nix.tool' pkg-set.config.compiler.nix-name;
-              tools = final.buildPackages.haskell-nix.tools' pkg-set.config.compiler.nix-name;
+              tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
+              tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
               roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
             };
 
@@ -519,7 +515,8 @@ final: prev: {
               });
           });
 
-        cabalProject = args':
+        cabalProject =
+            { src, compiler-nix-name, ... }@args':
             let
               args = { caller = "hackage-package"; } // args';
               p = cabalProject' args;
@@ -531,7 +528,7 @@ final: prev: {
             };
 
         stackProject' =
-            { ... }@args:
+            { src, ... }@args:
             let callProjectResults = callStackToNix ({ inherit cache; } // args);
                 generatedCache = genStackCache args;
                 cache = args.cache or generatedCache;
@@ -546,8 +543,8 @@ final: prev: {
               inherit (pkg-set.config) hsPkgs;
               inherit pkg-set;
               stack-nix = callProjectResults.projectNix;
-              tool = final.buildPackages.haskell-nix.tool' pkg-set.config.compiler.nix-name;
-              tools = final.buildPackages.haskell-nix.tools' pkg-set.config.compiler.nix-name;
+              tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
+              tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
               roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
            };
 
@@ -620,9 +617,6 @@ final: prev: {
 
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached.
-        haskellNixRoots = final.haskell-nix.roots (final.haskell-nix.defaultCompilerNixNameWithWarning (default:
-            "Please consider replacing `haskellNixRoots` with `p.roots` on your project "
-          + "or using `haskell-nix.roots \"${default}\"`."));
         roots = compiler-nix-name: final.recurseIntoAttrs {
           Level0 = roots' compiler-nix-name 0;
           Level1 = roots' compiler-nix-name 1;
@@ -631,9 +625,6 @@ final: prev: {
           Level2 = roots' compiler-nix-name 2;
         };
 
-        haskellNixRoots' = final.haskell-nix.roots' (final.haskell-nix.defaultCompilerNixNameWithWarning (default:
-            "Please consider replacing `haskellNixRoots'` with `p.roots'` on your project "
-          + "or using `haskell-nix.roots' \"${default}\"`."));
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({
             # Things that require no IFD to build
@@ -660,8 +651,6 @@ final: prev: {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
-            alex = final.buildPackages.haskell-nix.alex.${compiler-nix-name};
-            happy = final.buildPackages.haskell-nix.happy.${compiler-nix-name};
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
             inherit (final.ghc-extra-packages."${compiler-nix-name}"

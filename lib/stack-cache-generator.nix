@@ -15,7 +15,7 @@
     else _: null
 , resolverSha256 ? null
 , checkMaterialization ? null
-, nix-tools ? pkgs.haskell-nix.nix-tools.${pkgs.haskell-nix.internalDefaultCompilerNixName}
+, nix-tools ? pkgs.haskell-nix.internal-nix-tools
 , ...
 }:
 let

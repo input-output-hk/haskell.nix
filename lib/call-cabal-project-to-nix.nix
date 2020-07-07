@@ -18,10 +18,7 @@ in
 , cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
 , cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
 , caller               ? "callCabalProjectToNix" # Name of the calling funcion for better warning messages
-, compiler-nix-name ? # Nix name of the ghc compiler as a string eg. "ghc883"
-    pkgs.haskell-nix.defaultCompilerNixNameWithWarning (default:
-        "While building ${if name != null then "${name} " else ""}(using ${default}).  "
-      + "Please consider adding `compiler-nix-name = \"${default}\";` to the call to `${caller}`.")
+, compiler-nix-name
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , nix-tools     ? evalPackages.haskell-nix.nix-tools.${compiler-nix-name}
