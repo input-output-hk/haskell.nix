@@ -78,9 +78,9 @@ let
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
   maybeCleanedSource =
-    if haskellLib.canCleanSource src
+    if src.name && src.filter && haskellLib.canCleanSource src
       then (haskellLib.cleanSourceWith {
-        name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
+        name = ${src.name}-root-cabal-files";
         src = src.origSrc or src;
         filter = path: type: src.filter path type && (
           type == "directory" ||
