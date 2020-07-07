@@ -14,7 +14,6 @@
     then { location, tag, ...}: sha256map."${location}"."${tag}"
     else _: null
 , resolverSha256 ? null
-, checkMaterialization ? null
 , nix-tools ? pkgs.haskell-nix.internal-nix-tools
 , ...
 }:

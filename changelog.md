@@ -3,6 +3,8 @@ that will impact users.
 
 ## July ?, 2019
 * Removed `sources.nixpkgs-default`, use `sources.nixpkgs` instead.
+* Removed `./nixpkgs` directory, use  `(import ./. {}).sources`
+  or `./nix/sources.nix` instead.
 * Removes V1 interface for details on how to fix old code see:
     https://github.com/input-output-hk/haskell.nix/issues/709
 * Removed defaultCompilerNixName.
