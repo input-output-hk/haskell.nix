@@ -55,6 +55,7 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
+    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {};
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra
