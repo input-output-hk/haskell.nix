@@ -80,8 +80,8 @@ let
   maybeCleanedSource =
     if haskellLib.canCleanSource src
       then (haskellLib.cleanSourceWith {
-        name = name + "-root-cabal-files";
-        src = src.origSrc;
+        name = (name or "unknown") + "-root-cabal-files";
+        src = src.origSrc or src;
         filter = path: type: src.filter path type && (
           type == "directory" ||
           pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); })
