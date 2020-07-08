@@ -1,8 +1,8 @@
-{ indexStateHashesPath, internal-nix-tools, coreutils, nix, writeShellScriptBin, stdenv, curl }:
+{ indexStateHashesPath, nix-tools, coreutils, nix, writeShellScriptBin, stdenv, curl }:
 with builtins;
 with stdenv.lib;
 writeShellScriptBin "update-index-state-hashes" ''
-   export PATH="${makeBinPath [ coreutils internal-nix-tools nix curl ]}"
+   export PATH="${makeBinPath [ coreutils nix-tools nix curl ]}"
    
    # We'll take the last element from the indexStatesHashes file via nix and get the name.
    # This is the last timestamp recorded in the file (implicit assumption: the file is

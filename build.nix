@@ -9,7 +9,7 @@ in
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , ifdLevel ? 1000
-, compiler-nix-name ? "ghc865"
+, compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 }:
 
 let
@@ -33,8 +33,21 @@ in rec {
   # as not all of them can work in restricted eval mode (as they
   # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
-    update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
-    update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
+    update-hackage = import ./scripts/update-hackage.nix {
+      inherit (pkgs) stdenv writeScript coreutils glibc git
+        openssh nix-prefetch-git gawk bash curl findutils;
+      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+      nix-tools = haskell.internal-nix-tools;
+      cabal-install = haskell.internal-cabal-install;
+      inherit (haskell) update-index-state-hashes;
+    };
+    update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
+      inherit (pkgs) stdenv writeScript coreutils glibc git
+        openssh nix-prefetch-git gawk bash curl findutils;
+      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+      nix-tools = haskell.internal-nix-tools;
+      cabal-install = haskell.internal-cabal-install;
+    };
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };

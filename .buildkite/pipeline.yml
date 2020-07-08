@@ -1,6 +1,6 @@
 steps:
-  - label: 'Run tests'
-    command: "./test/tests.sh"
+  - label: 'Run tests with ghc883'
+    command: "./test/tests.sh ghc883"
     agents:
       system: x86_64-linux
 
@@ -14,7 +14,7 @@ steps:
     agents:
       system: x86_64-linux
 
-  - label: 'Check closure size'
+  - label: 'Check closure size with ghc883'
     command:
       - nix-build build.nix -A maintainer-scripts.check-closure-size -o check-closure-size.sh
       - echo "+++ Closure size (MB)"
@@ -24,7 +24,7 @@ steps:
 
   - label: 'Update docs'
     command:
-      - nix-build build.nix -A maintainer-scripts.update-docs -o update-docs.sh
+      - nix-build build.nix -A maintainer-scripts.update-docs --argstr compiler-nix-name ghc883 -o update-docs.sh
       - ./update-docs.sh
     agents:
       system: x86_64-linux
@@ -36,5 +36,5 @@ steps:
 
   - label: 'Make sure non store paths like can be used as src'
     command:
-      - nix-build build.nix -A maintainer-scripts.check-path-support -o check-path-support.sh
+      - nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc883 -o check-path-support.sh
       - ./check-path-support.sh

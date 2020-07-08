@@ -14,7 +14,7 @@
     then { location, tag, ...}: sha256map."${location}"."${tag}"
     else _: null
 , resolverSha256 ? null
-, nix-tools ? pkgs.haskell-nix.internal-nix-tools
+, nix-tools ? pkgs.haskell-nix.internal-nix-tools # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
 , ...
 }:
 let

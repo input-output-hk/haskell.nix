@@ -252,8 +252,10 @@ final: prev: {
         };
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
-            inherit (final.haskell-nix) indexStateHashesPath internal-nix-tools;
+            inherit (final.haskell-nix) indexStateHashesPath;
             inherit (final) coreutils nix writeShellScriptBin stdenv curl;
+            # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+            nix-tools = final.haskell-nix.internal-nix-tools;
         };
 
         # Function to call stackToNix
@@ -267,6 +269,8 @@ final: prev: {
         # to produce the nix representation of it.
         callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
             final.buildPackages.pkgs.runCommand "${name}.nix" {
+                # This function is only used when building stack projects (via mkCacheLine and mkCacheFile)
+                # When building stack projects we use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
                 nativeBuildInputs = [ final.buildPackages.haskell-nix.internal-nix-tools ];
 
                 LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";

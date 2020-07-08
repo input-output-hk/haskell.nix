@@ -1,5 +1,5 @@
 { stdenv, writeScript, coreutils, glibc, git, openssh
-, internal-nix-tools, internal-cabal-install, nix-prefetch-git
+, nix-tools, cabal-install, nix-prefetch-git
 , gawk, bash, curl, findutils }@args:
 
 import ./update-external.nix args {

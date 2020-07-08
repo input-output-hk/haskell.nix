@@ -21,8 +21,8 @@ in
 , compiler-nix-name
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
-, nix-tools     ? evalPackages.haskell-nix.nix-tools.${compiler-nix-name}
-, cabal-install ? evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
+, nix-tools     ? evalPackages.haskell-nix.nix-tools.${compiler-nix-name}     # When building cabal projects we use the nix-tools
+, cabal-install ? evalPackages.haskell-nix.cabal-install.${compiler-nix-name} # and cabal-install compiled with matching ghc version
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
                      # If the tests and benchmarks are not needed and they
