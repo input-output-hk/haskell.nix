@@ -12,6 +12,7 @@ lib: with lib.licenses;
   "AGPL-3.0-only"     = agpl3;
   "AGPL-3.0-or-later" = agpl3Plus;
   "Apache-2.0"        = asl20;
+  "GPL-2.0-or-later AND BSD-3-Clause" = [gpl2Plus bsd3];
   # Generic
   LicenseRef-Apache = "Apache";
   LicenseRef-GPL = "GPL";

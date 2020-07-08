@@ -1,4 +1,4 @@
-{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
@@ -14,6 +14,7 @@ let
   demo-src = ./external-package-demo-0.1.0.0.tar.gz;
 
   project = cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "extra-hackage/external-package-user";
 
     extra-hackages = [ hackage ];
@@ -27,7 +28,7 @@ let
   };
   packages = project.hsPkgs;
 
-in project // (recurseIntoAttrs {
+in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -66,4 +67,4 @@ in project // (recurseIntoAttrs {
       inherit project;
     };  
   };
-})
+}

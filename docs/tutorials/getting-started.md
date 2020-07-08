@@ -52,6 +52,8 @@ Add `default.nix`:
     name = "haskell-nix-project";
     src = ./.;
   };
+  # For `cabal.project` based projects specify the GHC version to use.
+  compiler-nix-name = "ghc883"; # Not used for `stack.yaml` based projects.
 }
 ```
 

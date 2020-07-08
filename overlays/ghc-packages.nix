@@ -1,14 +1,14 @@
 final: prev:
 let
-  callCabal2Nix = name: src: final.stdenv.mkDerivation {
+  callCabal2Nix = compiler-nix-name: name: src: final.evalPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
-    nativeBuildInputs = [ (final.buildPackages.haskell-nix.nix-tools-set {
-      # It is not safe to checkk the nix-tools materialization here
+    nativeBuildInputs = [
+      # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
-      # infinite recursion.
-      checkMaterialization = false;
-    }) ];
+      # infinite recursion (so using nix-tools-unchecked).
+      final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}
+    ];
     phases = [ "unpackPhase" "buildPhase" ];
 
     LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.hostPlatform.libc == "glibc") "${final.glibcLocales}/lib/locale/locale-archive";
@@ -117,7 +117,7 @@ in rec {
               fi
             ''
             else "${value.passthru.configured-src}/${dir}";
-        nix = callCabal2Nix "${ghcName}-${pkgName}" src;
+        nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
       }) ghc-extra-pkgs)
     final.buildPackages.haskell-nix.compiler;
 
@@ -178,7 +178,7 @@ in rec {
         if __pathExists materializedPath
           then materializedPath
           else null;
-      ghcOverride = final.buildPackages.haskell-nix.compiler.${ghcName};
+      compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;

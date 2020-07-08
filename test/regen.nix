@@ -3,7 +3,7 @@ let
   haskellNix = (import ../default.nix {});
 in
 { pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? haskellNix.sources.nixpkgs-default
+, nixpkgs ? haskellNix.sources.nixpkgs
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 }:
 

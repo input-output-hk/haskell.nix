@@ -25,7 +25,7 @@ let
   inherit (import ../default.nix {}) sources nixpkgsArgs;
 in
 { specJSON ? ./nix-tools-src.json }:
-with import sources.nixpkgs-default nixpkgsArgs;
+with import sources.nixpkgs nixpkgsArgs;
 let
   src = haskell-nix.cleanSourceHaskell {
     src = haskell-nix.fetchExternal {
@@ -36,6 +36,7 @@ let
   };
 in
   let plan-to-nix = (haskell-nix.cabalProject {
+    compiler-nix-name = "ghc865";
     name = "nix-tools";
     inherit src;
     modules = [{

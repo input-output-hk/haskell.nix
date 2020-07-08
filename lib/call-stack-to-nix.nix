@@ -5,7 +5,7 @@
  *
  * see also `call-cabal-project-to-nix`!
  */
-{ runCommand, nix-tools, pkgs, mkCacheFile, materialize, haskellLib }:
+{ runCommand, pkgs, mkCacheFile, materialize, haskellLib }:
 { name ? src.name or null # optional name for better error messages
 , src
 , stackYaml ? "stack.yaml"
@@ -15,6 +15,7 @@
 , resolverSha256 ? null
 , materialized ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
+, nix-tools ? pkgs.haskell-nix.internal-nix-tools # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
 , ... }:
 let
   inherit (haskellLib.fetchResolver {

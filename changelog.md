@@ -1,6 +1,28 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## July 8, 2019
+* Removed `sources.nixpkgs-default`, use `sources.nixpkgs` instead.
+* Removed `./nixpkgs` directory, use  `(import ./. {}).sources`
+  or `./nix/sources.nix` instead.
+* Removes V1 interface for details on how to fix old code see:
+    https://github.com/input-output-hk/haskell.nix/issues/709
+* Removed defaultCompilerNixName.
+* cabalProject, cabalProject', hackage-project and hackage-package
+  now require a `compiler-nix-name` argument.
+* `haskell-nix.tool` and `.tools` now require a `compiler-nix-name` argument.
+  New functions `p.tool` and `p.tools` (where p is a project) do not.
+  Like `shellFor { tools = ... }` they will use the compiler nix name
+  from the project (including stack projects where it is derived from
+  the resolver).
+* `haskell-nix.alex` and `haskell-nix.happy` have been removed. Use
+  `p.tool "alex" "3.2.5"` or `shellFor { tools = { alex = "3.2.5"; } }`.
+* `haskell-nix.nix-tools` -> `haskell-nix.nix-tools.ghc883` (it includes
+  the hpack exe now).
+* `haskell-nix.cabal-install` -> 
+  `p.tool "cabal" "3.2.0.0"` or `shellFor { tools = { cabal = "3.2.0.0"; } }`
+* `haskell-nix.haskellNixRoots` -> `haskell-nix.roots ghc883` or `p.roots`
+
 ## June 25, 2019
 * Haddock docs are now built in their own derivation when needed (not as part
   of the component build).

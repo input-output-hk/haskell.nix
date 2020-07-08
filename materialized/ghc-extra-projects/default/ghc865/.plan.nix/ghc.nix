@@ -14,6 +14,7 @@
       stage1 = false;
       stage2 = true;
       stage3 = false;
+      dynamic-system-linker = true;
       };
     package = {
       specVersion = "1.10";

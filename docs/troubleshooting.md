@@ -66,6 +66,7 @@ So this is expected, unfortunately.
 
 ### How do I prevent the evaluation-time dependencies of my project from being garbage-collected?
 
-The `haskellNixRoots` attribute should include all the evaluation-time dependencies.
+The `haskell-nix.roots "ghc883"` should include all the evaluation-time dependencies
+and the main build time dependecies of a project using ghc 8.8.3.
 So you can add that to the relevant GC root.
 In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in `release.nix`/`ci.nix`.

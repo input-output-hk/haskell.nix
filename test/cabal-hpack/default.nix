@@ -8,13 +8,13 @@ let
      {
        # Package has no exposed modules which causes
        #   haddock: No input file(s)
-       packages.cabal-simple.doHaddock = false;
+       packages.cabal-hpack.doHaddock = false;
      }
   ];
 
   project = project' {
     inherit compiler-nix-name;
-    src = testSrc "cabal-simple";
+    src = testSrc "cabal-hpack";
     inherit modules;
   };
 
@@ -27,20 +27,20 @@ in recurseIntoAttrs {
 
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
-  test-shell = util.addCabalInstall packages.cabal-simple.components.all;
+  test-shell = util.addCabalInstall packages.cabal-hpack.components.all;
 
   run = stdenv.mkDerivation {
-    name = "cabal-simple-test";
+    name = "cabal-hpack-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-hpack.components.exes.cabal-hpack}/bin/cabal-hpack${stdenv.hostPlatform.extensions.executable}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.cabal-simple.components.exes.cabal-simple}
+      cat ${haskellLib.check packages.cabal-hpack.components.exes.cabal-hpack}
     '' + (if stdenv.hostPlatform.isMusl
       then ''
         printf "checking that executable is statically linked... " >& 2
@@ -57,7 +57,7 @@ in recurseIntoAttrs {
       '')) + ''
 
       printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
+      all_exe="${packages.cabal-hpack.components.all}/bin/cabal-hpack${stdenv.hostPlatform.extensions.executable}"
       test -f "$all_exe"
       echo "$all_exe" >& 2
 

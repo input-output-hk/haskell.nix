@@ -1,9 +1,10 @@
-{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
+    inherit compiler-nix-name;
     index-state = "2020-05-25T00:00:00Z";
     src = testSrc "buildable";
     modules = [ { packages.buildable-test.flags.exclude-broken = true; } ];

@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs, compiler }:
 
 let
   # Builds a single component of a package.
@@ -44,7 +44,7 @@ let
 
   hoogleLocal = let
     nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "hoogle" {
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool compiler.nix-name "hoogle" {
         version = "5.0.17.15";
         index-state = pkgs.haskell-nix.internalHackageIndexState;
       }
@@ -59,9 +59,8 @@ let
 
   # Same as haskellPackages.shellFor in nixpkgs.
   shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {
-    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib buildPackages;
+    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib buildPackages compiler;
     inherit (buildPackages) glibcLocales;
-    buildGHC = ghc.passthru.buildGHC or ghc;
   };
 
   # Same as haskellPackages.ghcWithPackages and ghcWithHoogle in nixpkgs.

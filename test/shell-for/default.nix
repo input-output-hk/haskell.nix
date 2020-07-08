@@ -22,7 +22,7 @@ let
     packages = ps: with ps; [ pkga pkgb ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    buildInputs = [ cabal-install ];
+    tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
   };
 
@@ -31,7 +31,7 @@ let
     packages = ps: with ps; [ pkga ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    buildInputs = [ cabal-install ];
+    tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
   };
 
@@ -41,7 +41,7 @@ let
     #   packages = ps: with ps; [ pkga pkgb ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    buildInputs = [ cabal-install ];
+    tools = { cabal = "3.2.0.0"; };
   };
 
 in recurseIntoAttrs (if stdenv.hostPlatform.isWindows

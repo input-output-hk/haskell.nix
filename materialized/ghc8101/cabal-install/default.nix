@@ -35,7 +35,7 @@
         "bytestring".revision = (((hackage."bytestring")."0.10.10.0").revisions).default;
         "text".revision = (((hackage."text")."1.2.3.2").revisions).default;
         "Cabal".revision = (((hackage."Cabal")."3.2.0.0").revisions).default;
-        "base64-bytestring".revision = (((hackage."base64-bytestring")."1.1.0.0").revisions).default;
+        "base64-bytestring".revision = (((hackage."base64-bytestring")."1.0.0.3").revisions).default;
         "base".revision = (((hackage."base")."4.14.0.0").revisions).default;
         "time".revision = (((hackage."time")."1.9.3").revisions).default;
         "base16-bytestring".revision = (((hackage."base16-bytestring")."0.1.1.6").revisions).default;
