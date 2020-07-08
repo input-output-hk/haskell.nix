@@ -8,6 +8,7 @@ let readIfExists = src: fileName:
 in
 { name          ? src.name or null # optional name for better error messages
 , src
+, compiler-nix-name    # The name of the ghc compiler to use eg. "ghc883"
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
 , index-sha256  ? null # The hash of the truncated hackage index-state
 , plan-sha256   ? null # The hash of the plan-to-nix output (makes the plan-to-nix step a fixed output derivation)
@@ -18,7 +19,6 @@ in
 , cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
 , cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
 , caller               ? "callCabalProjectToNix" # Name of the calling funcion for better warning messages
-, compiler-nix-name
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , nix-tools     ? evalPackages.haskell-nix.nix-tools.${compiler-nix-name}     # When building cabal projects we use the nix-tools
