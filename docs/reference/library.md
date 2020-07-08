@@ -166,8 +166,8 @@ Then feeding its result into [mkStackPkgSet](#mkStackPkgSet) passing also
 |-------------------|--------------------------------------------------|-----------------------------------------------------------------------------|
 | `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                 |
 | `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                    |
-| `plan-nix`        |                                                  | `projectNix` attribute of [`callStackToNix`](#callstacktonix) return value  |
-| `index-state`     |                                                  | `index-state` attribute of [`callStackToNix`](#callstacktonix) return value |
+| `plan-nix`        |                                                  | `projectNix` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value  |
+| `index-state`     |                                                  | `index-state` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value |
 | `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                     |
 | `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                           | 
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                       |
