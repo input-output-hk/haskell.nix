@@ -686,6 +686,11 @@ needed for <code>importAndFilterProject</code>.</p>
 <td>Location of the cabal project files.</td>
 </tr>
 <tr>
+<td><code>compiler-nix-name</code></td>
+<td>String</td>
+<td>The name of the ghc compiler to use eg. "ghc883"</td>
+</tr>
+<tr>
 <td><code>index-state</code></td>
 <td>Timestamp</td>
 <td>Optional hackage index-state, eg. "2019-10-10T00:00:00Z".</td>
@@ -702,13 +707,23 @@ needed for <code>importAndFilterProject</code>.</p>
 </tr>
 <tr>
 <td><code>cabalProject</code></td>
-<td>Path</td>
-<td>Optional cabal project file (defaults to "${src}/cabal.project").</td>
+<td>String</td>
+<td>Optional cabal project file contents (defaults to readFile "${src}/cabal.project").</td>
+</tr>
+<tr>
+<td><code>cabalProjectLocal</code></td>
+<td>String</td>
+<td>Optional cabal project file contents (defaults to readFile "${src}/cabal.project.local").</td>
+</tr>
+<tr>
+<td><code>cabalProjectFreeze</code></td>
+<td>String</td>
+<td>Optional cabal project file contents (defaults to readFile "${src}/cabal.project.freeze").</td>
 </tr>
 <tr>
 <td><code>ghc</code></td>
 <td></td>
-<td>Optional ghc to use</td>
+<td>Deprecated. Use <code>compiler-nix-name</code> instead. Optional ghc to use</td>
 </tr>
 <tr>
 <td><code>nix-tools</code></td>

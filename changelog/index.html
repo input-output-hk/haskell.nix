@@ -177,6 +177,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#july-8-2019">July 8, 2019</a></li>
+    
+
     <li class="toctree-l2"><a href="#june-25-2019">June 25, 2019</a></li>
     
 
@@ -259,6 +262,29 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="july-8-2019">July 8, 2019<a class="headerlink" href="#july-8-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed <code>sources.nixpkgs-default</code>, use <code>sources.nixpkgs</code> instead.</li>
+<li>Removed <code>./nixpkgs</code> directory, use  <code>(import ./. {}).sources</code>
+  or <code>./nix/sources.nix</code> instead.</li>
+<li>Removes V1 interface for details on how to fix old code see:
+    https://github.com/input-output-hk/haskell.nix/issues/709</li>
+<li>Removed defaultCompilerNixName.</li>
+<li>cabalProject, cabalProject', hackage-project and hackage-package
+  now require a <code>compiler-nix-name</code> argument.</li>
+<li><code>haskell-nix.tool</code> and <code>.tools</code> now require a <code>compiler-nix-name</code> argument.
+  New functions <code>p.tool</code> and <code>p.tools</code> (where p is a project) do not.
+  Like <code>shellFor { tools = ... }</code> they will use the compiler nix name
+  from the project (including stack projects where it is derived from
+  the resolver).</li>
+<li><code>haskell-nix.alex</code> and <code>haskell-nix.happy</code> have been removed. Use
+  <code>p.tool "alex" "3.2.5"</code> or <code>shellFor { tools = { alex = "3.2.5"; } }</code>.</li>
+<li><code>haskell-nix.nix-tools</code> -&gt; <code>haskell-nix.nix-tools.ghc883</code> (it includes
+  the hpack exe now).</li>
+<li><code>haskell-nix.cabal-install</code> -&gt; 
+  <code>p.tool "cabal" "3.2.0.0"</code> or <code>shellFor { tools = { cabal = "3.2.0.0"; } }</code></li>
+<li><code>haskell-nix.haskellNixRoots</code> -&gt; <code>haskell-nix.roots ghc883</code> or <code>p.roots</code></li>
+</ul>
 <h2 id="june-25-2019">June 25, 2019<a class="headerlink" href="#june-25-2019" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Haddock docs are now built in their own derivation when needed (not as part

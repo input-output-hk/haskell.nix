@@ -276,6 +276,8 @@ projects.</p>
     name = &quot;haskell-nix-project&quot;;
     src = ./.;
   };
+  # For `cabal.project` based projects specify the GHC version to use.
+  compiler-nix-name = &quot;ghc883&quot;; # Not used for `stack.yaml` based projects.
 }
 </code></pre>
 

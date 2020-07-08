@@ -282,8 +282,9 @@ dependencies of nix-tools for instance).</p>
 <p>Lets say we want to build <code>hlint</code>.  We might start with an <code>hlint</code>
 file that looks like this:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = &quot;ghc883&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
     };
@@ -302,8 +303,9 @@ trace: Using index-state: 2020-04-15T00:00:00Z for hlint
 inputs.  For cabal projects this means we must specify the
 <code>index-state</code> of hackage we want to use:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = &quot;ghc883&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -326,8 +328,9 @@ $ nix-hash --base32 --type sha256 /nix/store/8z6p4237rin3c6c1lmjwshmj8rdqrhw2-hl
 <p>We can add the hash as <code>plan-sha256</code> or (<code>stack-sha256</code> for
 stack projects)</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = &quot;ghc883&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -350,8 +353,9 @@ trace: To materialize, point `materialized` to a copy of /nix/store/kk047cqsjvbj
 
 <p>To capture the nix we can do something like:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = &quot;ghc883&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -378,8 +382,9 @@ We can tell haskell.nix to check the materialiazation either by:</p>
 </ul>
 <p>If we choose to add the <code>checkMaterialization</code> flag you would have:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = &quot;ghc883&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.10&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -416,8 +421,9 @@ the time, we would be better off just removing <code>materialized</code> and <co
 the hash and materialized nix we can find out what nix files should be.
 For instance:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-project {
+      compiler-nix-name = &quot;ghc883&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.10&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -450,9 +456,10 @@ of using the <code>/nix/store/...</code> path directly.</p>
 you should gaurd against the path not existing as passing in
 a non-existing path is now an error:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
-    pkgs = import sources.nixpkgs-default nixpkgsArgs;
+    pkgs = import sources.nixpkgs nixpkgsArgs;
     hlintPlan = /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs;
     hlint = pkgs.haskell-nix.hackage-package {
+      compiler-nix-name = &quot;ghc883&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
