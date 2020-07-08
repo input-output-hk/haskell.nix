@@ -136,9 +136,9 @@ pkgs.haskell-nix.project {
 
 ## stackProject
 
-A function calling [callStackToNix](#callStackToNix) with all arguments.
+A function calling [callStackToNix](#callstacktonix) with all arguments.
 
-Then feeding its result into [mkStackPkgSet](#mkStackPkgSet) passing also
+Then feeding its result into [mkStackPkgSet](#mkstackpkgset) passing also
 `pkg-def-extras` and `modules` arguments.
 
 **Return value**:
@@ -147,17 +147,17 @@ Then feeding its result into [mkStackPkgSet](#mkStackPkgSet) passing also
 |-------------------|--------------------------------------------------|----------------------------------------------------------------------------|
 | `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                |
 | `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                   |
-| `stack-nix`       |                                                  | `projectNix` attribute of [`callStackToNix`](#callStackToNix) return value |
-| `shellFor`        | Function                                         | [`shellFor`](#shellFor)                                                    |
-| `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcWithHoogle)                                          | 
-| `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcWithPackages)                                      |
+| `stack-nix`       |                                                  | `projectNix` attribute of [`callStackToNix`](#callstacktonix) return value |
+| `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                    |
+| `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                          | 
+| `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                      |
 
 
 ## cabalProject
 
-A function calling [callCabalProjectToNix](#callCabalProjectToNix) with all arguments.
+A function calling [callCabalProjectToNix](#callcabalprojecttonix) with all arguments.
 
-Then feeding its result into [mkStackPkgSet](#mkStackPkgSet) passing also
+Then feeding its result into [mkCabalProjectPkgSet](#mkcabalprojectpkgset) passing also
 `pkg-def-extras`, `extra-hackages` and `modules` arguments.
 
 **Return value**:
