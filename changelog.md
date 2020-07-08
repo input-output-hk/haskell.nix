@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## July ?, 2019
+## July 8, 2019
 * Removed `sources.nixpkgs-default`, use `sources.nixpkgs` instead.
 * Removed `./nixpkgs` directory, use  `(import ./. {}).sources`
   or `./nix/sources.nix` instead.
