@@ -465,8 +465,8 @@ will be passed to it:</p>
 </code></pre>
 
 <h2 id="stackproject">stackProject<a class="headerlink" href="#stackproject" title="Permanent link">&para;</a></h2>
-<p>A function calling <a href="#callStackToNix">callStackToNix</a> with all arguments.</p>
-<p>Then feeding its result into <a href="#mkStackPkgSet">mkStackPkgSet</a> passing also
+<p>A function calling <a href="#callstacktonix">callStackToNix</a> with all arguments.</p>
+<p>Then feeding its result into <a href="#mkstackpkgset">mkStackPkgSet</a> passing also
 <code>pkg-def-extras</code> and <code>modules</code> arguments.</p>
 <p><strong>Return value</strong>:</p>
 <table>
@@ -491,28 +491,28 @@ will be passed to it:</p>
 <tr>
 <td><code>stack-nix</code></td>
 <td></td>
-<td><code>projectNix</code> attribute of <a href="#callStackToNix"><code>callStackToNix</code></a> return value</td>
+<td><code>projectNix</code> attribute of <a href="#callstacktonix"><code>callStackToNix</code></a> return value</td>
 </tr>
 <tr>
 <td><code>shellFor</code></td>
 <td>Function</td>
-<td><a href="#shellFor"><code>shellFor</code></a></td>
+<td><a href="#shellfor"><code>shellFor</code></a></td>
 </tr>
 <tr>
 <td><code>ghcWithHoogle</code></td>
 <td>Function</td>
-<td><a href="#ghcWithHoogle"><code>ghcWithHoogle</code></a></td>
+<td><a href="#ghcwithhoogle"><code>ghcWithHoogle</code></a></td>
 </tr>
 <tr>
 <td><code>ghcWithPackages</code></td>
 <td>Function</td>
-<td><a href="#ghcWithPackages"><code>ghcWithPackages</code></a></td>
+<td><a href="#ghcwithpackages"><code>ghcWithPackages</code></a></td>
 </tr>
 </tbody>
 </table>
 <h2 id="cabalproject">cabalProject<a class="headerlink" href="#cabalproject" title="Permanent link">&para;</a></h2>
-<p>A function calling <a href="#callCabalProjectToNix">callCabalProjectToNix</a> with all arguments.</p>
-<p>Then feeding its result into <a href="#mkStackPkgSet">mkStackPkgSet</a> passing also
+<p>A function calling <a href="#callcabalprojecttonix">callCabalProjectToNix</a> with all arguments.</p>
+<p>Then feeding its result into <a href="#mkcabalprojectpkgset">mkCabalProjectPkgSet</a> passing also
 <code>pkg-def-extras</code>, <code>extra-hackages</code> and <code>modules</code> arguments.</p>
 <p><strong>Return value</strong>:</p>
 <table>
