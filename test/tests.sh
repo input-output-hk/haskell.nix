@@ -117,7 +117,7 @@ else
 fi
 
 printf "*** Checking the maintainer scripts...\n" >& 2
-nix build $NIX_BUILD_ARGS --no-link --keep-going -f ../build.nix maintainer-scripts
+nix build $NIX_BUILD_ARGS --no-link --keep-going -f ../build.nix --argstr compiler-nix-name $GHC maintainer-scripts
 echo >& 2
 
 printf "*** Checking that plan construction works with extra Hackages...\n" >& 2
