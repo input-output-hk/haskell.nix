@@ -115,7 +115,7 @@
     <a class="current" href="./">Haskell.nix Library</a>
     <ul class="subnav">
             
-    <li class="toctree-l3"><a href="#types">Types</a></li>
+    <li class="toctree-l3"><a href="#data-structures">Data structures</a></li>
     
         <ul>
         
@@ -141,6 +141,12 @@
     <li class="toctree-l3"><a href="#top-level-attributes">Top-level attributes</a></li>
     
         <ul>
+        
+            <li><a class="toctree-l4" href="#project">project</a></li>
+        
+            <li><a class="toctree-l4" href="#stackproject">stackProject</a></li>
+        
+            <li><a class="toctree-l4" href="#cabalproject">cabalProject</a></li>
         
             <li><a class="toctree-l4" href="#mkstackpkgset">mkStackPkgSet</a></li>
         
@@ -298,11 +304,11 @@ what you get when importing <a href="https://github.com/input-output-hk/haskell.
 load the library in the <a href="../../tutorials/development/#using-nix-repl">Nix REPL</a> to
 test things.</p>
 <ul>
-<li><a href="#types">Types</a> — the kinds of data that you will encounter working with <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>.</li>
+<li><a href="#data-structures">Data structures</a> — the kinds of data that you will encounter working with <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>.</li>
 <li><a href="#top-level-attributes">Top-level attributes</a> — Functions and derivations defined in the Haskell.nix attrset.</li>
 <li><a href="#package-set-functions">Package-set functions</a> — Helper functions defined on the <code>hsPkgs</code> package set.</li>
 </ul>
-<h1 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h1>
+<h1 id="data-structures">Data structures<a class="headerlink" href="#data-structures" title="Permanent link">&para;</a></h1>
 <h2 id="package-set">Package Set<a class="headerlink" href="#package-set" title="Permanent link">&para;</a></h2>
 <p>The result of <code>mkPkgSet</code>. This is an application of the NixOS module
 system.</p>
@@ -445,6 +451,116 @@ will be passed to it:</p>
 </tbody>
 </table>
 <h1 id="top-level-attributes">Top-level attributes<a class="headerlink" href="#top-level-attributes" title="Permanent link">&para;</a></h1>
+<h2 id="project">project<a class="headerlink" href="#project" title="Permanent link">&para;</a></h2>
+<p>Function that accepts attribute set with a <code>src</code> attribute and looks for <code>stack.yaml</code> file relative to it.</p>
+<p>If file exists, it calls <a href="#stack-project">stackProject</a> function. Otherwise it will call <a href="#cabal-project">cabalProject</a> function.</p>
+<p><strong>Example</strong>:</p>
+<pre><code class="nix">pkgs.haskell-nix.project {
+  # 'cleanGit' cleans a source directory based on the files known by git
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
+    name = &quot;haskell-nix-project&quot;;
+    src = ./.;
+  };
+}
+</code></pre>
+
+<h2 id="stackproject">stackProject<a class="headerlink" href="#stackproject" title="Permanent link">&para;</a></h2>
+<p>A function calling <a href="#callStackToNix">callStackToNix</a> with all arguments.</p>
+<p>Then feeding its result into <a href="#mkStackPkgSet">mkStackPkgSet</a> passing also
+<code>pkg-def-extras</code> and <code>modules</code> arguments.</p>
+<p><strong>Return value</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hsPkgs</code></td>
+<td>Attrset of <a href="#haskell-package">Haskell Packages</a></td>
+<td>Buildable packages, created from <code>packages</code></td>
+</tr>
+<tr>
+<td><code>pkg-set</code></td>
+<td>Attrset</td>
+<td><a href="#package-set"><code>pkgSet</code></a></td>
+</tr>
+<tr>
+<td><code>stack-nix</code></td>
+<td></td>
+<td><code>projectNix</code> attribute of <a href="#callStackToNix"><code>callStackToNix</code></a> return value</td>
+</tr>
+<tr>
+<td><code>shellFor</code></td>
+<td>Function</td>
+<td><a href="#shellFor"><code>shellFor</code></a></td>
+</tr>
+<tr>
+<td><code>ghcWithHoogle</code></td>
+<td>Function</td>
+<td><a href="#ghcWithHoogle"><code>ghcWithHoogle</code></a></td>
+</tr>
+<tr>
+<td><code>ghcWithPackages</code></td>
+<td>Function</td>
+<td><a href="#ghcWithPackages"><code>ghcWithPackages</code></a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="cabalproject">cabalProject<a class="headerlink" href="#cabalproject" title="Permanent link">&para;</a></h2>
+<p>A function calling <a href="#callCabalProjectToNix">callCabalProjectToNix</a> with all arguments.</p>
+<p>Then feeding its result into <a href="#mkStackPkgSet">mkStackPkgSet</a> passing also
+<code>pkg-def-extras</code>, <code>extra-hackages</code> and <code>modules</code> arguments.</p>
+<p><strong>Return value</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hsPkgs</code></td>
+<td>Attrset of <a href="#haskell-package">Haskell Packages</a></td>
+<td>Buildable packages, created from <code>packages</code></td>
+</tr>
+<tr>
+<td><code>pkg-set</code></td>
+<td>Attrset</td>
+<td><a href="#package-set"><code>pkgSet</code></a></td>
+</tr>
+<tr>
+<td><code>plan-nix</code></td>
+<td></td>
+<td><code>projectNix</code> attribute of <a href="#callcabalprojecttonix"><code>callCabalProjectToNix</code></a> return value</td>
+</tr>
+<tr>
+<td><code>index-state</code></td>
+<td></td>
+<td><code>index-state</code> attribute of <a href="#callcabalprojecttonix"><code>callCabalProjectToNix</code></a> return value</td>
+</tr>
+<tr>
+<td><code>shellFor</code></td>
+<td>Function</td>
+<td><a href="#shellfor"><code>shellFor</code></a></td>
+</tr>
+<tr>
+<td><code>ghcWithHoogle</code></td>
+<td>Function</td>
+<td><a href="#ghcwithhoogle"><code>ghcWithHoogle</code></a></td>
+</tr>
+<tr>
+<td><code>ghcWithPackages</code></td>
+<td>Function</td>
+<td><a href="#ghcwithpackages"><code>ghcWithPackages</code></a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="mkstackpkgset">mkStackPkgSet<a class="headerlink" href="#mkstackpkgset" title="Permanent link">&para;</a></h2>
 <p>Creates a <a href="#package-set">package set</a> based on the <code>pkgs.nix</code> output
 of <code>stack-to-nix</code>.</p>
