@@ -113,6 +113,8 @@ There are other possible schemes for pinning. See
 
 ## Going forward
 
+Read through [project](../reference/library.md#project) function reference to see how the API works.
+
 There are a number of things to explore further in the tutorials section.
 
 [haskell.nix]: https://github.com/input-output-hk/haskell.nix
