@@ -4,11 +4,11 @@ what you get when importing [Haskell.nix][]. It might be helpful to
 load the library in the [Nix REPL](../tutorials/development.md#using-nix-repl) to
 test things.
 
- * [Types](#types) — the kinds of data that you will encounter working with [Haskell.nix][].
+ * [Data structures](#data-structures) — the kinds of data that you will encounter working with [Haskell.nix][].
  * [Top-level attributes](#top-level-attributes) — Functions and derivations defined in the Haskell.nix attrset.
  * [Package-set functions](#package-set-functions) — Helper functions defined on the `hsPkgs` package set.
 
-# Types
+# Data structures
 
 ## Package Set
 
@@ -115,6 +115,64 @@ will be passed to it:
 
 
 # Top-level attributes
+
+## project
+
+Function that accepts attribute set with a `src` attribute and looks for `stack.yaml` file relative to it.
+
+If file exists, it calls [stackProject](#stack-project) function. Otherwise it will call [cabalProject](#cabal-project) function.
+
+**Example**:
+
+```nix
+pkgs.haskell-nix.project {
+  # 'cleanGit' cleans a source directory based on the files known by git
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
+    name = "haskell-nix-project";
+    src = ./.;
+  };
+}
+```
+
+## stackProject
+
+A function calling [callStackToNix](#callStackToNix) with all arguments.
+
+Then feeding its result into [mkStackPkgSet](#mkStackPkgSet) passing also
+`pkg-def-extras` and `modules` arguments.
+
+**Return value**:
+
+| Attribute         | Type                                             | Description                                                                |
+|-------------------|--------------------------------------------------|----------------------------------------------------------------------------|
+| `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                |
+| `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                   |
+| `stack-nix`       |                                                  | `projectNix` attribute of [`callStackToNix`](#callStackToNix) return value |
+| `shellFor`        | Function                                         | [`shellFor`](#shellFor)                                                    |
+| `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcWithHoogle)                                          | 
+| `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcWithPackages)                                      |
+
+
+## cabalProject
+
+A function calling [callCabalProjectToNix](#callCabalProjectToNix) with all arguments.
+
+Then feeding its result into [mkStackPkgSet](#mkStackPkgSet) passing also
+`pkg-def-extras`, `extra-hackages` and `modules` arguments.
+
+**Return value**:
+
+| Attribute         | Type                                             | Description                                                                 |
+|-------------------|--------------------------------------------------|-----------------------------------------------------------------------------|
+| `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                 |
+| `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                    |
+| `plan-nix`        |                                                  | `projectNix` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value  |
+| `index-state`     |                                                  | `index-state` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value |
+| `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                     |
+| `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                           | 
+| `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                       |
+
+
 
 ## mkStackPkgSet
 
