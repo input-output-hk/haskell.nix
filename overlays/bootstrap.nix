@@ -457,7 +457,9 @@ in {
     # For cabal projects we match the versions used to the compiler
     # selected for the project to avoid the chance of a dependency
     # another GHC version (particularly useful on macOS where
-    # executables are dynamically linked to GHC itself).
+    # executables are dynamically linked to GHC itself, which means
+    # that if you use a tool built with a different GHC you will get
+    # that GHC itself in your closure).
     cabal-install = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.cabal-install-tool { inherit compiler-nix-name; }) final.haskell-nix.compiler;
     cabal-install-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
