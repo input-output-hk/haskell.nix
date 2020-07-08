@@ -83,7 +83,7 @@ echo >& 2
 printf "*** Checking shellFor works for a cabal project, multiple packages...\n" >& 2
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
-    --argstr compiler-nix-name $GHC
+    --argstr compiler-nix-name $GHC \
     -A shell-for.env \
     --run 'cd shell-for && cabal new-build all'
 echo >& 2
@@ -99,7 +99,7 @@ echo >& 2
 printf "*** Checking shellFor has a working hoogle index...\n" >& 2
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
-    --argstr compiler-nix-name $GHC
+    --argstr compiler-nix-name $GHC \
     -A shell-for.env \
     --run 'hoogle ConduitT | grep Data.Conduit'
 echo >& 2
