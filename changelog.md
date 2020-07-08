@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## July 8, 2019
+## July 8, 2020
 * Removed `sources.nixpkgs-default`, use `sources.nixpkgs` instead.
 * Removed `./nixpkgs` directory, use  `(import ./. {}).sources`
   or `./nix/sources.nix` instead.
@@ -23,7 +23,7 @@ that will impact users.
   `p.tool "cabal" "3.2.0.0"` or `shellFor { tools = { cabal = "3.2.0.0"; } }`
 * `haskell-nix.haskellNixRoots` -> `haskell-nix.roots ghc883` or `p.roots`
 
-## June 25, 2019
+## June 25, 2020
 * Haddock docs are now built in their own derivation when needed (not as part
   of the component build).
   They should build automatically when something (such as `shellFor`) attempts
