@@ -120,7 +120,7 @@ will be passed to it:
 
 Function that accepts attribute set with a `src` attribute and looks for `stack.yaml` file relative to it.
 
-If file exists, it calls [stackProject](#stack-project) function. Otherwise it will call [cabalProject](#cabal-project) function.
+If file exists, it calls [stackProject](#stackproject) function. Otherwise it will call [cabalProject](#cabalproject) function.
 
 **Example**:
 
