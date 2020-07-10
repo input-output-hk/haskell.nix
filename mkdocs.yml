@@ -35,6 +35,7 @@ pages:
     - 'Bumping Hackage and Stackage snapshots': tutorials/hackage-stackage.md
     - 'Materialization: Speeding up Nix evaluation': tutorials/materialization.md
     - 'Cross-compiling your project': tutorials/cross-compilation.md
+    - 'Generating coverage information': tutorials/coverage.md
   - 'Reference':
     - 'Suported GHC versions': reference/supported-ghc-versions.md
     - 'Command-line tools': reference/commands.md
@@ -52,4 +53,5 @@ pages:
     - 'Removing withPackage wrapper': dev/removing-with-package-wrapper.md
     - 'Test Suite': dev/tests.md
     - 'Adding a new GHC version': dev/adding-new-ghc.md
+    - 'Coverage': dev/coverage.md
   - 'ChangeLog': changelog.md
