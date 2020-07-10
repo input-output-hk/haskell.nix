@@ -453,7 +453,7 @@ will be passed to it:</p>
 <h1 id="top-level-attributes">Top-level attributes<a class="headerlink" href="#top-level-attributes" title="Permanent link">&para;</a></h1>
 <h2 id="project">project<a class="headerlink" href="#project" title="Permanent link">&para;</a></h2>
 <p>Function that accepts attribute set with a <code>src</code> attribute and looks for <code>stack.yaml</code> file relative to it.</p>
-<p>If file exists, it calls <a href="#stack-project">stackProject</a> function. Otherwise it will call <a href="#cabal-project">cabalProject</a> function.</p>
+<p>If file exists, it calls <a href="#stackproject">stackProject</a> function. Otherwise it will call <a href="#cabalproject">cabalProject</a> function.</p>
 <p><strong>Example</strong>:</p>
 <pre><code class="nix">pkgs.haskell-nix.project {
   # 'cleanGit' cleans a source directory based on the files known by git
