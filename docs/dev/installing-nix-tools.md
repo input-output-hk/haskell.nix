@@ -3,7 +3,7 @@
 To build the latest `nix-tools` and store the result at `./nt`, run:
 
 ```bash
-nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz pkgs.haskell-nix.nix-tools --out-link nt
+nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz pkgs.haskell-nix.nix-tools.ghc883 --out-link nt
 ```
 
 If you would like to then install `nix-tools` into your profile, run:
@@ -22,5 +22,5 @@ understand something that the documentation doesn't cover.
 git clone https://github.com/input-output-hk/nix-tools
 git clone https://github.com/input-output-hk/haskell.nix
 cd haskell.nix
-nix build -f . pkgs.haskell-nix.nix-tools --arg sourcesOverride '{ nix-tools = ../nix-tools; }' --out-link nt
+nix build -f . pkgs.haskell-nix.nix-tools.ghc883 --arg sourcesOverride '{ nix-tools = ../nix-tools; }' --out-link nt
 ```
