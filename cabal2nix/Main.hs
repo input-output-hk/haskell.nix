@@ -44,7 +44,7 @@ main = getArgs >>= \case
   [url,hash] | "http" `isPrefixOf` url ->
           let subdir = "." in
           fetch (\dir -> cabalFromPath url hash subdir $ dir </> subdir)
-            (Source url mempty UnknownHash subdir) >>= \case
+            (Source url mempty UnknownHash) >>= \case
             (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
             _ -> return ()
   [path,file] -> doesDirectoryExist file >>= \case

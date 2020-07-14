@@ -98,7 +98,7 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
          case cacheHits of
            [] -> do
              fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
-               (Source url rev UnknownHash subdir) >>= \case
+               (Source url rev UnknownHash) >>= \case
                (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
                _ -> return []
            hits ->

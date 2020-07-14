@@ -8,6 +8,7 @@ module Stack2nix
 
 import qualified Data.Text as T
 import Data.String (fromString)
+import Data.Maybe (fromMaybe)
 
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (liftIO)
@@ -161,42 +162,43 @@ packages2nix args pkgs =
                       prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
                     return (fromString pkg, fromString pkg $= mkPath False nix)
        (DVCS (Git url rev) _ subdirs) ->
-         fmap concat . forM subdirs $ \subdir ->
-         do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
-            case cacheHits of
-              [] -> do
-                fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
-                  (Source url rev UnknownHash subdir) >>= \case
-                  (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
-                  _ -> return []
-              hits ->
-                forM hits $ \( pkg, nix ) -> do
+         do hits <- forM subdirs $ \subdir -> liftIO $ cacheHits (argCacheFile args) url rev subdir
+            if any null hits
+              then
+                fetch (return . cabalFromPath url rev subdirs)
+                  (Source url rev UnknownHash) >>= \case
+                    (Just (DerivationSource{..}, genBindings)) -> fromMaybe [] <$> runMaybeT (genBindings derivHash)
+                    _ -> return []
+              else
+                forM (concat hits) $ \( pkg, nix ) ->
                   return (fromString pkg, fromString pkg $= mkPath False nix)
        _ -> return []
   where relPath = shortRelativePath (argOutputDir args) (dropFileName (argStackYaml args))
         cabalFromPath
-          :: String    -- URL
-          -> String    -- Revision
-          -> FilePath  -- Subdir
-          -> FilePath  -- Local Directory
-          -> MaybeT IO (String -> IO [(T.Text, Binding NExpr)])
-        cabalFromPath url rev subdir path = do
-          d <- liftIO $ doesDirectoryExist path
-          unless d $ fail ("not a directory: " ++ path)
-          cabalFiles <- liftIO $ findCabalFiles (argHpackUse args) path
-          return $ \sha256 ->
+          :: String      -- URL
+          -> String      -- Revision
+          -> [FilePath]  -- Subdirs
+          -> FilePath    -- Local Directory
+          -> String      -- Sha256
+          -> MaybeT IO [(T.Text, Binding NExpr)]
+        cabalFromPath url rev subdirs dir sha256 =
+          fmap concat . forM subdirs $ \subdir -> do
+            let path = dir </> subdir
+            d <- liftIO $ doesDirectoryExist path
+            unless d $ fail ("not a directory: " ++ path)
+            cabalFiles <- liftIO $ findCabalFiles (argHpackUse args) path
             forM cabalFiles $ \cabalFile -> do
-            let pkg = cabalFilePkgName cabalFile
-                nix = pkg <.> "nix"
-                nixFile = argOutputDir args </> nix
-                subdir' = if subdir == "." then Nothing
-                          else Just subdir
-                src = Just $ C2N.Git url rev (Just sha256) subdir'
-            createDirectoryIfMissing True (takeDirectory nixFile)
-            writeDoc nixFile =<<
-              prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
-            liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
-            return (fromString pkg, fromString pkg $= mkPath False nix)
+              let pkg = cabalFilePkgName cabalFile
+                  nix = pkg <.> "nix"
+                  nixFile = argOutputDir args </> nix
+                  subdir' = if subdir == "." then Nothing
+                            else Just subdir
+                  src = Just $ C2N.Git url rev (Just sha256) subdir'
+              liftIO $ createDirectoryIfMissing True (takeDirectory nixFile)
+              liftIO $ writeDoc nixFile =<<
+                prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
+              liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
+              return (fromString pkg, fromString pkg $= mkPath False nix)
 
 defaultNixContents :: String
 defaultNixContents = unlines
