@@ -81,11 +81,11 @@ fetch :: forall a. (String -> MaybeT IO a)      -- ^ This function is passed the
       -> Source                                 -- ^ The source to fetch from.
       -> IO (Maybe (DerivationSource, a))       -- ^ The derivation source and the result of the processing function. Returns Nothing if the download failed.
 fetch f source = firstJust . map runMaybeT . (fetchLocal source :) $ map (\fetcher -> fetchWith fetcher source >>= process)
-    [ (True, "git", ["--fetch-submodules"])
+    [ (False, "url", [])
+    , (True, "git", ["--fetch-submodules"])
     , (True, "hg", [])
     , (True, "svn", [])
     , (True, "bzr", [])
-    , (False, "url", [])
     ]
  where
   -- | Remove '/' from the end of the path. Nix doesn't accept paths that

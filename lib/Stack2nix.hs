@@ -8,16 +8,15 @@ module Stack2nix
 
 import qualified Data.Text as T
 import Data.String (fromString)
-import Data.Maybe (fromMaybe)
 
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad (unless, forM)
+import Control.Monad (unless, forM, forM_)
 import Extra (unlessM)
 
 import qualified Data.Map as M (fromListWith, toList)
 import System.FilePath ((<.>), (</>), takeDirectory, dropFileName)
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist)
 import System.IO (IOMode(..), openFile, hClose)
 import Data.Yaml (decodeFileEither)
 
@@ -63,7 +62,7 @@ stackexpr args =
                       =<< resolveSnapshot (argStackYaml args) value
 
 stack2nix :: Args -> Stack -> IO NExpr
-stack2nix args stack@(Stack resolver compiler pkgs pkgFlags ghcOpts) =
+stack2nix args (Stack resolver compiler pkgs pkgFlags ghcOpts) =
   do let extraDeps    = extraDeps2nix pkgs
          flags        = flags2nix pkgFlags
          ghcOptions   = ghcOptions2nix ghcOpts
@@ -148,7 +147,6 @@ writeDoc file doc =
 -- makeRelativeToCurrentDirectory
 packages2nix :: Args -> [Dependency] -> IO [(T.Text, Binding NExpr)]
 packages2nix args pkgs =
-  do cwd <- getCurrentDirectory
      fmap concat . forM pkgs $ \case
        (LocalPath folder) ->
          do cabalFiles <- findCabalFiles (argHpackUse args) (dropFileName (argStackYaml args) </> folder)
@@ -165,11 +163,15 @@ packages2nix args pkgs =
          do hits <- forM subdirs $ \subdir -> liftIO $ cacheHits (argCacheFile args) url rev subdir
             if any null hits
               then
-                fetch (return . cabalFromPath url rev subdirs)
+                -- If any of the subdirs were missing we need to fetch the files and
+                -- generate the bindings.
+                fetch (cabalFromPath url rev subdirs)
                   (Source url rev UnknownHash) >>= \case
-                    (Just (DerivationSource{..}, genBindings)) -> fromMaybe [] <$> runMaybeT (genBindings derivHash)
+                    (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
                     _ -> return []
               else
+                -- If the subdirs are all in the cache then the bindings should already be
+                -- generated too.
                 forM (concat hits) $ \( pkg, nix ) ->
                   return (fromString pkg, fromString pkg $= mkPath False nix)
        _ -> return []
@@ -179,13 +181,19 @@ packages2nix args pkgs =
           -> String      -- Revision
           -> [FilePath]  -- Subdirs
           -> FilePath    -- Local Directory
-          -> String      -- Sha256
-          -> MaybeT IO [(T.Text, Binding NExpr)]
-        cabalFromPath url rev subdirs dir sha256 =
-          fmap concat . forM subdirs $ \subdir -> do
+          -> MaybeT IO (String -> IO [(T.Text, Binding NExpr)])
+        cabalFromPath url rev subdirs dir = do
+          -- Check that all the subdirs exist if not this
+          -- fail the MaybeT so that the next fetcher will be tried
+          forM_ subdirs $ \subdir -> do
             let path = dir </> subdir
             d <- liftIO $ doesDirectoryExist path
             unless d $ fail ("not a directory: " ++ path)
+          -- If we got this far we are confident we have downloaded
+          -- with the right fetcher.  Return an action that will
+          -- be used to generate the bindings.
+          return $ \sha256 -> fmap concat . forM subdirs $ \subdir -> do
+            let path = dir </> subdir
             cabalFiles <- liftIO $ findCabalFiles (argHpackUse args) path
             forM cabalFiles $ \cabalFile -> do
               let pkg = cabalFilePkgName cabalFile
