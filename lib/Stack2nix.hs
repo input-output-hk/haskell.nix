@@ -161,19 +161,27 @@ packages2nix args pkgs =
                     return (fromString pkg, fromString pkg $= mkPath False nix)
        (DVCS (Git url rev) _ subdirs) ->
          do hits <- forM subdirs $ \subdir -> liftIO $ cacheHits (argCacheFile args) url rev subdir
+            let generateBindings =
+                  fetch (cabalFromPath url rev subdirs)
+                    (Source url rev UnknownHash) >>= \case
+                      (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
+                      _ -> return []
             if any null hits
               then
                 -- If any of the subdirs were missing we need to fetch the files and
                 -- generate the bindings.
-                fetch (cabalFromPath url rev subdirs)
-                  (Source url rev UnknownHash) >>= \case
-                    (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
-                    _ -> return []
-              else
-                -- If the subdirs are all in the cache then the bindings should already be
-                -- generated too.
-                forM (concat hits) $ \( pkg, nix ) ->
-                  return (fromString pkg, fromString pkg $= mkPath False nix)
+                generateBindings
+              else do
+                let allHits = concat hits
+                (and <$> forM allHits (\( _, nix ) -> doesFileExist (argOutputDir args </> nix))) >>= \case
+                  False ->
+                    -- One or more of the generated binding files are missing
+                    generateBindings
+                  True ->
+                    -- If the subdirs are all in the cache then the bindings should already be
+                    -- generated too.
+                    forM allHits $ \( pkg, nix ) ->
+                      return (fromString pkg, fromString pkg $= mkPath False nix)
        _ -> return []
   where relPath = shortRelativePath (argOutputDir args) (dropFileName (argStackYaml args))
         cabalFromPath
@@ -205,7 +213,10 @@ packages2nix args pkgs =
               createDirectoryIfMissing True (takeDirectory nixFile)
               writeDoc nixFile =<<
                 prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
-              appendCache (argCacheFile args) url rev subdir sha256 pkg nix
+              -- Only update the cache if there is not already a record
+              cacheHits (argCacheFile args) url rev subdir >>= \case
+                [hit] | hit == (pkg, nix) -> return ()
+                _ -> appendCache (argCacheFile args) url rev subdir sha256 pkg nix
               return (fromString pkg, fromString pkg $= mkPath False nix)
 
 defaultNixContents :: String
