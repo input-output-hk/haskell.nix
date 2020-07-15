@@ -70,24 +70,22 @@ instance FromJSON DerivationSource where
 fromDerivationSource :: DerivationSource -> Source
 fromDerivationSource DerivationSource{..} = Source derivUrl derivRevision (Certain derivHash)
 
-firstJust :: Monad m => [m (Maybe a)] -> m (Maybe a)
-firstJust [] = pure Nothing
-firstJust (x:xs) = x >>= maybe (firstJust xs) (pure . Just)
-
 -- | Fetch a source, trying any of the various nix-prefetch-* scripts.
 fetch :: forall a. (String -> MaybeT IO a)      -- ^ This function is passed the output path name as an argument.
                                                 -- It should return 'Nothing' if the file doesn't match the expected format.
                                                 -- This is required, because we cannot always check if a download succeeded otherwise.
       -> Source                                 -- ^ The source to fetch from.
       -> IO (Maybe (DerivationSource, a))       -- ^ The derivation source and the result of the processing function. Returns Nothing if the download failed.
-fetch f source = firstJust . map runMaybeT . (fetchLocal source :) $ map (\fetcher -> fetchWith fetcher source >>= process)
+fetch f = runMaybeT . fetchers where
+  fetchers :: Source -> MaybeT IO (DerivationSource, a)
+  fetchers source = msum . (fetchLocal source :) $ map (\fetcher -> fetchWith fetcher source >>= process)
     [ (False, "url", [])
     , (True, "git", ["--fetch-submodules"])
     , (True, "hg", [])
     , (True, "svn", [])
     , (True, "bzr", [])
     ]
- where
+
   -- | Remove '/' from the end of the path. Nix doesn't accept paths that
   -- end in a slash.
   stripSlashSuffix :: String -> String
