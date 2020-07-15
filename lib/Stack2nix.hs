@@ -196,17 +196,17 @@ packages2nix args pkgs =
             let path = dir </> subdir
             cabalFiles <- liftIO $ findCabalFiles (argHpackUse args) path
             forM cabalFiles $ \cabalFile -> do
-            let pkg = cabalFilePkgName cabalFile
-                nix = pkg <.> "nix"
-                nixFile = argOutputDir args </> nix
-                subdir' = if subdir == "." then Nothing
-                          else Just subdir
-                src = Just $ C2N.Git url rev (Just sha256) subdir'
-            liftIO $ createDirectoryIfMissing True (takeDirectory nixFile)
-            liftIO $ writeDoc nixFile =<<
-              prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
-            liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
-            return (fromString pkg, fromString pkg $= mkPath False nix)
+              let pkg = cabalFilePkgName cabalFile
+                  nix = pkg <.> "nix"
+                  nixFile = argOutputDir args </> nix
+                  subdir' = if subdir == "." then Nothing
+                            else Just subdir
+                  src = Just $ C2N.Git url rev (Just sha256) subdir'
+              createDirectoryIfMissing True (takeDirectory nixFile)
+              writeDoc nixFile =<<
+                prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
+              appendCache (argCacheFile args) url rev subdir sha256 pkg nix
+              return (fromString pkg, fromString pkg $= mkPath False nix)
 
 defaultNixContents :: String
 defaultNixContents = unlines
