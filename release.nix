@@ -1,7 +1,7 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluting
 # on a machine with e.g. no way to build the Darwin IFDs you need! 
 { supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
-, ifdLevel ? 1
+, ifdLevel ? 0
 , checkMaterialization ? false }:
 
 let
