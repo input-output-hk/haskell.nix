@@ -5,7 +5,7 @@ with stdenv.lib;
 let
   project = haskell-nix.cabalProject' {
     src = testSrc "compiler-nix-name";
-    compiler-nix-name = "ghc883";
+    compiler-nix-name = "ghc884";
   };
 
   packages = project.hsPkgs;

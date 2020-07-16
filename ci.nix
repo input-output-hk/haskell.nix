@@ -16,7 +16,7 @@
     (import ./default.nix { inherit checkMaterialization; }).nixpkgsArgs) ({
     ghc865 = {};
   } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
-    ghc883 = {};
+    ghc884 = {};
     ghc8101 = {};
   });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {

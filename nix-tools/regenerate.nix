@@ -10,10 +10,10 @@
 #
 # To bootstap materialization files for a new compiler (e.g. for ghc 8.8.3)
 #
-# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.cabal-install-tool { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
-# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.nix-tools-set { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
-# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.alex-tool { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
-# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.happy-tool { compiler-nix-name = "ghc883"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.cabal-install-tool { compiler-nix-name = "ghc884"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.nix-tools-set { compiler-nix-name = "ghc884"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.alex-tool { compiler-nix-name = "ghc884"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
+# nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.happy-tool { compiler-nix-name = "ghc884"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
 #
 # Using the script:
 # 1. run `nix-prefetch-git https://github.com/input-output-hk/nix-tools > nix-tools-src-new.json`

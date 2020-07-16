@@ -129,8 +129,9 @@ in {
                 # the first one is a prerequisite.
                 # both are trimmed to only include the make build system part and not the
                 # hadrian one.
-                ++ fromUntil "8.8" "8.12"      ./patches/ghc/bec76733b818b0489ffea0834ab6b1560207577c.patch
-                ++ fromUntil "8.8" "8.12"      ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
+                ++ fromUntil "8.8"  "8.12"     ./patches/ghc/bec76733b818b0489ffea0834ab6b1560207577c.patch
+                ++ fromUntil "8.8"  "8.8.4"    ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
+                ++ fromUntil "8.10" "8.12"     ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
                 ;
         in ({
@@ -308,6 +309,22 @@ in {
 
                 ghc-patches = ghc-patches "8.8.3";
             };
+            ghc884 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc884; };
+
+                inherit bootPkgs sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_7;
+                llvmPackages = final.llvmPackages_7;
+
+                src-spec = rec {
+                    version = "8.8.4";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "0bgwbxxvdn56l91bp9p5d083gzcfdi6z8l8b17qzjpr3n8w5wl7h";
+                };
+
+                ghc-patches = ghc-patches "8.8.4";
+            };
             ghc8101 =
               let
                 buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
@@ -315,7 +332,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = buildPkgs.haskell-nix.compiler.ghc883;
+                  ghc = buildPkgs.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
@@ -478,8 +495,8 @@ in {
     # there should be no difference in the behaviour of these tools.
     # (stack projects on macOS may see a significant change in the
     # closure size of their build dependencies due to dynamic linking).
-    internal-cabal-install = final.haskell-nix.cabal-install.ghc883;
-    internal-nix-tools = final.haskell-nix.nix-tools.ghc883;
+    internal-cabal-install = final.haskell-nix.cabal-install.ghc884;
+    internal-nix-tools = final.haskell-nix.nix-tools.ghc884;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
