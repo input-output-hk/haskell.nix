@@ -45,11 +45,8 @@ let
         # (we need to upgrade `nix-tools` to Cabal 3 for them to work)
         skipBroken = final.lib.filterAttrs (pkgName: _:
           ghcName == "ghc865" || (pkgName != "base" && pkgName != "ghc-heap"));
-        materializedPath = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
       in (final.haskell-nix.materialize ({
-          materialized = if __pathExists materializedPath
-            then materializedPath
-            else null;
+          materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
           (_: srcAndNix: srcAndNix.nix) (skipBroken bootPackages))));
 
@@ -167,17 +164,13 @@ in rec {
 
   # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
-    # Where to look for materialization files
-    let materializedPath = ../materialized/ghc-extra-projects
-                             + "/${ghc-extra-projects-type}/${ghcName}";
-    in final.haskell-nix.cabalProject' {
+    final.haskell-nix.cabalProject' {
       name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
       src = proj;
       index-state = final.haskell-nix.internalHackageIndexState;
-      materialized =
-        if __pathExists materializedPath
-          then materializedPath
-          else null;
+      # Where to look for materialization files
+      materialized = ../materialized/ghc-extra-projects
+                       + "/${ghc-extra-projects-type}/${ghcName}";
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
     })
