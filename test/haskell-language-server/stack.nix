@@ -10,4 +10,7 @@
   };
   projectFileName = "stack-${haskell-nix.compiler.${if compiler-nix-name == "ghc884" then "ghc883" else compiler-nix-name}.version}.yaml";
   modules = [{ config.compiler.nix-name = lib.mkForce compiler-nix-name; }];
+  sha256map = {
+    "https://github.com/DanielG/cabal-helper.git"."79a5608778493bf32e74b54bbf1ea2729941e50f" = "1jsiwg94yy8pwhzi3z6ayja9qdgf7fl6xn1h9z681j6lhbx225f8";
+  };
 }).haskell-language-server.components.exes.haskell-language-server
