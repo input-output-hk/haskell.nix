@@ -16,6 +16,7 @@ let
     tools = import ./tools.nix;
     emscripten = import ./emscripten.nix;
     nix-prefetch-git-minimal = import ./nix-prefetch-git-minimal.nix;
+    gobject-introspection = import ./gobject-introspection.nix;
     eval-on-current = import ./eval-on-current.nix;
     eval-on-build = import ./eval-on-build.nix;
   };
@@ -46,6 +47,7 @@ let
     tools
     emscripten
     nix-prefetch-git-minimal
+    gobject-introspection
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
