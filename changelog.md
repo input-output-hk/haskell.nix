@@ -1,6 +1,9 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## July ?, 2020
+* Changed `haskell-nix.roots` and `p.roots` to single derivations.
+
 ## July 8, 2020
 * Removed `sources.nixpkgs-default`, use `sources.nixpkgs` instead.
 * Removed `./nixpkgs` directory, use  `(import ./. {}).sources`
