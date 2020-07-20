@@ -620,14 +620,12 @@ final: prev: {
         withInputs = final.recurseIntoAttrs;
 
         # Add this to your tests to make all the dependencies of haskell.nix
-        # are tested and cached.
-        roots = compiler-nix-name: final.recurseIntoAttrs {
-          Level0 = roots' compiler-nix-name 0;
-          Level1 = roots' compiler-nix-name 1;
-          # Should be safe to use this now we have materialized everything
-          # except the tests
-          Level2 = roots' compiler-nix-name 2;
-        };
+        # are tested and cached. Consider using `p.roots` where `p` is a
+        # project as it will automatically match the `compiler-nix-name`
+        # of the project.
+        roots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
+          (final.lib.mapAttrsToList (name: path: { inherit name path; })
+            (roots' compiler-nix-name 2));
 
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({
