@@ -480,11 +480,27 @@ in {
     cabal-install = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.cabal-install-tool { inherit compiler-nix-name; }) final.haskell-nix.compiler;
     cabal-install-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.cabal-install-tool { inherit compiler-nix-name; checkMaterialization = false; }) final.haskell-nix.compiler;
+      final.haskell-nix.cabal-install-tool {
+        compiler-nix-name =
+          # If there is no materialized version for this GHC version fall back on
+          # a version of GHC for which there will be.
+          if __pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
+            then compiler-nix-name
+            else "ghc865";
+        checkMaterialization = false;
+      }) final.haskell-nix.compiler;
     nix-tools = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.nix-tools-set { inherit compiler-nix-name; }) final.haskell-nix.compiler;
     nix-tools-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.nix-tools-set { inherit compiler-nix-name; checkMaterialization = false; }) final.haskell-nix.compiler;
+      final.haskell-nix.nix-tools-set {
+        compiler-nix-name =
+          # If there is no materialized version for this GHC version fall back on
+          # a version of GHC for which there will be.
+          if __pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
+            then compiler-nix-name
+            else "ghc865";
+        checkMaterialization = false;
+      }) final.haskell-nix.compiler;
 
     # These `internal` versions are used for:
     # * `nix-tools` for stack projects (since we use `nix-tools` to process
