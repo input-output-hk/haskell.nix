@@ -1,9 +1,12 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## July ?, 2020
+## July 21, 2020
 * Added GHC 8.8.4 and replaced 8.8.3 in tests and as the ghc
   used to build nix-tools for stack projects.
+
+## July 20, 2020
+* Changed `haskell-nix.roots` and `p.roots` to single derivations.
 
 ## July 8, 2020
 * Removed `sources.nixpkgs-default`, use `sources.nixpkgs` instead.
