@@ -76,10 +76,7 @@
     <a class="current" href="./">Creating a development environment</a>
     <ul class="subnav">
             
-    <li class="toctree-l3"><a href="#how-to-get-a-development-shell-for-a-package">How to get a development shell for a package</a></li>
-    
-
-    <li class="toctree-l3"><a href="#how-to-get-a-development-shell-for-a-multi-package-project">How to get a development shell for a multi-package project</a></li>
+    <li class="toctree-l3"><a href="#how-to-get-a-development-shell">How to get a development shell</a></li>
     
 
     <li class="toctree-l3"><a href="#how-to-get-a-local-hoogle-index">How to get a local Hoogle index</a></li>
@@ -262,21 +259,8 @@ package set with Haskell.nix, then use <code>cabal new‑build</code> to work
 on it.  Starting Cabal 3.0 <code>cabal build</code> will work out of the box, as
 new style builds are the default.</p>
 </div>
-<h2 id="how-to-get-a-development-shell-for-a-package">How to get a development shell for a package<a class="headerlink" href="#how-to-get-a-development-shell-for-a-package" title="Permanent link">&para;</a></h2>
-<p>Run a <code>nix‑shell</code> on <code>components.all</code> of your package. <code>all</code> is a
-synthetic component whose dependencies are the union of the
-dependencies of all components in the package. Therefore, you will be
-able to build the test suites because their dependencies will be
-included.</p>
-<pre><code class="nix"># shell.nix
-let
-  hsPkgs = import ./default.nix {};
-in
-  hsPkgs.my-package.components.all
-</code></pre>
-
-<h2 id="how-to-get-a-development-shell-for-a-multi-package-project">How to get a development shell for a multi-package project<a class="headerlink" href="#how-to-get-a-development-shell-for-a-multi-package-project" title="Permanent link">&para;</a></h2>
-<p>If you have a Cabal or Stack project with multiple packages
+<h2 id="how-to-get-a-development-shell">How to get a development shell<a class="headerlink" href="#how-to-get-a-development-shell" title="Permanent link">&para;</a></h2>
+<p>If you have a Cabal or Stack project with one or more packages
 (i.e. multiple <code>.cabal</code> files, not a single package with multiple
 components), then you will need a development environment that
 contains the <em>dependencies</em> of your packages, but not the packages

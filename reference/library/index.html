@@ -384,7 +384,6 @@ the package, look within the components structure.</p>
   exes = { NAME = COMPONENT; };
   tests = { NAME = COMPONENT; };
   benchmarks = { NAME = COMPONENT; };
-  all = COMPONENT;
 }
 </code></pre>
 
@@ -392,8 +391,6 @@ the package, look within the components structure.</p>
 <p>In <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>, a <em>component</em> is a derivation corresponding to a
 <a href="https://www.haskell.org/cabal/users-guide/developing-packages.html">Cabal component</a>
 of a package.</p>
-<p><a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> also defines a special <code>all</code> component, which is the
-union of all components in the package.</p>
 <h2 id="identifier">Identifier<a class="headerlink" href="#identifier" title="Permanent link">&para;</a></h2>
 <p>A package identifier is an attrset pair of <code>name</code> and <code>version</code>.</p>
 <h2 id="extras">Extras<a class="headerlink" href="#extras" title="Permanent link">&para;</a></h2>
@@ -907,6 +904,11 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <td><code>packages</code></td>
 <td>Function</td>
 <td>Package selection function. It takes a list of <a href="#haskell-package">Haskell packages</a> and returns a subset of these packages.</td>
+</tr>
+<tr>
+<td><code>components</code></td>
+<td>Function</td>
+<td>Similar to <code>packages</code>, by default all the components of the selected packages are selected.</td>
 </tr>
 <tr>
 <td><code>additional</code></td>

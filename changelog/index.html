@@ -180,6 +180,9 @@
     <li class="toctree-l2"><a href="#july-21-2020">July 21, 2020</a></li>
     
 
+    <li class="toctree-l2"><a href="#july-21-2020_1">July 21, 2020</a></li>
+    
+
     <li class="toctree-l2"><a href="#july-20-2020">July 20, 2020</a></li>
     
 
@@ -269,6 +272,12 @@
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
 <h2 id="july-21-2020">July 21, 2020<a class="headerlink" href="#july-21-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed <code>components.all</code>, use <code>symlinkJoin</code> on components.exes or
+ <code>shellFor</code> if you need a shell.</li>
+<li>Added <code>components</code> arguemnt to <code>shellFor</code>.</li>
+</ul>
+<h2 id="july-21-2020_1">July 21, 2020<a class="headerlink" href="#july-21-2020_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Added GHC 8.8.4 and replaced 8.8.3 in tests and as the ghc
   used to build nix-tools for stack projects.</li>
