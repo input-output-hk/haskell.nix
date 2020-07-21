@@ -6,6 +6,10 @@ that will impact users.
  `shellFor` if you need a shell.
 * Added `components` arguemnt to `shellFor`.
 
+## July 21, 2020
+* Added GHC 8.8.4 and replaced 8.8.3 in tests and as the ghc
+  used to build nix-tools for stack projects.
+
 ## July 20, 2020
 * Changed `haskell-nix.roots` and `p.roots` to single derivations.
 

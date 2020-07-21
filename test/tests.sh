@@ -8,7 +8,7 @@ NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
 cd $(dirname $0)
 
 if [ "$#" != "1" ]; then
-  echo "Please pass a compiler-nix-name to use.  For example: ./test/test.sh ghc883"
+  echo "Please pass a compiler-nix-name to use.  For example: ./test/test.sh ghc884"
   exit 1
 fi
 

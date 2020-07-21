@@ -6,17 +6,17 @@
 # when it is not.
 #
 # To get a single tool:
-#   haskell-nix.tool "ghc883" "cabal" "3.2.0.0"
+#   haskell-nix.tool "ghc884" "cabal" "3.2.0.0"
 #
 # This does the same thing as:
 #   (haskell-nix.hackage-package {
-#     compiler-nix-name = "ghc883";
+#     compiler-nix-name = "ghc884";
 #     name = "cabal-install"
 #     version = "3.2.0.0"
 #   }).components.exes.cabal
 #
 # To get an attr set containing multiple tools:
-#   haskell-nix.tools "ghc883" { cabal = "3.2.0.0"; hlint = "2.2.11"; }
+#   haskell-nix.tools "ghc884" { cabal = "3.2.0.0"; hlint = "2.2.11"; }
 #
 # To add tools to a shell:
 #   shellFor { tools = { cabal = "3.2.0.0"; hlint = "2.2.11"; }; }
@@ -33,7 +33,7 @@
 # arguments that will be passed to `cabalProject`.
 #
 # For instance to add haskell.nix modules. Use:
-#   haskell-nix.tool "ghc883" "cabal" {
+#   haskell-nix.tool "ghc884" "cabal" {
 #      version = "3.2.0.0";
 #      modules = [ ... ];
 #   }

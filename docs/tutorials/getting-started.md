@@ -53,7 +53,7 @@ Add `default.nix`:
     src = ./.;
   };
   # For `cabal.project` based projects specify the GHC version to use.
-  compiler-nix-name = "ghc883"; # Not used for `stack.yaml` based projects.
+  compiler-nix-name = "ghc884"; # Not used for `stack.yaml` based projects.
 }
 ```
 
