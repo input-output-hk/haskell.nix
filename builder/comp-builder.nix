@@ -65,9 +65,7 @@ let
     then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
     else haskellLib.cleanCabalComponent package component src;
 
-  nameOnly = if haskellLib.isAll componentId
-    then "${package.identifier.name}-all"
-    else "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
+  nameOnly = "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
 
   fullName = "${nameOnly}-${package.identifier.version}";
 
@@ -293,7 +291,7 @@ let
       in ''
       runHook preInstall
       $SETUP_HS copy ${lib.concatStringsSep " " setupInstallFlags}
-      ${lib.optionalString (haskellLib.isLibrary componentId || haskellLib.isAll componentId) ''
+      ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
         if [ -d "${name}.conf" ]; then
@@ -326,7 +324,7 @@ let
           echo "package-id $id" >> $out/envDep
         fi
       ''}
-      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || haskellLib.isAll componentId) ''
+      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
         mkdir -p $out/bin
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})

@@ -51,10 +51,6 @@ in recurseIntoAttrs {
     passthru = {
       # Used for debugging with nix repl
       inherit project packages;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = util.addCabalInstall packages.cabal-simple.components.all;
     };
   };
 }

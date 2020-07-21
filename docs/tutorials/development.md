@@ -24,25 +24,9 @@ it exists in a file called `default.nix`.
     on it.  Starting Cabal 3.0 `cabal build` will work out of the box, as
     new style builds are the default.
 
-## How to get a development shell for a package
+## How to get a development shell
 
-Run a `nix‑shell` on `components.all` of your package. `all` is a
-synthetic component whose dependencies are the union of the
-dependencies of all components in the package. Therefore, you will be
-able to build the test suites because their dependencies will be
-included.
-
-```nix
-# shell.nix
-let
-  hsPkgs = import ./default.nix {};
-in
-  hsPkgs.my-package.components.all
-```
-
-## How to get a development shell for a multi-package project
-
-If you have a Cabal or Stack project with multiple packages
+If you have a Cabal or Stack project with one or more packages
 (i.e. multiple `.cabal` files, not a single package with multiple
 components), then you will need a development environment that
 contains the _dependencies_ of your packages, but not the packages

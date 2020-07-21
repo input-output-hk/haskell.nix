@@ -70,7 +70,6 @@ components = {
   exes = { NAME = COMPONENT; };
   tests = { NAME = COMPONENT; };
   benchmarks = { NAME = COMPONENT; };
-  all = COMPONENT;
 }
 ```
 
@@ -79,9 +78,6 @@ components = {
 In [Haskell.nix][], a _component_ is a derivation corresponding to a
 [Cabal component](https://www.haskell.org/cabal/users-guide/developing-packages.html)
 of a package.
-
-[Haskell.nix][] also defines a special `all` component, which is the
-union of all components in the package.
 
 ## Identifier
 
@@ -427,6 +423,7 @@ shellFor =
 | Argument       | Type | Description         |
 |----------------|------|---------------------|
 | `packages`     | Function | Package selection function. It takes a list of [Haskell packages](#haskell-package) and returns a subset of these packages. |
+| `components`   | Function | Similar to `packages`, by default all the components of the selected packages are selected. |
 | `additional`   | Function | Similar to `packages`, but the selected packages are built and included in `ghc-pkg list` (not just their dependencies). |
 | `withHoogle`   | Boolean  | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
 | `exactDeps`    | Boolean  | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |

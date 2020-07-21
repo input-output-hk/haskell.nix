@@ -38,11 +38,6 @@ in recurseIntoAttrs {
       otool -L $exe |grep .dylib
     '') + ''
 
-      printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.sublib-docs.components.all}/bin/sublib-docs${stdenv.hostPlatform.extensions.executable}"
-      test -f "$all_exe"
-      echo "$all_exe" >& 2
-
       # Check that it looks like we have docs
       test -f "${packages.sublib-docs.components.library.doc}/share/doc/sublib-docs/html/Lib.html"
       test -f "${packages.sublib-docs.components.sublibs.slib.doc}/share/doc/slib/html/Slib.html"
@@ -55,10 +50,6 @@ in recurseIntoAttrs {
     passthru = {
       # Used for debugging with nix repl
       inherit packages;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = util.addCabalInstall packages.sublib-docs.components.all;
     };
   };
 }

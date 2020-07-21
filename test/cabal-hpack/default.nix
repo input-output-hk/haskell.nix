@@ -25,10 +25,6 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
 
-  # Used for testing externally with nix-shell (../tests.sh).
-  # This just adds cabal-install to the existing shells.
-  test-shell = util.addCabalInstall packages.cabal-hpack.components.all;
-
   run = stdenv.mkDerivation {
     name = "cabal-hpack-test";
 
@@ -55,11 +51,6 @@ in recurseIntoAttrs {
         '' + optionalString stdenv.isDarwin ''
           otool -L $exe |grep .dylib
       '')) + ''
-
-      printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-hpack.components.all}/bin/cabal-hpack${stdenv.hostPlatform.extensions.executable}"
-      test -f "$all_exe"
-      echo "$all_exe" >& 2
 
       touch $out
     '';

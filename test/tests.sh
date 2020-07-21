@@ -129,7 +129,7 @@ echo >& 2
 printf "*** Checking that package with extra Hackages can be build...\n" >& 2
 nix build $NIX_BUILD_ARGS --no-link \
     -f ./default.nix --argstr compiler-nix-name $GHC \
-    extra-hackage.run.project.hsPkgs.external-package-user.components.all
+    extra-hackage.run.project.hsPkgs.external-package-user.components.exes.external-package-user
 echo >& 2
 
 printf "\n*** Finished successfully\n" >& 2

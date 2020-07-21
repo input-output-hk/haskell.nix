@@ -52,8 +52,7 @@ in {
           tys;
     in libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc:
-    lib.optional c.buildable c ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
 
   componentPrefix = {
     sublibs = "lib";
@@ -68,19 +67,16 @@ in {
       comps = config.components;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
-      applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
       buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true);
       libComp = if comps.library == null || !(comps.library.buildable or true)
         then {}
-        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" "setup" ]));
+        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "setup" ]));
       subComps = lib.mapAttrs
         (ctype: attrs: lib.mapAttrs (applySubComp ctype) (buildableAttrs attrs))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);
-      allComp = { all = applyAllComp comps.all; };
-    in subComps // libComp // allComp;
+    in subComps // libComp;
 
   isLibrary = componentId: componentId.ctype == "lib";
-  isAll = componentId: componentId.ctype == "all";
   isExe = componentId: componentId.ctype == "exe";
   isTest = componentId: componentId.ctype == "test";
   isBenchmark = componentId: componentId.ctype == "bench";
@@ -89,8 +85,7 @@ in {
     || isTest componentId
     || isBenchmark componentId;
   mayHaveExecutable = componentId:
-       isExecutableType componentId
-    || isAll componentId;
+       isExecutableType componentId;
 
   # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
   # This is used to make the default `packages` list for `shellFor`.
@@ -104,9 +99,7 @@ in {
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
-  componentTarget = componentId:
-    if componentId.ctype == "all" then ""
-    else "${componentId.ctype}:${componentId.cname}";
+  componentTarget = componentId:"${componentId.ctype}:${componentId.cname}";
 
   # Remove null or empty values from an attrset.
   optionalHooks = lib.filterAttrs (_: hook: hook != null && hook != "");

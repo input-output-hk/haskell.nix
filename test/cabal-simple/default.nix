@@ -26,8 +26,7 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  # This just adds cabal-install to the existing shells.
-  test-shell = util.addCabalInstall packages.cabal-simple.components.all;
+  test-shell = packages.shellFor { tools = { cabal = "3.2.0.0"; }; };
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
@@ -55,11 +54,6 @@ in recurseIntoAttrs {
         '' + optionalString stdenv.isDarwin ''
           otool -L $exe |grep .dylib
       '')) + ''
-
-      printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-simple.components.all}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
-      test -f "$all_exe"
-      echo "$all_exe" >& 2
 
       touch $out
     '';
