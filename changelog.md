@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## July ?, 2020
+## July 21, 2020
 * Removed `components.all`, use `symlinkJoin` on components.exes or
  `shellFor` if you need a shell.
 * Added `components` arguemnt to `shellFor`.
