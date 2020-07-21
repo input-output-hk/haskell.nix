@@ -25,7 +25,7 @@ Materialized nix used for dummy-data-x86_64-unknown-linux-musl-ghc-8.10.1 incorr
 ```
 
 Run the `updateMaterialized` script and repat the `nix-build` until it no longer fails.
-If the failure is not a problem with materialization ann no `updateMaterialized` script
+If the failure is not a problem with materialization and no `updateMaterialized` script
 is provided then you may need to fix the failure another way or (if it only relates to
 one of the cross compilers) modify `scripts/check-compiler-materialization/default.nix`
 so that it skips that compiler.
