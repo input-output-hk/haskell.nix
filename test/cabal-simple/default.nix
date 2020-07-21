@@ -26,8 +26,7 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  # This just adds cabal-install to the existing shells.
-  test-shell = util.addCabalInstall packages.cabal-simple.components.library;
+  test-shell = packages.shellFor {};
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
