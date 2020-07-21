@@ -14,7 +14,7 @@ in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };
-  shell = util.addCabalInstall packages.project.components.all;
+  shell = util.addCabalInstall packages.project.components.library;
   run = stdenv.mkDerivation {
     name = "cabal-22-test";
 

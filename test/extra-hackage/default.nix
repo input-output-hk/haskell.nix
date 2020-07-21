@@ -56,10 +56,6 @@ in recurseIntoAttrs {
         '' + optionalString stdenv.isDarwin ''
           otool -L $exe |grep .dylib
       '')) + ''
-      printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.external-package-user.components.all}/bin/external-package-user${stdenv.hostPlatform.extensions.executable}"
-      test -f "$all_exe"
-      echo "$all_exe" >& 2
       touch $out
     '';    
     meta.platforms = platforms.all;

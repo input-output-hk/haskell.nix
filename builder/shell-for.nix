@@ -1,11 +1,20 @@
 { lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, compiler }:
 
-{ packages ? ps:
+{ # `packages` function selects packages that will be worked on in the shell itself.
+  # These packages will not be built by `shellFor`, but their
+  # dependencies will be included in the shell's `ghc-pkg list`.
+  packages ? ps:
     let
       selected = haskellLib.selectLocalPackages ps;
     in
       builtins.trace ("Shell for " + toString (builtins.attrNames selected))
         (builtins.attrValues selected)
+  # `components` function selects components that will be worked on in the shell itself.
+  # By default `shellFor` will include the dependencies of all of the components
+  # in the selected packages.  If only as subset of the components will be
+  # worked on in the shell then we can pass a different `components` function
+  # to select those.
+, components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs) 
 , additional ? _: []
 , withHoogle ? true
 , exactDeps ? false
@@ -16,8 +25,9 @@ let
   # TODO find out why hoogle index creation can be made to work for cross compilers
   withHoogle' = withHoogle && !haskellLib.isCrossHost;
   selected = packages hsPkgs;
+  selectedComponents = components hsPkgs;
   additionalSelected = additional hsPkgs;
-  selectedConfigs = map (p: p.components.all.config) selected;
+  selectedConfigs = map (c: c.config) selectedComponents;
 
   name = if lib.length selected == 1
     then "ghc-shell-for-${(lib.head selected).identifier.name}"
@@ -45,9 +55,9 @@ let
   # Add the system libraries and build tools of the selected haskell
   # packages to the shell.
   systemInputs = removeSelectedInputs (lib.concatMap
-    (p: p.components.all.buildInputs ++ p.components.all.propagatedBuildInputs) selected);
+    (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents);
   nativeBuildInputs = removeSelected
-    (lib.concatMap (p: p.components.all.executableToolDepends) selected);
+    (lib.concatMap (c: c.executableToolDepends) selectedComponents);
 
   # Set up a "dummy" component to use with ghcForComponent.
   component = {
