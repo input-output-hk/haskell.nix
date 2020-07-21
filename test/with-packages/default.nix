@@ -19,7 +19,7 @@ let
 
       # vary component config for tests
       {
-        packages.test-with-packages.components.library.doExactConfig = dec;
+        packages.test-with-packages.components.library.doExactConfig = doExactConfig;
       }
     ];
   };
