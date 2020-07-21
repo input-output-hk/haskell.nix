@@ -284,7 +284,7 @@ file that looks like this:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = &quot;ghc883&quot;;
+      compiler-nix-name = &quot;ghc884&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
     };
@@ -305,7 +305,7 @@ inputs.  For cabal projects this means we must specify the
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = &quot;ghc883&quot;;
+      compiler-nix-name = &quot;ghc884&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -330,7 +330,7 @@ stack projects)</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = &quot;ghc883&quot;;
+      compiler-nix-name = &quot;ghc884&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -355,7 +355,7 @@ trace: To materialize, point `materialized` to a copy of /nix/store/kk047cqsjvbj
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = &quot;ghc883&quot;;
+      compiler-nix-name = &quot;ghc884&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -384,7 +384,7 @@ We can tell haskell.nix to check the materialiazation either by:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = &quot;ghc883&quot;;
+      compiler-nix-name = &quot;ghc884&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.10&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -423,7 +423,7 @@ For instance:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-project {
-      compiler-nix-name = &quot;ghc883&quot;;
+      compiler-nix-name = &quot;ghc884&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.10&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;
@@ -459,7 +459,7 @@ a non-existing path is now an error:</p>
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlintPlan = /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = &quot;ghc883&quot;;
+      compiler-nix-name = &quot;ghc884&quot;;
       name = &quot;hlint&quot;;
       version = &quot;2.2.11&quot;;
       index-state = &quot;2020-04-15T00:00:00Z&quot;;

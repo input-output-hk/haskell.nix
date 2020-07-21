@@ -269,7 +269,7 @@ This will ensure that the two builds agree.</p>
 <p>We don't generally cache much of Hackage (there's a lot of it!), except for the parts which are used by our tests.
 So this is expected, unfortunately.</p>
 <h3 id="how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected">How do I prevent the evaluation-time dependencies of my project from being garbage-collected?<a class="headerlink" href="#how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected" title="Permanent link">&para;</a></h3>
-<p>The <code>haskell-nix.roots "ghc883"</code> should include all the evaluation-time dependencies
+<p>The <code>haskell-nix.roots "ghc884"</code> should include all the evaluation-time dependencies
 and the main build time dependecies of a project using ghc 8.8.3.
 So you can add that to the relevant GC root.
 In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in <code>release.nix</code>/<code>ci.nix</code>.</p>
