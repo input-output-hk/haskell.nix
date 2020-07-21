@@ -5,7 +5,7 @@ with util;
 
 let
   pkgs = import ./pkgs.nix;
-  pkgSet = dec: mkPkgSet {
+  pkgSet = doExactConfig: mkPkgSet {
     # generated with:
     #   cabal new-build
     #   plan-to-nix -o .
