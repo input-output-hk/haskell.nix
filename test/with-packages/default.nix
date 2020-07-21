@@ -26,7 +26,7 @@ let
 
   packages = dec: (pkgSet dec).config.hsPkgs;
 
-  package = dec: (packages dec).test-with-packages;
+  package = doExactConfig: (packages doExactConfig).test-with-packages;
 
   decLibrary = (package true).components.library;
   library = (package false).components.library;
