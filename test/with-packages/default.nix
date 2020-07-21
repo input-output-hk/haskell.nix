@@ -24,7 +24,7 @@ let
     ];
   };
 
-  packages = dec: (pkgSet dec).config.hsPkgs;
+  packages = doExactConfig: (pkgSet doExactConfig).config.hsPkgs;
 
   package = doExactConfig: (packages doExactConfig).test-with-packages;
 
