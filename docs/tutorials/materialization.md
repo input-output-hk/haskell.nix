@@ -42,7 +42,7 @@ file that looks like this:
 let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = "ghc883";
+      compiler-nix-name = "ghc884";
       name = "hlint";
       version = "2.2.11";
     };
@@ -67,7 +67,7 @@ inputs.  For cabal projects this means we must specify the
 let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = "ghc883";
+      compiler-nix-name = "ghc884";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";
@@ -96,7 +96,7 @@ stack projects)
 let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = "ghc883";
+      compiler-nix-name = "ghc884";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";
@@ -126,7 +126,7 @@ To capture the nix we can do something like:
 let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = "ghc883";
+      compiler-nix-name = "ghc884";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";
@@ -161,7 +161,7 @@ If we choose to add the `checkMaterialization` flag you would have:
 let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = "ghc883";
+      compiler-nix-name = "ghc884";
       name = "hlint";
       version = "2.2.10";
       index-state = "2020-04-15T00:00:00Z";
@@ -206,7 +206,7 @@ For instance:
 let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlint = pkgs.haskell-nix.hackage-project {
-      compiler-nix-name = "ghc883";
+      compiler-nix-name = "ghc884";
       name = "hlint";
       version = "2.2.10";
       index-state = "2020-04-15T00:00:00Z";
@@ -245,7 +245,7 @@ let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;
     hlintPlan = /nix/store/kk047cqsjvbj4w8psv4l05abdcnyrqdc-hlint-plan-to-nix-pkgs;
     hlint = pkgs.haskell-nix.hackage-package {
-      compiler-nix-name = "ghc883";
+      compiler-nix-name = "ghc884";
       name = "hlint";
       version = "2.2.11";
       index-state = "2020-04-15T00:00:00Z";
