@@ -51,13 +51,15 @@ let
       s;
 
   lines = s: filter (x : x != [] && x != "") (split "\n" s);
+
+  origSrcSubDir = toString (src.origSrcSubDir or src);
 in
 
-if builtins.pathExists (toString src + "/.git")
+if builtins.pathExists (origSrcSubDir + "/.git")
 then
   let
-    hasIndex = builtins.pathExists (toString src + "/.git/index");
-    isWorktree = (builtins.readDir (toString src)).".git" == "regular";
+    hasIndex = builtins.pathExists (origSrcSubDir + "/.git/index");
+    isWorktree = (builtins.readDir origSrcSubDir).".git" == "regular";
 
     # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
@@ -74,19 +76,19 @@ then
       if hasIndex
         then { inherit src; subDir = ".git"; }
         else if !isWorktree
-          then abort "cleanGit: ${toString src + "/.git"} has no index file"
+          then abort "cleanGit: ${origSrcSubDir + "/.git"} has no index file"
           else {
             # likely a git worktree, so follow the indirection
             src =
               let
-                git_content = lines (readFile (toString src + "/.git"));
+                git_content = lines (readFile (origSrcSubDir + "/.git"));
                 first_line = head git_content;
                 prefix = "gitdir: ";
                 ok = length git_content == 1 && has_prefix prefix first_line;
               in
                 if ok
                 then /. + remove_prefix prefix first_line
-                else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
+                else abort "gitSource.nix: Cannot parse ${origSrcSubDir + "/.git"}";
     }));
 
     # Worktrees have a commondir pointing to the common `.git` dir.  We need the
@@ -102,7 +104,7 @@ then
         else gitDir + "/config";
 
     # We need the .gitmodules file for submoules to work.
-    gitModulesStr = toString src + "/.gitmodules";
+    gitModulesStr = origSrcSubDir + "/.gitmodules";
     gitModules = builtins.path { name = "gitmodules"; path = gitModulesStr; };
 
     gitSubmoduleFiles = cleanSourceWith {
@@ -154,7 +156,7 @@ then
     }
 
 else
-  trace "gitSource.nix: ${toString src} does not seem to be a git repository,\nassuming it is a clean checkout." (
+  trace "gitSource.nix: ${origSrcSubDir} does not seem to be a git repository,\nassuming it is a clean checkout." (
     cleanSourceWith {
       caller = "cleanGit";
       inherit name src subDir;
