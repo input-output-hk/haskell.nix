@@ -101,21 +101,11 @@ let
       )
       else null;
 
-  # Look for a index-state: field in the cabal.project file
-  parseIndexState = rawCabalProject:
-      let
-        indexState = pkgs.lib.lists.concatLists (
-          pkgs.lib.lists.filter (l: l != null)
-            (builtins.map (l: builtins.match "^index-state: *(.*)" l)
-              (pkgs.lib.splitString "\n" rawCabalProject)));
-      in
-        pkgs.lib.lists.head (indexState ++ [ null ]);
-
   index-state-found = if index-state != null
     then index-state
     else
       let cabalProjectIndexState = if rawCabalProject != null
-        then parseIndexState rawCabalProject
+        then pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject
         else null;
       in
         if cabalProjectIndexState != null
@@ -160,67 +150,15 @@ in
     then throw "Unknown index-state ${index-state-found}, the latest index-state I know about is ${pkgs.lib.last (builtins.attrNames index-state-hashes)}. You may need to update to a newer hackage.nix." else true);
 
 let
-  span = pred: list:
-    let n = pkgs.lib.lists.foldr (x: acc: if pred x then acc + 1 else 0) 0 list;
-    in { fst = pkgs.lib.lists.take n list; snd = pkgs.lib.lists.drop n list; };
-
-  # Parse lines of a source-repository-package block
-  parseBlockLines = blockLines: builtins.listToAttrs (builtins.concatMap (s:
-    let pair = builtins.match " *([^:]*): *(.*)" s;
-    in pkgs.lib.optional (pair != null) (pkgs.lib.attrsets.nameValuePair
-          (builtins.head pair)
-          (builtins.elemAt pair 1))) blockLines);
-
-  hashPath = path:
-    builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
-      "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
-
-  # Use pkgs.fetchgit if we have a sha256. Add comment like this
-  #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
-  # otherwise use __fetchGit.
-  fetchRepo = repo:
-    let sha256 = repo."--sha256" or (lookupSha256 repo);
-    in (if sha256 != null
-      then pkgs.evalPackages.fetchgit {
-          url = repo.location;
-          rev = repo.tag;
-          inherit sha256;
-        }
-      else
-        let drv = builtins.fetchGit {
-              url = repo.location;
-              ref = repo.tag;
-            };
-        in  __trace "WARNING: No sha256 found for source-repository-package ${repo.location} ${repo.tag} download may fail in restricted mode (hydra)"
-           (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
-            drv)
-    ) + (if repo.subdir or "" == "" then "" else "/" + repo.subdir);
-
-  # Parse a source-repository-package and fetch it if has `type: git`
-  parseBlock = block:
-    let
-      x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
-      attrs = parseBlockLines x.fst;
-    in
-      if attrs."type" or "" != "git"
-        then {
-          sourceRepo = [];
-          otherText = "\nsource-repository-package\n" + block;
-        }
-        else {
-          sourceRepo = [ (fetchRepo attrs) ];
-          otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
-        };
-
   # Deal with source-repository-packages in a way that will work in
   # restricted-eval mode (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
   # packages: block containing nix sotre paths of the fetched repos.
   replaceSoureRepos = projectFile:
     let
-      blocks = pkgs.lib.splitString "\nsource-repository-package\n" projectFile;
+      blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map parseBlock (pkgs.lib.lists.drop 1 blocks);
+      repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
       sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
       otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
