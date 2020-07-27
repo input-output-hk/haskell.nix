@@ -10,7 +10,7 @@
     overlay = (self.overlays {}).combined-eval-on-build;
     overlays = import ./overlays;
     config = import ./config.nix;
-    sources = import ./nixpkgs;
+    sources = import ./nix/sources.nix;
     nixpkgsArgs = {
       inherit (self) config;
       overlays = [ self.overlay ];
