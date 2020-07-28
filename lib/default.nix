@@ -258,5 +258,9 @@ in {
   # Find the resolver in the stack.yaml file and fetch it if a sha256 value is provided
   fetchResolver = import ./fetch-resolver.nix {
     inherit (pkgs.evalPackages) pkgs;
-  }; 
+  };
+
+  inherit (import ./cabal-project-parser.nix {
+    inherit pkgs;
+  }) parseIndexState parseBlock;
 }
