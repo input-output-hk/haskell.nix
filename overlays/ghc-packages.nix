@@ -33,6 +33,7 @@ let
       }) files);
     in final.evalPackages.runCommand "${name}${ext}" {} ''
       cp -Lr ${links} $out
+      chmod -R +w $out
     '';
 
   # Combine the all the boot package nix files for a given ghc
@@ -102,7 +103,7 @@ in rec {
           if dir == "libraries/ghc-boot"
             then final.evalPackages.runCommand "ghc-boot-src" {} ''
               cp -Lr ${value.passthru.configured-src}/${dir} $out
-              chmod -R +w $out/GHC
+              chmod -R +w $out
               cp -Lr ${value.generated}/libraries/ghc-boot/dist-install/build/GHC/* $out/GHC
             ''
             else if dir == "compiler"
