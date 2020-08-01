@@ -24,6 +24,13 @@
 let
   # TODO find out why hoogle index creation can be made to work for cross compilers
   withHoogle' = withHoogle && !haskellLib.isCrossHost;
+
+  # This will cause lorri to watch each of the cabal files for the project.
+  traceLorriReadForCabalFiles = x:
+    lib.foldr (name: haskellLib.traceLorriRead
+      (hsPkgs.${name}.src.origSrcSubDir + "/" + name + ".cabal")) x
+    (builtins.attrNames (haskellLib.selectProjectPackages hsPkgs));
+
   selected = packages hsPkgs;
   selectedComponents = components hsPkgs;
   additionalSelected = additional hsPkgs;
@@ -95,7 +102,7 @@ let
 
   mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
 in
-  stdenv.mkDerivation (mkDrvArgs // {
+  traceLorriReadForCabalFiles (stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
     buildInputs = systemInputs
@@ -120,4 +127,4 @@ in
     };
   } // lib.optionalAttrs exactDeps {
     CABAL_CONFIG = "${configFiles}/cabal.config";
-  })
+  }))
