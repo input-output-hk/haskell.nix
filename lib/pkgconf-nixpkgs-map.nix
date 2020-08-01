@@ -61,6 +61,7 @@ pkgs:
     "gtk-x11-2.0"                        = [ pkgs."gtk_x11" ];
     "gtkglext-1.0"                       = [ pkgs.gnome2.gtkglext pkgs.gtk2 ];
     "gtksourceview-3.0"                  = [ pkgs."gtksourceview3" ];
+    "harfbuzz-gobject"                   = [ pkgs."harfbuzz" ];
     "hidapi-libusb"                      = [ pkgs."hidapi" ];
     "icudata"                            = [ pkgs."icu" ];
     "icui18n"                            = [ pkgs."icu" ];
