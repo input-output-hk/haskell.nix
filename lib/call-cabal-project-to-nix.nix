@@ -352,7 +352,7 @@ let
           # hpack allows globbing, and turns that into module lists
           # without the source available (we cleaneSourceWith'd it),
           # this may not produce the right result.
-          echo No .cabal file found running hpack on $hpackFile
+          echo No .cabal file found, running hpack on $hpackFile
           hpack $hpackFile
         fi
       done
