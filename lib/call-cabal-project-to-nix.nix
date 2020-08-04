@@ -340,6 +340,14 @@ let
     fi
     cp -r ${maybeCleanedSource}/* .
     chmod +w -R .
+    # Remove package.yaml files that have already been converted
+    # to `.cabal` files.  This avoids problems where the `hpack`
+    # version used may be different.
+    for p in $(find . -name package.yaml); do
+      for c in $(dirname $p)/*.cabal; do
+        rm $p
+      done
+    done
     # warning: this may not generate the proper cabal file.
     # hpack allows globbing, and turns that into module lists
     # without the source available (we cleaneSourceWith'd it),
