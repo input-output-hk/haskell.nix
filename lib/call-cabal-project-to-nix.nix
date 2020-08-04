@@ -346,12 +346,7 @@ let
       shopt -u nullglob
       for cabalFile in $(dirname $hpackFile)/*.cabal; do
         if [ -e "$cabalFile" ]; then
-          # Remove package.yaml file as it has already been converted
-          # to a `.cabal` file.  This avoids problems where the `hpack`
-          # version used may be different and lets us clean the
-          # the component source based on the `.cabal` file.
           echo Ignoring $hpackFile as $cabalFile exists
-          rm $hpackFile
         else
           # warning: this may not generate the proper cabal file.
           # hpack allows globbing, and turns that into module lists
