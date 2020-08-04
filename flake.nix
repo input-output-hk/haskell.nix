@@ -10,7 +10,15 @@
     overlay = (self.overlays {}).combined-eval-on-build;
     overlays = import ./overlays;
     config = import ./config.nix;
-    sources = import ./nixpkgs;
+    # We can't import ./nix/sources.nix directly, because that uses nixpkgs to fetch by default,
+    # and importing nixpkgs without specifying localSystem doesn't work on flakes.
+    sources = let
+      sourcesInfo =
+        builtins.fromJSON (builtins.readFile ./nix/sources.json);
+      fetch = sourceInfo:
+        builtins.fetchTarball { inherit (sourceInfo) url sha256; };
+    in builtins.mapAttrs (_: fetch) sourcesInfo;
+
     nixpkgsArgs = {
       inherit (self) config;
       overlays = [ self.overlay ];
