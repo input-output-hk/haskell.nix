@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
 lib.makeOverridable (
 let self =
 { componentId
@@ -175,7 +175,7 @@ let
       prePatch = if (cabalFile != null)
          then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
          else lib.optionalString (cabal-generator == "hpack") ''
-           ${buildPackages.haskell-nix.haskellPackages.hpack.components.exes.hpack}/bin/hpack
+           ${buildPackages.haskell-nix.nix-tools.${compiler.nix-name}}/bin/hpack
          '';
     }
     # patches can (if they like) depend on the version and revision of the package.
