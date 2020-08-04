@@ -66,11 +66,10 @@ let
           in  __trace "WARNING: No sha256 found for source-repository-package ${repo.location} ${repo.tag} download may fail in restricted mode (hydra)"
              (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
               drv)
-      ) + subdir)
+      ) + (if subdir == "." then "" else "/" + subdir))
       (if repo ? subdir
-        then builtins.map (x: "/" + x) (
-          pkgs.lib.filter (x: x != "") (pkgs.lib.splitString " " repo.subdir))
-        else [""]);
+        then pkgs.lib.filter (x: x != "") (pkgs.lib.splitString " " repo.subdir)
+        else ["."]);
 
   # Parse a source-repository-package and fetch it if has `type: git`
   parseBlock = cabalProjectFileName: lookupSha256: block:
