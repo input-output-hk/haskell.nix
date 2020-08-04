@@ -340,11 +340,24 @@ let
     fi
     cp -r ${maybeCleanedSource}/* .
     chmod +w -R .
-    # warning: this may not generate the proper cabal file.
-    # hpack allows globbing, and turns that into module lists
-    # without the source available (we cleaneSourceWith'd it),
-    # this may not produce the right result.
-    find . -name package.yaml -exec hpack "{}" \;
+    # Decide what to do for each `package.yaml` file.
+    for hpackFile in $(find . -name package.yaml); do (
+      # Look to see if a `.cabal` file exists
+      shopt -u nullglob
+      for cabalFile in $(dirname $hpackFile)/*.cabal; do
+        if [ -e "$cabalFile" ]; then
+          echo Ignoring $hpackFile as $cabalFile exists
+        else
+          # warning: this may not generate the proper cabal file.
+          # hpack allows globbing, and turns that into module lists
+          # without the source available (we cleaneSourceWith'd it),
+          # this may not produce the right result.
+          echo No .cabal file found, running hpack on $hpackFile
+          hpack $hpackFile
+        fi
+      done
+      )
+    done
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${fixedProject.makeFixedProjectFile}
     ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
