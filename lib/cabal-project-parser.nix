@@ -68,7 +68,7 @@ let
               drv)
       ) + subdir)
       (if repo ? subdir
-        then builtins.map (x: "/" + x) (
+        then builtins.map (x: if x == "." then "" else "/" + x) (
           pkgs.lib.filter (x: x != "") (pkgs.lib.splitString " " repo.subdir))
         else [""]);
 
