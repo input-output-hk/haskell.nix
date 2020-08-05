@@ -167,6 +167,7 @@ let
     callStackToNix = callTest ./call-stack-to-nix {};
     callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit compiler-nix-name; };
     cabal-source-repo = callTest ./cabal-source-repo { inherit compiler-nix-name; };
+    cabal-source-repo-comments = callTest ./cabal-source-repo-comments { inherit compiler-nix-name; };
     buildable = callTest ./buildable { inherit compiler-nix-name; };
     project-flags-cabal = callTest ./project-flags/cabal.nix { inherit compiler-nix-name; };
     project-flags-stack = callTest ./project-flags/stack.nix {};
