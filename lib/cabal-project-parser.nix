@@ -14,11 +14,38 @@ let
       in
         pkgs.lib.lists.head (indexState ++ [ null ]);
 
+  # Remove the indentation of the first line from all the lines
+  unindent = blockLines: (pkgs.lib.foldl' ({matchString, out}: s:
+    let
+      m = builtins.match matchString s;
+    in
+      if m != null
+        then {
+          matchString = "(${builtins.head m})(.*)";
+          out = out ++ [(builtins.elemAt m 1)];
+        }
+        else {
+          inherit matchString out;
+        }
+    ) { matchString = "( *)(.*)"; out = []; } blockLines).out;
+
+  # Strip comments except `--sha256`
+  stripComments = blockLines: pkgs.lib.filter (s: s != "") (
+    pkgs.lib.foldl' (out: s:
+      let
+        m = builtins.match "(.*)--.*" s;
+      in
+        if !(pkgs.lib.hasPrefix "--sha256" s) && m != null
+          then out ++ [(builtins.head m)]
+          else out ++ [s]
+      ) [] blockLines
+    );
+
   # Parse lines of a source-repository-package block
   parseBlockLines = blockLines: (pkgs.lib.foldl' ({name, attrs}: s:
     let
       # Look for a new attribute name
-      pair = builtins.match " *([^:]*): *(.*)" s;
+      pair = builtins.match "([^ :]*): *(.*)" s;
 
       # Function to build the next parse state when the attribute name is known
       nextState = name: value: {
@@ -40,7 +67,7 @@ let
           if name != null
             then nextState name s # Append another line to the current attirbute
             else __trace "Expected attribute but found `${s}`" { inherit name attrs; }
-    ) { name = null; attrs = {}; } blockLines).attrs;
+    ) { name = null; attrs = {}; } (stripComments (unindent blockLines))).attrs;
 
   hashPath = path:
     builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
