@@ -52,9 +52,9 @@ let
         if ghc != null
           then __trace ("WARNING: A `ghc` argument was passed" + forName
             + " this has been deprecated in favour of `compiler-nix-name`. "
-            + "Using `ghc` will break cross compilation setups, as haskell.nix can not"
+            + "Using `ghc` will break cross compilation setups, as haskell.nix cannot "
             + "pick the correct `ghc` package from the respective buildPackages. "
-            + "For example use `compiler-nix-name = \"ghc865\";` for ghc 8.6.5") ghc
+            + "For example, use `compiler-nix-name = \"ghc865\";` for GHC 8.6.5.") ghc
           else
               # Do note that `pkgs = final.buildPackages` in the `overlays/haskell.nix`
               # call to this file. And thus `pkgs` here is the proper `buildPackages`
