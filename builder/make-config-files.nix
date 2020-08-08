@@ -119,13 +119,6 @@ in
     ''}
 
     for p in ${lib.concatStringsSep " " libDeps}; do
-      ${ # Sanity check for https://github.com/input-output-hk/haskell.nix/issues/660
-      ''
-      if [[ ! -s $p/envDep ]]; then
-        echo "ERROR: Missing or empty file $p/envDep"
-        exit 0
-      fi
-      ''}
       cat $p/envDep >> $out/ghc-environment
       ${ lib.optionalString component.doExactConfig ''
         cat $p/exactDep/configure-flags >> $out/configure-flags

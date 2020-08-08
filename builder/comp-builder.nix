@@ -305,23 +305,26 @@ let
         mkdir -p $out/exactDep
         touch $out/exactDep/configure-flags
         touch $out/exactDep/cabal.config
+        touch $out/envDep
 
         if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
           echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
+          echo "package-id $id" >> $out/envDep
         elif id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
           name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
           # so we are dealing with a sublib. As we build sublibs separately, the above
           # query should be safe.
           echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+        else
+          echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
+          exit 0
         fi
         if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
           echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
           echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
-        fi
-
-        touch $out/envDep
-        if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
-          echo "package-id $id" >> $out/envDep
+        else
+          echo 'ERROR: ${package.identifier.name} version could not be found with ${target-pkg-and-db}'
+          exit 0
         fi
       ''}
       ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
