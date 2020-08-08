@@ -48,8 +48,8 @@ let
       };
 
       meta = {
-        homepage = package.homepage;
-        description = package.synopsis;
+        homepage = package.homepage or "";
+        description = package.synopsis or "";
         license =
           let
             license-map = import ../lib/cabal-licenses.nix lib;
