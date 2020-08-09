@@ -23,8 +23,6 @@ in rec {
     pkgs.recurseIntoAttrs {
       ghcide-020 = tool compiler-nix-name "ghcide" "0.2.0";
       cabal-32 = tool compiler-nix-name "cabal" "3.2.0.0";
-    } // pkgs.lib.optionalAttrs (compiler-nix-name != "ghc8101") {
-      ghcide-object-code = tool compiler-nix-name "ghcide" "object-code";
     }
   );
 

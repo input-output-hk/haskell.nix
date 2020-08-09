@@ -129,9 +129,9 @@ in {
                 # the first one is a prerequisite.
                 # both are trimmed to only include the make build system part and not the
                 # hadrian one.
-                ++ fromUntil "8.8"  "8.12"     ./patches/ghc/bec76733b818b0489ffea0834ab6b1560207577c.patch
+                ++ fromUntil "8.8"  "8.10.2"   ./patches/ghc/bec76733b818b0489ffea0834ab6b1560207577c.patch
                 ++ fromUntil "8.8"  "8.8.4"    ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
-                ++ fromUntil "8.10" "8.12"     ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
+                ++ fromUntil "8.10" "8.10.2"   ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
                 ;
         in ({
@@ -346,6 +346,28 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.1";
+            };
+            ghc8102 =
+              let
+                buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
+              in final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = buildPkgs.haskell-nix.compiler.ghc884;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "8.10.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "02w8n085bw38vyp694j0lfk5wcnwkdaj7hhp0saj71x74533lmww";
+                };
+
+                ghc-patches = ghc-patches "8.10.2";
             };
         } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
