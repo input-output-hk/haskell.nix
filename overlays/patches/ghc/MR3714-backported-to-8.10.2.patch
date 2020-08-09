@@ -174,7 +174,7 @@ index d10a6900db..32151e27cf 100644
 +      SymI_NeedsProto(__lshrdi3)                       \
 +      SymI_NeedsProto(__fixunsdfdi)
 +#elif defined(__GNUC__) && SIZEOF_VOID_P == 8
-+#define RTS_LIBGCC_SYMBOLS
++#define RTS_LIBGCC_SYMBOLS                             \
        SymI_NeedsProto(__udivti3)                       \
        SymI_NeedsProto(__umodti3)
 -
