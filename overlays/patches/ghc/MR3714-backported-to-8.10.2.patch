@@ -1,5 +1,5 @@
 diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
-index d10a6900db..32151e27cf 100644
+index d10a6900db..b2f90a892d 100644
 --- a/rts/RtsSymbols.c
 +++ b/rts/RtsSymbols.c
 @@ -58,6 +58,7 @@
@@ -239,7 +239,25 @@ index d10a6900db..32151e27cf 100644
  #define SymI_NeedsDataProto(vvv)  extern StgWord vvv[];
  #if defined(COMPILING_WINDOWS_DLL)
  #define SymE_HasProto(vvv)    SymE_HasProto(vvv);
-@@ -1251,8 +1068,6 @@ RTS_LINKER_SYMBOLS
+@@ -1209,8 +1026,6 @@ RTS_DARWIN_ONLY_SYMBOLS
+ RTS_OPENBSD_ONLY_SYMBOLS
+ RTS_LIBGCC_SYMBOLS
+ RTS_LIBFFI_SYMBOLS
+-RTS_SSP_SYMBOLS
+-RTS_LINKER_SYMBOLS
+ #undef SymI_NeedsProto
+ #undef SymI_NeedsDataProto
+ #undef SymI_HasProto
+@@ -1230,7 +1045,7 @@ RTS_LINKER_SYMBOLS
+ #define SymE_HasDataProto(vvv) \
+                     SymE_HasProto(vvv)
+ 
+-#define SymI_NeedsProto(vvv,...) SymI_HasProto(vvv ## __VA_ARGS__)
++#define SymI_NeedsProto(vvv) SymI_HasProto(vvv)
+ #define SymI_NeedsDataProto(vvv) SymI_HasDataProto(vvv)
+ #define SymE_NeedsProto(vvv) SymE_HasProto(vvv)
+ #define SymE_NeedsDataProto(vvv) SymE_HasDataProto(vvv)
+@@ -1251,8 +1066,6 @@ RTS_LINKER_SYMBOLS
  #define SymI_HasProto_deprecated(vvv)   \
     { #vvv, (void*)0xBAADF00D, true },
  
@@ -248,7 +266,7 @@ index d10a6900db..32151e27cf 100644
  RtsSymbolVal rtsSyms[] = {
        RTS_SYMBOLS
        RTS_RET_SYMBOLS
-@@ -1264,14 +1079,11 @@ RtsSymbolVal rtsSyms[] = {
+@@ -1264,14 +1077,11 @@ RtsSymbolVal rtsSyms[] = {
        RTS_LIBGCC_SYMBOLS
        RTS_LIBFFI_SYMBOLS
        SymI_HasDataProto(nonmoving_write_barrier_enabled)
