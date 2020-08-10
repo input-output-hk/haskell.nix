@@ -126,7 +126,7 @@ let
     ++ [targetLibffi]
     ++ stdenv.lib.optional (!enableIntegerSimple) gmp
     ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
-    ++ stdenv.lib.optional platform.isLinux numactl;
+    ++ stdenv.lib.optional (platform.isLinux && !platform.isAarch32) numactl;
 
   toolsForTarget =
     if hostPlatform == buildPlatform then
