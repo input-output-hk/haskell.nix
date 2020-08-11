@@ -17,7 +17,7 @@
     ghc865 = {};
   } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
     ghc884 = {};
-    ghc8101 = {};
+    ghc8102 = {};
   });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
@@ -28,7 +28,7 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (system == "x86_64-linux" && compiler-nix-name != "ghc8101") {
+    in lib.optionalAttrs (system == "x86_64-linux" && compiler-nix-name != "ghc8102") {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux") {
