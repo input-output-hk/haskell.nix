@@ -174,9 +174,12 @@ let
 
       prePatch = if (cabalFile != null)
          then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
-         else lib.optionalString (cabal-generator == "hpack") ''
-           ${buildPackages.haskell-nix.nix-tools.${compiler.nix-name}}/bin/hpack
-         '';
+         else
+           # When building hpack package we use the internal nix-tools
+           # (compiled with a fixed GHC version)
+           lib.optionalString (cabal-generator == "hpack") ''
+             ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
+           '';
     }
     # patches can (if they like) depend on the version and revision of the package.
     // lib.optionalAttrs (patches != []) {
