@@ -21,8 +21,8 @@ in
 , caller               ? "callCabalProjectToNix" # Name of the calling funcion for better warning messages
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
-, nix-tools     ? evalPackages.haskell-nix.nix-tools.${compiler-nix-name}     # When building cabal projects we use the nix-tools
-, cabal-install ? evalPackages.haskell-nix.cabal-install.${compiler-nix-name} # and cabal-install compiled with matching ghc version
+, nix-tools     ? evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}     # When building cabal projects we use the nix-tools
+, cabal-install ? evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name} # and cabal-install compiled with matching ghc version
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
                      # If the tests and benchmarks are not needed and they
@@ -212,14 +212,21 @@ let
   # The solution here is to capture the GHC outputs that `cabal v2-configure`
   # requests and materialize it so that the real GHC is only needed
   # when `checkMaterialization` is set.
-  dummy-ghc-data = pkgs.haskell-nix.materialize ({
-    sha256 = null;
-    sha256Arg = "sha256";
-    materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
-    reasonNotSafe = null;
-  } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
-    inherit checkMaterialization;
-  }) (
+  dummy-ghc-data =
+    let
+      materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
+    in pkgs.haskell-nix.materialize ({
+      sha256 = null;
+      sha256Arg = "sha256";
+      materialized = if __pathExists materialized
+        then materialized
+        else __trace ("WARNING: No materialized dummy-ghc-data for "
+            + "${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}.")
+          null;
+      reasonNotSafe = null;
+    } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
+      inherit checkMaterialization;
+    }) (
   runCommand ("dummy-data-" + ghc.name) {
     nativeBuildInputs = [ ghc ];
   } ''
