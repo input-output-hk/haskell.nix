@@ -15,14 +15,20 @@
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
     inherit (import ./default.nix { inherit checkMaterialization; }) nixpkgsArgs;
     inherit runTests;
-  }) ({
-    ghc865 = true;
-  } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
-    ghc883 = false;
-    ghc884 = true;
-    ghc8101 = false;
-    ghc8102 = true;
-  });
+  }) (
+    # GHC version to cache and whether to run the tests against them.
+    # This list of GHC versions should include everything for which we
+    # have a ./materialized/ghcXXX directory containing the materialized
+    # cabal-install and nix-tools plans.  When removing a ghc version
+    # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
+    {
+      ghc865 = true;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
+      ghc883 = false;
+      ghc884 = true;
+      ghc8101 = false;
+      ghc8102 = true;
+    });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
     linux = "x86_64-linux";
