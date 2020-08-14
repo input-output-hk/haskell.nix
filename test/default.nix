@@ -214,7 +214,7 @@ let
   # - input ifdLevel is 3 or greater: return allTests
   optionalIfdTests = ifdLevel:
     pkgs.lib.optionalAttrs (ifdLevel > 1) (allTestsWithIfdInputs ifdLevel);
-in optionalIfdTests ifdLevel
+in pkgs.recurseIntoAttrs (optionalIfdTests ifdLevel)
 
 ## more possible test cases
 # 1. fully static linking
