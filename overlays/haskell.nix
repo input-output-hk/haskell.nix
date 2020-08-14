@@ -549,7 +549,7 @@ final: prev: {
               stack-nix = callProjectResults.projectNix;
               tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
               tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
-              roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+              roots = final.haskell-nix.stackRoots pkg-set.config.compiler.nix-name;
            };
 
         stackProject = args: let p = stackProject' args;
@@ -626,6 +626,13 @@ final: prev: {
         roots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
           (final.lib.mapAttrsToList (name: path: { inherit name path; })
             (roots' compiler-nix-name 2));
+
+        # Like `roots` but with the internal-nix-tools added
+        stackRoots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
+          (final.lib.mapAttrsToList (name: path: { inherit name path; })
+            (roots' compiler-nix-name 2 // {
+              inherit (final.buildPackages.haskell-nix) internal-nix-tools;
+            }));
 
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({
