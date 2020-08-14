@@ -8,8 +8,11 @@ you update the `spec.sha256` or the other versions source will be used.
 Check the LLVM version that should be used in the
 [ghc wiki](https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/backends/llvm/installing).
 
+## Update the list of cached GHC versions in `ci.nix`
 
-## Update the materialized files
+## Update [supported ghc versions](supported-ghc-versions.md) document
+
+## Add the materialized files
 
 In the haskell.nix repo run:
 
