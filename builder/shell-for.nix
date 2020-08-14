@@ -15,6 +15,7 @@
   # worked on in the shell then we can pass a different `components` function
   # to select those.
 , components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs) 
+  # Additional packages to be added unconditionally
 , additional ? _: []
 , withHoogle ? true
 , exactDeps ? false
@@ -24,39 +25,57 @@
 let
   # TODO find out why hoogle index creation can be made to work for cross compilers
   withHoogle' = withHoogle && !haskellLib.isCrossHost;
-  selected = packages hsPkgs;
-  selectedComponents = components hsPkgs;
-  additionalSelected = additional hsPkgs;
-  selectedConfigs = map (c: c.config) selectedComponents;
 
-  name = if lib.length selected == 1
-    then "ghc-shell-for-${(lib.head selected).identifier.name}"
+  selectedPackages = packages hsPkgs;
+  additionalPackages = additional hsPkgs;
+  selectedComponents = components hsPkgs;
+
+  # The configs of all the selected components
+  selectedConfigs = map (c: c.config) selectedComponents ++ map (p: p.setup.config) selectedPackages;
+
+  name = if lib.length selectedPackages == 1
+    then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
     else "ghc-shell-for-packages";
 
-  # Removes the selected packages from a list of packages.
-  # If `packages = [ a b ]` and `a` depends on `b`, don't build `b`,
-  # because cabal will end up ignoring that built version;
-  removeSelected = lib.filter
-    (input: lib.all (cfg: (input.identifier or null) != cfg.identifier) selected);
-  # Also since a will include the library component of b in its buildInputs
-  # (to make `propagatedBuildInputs` of `pkgconfig-depends` work) those should
-  # also be excluded (the pkgconfig depends of b will still be included in the
-  # system shells buildInputs via b's own buildInputs).
-  removeSelectedInputs = lib.filter
-    (input: lib.all (cfg: input != cfg.components.library or null) selected);
+  # Given a `packages = [ a b ]` we construct a shell with the dependencies of `a` and `b`.
+  #
+  # But if `a` depends on `b`, we don't want to include `b`, because
+  # - cabal will end up ignoring that built version;
+  # - The user has indicated that's what they're working on, so they probably don't want to have to build
+  #   it first (and it will change often).
+  # Generally we never want to include any of (the components of) the selected packages as dependencies.
+  #
+  # Furthermore, if `a` depends on `b`, `a` will include the library component of `b` in its `buildInputs`
+  # (to make `propagatedBuildInputs` of `pkgconfig-depends` work). So we also need to filter those
+  # (the pkgconfig depends of `b` will still be included in the
+  # system shell's `buildInputs` via `b`'s own `buildInputs`).
+  # We have to do this slightly differently because we will be looking at the actual components rather
+  # than the packages.
 
-  packageInputs =
-    removeSelected
-      (lib.concatMap (cfg: cfg.depends) selectedConfigs
-      ++ lib.concatMap (cfg: cfg.setup.config.depends or []) selected
-      )
-    ++ additionalSelected;
+  # Given a list of packages, removes those which were selected as part of the shell.
+  # We do this on the basis of their identifiers being the same, not direct equality (why?).
+  removeSelectedPackages =
+    # All the identifiers of the selected packages
+    let selectedPackageIds = map (p: p.identifier) selectedPackages;
+    in lib.filter (input: !(builtins.elem (input.identifier or null) selectedPackageIds));
 
-  # Add the system libraries and build tools of the selected haskell
-  # packages to the shell.
+  # Given a list of derivations, removes those which are components of packages which were selected as part of the shell.
+  removeSelectedInputs =
+    # All the components of the selected packages: we shouldn't add any of these as dependencies
+    let selectedPackageComponents = lib.concatMap haskellLib.getAllComponents selectedPackages;
+    in lib.filter (input: !(builtins.elem input selectedPackageComponents));
+
+  # We need to remove any dependencies which are selected packages (see above).
+  # `depends` contains packages so we use 'removeSelectedPackages`.
+  packageInputs = removeSelectedPackages (lib.concatMap (cfg: cfg.depends) selectedConfigs) ++ additionalPackages;
+
+  # Add the system libraries and build tools of the selected haskell packages to the shell.
+  # We need to remove any inputs which are selected components (see above).
+  # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends`  contain component
+  # derivations, not packages, so we use `removeSelectedInputs`).
   systemInputs = removeSelectedInputs (lib.concatMap
     (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents);
-  nativeBuildInputs = removeSelected
+  nativeBuildInputs = removeSelectedInputs
     (lib.concatMap (c: c.executableToolDepends) selectedComponents);
 
   # Set up a "dummy" component to use with ghcForComponent.
