@@ -21,6 +21,7 @@
     # have a ./materialized/ghcXXX directory containing the materialized
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
+    # Update supported-ghc-versions.md to reflect any changes made here.
     {
       ghc865 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
