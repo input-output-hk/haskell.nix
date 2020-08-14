@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Adding a new GHC version to haskell.nix - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Supported GHC Versions - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Adding a new GHC version to haskell.nix";
-    var mkdocs_page_input_path = "adding-new-ghc.md";
+    var mkdocs_page_name = "Supported GHC Versions";
+    var mkdocs_page_input_path = "supported-ghc-versions.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -199,10 +199,10 @@
     
       
     
-    <li>Adding a new GHC version to haskell.nix</li>
+    <li>Supported GHC Versions</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/adding-new-ghc.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/supported-ghc-versions.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -212,30 +212,35 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="adding-a-new-ghc-version-to-haskellnix">Adding a new GHC version to haskell.nix<a class="headerlink" href="#adding-a-new-ghc-version-to-haskellnix" title="Permanent link">&para;</a></h1>
-<h2 id="update-overlaysbootstrapnix">Update <code>overlays/bootstrap.nix</code><a class="headerlink" href="#update-overlaysbootstrapnix" title="Permanent link">&para;</a></h2>
-<p>Each ghc version is defined in this file.  Duplicate one of the exising
-ghc version definitions and replace the version numbers.  Make sure
-you update the <code>spec.sha256</code> or the other versions source will be used.
-Check the LLVM version that should be used in the
-<a href="https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/backends/llvm/installing">ghc wiki</a>.</p>
-<h2 id="update-the-list-of-cached-ghc-versions-in-cinix">Update the list of cached GHC versions in <code>ci.nix</code><a class="headerlink" href="#update-the-list-of-cached-ghc-versions-in-cinix" title="Permanent link">&para;</a></h2>
-<h2 id="update-supported-ghc-versions-document">Update <a href="../supported-ghc-versions/">supported ghc versions</a> document<a class="headerlink" href="#update-supported-ghc-versions-document" title="Permanent link">&para;</a></h2>
-<h2 id="add-the-materialized-files">Add the materialized files<a class="headerlink" href="#add-the-materialized-files" title="Permanent link">&para;</a></h2>
-<p>In the haskell.nix repo run:</p>
-<pre><code>mkdir materialized/ghc884
-nix-build scripts/check-compiler-materialization --argstr compiler-nix-name ghc884
-</code></pre>
-
-<p>The <code>nix-build</code> command will fail with something like:</p>
-<pre><code>Materialized nix used for dummy-data-x86_64-unknown-linux-musl-ghc-8.10.1 incorrect. To fix run: /nix/store/wnwpyrhv4nxgyljz3f20gdpspjxvm7h4-updateMaterialized
-</code></pre>
-
-<p>Run the <code>updateMaterialized</code> script and repat the <code>nix-build</code> until it no longer fails.
-If the failure is not a problem with materialization and no <code>updateMaterialized</code> script
-is provided then you may need to fix the failure another way or (if it only relates to
-one of the cross compilers) modify <code>scripts/check-compiler-materialization/default.nix</code>
-so that it skips that compiler.</p>
+                <h1 id="supported-ghc-versions">Supported GHC Versions<a class="headerlink" href="#supported-ghc-versions" title="Permanent link">&para;</a></h1>
+<p>The following versions of GHC built on the CI servers and should be included
+in the cache (for the default haskell.nix <code>nixpkgs</code>).</p>
+<ul>
+<li>8.6.5 <code>compiler-nix-name = "ghc865";</code></li>
+<li>8.8.3 <code>compiler-nix-name = "ghc883";</code></li>
+<li>8.8.4 <code>compiler-nix-name = "ghc884";</code></li>
+<li>8.10.1 <code>compiler-nix-name = "ghc8101";</code></li>
+<li>8.10.2 <code>compiler-nix-name = "ghc8102";</code></li>
+</ul>
+<p>Full test suite is run against 8.6.5, 8.8.4 and 8.10.2.</p>
+<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix">ci.nix</a>
+for the list of tested GHC versions.</p>
+<p>The following GHC versions are not included in CI and will not be cached:</p>
+<ul>
+<li>8.4.4 <code>compiler-nix-name = "ghc844";</code></li>
+<li>8.6.1 <code>compiler-nix-name = "ghc861";</code></li>
+<li>8.6.2 <code>compiler-nix-name = "ghc862";</code></li>
+<li>8.6.3 <code>compiler-nix-name = "ghc863";</code></li>
+<li>8.6.4 <code>compiler-nix-name = "ghc864";</code></li>
+<li>8.8.1 <code>compiler-nix-name = "ghc881";</code></li>
+<li>8.8.2 <code>compiler-nix-name = "ghc882";</code></li>
+</ul>
+<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix">overlays/bootstrap.nix</a>
+for a list of all the valid <code>compiler-nix-names</code>.</p>
+<p>See also:</p>
+<ul>
+<li><a href="../adding-new-ghc/">Instructions on adding new ghc versions</a>.</li>
+</ul>
               
             </div>
           </div>
