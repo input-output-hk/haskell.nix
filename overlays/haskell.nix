@@ -630,9 +630,11 @@ final: prev: {
         # Like `roots` but with the internal-nix-tools added
         stackRoots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
           (final.lib.mapAttrsToList (name: path: { inherit name path; })
-            (roots' compiler-nix-name 2 // {
+            (stackRoots' compiler-nix-name 2));
+        stackRoots' = compiler-nix-name: ifdLevel: roots' compiler-nix-name ifdLevel //
+            final.lib.optionalAttrs (ifdLevel > 1) {
               inherit (final.buildPackages.haskell-nix) internal-nix-tools;
-            }));
+            };
 
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({
@@ -658,8 +660,8 @@ final: prev: {
               final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
-            cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
+            nix-tools = final.buildPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
+            cabal-install = final.buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
             inherit (final.ghc-extra-packages."${compiler-nix-name}"
