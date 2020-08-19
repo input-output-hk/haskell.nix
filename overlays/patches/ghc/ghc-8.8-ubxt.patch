@@ -12,7 +12,7 @@ index 743631527e..b01d6640c3 100644
  fromStgWord :: StgWord -> Integer
  fromStgWord (StgWord i) = toInteger i
 diff --git a/compiler/ghci/ByteCodeAsm.hs b/compiler/ghci/ByteCodeAsm.hs
-index e3c18b93a2..c0bd185521 100644
+index e3c18b93a2..5d35db192f 100644
 --- a/compiler/ghci/ByteCodeAsm.hs
 +++ b/compiler/ghci/ByteCodeAsm.hs
 @@ -7,7 +7,7 @@
@@ -74,7 +74,7 @@ index e3c18b93a2..c0bd185521 100644
      literal (LitLabel fs (Just sz) _)
       | platformOS (targetPlatform dflags) == OSMinGW32
           = litlabel (appendFS fs (mkFastString ('@':show sz)))
-@@ -481,27 +486,99 @@ assembleI dflags i = case i of
+@@ -481,27 +486,100 @@ assembleI dflags i = case i of
  isLarge :: Word -> Bool
  isLarge n = n > 65535
  
@@ -100,8 +100,9 @@ index e3c18b93a2..c0bd185521 100644
 +-}
 +
 +non_void :: [ArgRep] -> [ArgRep]
-+non_void (V:xs) = xs
-+non_void xs     = xs
++non_void = filter nv
++  where nv V = False
++        nv _ = True
 +
 +push_alts_unlifted :: DynFlags -> ProtoBCO Name -> [ArgRep] -> Assembler ()
 +push_alts_unlifted dflags proto args = do
