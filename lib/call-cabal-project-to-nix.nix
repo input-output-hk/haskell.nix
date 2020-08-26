@@ -237,6 +237,11 @@ let
     ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
     ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
     ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
+    ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+      ${ghc.targetPrefix}ghc --numeric-ghc-version > $out/ghc/numeric-ghc-version
+      ${ghc.targetPrefix}ghc --numeric-ghcjs-version > $out/ghc/numeric-ghcjs-version
+      ${ghc.targetPrefix}ghc-pkg --numeric-ghcjs-version > $out/ghc-pkg/numeric-ghcjs-version
+    ''}
     # The order of the `ghc-pkg dump` output seems to be non
     # deterministic so we need to sort it so that it is always
     # the same.
@@ -271,6 +276,14 @@ let
         --numeric-version*)
           cat ${dummy-ghc-data}/ghc/numeric-version
           ;;
+      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+        --numeric-ghc-version*)
+          cat ${dummy-ghc-data}/ghc/numeric-ghc-version
+          ;;
+        --numeric-ghcjs-version*)
+          cat ${dummy-ghc-data}/ghc/numeric-ghcjs-version
+          ;;
+      ''}
         --supported-languages*)
           cat ${dummy-ghc-data}/ghc/supported-languages
           ;;
@@ -303,6 +316,11 @@ let
         --version)
           cat ${dummy-ghc-data}/ghc-pkg/version
           ;;
+      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+        --numeric-ghcjs-version)
+          cat ${dummy-ghc-data}/ghc-pkg/numeric-ghcjs-version
+          ;;
+      ''}
         'dump --global -v0')
           cat ${dummy-ghc-data}/ghc-pkg/dump-global
           ;;
@@ -394,6 +412,8 @@ let
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests \
         --enable-benchmarks \
+        ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
+            "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
         ${configureArgs}
 
     mkdir -p $out

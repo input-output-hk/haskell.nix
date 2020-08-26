@@ -56,13 +56,21 @@ let
       (p: "${p.configFiles}")
       libDeps;
     in lib.concatStringsSep "\" \"" xs;
-  libs     = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
-in
-  runCommand "${ghc.targetPrefix}${fullName}-config" {
+  libs = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
+  drv = runCommand "${ghc.targetPrefix}${fullName}-config" {
       nativeBuildInputs = [ghc];
       passthru = {
         inherit (ghc) targetPrefix;
-        inherit ghcCommand ghcCommandCaps libDir packageCfgDir;
+        inherit ghcCommand ghcCommandCaps libDir packageCfgDir component;
+        # Use ''${pkgroot} relative paths so that we can relocate the package database
+        # along with referenced packages and still have it work on systems with
+        # or without nix installed.
+        relocatableConfigFiles = runCommand "${ghc.targetPrefix}${fullName}-relocatable-config" ''
+          cp -r ${drv} $out
+          chmod -R +w $out
+          sed -i 's|/nix/store/|''${pkgroot}/../../../|' $out/${packageCfgDir}/*.conf
+          ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
+        '';
       };
     } (''
     mkdir -p $out
@@ -186,4 +194,5 @@ in
     done
   '' + ''
     ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
-  '')
+  '');
+in drv

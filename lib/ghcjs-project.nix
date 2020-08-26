@@ -1,3 +1,7 @@
+# IMPORTANT: This is for building ghcjs, not for building with
+# ghcjs. To build with ghcjs then just replace `haskell-nix`
+# with `pkgsCross.ghcjs.haskell-nix`.
+#
 # For the time being we can't really treat ghcjs like a
 # regular ghc (with different target). We need this as a
 # stop-gap measure until ghcjs can be treated like a regular
@@ -17,15 +21,18 @@
 # of the project.
 { pkgs }:
 { src
-, ghc ? pkgs.ghc
-, ghcjsVersion ? "8.6.0.1" # TODO get this from the source?
-, ghcVersion ? "8.6.5"     # TODO get this from the ghc arg?
-, happy ? pkgs.haskellPackages.happy
-, alex ? pkgs.haskellPackages.alex
-, cabal-install ? pkgs.cabal-install
+, compiler-nix-name
+, ghc ? pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}
+, ghcjsVersion
+, ghcVersion ? ghc.version
+, happy ? pkgs.haskell-nix.tool compiler-nix-name "happy" "1.19.12"
+, alex ? pkgs.haskell-nix.tool compiler-nix-name "alex" "3.2.5"
+, cabal-install ? pkgs.haskell-nix.cabal-install.${compiler-nix-name}
 , ...
 }@args:
 let
+    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" > 0;
+
     # Inputs needed to configure the GHCJS source tree
     configureInputs = with pkgs; [
             perl
@@ -38,8 +45,19 @@ let
             alex
             cabal-install
         ];
+    # nixpkgs does not have an emsdk, this derivation uses symlinks to make something
+    # that matches enought for `ghcjs-boot` to work
+    emscriptenupstream = pkgs.buildPackages.emscriptenupstream;
+    emscripten = pkgs.buildPackages.emscripten.override {
+      emscriptenBackend = emscriptenupstream;
+    };
+    emsdk = pkgs.linkFarm "emsdk" [
+      { name = "upstream/bin"; path = emscriptenupstream + "/bin"; }
+      { name = "upstream/emscripten"; path = emscripten + "/bin"; }
+      { name = "share"; path = emscripten + "/share"; }
+    ];
     # Inputs needed to boot the GHCJS compiler
-    bootInputs = with pkgs; [
+    bootInputs = with pkgs.buildPackages; [
             nodejs
             makeWrapper
             xorg.lndir
@@ -49,7 +67,8 @@ let
         ++ [ ghc cabal-install ]
         ++ lib.optionals stdenv.isDarwin [
           pkgs.buildPackages.gcc # https://github.com/ghcjs/ghcjs/issues/663
-        ];
+        ]
+        ++ lib.optional isGhcjs88 [ emsdk ];
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {
         buildInputs = configureInputs;
@@ -66,31 +85,40 @@ let
         sed -i 's/RELEASE=NO/RELEASE=YES/' ghc/configure.ac
         sed -i 's/${ghcjsVersion}/${ghcVersion}/' ghcjs.cabal
 
-        # TODO: How to actually fix this?
-        # Seems to work fine and produce the right files.
-        touch ghc/includes/ghcautoconf.h
-        mkdir -p ghc/compiler/vectorise
-        mkdir -p ghc/utils/haddock/haddock-library/vendor
+        ${
+          # TODO: How to actually fix this?
+          # Seems to work fine and produce the right files.
+          pkgs.lib.optionalString (!isGhcjs88) ''
+            touch ghc/includes/ghcautoconf.h
+            mkdir -p ghc/compiler/vectorise
+            mkdir -p ghc/utils/haddock/haddock-library/vendor
+          ''
+        }
+
+        rm -rf utils/pkg-cache
+        cp -r ${ghc.generated} utils/pkg-cache
 
         patchShebangs .
         sed -i 's/gcc /cc /g' utils/makePackages.sh
-        cat utils/makePackages.sh
         ./utils/makePackages.sh copy
 
-        echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
-
-        # nuke the HsBaseConfig.h from base.buildinfo.in; this will
-        # prevent it from being installed and provide incorrect values.
-        sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
-        cat lib/boot/pkg/base/base.buildinfo.in
-        '';
+        ${
+          # nuke the HsBaseConfig.h from base.buildinfo.in; this will
+          # prevent it from being installed and provide incorrect values.
+          pkgs.lib.optionalString (!isGhcjs88) ''
+            echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
+            sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
+          ''
+        }'';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (
         (pkgs.lib.filterAttrs 
-            (n: _: builtins.any (x: x == n)
-                ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"]) args) // {
+            (n: _: !(builtins.any (x: x == n)
+                ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"])) args) // {
         src = configured-src;
+        compiler-nix-name = if isGhcjs88 then "ghc883" else "ghc865";
+        configureArgs = pkgs.lib.optionalString isGhcjs88 "--constraint='Cabal >=3.0.2.0 && <3.1'";
         modules = [
             {
                 # we need ghc-boot in here for ghcjs.
@@ -99,8 +127,10 @@ let
                                          "ghc-boot" "binary" "bytestring" "filepath" "directory" "containers"
                                          "time" "unix" "Win32" ];
             }
-            {
+            (pkgs.lib.optionalAttrs (!isGhcjs88) {
                 packages.Cabal.patches = [ ./../overlays/patches/Cabal/fix-data-dir.patch ];
+            })
+            {
                 packages.ghcjs.doHaddock = false;
                 packages.haddock-ghcjs.doHaddock = false;
                 packages.haddock-api-ghcjs.doHaddock = false;
@@ -114,6 +144,7 @@ let
                 packages.ghc.flags.ghci = true;
                 packages.ghci.flags.ghci = true;
                 # packages.ghcjs.components.library.configureFlags = [ "-fno-wrapper-install" ];
+                packages.ghcjs.components.library.build-tools = [ alex ];
             }
         ];
     });
@@ -124,8 +155,9 @@ in ghcjsProject // {
         shellFor = args: (ghcjsProject.hsPkgs.shellFor args).overrideAttrs (drv: {
             buildInputs = (drv.buildInputs or []) ++ configureInputs;
             nativeBuildInputs = (drv.nativeBuildInputs or []) ++ bootInputs;
+            EMSDK = emsdk;
         });
     };
-    inherit configureInputs bootInputs configured-src;
+    inherit configureInputs bootInputs configured-src emscriptenupstream emscripten emsdk;
 }
 
