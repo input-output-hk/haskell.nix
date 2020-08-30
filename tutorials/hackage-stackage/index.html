@@ -233,11 +233,11 @@
 These are kept in <a href="https://github.com/input-output-hk/hackage.nix"><code>hackage.nix</code></a> and <a href="https://github.com/input-output-hk/stackage.nix"><code>stackage.nix</code></a> respectively.
 If your project depends on a Hackage package, then the <code>hackage.nix</code> revision used must be new enough to contain that, and likewise for Stackage snaphots and <code>stackage.nix</code>.</p>
 <h2 id="updating-and-pinning-hackagenix-and-stackagenix">Updating and pinning <code>hackage.nix</code> and <code>stackage.nix</code><a class="headerlink" href="#updating-and-pinning-hackagenix-and-stackagenix" title="Permanent link">&para;</a></h2>
-<p><code>haskell.nix</code> pins particular revisions of these repositories internally, both for our own usage in testing, and so that users have a sensible default when getting started. 
+<p><code>haskell.nix</code> pins particular revisions of these repositories internally, both for our own usage in testing, and so that users have a sensible default when getting started.
 These revisions are updated nightly, so you can get newer revisions of <code>hackage.nix</code> and <code>stackage.nix</code> by updating your revision of <code>haskell.nix</code> itself.</p>
 <p>However, this exposes you to changes in <code>haskell.nix</code> which you may not want, such as changes that force compiler rebuilds, or the occasional bug.
 Instead, you can pin <code>hackage.nix</code> and <code>stackage.nix</code> independently. For example:</p>
-<pre><code class="nix">let 
+<pre><code class="nix">let
   # You can use a tool like `niv` to manage this boilerplate
   hackageSrc = builtins.fetchTarball https://github.com/input-output-hk/hackage.nix/archive/master.tar.gz;
   stackageSrc = builtins.fetchTarball https://github.com/input-output-hk/stackage.nix/archive/master.tar.gz;

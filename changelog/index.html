@@ -275,7 +275,7 @@ that will impact users.</p>
 <ul>
 <li>Removed <code>components.all</code>, use <code>symlinkJoin</code> on components.exes or
  <code>shellFor</code> if you need a shell.</li>
-<li>Added <code>components</code> arguemnt to <code>shellFor</code>.</li>
+<li>Added <code>components</code> argument to <code>shellFor</code>.</li>
 </ul>
 <h2 id="july-21-2020_1">July 21, 2020<a class="headerlink" href="#july-21-2020_1" title="Permanent link">&para;</a></h2>
 <ul>
@@ -305,7 +305,7 @@ that will impact users.</p>
   <code>p.tool "alex" "3.2.5"</code> or <code>shellFor { tools = { alex = "3.2.5"; } }</code>.</li>
 <li><code>haskell-nix.nix-tools</code> -&gt; <code>haskell-nix.nix-tools.ghc883</code> (it includes
   the hpack exe now).</li>
-<li><code>haskell-nix.cabal-install</code> -&gt; 
+<li><code>haskell-nix.cabal-install</code> -&gt;
   <code>p.tool "cabal" "3.2.0.0"</code> or <code>shellFor { tools = { cabal = "3.2.0.0"; } }</code></li>
 <li><code>haskell-nix.haskellNixRoots</code> -&gt; <code>haskell-nix.roots ghc883</code> or <code>p.roots</code></li>
 </ul>

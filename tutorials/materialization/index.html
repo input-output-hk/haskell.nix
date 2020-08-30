@@ -244,7 +244,7 @@
 <h2 id="what-is-materialization">What is materialization?<a class="headerlink" href="#what-is-materialization" title="Permanent link">&para;</a></h2>
 <p>Capturing and storing the nix files for a project so that they do
 not need to be built (or checked).  This allows us to cache the input
-of an IFD (import from derviation).</p>
+of an IFD (import from derivation).</p>
 <h2 id="why-use-materialization">Why use materialization?<a class="headerlink" href="#why-use-materialization" title="Permanent link">&para;</a></h2>
 <p>Using functions like <code>project</code>, <code>cabalProject</code>, <code>stackProject</code>
 and <code>hackage-package</code> results in a lot of dependencies (all the
@@ -375,7 +375,7 @@ $ nix-build hlint.nix
 store will be read only.</p>
 <h2 id="how-can-we-check-sha256-and-materialized-are-up-to-date">How can we check <code>sha256</code> and <code>materialized</code> are up to date?<a class="headerlink" href="#how-can-we-check-sha256-and-materialized-are-up-to-date" title="Permanent link">&para;</a></h2>
 <p>Let's pretend we had to go back to <code>hlint</code> version <code>2.2.10</code>.
-We can tell haskell.nix to check the materialiazation either by:</p>
+We can tell haskell.nix to check the materialization either by:</p>
 <ul>
 <li>Removing the materialization files with <code>rm -rf hlint.materialized</code></li>
 <li>Temporarily adding <code>checkMaterialization = true;</code></li>
@@ -447,13 +447,13 @@ and use <code>nix-hash</code> to calculate the new value for <code>plan-sha256</
 </li>
 <li>
 <p>Users will still wind up building or downloading the dependencies
-  needed to build the nix fileds (if they do not have them).</p>
+  needed to build the nix files (if they do not have them).</p>
 </li>
 </ul>
 <p>For those reasons it might be best to make a copy instead
 of using the <code>/nix/store/...</code> path directly.</p>
 <p>If you really want to use the <code>/nix/store/...</code> path directly
-you should gaurd against the path not existing as passing in
+you should guard against the path not existing as passing in
 a non-existing path is now an error:</p>
 <pre><code class="nix">let inherit (import ./. {}) sources nixpkgsArgs;
     pkgs = import sources.nixpkgs nixpkgsArgs;

@@ -244,7 +244,7 @@ Hence, the two can come apart.</p>
 <p>Make sure you are using the same compiler for the cabal build as for the <code>haskell.nix</code> build.</p>
 <h4 id="hackage-index-state">Hackage index state<a class="headerlink" href="#hackage-index-state" title="Permanent link">&para;</a></h4>
 <p>(Cabal users only. For stack users, package versions come from the snapshot, so stack and <code>haskell.nix</code> will agree.)</p>
-<p>Cabal has the concept of the Hackage "index state". 
+<p>Cabal has the concept of the Hackage "index state".
 This is a timestamp, and it tells Cabal to behave "as if" it was seeing Hackage at that point in time.
 Pinning it is generally good for reproducibility regardless of whether you use <code>haskell.nix</code> (you can do so in <code>cabal.project</code>).</p>
 <p>If you do not set an <code>index-state</code> in <code>cabal.project</code>, then Cabal will use the latest one based on when you last called <code>cabal update</code>, and <code>haskell.nix</code> will use the latest one it knows about from <code>hackage.nix</code>.
@@ -270,7 +270,7 @@ This will ensure that the two builds agree.</p>
 So this is expected, unfortunately.</p>
 <h3 id="how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected">How do I prevent the evaluation-time dependencies of my project from being garbage-collected?<a class="headerlink" href="#how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected" title="Permanent link">&para;</a></h3>
 <p>The <code>haskell-nix.roots "ghc884"</code> should include all the evaluation-time dependencies
-and the main build time dependecies of a project using ghc 8.8.3.
+and the main build time dependencies of a project using ghc 8.8.4.
 So you can add that to the relevant GC root.
 In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in <code>release.nix</code>/<code>ci.nix</code>.</p>
               

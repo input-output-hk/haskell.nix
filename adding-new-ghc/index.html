@@ -214,7 +214,7 @@
               
                 <h1 id="adding-a-new-ghc-version-to-haskellnix">Adding a new GHC version to haskell.nix<a class="headerlink" href="#adding-a-new-ghc-version-to-haskellnix" title="Permanent link">&para;</a></h1>
 <h2 id="update-overlaysbootstrapnix">Update <code>overlays/bootstrap.nix</code><a class="headerlink" href="#update-overlaysbootstrapnix" title="Permanent link">&para;</a></h2>
-<p>Each ghc version is defined in this file.  Duplicate one of the exising
+<p>Each ghc version is defined in this file.  Duplicate one of the existing
 ghc version definitions and replace the version numbers.  Make sure
 you update the <code>spec.sha256</code> or the other versions source will be used.
 Check the LLVM version that should be used in the
@@ -231,7 +231,7 @@ nix-build scripts/check-compiler-materialization --argstr compiler-nix-name ghc8
 <pre><code>Materialized nix used for dummy-data-x86_64-unknown-linux-musl-ghc-8.10.1 incorrect. To fix run: /nix/store/wnwpyrhv4nxgyljz3f20gdpspjxvm7h4-updateMaterialized
 </code></pre>
 
-<p>Run the <code>updateMaterialized</code> script and repat the <code>nix-build</code> until it no longer fails.
+<p>Run the <code>updateMaterialized</code> script and repeat the <code>nix-build</code> until it no longer fails.
 If the failure is not a problem with materialization and no <code>updateMaterialized</code> script
 is provided then you may need to fix the failure another way or (if it only relates to
 one of the cross compilers) modify <code>scripts/check-compiler-materialization/default.nix</code>
