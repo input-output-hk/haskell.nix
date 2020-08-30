@@ -29,7 +29,7 @@ in a change to the `.cabal` file the test will still be built the same).
 ```
 components.tests.test.extraSrcFiles = [ "subdir-needed-by-test" ];
 ```
-Or alternatively, override the source with a suitable filter function. 
+Or alternatively, override the source with a suitable filter function.
 ```
 components.tests.test.src = haskell-nix.haskellLib.cleanSourceWith {
     inherit src;
@@ -64,7 +64,7 @@ sub directories containing git repos.
 
 For example if `repoA` and `repoB` are two git repos with
 cabal packages and want to use the `repoB` package when building
-`repoA.  First we can add `../repoB` to `repoA/cabal.project`:
+`repoA`.  First we can add `../repoB` to `repoA/cabal.project`:
 
 ```
 packages:

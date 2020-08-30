@@ -248,7 +248,7 @@ in {
     && stdenv.hostPlatform == stdenv.targetPlatform;
 
   # Takes a version number or attr set of arguments (for cabalProject)
-  # and conversios it to an attr set of argments.  This allows
+  # and converts it to an attr set of arguments.  This allows
   # the use of "1.0.0.0" or { version = "1.0.0.0"; ... }
   versionOrArgsToArgs = versionOrArgs:
     if lib.isAttrs versionOrArgs

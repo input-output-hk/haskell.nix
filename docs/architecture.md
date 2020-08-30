@@ -61,7 +61,7 @@ of packages available on hackage.
 [stackage.nix][] is similar to hackage.nix but provides all stackage
 snapshots (lts, and nightly) as nix expressions.  It naturally depends
 on hackage.nix to resolve package names, versions and revisions to the
-repsective packages from hackage.nix.
+respective packages from hackage.nix.
 
 [haskell.nix]: https://github.com/input-output-hk/haskell.nix
 [hackage.nix]: https://github.com/input-output-hk/hackage.nix

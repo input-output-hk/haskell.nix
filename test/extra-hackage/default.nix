@@ -2,8 +2,8 @@
 
 with stdenv.lib;
 
-let  
-  
+let
+
   hackage = import ./hackage;
 
   tarball = {
@@ -57,10 +57,10 @@ in recurseIntoAttrs {
           otool -L $exe |grep .dylib
       '')) + ''
       touch $out
-    '';    
+    '';
     meta.platforms = platforms.all;
     passthru = {
       inherit project;
-    };  
+    };
   };
 }

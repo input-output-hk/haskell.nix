@@ -2,8 +2,9 @@
 
 Cabal files may contain dependencies to external non-Haskell
 dependencies via:
-* [`build-tool-depends`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-build-tool-depends) 
-* [`pkgconfig-depends`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-pkgconfig-depends).
+
+* [`build-tool-depends`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-build-tool-depends)
+* [`pkgconfig-depends`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-pkgconfig-depends)
 * [`frameworks`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-frameworks)
 * [`extra-libraries`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-extra-libraries)
 

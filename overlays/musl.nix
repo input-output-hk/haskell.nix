@@ -12,7 +12,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   busybox-sandbox-shell = prev.busybox-sandbox-shell.override { inherit (final) busybox; };
 
   # we don't want the static output to be split. That just
-  # messes with the z -> libz mapping. We can't have a conditonal
+  # messes with the z -> libz mapping. We can't have a conditional
   # z -> libz / z -> libz.static mapping without threading the
   # package configuration in.  That seems a bit overkill.
   zlib = prev.zlib.override { splitStaticOutput = false; };
