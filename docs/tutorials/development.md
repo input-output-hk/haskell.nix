@@ -146,7 +146,7 @@ get a shell with some packages.
 Once you have a development shell, then you can begin configuring
 Emacs to use it. The way I do it is:
 
-1. Run [lorri watch](https://github.com/target/lorri) to continously
+1. Run [lorri watch](https://github.com/target/lorri) to continuously
    build the shell environment and maintain GC roots.
 
 2. Use [emacs‑direnv](https://github.com/wbolster/emacs-direnv) to
@@ -168,7 +168,7 @@ Emacs to use it. The way I do it is:
 ## Using `nix repl`
 
 It's sometimes useful to load [Haskell.nix][] in the REPL to explore
-attrsets and try examples. 
+attrsets and try examples.
 
 ```
 # example.nix
@@ -194,8 +194,10 @@ Added 2 variables.
 nix-repl> lib.take 5 pkgNames
 [ "ALUT" "ANum" "Allure" "Boolean" "BoundedChan" ]
 
-nix-repl> 
+nix-repl>
 ```
 
 Now that you have `nix-tools` and are able to import [Haskell.nix][],
 you can continue to the next chapter.
+
+[haskell.nix]: https://github.com/input-output-hk/haskell.nix

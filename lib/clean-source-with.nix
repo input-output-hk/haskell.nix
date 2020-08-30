@@ -40,7 +40,7 @@
   #             relative references to those siblings will work.
   #
   #   name:     Optional name to use as part of the store path.
-  #             If you do not provide a `name` it wil be derived
+  #             If you do not provide a `name` it will be derived
   #             from the `subDir`. You should provide `name` or
   #             `subDir`.  If you do not a warning will be displayed
   #             and the name used will be `source`.
@@ -80,7 +80,7 @@
         else
           if subDirName != ""
             then if src ? name
-              then src.name + "-" + subDirName 
+              then src.name + "-" + subDirName
               else "source-" + subDirName
             else if src ? name
               then src.name

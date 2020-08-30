@@ -56,7 +56,7 @@ stdenv.mkDerivation {
     cp $out/${appdir}/config $HOME/.emscripten
     export PATH=$PATH:$out/bin
 
-    #export EMCC_DEBUG=2  
+    #export EMCC_DEBUG=2
     ${python}/bin/python $src/tests/runner.py test_hello_world
     echo "--------------- /running test -----------------"
   '';

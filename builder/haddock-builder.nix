@@ -74,7 +74,7 @@ let
     ++ lib.optional doHaddock' "doc";
 
     propagatedBuildInputs = builtins.concatLists pkgconfig;
-  
+
     buildInputs = component.libs
       ++ map (d: d.components.library.haddock or d) component.depends;
 

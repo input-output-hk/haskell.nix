@@ -1,6 +1,6 @@
 # Update script to update nix-tools.
 #
-# This scipt might still come in handy, but it should now be possible to update
+# This script might still come in handy, but it should now be possible to update
 # the nix-tools materialization without it.
 #
 # Without this script:
@@ -8,7 +8,7 @@
 # 2. run `nix-build -E '(import ./. { checkMaterialization = true; }).pkgs.haskell-nix.nix-tools'`
 # 3. If it fails apply the fixes from the log (there should be rm, cp and chmod commands)
 #
-# To bootstap materialization files for a new compiler (e.g. for ghc 8.8.3)
+# To bootstrap materialization files for a new compiler (e.g. for ghc 8.8.3)
 #
 # nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.cabal-install-tool { compiler-nix-name = "ghc884"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'
 # nix-build -E 'let h = (import ./. {}).pkgs.haskell-nix; in h.nix-tools-set { compiler-nix-name = "ghc884"; checkMaterialization = true; inherit (h) cabal-install nix-tools; }'

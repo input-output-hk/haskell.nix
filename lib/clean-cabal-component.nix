@@ -6,7 +6,7 @@ let
   # Transform
   #   "."    -> ""
   #   "./."  -> ""
-  #  "./xyz" -> "xyz" 
+  #  "./xyz" -> "xyz"
   normalizeRelativePath = rel:
     if rel == "." || rel == "./."
       then ""

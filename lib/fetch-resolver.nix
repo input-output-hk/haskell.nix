@@ -21,7 +21,7 @@ let
       in
         pkgs.lib.lists.head (rs ++ [ null ]);
 
-    # If we found a resolver andwe have a resolverSha256 then we should download it.
+    # If we found a resolver and we have a resolverSha256 then we should download it.
     fetchedResolver =
       if resolver != null && resolverSha256 != null
         then pkgs.fetchurl {

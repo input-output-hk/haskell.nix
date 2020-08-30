@@ -14,8 +14,8 @@ let
     ghc = (ghc.passthru.buildGHC or ghc);
     hsPkgs = hsPkgs.buildPackages;
     # We need to use the buildPackages stdenv to build the setup-builder.
-    # in the native case, it would be the same in the corss case however
-    # re *really* want to build the Setup.hs on the build machine and not
+    # in the native case, it would be the same in the cross case however
+    # we *really* want to build the Setup.hs on the build machine and not
     # have the stdenv confuse it with the target/host env.
     inherit (buildPackages) stdenv;
     inherit buildPackages pkgconfig;

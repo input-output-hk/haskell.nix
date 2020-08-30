@@ -19,7 +19,7 @@
   libffi ? null
 
 , useLLVM ? !stdenv.targetPlatform.isx86
-, # LLVM is conceptually a run-time-only depedendency, but for
+, # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
   buildLlvmPackages, llvmPackages
@@ -37,7 +37,7 @@
 
 , enableLibraryProfiling ? true
 
-, # Whetherto build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
+, # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
 , # What flavour to build. An empty string indicates no
@@ -68,7 +68,7 @@ let
 
   inherit (bootPkgs) ghc;
 
-  # TODO check if this posible fix for segfaults works or not.
+  # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
     # on native platforms targetPlatform.{libffi, gmp} do not exist; thus fall back
     # to the non-targetPlatform version in those cases.
@@ -174,8 +174,8 @@ stdenv.mkDerivation (rec {
              "distPhase"
              ];
 
-  # ghc hardcodes the TOP dir durcing config, this breaks when
-  # splitting the configured src from the the build process.
+  # ghc hardcodes the TOP dir during config, this breaks when
+  # splitting the configured src from the build process.
   postUnpack = ''
     (cd $sourceRoot
      TOP=$(cat mk/config.mk|grep ^TOP|awk -F\  '{ print $3 }')
@@ -202,7 +202,7 @@ stdenv.mkDerivation (rec {
 
   outputs = [ "out" "doc" "generated" ];
 
-  # Make sure we never relax`$PATH` and hooks support for compatability.
+  # Make sure we never relax`$PATH` and hooks support for compatibility.
   strictDeps = true;
 
   # Don’t add -liconv to LDFLAGS automatically so that GHC will add it itself.
@@ -311,7 +311,7 @@ stdenv.mkDerivation (rec {
 
     configured-src = configured-src;
 
-    # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
+    # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
   } // extra-passthru;
 

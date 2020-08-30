@@ -1,4 +1,4 @@
-# Create a local hackare repo, we can use as a repository in a cabal config
+# Create a local hackage repo, we can use as a repository in a cabal config
 #
 # This will include:
 # - 01-index.tar.gz (the index file)
@@ -12,7 +12,7 @@
 #
 # We will create a completely unsigned bare repository.  Using signing keys within
 # nix would be pointless as we'd have to hardcode them to produce the same output
-# reproducably.
+# reproducibly.
 #
 pkgs:
 { name, index }:

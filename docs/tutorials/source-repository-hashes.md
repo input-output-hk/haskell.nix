@@ -5,7 +5,7 @@ to git repositories containing the version of a particular package
 that we wish to use.  This is mostly handled automatically by
 `nix-tools` and `haskell.nix` however when we want to use a nix
 system that is configured to use restricted mode (typically hydra)
-it will need an aditionaly hash.
+it will need additional hashes for the referenced repositories.
 
 When using `project`, `cabalProject` or `stackProject` functions
 you can include the hash needed in a comment.

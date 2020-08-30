@@ -1,6 +1,6 @@
 let
   # Here we try to figure out which qemu to use based on the host platform.
-  # This guess can be overriden by passing qemuSuffix
+  # This guess can be overridden by passing qemuSuffix
   qemuByHostPlatform = hostPlatform:
     # I'd prefer this was a dictionary lookup, with a fall through into abort,
     # that would make this more readable I guess.  I think there is some similar

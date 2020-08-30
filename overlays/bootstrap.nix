@@ -69,7 +69,7 @@ in {
             ghc-patches = version: let
                 # Returns true iff this derivation's version is strictly older than ver.
                 versionLessThan = ver: builtins.compareVersions ver version == 1;
-                # Returns true iff this derivation's verion is greater than or equal to ver.
+                # Returns true iff this derivation's version is greater than or equal to ver.
                 versionAtLeast = ver: !versionLessThan ver;
                 from = start: final.lib.optional (versionAtLeast start);
                 fromUntil = start: end: final.lib.optional (versionAtLeast start && versionLessThan end);
@@ -494,7 +494,7 @@ in {
     #   haskell-nix.cabal-install-unchecked.ghcXXX
     #   haskell-nix.nix-tools.ghcXXX
     #   haskell-nix.nix-tools-unchecked.ghcXXX
-    # Using these avoids unecessary calls to mkDerivation.
+    # Using these avoids unnecessary calls to mkDerivation.
     # For cabal projects we match the versions used to the compiler
     # selected for the project to avoid the chance of a dependency
     # another GHC version (particularly useful on macOS where
@@ -541,7 +541,7 @@ in {
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
     #       the `config` value.
-    # As such the folloing sadly won't work :(
+    # As such the following sadly won't work :(
     # haskellPackages = with import ../. {}; {
     #     hpack = null;
     #     hello = (hackage-package {
@@ -601,7 +601,7 @@ in {
             # can turn off materialization checks when
             # building ghc itself (since GHC is a dependency
             # of the materialization check it would cause
-            # infinite recusion).
+            # infinite recursion).
             alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({
                 version = "3.2.4";
                 inherit ghcOverride nix-tools cabal-install index-state;

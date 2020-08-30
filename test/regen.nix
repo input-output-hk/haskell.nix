@@ -47,11 +47,11 @@ writeScript "regen-tests.sh" ''
 
   cd cabal-simple
   regen cabal-simple
-  cd ..  
+  cd ..
 
   cd cabal-sublib
   regen cabal-sublib
-  cd ..  
+  cd ..
 
   cd with-packages
   regen test-with-packages
