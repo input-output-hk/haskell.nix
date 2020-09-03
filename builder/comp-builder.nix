@@ -380,6 +380,5 @@ let
   }
   // lib.optionalAttrs (hardeningDisable != []) {
     inherit hardeningDisable;
-  }
-  );
+  });
 in drv; in self)
