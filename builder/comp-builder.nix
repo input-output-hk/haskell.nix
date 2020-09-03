@@ -279,8 +279,6 @@ let
       runHook postBuild
     '';
 
-    checkPhase = "notice: Test built, but not executed yet.  To run a test `p.components.tests.X` build `p.checks.X`.";
-
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #
     # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
@@ -363,6 +361,8 @@ let
       runHook postInstall
     '' + (lib.optionalString keepSource ''
       rm -rf dist
+    '') + (lib.optionalString (haskellLib.isTest componentId) ''
+      echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
 
     shellHook = ''
