@@ -279,7 +279,7 @@ let
       runHook postBuild
     '';
 
-    checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
+    checkPhase = "notice: Test built, but not executed yet.  To run a test `p.components.tests.X` build `p.checks.X`.";
 
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #
