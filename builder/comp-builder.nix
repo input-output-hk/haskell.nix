@@ -31,6 +31,7 @@ let self =
 
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
+, hardeningDisable ? component.hardeningDisable
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
@@ -376,5 +377,9 @@ let
     inherit
       preBuild postBuild
       preInstall postInstall;
-  });
+  }
+  // lib.optionalAttrs (hardeningDisable != []) {
+    inherit hardeningDisable;
+  }
+  );
 in drv; in self)
