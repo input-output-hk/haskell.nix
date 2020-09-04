@@ -448,6 +448,39 @@ in {
                 cd lib
                 cp -R ${ghcjs883}/lib ${targetPrefix}ghc-8.8.3
             '' + installDeps targetPrefix);
+            ghc884 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc884;
+                in let ghcjs884 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
+                ghcjsVersion =  "8.8.0.0.1";
+                ghc = buildGHC;
+                ghcVersion = "8.8.4";
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.4" {
+                passthru = {
+                    inherit targetPrefix;
+                    version = "8.8.4";
+                    isHaskellNixCompiler = true;
+                    inherit (ghcjs884) configured-src bundled-ghcjs project;
+                    inherit buildGHC;
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        # setting gcc is stupid. non-emscripten ghcjs has no cc.
+                        # however cabal insists on compiling the c sources. m(
+                        "--with-gcc=${final.buildPackages.stdenv.cc}/bin/cc"
+                    ];
+                };
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
+                mkdir -p $out/bin
+                cd $out/bin
+                ln -s ${ghcjs884}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${ghcjs884}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
+                cd ..
+                mkdir lib
+                cd lib
+                cp -R ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
+            '' + installDeps targetPrefix);
         }))));
 
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
