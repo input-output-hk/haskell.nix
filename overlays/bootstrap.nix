@@ -327,14 +327,11 @@ in {
 
                 ghc-patches = ghc-patches "8.8.4";
             };
-            ghc8101 =
-              let
-                buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
-              in final.callPackage ../compiler/ghc {
+            ghc8101 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = buildPkgs.haskell-nix.compiler.ghc884;
+                  ghc = final.haskell-nix.compiler.ghc865;
                 };
                 inherit sphinx installDeps;
 
@@ -349,14 +346,11 @@ in {
 
                 ghc-patches = ghc-patches "8.10.1";
             };
-            ghc8102 =
-              let
-                buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
-              in final.callPackage ../compiler/ghc {
+            ghc8102 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = buildPkgs.haskell-nix.compiler.ghc884;
+                  ghc = final.haskell-nix.compiler.ghc865;
                 };
                 inherit sphinx installDeps;
 
