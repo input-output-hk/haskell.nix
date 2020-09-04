@@ -40,7 +40,7 @@ in pkgs.lib.evalModules {
         in let pkg-def' = strip-pkg-def pkg-def;
         # The desugar reason.
         #
-        # it is quite combersome to write
+        # it is quite cumbersome to write
         # (hackage: { packages.x.revision = hackage...;
         #             packages.y.revision = import ./foo.nix; })
         # where we'd rather write:
@@ -85,7 +85,7 @@ in pkgs.lib.evalModules {
 
     # Error handlers
     ./modules/error-handler.nix
-    
+
     # Supplies metadata
     ./modules/cabal.nix
 

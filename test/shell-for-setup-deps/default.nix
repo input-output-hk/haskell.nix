@@ -15,10 +15,10 @@ let
 
   env = project.hsPkgs.shellFor {};
 
-# Making this work for cross compilers will be dificult as setup-deps are
+# Making this work for cross compilers will be difficult as setup-deps are
 # built for the build platform and the shell will be for the host platform.
 # We probably need a shell that provides both build and host ghc
-# and corrisponding package DBs and a way to use them.
+# and corresponding package DBs and a way to use them.
 # This problem affects musl as well as the build libraries are linked to glibc.
 in recurseIntoAttrs (if stdenv.buildPlatform != stdenv.hostPlatform
  then

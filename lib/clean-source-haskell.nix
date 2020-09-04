@@ -1,7 +1,7 @@
 # This is a source filter function which cleans common build products
 # and files not needed to do a haskell build from a source directory.
 #
-# This can avoid unecessary builds when these files change.
+# This can avoid unnecessary builds when these files change.
 #
 # It should be used with "pkgs.lib.cleanSourceWith". Alternatively,
 # use the convenience function "cleanSourceHaskell".

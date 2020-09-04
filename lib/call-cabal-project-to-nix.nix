@@ -18,7 +18,7 @@ in
 , cabalProject         ? readIfExists src cabalProjectFileName
 , cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
 , cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
-, caller               ? "callCabalProjectToNix" # Name of the calling funcion for better warning messages
+, caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , nix-tools     ? evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}     # When building cabal projects we use the nix-tools
@@ -26,7 +26,7 @@ in
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
                      # If the tests and benchmarks are not needed and they
-                     # causes the wrong plan to be choosen, then we can use
+                     # cause the wrong plan to be chosen, then we can use
                      # `configureArgs = "--disable-tests --disable-benchmarks";`
 , sha256map     ? null
                      # An alternative to adding `--sha256` comments into the
@@ -153,7 +153,7 @@ let
   # Deal with source-repository-packages in a way that will work in
   # restricted-eval mode (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
-  # packages: block containing nix sotre paths of the fetched repos.
+  # packages: block containing nix store paths of the fetched repos.
   replaceSoureRepos = projectFile:
     let
       blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
@@ -194,7 +194,7 @@ let
       }
       else replaceSoureRepos rawCabalProject;
 
-  # The use of a the actual GHC can cause significant problems:
+  # The use of the actual GHC can cause significant problems:
   # * For hydra to assemble a list of jobs from `components.tests` it must
   #   first have GHC that will be used. If a patch has been applied to the
   #   GHC to be used it must be rebuilt before the list of jobs can be assembled.
@@ -395,7 +395,7 @@ let
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include
       # some packages that will be excluded by `index-state-found`
-      # which is used by cabal (cached-index-state >= index-state-found).  
+      # which is used by cabal (cached-index-state >= index-state-found).
       dotCabal {
         inherit cabal-install nix-tools extra-hackage-tarballs;
         index-state = cached-index-state;

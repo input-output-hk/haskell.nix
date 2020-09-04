@@ -24,3 +24,5 @@ git clone https://github.com/input-output-hk/haskell.nix
 cd haskell.nix
 nix build -f . pkgs.haskell-nix.nix-tools.ghc884 --arg sourcesOverride '{ nix-tools = ../nix-tools; }' --out-link nt
 ```
+
+[haskell.nix]: https://github.com/input-output-hk/haskell.nix

@@ -77,7 +77,7 @@ nixpkgs (*This has undergone substantially less testing*).
 
 ### Component builder
 
-To prevent depending on mutliple instances of the same libraries, the
+To prevent depending on multiple instances of the same libraries, the
 component builder will try to build every package from scratch and
 rely as little as possible on packages that are shipped with the GHC
 distribution. The exceptions are packages that are known to not be

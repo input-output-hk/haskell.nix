@@ -4,7 +4,7 @@
 { pkgs, haskellLib }:
 { projectNix, sourceRepos, src }:
 let
-  # Full source including possible relartive paths form the
+  # Full source including possible relative paths form the
   # project directory.
   srcRoot =
     if haskellLib.canCleanSource src

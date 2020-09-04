@@ -1,9 +1,9 @@
 # Motivation
 
-Why do we need another Haskell infrastructure for Nix?  
+Why do we need another Haskell infrastructure for Nix?
 
 Doesn't nixpkgs
-provide a sufficiently good Haskell infrastructure already? 
+provide a sufficiently good Haskell infrastructure already?
 
 Problems with
 the nixpkgs haskell infrastructure are covered in the following sections:

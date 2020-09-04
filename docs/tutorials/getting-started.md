@@ -24,6 +24,13 @@ $ cachix use iohk
 Configured https://iohk.cachix.org binary cache in ~/.config/nix/nix.conf
 ```
 
+Note: `haskell.nix` currently uses multiple CI providers to build derivations and store outputs. To improve your chances of getting a cache hit, you might want to add the following additional substituter to `~/.config/nix/nix.conf`:
+
+```
+trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
+substituters = [...] https://hydra.iohk.io [...]
+```
+
 ## Scaffolding
 
 The following work with `stack.yaml` and `cabal.project` based

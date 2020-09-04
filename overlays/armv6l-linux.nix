@@ -28,14 +28,14 @@ final: prev:
           ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
-          # Therfore let's enable doCrossCheck here!
+          # Therefore let's enable doCrossCheck here!
           doCrossCheck = pkgs.stdenv.hostPlatform.isWindows;
         };
       in {
         packages = {
-          # clock 0.7.2 needs to be patche to support cross compilation.
+          # clock 0.7.2 needs to be patched to support cross compilation.
           clock.patches              = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isAarch32 [ ({ version, revision }: (if version == "0.7.2" then ./patches/clock-0.7.2.patch else null)) ];
-          # nix calles this package crypto
+          # nix calls this package crypto
         #   cryptonite-openssl.patches = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.7" then ./patches/cryptonite-openssl-0.7.patch else null) ];
 
         #   http-client.patches        = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.5.14" then ./patches/http-client-0.5.14.patch else null) ];

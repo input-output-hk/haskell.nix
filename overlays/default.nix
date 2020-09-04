@@ -30,7 +30,7 @@ let
 
   ordered = with overlays; [
     # Hide nixpkgs haskell and haskellPackages from the haskell-nix overlays.
-    # This should prevent us inadvertantly depending on them.
+    # This should prevent us inadvertently depending on them.
     (_: prev: {
       haskell = { };
       haskellPackages = { };

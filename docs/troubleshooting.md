@@ -29,7 +29,7 @@ Make sure you are using the same compiler for the cabal build as for the `haskel
 
 (Cabal users only. For stack users, package versions come from the snapshot, so stack and `haskell.nix` will agree.)
 
-Cabal has the concept of the Hackage "index state". 
+Cabal has the concept of the Hackage "index state".
 This is a timestamp, and it tells Cabal to behave "as if" it was seeing Hackage at that point in time.
 Pinning it is generally good for reproducibility regardless of whether you use `haskell.nix` (you can do so in `cabal.project`).
 
@@ -67,6 +67,6 @@ So this is expected, unfortunately.
 ### How do I prevent the evaluation-time dependencies of my project from being garbage-collected?
 
 The `haskell-nix.roots "ghc884"` should include all the evaluation-time dependencies
-and the main build time dependecies of a project using ghc 8.8.3.
+and the main build time dependencies of a project using ghc 8.8.4.
 So you can add that to the relevant GC root.
 In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in `release.nix`/`ci.nix`.

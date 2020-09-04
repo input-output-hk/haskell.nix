@@ -246,7 +246,7 @@ let
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
       ++ builtins.concatLists pkgconfig;
-  
+
     buildInputs = component.libs
       ++ map (d: d.components.library or d) component.depends;
 
@@ -284,7 +284,7 @@ let
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #
     # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
-    #         folder isntead of a file for the configuration.  Therfore if the result is a folder,
+    #         folder instead of a file for the configuration.  Therefore if the result is a folder,
     #         we need to register each and every element of that folder.
     #
     # Note 3: if a package has no libs SETUP will not generate anything.  This can
@@ -342,7 +342,7 @@ let
           ''}
         fi
       '')
-      # In case `setup copy` did not creat this
+      # In case `setup copy` did not create this
       + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
       + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
         echo "Symlink libffi and gmp .dlls ..."

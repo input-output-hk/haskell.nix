@@ -4,7 +4,7 @@
 
 Capturing and storing the nix files for a project so that they do
 not need to be built (or checked).  This allows us to cache the input
-of an IFD (import from derviation).
+of an IFD (import from derivation).
 
 ## Why use materialization?
 
@@ -32,7 +32,7 @@ dependencies of nix-tools for instance).
   nix files automatically.
 * You are certain that the IFD you materialize is not `system`-dependent. If it was you'd
    obtain different nix expressions depending on which `system` the IFD was evaluated.
-   
+
 ## How can we materialize the nix files?
 
 Lets say we want to build `hlint`.  We might start with an `hlint`
@@ -150,7 +150,7 @@ store will be read only.
 ## How can we check `sha256` and `materialized` are up to date?
 
 Let's pretend we had to go back to `hlint` version `2.2.10`.
-We can tell haskell.nix to check the materialiazation either by:
+We can tell haskell.nix to check the materialization either by:
 
 * Removing the materialization files with `rm -rf hlint.materialized`
 * Temporarily adding `checkMaterialization = true;`
@@ -231,13 +231,13 @@ Yes and it gives us the same speed improvement, however:
 * It does not help at all in `restricted-eval` mode (Hydra).
 
 * Users will still wind up building or downloading the dependencies
-  needed to build the nix fileds (if they do not have them).
+  needed to build the nix files (if they do not have them).
 
 For those reasons it might be best to make a copy instead
 of using the `/nix/store/...` path directly.
 
 If you really want to use the `/nix/store/...` path directly
-you should gaurd against the path not existing as passing in
+you should guard against the path not existing as passing in
 a non-existing path is now an error:
 
 ```nix

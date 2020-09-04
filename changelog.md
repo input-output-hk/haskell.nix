@@ -4,7 +4,7 @@ that will impact users.
 ## July 21, 2020
 * Removed `components.all`, use `symlinkJoin` on components.exes or
  `shellFor` if you need a shell.
-* Added `components` arguemnt to `shellFor`.
+* Added `components` argument to `shellFor`.
 
 ## July 21, 2020
 * Added GHC 8.8.4 and replaced 8.8.3 in tests and as the ghc
@@ -31,7 +31,7 @@ that will impact users.
   `p.tool "alex" "3.2.5"` or `shellFor { tools = { alex = "3.2.5"; } }`.
 * `haskell-nix.nix-tools` -> `haskell-nix.nix-tools.ghc883` (it includes
   the hpack exe now).
-* `haskell-nix.cabal-install` -> 
+* `haskell-nix.cabal-install` ->
   `p.tool "cabal" "3.2.0.0"` or `shellFor { tools = { cabal = "3.2.0.0"; } }`
 * `haskell-nix.haskellNixRoots` -> `haskell-nix.roots ghc883` or `p.roots`
 

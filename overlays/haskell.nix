@@ -2,7 +2,7 @@
 ,  ... }:
 # The haskell.nix infrastructure
 #
-# for hygenic reasons we'll use haskell-nix as a prefix.
+# for hygienic reasons we'll use haskell-nix as a prefix.
 # Using haskell.nix in nix is awkward as I needs to be quoted.
 final: prev: {
     haskell-nix = with final.haskell-nix; {
@@ -234,7 +234,7 @@ final: prev: {
             '';
 
         # Some of features of haskell.nix rely on using a hackage index
-        # to calculate a build plan.  To maintain stabity for caching and
+        # to calculate a build plan.  To maintain stability for caching and
         # to allow the outputs to be materialized we pin this value here.
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
@@ -348,7 +348,7 @@ final: prev: {
         # stack-to-nix or plan-to-nix to prevent them
         # from needing network access.
         # The cache contains only local paths to nix files so that it can
-        # the results of `stack-to-nix` can be imported in restrected eval
+        # the results of `stack-to-nix` can be imported in restricted eval
         # mode.
         mkCacheFile = repos:
           final.buildPackages.pkgs.runCommand "cache-file" {} ''
@@ -436,8 +436,8 @@ final: prev: {
         # from hackage.  This is useful if you want to build an executable from
         # a given package.
         # NB: If no explicit index-state is provided the most recent one from
-        # the index-state-hashes is used.  This guarantees reproducability wrt
-        # to the haskell.nix revision.  If reproducability beyond haskell.nix
+        # the index-state-hashes is used.  This guarantees reproducibility wrt
+        # to the haskell.nix revision.  If reproducibility beyond haskell.nix
         # is required, a specific index-state should be provided!
         hackage-package =
           { name, compiler-nix-name, ... }@args':
@@ -567,9 +567,9 @@ final: prev: {
         #     `projectFileName = "cabal.project";`
         # to let it know which to choose (or pick another name).  If the
         # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
-        # If niether `stack.yaml` nor `cabal.project` exist `cabalProject` is
+        # If neither `stack.yaml` nor `cabal.project` exist `cabalProject` is
         # used (as it will use a default `cabal.project`).
-        project' = { src, projectFileName ? null, ... }@args': 
+        project' = { src, projectFileName ? null, ... }@args':
           let
             args = { caller = "project'"; } // args';
             dir = __readDir (src.origSrcSubDir or src);

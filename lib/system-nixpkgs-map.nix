@@ -1,4 +1,4 @@
-# Maps of system pkg refenreces from
+# Maps of system pkg references from
 # cabal file to nixpkgs pkgs.
 # See ../docs/dev/pkg-map.md
 pkgs:
@@ -94,5 +94,5 @@ pkgs:
      Crypt32 = null;
    }
 # -- os x
-# NB: these map almost 1:1 to the famework names
+# NB: these map almost 1:1 to the framework names
 // pkgs.darwin.apple_sdk.frameworks
