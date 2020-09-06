@@ -1,0 +1,939 @@
+diff --git a/compiler/basicTypes/RdrName.hs b/compiler/basicTypes/RdrName.hs
+index d730538b88..597c8eb909 100644
+--- a/compiler/basicTypes/RdrName.hs
++++ b/compiler/basicTypes/RdrName.hs
+@@ -71,6 +71,7 @@ module RdrName (
+ #include "HsVersions.h"
+ 
+ import GhcPrelude
++import Binary
+ 
+ import Module
+ import Name
+@@ -466,6 +467,11 @@ data GlobalRdrElt
+          -- INVARIANT: either gre_lcl = True or gre_imp is non-empty
+          -- See Note [GlobalRdrElt provenance]
+ 
++instance Binary GlobalRdrElt where
++  put_ bh (GRE f1 f2 f3 f4) = put_ bh f1 >> put_ bh f2 >> put_ bh f3 >> put_ bh f4
++  get bh = GRE <$> get bh <*> get bh <*> get bh  <*> get bh
++
++
+ -- | The children of a Name are the things that are abbreviated by the ".."
+ --   notation in export lists.  See Note [Parents]
+ data Parent = NoParent
+@@ -474,6 +480,18 @@ data Parent = NoParent
+               -- ^ See Note [Parents for record fields]
+             deriving (Eq, Data)
+ 
++instance Binary Parent where
++  put_ bh NoParent = putByte bh 0
++  put_ bh (ParentIs f1) = putByte bh 1 >> put_ bh f1
++  put_ bh (FldParent f1 f2) = putByte bh 2 >> put_ bh f1 >> put_ bh f2
++  get bh = do
++    i <- getByte bh
++    case i of
++      0 -> return NoParent
++      1 -> ParentIs <$> get bh
++      _ -> FldParent <$> get bh <*> get bh
++
++
+ instance Outputable Parent where
+    ppr NoParent        = empty
+    ppr (ParentIs n)    = text "parent:" <> ppr n
+@@ -1136,6 +1154,11 @@ data ImportSpec = ImpSpec { is_decl :: ImpDeclSpec,
+                             is_item :: ImpItemSpec }
+                 deriving( Eq, Ord, Data )
+ 
++instance Binary ImportSpec where
++  put_ bh (ImpSpec f1 f2) = put_ bh f1 >> put_ bh f2
++  get bh = ImpSpec <$> get bh <*> get bh
++
++
+ -- | Import Declaration Specification
+ --
+ -- Describes a particular import declaration and is
+@@ -1153,6 +1176,11 @@ data ImpDeclSpec
+         is_dloc     :: SrcSpan     -- ^ The location of the entire import declaration
+     } deriving Data
+ 
++instance Binary ImpDeclSpec where
++  put_ bh (ImpDeclSpec f1 f2 f3 f4) = put_ bh f1 >> put_ bh f2 >> put_ bh f3 >> put_ bh f4
++  get bh = ImpDeclSpec <$> get bh <*> get bh <*> get bh <*> get bh
++
++
+ -- | Import Item Specification
+ --
+ -- Describes import info a particular Name
+@@ -1192,6 +1220,14 @@ instance Ord ImpItemSpec where
+       (_, ImpAll)      -> LT
+       (ImpSome _ l1, ImpSome _ l2) -> l1 `compare` l2
+ 
++instance Binary ImpItemSpec where
++  put_ bh ImpAll = putByte bh 0
++  put_ bh (ImpSome f1 f2) = putByte bh 1 >> put_ bh f1 >> put_ bh f2
++  get bh = do
++    i <- getByte bh
++    case i of
++      0 -> return ImpAll
++      _ -> ImpSome <$> get bh <*> get bh
+ 
+ bestImport :: [ImportSpec] -> ImportSpec
+ -- See Note [Choosing the best import declaration]
+diff --git a/compiler/iface/BinIface.hs b/compiler/iface/BinIface.hs
+index faee723bd2..0f7073f15c 100644
+--- a/compiler/iface/BinIface.hs
++++ b/compiler/iface/BinIface.hs
+@@ -148,7 +148,15 @@ readBinIface_ dflags checkHiWay traceBinIFaceReading hi_path ncu = do
+     wantedGot "Way" way_descr check_way ppr
+     when (checkHiWay == CheckHiWay) $
+         errorOnMismatch "mismatched interface file ways" way_descr check_way
+-    getWithUserData ncu bh
++
++    extFields_p <- get bh
++
++    mod_iface <- getWithUserData ncu bh
++
++    seekBin bh extFields_p
++    extFields <- get bh
++
++    return mod_iface{mi_ext_fields = extFields}
+ 
+ 
+ -- | This performs a get action after reading the dictionary and symbol
+@@ -200,8 +208,16 @@ writeBinIface dflags hi_path mod_iface = do
+     let way_descr = getWayDescr dflags
+     put_  bh way_descr
+ 
++    extFields_p_p <- tellBin bh
++    put_ bh extFields_p_p
+ 
+     putWithUserData (debugTraceMsg dflags 3) bh mod_iface
++
++    extFields_p <- tellBin bh
++    putAt bh extFields_p_p extFields_p
++    seekBin bh extFields_p
++    put_ bh (mi_ext_fields mod_iface)
++
+     -- And send the result to the file
+     writeBinMem bh hi_path
+ 
+diff --git a/compiler/iface/IfaceSyn.hs b/compiler/iface/IfaceSyn.hs
+index f691300157..9662667172 100644
+--- a/compiler/iface/IfaceSyn.hs
++++ b/compiler/iface/IfaceSyn.hs
+@@ -22,6 +22,7 @@ module IfaceSyn (
+         IfaceAxBranch(..),
+         IfaceTyConParent(..),
+         IfaceCompleteMatch(..),
++        IfaceModGuts(..),
+ 
+         -- * Binding names
+         IfaceTopBndr,
+@@ -57,7 +58,7 @@ import Name
+ import CostCentre
+ import Literal
+ import ForeignCall
+-import Annotations( AnnPayload, AnnTarget )
++import Annotations( AnnPayload, AnnTarget, Annotation )
+ import BasicTypes
+ import Outputable
+ import Module
+@@ -73,6 +74,16 @@ import Lexeme (isLexSym)
+ import TysWiredIn ( constraintKindTyConName )
+ import Util (seqList)
+ 
++import ByteCodeTypes
++import DriverPhases
++import GHC.ForeignSrcLang.Type
++import GHC.Hs.Doc ( ArgDocMap, DeclDocMap, HsDocString )
++import Avail
++import RdrName
++import {-# SOURCE #-} HscTypes
++import NameEnv
++import DynFlags
++
+ import Control.Monad
+ import System.IO.Unsafe
+ import Control.DeepSeq
+@@ -571,7 +582,50 @@ type family (==) (a :: k) (b :: k) :: Bool
+           -- incompatible with: #1, #0
+ The comment after an equation refers to all previous equations (0-indexed)
+ that are incompatible with it.
+++-}
++
++{-
+++************************************************************************
+++*                                                                      *
+++                Phases
+++*                                                                      *
+++************************************************************************
+++-}
++
++data IfaceModGuts = IfaceModGuts {
++    img_module        :: !Module,
++    img_hsc_src       :: HscSource,
++    img_loc           :: SrcSpan,
++    img_exports       :: ![AvailInfo],
++    img_deps          :: !Dependencies,
++    img_usages        :: ![Usage],
++    img_used_th       :: !Bool,
++    img_rdr_env       :: !GlobalRdrEnv,
++    img_fix_env       :: !FixityEnv,
++    img_tcs           :: ![IfaceTyCon],
++    img_insts         :: ![IfaceClsInst],
++    img_fam_insts     :: ![IfaceFamInst],
++    img_patsyns       :: ![IfaceDecl],
++    img_rules         :: ![IfaceRule],
++    img_binds         :: ![IfaceBinding],
++    img_foreign       :: !ForeignStubs,
++    img_foreign_files :: ![(ForeignSrcLang, FilePath)],
++    img_warns         :: !Warnings,
++    img_anns          :: [Annotation],
++    img_complete_sigs :: [CompleteMatch],
++    img_hpc_info      :: !HpcInfo,
++    img_modBreaks     :: !(Maybe ModBreaks),
++    img_inst_env      :: [IfaceClsInst],
++    img_fam_inst_env  :: [IfaceFamInst],
++    img_safe_haskell  :: SafeHaskellMode,
++    img_trust_pkg     :: Bool,
++    img_doc_hdr       :: !(Maybe HsDocString),
++    img_decl_docs     :: !DeclDocMap,
++    img_arg_docs      :: !ArgDocMap
++  }
++
+ 
++{-
+ ************************************************************************
+ *                                                                      *
+               Printing IfaceDecl
+@@ -2418,6 +2472,43 @@ instance Binary IfaceCompleteMatch where
+   put_ bh (IfaceCompleteMatch cs ts) = put_ bh cs >> put_ bh ts
+   get bh = IfaceCompleteMatch <$> get bh <*> get bh
+ 
++instance Binary IfaceModGuts where
++  put_ bh (IfaceModGuts f1 f2 f3 f4 f5 f6 f7 _f8 _f9 f10 f11 f12 f13 f14 f15 f16 f17 f18
++                        f19 f20 f21 _f22 f23 f24 f25 f26 f27 f28 f29) = do
++    put_ bh f1
++    put_ bh f2
++    put_ bh f3
++    put_ bh f4
++    put_ bh f5
++    put_ bh f6
++    put_ bh f7
++    -- put_ bh f8
++    -- put_ bh f9
++    put_ bh f10
++    put_ bh f11
++    put_ bh f12
++    put_ bh f13
++    put_ bh f14
++    put_ bh f15
++    put_ bh f16
++    put_ bh f17
++    put_ bh f18
++    put_ bh f19
++    put_ bh f20
++    put_ bh f21
++    put_ bh f23
++    put_ bh f24
++    put_ bh f25
++    put_ bh f26
++    put_ bh f27
++    put_ bh f28
++    put_ bh f29
++
++  get bh = IfaceModGuts <$> get bh <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
++                        <*> get bh <*> return emptyOccEnv <*> return emptyNameEnv <*> get bh <*> get bh <*> get bh
++                        <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
++                        <*> get bh <*> get bh <*> get bh <*> return Nothing <*> get bh <*> get bh
++                        <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
+ 
+ {-
+ ************************************************************************
+diff --git a/compiler/iface/LoadIface.hs b/compiler/iface/LoadIface.hs
+index 8d327e528d..06cdb90800 100644
+--- a/compiler/iface/LoadIface.hs
++++ b/compiler/iface/LoadIface.hs
+@@ -48,6 +48,7 @@ import HscTypes
+ import BasicTypes hiding (SuccessFlag(..))
+ import TcRnMonad
+ 
++import Binary   ( BinData(..) )
+ import Constants
+ import PrelNames
+ import PrelInfo
+@@ -83,6 +84,7 @@ import Plugins
+ import Control.Monad
+ import Control.Exception
+ import Data.IORef
++import Data.Map ( toList )
+ import System.FilePath
+ 
+ {-
+@@ -1155,6 +1157,7 @@ pprModIface iface@ModIface{ mi_final_exts = exts }
+         , text "module header:" $$ nest 2 (ppr (mi_doc_hdr iface))
+         , text "declaration docs:" $$ nest 2 (ppr (mi_decl_docs iface))
+         , text "arg docs:" $$ nest 2 (ppr (mi_arg_docs iface))
++        , text "extensible fields:" $$ nest 2 (pprExtensibleFields (mi_ext_fields iface))
+         ]
+   where
+     pp_hsc_src HsBootFile = text "[boot]"
+@@ -1244,6 +1247,11 @@ pprIfaceAnnotation :: IfaceAnnotation -> SDoc
+ pprIfaceAnnotation (IfaceAnnotation { ifAnnotatedTarget = target, ifAnnotatedValue = serialized })
+   = ppr target <+> text "annotated by" <+> ppr serialized
+ 
++pprExtensibleFields :: ExtensibleFields -> SDoc
++pprExtensibleFields (ExtensibleFields fs) = vcat . map pprField $ toList fs
++  where
++    pprField (name, (BinData size _data)) = text name <+> text "-" <+> ppr size <+> text "bytes"
++
+ {-
+ *********************************************************
+ *                                                       *
+diff --git a/compiler/iface/MkIface.hs b/compiler/iface/MkIface.hs
+index 8e66a67f58..eac7af8cb0 100644
+--- a/compiler/iface/MkIface.hs
++++ b/compiler/iface/MkIface.hs
+@@ -23,7 +23,8 @@ module MkIface (
+         mkIfaceExports,
+ 
+         coAxiomToIfaceDecl,
+-        tyThingToIfaceDecl -- Converting things to their Iface equivalents
++        tyThingToIfaceDecl, -- Converting things to their Iface equivalents
++        toIfaceModGuts
+  ) where
+ 
+ {-
+@@ -67,6 +68,7 @@ import BinFingerprint
+ import LoadIface
+ import ToIface
+ import FlagChecker
++import Binary
+ 
+ import DsUsage ( mkUsageInfo, mkUsedNames, mkDependencies )
+ import Id
+@@ -104,7 +106,6 @@ import Unique
+ import Util             hiding ( eqListBy )
+ import FastString
+ import Maybes
+-import Binary
+ import Fingerprint
+ import Exception
+ import UniqSet
+@@ -138,25 +139,31 @@ import qualified Data.Semigroup
+ mkPartialIface :: HscEnv
+                -> ModDetails
+                -> ModGuts
+-               -> PartialModIface
++               -> IO PartialModIface
+ mkPartialIface hsc_env mod_details
+-  ModGuts{ mg_module       = this_mod
+-         , mg_hsc_src      = hsc_src
+-         , mg_usages       = usages
+-         , mg_used_th      = used_th
+-         , mg_deps         = deps
+-         , mg_rdr_env      = rdr_env
+-         , mg_fix_env      = fix_env
+-         , mg_warns        = warns
+-         , mg_hpc_info     = hpc_info
+-         , mg_safe_haskell = safe_mode
+-         , mg_trust_pkg    = self_trust
+-         , mg_doc_hdr      = doc_hdr
+-         , mg_decl_docs    = decl_docs
+-         , mg_arg_docs     = arg_docs
+-         }
+-  = mkIface_ hsc_env this_mod hsc_src used_th deps rdr_env fix_env warns hpc_info self_trust
+-             safe_mode usages doc_hdr decl_docs arg_docs mod_details
++  guts@ModGuts{ mg_module       = this_mod
++              , mg_hsc_src      = hsc_src
++              , mg_usages       = usages
++              , mg_used_th      = used_th
++              , mg_deps         = deps
++              , mg_rdr_env      = rdr_env
++              , mg_fix_env      = fix_env
++              , mg_warns        = warns
++              , mg_hpc_info     = hpc_info
++              , mg_safe_haskell = safe_mode
++              , mg_trust_pkg    = self_trust
++              , mg_doc_hdr      = doc_hdr
++              , mg_decl_docs    = decl_docs
++              , mg_arg_docs     = arg_docs
++              }
++  = do when (gopt Opt_Write_Phase_Core (hsc_dflags hsc_env)) $
++         registerInterfaceDataWith "ghc/phase/core" hsc_env $ \bh ->
++           putWithUserData (const $ return ()) bh (toIfaceModGuts guts)
++       ext_fs <- readIORef $ hsc_ext_fields hsc_env
++       return iface{mi_ext_fields = ext_fs}
++    where
++      iface = mkIface_ hsc_env this_mod hsc_src used_th deps rdr_env fix_env warns hpc_info self_trust
++                       safe_mode usages doc_hdr decl_docs arg_docs mod_details
+ 
+ -- | Fully instantiate a interface
+ -- Adds fingerprints and potentially code generator produced information.
+@@ -311,7 +318,8 @@ mkIface_ hsc_env
+           mi_doc_hdr     = doc_hdr,
+           mi_decl_docs   = decl_docs,
+           mi_arg_docs    = arg_docs,
+-          mi_final_exts        = () }
++          mi_final_exts  = (),
++          mi_ext_fields  = emptyExtensibleFields }
+   where
+      cmp_rule     = comparing ifRuleName
+      -- Compare these lexicographically by OccName, *not* by unique,
+@@ -2076,3 +2084,39 @@ bogusIfaceRule id_name
+         ifRuleBndrs = [], ifRuleHead = id_name, ifRuleArgs = [],
+         ifRuleRhs = IfaceExt id_name, ifRuleOrph = IsOrphan,
+         ifRuleAuto = True }
++
++--------------------------
++
++toIfaceModGuts :: ModGuts -> IfaceModGuts
++toIfaceModGuts (ModGuts f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14 f15 f16 f17 f18
++                        f19 f20 f21 f22 f23 f24 f25 f26 f27 f28 f29) =
++  IfaceModGuts
++    f1
++    f2
++    f3
++    f4
++    f5
++    f6
++    f7
++    f8
++    f9
++    (map toIfaceTyCon f10)
++    (map instanceToIfaceInst f11)
++    (map famInstToIfaceFamInst f12)
++    (map patSynToIfaceDecl f13)
++    (map coreRuleToIfaceRule f14)
++    (map toIfaceBind f15)
++    f16
++    f17
++    f18
++    f19
++    f20
++    f21
++    f22
++    (map instanceToIfaceInst $ instEnvElts f23)
++    (map famInstToIfaceFamInst $ famInstEnvElts f24)
++    f25
++    f26
++    f27
++    f28
++    f29
+diff --git a/compiler/iface/TcIface.hs b/compiler/iface/TcIface.hs
+index 077c66371e..3d9882f624 100644
+--- a/compiler/iface/TcIface.hs
++++ b/compiler/iface/TcIface.hs
+@@ -17,7 +17,9 @@ module TcIface (
+         tcIfaceDecl, tcIfaceInst, tcIfaceFamInst, tcIfaceRules,
+         tcIfaceAnnotations, tcIfaceCompleteSigs,
+         tcIfaceExpr,    -- Desired by HERMIT (#7683)
+-        tcIfaceGlobal
++        tcIfaceGlobal,
++        tcIfaceType,
++        tcJoinInfo,
+  ) where
+ 
+ #include "HsVersions.h"
+diff --git a/compiler/main/Annotations.hs b/compiler/main/Annotations.hs
+index 82d80aae43..4088d93565 100644
+--- a/compiler/main/Annotations.hs
++++ b/compiler/main/Annotations.hs
+@@ -41,6 +41,10 @@ data Annotation = Annotation {
+         ann_value  :: AnnPayload
+     }
+ 
++instance Binary Annotation where
++  put_ bh (Annotation f1 f2) = put_ bh f1 >> put_ bh f2
++  get bh = Annotation <$> get bh <*> get bh
++
+ type AnnPayload = Serialized    -- ^ The "payload" of an annotation
+                                 --   allows recovery of its value at a given type,
+                                 --   and can be persisted to an interface file
+diff --git a/compiler/main/DynFlags.hs b/compiler/main/DynFlags.hs
+index 03bb5292da..dc9e8e69ed 100644
+--- a/compiler/main/DynFlags.hs
++++ b/compiler/main/DynFlags.hs
+@@ -250,6 +250,7 @@ module DynFlags (
+ 
+ import GhcPrelude
+ 
++import Binary
+ import GHC.Platform
+ import GHC.UniqueSubdir (uniqueSubdir)
+ import PlatformConstants
+@@ -594,6 +595,9 @@ data GeneralFlag
+    | Opt_WriteInterface -- forces .hi files to be written even with -fno-code
+    | Opt_WriteHie -- generate .hie files
+ 
++   -- Writing phase outputs
++   | Opt_Write_Phase_Core
++
+    -- profiling opts
+    | Opt_AutoSccsOnIndividualCafs
+    | Opt_ProfCountEntries
+@@ -945,6 +949,24 @@ data SafeHaskellMode
+    | Sf_Ignore        -- ^ @-fno-safe-haskell@ state
+    deriving (Eq)
+ 
++instance Binary SafeHaskellMode where
++  put_ bh Sf_None         = putByte bh 0
++  put_ bh Sf_Unsafe       = putByte bh 1
++  put_ bh Sf_Trustworthy  = putByte bh 2
++  put_ bh Sf_Safe         = putByte bh 3
++  put_ bh Sf_SafeInferred = putByte bh 4
++  put_ bh Sf_Ignore       = putByte bh 5
++  get bh = do
++    i <- getByte bh
++    case i of
++      0 -> return Sf_None
++      1 -> return Sf_Unsafe
++      2 -> return Sf_Trustworthy
++      3 -> return Sf_Safe
++      4 -> return Sf_SafeInferred
++      _ -> return Sf_Ignore
++
++
+ instance Show SafeHaskellMode where
+     show Sf_None         = "None"
+     show Sf_Unsafe       = "Unsafe"
+@@ -3183,6 +3205,10 @@ dynamic_flags_deps = [
+   , make_ord_flag defGhcFlag "dynamic-too"
+         (NoArg (setGeneralFlag Opt_BuildDynamicToo))
+ 
++        ------- Phase outputs -----------------------------------------------
++  , make_ord_flag defGhcFlag "write-phase-core"
++        (NoArg (setGeneralFlag Opt_Write_Phase_Core))
++
+         ------- Keeping temporary files -------------------------------------
+      -- These can be singular (think ghc -c) or plural (think ghc --make)
+   , make_ord_flag defGhcFlag "keep-hc-file"
+@@ -4592,7 +4618,8 @@ defaultFlags settings
+       Opt_RPath,
+       Opt_SharedImplib,
+       Opt_SimplPreInlining,
+-      Opt_VersionMacros
++      Opt_VersionMacros,
++      Opt_Write_Phase_Core
+     ]
+ 
+     ++ [f | (ns,f) <- optLevelFlags, 0 `elem` ns]
+diff --git a/compiler/main/HscMain.hs b/compiler/main/HscMain.hs
+index 9bb6b4e391..98b527f3eb 100644
+--- a/compiler/main/HscMain.hs
++++ b/compiler/main/HscMain.hs
+@@ -195,6 +195,7 @@ newHscEnv dflags = do
+     us      <- mkSplitUniqSupply 'r'
+     nc_var  <- newIORef (initNameCache us knownKeyNames)
+     fc_var  <- newIORef emptyInstalledModuleEnv
++    ext_fs  <- newIORef emptyExtensibleFields
+     iserv_mvar <- newMVar Nothing
+     emptyDynLinker <- uninitializedLinker
+     return HscEnv {  hsc_dflags       = dflags
+@@ -205,6 +206,7 @@ newHscEnv dflags = do
+                   ,  hsc_EPS          = eps_var
+                   ,  hsc_NC           = nc_var
+                   ,  hsc_FC           = fc_var
++                  ,  hsc_ext_fields   = ext_fs
+                   ,  hsc_type_env_var = Nothing
+                   ,  hsc_iserv        = iserv_mvar
+                   ,  hsc_dynLinker    = emptyDynLinker
+@@ -833,11 +835,10 @@ finish summary tc_result mb_old_hash = do
+           (cg_guts, details) <- {-# SCC "CoreTidy" #-}
+               liftIO $ tidyProgram hsc_env desugared_guts
+ 
+-          let !partial_iface =
+-                {-# SCC "HscMain.mkPartialIface" #-}
++          !partial_iface <- {-# SCC "HscMain.mkPartialIface" #-}
+                 -- This `force` saves 2M residency in test T10370
+                 -- See Note [Avoiding space leaks in toIface*] for details.
+-                force (mkPartialIface hsc_env details desugared_guts)
++                liftIO $ force <$> (mkPartialIface hsc_env details desugared_guts)
+ 
+           return ( HscRecomp { hscs_guts = cg_guts,
+                                hscs_mod_location = ms_location summary,
+diff --git a/compiler/main/HscTypes.hs b/compiler/main/HscTypes.hs
+index 6bc090499f..fdc4e06aad 100644
+--- a/compiler/main/HscTypes.hs
++++ b/compiler/main/HscTypes.hs
+@@ -148,7 +148,17 @@ module HscTypes (
+ 
+         -- * COMPLETE signature
+         CompleteMatch(..), CompleteMatchMap,
+-        mkCompleteMatchMap, extendCompleteMatchMap
++        mkCompleteMatchMap, extendCompleteMatchMap,
++
++
++        -- * Exstensible Iface fields
++        ExtensibleFields(..), FieldName,
++        emptyExtensibleFields,
++        readField, readIfaceField, readIfaceFieldWith,
++        writeField, writeIfaceField, writeIfaceFieldWith,
++        deleteField, deleteIfaceField,
++        registerInterfaceData, registerInterfaceDataWith,
++        unregisterInterfaceData,
+     ) where
+ 
+ #include "HsVersions.h"
+@@ -216,7 +226,7 @@ import GHC.Serialized   ( Serialized )
+ import qualified GHC.LanguageExtensions as LangExt
+ 
+ import Foreign
+-import Control.Monad    ( guard, liftM, ap )
++import Control.Monad    ( guard, liftM, ap, forM, forM_, replicateM )
+ import Data.IORef
+ import Data.Time
+ import Exception
+@@ -224,6 +234,8 @@ import System.FilePath
+ import Control.Concurrent
+ import System.Process   ( ProcessHandle )
+ import Control.DeepSeq
++import qualified Data.Map as Map
++import Data.Map (Map)
+ 
+ -- -----------------------------------------------------------------------------
+ -- Compilation state
+@@ -465,6 +477,10 @@ data HscEnv
+         hsc_FC   :: {-# UNPACK #-} !(IORef FinderCache),
+                 -- ^ The cached result of performing finding in the file system
+ 
++        hsc_ext_fields :: {-# UNPACK #-} !(IORef ExtensibleFields),
++                -- ^ Extensible interface field data stored by plugins to be later
++                -- output in the `.hi` file.
++
+         hsc_type_env_var :: Maybe (Module, IORef TypeEnv)
+                 -- ^ Used for one-shot compilation only, to initialise
+                 -- the 'IfGblEnv'. See 'TcRnTypes.tcg_type_env_var' for
+@@ -1070,9 +1086,17 @@ data ModIface_ (phase :: ModIfacePhase)
+         mi_arg_docs :: ArgDocMap,
+                 -- ^ Docs on arguments.
+ 
+-        mi_final_exts :: !(IfaceBackendExts phase)
++        mi_final_exts :: !(IfaceBackendExts phase),
+                 -- ^ Either `()` or `ModIfaceBackend` for
+                 -- a fully instantiated interface.
++
++        mi_ext_fields :: ExtensibleFields
++                -- ^ Additional optional fields, where the Map key represents
++                -- the field name, resulting in a (size, serialized data) pair.
++                -- Because the data is intended to be serialized through the
++                -- internal `Binary` class (increasing compatibility with types
++                -- using `Name` and `FastString`, such as HIE), this format is
++                -- chosen over `ByteString`s.
+      }
+ 
+ -- | Old-style accessor for whether or not the ModIface came from an hs-boot
+@@ -1144,6 +1168,9 @@ instance Binary ModIface where
+                  mi_doc_hdr   = doc_hdr,
+                  mi_decl_docs = decl_docs,
+                  mi_arg_docs  = arg_docs,
++                 mi_ext_fields = _ext_fields, -- Don't `put_` this in the instance so we
++                                              -- can deal with its pointer in the header
++                                              -- when we write the actual file
+                  mi_final_exts = ModIfaceBackend {
+                    mi_iface_hash = iface_hash,
+                    mi_mod_hash = mod_hash,
+@@ -1244,6 +1271,8 @@ instance Binary ModIface where
+                  mi_doc_hdr     = doc_hdr,
+                  mi_decl_docs   = decl_docs,
+                  mi_arg_docs    = arg_docs,
++                 mi_ext_fields  = emptyExtensibleFields, -- placeholder because this is dealt
++                                                         -- with specially when the file is read
+                  mi_final_exts = ModIfaceBackend {
+                    mi_iface_hash = iface_hash,
+                    mi_mod_hash = mod_hash,
+@@ -1287,7 +1316,9 @@ emptyPartialModIface mod
+                mi_doc_hdr     = Nothing,
+                mi_decl_docs   = emptyDeclDocMap,
+                mi_arg_docs    = emptyArgDocMap,
+-               mi_final_exts        = () }
++               mi_final_exts  = (),
++               mi_ext_fields  = emptyExtensibleFields
++             }
+ 
+ emptyFullModIface :: Module -> ModIface
+ emptyFullModIface mod =
+@@ -1496,6 +1527,16 @@ data ForeignStubs
+       --  2) C stubs to use when calling
+       --     "foreign exported" functions
+ 
++instance Binary ForeignStubs where
++  put_ bh NoStubs = putByte bh 0
++  put_ bh (ForeignStubs _f1 _f2) = put_ bh NoStubs --putByte bh 1 >> put_ bh f1 >> put_ bh f2
++  get bh = do
++    i <- getByte bh
++    case i of
++      0 -> return NoStubs
++      _ -> return NoStubs --ForeignStubs <$> get bh <*> get bh
++
++
+ appendStubC :: ForeignStubs -> SDoc -> ForeignStubs
+ appendStubC NoStubs            c_code = ForeignStubs empty c_code
+ appendStubC (ForeignStubs h c) c_code = ForeignStubs h (c $$ c_code)
+@@ -2413,6 +2454,10 @@ type FixityEnv = NameEnv FixItem
+ -- so that we can generate an interface from it
+ data FixItem = FixItem OccName Fixity
+ 
++instance Binary FixItem where
++  put_ bh (FixItem f1 f2) = put_ bh f1 >> put_ bh f2
++  get bh = FixItem <$> get bh <*> get bh
++
+ instance Outputable FixItem where
+   ppr (FixItem occ fix) = ppr fix <+> ppr occ
+ 
+@@ -3022,6 +3067,15 @@ data HpcInfo
+ -- even if there is no module-local HPC usage
+ type AnyHpcUsage = Bool
+ 
++instance Binary HpcInfo where
++  put_ bh (HpcInfo f1 f2) = putByte bh 0 >> put_ bh f1 >> put_ bh f2
++  put_ bh (NoHpcInfo f1)  = putByte bh 1 >> put_ bh f1
++  get bh = do
++    i <- getByte bh
++    case i of
++      0 -> HpcInfo <$> get bh <*> get bh
++      _ -> NoHpcInfo <$> get bh
++
+ emptyHpcInfo :: AnyHpcUsage -> HpcInfo
+ emptyHpcInfo = NoHpcInfo
+ 
+@@ -3170,6 +3224,10 @@ data CompleteMatch = CompleteMatch {
+                             -- ^ The TyCon that they cover (e.g. Maybe)
+                           }
+ 
++instance Binary CompleteMatch where
++  put_ bh (CompleteMatch f1 f2) = put_ bh f1 >> put_ bh f2
++  get bh = CompleteMatch <$> get bh <*> get bh
++
+ instance Outputable CompleteMatch where
+   ppr (CompleteMatch cl ty) = text "CompleteMatch:" <+> ppr cl
+                                                     <+> dcolon <+> ppr ty
+@@ -3254,7 +3312,119 @@ phaseForeignLanguage phase = case phase of
+ -- avoid major space leaks.
+ instance (NFData (IfaceBackendExts (phase :: ModIfacePhase)), NFData (IfaceDeclExts (phase :: ModIfacePhase))) => NFData (ModIface_ phase) where
+   rnf (ModIface f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12
+-                f13 f14 f15 f16 f17 f18 f19 f20 f21 f22 f23) =
++                f13 f14 f15 f16 f17 f18 f19 f20 f21 f22 f23 f24) =
+     rnf f1 `seq` rnf f2 `seq` f3 `seq` f4 `seq` f5 `seq` f6 `seq` rnf f7 `seq` f8 `seq`
+     f9 `seq` rnf f10 `seq` rnf f11 `seq` f12 `seq` rnf f13 `seq` rnf f14 `seq` rnf f15 `seq`
+     rnf f16 `seq` f17 `seq` rnf f18 `seq` rnf f19 `seq` f20 `seq` f21 `seq` f22 `seq` rnf f23
++    `seq` rnf f24
++
++{-
++************************************************************************
++*                                                                      *
++\subsection{Extensible Iface Fields}
++*                                                                      *
++************************************************************************
++-}
++
++type FieldName = String
++
++newtype ExtensibleFields = ExtensibleFields { getExtensibleFields :: (Map FieldName BinData) }
++
++instance Binary ExtensibleFields where
++  put_ bh (ExtensibleFields fs) = do
++    put_ bh (Map.size fs :: Int)
++
++    -- Put the names of each field, and reserve a space
++    -- for a payload pointer after each name:
++    header_entries <- forM (Map.toList fs) $ \(name, dat) -> do
++      put_ bh name
++      field_p_p <- tellBin bh
++      put_ bh field_p_p
++      return (field_p_p, dat)
++
++    -- Now put the payloads and use the reserved space
++    -- to point to the start of each payload:
++    forM_ header_entries $ \(field_p_p, dat) -> do
++      field_p <- tellBin bh
++      putAt bh field_p_p field_p
++      seekBin bh field_p
++      put_ bh dat
++
++  get bh = do
++    n <- get bh :: IO Int
++
++    -- Get the names and field pointers:
++    header_entries <- replicateM n $ do
++      (,) <$> get bh <*> get bh
++
++    -- Seek to and get each field's payload:
++    fields <- forM header_entries $ \(name, field_p) -> do
++      seekBin bh field_p
++      dat <- get bh
++      return (name, dat)
++
++    return . ExtensibleFields . Map.fromList $ fields
++
++instance NFData ExtensibleFields where
++  rnf (ExtensibleFields fs) = rnf fs
++
++emptyExtensibleFields :: ExtensibleFields
++emptyExtensibleFields = ExtensibleFields Map.empty
++
++--------------------------------------------------------------------------------
++-- | Reading
++
++readIfaceField :: Binary a => FieldName -> ModIface -> IO (Maybe a)
++readIfaceField name = readIfaceFieldWith name get
++
++readField :: Binary a => FieldName -> ExtensibleFields -> IO (Maybe a)
++readField name = readFieldWith name get
++
++readIfaceFieldWith :: FieldName -> (BinHandle -> IO a) -> ModIface -> IO (Maybe a)
++readIfaceFieldWith name read iface = readFieldWith name read (mi_ext_fields iface)
++
++readFieldWith :: FieldName -> (BinHandle -> IO a) -> ExtensibleFields -> IO (Maybe a)
++readFieldWith name read fields = sequence $ ((read =<<) . dataHandle) <$>
++  Map.lookup name (getExtensibleFields fields)
++
++--------------------------------------------------------------------------------
++-- | Writing
++
++writeIfaceField :: Binary a => FieldName -> a -> ModIface -> IO ModIface
++writeIfaceField name x = writeIfaceFieldWith name (`put_` x)
++
++writeField :: Binary a => FieldName -> a -> ExtensibleFields -> IO ExtensibleFields
++writeField name x = writeFieldWith name (`put_` x)
++
++writeIfaceFieldWith :: FieldName -> (BinHandle -> IO ()) -> ModIface -> IO ModIface
++writeIfaceFieldWith name write iface = do
++  fields <- writeFieldWith name write (mi_ext_fields iface)
++  return iface{ mi_ext_fields = fields }
++
++writeFieldWith :: FieldName -> (BinHandle -> IO ()) -> ExtensibleFields -> IO ExtensibleFields
++writeFieldWith name write fields = do
++  bh <- openBinMem (1024 * 1024)
++  write bh
++  --
++  bd <- handleData bh
++  return $ ExtensibleFields (Map.insert name bd $ getExtensibleFields fields)
++
++deleteField :: FieldName -> ExtensibleFields -> ExtensibleFields
++deleteField name (ExtensibleFields fs) = ExtensibleFields $ Map.delete name fs
++
++deleteIfaceField :: FieldName -> ModIface -> ModIface
++deleteIfaceField name iface = iface { mi_ext_fields = deleteField name (mi_ext_fields iface) }
++
++registerInterfaceData :: Binary a => FieldName -> HscEnv -> a -> IO ()
++registerInterfaceData name env x = registerInterfaceDataWith name env (`put_` x)
++
++registerInterfaceDataWith :: FieldName -> HscEnv -> (BinHandle -> IO ()) -> IO ()
++registerInterfaceDataWith name env write = do
++  ext_fs  <- readIORef (hsc_ext_fields env)
++  ext_fs' <- writeFieldWith name write ext_fs
++  writeIORef (hsc_ext_fields env) ext_fs'
++
++unregisterInterfaceData :: FieldName -> HscEnv -> IO ()
++unregisterInterfaceData name env = do
++  ext_fs <- readIORef (hsc_ext_fields env)
++  writeIORef (hsc_ext_fields env) (deleteField name ext_fs)
+diff --git a/compiler/utils/Binary.hs b/compiler/utils/Binary.hs
+index 503dd31690..61a9dd159e 100644
+--- a/compiler/utils/Binary.hs
++++ b/compiler/utils/Binary.hs
+@@ -27,6 +27,8 @@ module Binary
+     {-type-}  BinHandle,
+     SymbolTable, Dictionary,
+ 
++   BinData(..), dataHandle, handleData,
++
+    openBinMem,
+ --   closeBin,
+ 
+@@ -74,7 +76,9 @@ import FastMutInt
+ import Fingerprint
+ import BasicTypes
+ import SrcLoc
++import GHC.ForeignSrcLang.Type
+ 
++import Control.DeepSeq
+ import Foreign
+ import Data.Array
+ import Data.ByteString (ByteString)
+@@ -97,6 +101,43 @@ import GHC.Serialized
+ 
+ type BinArray = ForeignPtr Word8
+ 
++---------------------------------------------------------------
++-- BinData
++---------------------------------------------------------------
++
++data BinData = BinData Int BinArray
++
++instance NFData BinData where
++  rnf (BinData sz _) = rnf sz
++
++instance Binary BinData where
++  put_ bh (BinData sz dat) = do
++    put_ bh sz
++    putPrim bh sz $ \dest ->
++      withForeignPtr dat $ \orig ->
++        copyBytes dest orig sz
++  --
++  get bh = do
++    sz <- get bh
++    dat <- mallocForeignPtrBytes sz
++    getPrim bh sz $ \orig ->
++      withForeignPtr dat $ \dest ->
++        copyBytes dest orig sz
++    return (BinData sz dat)
++
++dataHandle :: BinData -> IO BinHandle
++dataHandle (BinData size bin) = do
++  ixr <- newFastMutInt
++  szr <- newFastMutInt
++  writeFastMutInt ixr 0
++  writeFastMutInt szr size
++  binr <- newIORef bin
++  return (BinMem noUserData ixr szr binr)
++
++handleData :: BinHandle -> IO BinData
++handleData (BinMem _ ixr _ binr) = BinData <$> readFastMutInt ixr <*> readIORef binr
++
++
+ ---------------------------------------------------------------
+ -- BinHandle
+ ---------------------------------------------------------------
+@@ -1420,3 +1461,20 @@ instance Binary SourceText where
+         s <- get bh
+         return (SourceText s)
+       _ -> panic $ "Binary SourceText:" ++ show h
++
++instance Binary ForeignSrcLang where
++  put_ bh LangC      = putByte bh 0
++  put_ bh LangCxx    = putByte bh 1
++  put_ bh LangObjc   = putByte bh 2
++  put_ bh LangObjcxx = putByte bh 3
++  put_ bh LangAsm    = putByte bh 4
++  put_ bh RawObject  = putByte bh 5
++  get bh = do
++    i <- getByte bh
++    case i of
++      0 -> return LangC
++      1 -> return LangCxx
++      2 -> return LangObjc
++      3 -> return LangObjcxx
++      4 -> return LangAsm
++      _ -> return RawObject
+diff --git a/testsuite/tests/showIface/DocsInHiFile0.stdout b/testsuite/tests/showIface/DocsInHiFile0.stdout
+index e1c32d63c8..352dae916f 100644
+--- a/testsuite/tests/showIface/DocsInHiFile0.stdout
++++ b/testsuite/tests/showIface/DocsInHiFile0.stdout
+@@ -2,3 +2,4 @@ module header:
+   Nothing
+ declaration docs:
+ arg docs:
++extensible fields:
+diff --git a/testsuite/tests/showIface/DocsInHiFile1.stdout b/testsuite/tests/showIface/DocsInHiFile1.stdout
+index 2576c2560c..83d21f1953 100644
+--- a/testsuite/tests/showIface/DocsInHiFile1.stdout
++++ b/testsuite/tests/showIface/DocsInHiFile1.stdout
+@@ -33,4 +33,4 @@ arg docs:
+   p:
+     0:
+       " An argument"
+-
++extensible fields:
