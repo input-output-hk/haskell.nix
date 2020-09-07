@@ -331,7 +331,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = final.haskell-nix.compiler.ghc865;
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
@@ -350,7 +350,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = final.haskell-nix.compiler.ghc865;
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
