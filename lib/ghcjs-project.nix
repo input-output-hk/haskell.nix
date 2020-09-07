@@ -95,8 +95,8 @@ let
           ''
         }
 
-        rm -rf utils/pkg-cache
-        cp -r ${ghc.generated} utils/pkg-cache
+        rm -rf utils/pkg-cache/ghc
+        cp -r ${ghc.generated} utils/pkg-cache/ghc
 
         patchShebangs .
         sed -i 's/gcc /cc /g' utils/makePackages.sh

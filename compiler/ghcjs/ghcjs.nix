@@ -4,7 +4,7 @@
 , ghcjsVersion ? "8.6.0.1"
 , ghcVersion ? "8.6.5"
 , compiler-nix-name ? if builtins.compareVersions ghcjsVersion "8.8.0.0" > 0
-  then "ghc883"
+  then "ghc884"
   else "ghc865"
 , ghc ? pkgs.buildPackages.ghc
 }:

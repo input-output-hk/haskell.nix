@@ -393,6 +393,7 @@ in {
                     inherit targetPrefix;
                     version = "8.6.5";
                     isHaskellNixCompiler = true;
+                    enableShared = false;
                     inherit (ghcjs865) configured-src bundled-ghcjs project;
                     inherit buildGHC;
                     extraConfigureFlags = [
@@ -421,11 +422,13 @@ in {
                 ghcjsVersion =  "8.8.0.0.1";
                 ghc = buildGHC;
                 ghcVersion = "8.8.3";
+                compiler-nix-name = "ghc883";
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.3" {
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.3";
                     isHaskellNixCompiler = true;
+                    enableShared = false;
                     inherit (ghcjs883) configured-src bundled-ghcjs project;
                     inherit buildGHC;
                     extraConfigureFlags = [
@@ -454,11 +457,13 @@ in {
                 ghcjsVersion =  "8.8.0.0.1";
                 ghc = buildGHC;
                 ghcVersion = "8.8.4";
+                compiler-nix-name = "ghc884";
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.4" {
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.4";
                     isHaskellNixCompiler = true;
+                    enableShared = false;
                     inherit (ghcjs884) configured-src bundled-ghcjs project;
                     inherit buildGHC;
                     extraConfigureFlags = [
