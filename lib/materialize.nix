@@ -30,9 +30,8 @@ let
   # a string and nothing ensures that it will be built (and if you're printing it out to the user, they may well expect it to be there!).
   # `getDerivationPathAndBuild` solves this by forcing the derivation to be built at eval time (which is when you're tracing).
   getDerivationPathAndBuild = drv:
-    # Make a text file containing the store path as a Nix string literal, and import that. That gets us the very same string back again, but we're forced to
-    # evaluate the derivation that builds the text file, which builds the derivation we passed in too.
-    import (pkgs.writeText "drv" ''"${drv}"'');
+    # pathExists forces the derivation to be built
+    builtins.seq (builtins.pathExists drv) drv;
 
   traceIgnoringSha256 = reason: x:
     if sha256 != null
