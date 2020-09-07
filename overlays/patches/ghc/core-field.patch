@@ -830,6 +830,33 @@ index 6bc090499f..fdc4e06aad 100644
 +unregisterInterfaceData name env = do
 +  ext_fs <- readIORef (hsc_ext_fields env)
 +  writeIORef (hsc_ext_fields env) (deleteField name ext_fs)
+diff --git a/compiler/main/HscTypes.hs-boot b/compiler/main/HscTypes.hs-boot
+new file mode 100755
+index 0000000000..8d1b0089c0
+--- /dev/null
++++ b/compiler/main/HscTypes.hs-boot
+@@ -0,0 +1,21 @@
++module HscTypes where
++
++import NameEnv
++import Binary
++
++data Dependencies
++data Usage
++type FixityEnv = NameEnv FixItem
++data FixItem
++data ForeignStubs
++data Warnings
++data CompleteMatch
++data HpcInfo
++
++instance Binary Dependencies
++instance Binary Usage
++instance Binary ForeignStubs
++instance Binary Warnings
++instance Binary CompleteMatch
++instance Binary HpcInfo
++instance Binary FixItem
 diff --git a/compiler/utils/Binary.hs b/compiler/utils/Binary.hs
 index 503dd31690..61a9dd159e 100644
 --- a/compiler/utils/Binary.hs
