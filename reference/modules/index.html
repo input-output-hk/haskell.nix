@@ -177,6 +177,8 @@
         
             <li><a class="toctree-l4" href="#hackagedb">hackage.db</a></li>
         
+            <li><a class="toctree-l4" href="#hardeningdisable">hardeningDisable</a></li>
+        
             <li><a class="toctree-l4" href="#hspkgs">hsPkgs</a></li>
         
             <li><a class="toctree-l4" href="#keepsource">keepSource</a></li>
@@ -240,6 +242,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksextrasrcfiles">packages..components.benchmarks..extraSrcFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksframeworks">packages..components.benchmarks..frameworks</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsbenchmarkshardeningdisable">packages..components.benchmarks..hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarkshssourcedirs">packages..components.benchmarks..hsSourceDirs</a></li>
         
@@ -351,6 +355,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentsexesframeworks">packages..components.exes..frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentsexeshardeningdisable">packages..components.exes..hardeningDisable</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentsexeshssourcedirs">packages..components.exes..hsSourceDirs</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsexesincludedirs">packages..components.exes..includeDirs</a></li>
@@ -460,6 +466,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsextrasrcfiles">packages..components.foreignlibs..extraSrcFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsframeworks">packages..components.foreignlibs..frameworks</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsforeignlibshardeningdisable">packages..components.foreignlibs..hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibshssourcedirs">packages..components.foreignlibs..hsSourceDirs</a></li>
         
@@ -571,6 +579,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentslibraryframeworks">packages..components.library.frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentslibraryhardeningdisable">packages..components.library.hardeningDisable</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentslibraryhssourcedirs">packages..components.library.hsSourceDirs</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentslibraryincludedirs">packages..components.library.includeDirs</a></li>
@@ -680,6 +690,8 @@
             <li><a class="toctree-l4" href="#packagescomponentssetupextrasrcfiles">packages..components.setup.extraSrcFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetupframeworks">packages..components.setup.frameworks</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentssetuphardeningdisable">packages..components.setup.hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetuphssourcedirs">packages..components.setup.hsSourceDirs</a></li>
         
@@ -791,6 +803,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentssublibsframeworks">packages..components.sublibs..frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentssublibshardeningdisable">packages..components.sublibs..hardeningDisable</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentssublibshssourcedirs">packages..components.sublibs..hsSourceDirs</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssublibsincludedirs">packages..components.sublibs..includeDirs</a></li>
@@ -901,6 +915,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentstestsframeworks">packages..components.tests..frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentstestshardeningdisable">packages..components.tests..hardeningDisable</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentstestshssourcedirs">packages..components.tests..hsSourceDirs</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentstestsincludedirs">packages..components.tests..includeDirs</a></li>
@@ -992,6 +1008,8 @@
             <li><a class="toctree-l4" href="#packagesenablestatic">packages..enableStatic</a></li>
         
             <li><a class="toctree-l4" href="#packagesflags">packages..flags</a></li>
+        
+            <li><a class="toctree-l4" href="#packageshardeningdisable">packages..hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packageskeepsource">packages..keepSource</a></li>
         
@@ -1379,6 +1397,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: unspecified</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
+<h2 id="hardeningdisable">hardeningDisable<a class="headerlink" href="#hardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="hspkgs">hsPkgs<a class="headerlink" href="#hspkgs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: unspecified</p>
@@ -1537,6 +1560,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <h2 id="packagescomponentsbenchmarksframeworks">packages.<name>.components.benchmarks.<name>.frameworks<a class="headerlink" href="#packagescomponentsbenchmarksframeworks" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of packages</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentsbenchmarkshardeningdisable">packages.<name>.components.benchmarks.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentsbenchmarkshardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkshssourcedirs">packages.<name>.components.benchmarks.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentsbenchmarkshssourcedirs" title="Permanent link">&para;</a></h2>
@@ -1815,6 +1843,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentsexeshardeningdisable">packages.<name>.components.exes.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentsexeshardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexeshssourcedirs">packages.<name>.components.exes.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentsexeshssourcedirs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of unspecifieds</p>
@@ -2089,6 +2122,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <h2 id="packagescomponentsforeignlibsframeworks">packages.<name>.components.foreignlibs.<name>.frameworks<a class="headerlink" href="#packagescomponentsforeignlibsframeworks" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of packages</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentsforeignlibshardeningdisable">packages.<name>.components.foreignlibs.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentsforeignlibshardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibshssourcedirs">packages.<name>.components.foreignlibs.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentsforeignlibshssourcedirs" title="Permanent link">&para;</a></h2>
@@ -2367,6 +2405,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentslibraryhardeningdisable">packages.<name>.components.library.hardeningDisable<a class="headerlink" href="#packagescomponentslibraryhardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryhssourcedirs">packages.<name>.components.library.hsSourceDirs<a class="headerlink" href="#packagescomponentslibraryhssourcedirs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of unspecifieds</p>
@@ -2641,6 +2684,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <h2 id="packagescomponentssetupframeworks">packages.<name>.components.setup.frameworks<a class="headerlink" href="#packagescomponentssetupframeworks" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of packages</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentssetuphardeningdisable">packages.<name>.components.setup.hardeningDisable<a class="headerlink" href="#packagescomponentssetuphardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuphssourcedirs">packages.<name>.components.setup.hsSourceDirs<a class="headerlink" href="#packagescomponentssetuphssourcedirs" title="Permanent link">&para;</a></h2>
@@ -2919,6 +2967,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentssublibshardeningdisable">packages.<name>.components.sublibs.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentssublibshardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibshssourcedirs">packages.<name>.components.sublibs.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentssublibshssourcedirs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of unspecifieds</p>
@@ -3195,6 +3248,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentstestshardeningdisable">packages.<name>.components.tests.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentstestshardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestshssourcedirs">packages.<name>.components.tests.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentstestshssourcedirs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of unspecifieds</p>
@@ -3425,6 +3483,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: attribute set of booleans</p>
 <p><strong>No Default</strong></p>
+<p><strong>No Example</strong></p>
+<h2 id="packageshardeningdisable">packages.<name>.hardeningDisable<a class="headerlink" href="#packageshardeningdisable" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packageskeepsource">packages.<name>.keepSource<a class="headerlink" href="#packageskeepsource" title="Permanent link">&para;</a></h2>
 <p>Keep component source in the store in a <code>source</code> output</p>
