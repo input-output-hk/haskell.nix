@@ -220,6 +220,10 @@ let
       type = nullOr uniqueStr;
       default = getDefaultOrNull def "postHaddock";
     };
+    hardeningDisable = mkOption {
+      type = listOfFilteringNulls str;
+      default = (def.hardeningDisable or []);
+    };
   };
 
 

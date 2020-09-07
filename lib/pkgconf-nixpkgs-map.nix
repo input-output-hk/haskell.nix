@@ -106,6 +106,7 @@ pkgs:
     "notify"                             = [ pkgs."libnotify" ];
     "odbc"                               = [ pkgs."unixODBC" ];
     "openblas"                           = [ pkgs."openblasCompat" ];
+    "opencv"                             = [ pkgs."opencv3" ];
     "panelw"                             = [ pkgs."ncurses" ];
     "pangocairo"                         = [ pkgs."pango" ];
     "pcap"                               = [ pkgs."libpcap" ];
