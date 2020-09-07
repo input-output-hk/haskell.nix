@@ -918,22 +918,3 @@ index 503dd31690..61a9dd159e 100644
 +      3 -> return LangObjcxx
 +      4 -> return LangAsm
 +      _ -> return RawObject
-diff --git a/testsuite/tests/showIface/DocsInHiFile0.stdout b/testsuite/tests/showIface/DocsInHiFile0.stdout
-index e1c32d63c8..352dae916f 100644
---- a/testsuite/tests/showIface/DocsInHiFile0.stdout
-+++ b/testsuite/tests/showIface/DocsInHiFile0.stdout
-@@ -2,3 +2,4 @@ module header:
-   Nothing
- declaration docs:
- arg docs:
-+extensible fields:
-diff --git a/testsuite/tests/showIface/DocsInHiFile1.stdout b/testsuite/tests/showIface/DocsInHiFile1.stdout
-index 2576c2560c..83d21f1953 100644
---- a/testsuite/tests/showIface/DocsInHiFile1.stdout
-+++ b/testsuite/tests/showIface/DocsInHiFile1.stdout
-@@ -33,4 +33,4 @@ arg docs:
-   p:
-     0:
-       " An argument"
--
-+extensible fields:
