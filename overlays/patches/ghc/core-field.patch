@@ -292,7 +292,7 @@ index 8d327e528d..06cdb90800 100644
  *********************************************************
  *                                                       *
 diff --git a/compiler/iface/MkIface.hs b/compiler/iface/MkIface.hs
-index 8e66a67f58..eac7af8cb0 100644
+index 8e66a67f58..91119af421 100644
 --- a/compiler/iface/MkIface.hs
 +++ b/compiler/iface/MkIface.hs
 @@ -23,7 +23,8 @@ module MkIface (
@@ -321,7 +321,7 @@ index 8e66a67f58..eac7af8cb0 100644
  import Fingerprint
  import Exception
  import UniqSet
-@@ -138,25 +139,31 @@ import qualified Data.Semigroup
+@@ -138,25 +139,32 @@ import qualified Data.Semigroup
  mkPartialIface :: HscEnv
                 -> ModDetails
                 -> ModGuts
@@ -362,7 +362,8 @@ index 8e66a67f58..eac7af8cb0 100644
 +              }
 +  = do when (gopt Opt_Write_Phase_Core (hsc_dflags hsc_env)) $
 +         registerInterfaceDataWith "ghc/phase/core" hsc_env $ \bh ->
-+           putWithUserData (const $ return ()) bh (toIfaceModGuts guts)
++           -- putWithUserData (const $ return ()) bh (toIfaceModGuts guts)
++           putWithUserData (const $ return ()) bh (map toIfaceBind $ mg_binds guts)
 +       ext_fs <- readIORef $ hsc_ext_fields hsc_env
 +       return iface{mi_ext_fields = ext_fs}
 +    where
@@ -371,7 +372,7 @@ index 8e66a67f58..eac7af8cb0 100644
  
  -- | Fully instantiate a interface
  -- Adds fingerprints and potentially code generator produced information.
-@@ -311,7 +318,8 @@ mkIface_ hsc_env
+@@ -311,7 +319,8 @@ mkIface_ hsc_env
            mi_doc_hdr     = doc_hdr,
            mi_decl_docs   = decl_docs,
            mi_arg_docs    = arg_docs,
@@ -381,7 +382,7 @@ index 8e66a67f58..eac7af8cb0 100644
    where
       cmp_rule     = comparing ifRuleName
       -- Compare these lexicographically by OccName, *not* by unique,
-@@ -2076,3 +2084,39 @@ bogusIfaceRule id_name
+@@ -2076,3 +2085,39 @@ bogusIfaceRule id_name
          ifRuleBndrs = [], ifRuleHead = id_name, ifRuleArgs = [],
          ifRuleRhs = IfaceExt id_name, ifRuleOrph = IsOrphan,
          ifRuleAuto = True }
