@@ -7,23 +7,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
-  <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Adding a new GHC version to haskell.nix - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Adding a new GHC version - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
-  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Adding a new GHC version to haskell.nix";
-    var mkdocs_page_input_path = "adding-new-ghc.md";
+    var mkdocs_page_name = "Adding a new GHC version";
+    var mkdocs_page_input_path = "dev/adding-new-ghc.md";
     var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js" defer></script>
-  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
   
@@ -36,9 +36,9 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
         <div role="search">
-  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
@@ -50,17 +50,17 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="..">Introduction</a>
+    <a class="" href="../..">Introduction</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../motivation/">Motivation</a>
+    <a class="" href="../../motivation/">Motivation</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../architecture/">Architecture</a>
+    <a class="" href="../../architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -69,35 +69,35 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../tutorials/getting-started/">Getting Started</a>
+    <a class="" href="../../tutorials/getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tutorials/development/">Creating a development environment</a>
+    <a class="" href="../../tutorials/development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
+    <a class="" href="../../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tutorials/source-repository-hashes/">Handling git repositories in projects</a>
+    <a class="" href="../../tutorials/source-repository-hashes/">Handling git repositories in projects</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+    <a class="" href="../../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
+    <a class="" href="../../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tutorials/materialization/">Materialization: Speeding up Nix evaluation</a>
+    <a class="" href="../../tutorials/materialization/">Materialization: Speeding up Nix evaluation</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../tutorials/cross-compilation/">Cross-compiling your project</a>
+    <a class="" href="../../tutorials/cross-compilation/">Cross-compiling your project</a>
                 </li>
     </ul>
 	    </li>
@@ -108,22 +108,26 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../reference/commands/">Command-line tools</a>
+    <a class="" href="../../reference/supported-ghc-versions/">Suported GHC versions</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../reference/library/">Haskell.nix Library</a>
+    <a class="" href="../../reference/commands/">Command-line tools</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../reference/modules/">Module options</a>
+    <a class="" href="../../reference/library/">Haskell.nix Library</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
                 </li>
     </ul>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../troubleshooting/">Troubleshooting</a>
+    <a class="" href="../../troubleshooting/">Troubleshooting</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -132,7 +136,7 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../iohk-nix/">IOHKs nix library</a>
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
                 </li>
     </ul>
 	    </li>
@@ -143,38 +147,60 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../dev/dev-architecture/">Architecture</a>
+    <a class="" href="../dev-architecture/">Architecture</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../dev/installing-nix-tools/">Installing nix-tools</a>
+    <a class="" href="../installing-nix-tools/">Installing nix-tools</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../dev/manually-generating-nix-expressions/">Manually generating Nix expressions</a>
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../dev/maintainer-scripts/">Maintainer Scripts</a>
+    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../dev/nixpkgs-pin/">Nixpkgs Pin</a>
+    <a class="" href="../nixpkgs-pin/">Nixpkgs Pin</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../dev/tests/">Test Suite</a>
+    <a class="" href="../tests/">Test Suite</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Adding a new GHC version</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#adding-a-new-ghc-version-to-haskellnix">Adding a new GHC version to haskell.nix</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#update-overlaysbootstrapnix">Update overlays/bootstrap.nix</a></li>
+        
+            <li><a class="toctree-l4" href="#update-the-list-of-cached-ghc-versions-in-cinix">Update the list of cached GHC versions in ci.nix</a></li>
+        
+            <li><a class="toctree-l4" href="#update-supported-ghc-versions-document">Update supported ghc versions document</a></li>
+        
+            <li><a class="toctree-l4" href="#add-the-materialized-files">Add the materialized files</a></li>
+        
+        </ul>
+    
+
+    </ul>
                 </li>
     </ul>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../changelog/">ChangeLog</a>
+    <a class="" href="../../changelog/">ChangeLog</a>
 	    </li>
           
         </ul>
@@ -187,7 +213,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">Alternative Haskell Infrastructure for Nixpkgs</a>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
       </nav>
 
       
@@ -195,14 +221,18 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="..">Docs</a> &raquo;</li>
+    <li><a href="../..">Docs</a> &raquo;</li>
     
       
+        
+          <li>Dev Notes &raquo;</li>
+        
+      
     
-    <li>Adding a new GHC version to haskell.nix</li>
+    <li>Adding a new GHC version</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/adding-new-ghc.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/dev/adding-new-ghc.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -220,7 +250,7 @@ you update the <code>spec.sha256</code> or the other versions source will be use
 Check the LLVM version that should be used in the
 <a href="https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler/backends/llvm/installing">ghc wiki</a>.</p>
 <h2 id="update-the-list-of-cached-ghc-versions-in-cinix">Update the list of cached GHC versions in <code>ci.nix</code><a class="headerlink" href="#update-the-list-of-cached-ghc-versions-in-cinix" title="Permanent link">&para;</a></h2>
-<h2 id="update-supported-ghc-versions-document">Update <a href="../supported-ghc-versions/">supported ghc versions</a> document<a class="headerlink" href="#update-supported-ghc-versions-document" title="Permanent link">&para;</a></h2>
+<h2 id="update-supported-ghc-versions-document">Update <a href="../../reference/supported-ghc-versions/">supported ghc versions</a> document<a class="headerlink" href="#update-supported-ghc-versions-document" title="Permanent link">&para;</a></h2>
 <h2 id="add-the-materialized-files">Add the materialized files<a class="headerlink" href="#add-the-materialized-files" title="Permanent link">&para;</a></h2>
 <p>In the haskell.nix repo run:</p>
 <pre><code>mkdir materialized/ghc884
@@ -240,6 +270,15 @@ so that it skips that compiler.</p>
             </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../changelog/" class="btn btn-neutral float-right" title="ChangeLog">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../tests/" class="btn btn-neutral" title="Test Suite"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -265,12 +304,16 @@ so that it skips that compiler.</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
+        <span><a href="../tests/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../changelog/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
 
 </body>
 </html>
