@@ -63,7 +63,17 @@ let self =
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   cleanSrc = if cabal-generator == "hpack" && !(package.cleanHpack or false)
-    then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
+    then builtins.trace ("Cleaning component source not supported for hpack package: " + name)
+      # We can clean out the siblings though to at least avoid changes to other packages
+      # from triggering a rebuild of this one.
+      (if src ? origSrc && src ? filter && src.origSubDir or "" != ""
+        then haskellLib.cleanSourceWith {
+          src = src.origSrc;
+          subDir = lib.removePrefix "/" src.origSubDir;
+          inherit (src) filter;
+        }
+        else src
+      )
     else haskellLib.cleanCabalComponent package component src;
 
   nameOnly = "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
@@ -164,7 +174,12 @@ let
 
   # Attributes that are common to both the build and haddock derivations
   commonAttrs = {
-      src = cleanSrc;
+      src = if cleanSrc ? origSrc && cleanSrc ? filter && cleanSrc.origSubDir or "" != ""
+        then haskellLib.cleanSourceWith {
+          src = cleanSrc.origSrc;
+          inherit (cleanSrc) filter;
+        }
+        else cleanSrc;
 
       LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
       LC_ALL = "en_US.UTF-8";
@@ -173,14 +188,21 @@ let
 
       SETUP_HS = setup + /bin/Setup;
 
-      prePatch = if (cabalFile != null)
-         then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
-         else
-           # When building hpack package we use the internal nix-tools
-           # (compiled with a fixed GHC version)
-           lib.optionalString (cabal-generator == "hpack") ''
-             ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
-           '';
+      prePatch =
+        # If the package is in a sub directory `cd` there first
+        (lib.optionalString (cleanSrc.origSubDir or "" != "") ''
+            cd ${lib.removePrefix "/" (cleanSrc.origSubDir or "")}
+          ''
+        ) + 
+        (if cabalFile != null
+          then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
+          else
+            # When building hpack package we use the internal nix-tools
+            # (compiled with a fixed GHC version)
+            lib.optionalString (cabal-generator == "hpack") ''
+              ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
+            ''
+        );
     }
     # patches can (if they like) depend on the version and revision of the package.
     // lib.optionalAttrs (patches != []) {

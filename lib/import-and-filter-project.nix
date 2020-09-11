@@ -38,7 +38,13 @@ in project // {
                         pkgs.lib.lists.elemAt sourceRepos (
                           pkgs.lib.strings.toInt (pkgs.lib.strings.removePrefix srcRepoPrefix subDir))
                       else if haskellLib.canCleanSource srcRoot
-                        then haskellLib.cleanSourceWith { src = srcRoot; inherit subDir; }
+                        then haskellLib.cleanSourceWith {
+                          src = srcRoot;
+                          inherit subDir;
+                          includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
+                                                  # component builder so that relative paths can be used to
+                                                  # reference project directories not in the package subDir.
+                        }
                         else srcRoot + (if subDir == "" then "" else "/" + subDir);
             in oldPkg // {
               src = (pkgs.lib).mkDefault packageSrc;

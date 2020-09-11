@@ -1,6 +1,6 @@
 # From https://github.com/NixOS/nix/issues/2944
 { lib, runCommand, git, cleanSourceWith }:
-{ name ? null, src, subDir ? "", keepGitDir ? false }:
+{ name ? null, src, subDir ? "", includeSiblings ? false, keepGitDir ? false }:
 
 # The function call
 #
@@ -154,13 +154,13 @@ then
   in
     cleanSourceWith {
       caller = "cleanGit";
-      inherit name src subDir filter;
+      inherit name src subDir includeSiblings filter;
     }
 
 else
-  trace "gitSource.nix: ${origSrcSubDir} does not seem to be a git repository,\nassuming it is a clean checkout." (
+  trace "haskell-nix.haskellLib.cleanGit: ${origSrcSubDir} does not seem to be a git repository,\nassuming it is a clean checkout." (
     cleanSourceWith {
       caller = "cleanGit";
-      inherit name src subDir;
+      inherit name src subDir includeSiblings;
     }
   )
