@@ -1,6 +1,6 @@
 # From https://github.com/NixOS/nix/issues/2944
 { lib, runCommand, git, cleanSourceWith }:
-{ name ? null, src, subDir ? "" }:
+{ name ? null, src, subDir ? "", keepGitDir ? false }:
 
 # The function call
 #
@@ -24,26 +24,6 @@ with builtins;
 # is shared among multiple invocations of gitSource:
 
 let
-  filter_from_list = root: files:
-    let
-      all_paren_dirs = p:
-        if p == "." || p == "/"
-        then []
-        else [ p ] ++ all_paren_dirs (dirOf p);
-
-      whitelist_set = listToAttrs (
-        concatMap (p:
-          # Using `origSrcSubDir` (if present) makes it possible to cleanGit src that
-          # has already been cleaned with cleanSrcWith.
-          let full_path = root.origSrcSubDir or (toString root) + "/${p}"; in
-          map (p': { name = p'; value = true; }) (all_paren_dirs full_path)
-        ) files
-      );
-    in
-    p: t: hasAttr (toString p) whitelist_set;
-
-  has_prefix = prefix: s:
-    prefix == builtins.substring 0 (builtins.stringLength prefix) s;
   remove_prefix = prefix: s:
     builtins.substring
       (builtins.stringLength prefix)
@@ -84,7 +64,7 @@ then
                 git_content = lines (readFile (origSrcSubDir + "/.git"));
                 first_line = head git_content;
                 prefix = "gitdir: ";
-                ok = length git_content == 1 && has_prefix prefix first_line;
+                ok = length git_content == 1 && lib.hasPrefix prefix first_line;
               in
                 if ok
                 then /. + remove_prefix prefix first_line
@@ -148,7 +128,29 @@ then
 
     whitelist = lines (readFile (whitelist_file.out));
 
-    filter = filter_from_list src whitelist;
+    all_paren_dirs = p:
+        if p == "." || p == "/"
+        then []
+        else [ p ] ++ all_paren_dirs (dirOf p);
+
+    # All the paths that we need to keep as a set (including parent dirs)
+    whitelist_set = listToAttrs (
+        concatMap (p:
+          # Using `origSrcSubDir` (if present) makes it possible to cleanGit src that
+          # has already been cleaned with cleanSrcWith.
+          let full_path = src.origSrcSubDir or (toString src) + "/${p}"; in
+          map (p': { name = p'; value = true; }) (all_paren_dirs full_path)
+        ) whitelist
+      );
+
+    # Identify files in the `.git` dir
+    isGitDirPath = path: 
+          path == origSrcSubDir + "/.git"
+        || lib.hasPrefix (origSrcSubDir + "/.git/") path;
+
+    filter = path: type:
+         hasAttr (toString path) whitelist_set
+      || (keepGitDir && isGitDirPath path);
   in
     cleanSourceWith {
       caller = "cleanGit";
