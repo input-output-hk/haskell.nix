@@ -35,7 +35,12 @@ let
   drv =
     stdenv.mkDerivation ({
       name = "${ghc.targetPrefix}${fullName}";
-      src = cleanSrc;
+      src = if cleanSrc ? origSrc && cleanSrc ? filter && cleanSrc.origSubDir or "" != ""
+        then haskellLib.cleanSourceWith {
+          src = cleanSrc.origSrc;
+          inherit (cleanSrc) filter;
+        }
+        else cleanSrc;
       buildInputs = component.libs
         ++ component.frameworks
         ++ builtins.concatLists component.pkgconfig;
@@ -83,6 +88,14 @@ let
         runHook postInstall
       '';
     }
+    // (lib.optionalAttrs (cleanSrc.origSubDir or "" != "") {
+      prePatch =
+        # If the package is in a sub directory `cd` there first
+        (lib.optionalString (cleanSrc.origSubDir or "" != "") ''
+            cd ${lib.removePrefix "/" (cleanSrc.origSubDir or "")}
+          ''
+        );
+    })
     // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
     // hooks
   );
