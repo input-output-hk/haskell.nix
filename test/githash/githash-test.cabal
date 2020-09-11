@@ -1,15 +1,15 @@
-cabal-version:       >=1.10
+cabal-version:       2.4
 name:                githash-test
 version:             0.1.0.0
-license:             PublicDomain
+license:             MIT
 author:              Hamish Mackenzie
 build-type:          Simple
-extra-source-files:  ../../.git/**
+extra-source-files:  ../../.git/**/*
 
 executable githash-test
-  hs-source-dir:       src
+  hs-source-dirs:      src
   main-is:             Main.hs
-  build-depends:       base >=4.13 && <5,
+  build-depends:       base >=4.12 && <5,
                        githash
   default-language:    Haskell2010
   build-tools:         git
