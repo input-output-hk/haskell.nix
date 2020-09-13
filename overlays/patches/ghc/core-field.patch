@@ -453,7 +453,7 @@ index 82d80aae43..4088d93565 100644
                                  --   allows recovery of its value at a given type,
                                  --   and can be persisted to an interface file
 diff --git a/compiler/main/DynFlags.hs b/compiler/main/DynFlags.hs
-index 03bb5292da..dc9e8e69ed 100644
+index 03bb5292da..65048a7860 100644
 --- a/compiler/main/DynFlags.hs
 +++ b/compiler/main/DynFlags.hs
 @@ -250,6 +250,7 @@ module DynFlags (
@@ -510,13 +510,13 @@ index 03bb5292da..dc9e8e69ed 100644
          ------- Keeping temporary files -------------------------------------
       -- These can be singular (think ghc -c) or plural (think ghc --make)
    , make_ord_flag defGhcFlag "keep-hc-file"
-@@ -4592,7 +4618,8 @@ defaultFlags settings
-       Opt_RPath,
+@@ -4593,6 +4619,9 @@ defaultFlags settings
        Opt_SharedImplib,
        Opt_SimplPreInlining,
--      Opt_VersionMacros
-+      Opt_VersionMacros,
-+      Opt_Write_Phase_Core
+       Opt_VersionMacros
++#if GHC_STAGE > 1
++      , Opt_Write_Phase_Core
++#endif
      ]
  
      ++ [f | (ns,f) <- optLevelFlags, 0 `elem` ns]
