@@ -137,6 +137,7 @@ in {
                 ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/core-field.patch
+                ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/noinline-set-bit-if.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
