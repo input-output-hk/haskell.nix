@@ -20,7 +20,7 @@ you could run:
 nix build '(with import <nixpkgs> (import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz")).nixpkgsArgs; (haskell-nix.hackage-package { name = "lens"; version = "4.17.1"; })).components.library'
 ```
 This would build the (public) library component of the [lens-4.17.1][] package
-from hackage.  
+from hackage.
 
 ### Pinning hackage index
 
@@ -32,7 +32,7 @@ nix build '(with import <nixpkgs> (import (builtins.fetchTarball "https://github
 ```
 This would use the hackage index as of `2019-07-14T00:00:00Z` to produce a
 build plan for the [lens-4.17.1][] package.
-   
+
 [Stackage]: https://stackage.org
 [Hackage]: https://hackage.haskell.org
 [hackage.nix]: https://github.com/input-output-hk/hackage.nix

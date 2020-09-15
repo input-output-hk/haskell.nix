@@ -6,14 +6,14 @@ If your project depends on a Hackage package, then the `hackage.nix` revision us
 
 ## Updating and pinning `hackage.nix` and `stackage.nix`
 
-`haskell.nix` pins particular revisions of these repositories internally, both for our own usage in testing, and so that users have a sensible default when getting started. 
+`haskell.nix` pins particular revisions of these repositories internally, both for our own usage in testing, and so that users have a sensible default when getting started.
 These revisions are updated nightly, so you can get newer revisions of `hackage.nix` and `stackage.nix` by updating your revision of `haskell.nix` itself.
 
 However, this exposes you to changes in `haskell.nix` which you may not want, such as changes that force compiler rebuilds, or the occasional bug.
 Instead, you can pin `hackage.nix` and `stackage.nix` independently. For example:
 
 ```nix
-let 
+let
   # You can use a tool like `niv` to manage this boilerplate
   hackageSrc = builtins.fetchTarball https://github.com/input-output-hk/hackage.nix/archive/master.tar.gz;
   stackageSrc = builtins.fetchTarball https://github.com/input-output-hk/stackage.nix/archive/master.tar.gz;

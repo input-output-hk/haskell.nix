@@ -1,6 +1,6 @@
 # This file is for configuration that should be required by every
 # package set. Hopefully we can keep configuration for particular
-# pacakge sets out of this repo. Ideally, this file is only used for
+# package sets out of this repo. Ideally, this file is only used for
 # fixing things that are broken due to the Nix infrastructure.
 
 { pkgs, ... }: {

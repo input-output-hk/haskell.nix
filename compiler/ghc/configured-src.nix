@@ -19,7 +19,7 @@ stdenv.mkDerivation (rec {
     patches = ghc-patches;
     name = "${targetPrefix}ghc-${ghc-version}-configured-src";
 
-    # Make sure we never relax`$PATH` and hooks support for compatability.
+    # Make sure we never relax`$PATH` and hooks support for compatibility.
     strictDeps = true;
 
     nativeBuildInputs = [

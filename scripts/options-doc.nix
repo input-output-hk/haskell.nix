@@ -39,7 +39,7 @@ let
     ${ if lib.hasAttr "example" value
        then ''
         **Example**:
-  
+
         ${builtins.toJSON value.example}
       ''
       else "**No Example**"

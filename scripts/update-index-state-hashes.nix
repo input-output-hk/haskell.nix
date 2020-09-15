@@ -3,24 +3,24 @@ with builtins;
 with stdenv.lib;
 writeShellScriptBin "update-index-state-hashes" ''
    export PATH="${makeBinPath [ coreutils nix-tools nix curl ]}"
-   
+
    # We'll take the last element from the indexStatesHashes file via nix and get the name.
    # This is the last timestamp recorded in the file (implicit assumption: the file is
    # ordered, and nix preserved that order when parsing it into a attributeset).
    start=${let ls = attrNames (import indexStateHashesPath); in elemAt ls (length ls - 1)}
-   
+
    # The indexStatesHashesPath looks like
    # {
    #   ...
    # }
    # Idea: take everything but drop the last line, and can then just append each new
    # entry and finally close the file with "}".  We'll do this by echoing to STDOUT!
-   
+
    # Old file without the closing curly brace.
    cat ${indexStateHashesPath} | head -n -1
-   
+
    # Parse the $start date, and now into seconds with the date command.  Then walk
-   # them by 86400 (24*60*60) days.  We need to format the output with '%.f' as we 
+   # them by 86400 (24*60*60) days.  We need to format the output with '%.f' as we
    # don't want fractional values.
    for d in $(seq -f '%.f' $(date -u +%s -d $start) 86400 $(date -u +%s)) ; do
       # turn the step date $d into a YYYY-MM-DD string, and generate the truncated
@@ -35,7 +35,7 @@ writeShellScriptBin "update-index-state-hashes" ''
         echo "  \"''${dt}T00:00:00Z\" = \"''${sha256}\";"
       fi
     done
-    
+
     # emit the final closing brace.
     echo '}'
     ''

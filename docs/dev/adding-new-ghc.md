@@ -2,7 +2,7 @@
 
 ## Update `overlays/bootstrap.nix`
 
-Each ghc version is defined in this file.  Duplicate one of the exising
+Each ghc version is defined in this file.  Duplicate one of the existing
 ghc version definitions and replace the version numbers.  Make sure
 you update the `spec.sha256` or the other versions source will be used.
 Check the LLVM version that should be used in the
@@ -10,7 +10,7 @@ Check the LLVM version that should be used in the
 
 ## Update the list of cached GHC versions in `ci.nix`
 
-## Update [supported ghc versions](supported-ghc-versions.md) document
+## Update [supported ghc versions](../reference/supported-ghc-versions.md) document
 
 ## Add the materialized files
 
@@ -27,7 +27,7 @@ The `nix-build` command will fail with something like:
 Materialized nix used for dummy-data-x86_64-unknown-linux-musl-ghc-8.10.1 incorrect. To fix run: /nix/store/wnwpyrhv4nxgyljz3f20gdpspjxvm7h4-updateMaterialized
 ```
 
-Run the `updateMaterialized` script and repat the `nix-build` until it no longer fails.
+Run the `updateMaterialized` script and repeat the `nix-build` until it no longer fails.
 If the failure is not a problem with materialization and no `updateMaterialized` script
 is provided then you may need to fix the failure another way or (if it only relates to
 one of the cross compilers) modify `scripts/check-compiler-materialization/default.nix`

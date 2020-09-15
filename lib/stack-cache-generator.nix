@@ -26,7 +26,7 @@ let
         inherit src stackYaml resolverSha256;
       }) resolver fetchedResolver;
 
-    # Filter just the stack yaml file and any reolver yaml file it points to.
+    # Filter just the stack yaml file and any resolver yaml file it points to.
     maybeCleanedSource =
       if haskellLib.canCleanSource src
         then haskellLib.cleanSourceWith {
@@ -39,7 +39,7 @@ let
 
     # All repos served via ssh or git protocols are usually private
     private = url: pkgs.lib.substring 0 4 url != "http";
-    
+
     repos = builtins.fromJSON (builtins.readFile (pkgs.runCommand "stack-repos" {
         buildInputs = [ nix-tools ];
       } ''

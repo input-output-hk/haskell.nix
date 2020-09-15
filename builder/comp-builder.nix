@@ -31,6 +31,7 @@ let self =
 
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
+, hardeningDisable ? component.hardeningDisable
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
@@ -246,7 +247,7 @@ let
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
       ++ builtins.concatLists pkgconfig;
-  
+
     buildInputs = component.libs
       ++ map (d: d.components.library or d) component.depends;
 
@@ -279,12 +280,10 @@ let
       runHook postBuild
     '';
 
-    checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
-
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #
     # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
-    #         folder isntead of a file for the configuration.  Therfore if the result is a folder,
+    #         folder instead of a file for the configuration.  Therefore if the result is a folder,
     #         we need to register each and every element of that folder.
     #
     # Note 3: if a package has no libs SETUP will not generate anything.  This can
@@ -342,7 +341,7 @@ let
           ''}
         fi
       '')
-      # In case `setup copy` did not creat this
+      # In case `setup copy` did not create this
       + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
       + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
         echo "Symlink libffi and gmp .dlls ..."
@@ -363,6 +362,8 @@ let
       runHook postInstall
     '' + (lib.optionalString keepSource ''
       rm -rf dist
+    '') + (lib.optionalString (haskellLib.isTest componentId) ''
+      echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
 
     shellHook = ''
@@ -376,5 +377,8 @@ let
     inherit
       preBuild postBuild
       preInstall postInstall;
+  }
+  // lib.optionalAttrs (hardeningDisable != []) {
+    inherit hardeningDisable;
   });
 in drv; in self)

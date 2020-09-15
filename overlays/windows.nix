@@ -5,7 +5,7 @@
 final: prev:
 {
    # on windows we have this habit of putting libraries
-   # into `bin`, wheras on unix it's usually `lib`. For
+   # into `bin`, whereas on unix it's usually `lib`. For
    # this confuses nix easily. So we'll just move the
    # .dll's from `bin` into `$out/lib`. Such that they
    # are trivially found.
@@ -45,7 +45,7 @@ final: prev:
           # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
-          # Therfore let's enable doCrossCheck here!
+          # Therefore let's enable doCrossCheck here!
           doCrossCheck = pkgs.stdenv.hostPlatform.isWindows;
         };
       in {
@@ -79,9 +79,9 @@ final: prev:
           #   }
           #   else null)) ];
 
-          # clock 0.7.2 needs to be patche to support cross compilation.
+          # clock 0.7.2 needs to be patched to support cross compilation.
           clock.patches              = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: (if version == "0.7.2" then ./patches/clock-0.7.2.patch else null)) ];
-          # nix calles this package crypto
+          # nix calls this package crypto
           cryptonite-openssl.patches = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.7" then ./patches/cryptonite-openssl-0.7.patch else null) ];
 
           # this patch seems to be rather flaky and highly dependent on

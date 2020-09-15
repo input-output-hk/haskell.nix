@@ -9,9 +9,9 @@ let
 in
 
 {
-  # this has a slightly modified option type. we will *overwrite* any previous
+  # This has a slightly modified option type. We will *overwrite* any previous
   # setting of nonRelocatablePkgs, instead of merging them.  Otherwise you
-  # have no chance of removing packages retroacively.  We might improvie this
+  # have no chance of removing packages retroactively.  We might improve this
   # by implementing a logic that would allow +xxx to be added, -xxx to be removed
   # and if it's not a list of -/+ prefixed strings, be assumed to be overwriting.
   # This seems ugly.

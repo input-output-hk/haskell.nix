@@ -65,7 +65,7 @@ let
           nextState (builtins.head pair) (builtins.elemAt pair 1)
         else
           if name != null
-            then nextState name s # Append another line to the current attirbute
+            then nextState name s # Append another line to the current attribute
             else __trace "Expected attribute but found `${s}`" { inherit name attrs; }
     ) { name = null; attrs = {}; } (stripComments (unindent blockLines))).attrs;
 

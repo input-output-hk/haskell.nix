@@ -18,7 +18,7 @@ in recurseIntoAttrs {
   run = stdenv.mkDerivation {
     name = "buildable-test";
 
-    buildCommand = 
+    buildCommand =
       (concatStrings (mapAttrsToList (name: value: ''
         printf "checking whether executable runs... " >& 2
         cat ${haskellLib.check value}

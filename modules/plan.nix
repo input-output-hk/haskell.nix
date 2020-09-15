@@ -1,5 +1,5 @@
 # The plan (that is, a package set description like an LTS set or a
-# plan.nix (derived from plan.json)) will producde a structure that
+# plan.nix (derived from plan.json)) will produce a structure that
 # looks like, which is stored in config.plan.pkg-def:
 #
 # { packages = { "package" = { revision = hackageConfigs.$package.$version.revisions.default;
@@ -16,9 +16,9 @@ with lib;
 with types;
 
 let
-  # dealing with str is a bit annoying espectially with `nullOr str` as that apparently defaults to ""
+  # dealing with str is a bit annoying especially with `nullOr str` as that apparently defaults to ""
   # instead of null :shrug:.  This then messes with our option inheritance logic.
-  # Hence we have a uniqueStr type that ensures multiple identially defined options are collapsed
+  # Hence we have a uniqueStr type that ensures multiple identically defined options are collapsed
   # without raising an error. And a way to fetch default options that will retain `null` if the
   # option is not defined or "".
   getDefaultOrNull = def: key: if def ? ${key} && def.${key} != "" then def.${key} else null;
@@ -219,6 +219,10 @@ let
     postHaddock = mkOption {
       type = nullOr uniqueStr;
       default = getDefaultOrNull def "postHaddock";
+    };
+    hardeningDisable = mkOption {
+      type = listOfFilteringNulls str;
+      default = (def.hardeningDisable or []);
     };
   };
 

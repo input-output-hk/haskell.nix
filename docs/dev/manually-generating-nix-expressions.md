@@ -1,7 +1,7 @@
 # Manually generating Nix expressions
 
 We believe that imports from derivations (IFDs) provide tremendous
-value in nix and the aversion towards them stems mostly from 
+value in nix and the aversion towards them stems mostly from
 poor tooling and ci support for them.  We do not believe
 that poor tooling or ci support should cripple nix capability
 of abstraction.  Hence haskell.nix makes excessive use of
