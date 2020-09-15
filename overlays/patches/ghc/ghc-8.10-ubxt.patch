@@ -1119,10 +1119,3 @@ index 44d7d302e5..4bc43c3f4f 100644
  /*
   * Dummy info table pushed on the top of the stack when the interpreter
   * should apply the BCO on the stack to its arguments, also on the
-diff --git a/utils/hsc2hs b/utils/hsc2hs
-index 24100ea521..ed109c7199 160000
---- a/utils/hsc2hs
-+++ b/utils/hsc2hs
-@@ -1 +1 @@
--Subproject commit 24100ea521596922d3edc8370b3d9f7b845ae4cf
-+Subproject commit ed109c719925e358f68b95970199c4b961de6817
