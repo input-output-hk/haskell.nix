@@ -53,9 +53,10 @@ let
   lines = s: filter (x : x != [] && x != "") (split "\n" s);
 
   origSrcSubDir = toString (src.origSrcSubDir or src);
+  directoryExists = path: builtins.pathExists (builtins.toPath path + "/.");
 in
 
-if builtins.pathExists (origSrcSubDir + "/.git")
+if directoryExists (origSrcSubDir + "/.git")
 then
   let
     hasIndex = builtins.pathExists (origSrcSubDir + "/.git/index");
