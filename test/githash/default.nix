@@ -1,10 +1,29 @@
-{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitMinimal }:
 
 with stdenv.lib;
 
 let
+  src = testSrc "githash";
   project = haskell-nix.cabalProject' {
-    src = testSrc "githash";
+    inherit src;
+    # When haskell.nix has come from the store (e.g. on hydra) we need to provide
+    # a suitable mock of the cleaned source with a .git dir.
+    modules = optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {
+      packages.githash-test.src =
+        rec {
+          origSrc = runCommand "githash-test-src" { buildInputs = [ gitMinimal ]; } ''
+            mkdir -p $out/test/githash
+            cd $out
+            git init
+            cp -r ${src}/* test/githash
+            git add test/githash
+            git -c "user.name=unknown" -c "user.email=unknown" commit -m 'Initial Commit'
+          '';
+          origSubDir = "/test/githash";
+          origSrcSubDir = origSrc + origSubDir;
+          outPath = origSrcSubDir;
+        };
+    };
     inherit compiler-nix-name;
   };
 

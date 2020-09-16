@@ -174,12 +174,15 @@ let
 
   # Attributes that are common to both the build and haddock derivations
   commonAttrs = {
-      src = if cleanSrc ? origSrc && cleanSrc ? filter && cleanSrc.origSubDir or "" != ""
-        then haskellLib.cleanSourceWith {
-          src = cleanSrc.origSrc;
-          inherit (cleanSrc) filter;
-        }
-        else cleanSrc;
+      src =
+        # Remove the origSubDir if there was one so that src points to `cleanSrc.origSrc`
+        # when possible.  The `cleanSrc.origSubDir` is then used in `prePatch` instead.
+        if cleanSrc ? origSrc && cleanSrc ? filter && cleanSrc.origSubDir or "" != ""
+          then haskellLib.cleanSourceWith {
+            src = cleanSrc.origSrc;
+            inherit (cleanSrc) filter;
+          }
+          else cleanSrc.origSrc or cleanSrc;
 
       LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
       LC_ALL = "en_US.UTF-8";

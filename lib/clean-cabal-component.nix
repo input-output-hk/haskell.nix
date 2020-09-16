@@ -1,6 +1,6 @@
 # Use cleanSourceWith to filter just the files needed for a particular
 # component of the package
-{ lib, cleanSourceWith }: package: component: src:
+{ lib, cleanSourceWith, canCleanSource }: package: component: src:
 let
   srcStr' = src.origSrc or null;
   subDir = if src.origSubDir or "" == ""
@@ -49,7 +49,7 @@ let
         then p
         else p + "/";
 in
-  if srcStr' == null || package.detailLevel != "FullDetails"
+  if srcStr' == null || package.detailLevel != "FullDetails" || !canCleanSource src
     then src
     else
       let

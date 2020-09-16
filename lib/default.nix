@@ -193,7 +193,7 @@ in {
 
   # Use cleanSourceWith to filter just the files needed for a particular
   # component of a package
-  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith; };
+  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith canCleanSource; };
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
