@@ -10,7 +10,7 @@ Check the LLVM version that should be used in the
 
 ## Update the list of cached GHC versions in `ci.nix`
 
-## Update [supported ghc versions](supported-ghc-versions.md) document
+## Update [supported ghc versions](../reference/supported-ghc-versions.md) document
 
 ## Add the materialized files
 
