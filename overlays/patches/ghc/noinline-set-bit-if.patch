@@ -1,0 +1,12 @@
+diff --git a/compiler/parser/Lexer.hs b/compiler/parser/Lexer.hs
+index 2ada289db4..625a78c425 100644
+--- a/compiler/parser/Lexer.hs
++++ b/compiler/parser/Lexer.hs
+@@ -2429,6 +2429,7 @@ mkParserFlags' warningFlags extensionFlags thisPackage
+ 
+     xoptBit bit ext = bit `setBitIf` EnumSet.member ext extensionFlags
+ 
++    {-# NOINLINE setBitIf #-}
+     setBitIf :: ExtBits -> Bool -> ExtsBitmap
+     b `setBitIf` cond | cond      = xbit b
+                       | otherwise = 0

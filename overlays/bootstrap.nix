@@ -135,8 +135,12 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
 
                 ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
+
                 ++ fromUntil "8.8.3"  "8.9"    ./patches/ghc/ghc-8.8-ubxt.patch
                 ++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
+
+                ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/core-field.patch
+                ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/noinline-set-bit-if.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
