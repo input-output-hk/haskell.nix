@@ -92,6 +92,7 @@ pkgs:
      iphlpapi = null; # IP Help API
      msvcrt = null; # this is the libc
      Crypt32 = null;
+     mswsock = null;
    }
 # -- os x
 # NB: these map almost 1:1 to the framework names
