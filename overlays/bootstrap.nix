@@ -135,12 +135,6 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
 
                 ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
-
-                ++ fromUntil "8.8.3"  "8.9"    ./patches/ghc/ghc-8.8-ubxt.patch
-                ++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
-
-                ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/core-field.patch
-                ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/noinline-set-bit-if.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
@@ -370,6 +364,27 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.2";
+            };
+            # ghc 8.10.2 with patches needed by plutus
+            ghc8102-plutus = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "8.10.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "02w8n085bw38vyp694j0lfk5wcnwkdaj7hhp0saj71x74533lmww";
+                };
+
+                ghc-patches = ghc-patches "8.10.2"
+                 ++ [ ./patches/ghc/ghc-8.10-ubxt.patch ];
             };
         } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
