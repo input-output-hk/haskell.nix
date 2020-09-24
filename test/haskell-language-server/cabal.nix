@@ -5,8 +5,8 @@ let
     src = evalPackages.fetchgit {
       url = "https://github.com/haskell/haskell-language-server.git";
       fetchSubmodules = true;
-      rev = "c966e6f8b7be1ec7ca8dc5084fe7f2e6432c50f0";
-      sha256 = "1msjprk4g5v7aqpaa8zg34q999yxz0hg7zavc8a89p7yczss9h28";
+      rev = "e390da54a90f2c6c02ce836a27f2d4c33a71f607";
+      sha256 = "0s77r79zn6q42k3biylni81vhn1yr8r1mqn8pj9kgggh16xw229b";
     };
     projectFileName = "cabal.project";
     sha256map = {
