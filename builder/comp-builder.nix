@@ -62,6 +62,8 @@ let self =
 # Debug
 , enableDebugRTS ? false
 , enableDWARF ? false
+# This will only work with a custom TSan way enabled custom compiler
+, enableTSanRTS ? false
 
 # LLVM
 , useLLVM ? ghc.useLLVM
@@ -143,6 +145,7 @@ let
       ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
+      ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
       ++ lib.optional enableDWARF "--ghc-option=-g"
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
