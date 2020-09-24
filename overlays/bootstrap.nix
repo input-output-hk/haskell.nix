@@ -141,6 +141,15 @@ in {
                 ++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
                 ;
         in ({
+            sources = {
+              ghc-865-iohk = import ../compiler/ghc/source-dist.nix {
+                inherit (final) stdenv;
+                pkgs = final;
+                inherit (final.haskell-nix.compiler.ghc865.bootPkgs) alex happy hscolour ghc;
+                src = final.haskell-nix.sources."ghc-8.6.5-iohk";
+                version = "8.6.5-iohk";
+              };
+            };
             ghc844 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc844; };
 
@@ -246,26 +255,61 @@ in {
                 ghc-patches = ghc-patches "8.6.4"
                             ++ [ D5123-patch ];
             };
-            ghc865 = final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865; };
+            # ghc865 = final.callPackage ../compiler/ghc {
+            #     extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865; };
 
-                inherit sphinx installDeps;
-                bootPkgs = bootPkgs // {
-                  # GHC 8.6.5 and earlier need happy 1.19.11
-                  happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
-                };
+            #     inherit sphinx installDeps;
+            #     bootPkgs = bootPkgs // {
+            #       # GHC 8.6.5 and earlier need happy 1.19.11
+            #       happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
+            #     };
+
+            #     buildLlvmPackages = final.buildPackages.llvmPackages_6;
+            #     llvmPackages = final.llvmPackages_6;
+
+            #     src-spec = rec {
+            #         version = "8.6.5";
+            #         url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+            #         sha256 = "0qg3zsmbk4rkwkc3jpas3zs74qaxmw4sp4v1mhsbj0a0dzls2jjd";
+            #     };
+
+            #     ghc-patches = ghc-patches "8.6.5"
+            #                 ++ [ D5123-patch haddock-900-patch ];
+            # };
+            ghc865 = final.haskell-nix.compiler.ghc865-iohk;
+            ghc865-iohk = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865-iohk; };
+
+                inherit bootPkgs sphinx installDeps;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_6;
                 llvmPackages = final.llvmPackages_6;
 
                 src-spec = rec {
                     version = "8.6.5";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "0qg3zsmbk4rkwkc3jpas3zs74qaxmw4sp4v1mhsbj0a0dzls2jjd";
+                    file = "${final.haskell-nix.compiler.sources.ghc-865-iohk}/src.tar.xz";
                 };
 
-                ghc-patches = ghc-patches "8.6.5"
-                            ++ [ D5123-patch haddock-900-patch ];
+                ghc-patches = [
+                  ./patches/ghc/outputtable-assert-8.6.patch
+                  ./patches/ghc/ghc-8.6.4-reenable-th-qq-in-stage1.patch
+                  ./patches/ghc/dll-loader-8.4.2.patch
+                  ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
+                  ./patches/ghc/ghc-8.6.5-atomic-arm-arch.patch
+                  ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
+                  ./patches/ghc/respect-ar-path.patch
+                  ./patches/ghc/ghc-no-system-linker.patch
+                  # ./patches/ghc/aarch64-linker.patch
+                  ./patches/ghc/llvm-emit-nonlazybind.patch
+
+                  ./patches/ghc/Cabal-3886.patch
+                  ./patches/ghc/ghc-8.4.3-Cabal2201-allow-test-wrapper.patch
+                  ./patches/ghc/ghc-8.4.3-Cabal2201-response-file-support.patch
+                  ./patches/ghc/ghc-8.6-Cabal-fix-datadir.patch
+                  ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch
+                  ./patches/ghc/ghc-prim-linux-extra-libraries.patch
+                  haddock-900-patch
+                ];
             };
             ghc881 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc881; };
