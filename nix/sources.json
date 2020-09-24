@@ -12,6 +12,20 @@
         "url": "https://github.com/haskell/cabal/archive/94aaa8e4720081f9c75497e2735b90f6a819b08e.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "ghc-8.6.5-iohk": {
+        "branch": "release/8.6.5-iohk",
+        "deepClone": true,
+        "description": "IOHK's ghc fork. See release/X.Y.Z-iohk branches.",
+        "homepage": "",
+        "owner": "input-output-hk",
+        "ref": "release/8.6.5-iohk",
+        "repo": "https://github.com/input-output-hk/ghc.git",
+        "rev": "95713a6ecce4551240da7c96b6176f980af75cae",
+        "sha256": "0hma1zsijw9z2i622qnxpmhahbjdjgq68hz1l57bbm3v9nzh21bc",
+        "type": "git",
+        "url": "https://github.com/input-output-hk/ghc.git",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "niv": {
         "branch": "master",
         "builtin": false,
