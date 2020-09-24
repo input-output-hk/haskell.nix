@@ -479,7 +479,7 @@ final: prev: {
                           ++ final.lib.optional (args ? ghcOverride || args ? ghc)
                               { ghc.package = args.ghcOverride or args.ghc; }
                           ++ final.lib.optional (args ? compiler-nix-name)
-                              { compiler.nix-name = args.compiler-nix-name; };
+                              { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
             in addProjectAndPackageAttrs {

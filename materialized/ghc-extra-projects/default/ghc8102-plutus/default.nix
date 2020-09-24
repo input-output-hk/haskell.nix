@@ -25,7 +25,7 @@
         };
       compiler = {
         version = "8.10.2";
-        nix-name = "ghc8102-plutus";
+        nix-name = "ghc8102";
         packages = {
           "ghc-prim" = "0.6.1";
           "ghc-heap" = "8.10.2";

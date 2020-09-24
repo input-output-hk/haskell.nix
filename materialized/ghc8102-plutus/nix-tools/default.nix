@@ -304,7 +304,7 @@
         };
       compiler = {
         version = "8.10.2";
-        nix-name = "ghc8102-plutus";
+        nix-name = "ghc8102";
         packages = {
           "exceptions" = "0.10.4";
           "binary" = "0.8.8.0";
