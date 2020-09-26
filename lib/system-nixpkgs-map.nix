@@ -78,6 +78,7 @@ pkgs:
      vulkan = pkgs.vulkan-loader;
      sodium = pkgs.libsodium;
      gfortran = pkgs.gfortran.cc.lib;
+     blas = pkgs.openblasCompat;
    }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
