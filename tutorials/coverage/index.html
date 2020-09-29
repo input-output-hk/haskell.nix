@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Command-line tools - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>Generating coverage information - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -17,8 +17,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Command-line tools";
-    var mkdocs_page_input_path = "reference/commands.md";
+    var mkdocs_page_name = "Generating coverage information";
+    var mkdocs_page_input_path = "tutorials/coverage.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -69,39 +69,57 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../../tutorials/getting-started/">Getting Started</a>
+    <a class="" href="../getting-started/">Getting Started</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../tutorials/development/">Creating a development environment</a>
+    <a class="" href="../development/">Creating a development environment</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
+    <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../tutorials/source-repository-hashes/">Handling git repositories in projects</a>
+    <a class="" href="../source-repository-hashes/">Handling git repositories in projects</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
+    <a class="" href="../hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../tutorials/materialization/">Materialization: Speeding up Nix evaluation</a>
+    <a class="" href="../materialization/">Materialization: Speeding up Nix evaluation</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../tutorials/cross-compilation/">Cross-compiling your project</a>
+    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
                 </li>
-                <li class="">
+                <li class=" current">
                     
-    <a class="" href="../../tutorials/coverage/">Generating coverage information</a>
+    <a class="current" href="./">Generating coverage information</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#coverage">Coverage</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#prerequisites">Prerequisites</a></li>
+        
+            <li><a class="toctree-l4" href="#per-package">Per-package</a></li>
+        
+            <li><a class="toctree-l4" href="#project-wide">Project-wide</a></li>
+        
+            <li><a class="toctree-l4" href="#custom">Custom</a></li>
+        
+        </ul>
+    
+
+    </ul>
                 </li>
     </ul>
 	    </li>
@@ -112,31 +130,19 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../supported-ghc-versions/">Suported GHC versions</a>
-                </li>
-                <li class=" current">
-                    
-    <a class="current" href="./">Command-line tools</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l3"><a href="#stack-to-nix">stack-to-nix</a></li>
-    
-
-    <li class="toctree-l3"><a href="#plan-to-nix">plan-to-nix</a></li>
-    
-
-    <li class="toctree-l3"><a href="#cabal-to-nix">cabal-to-nix</a></li>
-    
-
-    </ul>
+    <a class="" href="../../reference/supported-ghc-versions/">Suported GHC versions</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../library/">Haskell.nix Library</a>
+    <a class="" href="../../reference/commands/">Command-line tools</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../modules/">Module options</a>
+    <a class="" href="../../reference/library/">Haskell.nix Library</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
                 </li>
     </ul>
 	    </li>
@@ -227,14 +233,14 @@
     
       
         
-          <li>Reference &raquo;</li>
+          <li>Tutorials &raquo;</li>
         
       
     
-    <li>Command-line tools</li>
+    <li>Generating coverage information</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/reference/commands.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/coverage.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -244,73 +250,109 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="stack-to-nix">stack-to-nix<a class="headerlink" href="#stack-to-nix" title="Permanent link">&para;</a></h1>
-<pre><code>stack-to-nix - a stack to nix converter
+                <h1 id="coverage">Coverage<a class="headerlink" href="#coverage" title="Permanent link">&para;</a></h1>
+<p>haskell.nix can generate coverage information for your package or
+project using Cabal's inbuilt hpc support.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>To get a sensible coverage report, you need to enable coverage on each
+of the packages of your project:</p>
+<pre><code class="nix">pkgs.haskell-nix.project {
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
+    name = &quot;haskell-nix-project&quot;;
+    src = ./.;
+  };
+  compiler-nix-name = &quot;ghc884&quot;;
 
-Usage: stack-to-nix (-o|--output DIR) [--stack-yaml FILE]
-                    [--ignore-package-yaml] [--cache FILE]
-  Generate a Nix expression for a Haskell package using Stack
-
-Available options:
-  -o,--output DIR          Generate output in DIR
-  --stack-yaml FILE        Override project stack.yaml (default: &quot;stack.yaml&quot;)
-  --ignore-package-yaml    disable hpack run and use only cabal disregarding
-                           package.yaml existence
-  --cache FILE             Dependency cache
-                           file (default: &quot;.stack-to-nix.cache&quot;)
-  -h,--help                Show this help text
+  modules = [{
+    packages.$pkg.components.library.doCoverage = true;
+  }];
+}
 </code></pre>
 
-<p>Use this for stack projects. If a <code>default.nix</code> does not exist in the
-output directory, it will create a basic one with a
-<a href="../manually-generating-nix-expressions#Using-Stack"><code>mkStackPkgSet</code></a> function.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you find that there are missing files which should have been
-generated, remove <code>.stack-to-nix.cache</code>
-(The open issue is <a href="https://github.com/input-output-hk/haskell.nix/issues/57">#57</a>).</p>
-</div>
-<h1 id="plan-to-nix">plan-to-nix<a class="headerlink" href="#plan-to-nix" title="Permanent link">&para;</a></h1>
-<pre><code>plan-to-nix - a stack to nix converter
+<p>If you would like to make coverage optional, add an argument to your nix expression:</p>
+<pre><code class="nix">{ withCoverage ? false }:
 
-Usage: plan-to-nix (-o|--output DIR) [--plan-json FILE] [--cabal-project FILE]
-                   [--cache FILE]
-  Generate a Nix expression for a Haskell package using Cabal
+pkgs.haskell-nix.project {
+  src = pkgs.haskell-nix.haskellLib.cleanGit {
+    name = &quot;haskell-nix-project&quot;;
+    src = ./.;
+  };
+  compiler-nix-name = &quot;ghc884&quot;;
 
-Available options:
-  -o,--output DIR          Generate output in DIR
-  --plan-json FILE         Override plan.json
-                           location (default: &quot;dist-newstyle/cache/plan.json&quot;)
-  --cabal-project FILE     Override path to
-                           cabal.project (default: &quot;cabal.project&quot;)
-  --cache FILE             Dependency cache file (default: &quot;.nix-tools.cache&quot;)
-  -h,--help                Show this help text
+  modules = pkgs.lib.optional withCoverage [{
+    packages.$pkg.components.library.doCoverage = true;
+  }];
+}
 </code></pre>
 
-<p>Use this for Cabal new-build projects (even if you don't have a
-<code>cabal.project</code>). Before running, you need to create a plan. For more
-information, see <a href="../manually-generating-nix-expressions#Using-Cabal">Cabal Projects</a> in the user
-guide.</p>
-<p>It will create a template <code>default.nix</code> in the output directory,
-unless that file already exists.</p>
-<p>Inside the output directory, there will be another directory
-<code>.plan.nix</code>, which contains Nix expressions for all local packages,
-generated by <code>cabal-to-nix</code>. The output file <code>pkgs.nix</code> refers to
-these files.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you find that there are missing files which should have been
-generated, remove <code>.nix-tools.cache</code>
-(The open issue is <a href="https://github.com/input-output-hk/haskell.nix/issues/57">#57</a>).</p>
-</div>
-<h1 id="cabal-to-nix">cabal-to-nix<a class="headerlink" href="#cabal-to-nix" title="Permanent link">&para;</a></h1>
-<pre><code>Usage: cabal-to-nix FILE.cabal
+<h2 id="per-package">Per-package<a class="headerlink" href="#per-package" title="Permanent link">&para;</a></h2>
+<pre><code class="bash">nix-build default.nix -A &quot;projectWithCoverage.$pkg.coverageReport&quot;
 </code></pre>
 
-<p>This writes (to stdout) a <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> Nix expression for the given
-cabal package.</p>
-<p>Normally, you do not need to run <code>cabal-to-nix</code> yourself. It is called
-by <code>stack-to-nix</code> and <code>plan-to-nix</code>.</p>
+<p>This will generate a coverage report for the package you requested.
+All tests that are enabled (configured with <code>doCheck == true</code>) are
+included in the coverage report.</p>
+<p>See the <a href="../../dev/coverage/#package-reports">developer coverage docs</a> for more information.</p>
+<h2 id="project-wide">Project-wide<a class="headerlink" href="#project-wide" title="Permanent link">&para;</a></h2>
+<pre><code class="bash">nix-build default.nix -A &quot;projectWithCoverage.projectCoverageReport&quot;
+</code></pre>
+
+<p>This will generate a coverage report for all the local packages in
+your project.</p>
+<p>See the <a href="../../dev/coverage/#project-wide-reports">developer coverage docs</a> for more information.</p>
+<h2 id="custom">Custom<a class="headerlink" href="#custom" title="Permanent link">&para;</a></h2>
+<p>By default, the behaviour of the <code>coverageReport</code> attribute is to
+generate a coverage report that describes how that package affects the
+coverage of all local packages (including itself) in the project.</p>
+<p>The default behaviour of <code>projectCoverageReport</code> is to sum the
+default coverage reports (produced by the above process) of all local
+packages in the project.</p>
+<p>You can modify this behaviour by using the <code>coverageReport</code> and
+<code>projectCoverageReport</code> functions found in the haskell.nix library:</p>
+<pre><code class="nix">let
+  inherit (pkgs.haskell-nix) haskellLib;
+
+  project = haskellLib.project {
+    src = pkgs.haskell-nix.haskellLib.cleanGit {
+      name = &quot;haskell-nix-project&quot;;
+      src = ./.;
+    };
+    compiler-nix-name = &quot;ghc884&quot;;
+
+    modules = [{
+      packages.$pkgA.components.library.doCoverage = true;
+      packages.$pkgB.components.library.doCoverage = true;
+    }];
+  };
+
+  # Generate a coverage report for $pkgA that only includes the
+  # unit-test check and only shows coverage information for $pkgA, not
+  # $pkgB.
+  custom$pkgACoverageReport = haskellLib.coverageReport rec {
+    name = &quot;$pkgA-unit-tests-only&quot;
+    inherit (project.$pkgA.components) library;
+    checks = [project.$pkgA.components.checks.unit-test];
+    # Note that this is the default value of the &quot;mixLibraries&quot;
+    # argument and so this line isn't really necessary.
+    mixLibraries = [project.$pkgA.components.library];
+  };
+
+  custom$pkgBCoverageReport = haskellLib.coverageReport rec {
+    name = &quot;$pkgB-unit-tests-only&quot;
+    inherit (project.$pkgB.components) library;
+    checks = [project.$pkgB.components.checks.unit-test];
+    mixLibraries = [project.$pkgB.components.library];
+  };
+
+  # Generate a project coverage report that only includes the unit
+  # tests of the project, and only shows how each unit test effects
+  # the coverage of it's package, and not other packages in the
+  # project.
+  allUnitTestsProjectReport = haskellLib.projectCoverageReport [custom$pkgACoverageReport custom$pkgBCoverageReport];
+in {
+  inherit project custom$pkgACoverageReport custom$pkgBCoverageReport allUnitTestsProjectCoverageReport;
+}
+</code></pre>
               
             </div>
           </div>
@@ -318,10 +360,10 @@ by <code>stack-to-nix</code> and <code>plan-to-nix</code>.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../library/" class="btn btn-neutral float-right" title="Haskell.nix Library">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../reference/supported-ghc-versions/" class="btn btn-neutral float-right" title="Suported GHC versions">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../supported-ghc-versions/" class="btn btn-neutral" title="Suported GHC versions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../cross-compilation/" class="btn btn-neutral" title="Cross-compiling your project"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -349,10 +391,10 @@ by <code>stack-to-nix</code> and <code>plan-to-nix</code>.</p>
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../supported-ghc-versions/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../cross-compilation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../library/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../reference/supported-ghc-versions/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

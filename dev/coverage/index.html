@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Coverage - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Coverage";
+    var mkdocs_page_input_path = "dev/coverage.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../motivation/">Motivation</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Tutorials</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../tutorials/getting-started/">Getting Started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/development/">Creating a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/source-repository-hashes/">Handling git repositories in projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/materialization/">Materialization: Speeding up Nix evaluation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/coverage/">Generating coverage information</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../reference/supported-ghc-versions/">Suported GHC versions</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/library/">Haskell.nix Library</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../troubleshooting/">Troubleshooting</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../manually-generating-nix-expressions/">Manually generating Nix expressions</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../nixpkgs-pin/">Nixpkgs Pin</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../tests/">Test Suite</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../adding-new-ghc/">Adding a new GHC version</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Coverage</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#developer-coverage-overview">Developer Coverage Overview</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#building">Building</a></li>
+        
+            <li><a class="toctree-l4" href="#coverage-reports">Coverage reports</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../changelog/">ChangeLog</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Dev Notes &raquo;</li>
+        
+      
+    
+    <li>Coverage</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/dev/coverage.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="developer-coverage-overview">Developer Coverage Overview<a class="headerlink" href="#developer-coverage-overview" title="Permanent link">&para;</a></h1>
+<h2 id="building">Building<a class="headerlink" href="#building" title="Permanent link">&para;</a></h2>
+<p>The implementation of coverage starts with the "doCoverage" flag on
+the builder in <code>comp-builder.nix</code>. The doCoverage flag enables and
+disables the Cabal coverage flag and copies any generated coverage
+data to "$out/share/hpc".</p>
+<h3 id="mix-and-tix-files">Mix and tix files<a class="headerlink" href="#mix-and-tix-files" title="Permanent link">&para;</a></h3>
+<p>The coverage information for any derivation consists of "mix" and
+"tix" files.</p>
+<p>Mix files record static information about a source file and are
+generated at build time. They primarily contain a path to the source
+file and information about expressions and regions of the source file,
+which are later referenced by tix files.</p>
+<p>Tix files contain dynamic information about a test run, recording when
+a portion of a source file is touched by a test. These are generated
+when the test is run.</p>
+<h3 id="multiple-local-packages">Multiple local packages<a class="headerlink" href="#multiple-local-packages" title="Permanent link">&para;</a></h3>
+<p>In the context of multiple local packages, there are a few types of
+coverage we might be interested in:
+  - How well does the tests for this package cover the package library?
+  - How well does the tests for this package cover the libraries of
+    other packages in this project?
+  - Both of the above.</p>
+<p>To facilitate expressing any of these classifications of coverage, the
+<code>lib/cover.nix</code> function provides the <code>mixLibraries</code> argument. If
+you're just interested in how the tests cover the package library, you
+provide that library as an argument to <code>mixLibraries</code>. If you're
+interested in how the tests also cover other local packages in the
+project, you can also provide those libraries as arguments to
+mixLibraries.</p>
+<p>The <code>projectCoverageReport</code> and <code>coverageReport</code> attributes that are
+provided by default on projects and packages respectively provide
+coverage information for <em>all</em> local packages in the project. This is
+to mimic the behaviour of Stack, which seems to be the expectation of
+most people. Of course, you can use the <code>projectCoverageReport</code> and
+<code>coverageReport</code> functions to construct your own custom coverage
+reports (as detailed in the <a href="../../tutorials/coverage/#custom">coverage tutorial</a>).</p>
+<h2 id="coverage-reports">Coverage reports<a class="headerlink" href="#coverage-reports" title="Permanent link">&para;</a></h2>
+<h3 id="package-reports">Package reports<a class="headerlink" href="#package-reports" title="Permanent link">&para;</a></h3>
+<p>The coverage information generated will look something like this:</p>
+<pre><code class="bash">/nix/store/...-my-project-0.1.0.0-coverage-report/
+└── share
+    └── hpc
+        └── vanilla
+            ├── html
+            │   └── my-library-0.1.0.0
+            │       ├── my-library-0.1.0.0-48EVZBwW9Kj29VTaRMhBDf
+            │       │   ├── My.Lib.Config.hs.html
+            │       │   ├── My.Lib.Types.hs.html
+            │       │   └── My.Lib.Util.hs.html
+            │       ├── hpc_index_alt.html
+            │       ├── hpc_index_exp.html
+            │       ├── hpc_index_fun.html
+            │       └── hpc_index.html
+            ├── mix
+            │   └── my-library-0.1.0.0
+            │       └── my-library-0.1.0.0-48EVZBwW9Kj29VTaRMhBDf
+            │           ├── My.Lib.Config.mix
+            │           ├── My.Lib.Types.mix
+            │           └── My.Lib.Util.mix
+            └── tix
+                └── my-library-0.1.0.0
+                    ├── my-library-0.1.0.0.tix
+                    ├── my-test-1
+                    │   └── my-test-1.tix
+                    └── unit-test
+                        └── unit-test.tix
+</code></pre>
+
+<ul>
+<li>The mix files are copied verbatim from the library built with
+  coverage.</li>
+<li>The tix files for each test are copied from the check run verbatim
+  and are output to ".../tix/<libraryname>/<testname>/<testname>.tix".</li>
+<li>The tix files for each library are generated by summing the tix
+  files for each test, but excluding any test modules. This tix file
+  is output to ".../tix/<libraryname>/<libraryname>.tix".</li>
+<li>Test modules are determined by inspecting the plan for the project
+    (i.e. for the project "my-project" and test-suite "my-test-1", the
+    test modules are read from:
+    <code>my-project.checks.my-test-1.config.modules</code>)</li>
+<li>The hpc HTML reports for each library are generated from their
+  respective tix files (i.e. the
+  <code>share/hpc/vanilla/html/my-library-0.1.0.0</code> report is generated from
+  the
+  <code>share/hpc/vanilla/tix/my-library-0.1.0.0/my-library-0.1.0.0.tix</code>
+  file)</li>
+</ul>
+<h3 id="project-wide-reports">Project-wide reports<a class="headerlink" href="#project-wide-reports" title="Permanent link">&para;</a></h3>
+<p>The coverage information for an entire project will look something
+like this:</p>
+<pre><code class="bash">/nix/store/...-coverage-report
+└── share
+    └── hpc
+        └── vanilla
+            ├── html
+            │   ├── index.html
+            │   ├── all
+            │   │   ├── my-library-0.1.0.0-ERSaOroBZhe9awsoBkhmcV
+            │   │   │   ├── My.Lib.Config.hs.html
+            │   │   │   ├── My.Lib.Types.hs.html
+            │   │   │   └── My.Lib.Util.hs.html
+            │   │   ├── other-library-0.1.0.0-48EVZBwW9Kj29VTaRMhBDf
+            │   │   │   ├── Other.Lib.A.hs.html
+            │   │   │   └── Other.Lib.B.hs.html
+            │   │   ├── hpc_index_alt.html
+            │   │   ├── hpc_index_exp.html
+            │   │   ├── hpc_index_fun.html
+            │   │   └── hpc_index.html
+            │   ├── my-library-0.1.0.0
+            │   │   ├── my-library-0.1.0.0-ERSaOroBZhe9awsoBkhmcV
+            │   │   │   ├── My.Lib.Config.hs.html
+            │   │   │   ├── My.Lib.Types.hs.html
+            │   │   │   └── My.Lib.Util.hs.html
+            │   │   ├── hpc_index_alt.html
+            │   │   ├── hpc_index_exp.html
+            │   │   ├── hpc_index_fun.html
+            │   │   └── hpc_index.html
+            │   └── other-libray-0.1.0.0
+            │       ├── other-library-0.1.0.0-48EVZBwW9Kj29VTaRMhBDf
+            │       │   ├── Other.Lib.A.hs.html
+            │       │   └── Other.Lib.B.hs.html
+            │       ├── hpc_index_alt.html
+            │       ├── hpc_index_exp.html
+            │       ├── hpc_index_fun.html
+            │       └── hpc_index.html
+            ├── mix
+            │   ├── my-library-0.1.0.0-ERSaOroBZhe9awsoBkhmcV
+            │   │   ├── My.Lib.Config.mix
+            │   │   ├── My.Lib.Types.mix
+            │   │   └── My.Lib.Util.mix
+            │   └── other-library-0.1.0.0-48EVZBwW9Kj29VTaRMhBDf
+            │       ├── Other.Lib.A.mix
+            │       └── Other.Lib.B.mix
+            └── tix
+                ├── all
+                │   └── all.tix
+                ├── my-library-0.1.0.0
+                │   ├── my-library-0.1.0.0.tix
+                │   ├── my-test-1
+                │   │   └── my-test-1.tix
+                │   └── unit-test
+                │       └── unit-test.tix
+                └── another-library-0.1.0.0
+                    ├── another-library-0.1.0.0.tix
+                    ├── my-test-2
+                    │   └── my-test-2.tix
+                    └── unit-test
+                        └── unit-test.tix
+</code></pre>
+
+<p>All of the coverage information is copied verbatim from the coverage
+reports for each of the constituent packages. A few additions are
+made:
+  - <code>tix/all/all.tix</code> is generated from the union of all the library
+    tix files.
+    - We use this file when generating coverage reports for
+      "coveralls.io".
+  - An index page (<code>html/index.html</code>) is generated which links to the
+    HTML coverage reports of the constituent packages.
+  - A synthetic HTML report is generated from the <code>tix/all/all.tix</code>
+    file. This shows the union of all the coverage information
+    generated by each constituent coverage report.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../changelog/" class="btn btn-neutral float-right" title="ChangeLog">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../adding-new-ghc/" class="btn btn-neutral" title="Adding a new GHC version"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../adding-new-ghc/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../changelog/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

@@ -99,6 +99,10 @@
                     
     <a class="" href="../../tutorials/cross-compilation/">Cross-compiling your project</a>
                 </li>
+                <li class="">
+                    
+    <a class="" href="../../tutorials/coverage/">Generating coverage information</a>
+                </li>
     </ul>
 	    </li>
           
@@ -144,6 +148,8 @@
             <li><a class="toctree-l4" href="#configureflags">configureFlags</a></li>
         
             <li><a class="toctree-l4" href="#docheck">doCheck</a></li>
+        
+            <li><a class="toctree-l4" href="#docoverage">doCoverage</a></li>
         
             <li><a class="toctree-l4" href="#docrosscheck">doCrossCheck</a></li>
         
@@ -214,6 +220,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksdepends">packages..components.benchmarks..depends</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksdocheck">packages..components.benchmarks..doCheck</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsbenchmarksdocoverage">packages..components.benchmarks..doCoverage</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksdocrosscheck">packages..components.benchmarks..doCrossCheck</a></li>
         
@@ -327,6 +335,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentsexesdocheck">packages..components.exes..doCheck</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentsexesdocoverage">packages..components.exes..doCoverage</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentsexesdocrosscheck">packages..components.exes..doCrossCheck</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsexesdoexactconfig">packages..components.exes..doExactConfig</a></li>
@@ -438,6 +448,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsdepends">packages..components.foreignlibs..depends</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsdocheck">packages..components.foreignlibs..doCheck</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsforeignlibsdocoverage">packages..components.foreignlibs..doCoverage</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsdocrosscheck">packages..components.foreignlibs..doCrossCheck</a></li>
         
@@ -551,6 +563,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentslibrarydocheck">packages..components.library.doCheck</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentslibrarydocoverage">packages..components.library.doCoverage</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentslibrarydocrosscheck">packages..components.library.doCrossCheck</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentslibrarydoexactconfig">packages..components.library.doExactConfig</a></li>
@@ -662,6 +676,8 @@
             <li><a class="toctree-l4" href="#packagescomponentssetupdepends">packages..components.setup.depends</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetupdocheck">packages..components.setup.doCheck</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentssetupdocoverage">packages..components.setup.doCoverage</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetupdocrosscheck">packages..components.setup.doCrossCheck</a></li>
         
@@ -775,6 +791,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentssublibsdocheck">packages..components.sublibs..doCheck</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentssublibsdocoverage">packages..components.sublibs..doCoverage</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentssublibsdocrosscheck">packages..components.sublibs..doCrossCheck</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssublibsdoexactconfig">packages..components.sublibs..doExactConfig</a></li>
@@ -887,6 +905,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentstestsdocheck">packages..components.tests..doCheck</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentstestsdocoverage">packages..components.tests..doCoverage</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentstestsdocrosscheck">packages..components.tests..doCrossCheck</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentstestsdoexactconfig">packages..components.tests..doExactConfig</a></li>
@@ -982,6 +1002,8 @@
             <li><a class="toctree-l4" href="#packagesconfigureflags">packages..configureFlags</a></li>
         
             <li><a class="toctree-l4" href="#packagesdocheck">packages..doCheck</a></li>
+        
+            <li><a class="toctree-l4" href="#packagesdocoverage">packages..doCoverage</a></li>
         
             <li><a class="toctree-l4" href="#packagesdocrosscheck">packages..doCrossCheck</a></li>
         
@@ -1215,6 +1237,10 @@
                     
     <a class="" href="../../dev/adding-new-ghc/">Adding a new GHC version</a>
                 </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/coverage/">Coverage</a>
+                </li>
     </ul>
 	    </li>
           
@@ -1314,6 +1340,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
+<p><strong>No Example</strong></p>
+<h2 id="docoverage">doCoverage<a class="headerlink" href="#docoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="docrosscheck">doCrossCheck<a class="headerlink" href="#docrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
@@ -1489,6 +1520,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentsbenchmarksdocoverage">packages.<name>.components.benchmarks.<name>.doCoverage<a class="headerlink" href="#packagescomponentsbenchmarksdocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksdocrosscheck">packages.<name>.components.benchmarks.<name>.doCrossCheck<a class="headerlink" href="#packagescomponentsbenchmarksdocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
@@ -1771,6 +1807,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentsexesdocoverage">packages.<name>.components.exes.<name>.doCoverage<a class="headerlink" href="#packagescomponentsexesdocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesdocrosscheck">packages.<name>.components.exes.<name>.doCrossCheck<a class="headerlink" href="#packagescomponentsexesdocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
 <p><strong>Type</strong>: boolean</p>
@@ -2051,6 +2092,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentsforeignlibsdocoverage">packages.<name>.components.foreignlibs.<name>.doCoverage<a class="headerlink" href="#packagescomponentsforeignlibsdocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsdocrosscheck">packages.<name>.components.foreignlibs.<name>.doCrossCheck<a class="headerlink" href="#packagescomponentsforeignlibsdocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
@@ -2333,6 +2379,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentslibrarydocoverage">packages.<name>.components.library.doCoverage<a class="headerlink" href="#packagescomponentslibrarydocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarydocrosscheck">packages.<name>.components.library.doCrossCheck<a class="headerlink" href="#packagescomponentslibrarydocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
 <p><strong>Type</strong>: boolean</p>
@@ -2613,6 +2664,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentssetupdocoverage">packages.<name>.components.setup.doCoverage<a class="headerlink" href="#packagescomponentssetupdocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupdocrosscheck">packages.<name>.components.setup.doCrossCheck<a class="headerlink" href="#packagescomponentssetupdocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
@@ -2895,6 +2951,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentssublibsdocoverage">packages.<name>.components.sublibs.<name>.doCoverage<a class="headerlink" href="#packagescomponentssublibsdocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsdocrosscheck">packages.<name>.components.sublibs.<name>.doCrossCheck<a class="headerlink" href="#packagescomponentssublibsdocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
 <p><strong>Type</strong>: boolean</p>
@@ -3176,6 +3237,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentstestsdocoverage">packages.<name>.components.tests.<name>.doCoverage<a class="headerlink" href="#packagescomponentstestsdocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsdocrosscheck">packages.<name>.components.tests.<name>.doCrossCheck<a class="headerlink" href="#packagescomponentstestsdocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>
 <p><strong>Type</strong>: boolean</p>
@@ -3416,6 +3482,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: true</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagesdocoverage">packages.<name>.doCoverage<a class="headerlink" href="#packagesdocoverage" title="Permanent link">&para;</a></h2>
+<p>Enable production of test coverage reports.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesdocrosscheck">packages.<name>.doCrossCheck<a class="headerlink" href="#packagesdocrosscheck" title="Permanent link">&para;</a></h2>
 <p>Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.</p>

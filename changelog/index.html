@@ -99,6 +99,10 @@
                     
     <a class="" href="../tutorials/cross-compilation/">Cross-compiling your project</a>
                 </li>
+                <li class="">
+                    
+    <a class="" href="../tutorials/coverage/">Generating coverage information</a>
+                </li>
     </ul>
 	    </li>
           
@@ -177,6 +181,10 @@
                     
     <a class="" href="../dev/adding-new-ghc/">Adding a new GHC version</a>
                 </li>
+                <li class="">
+                    
+    <a class="" href="../dev/coverage/">Coverage</a>
+                </li>
     </ul>
 	    </li>
           
@@ -185,6 +193,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#sep-8-2020">Sep 8, 2020</a></li>
+    
+
     <li class="toctree-l2"><a href="#july-21-2020">July 21, 2020</a></li>
     
 
@@ -279,6 +290,16 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="sep-8-2020">Sep 8, 2020<a class="headerlink" href="#sep-8-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added the ability to generate coverage reports for packages and
+  projects.</li>
+<li>Added the <code>doCoverage</code> module option that allows users to choose
+  packages to enable coverage for.</li>
+<li>Added a <code>doCoverage</code> flag to the component builder that outputs HPC
+  information when coverage is enabled.</li>
+<li>Added test for coverage.</li>
+</ul>
 <h2 id="july-21-2020">July 21, 2020<a class="headerlink" href="#july-21-2020" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Removed <code>components.all</code>, use <code>symlinkJoin</code> on components.exes or
@@ -418,7 +439,7 @@ take a <code>pkg-def-extras</code> instead of <code>pkg-def-overlay</code> argum
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="../dev/adding-new-ghc/" class="btn btn-neutral" title="Adding a new GHC version"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../dev/coverage/" class="btn btn-neutral" title="Coverage"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -446,7 +467,7 @@ take a <code>pkg-def-extras</code> instead of <code>pkg-def-overlay</code> argum
           <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../dev/adding-new-ghc/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../dev/coverage/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
     </span>
