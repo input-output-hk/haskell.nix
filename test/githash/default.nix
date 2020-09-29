@@ -1,4 +1,4 @@
-{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitMinimal }:
+{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitReallyMinimal }:
 
 with stdenv.lib;
 
@@ -11,7 +11,7 @@ let
     modules = optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {
       packages.githash-test.src =
         rec {
-          origSrc = runCommand "githash-test-src" { buildInputs = [ gitMinimal ]; } ''
+          origSrc = runCommand "githash-test-src" { buildInputs = [ gitReallyMinimal ]; } ''
             mkdir -p $out/test/githash
             cd $out
             git init
