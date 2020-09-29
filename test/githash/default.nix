@@ -1,4 +1,4 @@
-{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, buildPackages }:
+{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitReallyMinimal, buildPackages }:
 
 with stdenv.lib;
 
@@ -25,7 +25,10 @@ let
         };
       }) ++ [{
         packages.githash-test.components.exes.githash-test.build-tools = mkForce [
-          buildPackages.buildPackages.gitReallyMinimal
+          # Using the cross compiled version here, but currently git does not
+          # seem to cross compile (so this test is disabled for cross compilation in
+          # the test/default.nix file).
+          gitReallyMinimal
         ];
       }];
     inherit compiler-nix-name;

@@ -183,7 +183,6 @@ let
     hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
     cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
     index-state = callTest ./index-state { inherit compiler-nix-name; };
-    githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
 
     unit = unitTests;
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" ) {
@@ -193,6 +192,9 @@ let
   } // lib.optionalAttrs (!pkgs.haskell-nix.haskellLib.isCrossHost) {
     # Haddock is not included with cross compilers currently
     sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
+    # githash runs git from TH code and this needs a cross compiled git exe
+    # to work correctly.  Cross compiling git is currently brocken.
+    githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the
