@@ -8,7 +8,7 @@ let
     inherit src;
     # When haskell.nix has come from the store (e.g. on hydra) we need to provide
     # a suitable mock of the cleaned source with a .git dir.
-    modules = optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {
+    modules = (optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {
       packages.githash-test.src =
         rec {
           origSrc = runCommand "githash-test-src" { buildInputs = [ buildPackages.buildPackages.gitReallyMinimal ]; } ''
@@ -23,7 +23,11 @@ let
           origSrcSubDir = origSrc + origSubDir;
           outPath = origSrcSubDir;
         };
-    };
+      }) ++ [{
+        packages.githash-test.components.exes.githash-test.build-tools = mkForce [
+          buildPackages.buildPackages.gitReallyMinimal
+        ];
+      }];
     inherit compiler-nix-name;
   };
 
