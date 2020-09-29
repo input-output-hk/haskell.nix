@@ -39,7 +39,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.cabal-simple.components.exes.cabal-simple}
+      cat ${haskellLib.check packages.cabal-simple.components.exes.cabal-simple}/test-stdout
     '' + (if stdenv.hostPlatform.isMusl
       then ''
         printf "checking that executable is statically linked... " >& 2
