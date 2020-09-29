@@ -28,7 +28,8 @@ let
           # Using the cross compiled version here, but currently git does not
           # seem to cross compile (so this test is disabled for cross compilation in
           # the test/default.nix file).
-          gitReallyMinimal
+          # Using buildPackages here is not right, but at least gets musl64 test to pass.
+          buildPackages.buildPackages.gitReallyMinimal
         ];
       }];
     inherit compiler-nix-name;
