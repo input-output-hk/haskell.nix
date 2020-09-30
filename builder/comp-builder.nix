@@ -234,11 +234,8 @@ let
     meta = {
       homepage = package.homepage or "";
       description = package.synopsis or "";
-      license =
-        let
-          license-map = import ../lib/cabal-licenses.nix lib;
-        in license-map.${package.license} or
-          (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
+      license = let cabalToNixpkgsLicense = import ../lib/spdx/cabal.nix lib;
+                in cabalToNixpkgsLicense package.license;
       platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
     };
 
