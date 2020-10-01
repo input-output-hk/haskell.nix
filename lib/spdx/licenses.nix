@@ -1,8 +1,9 @@
+pkgs:
 with builtins; let
   licensesJSON = fromJSON (replaceStrings
       [ "\\u0026" "\\u0027" "\\u003d" ]
       [ "&" "'" "=" ]
-      (readFile (fetchurl https://spdx.org/licenses/licenses.json))
+      (readFile "${pkgs.spdx-license-list-data}/json/licenses.json")
     );
   dropFour = s: substring 0 (stringLength s - 4) s;
   toSpdx = lic: with lic;

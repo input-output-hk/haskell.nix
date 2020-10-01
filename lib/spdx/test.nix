@@ -1,4 +1,4 @@
-let spdx = import ./spdx.nix;
+let spdx = import ./parser.nix;
 in {
   idstringF = [ (spdx.idstring "$@#!$") ];
   idstringP = [ (spdx.idstring "blah") ];

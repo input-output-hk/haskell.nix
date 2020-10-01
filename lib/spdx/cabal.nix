@@ -1,12 +1,12 @@
-lib:
-license: let
-  license-map = import ../cabal-licenses.nix lib;
+pkgs:
+license: with builtins; let
+  license-map = import ../cabal-licenses.nix pkgs;
   otherLicenseWarning = lic:
-    builtins.trace "WARNING: license \"${lic}\" not found"
-                   license-map.LicenseRef-OtherLicense;
-  spdx = import ../lib/spdx/parser.nix;
-  licenses = spdx.compoundExpression license;
+    trace "WARNING: license \"${lic}\" not found"
+          license-map.LicenseRef-OtherLicense;
+  spdx = import ./parser.nix;
+  licenses = spdx.compound-expression license;
 in if licenses == []
    then otherLicenseWarning license
    else map (lic: license-map.${lic} or (otherLicenseWarning lic))
-            (lib.unique (head licenses)._1);
+            (pkgs.lib.unique (head licenses)._1)

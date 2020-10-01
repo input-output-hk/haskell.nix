@@ -1,4 +1,4 @@
-{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
+{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
 { component, package, name, src, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
@@ -50,7 +50,7 @@ let
       meta = {
         homepage = package.homepage or "";
         description = package.synopsis or "";
-        license = let cabalToNixpkgsLicense = import ../lib/spdx/cabal.nix lib;
+        license = let cabalToNixpkgsLicense = import ../lib/spdx/cabal.nix pkgs;
                   in cabalToNixpkgsLicense package.license;
         platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
       };

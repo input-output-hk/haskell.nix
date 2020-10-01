@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
 lib.makeOverridable (
 let self =
 { componentId
@@ -234,7 +234,7 @@ let
     meta = {
       homepage = package.homepage or "";
       description = package.synopsis or "";
-      license = let cabalToNixpkgsLicense = import ../lib/spdx/cabal.nix lib;
+      license = let cabalToNixpkgsLicense = import ../lib/spdx/cabal.nix pkgs;
                 in cabalToNixpkgsLicense package.license;
       platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
     };

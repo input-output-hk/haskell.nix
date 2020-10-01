@@ -1,6 +1,6 @@
-lib: with lib.licenses;
-let licenses = import spdx/licenses.nix;
-licenses // {
+pkgs:
+let licenses = import spdx/licenses.nix pkgs;
+in licenses // {
   # Generic
   LicenseRef-PublicDomain = {
       spdxId = "LicenseRef-PublicDomain";
