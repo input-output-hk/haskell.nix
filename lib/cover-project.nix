@@ -106,6 +106,7 @@ in pkgs.runCommand "project-coverage-report"
       popd
     }
 
+    mkdir -p $out/nix-support
     mkdir -p $out/share/hpc/vanilla/tix/all
     mkdir -p $out/share/hpc/vanilla/mix/
     mkdir -p $out/share/hpc/vanilla/html/
@@ -136,6 +137,7 @@ in pkgs.runCommand "project-coverage-report"
 
       # Markup a HTML coverage report for the entire project
       cp ${projectIndexHtml} $out/share/hpc/vanilla/html/index.html
+      echo "report coverage-per-package $out/share/hpc/vanilla/html/index.html" >> $out/nix-support/hydra-build-products
 
       local markupOutDir="$out/share/hpc/vanilla/html/all"
       local srcDirs=${toBashArray srcDirs}
@@ -146,5 +148,6 @@ in pkgs.runCommand "project-coverage-report"
       findModules allMixModules "$out/share/hpc/vanilla/mix/" "*.mix"
 
       markup srcDirs mixDirs allMixModules "$markupOutDir" "$tixFile"
+      echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
     fi
   ''

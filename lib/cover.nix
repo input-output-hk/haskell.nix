@@ -99,6 +99,7 @@ in pkgs.runCommand (name + "-coverage-report")
 
     local mixDirs=${toBashArray mixDirs}
 
+    mkdir -p $out/nix-support
     mkdir -p $out/share/hpc/vanilla/mix/${name}
     mkdir -p $out/share/hpc/vanilla/tix/${name}
     mkdir -p $out/share/hpc/vanilla/html/${name}
@@ -161,5 +162,7 @@ in pkgs.runCommand (name + "-coverage-report")
 
       # Markup a HTML report, included modules from only this package
       markup srcDirs mixDirs pkgMixModules "$markupOutDir" "$sumTixFile"
+
+      echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
     fi
   ''
