@@ -22,7 +22,8 @@ let
   srcDirs = map (l: l.src.outPath) mixLibraries;
 
 in pkgs.runCommand (name + "-coverage-report")
-  ({ passthru = {
+  ({buildInputs = [ pkgs.buildPackages.zip ];
+    passthru = {
       inherit name library checks;
     };
     # HPC will fail if the Haskell file contains non-ASCII characters,
@@ -162,6 +163,9 @@ in pkgs.runCommand (name + "-coverage-report")
       # Markup a HTML report, included modules from only this package
       markup srcDirs mixDirs pkgMixModules "$markupOutDir" "$sumTixFile"
 
+      # Provide a HTML zipfile and Hydra links
+      ( cd "$markupOutDir" ; zip -r $out/share/hpc/vanilla/${name}-html.zip . )
       echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
+      echo "file zip $out/share/hpc/vanilla/${name}-html.zip" >> $out/nix-support/hydra-build-products
     fi
   ''

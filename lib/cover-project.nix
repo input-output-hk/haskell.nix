@@ -55,7 +55,8 @@ let
   srcDirs = map (l: l.src.outPath) (projectLibs);
 
 in pkgs.runCommand "project-coverage-report"
-  ({ LANG        = "en_US.UTF-8";
+  ({ buildInputs = [ pkgs.buildPackages.zip ];
+     LANG        = "en_US.UTF-8";
      LC_ALL      = "en_US.UTF-8";
   } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
     LOCALE_ARCHIVE = "${pkgs.buildPackages.glibcLocales}/lib/locale/locale-archive";
@@ -144,6 +145,9 @@ in pkgs.runCommand "project-coverage-report"
       findModules allMixModules "$out/share/hpc/vanilla/mix/" "*.mix"
 
       markup srcDirs mixDirs allMixModules "$markupOutDir" "$tixFile"
+
       echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
+      ( cd $out/share/hpc/vanilla/html ; zip -r $out/share/hpc/vanilla/html.zip . )
+      echo "file zip $out/share/hpc/vanilla/html.zip" >> $out/nix-support/hydra-build-products
     fi
   ''
