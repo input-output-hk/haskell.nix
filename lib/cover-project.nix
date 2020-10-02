@@ -43,11 +43,6 @@ let
   </html>
   '';
 
-  ghc =
-    if (builtins.length coverageReports) > 0
-    then (builtins.head coverageReports).library.project.pkg-set.config.ghc.package or pkgs.ghc
-    else pkgs.ghc;
-
   libs = map (r: r.library) coverageReports;
 
   projectLibs = map (pkg: pkg.components.library) (lib.attrValues (haskellLib.selectProjectPackages ((lib.head libs).project.hsPkgs)));
@@ -60,13 +55,14 @@ let
   srcDirs = map (l: l.src.outPath) (projectLibs);
 
 in pkgs.runCommand "project-coverage-report"
-  ({ buildInputs = [ghc];
-     LANG        = "en_US.UTF-8";
+  ({ LANG        = "en_US.UTF-8";
      LC_ALL      = "en_US.UTF-8";
   } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
     LOCALE_ARCHIVE = "${pkgs.buildPackages.glibcLocales}/lib/locale/locale-archive";
   })
   ''
+    local hpc=${pkgs.buildPackages.haskellPackages.ghc}/bin/hpc
+
     function markup() {
       local -n srcDs=$1
       local -n mixDs=$2
@@ -74,7 +70,7 @@ in pkgs.runCommand "project-coverage-report"
       local destDir=$4
       local tixFile=$5
 
-      local hpcMarkupCmd=("hpc" "markup" "--destdir=$destDir")
+      local hpcMarkupCmd=("$hpc" "markup" "--destdir=$destDir")
       for srcDir in "''${srcDs[@]}"; do
         hpcMarkupCmd+=("--srcdir=$srcDir")
       done
@@ -130,7 +126,7 @@ in pkgs.runCommand "project-coverage-report"
     if [ ''${#tixFiles[@]} -ne 0 ]; then
       # Create tix file with test run information for all packages
       tixFile="$out/share/hpc/vanilla/tix/all/all.tix"
-      hpcSumCmd=("hpc" "sum" "--union" "--output=$tixFile")
+      hpcSumCmd=("$hpc" "sum" "--union" "--output=$tixFile")
       hpcSumCmd+=("''${tixFiles[@]}")
       echo "''${hpcSumCmd[@]}"
       eval "''${hpcSumCmd[@]}"
