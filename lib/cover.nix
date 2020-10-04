@@ -11,6 +11,8 @@
 # argument. Use a larger list of libraries if you would like the tests
 # of one local package to generate coverage for another.
 , mixLibraries ? [library]
+# hack for project-less projects
+, ghc ? library.project.pkg-set.config.ghc.package
 }:
 
 let
@@ -22,7 +24,7 @@ let
   srcDirs = map (l: l.src.outPath) mixLibraries;
 
 in pkgs.runCommand (name + "-coverage-report")
-  ({nativeBuildInputs = [ pkgs.buildPackages.zip ];
+  ({nativeBuildInputs = [ (ghc.buildGHC or ghc) pkgs.buildPackages.zip ];
     passthru = {
       inherit name library checks;
     };
@@ -37,8 +39,6 @@ in pkgs.runCommand (name + "-coverage-report")
     LOCALE_ARCHIVE = "${pkgs.buildPackages.glibcLocales}/lib/locale/locale-archive";
   })
   ''
-    local hpc=${pkgs.buildPackages.haskellPackages.ghc}/bin/hpc
-
     function markup() {
       local -n srcDs=$1
       local -n mixDs=$2
@@ -46,7 +46,7 @@ in pkgs.runCommand (name + "-coverage-report")
       local destDir=$4
       local tixFile=$5
 
-      local hpcMarkupCmd=("$hpc" "markup" "--destdir=$destDir")
+      local hpcMarkupCmd=("hpc" "markup" "--destdir=$destDir")
       for srcDir in "''${srcDs[@]}"; do
         hpcMarkupCmd+=("--srcdir=$srcDir")
       done
@@ -70,7 +70,7 @@ in pkgs.runCommand (name + "-coverage-report")
       local -n tixFs=$2
       local outFile="$3"
 
-      local hpcSumCmd=("$hpc" "sum" "--union" "--output=$outFile")
+      local hpcSumCmd=("hpc" "sum" "--union" "--output=$outFile")
 
       for module in "''${includedModules[@]}"; do
         hpcSumCmd+=("--include=$module")
