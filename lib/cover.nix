@@ -22,7 +22,7 @@ let
   srcDirs = map (l: l.src.outPath) mixLibraries;
 
 in pkgs.runCommand (name + "-coverage-report")
-  ({buildInputs = [ pkgs.buildPackages.zip ];
+  ({nativeBuildInputs = [ pkgs.buildPackages.zip ];
     passthru = {
       inherit name library checks;
     };

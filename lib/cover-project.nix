@@ -55,9 +55,9 @@ let
   srcDirs = map (l: l.src.outPath) (projectLibs);
 
 in pkgs.runCommand "project-coverage-report"
-  ({ buildInputs = [ pkgs.buildPackages.zip ];
-     LANG        = "en_US.UTF-8";
-     LC_ALL      = "en_US.UTF-8";
+  ({ nativeBuildInputs = [ pkgs.buildPackages.zip ];
+     LANG = "en_US.UTF-8";
+     LC_ALL = "en_US.UTF-8";
   } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
     LOCALE_ARCHIVE = "${pkgs.buildPackages.glibcLocales}/lib/locale/locale-archive";
   })
