@@ -24,7 +24,7 @@ let
   srcDirs = map (l: l.src.outPath) mixLibraries;
 
 in pkgs.runCommand (name + "-coverage-report")
-  ({ buildInputs = [ ghc ];
+  ({nativeBuildInputs = [ (ghc.buildGHC or ghc) pkgs.buildPackages.zip ];
     passthru = {
       inherit name library checks;
     };
@@ -99,6 +99,7 @@ in pkgs.runCommand (name + "-coverage-report")
 
     local mixDirs=${toBashArray mixDirs}
 
+    mkdir -p $out/nix-support
     mkdir -p $out/share/hpc/vanilla/mix/${name}
     mkdir -p $out/share/hpc/vanilla/tix/${name}
     mkdir -p $out/share/hpc/vanilla/html/${name}
@@ -161,5 +162,10 @@ in pkgs.runCommand (name + "-coverage-report")
 
       # Markup a HTML report, included modules from only this package
       markup srcDirs mixDirs pkgMixModules "$markupOutDir" "$sumTixFile"
+
+      # Provide a HTML zipfile and Hydra links
+      ( cd "$markupOutDir" ; zip -r $out/share/hpc/vanilla/${name}-html.zip . )
+      echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
+      echo "file zip $out/share/hpc/vanilla/${name}-html.zip" >> $out/nix-support/hydra-build-products
     fi
   ''
