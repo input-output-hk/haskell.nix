@@ -20,6 +20,8 @@ let
   cabalProj = (cabalProject' projectArgs);
   stackProj = (stackProject' projectArgs);
 
+  exeExt = stdenv.hostPlatform.extensions.executable;
+
 in recurseIntoAttrs ({
   run = stdenv.mkDerivation {
     name = "coverage-test";
@@ -83,7 +85,7 @@ in recurseIntoAttrs ({
         dirExistsEmpty "$pkga_basedir/html/pkga-0.1.0.0"
   
         pkgb_basedir="${project.hsPkgs.pkgb.coverageReport}/share/hpc/vanilla"
-        testTix="$pkgb_basedir/tix/pkgb-0.1.0.0/tests/tests.tix"
+        testTix="$pkgb_basedir/tix/pkgb-0.1.0.0/tests${exeExt}/tests${exeExt}.tix"
         libTix="$pkgb_basedir/tix/pkgb-0.1.0.0/pkgb-0.1.0.0.tix"
         fileExistsNonEmpty "$testTix"
         fileExistsNonEmpty "$libTix"
@@ -110,9 +112,9 @@ in recurseIntoAttrs ({
         dirExists "$project_basedir/tix/pkga-0.1.0.0"
         dirExists "$project_basedir/tix/pkgb-0.1.0.0"
         fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0/pkgb-0.1.0.0.tix"
-        dirExists "$project_basedir/tix/pkgb-0.1.0.0/tests"
-        fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0/tests/tests.tix"
-      '') [ cabalProj stackProj ])}
+        dirExists "$project_basedir/tix/pkgb-0.1.0.0/tests${exeExt}"
+        fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0/tests${exeExt}/tests${exeExt}.tix"
+      '') [ stackProj ])}
 
       touch $out
     '';
