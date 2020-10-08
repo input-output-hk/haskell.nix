@@ -11,6 +11,7 @@
   nixpkgsVersions = {
     "R1909" = "nixpkgs-1909";
     "R2003" = "nixpkgs-2003";
+    "R2009" = "nixpkgs-2009";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
     inherit (import ./default.nix { inherit checkMaterialization; }) nixpkgsArgs;
@@ -30,6 +31,8 @@
       ghc8101 = false;
       ghc8102 = true;
       ghc8102-plutus = true;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
+      ghc8102 = true;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
@@ -40,7 +43,7 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (system == "x86_64-linux" && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8102-plutus") {
+    in lib.optionalAttrs (system == "x86_64-linux" && (nixpkgsName == "R2009" || (compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8102-plutus"))) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux") {
