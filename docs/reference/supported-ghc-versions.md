@@ -29,4 +29,4 @@ for a list of all the valid `compiler-nix-names`.
 
 See also:
 
-* [Instructions on adding new ghc versions](adding-new-ghc.md).
+* [Instructions on adding new GHC versions](../dev/adding-new-ghc.md).
