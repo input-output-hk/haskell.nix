@@ -10,6 +10,21 @@ its dependencies into Nix code.
 
 - [Introduction](https://input-output-hk.github.io/haskell.nix/)
 - [Getting Started](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started/)
+- [Troubleshooting](https://input-output-hk.github.io/haskell.nix/troubleshooting/)
+- Explore the documentation from there to find further topics.
+
+## Help! Something isn't working
+
+The #1 problem that people have when using `haskell.nix` is that they find themselves building GHC.
+This should not happen, but you *must* follow the `haskell.nix` setup instructions properly to avoid it.
+If you find this happening to you, please check that you have followed the 
+[getting started instructions](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started/#setting-up-the-binary-cache) and
+consult the corresponding [troubleshooting section](https://input-output-hk.github.io/haskell.nix/troubleshooting/#why-am-i-building-ghc).
+
+The troubleshooting documentation also contains some help for other common issues.
+Please give it a read before asking on IRC or opening an issue.
+
+If you're still stuck, join the [#haskell.nix](https://www.irccloud.com/invite?channel=%23haskell.nix&hostname=irc.freenode.net&port=6697&ssl=1) channel on [irc.freenode.net](https://freenode.net/), or open an issue.
 
 ## Related repos
 
@@ -22,7 +37,3 @@ Haskell packages in Nix. It depends on other repos, which are:
 
 - [`stackage.nix`](https://github.com/input-output-hk/stackage.nix) — all of the [Stackage](https://www.stackage.org/) snapshots, converted to Nix expressions.
 
-## IRC Channel
-
-Join the [#haskell.nix](https://www.irccloud.com/invite?channel=%23haskell.nix&hostname=irc.freenode.net&port=6697&ssl=1) channel on [irc.freenode.net](https://freenode.net/) to get help or discuss
-the development of `haskell.nix` and `nix-tools`.
