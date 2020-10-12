@@ -91,12 +91,17 @@ let
       "$(cat ${configFiles}/configure-flags)"
     ] ++ commonConfigureFlags);
 
+  # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
+  pkgConfigHasPrefix = builtins.compareVersions lib.nixpkgsVersion "20.09pre" >= 0;
+
   commonConfigureFlags = ([
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ] ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
+    ] ++ lib.optional (pkgConfigHasPrefix && pkgconfig != [])
+      "--with-pkg-config=${ghc.targetPrefix}pkg-config"
+      ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
     ( # CC
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
