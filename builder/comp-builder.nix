@@ -100,7 +100,7 @@ let
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ] ++ lib.optional pkgConfigHasPrefix
+    ] ++ lib.optional (pkgConfigHasPrefix && pkgconfig != [])
       "--with-pkg-config=${ghc.targetPrefix}pkg-config"
       ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
     ( # CC
