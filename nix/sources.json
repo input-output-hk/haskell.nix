@@ -76,5 +76,17 @@
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/732684b720f829056dcb62380c2c17e4d3ebd947.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs-2009": {
+        "branch": "nixpkgs-20.09-darwin",
+        "description": "Nix Packages collection",
+        "homepage": null,
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "07e5844fdf6fe99f41229d7392ce81cfe191bcfc",
+        "sha256": "0p2z6jidm4rlp2yjfl553q234swj1vxl8z0z8ra1hm61lfrlcmb9",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/07e5844fdf6fe99f41229d7392ce81cfe191bcfc.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

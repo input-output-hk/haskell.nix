@@ -181,6 +181,7 @@ let
     hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
     cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
     index-state = callTest ./index-state { inherit compiler-nix-name; };
+    coverage = callTest ./coverage { inherit compiler-nix-name; };
 
     unit = unitTests;
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" ) {
