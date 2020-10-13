@@ -137,6 +137,8 @@ in {
                 ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
+
+                ++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
