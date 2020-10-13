@@ -53,7 +53,7 @@ in with builtins; rec {
                     else let r' = head rest;
                          in [ (Pair.mappend r r') ];
 
-  idstring = regex 0 "[[:alnum:]-\.]+";
+  idstring = regex 0 "[-\.0-9a-zA-Z]+";
 
   license-ref = let documentref = chain [ (string "DocumentRef-")
                                           idstring
