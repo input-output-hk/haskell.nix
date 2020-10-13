@@ -92,7 +92,7 @@ let
     ] ++ commonConfigureFlags);
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
-  pkgConfigHasPrefix = builtins.compareVersions lib.nixpkgsVersion "20.09pre" >= 0;
+  pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;
 
   commonConfigureFlags = ([
       # GHC
