@@ -24,6 +24,17 @@ final: prev:
      configureFlags = (drv.configureFlags or []) ++ prev.stdenv.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
 
+   binutils-unwrapped = prev.binutils-unwrapped.overrideAttrs (attrs: {
+     patches = attrs.patches ++ final.lib.optional (final.stdenv.targetPlatform.isWindows && attrs.version == "2.31.1") (
+       final.fetchpatch {
+         name = "plugin-target-handling-patch";
+         url = "https://sourceware.org/git/?p=binutils-gdb.git;a=patch;h=999d6dff80fab12d22c2a8d91923db6bde7fb3e5";
+         excludes = ["bfd/ChangeLog"];
+         sha256 = "0a60w52wrf6qzchsiviprmcblq0q1fv1rbkx4gkk482dmvx4j0l6";
+       }
+     );
+   });
+
    haskell-nix = prev.haskell-nix // ({
      defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
