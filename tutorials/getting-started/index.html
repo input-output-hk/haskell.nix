@@ -76,7 +76,7 @@
     
         <ul>
         
-            <li><a class="toctree-l4" href="#setting-up-the-cachix-binary-cache">Setting up the Cachix binary cache</a></li>
+            <li><a class="toctree-l4" href="#setting-up-the-binary-cache">Setting up the binary cache</a></li>
         
             <li><a class="toctree-l4" href="#scaffolding">Scaffolding</a></li>
         
@@ -255,24 +255,15 @@ or <a href="https://docs.haskellstack.org/en/stable/README/#quick-start-guide">S
 project and its dependencies into Nix code.</p>
 <p>Assuming you have <a href="https://nixos.org/download.html">Nix</a> installed, you can
 start setting up your project.</p>
-<h2 id="setting-up-the-cachix-binary-cache">Setting up the Cachix binary cache<a class="headerlink" href="#setting-up-the-cachix-binary-cache" title="Permanent link">&para;</a></h2>
-<p>You can <strong>avoid compiling GHC and nix-tools</strong> by configuring
-<a href="https://cachix.org">Cachix</a> so you can benefit from the binary cache built by
-CI:</p>
-<pre><code class="bash">$ nix-env -iA cachix -f https://cachix.org/api/v1/install
-installing 'cachix-0.3.8'
-building '/nix/store/bh176xhpk4wrjm56iahm86wf85jaz23v-user-environment.drv'...
-created 42 symlinks in user environment
-
-$ cachix use iohk
-Configured https://iohk.cachix.org binary cache in ~/.config/nix/nix.conf
-</code></pre>
-
-<p>Note: <code>haskell.nix</code> currently uses multiple CI providers to build derivations and store outputs. To improve your chances of getting a cache hit, you might want to add the following additional substituter to <code>~/.config/nix/nix.conf</code>:</p>
+<h2 id="setting-up-the-binary-cache">Setting up the binary cache<a class="headerlink" href="#setting-up-the-binary-cache" title="Permanent link">&para;</a></h2>
+<p>IMPORTANT: you <em>must</em> do this or you <em>will</em> build several copies of GHC!</p>
+<p>You can configure Nix to use our binary cache, which is pushed to by CI, so should contain the artifacts that you need.</p>
+<p>You need to add the following sections to <code>/etc/nix/nix.conf</code> or, if you are a trusted user, <code>~/.config/nix/nix.conf</code> (if you don't know what a "trusted user" is, you probably want to do the former).</p>
 <pre><code>trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
 substituters = [...] https://hydra.iohk.io [...]
 </code></pre>
 
+<p>This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding <a href="../reference/troubleshooting#why-am-i-building-ghc">troubleshooting section</a>.</p>
 <h2 id="scaffolding">Scaffolding<a class="headerlink" href="#scaffolding" title="Permanent link">&para;</a></h2>
 <p>The following work with <code>stack.yaml</code> and <code>cabal.project</code> based
 projects.</p>

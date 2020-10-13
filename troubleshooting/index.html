@@ -138,9 +138,9 @@
     
         <ul>
         
-            <li><a class="toctree-l3" href="#general-troubleshooting-when-using-cabalprojectstackprojectproject">General troubleshooting when using cabalProject/stackProject/project</a></li>
+            <li><a class="toctree-l3" href="#issues-with-building-and-garbage-collection">Issues with building and garbage-collection</a></li>
         
-            <li><a class="toctree-l3" href="#specific-issues">Specific issues</a></li>
+            <li><a class="toctree-l3" href="#general-troubleshooting-when-using-cabalprojectstackprojectproject">General troubleshooting when using cabalProject/stackProject/project</a></li>
         
         </ul>
     
@@ -243,6 +243,23 @@
             <div class="section">
               
                 <h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
+<h2 id="issues-with-building-and-garbage-collection">Issues with building and garbage-collection<a class="headerlink" href="#issues-with-building-and-garbage-collection" title="Permanent link">&para;</a></h2>
+<h3 id="why-am-i-building-ghc">Why am I building GHC?<a class="headerlink" href="#why-am-i-building-ghc" title="Permanent link">&para;</a></h3>
+<p>It's easier to list the reverse: when will you <em>not</em> build GHC?</p>
+<ul>
+<li>You have configured the <a href="../tutorials/getting-started/">binary cache</a> correctly.</li>
+<li>You are using one of the GHC versions which <a href="../reference/supported-ghc-versions/">we support</a>.</li>
+<li>You are using one of the nixpkgs versions used by our CI (you can access the sources for these <a href="../tutorials/getting-started/">through haskell.nix</a>.</li>
+</ul>
+<p>If you think you are doing all of these and you still find you're building GHC, drop us a line.</p>
+<h3 id="why-am-i-building-lots-of-haskell-packages">Why am I building lots of Haskell packages?<a class="headerlink" href="#why-am-i-building-lots-of-haskell-packages" title="Permanent link">&para;</a></h3>
+<p>We don't generally cache much of Hackage (there's a lot of it!), except for the parts which are used by our tests.
+So this is expected, unfortunately.</p>
+<h3 id="how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected">How do I prevent the evaluation-time dependencies of my project from being garbage-collected?<a class="headerlink" href="#how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected" title="Permanent link">&para;</a></h3>
+<p>The <code>haskell-nix.roots "ghc884"</code> should include all the evaluation-time dependencies
+and the main build time dependencies of a project using ghc 8.8.4.
+So you can add that to the relevant GC root.
+In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in <code>release.nix</code>/<code>ci.nix</code>.</p>
 <h2 id="general-troubleshooting-when-using-cabalprojectstackprojectproject">General troubleshooting when using <code>cabalProject</code>/<code>stackProject</code>/<code>project</code><a class="headerlink" href="#general-troubleshooting-when-using-cabalprojectstackprojectproject" title="Permanent link">&para;</a></h2>
 <h3 id="does-the-cabalstack-build-work">Does the cabal/stack build work?<a class="headerlink" href="#does-the-cabalstack-build-work" title="Permanent link">&para;</a></h3>
 <p>In <code>haskell.nix</code>, we strive to take the build configuration from the cabal/stack configuration files.
@@ -272,23 +289,6 @@ For example, you might enable profiling.</p>
 <p>Where possible, try to do the configuration in your cabal/stack configuration, e.g. setting <code>profiling: true</code> in <code>cabal.project</code>.
 This will ensure that the two builds agree.</p>
 <p>If you want or need to set some of them in Nix, try bringing the two into sync temporarily for troubleshooting.</p>
-<h2 id="specific-issues">Specific issues<a class="headerlink" href="#specific-issues" title="Permanent link">&para;</a></h2>
-<h3 id="why-am-i-building-ghc">Why am I building GHC?<a class="headerlink" href="#why-am-i-building-ghc" title="Permanent link">&para;</a></h3>
-<p>It's easier to list the reverse: when will you <em>not</em> build GHC?</p>
-<ul>
-<li>You have configured the <a href="../tutorials/getting-started/">binary caches</a> correctly.</li>
-<li>You are using one of the GHC versions built by our CI (have a look in <a href="../ci.nix">ci.nix</a> to see what gets built).</li>
-<li>You are using one of the nixpkgs versions used by our CI (you can access the sources for these <a href="../tutorials/getting-started/">through haskell.nix</a>.</li>
-</ul>
-<p>If you think you are doing all of these and you still find you're building GHC, drop us a line.</p>
-<h3 id="why-am-i-building-lots-of-haskell-packages">Why am I building lots of Haskell packages?<a class="headerlink" href="#why-am-i-building-lots-of-haskell-packages" title="Permanent link">&para;</a></h3>
-<p>We don't generally cache much of Hackage (there's a lot of it!), except for the parts which are used by our tests.
-So this is expected, unfortunately.</p>
-<h3 id="how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected">How do I prevent the evaluation-time dependencies of my project from being garbage-collected?<a class="headerlink" href="#how-do-i-prevent-the-evaluation-time-dependencies-of-my-project-from-being-garbage-collected" title="Permanent link">&para;</a></h3>
-<p>The <code>haskell-nix.roots "ghc884"</code> should include all the evaluation-time dependencies
-and the main build time dependencies of a project using ghc 8.8.4.
-So you can add that to the relevant GC root.
-In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in <code>release.nix</code>/<code>ci.nix</code>.</p>
               
             </div>
           </div>
