@@ -232,6 +232,16 @@ in {
     inherit stdenv lib haskellLib srcOnly;
   };
 
+  # Do coverage of a package
+  coverageReport = import ./cover.nix {
+    inherit stdenv lib haskellLib pkgs;
+  };
+
+  # Do coverage of a project
+  projectCoverageReport = import ./cover-project.nix {
+    inherit stdenv lib haskellLib pkgs;
+  };
+
   # Use `isCrossHost` to identify when we are cross compiling and
   # the code we are producing will not run on the build system
   # without an emulator.

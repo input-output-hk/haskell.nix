@@ -26,7 +26,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable ran... " >& 2
-      cat ${haskellLib.check packages.exe-only.components.exes.exe-only}
+      cat ${haskellLib.check packages.exe-only.components.exes.exe-only}/test-stdout
     '' +
     # Aarch are statically linked and does not have ldd for these tests.
     optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (
