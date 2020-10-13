@@ -1,0 +1,1539 @@
+diff --git a/compiler/ghci/ByteCodeAsm.hs b/compiler/ghci/ByteCodeAsm.hs
+index 44876efc91..8b0fb9a17e 100644
+--- a/compiler/ghci/ByteCodeAsm.hs
++++ b/compiler/ghci/ByteCodeAsm.hs
+@@ -7,10 +7,10 @@
+ -- | ByteCodeLink: Bytecode assembler and linker
+ module ByteCodeAsm (
+         assembleBCOs, assembleOneBCO,
+-
+         bcoFreeNames,
+         SizedSeq, sizeSS, ssElts,
+-        iNTERP_STACK_CHECK_THRESH
++        iNTERP_STACK_CHECK_THRESH,
++        mkTupleInfoSig
+   ) where
+ 
+ #include "HsVersions.h"
+@@ -376,6 +376,16 @@ assembleI dflags i = case i of
+                            -> do let ul_bco = assembleBCO dflags proto
+                                  p <- ioptr (liftM BCOPtrBCO ul_bco)
+                                  emit (push_alts pk) [Op p]
++  PUSH_ALTS_T proto tuple_info tuple_proto
++                           -> do let ul_bco = assembleBCO dflags proto
++                                     ul_tuple_bco = assembleBCO dflags
++                                                                tuple_proto
++                                 p <- ioptr (liftM BCOPtrBCO ul_bco)
++                                 p_tup <- ioptr (liftM BCOPtrBCO ul_tuple_bco)
++                                 info <- int (fromIntegral $
++                                              mkTupleInfoSig tuple_info)
++                                 emit bci_PUSH_ALTS_T
++                                      [Op p, Op info, Op p_tup]
+   PUSH_PAD8                -> emit bci_PUSH_PAD8 []
+   PUSH_PAD16               -> emit bci_PUSH_PAD16 []
+   PUSH_PAD32               -> emit bci_PUSH_PAD32 []
+@@ -434,6 +444,7 @@ assembleI dflags i = case i of
+   ENTER                    -> emit bci_ENTER []
+   RETURN                   -> emit bci_RETURN []
+   RETURN_UBX rep           -> emit (return_ubx rep) []
++  RETURN_T                 -> emit bci_RETURN_T []
+   CCALL off m_addr i       -> do np <- addr m_addr
+                                  emit bci_CCALL [SmallOp off, Op np, SmallOp i]
+   BRK_FUN index uniq cc    -> do p1 <- ptr BCOPtrBreakArray
+@@ -501,6 +512,41 @@ return_ubx V16 = error "return_ubx: vector"
+ return_ubx V32 = error "return_ubx: vector"
+ return_ubx V64 = error "return_ubx: vector"
+ 
++{-
++  Construct the tuple_info word that stg_ctoi_t and stg_ret_t use
++  to convert a tuple between the native calling convention and the
++  interpreter.
++
++  See StgMiscClosures.cmm for more information.
++ -}
++mkTupleInfoSig :: TupleInfo -> Word32
++mkTupleInfoSig ti@TupleInfo{..}
++  {-
++    we can only handle up to a fixed number of words on the stack,
++    because we need a stg_ctoi_tN stack frame for each size N
++
++    If needed, you can support larger tuples by adding more in
++    StgMiscClosures.cmm and MiscClosures.h
++  -}
++  | tupleNativeStackSize > 32 =
++    pprPanic "mkTupleInfoSig: tuple too big" (ppr tupleNativeStackSize)
++  | tupleNativeStackSize < 16384 &&
++    tupleDoubleRegs < 64 && -- 6 bit bitmap (these can be shared with float)
++    tupleFloatRegs < 64 && -- 6 bit bitmap (these can be shared with double)
++    tupleLongRegs < 4 && -- 2 bit bitmap
++    tupleVanillaRegs < 65536 && -- 4 bit count
++    -- check that there are no "holes", i.e. that R1..Rn are all in use
++    tupleVanillaRegs .&. (tupleVanillaRegs + 1) == 0
++    = fromIntegral tupleNativeStackSize .|.
++      w (tupleLongRegs `shiftL` 14) .|.
++      w (tupleDoubleRegs `shiftL` 16) .|.
++      w (tupleFloatRegs `shiftL` 22) .|.
++      w (countTrailingZeros (1 + tupleVanillaRegs) `shiftL` 28)
++  | otherwise = pprPanic "mkTupleInfoSig: unsupported tuple shape" (ppr ti)
++  where
++    w :: Int -> Word32
++    w = fromIntegral
++
+ -- Make lists of host-sized words for literals, so that when the
+ -- words are placed in memory at increasing addresses, the
+ -- bit pattern is correct for the host's word size and endianness.
+diff --git a/compiler/ghci/ByteCodeGen.hs b/compiler/ghci/ByteCodeGen.hs
+index fb60c21f9d..62e8457c5a 100644
+--- a/compiler/ghci/ByteCodeGen.hs
++++ b/compiler/ghci/ByteCodeGen.hs
+@@ -17,6 +17,11 @@ import ByteCodeInstr
+ import ByteCodeAsm
+ import ByteCodeTypes
+ 
++import CmmCallConv
++import CmmExpr
++import CmmNode
++import CmmUtils
++
+ import GHCi
+ import GHCi.FFI
+ import GHCi.RemoteTypes
+@@ -195,12 +200,6 @@ simpleFreeVars = freeVars
+ 
+ type BCInstrList = OrdList BCInstr
+ 
+-newtype ByteOff = ByteOff Int
+-    deriving (Enum, Eq, Integral, Num, Ord, Real)
+-
+-newtype WordOff = WordOff Int
+-    deriving (Enum, Eq, Integral, Num, Ord, Real)
+-
+ wordsToBytes :: DynFlags -> WordOff -> ByteOff
+ wordsToBytes dflags = fromIntegral . (* wORD_SIZE dflags) . fromIntegral
+ 
+@@ -230,7 +229,7 @@ ppBCEnv p
+      $$ nest 4 (vcat (map pp_one (sortBy cmp_snd (Map.toList p))))
+      $$ text "end-env"
+      where
+-        pp_one (var, offset) = int offset <> colon <+> ppr var <+> ppr (bcIdArgRep var)
++        pp_one (var, ByteOff offset) = int offset <> colon <+> ppr var <+> ppr (bcIdArgReps var)
+         cmp_snd x y = compare (snd x) (snd y)
+ -}
+ 
+@@ -299,6 +298,11 @@ argBits dflags (rep : args)
+   | isFollowableArg rep  = False : argBits dflags args
+   | otherwise = take (argRepSizeW dflags rep) (repeat True) ++ argBits dflags args
+ 
++non_void :: [ArgRep] -> [ArgRep]
++non_void = filter nv
++  where nv V = False
++        nv _ = True
++
+ -- -----------------------------------------------------------------------------
+ -- schemeTopBind
+ 
+@@ -482,6 +486,57 @@ returnUnboxedAtom d s p e e_rep = do
+            `appOL`  mkSlideB dflags szb (d - s)  -- clear to sequel
+            `snocOL` RETURN_UBX e_rep)            -- go
+ 
++-- XXX merge the two functions below
++-- XXX use the old special cases if possible (more efficient)
++returnUnboxedTuple
++    :: StackDepth
++    -> Sequel
++    -> BCEnv
++    -> [AnnExpr' Id DVarSet]
++    -> BcM BCInstrList
++returnUnboxedTuple d s p es = do
++    dflags <- getDynFlags
++    let arg_ty e = primRepCmmType dflags (atomPrimRep e)
++        (tuple_info, tuple_components) = layoutTuple dflags d arg_ty es
++        args_ptrs = map (\(e, off) -> (isFollowableArg (atomRep e), off)) tuple_components
++        go _   pushes [] = return (reverse pushes)
++        go !dd pushes ((a, off):cs) = do (push, szb) <- pushAtom dd p a
++                                         MASSERT(off == dd + szb)
++                                         go (dd + szb) (push:pushes) cs
++    pushes <- go d [] tuple_components
++    tuple_bco <- emitBc (tupleBCO dflags tuple_info args_ptrs)
++    return (mconcat pushes
++            `appOL` mkSlideB dflags (wordsToBytes dflags $ tupleSize tuple_info) (d - s) -- clear to sequel
++            `snocOL` PUSH_UBX (mkLitWord dflags . fromIntegral $ mkTupleInfoSig tuple_info) 1 -- add info word
++            `snocOL` PUSH_BCO tuple_bco -- add info BCO
++            `snocOL` RETURN_T) -- go
++
++
++
++-- return a tuple that's already on the stack in the right order
++returnUnboxedTuple'
++    :: StackDepth -- ^ current stack depth
++    -> Sequel     -- ^ depth of sequel
++    -> BCEnv
++    -> StackDepth -- ^ depth of start of tuple
++    -> [PrimRep]
++    -> BcM BCInstrList
++returnUnboxedTuple' d s _p d_tuple t_reps = do
++    dflags <- getDynFlags
++    let arg_ty :: PrimRep -> CmmType
++        arg_ty e = primRepCmmType dflags e
++        (tuple_info, tuple_components) = layoutTuple dflags d arg_ty t_reps
++        args_ptrs = map (\(rep, off) -> (isFollowableArg (toArgRep rep), off)) tuple_components
++        tuple_offset = trunc16W $ bytesToWords dflags (d - d_tuple) + tupleSize tuple_info - 1
++        copyTuple = replicate (fromIntegral $ tupleSize tuple_info)
++                              (PUSH_L tuple_offset)
++    tuple_bco <- emitBc (tupleBCO dflags tuple_info args_ptrs)
++    return (toOL copyTuple
++            `appOL` mkSlideB dflags (wordsToBytes dflags $ tupleSize tuple_info) (d - s) -- clear to sequel
++            `snocOL` PUSH_UBX (mkLitWord dflags . fromIntegral $ mkTupleInfoSig tuple_info) 1 -- add info word
++            `snocOL` PUSH_BCO tuple_bco
++            `snocOL` RETURN_T) -- go
++
+ -- Compile code to apply the given expression to the remaining args
+ -- on the stack, returning a HNF.
+ schemeE
+@@ -499,6 +554,10 @@ schemeE d s p e@(AnnCoercion {}) = returnUnboxedAtom d s p e V
+ schemeE d s p e@(AnnVar v)
+       -- See Note [Not-necessarily-lifted join points], step 3.
+     | isNNLJoinPoint v          = doTailCall d s p (protectNNLJoinPointId v) [AnnVar voidPrimId]
++    | isUnboxedTupleType (idType v) =
++        let d_tuple = fromMaybe (panic "CoreToByteCode.schemeE: global unboxed tuples are not supported")
++                                (lookupBCEnv_maybe v p)
++        in returnUnboxedTuple' d s p d_tuple (bcIdPrimReps v) --- XXX should this be arg reps instead?
+     | isUnliftedType (idType v) = returnUnboxedAtom d s p e (bcIdArgRep v)
+     | otherwise                 = schemeT d s p e
+ 
+@@ -817,7 +876,8 @@ schemeT d s p app
+                   unboxedTupleReturn d s p arg2
+         [arg1,arg2] | isVAtom arg2 ->
+                   unboxedTupleReturn d s p arg1
+-        _other -> multiValException
++        -- XXX find if we can work the above cases into the general version
++        other -> returnUnboxedTuple d s p (reverse other)
+ 
+    -- Case 3: Ordinary data constructor
+    | Just con <- maybe_saturated_dcon
+@@ -979,12 +1039,12 @@ doCase
+                  -- don't enter the result
+     -> BcM BCInstrList
+ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+-  | typePrimRep (idType bndr) `lengthExceeds` 1
+-  = multiValException
+-  | otherwise
+   = do
+      dflags <- getDynFlags
+      let
++        -- XXX handle general unboxed tuples and the old special cased ones properly here
++        utup     = isUnboxedTupleType bndr_ty && length (non_void (typeArgReps bndr_ty)) > 1
++
+         profiling
+           | gopt Opt_ExternalInterpreter dflags = gopt Opt_SccProfilingOn dflags
+           | otherwise = rtsIsProfiled
+@@ -994,8 +1054,9 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+         -- When an alt is entered, it assumes the returned value is
+         -- on top of the itbl.
+         ret_frame_size_b :: StackDepth
+-        ret_frame_size_b = 2 * wordSize dflags
+-
++        ret_frame_size_b | utup      = 4 * wordSize dflags
++                         | otherwise = 2 * wordSize dflags
++ 
+         -- The extra frame we push to save/restor the CCCS when profiling
+         save_ccs_size_b | profiling = 2 * wordSize dflags
+                         | otherwise = 0
+@@ -1004,16 +1065,22 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+         -- when it is returned.
+         unlifted_itbl_size_b :: StackDepth
+         unlifted_itbl_size_b | isAlgCase = 0
+-                            | otherwise = wordSize dflags
++                             | utup      = 3 * wordSize dflags
++                             | otherwise = wordSize dflags
++
++        bndr_size | utup      = let bndr_ty = primRepCmmType dflags
++                                    (tuple_info, _) = layoutTuple dflags 0 bndr_ty (bcIdPrimReps bndr)
++                                in wordsToBytes dflags (tupleSize tuple_info)
++                  | otherwise = wordsToBytes dflags (idSizeW dflags bndr)
+ 
+         -- depth of stack after the return value has been pushed
+         d_bndr =
+-            d + ret_frame_size_b + wordsToBytes dflags (idSizeW dflags bndr)
++            d + ret_frame_size_b + bndr_size
+ 
+         -- depth of stack after the extra info table for an unboxed return
+         -- has been pushed, if any.  This is the stack depth at the
+         -- continuation.
+-        d_alts = d_bndr + unlifted_itbl_size_b
++        d_alts = d + ret_frame_size_b + bndr_size + unlifted_itbl_size_b
+ 
+         -- Env in which to compile the alts, not including
+         -- any vars bound by the alts themselves
+@@ -1036,11 +1103,26 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+            | null real_bndrs = do
+                 rhs_code <- schemeE d_alts s p_alts rhs
+                 return (my_discr alt, rhs_code)
+-           -- If an alt attempts to match on an unboxed tuple or sum, we must
+-           -- bail out, as the bytecode compiler can't handle them.
+-           -- (See #14608.)
+-           | any (\bndr -> typePrimRep (idType bndr) `lengthExceeds` 1) bndrs
+-           = multiValException
++           | utup =
++             let bndr_ty = primRepCmmType dflags . bcIdPrimRep
++                 tuple_start = d_bndr
++                 (tuple_info, args_offsets) =
++                   layoutTuple dflags
++                               0
++                               bndr_ty
++                               bndrs
++
++                 stack_bot = d_alts
++
++                 p' = Map.insertList
++                        [ (arg, tuple_start - wordsToBytes dflags (tupleSize tuple_info) + offset)
++                        | (arg, offset) <- args_offsets
++                        , not (isVoidRep $ bcIdPrimRep arg)]
++                        p_alts
++             in do
++               -- traceCBC ("ubx tup cont: " ++ show (stack_bot,tuple_start,tot_wds) ++ "\n" ++  show args_offsets)
++               rhs_code <- schemeE stack_bot s p' rhs
++               return (NoDiscr, rhs_code)
+            -- algebraic alt with some binders
+            | otherwise =
+              let (tot_wds, _ptrs_wds, args_offsets) =
+@@ -1068,7 +1150,7 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+         my_discr (DEFAULT, _, _) = NoDiscr {-shouldn't really happen-}
+         my_discr (DataAlt dc, _, _)
+            | isUnboxedTupleCon dc || isUnboxedSumCon dc
+-           = multiValException
++           = NoDiscr
+            | otherwise
+            = DiscrP (fromIntegral (dataConTag dc - fIRST_TAG))
+         my_discr (LitAlt l, _, _)
+@@ -1100,17 +1182,22 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+         -- really want a bitmap up to depth (d-s).  This affects compilation of
+         -- case-of-case expressions, which is the only time we can be compiling a
+         -- case expression with s /= 0.
+-        bitmap_size = trunc16W $ bytesToWords dflags (d - s)
++        bitmap_size | utup      = trunc16W $ 2 + bytesToWords dflags (d - s)
++                    | otherwise = trunc16W $ bytesToWords dflags (d - s)
+         bitmap_size' :: Int
+         bitmap_size' = fromIntegral bitmap_size
+-        bitmap = intsToReverseBitmap dflags bitmap_size'{-size-}
+-                        (sort (filter (< bitmap_size') rel_slots))
++        -- unboxed tuples get two more words, the second is a pointer (tuple_bco)
++        bitmap | utup      = intsToReverseBitmap dflags bitmap_size'{-size-}
++                               (1 : sort (filter (< bitmap_size') (map (+2) rel_slots)))
++               | otherwise = intsToReverseBitmap dflags bitmap_size'{-size-}
++                               (sort (filter (< bitmap_size') rel_slots))
+           where
+           binds = Map.toList p
+           -- NB: unboxed tuple cases bind the scrut binder to the same offset
+           -- as one of the alt binders, so we have to remove any duplicates here:
+           rel_slots = nub $ map fromIntegral $ concat (map spread binds)
+-          spread (id, offset) | isFollowableArg (bcIdArgRep id) = [ rel_offset ]
++          spread (id, offset) | isUnboxedTupleType (idType id) = []
++                              | isFollowableArg (bcIdArgRep id) = [ rel_offset ]
+                               | otherwise                      = []
+                 where rel_offset = trunc16W $ bytesToWords dflags (d - offset)
+ 
+@@ -1121,19 +1208,117 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+          alt_bco_name = getName bndr
+          alt_bco = mkProtoBCO dflags alt_bco_name alt_final (Left alts)
+                        0{-no arity-} bitmap_size bitmap True{-is alts-}
+---     trace ("case: bndr = " ++ showSDocDebug (ppr bndr) ++ "\ndepth = " ++ show d ++ "\nenv = \n" ++ showSDocDebug (ppBCEnv p) ++
+---            "\n      bitmap = " ++ show bitmap) $ do
+-
+      scrut_code <- schemeE (d + ret_frame_size_b + save_ccs_size_b)
+                            (d + ret_frame_size_b + save_ccs_size_b)
+                            p scrut
+      alt_bco' <- emitBc alt_bco
+-     let push_alts
+-            | isAlgCase = PUSH_ALTS alt_bco'
+-            | otherwise = PUSH_ALTS_UNLIFTED alt_bco' (typeArgRep bndr_ty)
+-     return (push_alts `consOL` scrut_code)
++     if utup
++       then do
++              -- XXX we shouldn't call layoutTuple twice
++              let (tuple_info, args_offsets) =
++                     layoutTuple dflags
++                                 0
++                                 (primRepCmmType dflags)
++                                 (bcIdPrimReps bndr)
++                  args_ptrs = map (\(rep, off) -> (isFollowableArg (toArgRep rep), off)) args_offsets
++              tuple_bco <- emitBc (tupleBCO dflags tuple_info args_ptrs)
++              return (PUSH_ALTS_T alt_bco' tuple_info tuple_bco
++                      `consOL` scrut_code)
++       else let push_alts
++                  | isAlgCase = PUSH_ALTS alt_bco'
++                  | otherwise = PUSH_ALTS_UNLIFTED alt_bco'
++                                                   (typeArgRep bndr_ty)
++            in return (push_alts `consOL` scrut_code)
+ 
+ 
++-- -----------------------------------------------------------------------------
++-- Deal with tuples
++
++-- The native calling convention uses registers for tuples, but in the
++-- bytecode interpreter, all values live on the stack.
++
++layoutTuple :: DynFlags
++            -> ByteOff
++            -> (a -> CmmType)
++            -> [a]
++            -> ( TupleInfo
++               , [(a, ByteOff)] -- argument, offset on stack
++               )
++layoutTuple dflags start_off arg_ty reps =
++  let (orig_stk_bytes, pos) = assignArgumentsPos dflags
++                                                 0
++                                                 NativeReturn
++                                                 arg_ty
++                                                 reps
++
++      -- keep the stack parameters in the same place
++      orig_stk_params = [(x, fromIntegral off) | (x, StackParam off) <- pos]
++
++      -- sort the register parameters by register and add them to the stack
++      (regs, reg_params)
++          = unzip $ sortBy (comparing fst)
++                           [(reg, x) | (x, RegisterParam reg) <- pos]
++
++      (new_stk_bytes, new_stk_params) = assignStack dflags
++                                                    orig_stk_bytes
++                                                    arg_ty
++                                                    reg_params
++
++      -- make live register bitmaps
++      bmp_reg r ~(v, f, d, l)
++        = case r of VanillaReg n _ -> (a v n, f,     d,     l    )
++                    FloatReg n     -> (v,     a f n, d,     l    )
++                    DoubleReg n    -> (v,     f,     a d n, l    )
++                    LongReg n      -> (v,     f,     d,     a l n)
++                    _              ->
++                      pprPanic "CoreToByteCode.layoutTuple count_reg"
++                               (ppr r)
++              where a bmp n = bmp .|. (1 `shiftL` (n-1))
++
++      (vanilla_regs, float_regs, double_regs, long_regs)
++          = foldr bmp_reg (0, 0, 0, 0) regs
++
++      get_byte_off (x, StackParam y) = (x, fromIntegral y)
++      get_byte_off _                 =
++          panic "CoreToByteCode.layoutTuple get_byte_off"
++
++  in ( TupleInfo
++         { tupleSize        = bytesToWords dflags (ByteOff new_stk_bytes)
++         , tupleVanillaRegs = vanilla_regs
++         , tupleLongRegs    = long_regs
++         , tupleFloatRegs   = float_regs
++         , tupleDoubleRegs  = double_regs
++         , tupleNativeStackSize = bytesToWords dflags
++                                               (ByteOff orig_stk_bytes)
++         }
++     , sortBy (comparing snd) $
++              map (\(x, o) -> (x, o + start_off))
++                  (orig_stk_params ++ map get_byte_off new_stk_params)
++     )
++
++tupleBCO :: DynFlags -> TupleInfo -> [(Bool, ByteOff)] -> [FFIInfo] -> ProtoBCO Name
++tupleBCO dflags info pointers =
++  mkProtoBCO dflags invented_name body_code (Left [])
++             0{-no arity-} bitmap_size bitmap False{-is alts-}
++
++  where
++    {-
++      The tuple BCO is never referred to by name, so we can get away
++      with using a fake name here. We will need to change this if we want
++      to save some memory by sharing the BCO between places that have
++      the same tuple shape
++    -}
++    invented_name  = mkSystemVarName (mkPseudoUniqueE 0) (fsLit "tuple")
++
++    -- the first word in the frame is the tuple_info word,
++    -- which is not a pointer
++    bitmap_size = trunc16W $ 1 + tupleSize info
++    bitmap      = intsToReverseBitmap dflags (fromIntegral bitmap_size) $
++                  map ((+1) . fromIntegral . bytesToWords dflags . snd)
++                      (filter fst pointers)
++    body_code = mkSlideW 0 1      -- pop frame header
++                `snocOL` RETURN_T -- and add it again
++
+ -- -----------------------------------------------------------------------------
+ -- Deal with a CCall.
+ 
+@@ -1814,6 +1999,9 @@ bcIdPrimRep id
+   | otherwise
+   = pprPanic "bcIdPrimRep" (ppr id <+> dcolon <+> ppr (idType id))
+ 
++bcIdPrimReps :: Id -> [PrimRep]
++bcIdPrimReps id = typePrimRepArgs (idType id)
++
+ repSizeWords :: DynFlags -> PrimRep -> WordOff
+ repSizeWords dflags rep = WordOff $ argRepSizeW dflags (toArgRep rep)
+ 
+@@ -1921,6 +2109,10 @@ mkStackOffsets original_depth szsb = tail (scanl' (+) original_depth szsb)
+ typeArgRep :: Type -> ArgRep
+ typeArgRep = toArgRep . typePrimRep1
+ 
++-- XXX this can be removed?
++typeArgReps :: Type -> [ArgRep]
++typeArgReps = map toArgRep . typePrimRepArgs -- typePrimRepArgs (idType id)
++
+ -- -----------------------------------------------------------------------------
+ -- The bytecode generator's monad
+ 
+diff --git a/compiler/ghci/ByteCodeInstr.hs b/compiler/ghci/ByteCodeInstr.hs
+index c386ece52a..d8f902546f 100644
+--- a/compiler/ghci/ByteCodeInstr.hs
++++ b/compiler/ghci/ByteCodeInstr.hs
+@@ -86,6 +86,9 @@ data BCInstr
+    -- Push an alt continuation
+    | PUSH_ALTS          (ProtoBCO Name)
+    | PUSH_ALTS_UNLIFTED (ProtoBCO Name) ArgRep
++   | PUSH_ALTS_T        (ProtoBCO Name) -- continuation
++                        !TupleInfo
++                        (ProtoBCO Name) -- tuple return BCO
+ 
+    -- Pushing 8, 16 and 32 bits of padding (for constructors).
+    | PUSH_PAD8
+@@ -168,8 +171,9 @@ data BCInstr
+ 
+    -- To Infinity And Beyond
+    | ENTER
+-   | RETURN             -- return a lifted value
++   | RETURN            -- return a lifted value
+    | RETURN_UBX ArgRep -- return an unlifted value, here's its rep
++   | RETURN_T          -- return an unboxed tuple (info already on stack)
+ 
+    -- Breakpoints
+    | BRK_FUN          Word16 Unique (RemotePtr CostCentre)
+@@ -234,8 +238,13 @@ instance Outputable BCInstr where
+    ppr (PUSH_PRIMOP op)      = text "PUSH_G  " <+> text "GHC.PrimopWrappers."
+                                                <> ppr op
+    ppr (PUSH_BCO bco)        = hang (text "PUSH_BCO") 2 (ppr bco)
++
+    ppr (PUSH_ALTS bco)       = hang (text "PUSH_ALTS") 2 (ppr bco)
+    ppr (PUSH_ALTS_UNLIFTED bco pk) = hang (text "PUSH_ALTS_UNLIFTED" <+> ppr pk) 2 (ppr bco)
++   ppr (PUSH_ALTS_T bco tuple_info tuple_bco) =
++                               hang (text "PUSH_ALTS_T" <+> ppr tuple_info)
++                                    2
++                                    (ppr tuple_bco $+$ ppr bco)
+ 
+    ppr PUSH_PAD8             = text "PUSH_PAD8"
+    ppr PUSH_PAD16            = text "PUSH_PAD16"
+@@ -292,8 +301,11 @@ instance Outputable BCInstr where
+    ppr ENTER                 = text "ENTER"
+    ppr RETURN                = text "RETURN"
+    ppr (RETURN_UBX pk)       = text "RETURN_UBX  " <+> ppr pk
++   ppr (RETURN_T)            = text "RETURN_T"
+    ppr (BRK_FUN index uniq _cc) = text "BRK_FUN" <+> ppr index <+> ppr uniq <+> text "<cc>"
+ 
++
++
+ -- -----------------------------------------------------------------------------
+ -- The stack use, in words, of each bytecode insn.  These _must_ be
+ -- correct, or overestimates of reality, to be safe.
+@@ -321,8 +333,14 @@ bciStackUse PUSH32_W{}            = 1  -- takes exactly 1 word
+ bciStackUse PUSH_G{}              = 1
+ bciStackUse PUSH_PRIMOP{}         = 1
+ bciStackUse PUSH_BCO{}            = 1
+-bciStackUse (PUSH_ALTS bco)       = 2 + protoBCOStackUse bco
+-bciStackUse (PUSH_ALTS_UNLIFTED bco _) = 2 + protoBCOStackUse bco
++-- XXX these don't take stack space for restoring the CCCS into account!
++bciStackUse (PUSH_ALTS bco)       = 3 + protoBCOStackUse bco
++bciStackUse (PUSH_ALTS_UNLIFTED bco _) = 4 + protoBCOStackUse bco
++bciStackUse (PUSH_ALTS_T bco info _) =
++   -- (tuple_bco, tuple_info word, cont_bco, stg_ctoi_t)
++   -- tuple
++   -- (tuple_info, tuple_bco, stg_ret_t)
++   7 + fromIntegral (tupleSize info) + protoBCOStackUse bco
+ bciStackUse (PUSH_PAD8)           = 1  -- overapproximation
+ bciStackUse (PUSH_PAD16)          = 1  -- overapproximation
+ bciStackUse (PUSH_PAD32)          = 1  -- overapproximation on 64bit arch
+@@ -361,6 +379,7 @@ bciStackUse JMP{}                 = 0
+ bciStackUse ENTER{}               = 0
+ bciStackUse RETURN{}              = 0
+ bciStackUse RETURN_UBX{}          = 1
++bciStackUse RETURN_T{}            = 1
+ bciStackUse CCALL{}               = 0
+ bciStackUse SWIZZLE{}             = 0
+ bciStackUse BRK_FUN{}             = 0
+diff --git a/compiler/ghci/ByteCodeTypes.hs b/compiler/ghci/ByteCodeTypes.hs
+index 0c0c34ad64..71378b27f3 100644
+--- a/compiler/ghci/ByteCodeTypes.hs
++++ b/compiler/ghci/ByteCodeTypes.hs
+@@ -8,6 +8,8 @@ module ByteCodeTypes
+   ( CompiledByteCode(..), seqCompiledByteCode, FFIInfo(..)
+   , UnlinkedBCO(..), BCOPtr(..), BCONPtr(..)
+   , ItblEnv, ItblPtr(..)
++  , TupleInfo(..)
++  , ByteOff(..), WordOff(..)
+   , CgBreakInfo(..)
+   , ModBreaks (..), BreakIndex, emptyModBreaks
+   , CCostCentre
+@@ -67,6 +69,34 @@ seqCompiledByteCode CompiledByteCode{..} =
+   rnf bc_strs `seq`
+   rnf (fmap seqModBreaks bc_breaks)
+ 
++newtype ByteOff = ByteOff Int
++    deriving (Enum, Eq, Show, Integral, Num, Ord, Real, Outputable)
++
++newtype WordOff = WordOff Int
++    deriving (Enum, Eq, Show, Integral, Num, Ord, Real, Outputable)
++
++-- This contains the data we need for passing unboxed tuples between
++-- bytecode and native code
++data TupleInfo = TupleInfo
++  { tupleSize            :: !WordOff -- total size of tuple in words
++  , tupleVanillaRegs     :: !Int     -- vanilla registers used (bitmap)
++  , tupleLongRegs        :: !Int     -- long registers used (bitmap)
++  , tupleFloatRegs       :: !Int     -- float registers used (bitmap)
++  , tupleDoubleRegs      :: !Int     -- double registers used (bitmap)
++  , tupleNativeStackSize :: !WordOff {- words spilled on the stack by
++                                        native calling convention -}
++  } deriving (Show)
++
++instance Outputable TupleInfo where
++  ppr TupleInfo{..} = text "<size" <+> ppr tupleSize <+>
++                      text "stack" <+> ppr tupleNativeStackSize <+>
++                      text "regs"  <+>
++                          char 'R' <> ppr tupleVanillaRegs <+>
++                          char 'L' <> ppr tupleLongRegs <+>
++                          char 'F' <> ppr tupleFloatRegs <+>
++                          char 'D' <> ppr tupleDoubleRegs <>
++                      char '>'
++
+ type ItblEnv = NameEnv (Name, ItblPtr)
+         -- We need the Name in the range so we know which
+         -- elements to filter out when unloading a module
+diff --git a/compiler/main/GhcMake.hs b/compiler/main/GhcMake.hs
+index 6599da07f4..d587f9c88e 100644
+--- a/compiler/main/GhcMake.hs
++++ b/compiler/main/GhcMake.hs
+@@ -2078,7 +2078,7 @@ downsweep hsc_env old_summaries excl_mods allow_dup_roots
+            (defaultObjectTarget dflags)
+            map0
+          else if hscTarget dflags == HscInterpreted
+-           then enableCodeGenForUnboxedTuplesOrSums
++           then enableCodeGenForUnboxedSums
+              (defaultObjectTarget dflags)
+              map0
+            else return map0
+@@ -2177,23 +2177,21 @@ enableCodeGenForTH =
+ --
+ -- This is used used in order to load code that uses unboxed tuples
+ -- or sums into GHCi while still allowing some code to be interpreted.
+-enableCodeGenForUnboxedTuplesOrSums :: HscTarget
++enableCodeGenForUnboxedSums :: HscTarget
+   -> NodeMap [Either ErrorMessages ModSummary]
+   -> IO (NodeMap [Either ErrorMessages ModSummary])
+-enableCodeGenForUnboxedTuplesOrSums =
++enableCodeGenForUnboxedSums =
+   enableCodeGenWhen condition should_modify TFL_GhcSession TFL_CurrentModule
+   where
+     condition ms =
+-      unboxed_tuples_or_sums (ms_hspp_opts ms) &&
++      xopt LangExt.UnboxedSums (ms_hspp_opts ms) &&
+       not (gopt Opt_ByteCode (ms_hspp_opts ms)) &&
+       not (isBootSummary ms)
+-    unboxed_tuples_or_sums d =
+-      xopt LangExt.UnboxedTuples d || xopt LangExt.UnboxedSums d
+     should_modify (ModSummary { ms_hspp_opts = dflags }) =
+       hscTarget dflags == HscInterpreted
+ 
+ -- | Helper used to implement 'enableCodeGenForTH' and
+--- 'enableCodeGenForUnboxedTuples'. In particular, this enables
++-- 'enableCodeGenForUnboxedSums'. In particular, this enables
+ -- unoptimized code generation for all modules that meet some
+ -- condition (first parameter), or are dependencies of those
+ -- modules. The second parameter is a condition to check before
+diff --git a/includes/rts/Bytecodes.h b/includes/rts/Bytecodes.h
+index e5d55f694f..88748ea184 100644
+--- a/includes/rts/Bytecodes.h
++++ b/includes/rts/Bytecodes.h
+@@ -91,6 +91,9 @@
+ #define bci_BRK_FUN			66
+ #define bci_TESTLT_W   			67
+ #define bci_TESTEQ_W  			68
++
++#define bci_RETURN_T          69
++#define bci_PUSH_ALTS_T       70
+ /* If you need to go past 255 then you will run into the flags */
+ 
+ /* If you need to go below 0x0100 then you will run into the instructions */
+diff --git a/includes/stg/MiscClosures.h b/includes/stg/MiscClosures.h
+index 5b2364407f..f98401cc98 100644
+--- a/includes/stg/MiscClosures.h
++++ b/includes/stg/MiscClosures.h
+@@ -87,6 +87,41 @@ RTS_RET(stg_ctoi_D1);
+ RTS_RET(stg_ctoi_L1);
+ RTS_RET(stg_ctoi_V);
+ 
++RTS_FUN_DECL(stg_ctoi_t);
++RTS_RET(stg_ctoi_t0);
++RTS_RET(stg_ctoi_t1);
++RTS_RET(stg_ctoi_t2);
++RTS_RET(stg_ctoi_t3);
++RTS_RET(stg_ctoi_t4);
++RTS_RET(stg_ctoi_t5);
++RTS_RET(stg_ctoi_t6);
++RTS_RET(stg_ctoi_t7);
++RTS_RET(stg_ctoi_t8);
++RTS_RET(stg_ctoi_t9);
++RTS_RET(stg_ctoi_t10);
++RTS_RET(stg_ctoi_t11);
++RTS_RET(stg_ctoi_t12);
++RTS_RET(stg_ctoi_t13);
++RTS_RET(stg_ctoi_t14);
++RTS_RET(stg_ctoi_t15);
++RTS_RET(stg_ctoi_t16);
++RTS_RET(stg_ctoi_t17);
++RTS_RET(stg_ctoi_t18);
++RTS_RET(stg_ctoi_t19);
++RTS_RET(stg_ctoi_t20);
++RTS_RET(stg_ctoi_t21);
++RTS_RET(stg_ctoi_t22);
++RTS_RET(stg_ctoi_t23);
++RTS_RET(stg_ctoi_t24);
++RTS_RET(stg_ctoi_t25);
++RTS_RET(stg_ctoi_t26);
++RTS_RET(stg_ctoi_t27);
++RTS_RET(stg_ctoi_t28);
++RTS_RET(stg_ctoi_t29);
++RTS_RET(stg_ctoi_t30);
++RTS_RET(stg_ctoi_t31);
++RTS_RET(stg_ctoi_t32);
++
+ RTS_RET(stg_apply_interp);
+ 
+ RTS_ENTRY(stg_IND);
+@@ -293,6 +328,7 @@ RTS_RET(stg_ret_n);
+ RTS_RET(stg_ret_f);
+ RTS_RET(stg_ret_d);
+ RTS_RET(stg_ret_l);
++RTS_RET(stg_ret_t);
+ 
+ RTS_FUN_DECL(stg_gc_prim);
+ RTS_FUN_DECL(stg_gc_prim_p);
+diff --git a/rts/Disassembler.c b/rts/Disassembler.c
+index 01d6c3b1d9..bae23c1f17 100644
+--- a/rts/Disassembler.c
++++ b/rts/Disassembler.c
+@@ -148,6 +148,13 @@ disInstr ( StgBCO *bco, int pc )
+          debugBelch("PUSH_ALTS_V  " ); printPtr( ptrs[instrs[pc]] );
+          debugBelch("\n");
+          pc += 1; break;
++      case bci_PUSH_ALTS_T:
++         debugBelch("PUSH_ALTS_T  ");
++         printPtr( ptrs[instrs[pc]] );
++         debugBelch(" 0x%" FMT_HexWord " ", literals[instrs[pc+1]] );
++         printPtr( ptrs[instrs[pc+2]] );
++         debugBelch("\n");
++         pc += 3; break;
+       case bci_PUSH_PAD8:
+          debugBelch("PUSH_PAD8\n");
+          pc += 1; break;
+@@ -313,6 +320,9 @@ disInstr ( StgBCO *bco, int pc )
+       case bci_RETURN_V:
+          debugBelch("RETURN_V\n" );
+          break;
++      case bci_RETURN_T:
++         debugBelch("RETURN_T\n ");
++         break;
+ 
+       default:
+          barf("disInstr: unknown opcode %u", (unsigned int) instr);
+diff --git a/rts/Interpreter.c b/rts/Interpreter.c
+index 463ddae18b..f33fb9c73e 100644
+--- a/rts/Interpreter.c
++++ b/rts/Interpreter.c
+@@ -681,12 +681,13 @@ do_return_unboxed:
+                 || SpW(0) == (W_)&stg_ret_f_info
+                 || SpW(0) == (W_)&stg_ret_d_info
+                 || SpW(0) == (W_)&stg_ret_l_info
++                || SpW(0) == (W_)&stg_ret_t_info
+             );
+ 
+         IF_DEBUG(interpreter,
+              debugBelch(
+              "\n---------------------------------------------------------------\n");
+-             debugBelch("Returning: "); printObj(obj);
++             debugBelch("Returning unboxed\n");
+              debugBelch("Sp = %p\n", Sp);
+ #if defined(PROFILING)
+              fprintCCS(stderr, cap->r.rCCCS);
+@@ -697,7 +698,7 @@ do_return_unboxed:
+              debugBelch("\n\n");
+             );
+ 
+-        // get the offset of the stg_ctoi_ret_XXX itbl
++        // get the offset of the stg_ctoi_XXX itbl
+         offset = stack_frame_sizeW((StgClosure *)Sp);
+ 
+         switch (get_itbl((StgClosure*)(Sp_plusW(offset)))->type) {
+@@ -1326,6 +1327,64 @@ run_BCO:
+             goto nextInsn;
+         }
+ 
++        case bci_PUSH_ALTS_T: {
++            int o_bco = BCO_GET_LARGE_ARG;
++            W_ tuple_info = (W_)BCO_LIT(BCO_GET_LARGE_ARG);
++            int o_tuple_bco = BCO_GET_LARGE_ARG;
++
++            SpW(-1) = BCO_PTR(o_tuple_bco);
++            SpW(-2) = tuple_info;
++            SpW(-3) = BCO_PTR(o_bco);
++            W_ ctoi_t_offset;
++            int tuple_stack_words = tuple_info & 0x3fff;
++            switch(tuple_stack_words) {
++                case 0:  ctoi_t_offset = (W_)&stg_ctoi_t0_info;  break;
++                case 1:  ctoi_t_offset = (W_)&stg_ctoi_t1_info;  break;
++                case 2:  ctoi_t_offset = (W_)&stg_ctoi_t2_info;  break;
++                case 3:  ctoi_t_offset = (W_)&stg_ctoi_t3_info;  break;
++                case 4:  ctoi_t_offset = (W_)&stg_ctoi_t4_info;  break;
++                case 5:  ctoi_t_offset = (W_)&stg_ctoi_t5_info;  break;
++                case 6:  ctoi_t_offset = (W_)&stg_ctoi_t6_info;  break;
++                case 7:  ctoi_t_offset = (W_)&stg_ctoi_t7_info;  break;
++                case 8:  ctoi_t_offset = (W_)&stg_ctoi_t8_info;  break;
++                case 9:  ctoi_t_offset = (W_)&stg_ctoi_t9_info;  break;
++                case 10: ctoi_t_offset = (W_)&stg_ctoi_t10_info; break;
++                case 11: ctoi_t_offset = (W_)&stg_ctoi_t11_info; break;
++                case 12: ctoi_t_offset = (W_)&stg_ctoi_t12_info; break;
++                case 13: ctoi_t_offset = (W_)&stg_ctoi_t13_info; break;
++                case 14: ctoi_t_offset = (W_)&stg_ctoi_t14_info; break;
++                case 15: ctoi_t_offset = (W_)&stg_ctoi_t15_info; break;
++                case 16: ctoi_t_offset = (W_)&stg_ctoi_t16_info; break;
++                case 17: ctoi_t_offset = (W_)&stg_ctoi_t17_info; break;
++                case 18: ctoi_t_offset = (W_)&stg_ctoi_t18_info; break;
++                case 19: ctoi_t_offset = (W_)&stg_ctoi_t19_info; break;
++                case 20: ctoi_t_offset = (W_)&stg_ctoi_t20_info; break;
++                case 21: ctoi_t_offset = (W_)&stg_ctoi_t21_info; break;
++                case 22: ctoi_t_offset = (W_)&stg_ctoi_t22_info; break;
++                case 23: ctoi_t_offset = (W_)&stg_ctoi_t23_info; break;
++                case 24: ctoi_t_offset = (W_)&stg_ctoi_t24_info; break;
++                case 25: ctoi_t_offset = (W_)&stg_ctoi_t25_info; break;
++                case 26: ctoi_t_offset = (W_)&stg_ctoi_t26_info; break;
++                case 27: ctoi_t_offset = (W_)&stg_ctoi_t27_info; break;
++                case 28: ctoi_t_offset = (W_)&stg_ctoi_t28_info; break;
++                case 29: ctoi_t_offset = (W_)&stg_ctoi_t29_info; break;
++                case 30: ctoi_t_offset = (W_)&stg_ctoi_t30_info; break;
++                case 31: ctoi_t_offset = (W_)&stg_ctoi_t31_info; break;
++                case 32: ctoi_t_offset = (W_)&stg_ctoi_t32_info; break;
++
++                default: barf("unsupported tuple size %d", tuple_stack_words);
++            }
++            SpW(-4) = ctoi_t_offset;
++            Sp_subW(4);
++            /* XXX this cannot work yet */
++            /* #if defined(PROFILING)
++            Sp_subW(2);
++            SpW(1) = (W_)cap->r.rCCCS;
++            SpW(0) = (W_)&stg_restore_cccs_info;
++            #endif */
++            goto nextInsn;
++        }
++
+         case bci_PUSH_APPLY_N:
+             Sp_subW(1); SpW(0) = (W_)&stg_ap_n_info;
+             goto nextInsn;
+@@ -1705,6 +1764,12 @@ run_BCO:
+             Sp_subW(1);
+             SpW(0) = (W_)&stg_ret_v_info;
+             goto do_return_unboxed;
++        case bci_RETURN_T: {
++            /* tuple_info and tuple_bco must already be on the stack */
++            Sp_subW(1);
++            SpW(0) = (W_)&stg_ret_t_info;
++            goto do_return_unboxed;
++        }
+ 
+         case bci_SWIZZLE: {
+             int stkoff = BCO_NEXT;
+diff --git a/rts/Printer.c b/rts/Printer.c
+index 15404e1205..ab2119cf78 100644
+--- a/rts/Printer.c
++++ b/rts/Printer.c
+@@ -528,17 +528,7 @@ printStackChunk( StgPtr sp, StgPtr spBottom )
+ 
+         case RET_SMALL: {
+             StgWord c = *sp;
+-            if (c == (StgWord)&stg_ctoi_R1p_info) {
+-                debugBelch("tstg_ctoi_ret_R1p_info\n" );
+-            } else if (c == (StgWord)&stg_ctoi_R1n_info) {
+-                debugBelch("stg_ctoi_ret_R1n_info\n" );
+-            } else if (c == (StgWord)&stg_ctoi_F1_info) {
+-                debugBelch("stg_ctoi_ret_F1_info\n" );
+-            } else if (c == (StgWord)&stg_ctoi_D1_info) {
+-                debugBelch("stg_ctoi_ret_D1_info\n" );
+-            } else if (c == (StgWord)&stg_ctoi_V_info) {
+-                debugBelch("stg_ctoi_ret_V_info\n" );
+-            } else if (c == (StgWord)&stg_ap_v_info) {
++            if (c == (StgWord)&stg_ap_v_info) {
+                 debugBelch("stg_ap_v_info\n" );
+             } else if (c == (StgWord)&stg_ap_f_info) {
+                 debugBelch("stg_ap_f_info\n" );
+@@ -594,11 +584,51 @@ printStackChunk( StgPtr sp, StgPtr spBottom )
+         }
+ 
+         case RET_BCO: {
+-            StgBCO *bco;
+-
+-            bco = ((StgBCO *)sp[1]);
++            StgWord c = *sp;
++            StgBCO *bco = ((StgBCO *)sp[1]);
+ 
+-            debugBelch("RET_BCO (%p)\n", sp);
++            if (c == (StgWord)&stg_ctoi_R1p_info) {
++                debugBelch("stg_ctoi_R1p_info" );
++            } else if (c == (StgWord)&stg_ctoi_R1unpt_info) {
++                debugBelch("stg_ctoi_R1unpt_info" );
++            } else if (c == (StgWord)&stg_ctoi_R1n_info) {
++                debugBelch("stg_ctoi_R1n_info" );
++            } else if (c == (StgWord)&stg_ctoi_F1_info) {
++                debugBelch("stg_ctoi_F1_info" );
++            } else if (c == (StgWord)&stg_ctoi_D1_info) {
++                debugBelch("stg_ctoi_D1_info" );
++            } else if (c == (StgWord)&stg_ctoi_V_info) {
++                debugBelch("stg_ctoi_V_info" );
++            } else if (c == (StgWord)&stg_BCO_info) {
++                debugBelch("stg_BCO_info" );
++            } else if (c == (StgWord)&stg_apply_interp_info) {
++                debugBelch("stg_apply_interp_info" );
++            } else if (c == (StgWord)&stg_ret_t_info) {
++                debugBelch("stg_ret_t_info" );
++            } else if (c == (StgWord)&stg_ctoi_t0_info) {
++                debugBelch("stg_ctoi_t0_info" );
++            } else if (c == (StgWord)&stg_ctoi_t1_info) {
++                debugBelch("stg_ctoi_t1_info" );
++            } else if (c == (StgWord)&stg_ctoi_t2_info) {
++                debugBelch("stg_ctoi_t2_info" );
++            } else if (c == (StgWord)&stg_ctoi_t3_info) {
++                debugBelch("stg_ctoi_t3_info" );
++            } else if (c == (StgWord)&stg_ctoi_t4_info) {
++                debugBelch("stg_ctoi_t4_info" );
++            } else if (c == (StgWord)&stg_ctoi_t5_info) {
++                debugBelch("stg_ctoi_t5_info" );
++            } else if (c == (StgWord)&stg_ctoi_t6_info) {
++                debugBelch("stg_ctoi_t6_info" );
++            } else if (c == (StgWord)&stg_ctoi_t7_info) {
++                debugBelch("stg_ctoi_t7_info" );
++            } else if (c == (StgWord)&stg_ctoi_t8_info) {
++                debugBelch("stg_ctoi_t8_info" );
++            /* there are more stg_ctoi_tN_info frames,
++               but we don't print them all */
++            } else {
++                debugBelch("RET_BCO");
++            }
++            debugBelch(" (%p)\n", sp);
+             printLargeBitmap(spBottom, sp+2,
+                              BCO_BITMAP(bco), BCO_BITMAP_SIZE(bco));
+             continue;
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index b2f90a892d..9ad6806c18 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -551,6 +551,8 @@
+       SymI_HasProto(stg_ret_f_info)                                     \
+       SymI_HasProto(stg_ret_d_info)                                     \
+       SymI_HasProto(stg_ret_l_info)                                     \
++      SymI_HasProto(stg_ret_t_info)                                     \
++      SymI_HasProto(stg_ctoi_t)                                         \
+       SymI_HasProto(stg_gc_prim_p)                                      \
+       SymI_HasProto(stg_gc_prim_pp)                                     \
+       SymI_HasProto(stg_gc_prim_n)                                      \
+diff --git a/rts/StgMiscClosures.cmm b/rts/StgMiscClosures.cmm
+index 44d7d302e5..015a6b50f6 100644
+--- a/rts/StgMiscClosures.cmm
++++ b/rts/StgMiscClosures.cmm
+@@ -195,6 +195,236 @@ INFO_TABLE_RET( stg_ctoi_V, RET_BCO )
+     jump stg_yield_to_interpreter [];
+ }
+ 
++/* In the calling convention for compiled code, a tuple is returned
++   in registers, with everything that doesn't fit spilled onto the STG
++   stack.
++
++   At the time the continuation is called, Sp points to the highest word
++   used on the stack:
++
++       ...
++       stg_ctoi_t  (next stack frame, continuation)
++       spilled_1
++       spilled_2
++       spilled_3   <- Sp
++
++   This makes it difficult to write a procedure that can handle tuples of
++   any size.
++
++   To get around this, we use a Cmm procedure that adjusts the stack pointer
++   to skip over the tuple:
++
++       ...
++       stg_ctoi_t3  (advances Sp by 3 words, then calls stg_ctoi_t)
++       spilled_1
++       spilled_2
++       spilled_3    <- Sp
++  
++   When stg_ctoi_t is called, the stack looks like:
++
++       ...
++       tuple_BCO
++       tuple_info
++       cont_BCO     (continuation in bytecode)
++       stg_ctoi_t3  <- Sp
++       spilled_1
++       spilled_2
++       spilled_3
++
++   stg_ctoi_t then reads the tuple_info word to determine the registers
++   to save onto the stack and construct a call to tuple_BCO. Afterwards the
++   stack looks as follows:
++
++       ...
++       tuple_BCO
++       tuple_info
++       cont_BCO
++       stg_ctoi_t3
++       spilled_1
++       spilled_2
++       spilled_3
++       saved_R2
++       saved_R1
++       saved_D3
++       ...
++       tuple_BCO
++       stg_apply_interp <- Sp
++
++   
++   tuple_BCO contains the bytecode instructions to return the tuple to
++   cont_BCO. The bitmap in tuple_BCO describes the contents of
++   the tuple to the storage manager. 
++
++   At this point we can safely jump to the interpreter.
++
++ */
++
++#define MK_STG_CTOI_T(N) INFO_TABLE_RET( \
++  stg_ctoi_t ## N, RET_BCO ) \
++  { Sp_adj(N); jump stg_ctoi_t [*]; }
++
++MK_STG_CTOI_T(0)
++MK_STG_CTOI_T(1)
++MK_STG_CTOI_T(2)
++MK_STG_CTOI_T(3)
++MK_STG_CTOI_T(4)
++MK_STG_CTOI_T(5)
++MK_STG_CTOI_T(6)
++MK_STG_CTOI_T(7)
++MK_STG_CTOI_T(8)
++MK_STG_CTOI_T(9)
++MK_STG_CTOI_T(10)
++MK_STG_CTOI_T(11)
++MK_STG_CTOI_T(12)
++MK_STG_CTOI_T(13)
++MK_STG_CTOI_T(14)
++MK_STG_CTOI_T(15)
++MK_STG_CTOI_T(16)
++MK_STG_CTOI_T(17)
++MK_STG_CTOI_T(18)
++MK_STG_CTOI_T(19)
++MK_STG_CTOI_T(20)
++MK_STG_CTOI_T(21)
++MK_STG_CTOI_T(22)
++MK_STG_CTOI_T(23)
++MK_STG_CTOI_T(24)
++MK_STG_CTOI_T(25)
++MK_STG_CTOI_T(26)
++MK_STG_CTOI_T(27)
++MK_STG_CTOI_T(28)
++MK_STG_CTOI_T(29)
++MK_STG_CTOI_T(30)
++MK_STG_CTOI_T(31)
++MK_STG_CTOI_T(32)
++
++/*
++  the tuple_info word describes the register and stack usage of the tuple:
++
++  [ rrrr ffff ffdd dddd llss ssss ssss ssss ]
++
++  - r: number of vanilla registers R1..Rn
++  - f: bitmap of float registers F1..F6
++  - d: bitmap of double registers D1..D6
++  - l: bitmap of long registers L1..Ln
++  - s: size of tuple in words on stack
++
++  the order in which the registers are pushed on the stack is determined by
++  the Ord instance of GHC.Cmm.Expr.GlobalReg
++
++ */
++
++stg_ctoi_t
++    /* explicit stack */
++{
++
++    W_ tuple_info, tuple_stack, tuple_regs_R,
++       tuple_regs_F, tuple_regs_D, tuple_regs_L;
++    P_ tuple_BCO;
++
++    tuple_info = Sp(2); /* tuple information word */
++    tuple_BCO  = Sp(3); /* bytecode object that returns the tuple in
++                           the interpreter */
++
++    tuple_stack  = tuple_info & 0x3fff; /* number of words spilled on stack */
++    tuple_regs_R = (tuple_info >> 28) & 0xf;  /* number of R1..Rn */
++    tuple_regs_F = (tuple_info >> 22) & 0x3f; /* 6 bits bitmap */
++    tuple_regs_D = (tuple_info >> 16) & 0x3f; /* 6 bits bitmap */
++    tuple_regs_L = (tuple_info >> 14) & 0x3;  /* 2 bits bitmap */
++
++    Sp = Sp - WDS(tuple_stack);
++
++    /* save long registers */
++    /* fixme L2 ? */
++    if((tuple_regs_L & 1) != 0) { Sp = Sp - 8; L_[Sp] = L1; }
++
++    /* save double registers */
++    if((tuple_regs_D & 32) != 0) { Sp = Sp - SIZEOF_DOUBLE; D_[Sp] = D6; }
++    if((tuple_regs_D & 16) != 0) { Sp = Sp - SIZEOF_DOUBLE; D_[Sp] = D5; }
++    if((tuple_regs_D & 8)  != 0) { Sp = Sp - SIZEOF_DOUBLE; D_[Sp] = D4; }
++    if((tuple_regs_D & 4)  != 0) { Sp = Sp - SIZEOF_DOUBLE; D_[Sp] = D3; }
++    if((tuple_regs_D & 2)  != 0) { Sp = Sp - SIZEOF_DOUBLE; D_[Sp] = D2; }
++    if((tuple_regs_D & 1)  != 0) { Sp = Sp - SIZEOF_DOUBLE; D_[Sp] = D1; }
++
++    /* save float registers */
++    if((tuple_regs_F & 32) != 0) { Sp_adj(-1); F_[Sp] = F6; }
++    if((tuple_regs_F & 16) != 0) { Sp_adj(-1); F_[Sp] = F5; }
++    if((tuple_regs_F & 8)  != 0) { Sp_adj(-1); F_[Sp] = F4; }
++    if((tuple_regs_F & 4)  != 0) { Sp_adj(-1); F_[Sp] = F3; }
++    if((tuple_regs_F & 2)  != 0) { Sp_adj(-1); F_[Sp] = F2; }
++    if((tuple_regs_F & 1)  != 0) { Sp_adj(-1); F_[Sp] = F1; }
++
++    /* save vanilla registers */
++    if(tuple_regs_R >= 6) { Sp_adj(-1); Sp(0) = R6; }
++    if(tuple_regs_R >= 5) { Sp_adj(-1); Sp(0) = R5; }
++    if(tuple_regs_R >= 4) { Sp_adj(-1); Sp(0) = R4; }
++    if(tuple_regs_R >= 3) { Sp_adj(-1); Sp(0) = R3; }
++    if(tuple_regs_R >= 2) { Sp_adj(-1); Sp(0) = R2; }
++    if(tuple_regs_R >= 1) { Sp_adj(-1); Sp(0) = R1; }
++
++    /* jump to the BCO that will finish the return of the tuple */
++    Sp_adj(-3);
++    Sp(2) = tuple_info;
++    Sp(1) = tuple_BCO;
++    Sp(0) = stg_ret_t_info;
++
++    jump stg_yield_to_interpreter [];
++}
++
++INFO_TABLE_RET( stg_ret_t, RET_BCO )
++{
++    W_ tuple_info, tuple_stack, tuple_regs_R, tuple_regs_F,
++       tuple_regs_D, tuple_regs_L;
++
++    tuple_info = Sp(2);
++    Sp_adj(3);
++
++    tuple_stack  = tuple_info & 0x3fff; /* number of words spilled on stack */
++    tuple_regs_R = (tuple_info >> 28) & 0xf;  /* number of R1..Rn */
++    tuple_regs_F = (tuple_info >> 22) & 0x3f; /* 6 bits bitmap */
++    tuple_regs_D = (tuple_info >> 16) & 0x3f; /* 6 bits bitmap */
++    tuple_regs_L = (tuple_info >> 14) & 0x3;  /* 2 bits bitmap */
++
++    /* ccall debugBelch("stg_ret_t: stack%d R%d F%d D%d L%d\n",
++                         tuple_stack,
++                         tuple_regs_R,
++                         tuple_regs_F,
++                         tuple_regs_D,
++                         tuple_regs_L); */
++
++    /* restore everything in the reverse order of stg_ctoi_t */
++
++    /* restore vanilla registers */
++    if(tuple_regs_R >= 1) { R1 = Sp(0); Sp_adj(1); }
++    if(tuple_regs_R >= 2) { R2 = Sp(0); Sp_adj(1); }
++    if(tuple_regs_R >= 3) { R3 = Sp(0); Sp_adj(1); }
++    if(tuple_regs_R >= 4) { R4 = Sp(0); Sp_adj(1); }
++    if(tuple_regs_R >= 5) { R5 = Sp(0); Sp_adj(1); }
++    if(tuple_regs_R >= 6) { R6 = Sp(0); Sp_adj(1); }
++
++    /* restore float registers */
++    if((tuple_regs_F & 1)  != 0) { F1 = F_[Sp]; Sp_adj(1); }
++    if((tuple_regs_F & 2)  != 0) { F2 = F_[Sp]; Sp_adj(1); }
++    if((tuple_regs_F & 4)  != 0) { F3 = F_[Sp]; Sp_adj(1); }
++    if((tuple_regs_F & 8)  != 0) { F4 = F_[Sp]; Sp_adj(1); }
++    if((tuple_regs_F & 16) != 0) { F5 = F_[Sp]; Sp_adj(1); }
++    if((tuple_regs_F & 32) != 0) { F6 = F_[Sp]; Sp_adj(1); }
++
++    /* restore double registers */
++    if((tuple_regs_D & 1)  != 0) { D1 = D_[Sp]; Sp = Sp + SIZEOF_DOUBLE; }
++    if((tuple_regs_D & 2)  != 0) { D2 = D_[Sp]; Sp = Sp + SIZEOF_DOUBLE; }
++    if((tuple_regs_D & 4)  != 0) { D3 = D_[Sp]; Sp = Sp + SIZEOF_DOUBLE; }
++    if((tuple_regs_D & 8)  != 0) { D4 = D_[Sp]; Sp = Sp + SIZEOF_DOUBLE; }
++    if((tuple_regs_D & 16) != 0) { D5 = D_[Sp]; Sp = Sp + SIZEOF_DOUBLE; }
++    if((tuple_regs_D & 32) != 0) { D6 = D_[Sp]; Sp = Sp + SIZEOF_DOUBLE; }
++
++    /* restore long registers */
++    if((tuple_regs_L & 1) != 0) { L1 = L_[Sp]; Sp = Sp + 8; }
++
++    /* Sp points to the topmost argument now */
++    jump Sp(tuple_stack) [*]; // NB. all registers live!
++}
++
++
+ /*
+  * Dummy info table pushed on the top of the stack when the interpreter
+  * should apply the BCO on the stack to its arguments, also on the
+diff --git a/testsuite/tests/ghci/should_run/UnboxedTuples/Common.hs-incl b/testsuite/tests/ghci/should_run/UnboxedTuples/Common.hs-incl
+new file mode 100644
+index 0000000000..80992405b5
+--- /dev/null
++++ b/testsuite/tests/ghci/should_run/UnboxedTuples/Common.hs-incl
+@@ -0,0 +1,219 @@
++type T1 a = a -> (# a #)
++tuple1 :: T1 a
++tuple1 x = (# x #)
++
++tuple1a :: a -> T1 a -> a
++tuple1a x f = case f x of (# y #) -> y
++
++-- can still be returned in registers, pointers
++type T2p a = a -> a -> a -> a -> (# a, a, a, a #)
++
++tuple2p :: T2p a
++tuple2p x1 x2 x3 x4 = (# x1, x2, x3, x4 #)
++
++tuple2p_a :: T2p a -> a -> a -> a -> a -> (a, a, a, a)
++tuple2p_a f x1 x2 x3 x4 =
++    case f x1 x2 x3 x4 of (# y1, y2, y3, y4 #) -> (y1, y2, y3, y4)
++
++-- can still be returned in registers, non-pointers
++type T2n = Int -> Int -> Int -> Int -> (# Int#, Int#, Int#, Int# #)
++
++tuple2n :: T2n
++tuple2n (I# x1) (I# x2) (I# x3) (I# x4) = (# x1, x2, x3, x4 #)
++
++tuple2n_a :: T2n -> Int -> Int -> Int -> Int -> (Int, Int, Int, Int)
++tuple2n_a f x1 x2 x3 x4 =
++    case f x1 x2 x3 x4 of
++        (# y1, y2, y3, y4 #) -> (I# y1, I# y2, I# y3, I# y4)
++
++
++-- too big to fit in registers
++type T3 a = a -> a -> a -> a
++        -> a -> a -> a -> a
++        -> a -> a -> a -> a
++        -> (# a, a, a, a
++            , a, a, a, a
++            , a, a, a, a #)
++tuple3 :: T3 a
++tuple3 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 =
++    (# x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12 #)
++
++tuple3_a :: T3 a
++        -> a -> a -> a -> a
++        -> a -> a -> a -> a
++        -> a -> a -> a -> a
++        -> ( a, a, a, a
++           , a, a, a, a
++           , a, a, a, a
++           )
++tuple3_a f x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 = 
++    case f x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 of
++            (# y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12 #) ->
++                (y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12)
++
++type T4a = Float -> Double -> Float -> Double
++        -> (# Float#, Double#, Float#, Double# #)
++
++tuple4a :: T4a
++tuple4a (F# f1) (D# d1) (F# f2) (D# d2) = (# f1, d1, f2, d2 #)
++
++tuple4a_a :: T4a
++         -> Float -> Double -> Float -> Double
++         -> (Float, Double, Float, Double)
++tuple4a_a h f1 d1 f2 d2 =
++  case h f1 d1 f2 d2 of (# g1, e1, g2, e2 #) -> (F# g1, D# e1, F# g2, D# e2 )
++
++
++-- this should fill the floating point registers
++type T4b = Float -> Double -> Float -> Double
++       -> Float -> Double -> Float -> Double
++       -> Float -> Double -> Float -> Double
++       -> Float -> Double -> Float -> Double
++       -> Float -> Double -> Float -> Double
++       -> (# Float#, Double#, Float#, Double#
++           , Float#, Double#, Float#, Double#
++           , Float#, Double#, Float#, Double#
++           , Float#, Double#, Float#, Double#
++           , Float#, Double#, Float#, Double# #)
++tuple4b :: T4b
++tuple4b (F# f1) (D# d1) (F# f2) (D# d2)
++       (F# f3) (D# d3) (F# f4) (D# d4)
++       (F# f5) (D# d5) (F# f6) (D# d6)
++       (F# f7) (D# d7) (F# f8) (D# d8)
++       (F# f9) (D# d9) (F# f10) (D# d10) =
++    (# f1, d1, f2, d2
++     , f3, d3, f4, d4
++     , f5, d5, f6, d6
++     , f7, d7, f8, d8
++     , f9, d9, f10, d10
++     #)
++
++tuple4b_a :: T4b
++         -> Float -> Double -> Float -> Double
++         -> Float -> Double -> Float -> Double
++         -> Float -> Double -> Float -> Double
++         -> Float -> Double -> Float -> Double
++         -> Float -> Double -> Float -> Double
++         -> ( (Float, Double, Float, Double)
++            , (Float, Double, Float, Double)
++            , (Float, Double, Float, Double)
++            , (Float, Double, Float, Double)
++            , (Float, Double, Float, Double)
++            )
++tuple4b_a h f1 d1 f2 d2
++           f3 d3 f4 d4
++           f5 d5 f6 d6
++           f7 d7 f8 d8
++           f9 d9 f10 d10 =
++    case h f1 d1 f2 d2
++           f3 d3 f4 d4
++           f5 d5 f6 d6
++           f7 d7 f8 d8
++           f9 d9 f10 d10 of
++      (# g1, e1, g2, e2
++       , g3, e3, g4, e4
++       , g5, e5, g6, e6
++       , g7, e7, g8, e8
++       , g9, e9, g10, e10 #) ->
++        ( (F# g1, D# e1, F# g2, D# e2)
++        , (F# g3, D# e3, F# g4, D# e4)
++        , (F# g5, D# e5, F# g6, D# e6)
++        , (F# g7, D# e7, F# g8, D# e8)
++        , (F# g9, D# e9, F# g10, D# e10))
++
++type T4c = Float -> Double -> Word64 -> Integer
++        -> Float -> Double -> Word64 -> Integer
++        -> Float -> Double -> Word64 -> Integer
++        -> Float -> Double -> Word64 -> Integer
++        -> (# Float#, Double#, WW#, Integer
++            , Float#, Double#, WW#, Integer
++            , Float#, Double#, WW#, Integer
++            , Float#, Double#, WW#, Integer
++            #)
++tuple4c :: T4c
++tuple4c (F# f1) (D# d1) (W64# w1) i1
++        (F# f2) (D# d2) (W64# w2) i2
++        (F# f3) (D# d3) (W64# w3) i3
++        (F# f4) (D# d4) (W64# w4) i4 =
++     (# f1, d1, w1, i1
++      , f2, d2, w2, i2
++      , f3, d3, w3, i3
++      , f4, d4, w4, i4
++      #)
++
++tuple4c_a :: T4c
++          -> Float -> Double -> Word64 -> Integer
++          -> Float -> Double -> Word64 -> Integer
++          -> Float -> Double -> Word64 -> Integer
++          -> Float -> Double -> Word64 -> Integer
++          -> ( ( Float, Double, Word64, Integer)
++            , ( Float, Double, Word64, Integer)
++            , ( Float, Double, Word64, Integer)
++            ,  ( Float, Double, Word64, Integer)
++             )
++tuple4c_a h f1 d1 w1 i1
++            f2 d2 w2 i2
++            f3 d3 w3 i3
++            f4 d4 w4 i4 =
++    case h f1 d1 w1 i1
++            f2 d2 w2 i2
++            f3 d3 w3 i3
++            f4 d4 w4 i4 of
++      (# f1', d1', w1', i1'
++       , f2', d2', w2', i2'
++       , f3', d3', w3', i3'
++       , f4', d4', w4', i4' #) ->
++       ( (F# f1', D# d1', W64# w1', i1')
++       , (F# f2', D# d2', W64# w2', i2')
++       , (F# f3', D# d3', W64# w3', i3')
++       , (F# f4', D# d4', W64# w4', i4')
++       )
++
++type T5 = Int -> Word64 -> Int -> Word64
++       -> Int -> Word64 -> Int -> Word64
++       -> Int -> Word64 -> Int -> Word64
++       -> Int -> Word64 -> Int -> Word64
++       -> (# Int, WW#, Int, WW#
++           , Int, WW#, Int, WW#
++           , Int, WW#, Int, WW#
++           , Int, WW#, Int, WW# 
++           #)
++
++tuple5 :: T5
++tuple5 i1 (W64# w1) i2 (W64# w2)
++       i3 (W64# w3) i4 (W64# w4)
++       i5 (W64# w5) i6 (W64# w6)
++       i7 (W64# w7) i8 (W64# w8) =
++    (# i1, w1, i2, w2
++     , i3, w3, i4, w4
++     , i5, w5, i6, w6
++     , i7, w7, i8, w8 #)
++
++tuple5_a :: T5
++         -> Int -> Word64 -> Int -> Word64
++         -> Int -> Word64 -> Int -> Word64
++         -> Int -> Word64 -> Int -> Word64
++         -> Int -> Word64 -> Int -> Word64
++         -> ( (Int, Word64, Int, Word64)
++            , (Int, Word64, Int, Word64)
++            , (Int, Word64, Int, Word64)
++            , (Int, Word64, Int, Word64)
++            )
++tuple5_a f i1 w1 i2 w2
++           i3 w3 i4 w4
++           i5 w5 i6 w6
++           i7 w7 i8 w8 =
++    case f i1 w1 i2 w2
++           i3 w3 i4 w4
++           i5 w5 i6 w6
++           i7 w7 i8 w8 of
++      (# j1, x1, j2, x2
++       , j3, x3, j4, x4
++       , j5, x5, j6, x6
++       , j7, x7, j8, x8
++       #) ->
++       ( (j1, W64# x1, j2, W64# x2)
++       , (j3, W64# x3, j4, W64# x4)
++       , (j5, W64# x5, j6, W64# x6)
++       , (j7, W64# x7, j8, W64# x8)
++       )
+diff --git a/testsuite/tests/ghci/should_run/UnboxedTuples/Obj.hs b/testsuite/tests/ghci/should_run/UnboxedTuples/Obj.hs
+new file mode 100644
+index 0000000000..e9272583f0
+--- /dev/null
++++ b/testsuite/tests/ghci/should_run/UnboxedTuples/Obj.hs
+@@ -0,0 +1,17 @@
++{-# LANGUAGE CPP, UnboxedTuples, MagicHash #-}
++{-# OPTIONS_GHC -fobject-code #-}
++
++#include "MachDeps.h"
++
++#if WORD_SIZE_IN_BITS < 64
++#define WW Word64
++#else
++#define WW Word
++#endif
++
++module Obj where
++
++import GHC.Exts
++import GHC.Word
++
++#include "Common.hs-incl"
+diff --git a/testsuite/tests/ghci/should_run/UnboxedTuples/UnboxedTuples.hs b/testsuite/tests/ghci/should_run/UnboxedTuples/UnboxedTuples.hs
+new file mode 100644
+index 0000000000..f6cec4206f
+--- /dev/null
++++ b/testsuite/tests/ghci/should_run/UnboxedTuples/UnboxedTuples.hs
+@@ -0,0 +1,83 @@
++{-# LANGUAGE CPP, UnboxedTuples, MagicHash #-}
++{-# OPTIONS_GHC -fbyte-code #-}
++
++#include "MachDeps.h"
++
++#if WORD_SIZE_IN_BITS < 64
++#define WW Word64
++#else
++#define WW Word
++#endif
++
++{-
++  Test unboxed tuples in the bytecode interpreter.
++
++  The bytecode interpreter uses the stack for everything, while
++  compiled code uses STG registers for arguments and return values.
++ -}
++
++module Main where
++
++import qualified Obj as O
++
++import GHC.Exts
++import GHC.Word
++
++main :: IO ()
++main = do
++
++    testX "tuple2p"
++          tuple2p_a O.tuple2p_a
++          tuple2p   O.tuple2p
++          (\f -> f (1234::Integer) 1235 1236 1237)
++
++    testX "tuple2n"
++          tuple2n_a O.tuple2n_a
++          tuple2n   O.tuple2n
++          (\f -> f 7654 7653 7652 7651)
++
++    testX "tuple3"
++          tuple3_a O.tuple3_a
++          tuple3   O.tuple3
++          (\f -> f (1000::Integer) 1001 1002 1003
++                   1004 1005 1006 1007
++                   1008 1009 1010 1011)
++
++    testX "tuple4a"
++          tuple4a_a O.tuple4a_a
++          tuple4a   O.tuple4a
++          (\f -> f 2000 2001 2002 2003)
++
++    testX "tuple4b"
++          tuple4b_a O.tuple4b_a
++          tuple4b   O.tuple4b
++          (\f -> f 3000 3001 3002 3003 
++                   3004 3005 3006 3007
++                   3008 3009 3010 3011
++                   3012 3013 3014 3015
++                   3016 3017 3018 3019)
++
++    testX "tuple4c"
++          tuple4c_a O.tuple4c_a
++          tuple4c   O.tuple4c
++          (\f -> f 3000 3001 3002 3003 
++                   3004 3005 3006 3007
++                   3008 3009 3010 3011
++                   3012 3013 3014 3015)
++
++    testX "tuple5"
++          tuple5_a O.tuple5_a
++          tuple5   O.tuple5
++          (\f -> f 4000 4001 4002 4003
++                   4004 4005 4006 4007 
++                   4008 4009 4010 4011 
++                   4012 4013 4014 4015)
++
++
++testX :: (Eq a, Show a)
++      => String -> (p -> t) -> (p -> t) -> p -> p -> (t -> a) -> IO ()
++testX msg a1 a2 b1 b2 ap =
++    let (r:rs) = [ap (f g) | f <- [a1,a2], g <- [b1,b2]]
++    in putStrLn (msg ++ " " ++ (show $ all (==r) rs) ++ " " ++ show r)
++
++#include "Common.hs-incl"
+diff --git a/testsuite/tests/ghci/should_run/UnboxedTuples/UnboxedTuples.stdout b/testsuite/tests/ghci/should_run/UnboxedTuples/UnboxedTuples.stdout
+new file mode 100644
+index 0000000000..30acb50b07
+--- /dev/null
++++ b/testsuite/tests/ghci/should_run/UnboxedTuples/UnboxedTuples.stdout
+@@ -0,0 +1,7 @@
++tuple2p True (1234,1235,1236,1237)
++tuple2n True (7654,7653,7652,7651)
++tuple3 True (1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011)
++tuple4a True (2000.0,2001.0,2002.0,2003.0)
++tuple4b True ((3000.0,3001.0,3002.0,3003.0),(3004.0,3005.0,3006.0,3007.0),(3008.0,3009.0,3010.0,3011.0),(3012.0,3013.0,3014.0,3015.0),(3016.0,3017.0,3018.0,3019.0))
++tuple4c True ((3000.0,3001.0,3002,3003),(3004.0,3005.0,3006,3007),(3008.0,3009.0,3010,3011),(3012.0,3013.0,3014,3015))
++tuple5 True ((4000,4001,4002,4003),(4004,4005,4006,4007),(4008,4009,4010,4011),(4012,4013,4014,4015))
+diff --git a/testsuite/tests/ghci/should_run/UnboxedTuples/unboxedtuples.T b/testsuite/tests/ghci/should_run/UnboxedTuples/unboxedtuples.T
+new file mode 100644
+index 0000000000..9439257683
+--- /dev/null
++++ b/testsuite/tests/ghci/should_run/UnboxedTuples/unboxedtuples.T
+@@ -0,0 +1,2 @@
++test('UnboxedTuples', [extra_files(['Obj.hs', 'Common.hs-incl']),
++     only_ways(['ghci'])], compile_and_run, [''])
