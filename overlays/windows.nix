@@ -25,7 +25,7 @@ final: prev:
    });
 
    binutils-unwrapped = prev.binutils-unwrapped.overrideAttrs (attrs: {
-     patches = attrs.patches ++ final.lib.optional (final.stdenv.targetPlatform.isWindows && attrs.version == "2.31.1") (
+     patches = attrs.patches ++ final.lib.optional (final.stdenv.targetPlatform.isWindows && attrs.version or "" == "2.31.1") (
        final.fetchpatch {
          name = "plugin-target-handling-patch";
          url = "https://sourceware.org/git/?p=binutils-gdb.git;a=patch;h=999d6dff80fab12d22c2a8d91923db6bde7fb3e5";
