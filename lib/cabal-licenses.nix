@@ -9,6 +9,11 @@ in licenses // {
       url = "https://wikipedia.org/wiki/Public_domain";
       free = true;
     };
+  LicenseRef-LGPL = {
+      shortName = "LGPL";
+      fullName = "LGPL";
+      free = true;
+    };
   LicenseRef-OtherLicense = {
       spdxId = "LicenseRef-OtherLicense";
       shortName = "Other License";
