@@ -53,6 +53,9 @@ let self =
 , enableExecutableProfiling ? component.enableExecutableProfiling
 , profilingDetail ? component.profilingDetail
 
+# Coverage
+, doCoverage ? component.doCoverage
+
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 
@@ -97,12 +100,17 @@ let
       "$(cat ${configFiles}/configure-flags)"
     ] ++ commonConfigureFlags);
 
+  # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
+  pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;
+
   commonConfigureFlags = ([
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ] ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
+    ] ++ lib.optional (pkgConfigHasPrefix && pkgconfig != [])
+      "--with-pkg-config=${ghc.targetPrefix}pkg-config"
+      ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
     ( # CC
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
@@ -128,6 +136,7 @@ let
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
       (enableFeature enableLibraryForGhci "library-for-ghci")
+      (enableFeature doCoverage "coverage")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
@@ -372,6 +381,11 @@ let
             find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
           fi
         done
+      '')
+      + (lib.optionalString doCoverage ''
+        mkdir -p $out/share
+        cp -r dist/hpc $out/share
+        cp dist/setup-config $out/
       '')
       }
       runHook postInstall
