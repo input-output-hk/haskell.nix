@@ -135,6 +135,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
 
                 ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
+
+                ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
@@ -331,7 +333,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
                 };
                 inherit sphinx installDeps;
 
@@ -350,7 +353,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
                 };
                 inherit sphinx installDeps;
 

@@ -26,7 +26,7 @@ in recurseIntoAttrs {
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.project.components.exes.project}
+      cat ${haskellLib.check packages.project.components.exes.project}/test-stdout
 
     '' +
     # Aarch is statically linked and does not produce a .so file.
@@ -56,10 +56,10 @@ in recurseIntoAttrs {
       touch $out
 
       printf "checking whether benchmark ran... " >& 2
-      cat ${haskellLib.check packages.project.components.benchmarks.project-bench}
+      cat ${haskellLib.check packages.project.components.benchmarks.project-bench}/test-stdout
 
       printf "checking whether tests ran... " >& 2
-      cat ${haskellLib.check packages.project.components.tests.unit}
+      cat ${haskellLib.check packages.project.components.tests.unit}/test-stdout
     '';
 
     meta.platforms = platforms.all;

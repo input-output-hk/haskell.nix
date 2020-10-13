@@ -101,17 +101,20 @@ let
       )
       else null;
 
-  index-state-found = if index-state != null
+  cabalProjectIndexState =
+    if rawCabalProject != null
+    then pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject
+    else null;
+
+  index-state-found =
+    if index-state != null
     then index-state
-    else
-      let cabalProjectIndexState = if rawCabalProject != null
-        then pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject
-        else null;
-      in
-        if cabalProjectIndexState != null
-          then cabalProjectIndexState
-          else builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
-            (pkgs.lib.last (builtins.attrNames index-state-hashes));
+    else if cabalProjectIndexState != null
+    then cabalProjectIndexState
+    else builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
+      (pkgs.lib.last (builtins.attrNames index-state-hashes));
+
+  index-state-pinned = index-state != null || cabalProjectIndexState != null;
 
 in
   assert (if index-state-found == null
@@ -323,8 +326,8 @@ let
     sha256Arg = "plan-sha256";
     # Before pinning stuff down we need an index state to use
     reasonNotSafe =
-      if index-state == null
-        then "index-state is not set"
+      if !index-state-pinned
+        then "index-state is not pinned by an argument or the cabal project file"
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;

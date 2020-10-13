@@ -20,7 +20,7 @@ in recurseIntoAttrs {
       exe="${packages.use-cabal-simple.components.exes.use-cabal-simple}/bin/use-cabal-simple${stdenv.hostPlatform.extensions.executable}"
 
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.use-cabal-simple.components.exes.use-cabal-simple}
+      cat ${haskellLib.check packages.use-cabal-simple.components.exes.use-cabal-simple}/test-stdout
 
       touch $out
     '';
