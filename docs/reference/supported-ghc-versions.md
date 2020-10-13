@@ -1,7 +1,7 @@
 # Supported GHC Versions
 
 The following versions of GHC built on the CI servers and should be included
-in the cache (for the default haskell.nix `nixpkgs`).
+in the binary cache (for the default haskell.nix `nixpkgs`).
 
 * 8.6.5 `compiler-nix-name = "ghc865";`
 * 8.8.3 `compiler-nix-name = "ghc883";`
@@ -27,6 +27,4 @@ The following GHC versions are not included in CI and will not be cached:
 See [overlays/bootstrap.nix](https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix)
 for a list of all the valid `compiler-nix-names`.
 
-See also:
-
-* [Instructions on adding new GHC versions](../dev/adding-new-ghc.md).
+See also: [Instructions on adding new GHC versions](../dev/adding-new-ghc.md).
