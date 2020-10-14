@@ -132,9 +132,9 @@ in { haskell-nix = prev.haskell-nix // {
           sha256 = "17nzgpiacmrvwsy2fjx6a6pcpkncqcwfhaijvajm16jpdgni8mik";
           fetchSubmodules = true;
         };
-        lookupSha256 = { location, tag, ... } : {
+        sha256map = {
           "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
-          }."${location}"."${tag}";
+        };
         # Plan issues with the benchmarks, can try removing later
         configureArgs = "--disable-benchmarks";
         modules = [{
