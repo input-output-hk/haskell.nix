@@ -390,7 +390,7 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.2"
-                 ++ [  ]; # TODO add patch here
+                 ++ [ ./patches/ghc/core-field.patch ];
             };
         } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false)
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
