@@ -362,8 +362,8 @@ index 8e66a67f58..91119af421 100644
 +              }
 +  = do when (gopt Opt_Write_Phase_Core (hsc_dflags hsc_env)) $
 +         registerInterfaceDataWith "ghc/phase/core" hsc_env $ \bh ->
-+           putWithUserData (const $ return ()) bh (toIfaceModGuts guts)
-+           -- putWithUserData (const $ return ()) bh (map toIfaceBind $ mg_binds guts)
++           -- putWithUserData (const $ return ()) bh (toIfaceModGuts guts)
++           putWithUserData (const $ return ()) bh (map toIfaceBind $ mg_binds guts)
 +       ext_fs <- readIORef $ hsc_ext_fields hsc_env
 +       return iface{mi_ext_fields = ext_fs}
 +    where
