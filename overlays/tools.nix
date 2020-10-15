@@ -91,6 +91,9 @@ in { haskell-nix = prev.haskell-nix // {
     );
 
   # Tools not in hackage yet
+  # When adding custom tools here, consider adding them
+  # to the `tools` attribute defined in `build.nix` to make
+  # sure they are cached.
   custom-tools = {
     ghcide.object-code = args:
         (final.haskell-nix.cabalProject (args // {
