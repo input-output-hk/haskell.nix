@@ -292,7 +292,7 @@ index 8d327e528d..06cdb90800 100644
  *********************************************************
  *                                                       *
 diff --git a/compiler/iface/MkIface.hs b/compiler/iface/MkIface.hs
-index 8e66a67f58..91119af421 100644
+index 8e66a67f58..5c472526c5 100644
 --- a/compiler/iface/MkIface.hs
 +++ b/compiler/iface/MkIface.hs
 @@ -23,7 +23,8 @@ module MkIface (
@@ -321,7 +321,7 @@ index 8e66a67f58..91119af421 100644
  import Fingerprint
  import Exception
  import UniqSet
-@@ -138,25 +139,32 @@ import qualified Data.Semigroup
+@@ -138,25 +139,28 @@ import qualified Data.Semigroup
  mkPartialIface :: HscEnv
                 -> ModDetails
                 -> ModGuts
@@ -360,11 +360,7 @@ index 8e66a67f58..91119af421 100644
 +              , mg_decl_docs    = decl_docs
 +              , mg_arg_docs     = arg_docs
 +              }
-+  = do when (gopt Opt_Write_Phase_Core (hsc_dflags hsc_env)) $
-+         registerInterfaceDataWith "ghc/phase/core" hsc_env $ \bh ->
-+           -- putWithUserData (const $ return ()) bh (toIfaceModGuts guts)
-+           putWithUserData (const $ return ()) bh (map toIfaceBind $ mg_binds guts)
-+       ext_fs <- readIORef $ hsc_ext_fields hsc_env
++  = do ext_fs <- readIORef $ hsc_ext_fields hsc_env
 +       return iface{mi_ext_fields = ext_fs}
 +    where
 +      iface = mkIface_ hsc_env this_mod hsc_src used_th deps rdr_env fix_env warns hpc_info self_trust
@@ -372,7 +368,7 @@ index 8e66a67f58..91119af421 100644
  
  -- | Fully instantiate a interface
  -- Adds fingerprints and potentially code generator produced information.
-@@ -311,7 +319,8 @@ mkIface_ hsc_env
+@@ -311,7 +315,8 @@ mkIface_ hsc_env
            mi_doc_hdr     = doc_hdr,
            mi_decl_docs   = decl_docs,
            mi_arg_docs    = arg_docs,
@@ -382,7 +378,7 @@ index 8e66a67f58..91119af421 100644
    where
       cmp_rule     = comparing ifRuleName
       -- Compare these lexicographically by OccName, *not* by unique,
-@@ -2076,3 +2085,39 @@ bogusIfaceRule id_name
+@@ -2076,3 +2081,39 @@ bogusIfaceRule id_name
          ifRuleBndrs = [], ifRuleHead = id_name, ifRuleArgs = [],
          ifRuleRhs = IfaceExt id_name, ifRuleOrph = IsOrphan,
          ifRuleAuto = True }
@@ -521,10 +517,20 @@ index 03bb5292da..65048a7860 100644
  
      ++ [f | (ns,f) <- optLevelFlags, 0 `elem` ns]
 diff --git a/compiler/main/HscMain.hs b/compiler/main/HscMain.hs
-index 9bb6b4e391..98b527f3eb 100644
+index 9bb6b4e391..25265aa67d 100644
 --- a/compiler/main/HscMain.hs
 +++ b/compiler/main/HscMain.hs
-@@ -195,6 +195,7 @@ newHscEnv dflags = do
+@@ -180,6 +180,9 @@ import HieTypes         ( getAsts, hie_asts, hie_module )
+ import HieBin           ( readHieFile, writeHieFile , hie_file_result)
+ import HieDebug         ( diffFile, validateScopes )
+ 
++import ToIface          ( toIfaceBind )
++import BinIface         ( putWithUserData )
++
+ #include "HsVersions.h"
+ 
+ 
+@@ -195,6 +198,7 @@ newHscEnv dflags = do
      us      <- mkSplitUniqSupply 'r'
      nc_var  <- newIORef (initNameCache us knownKeyNames)
      fc_var  <- newIORef emptyInstalledModuleEnv
@@ -532,7 +538,7 @@ index 9bb6b4e391..98b527f3eb 100644
      iserv_mvar <- newMVar Nothing
      emptyDynLinker <- uninitializedLinker
      return HscEnv {  hsc_dflags       = dflags
-@@ -205,6 +206,7 @@ newHscEnv dflags = do
+@@ -205,6 +209,7 @@ newHscEnv dflags = do
                    ,  hsc_EPS          = eps_var
                    ,  hsc_NC           = nc_var
                    ,  hsc_FC           = fc_var
@@ -540,12 +546,16 @@ index 9bb6b4e391..98b527f3eb 100644
                    ,  hsc_type_env_var = Nothing
                    ,  hsc_iserv        = iserv_mvar
                    ,  hsc_dynLinker    = emptyDynLinker
-@@ -833,11 +835,10 @@ finish summary tc_result mb_old_hash = do
+@@ -833,11 +838,14 @@ finish summary tc_result mb_old_hash = do
            (cg_guts, details) <- {-# SCC "CoreTidy" #-}
                liftIO $ tidyProgram hsc_env desugared_guts
  
 -          let !partial_iface =
 -                {-# SCC "HscMain.mkPartialIface" #-}
++          when (gopt Opt_Write_Phase_Core (hsc_dflags hsc_env)) $
++            liftIO $ registerInterfaceDataWith "ghc/phase/core" hsc_env $ \bh ->
++              putWithUserData (const $ return ()) bh (map toIfaceBind $ cg_binds cg_guts)
++
 +          !partial_iface <- {-# SCC "HscMain.mkPartialIface" #-}
                  -- This `force` saves 2M residency in test T10370
                  -- See Note [Avoiding space leaks in toIface*] for details.
@@ -833,7 +843,7 @@ index 6bc090499f..fdc4e06aad 100644
 +  writeIORef (hsc_ext_fields env) (deleteField name ext_fs)
 diff --git a/compiler/main/HscTypes.hs-boot b/compiler/main/HscTypes.hs-boot
 new file mode 100755
-index 0000000000..8d1b0089c0
+index 0000000000..584381b60b
 --- /dev/null
 +++ b/compiler/main/HscTypes.hs-boot
 @@ -0,0 +1,21 @@
