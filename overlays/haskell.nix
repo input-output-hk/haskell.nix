@@ -520,7 +520,7 @@ final: prev: {
                         inherit (components) library;
                         checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
                         mixLibraries = final.lib.concatMap
-                          (pkg: final.lib.optional (pkg.components ? library) pkgs.components.library)
+                          (pkg: final.lib.optional (pkg.components ? library) pkg.components.library)
                             (final.lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs));
                       });
                     }
