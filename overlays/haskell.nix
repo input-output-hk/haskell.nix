@@ -519,7 +519,9 @@ final: prev: {
                         name = package.identifier.name + "-" + package.identifier.version;
                         inherit (components) library;
                         checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
-                        mixLibraries = map (pkg: pkg.components.library) (final.lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs));
+                        mixLibraries = map (pkg: pkg.components.library)
+                          (final.lib.filter (pkg: pkg.components ? library)
+                            (final.lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs)));
                       });
                     }
                 ) rawProject.hsPkgs
