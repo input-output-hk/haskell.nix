@@ -103,7 +103,10 @@ final: prev: {
         excludeBootPackages = compiler-nix-name: pkg-def: hackage:
           let original = pkg-def hackage;
               bootPkgNames = final.lib.attrNames
-                final.ghc-boot-packages.${compiler-nix-name};
+                final.ghc-boot-packages.${
+                  if compiler-nix-name != null
+                    then compiler-nix-name
+                    else (pkg-def hackage).compiler.nix-name};
           in original // {
             packages = final.lib.filterAttrs (n: _: final.lib.all (b: n != b) bootPkgNames)
               original.packages;
@@ -130,7 +133,7 @@ final: prev: {
                   else module;
                 removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
-                pkg-def = excludeBootPackages compiler.nix-name pkg-def;
+                pkg-def = excludeBootPackages null pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
                                    final.ghc-boot-packages.${compiler.nix-name}
                                  ]
@@ -155,7 +158,7 @@ final: prev: {
                 compiler-nix-name' =
                   if compiler-nix-name != null
                     then compiler-nix-name
-                    else (plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler;
+                    else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
             in mkPkgSet {
