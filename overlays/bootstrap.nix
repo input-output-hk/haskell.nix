@@ -373,7 +373,7 @@ in {
             };
             # ghc 8.10.2 with patches needed by plutus
             ghc8102-plutus = final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102-plutus; };
 
                 bootPkgs = bootPkgs // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
