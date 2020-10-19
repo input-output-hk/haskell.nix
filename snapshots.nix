@@ -12,7 +12,7 @@ with lib;
 
 let
   mkSnapshot = name: pkg-def: (let pkgSet = mkPkgSet {
-    pkg-def = excludeBootPackages pkg-def;
+    pkg-def = excludeBootPackages (pkg-def hackage).compiler.nix-name pkg-def;
     # ghc-boot-packages are needed for the reinstallable ghc library and
     # are constructed from the patched ghc source.
     pkg-def-extras = (pkg-def-extras name)
