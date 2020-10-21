@@ -100,10 +100,15 @@ final: prev: {
         # Some boot packages (libiserv) are in lts, but not in hackage,
         # so we should not try to get it from hackage based on the stackage
         # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
-        excludeBootPackages = pkg-def: hackage:
+        # The compiler-nix-name allows non default values (like
+        # "ghc8102-experimental").
+        excludeBootPackages = compiler-nix-name: pkg-def: hackage:
           let original = pkg-def hackage;
               bootPkgNames = final.lib.attrNames
-                final.ghc-boot-packages.${(pkg-def hackage).compiler.nix-name};
+                final.ghc-boot-packages.${
+                  if compiler-nix-name != null
+                    then compiler-nix-name
+                    else (pkg-def hackage).compiler.nix-name};
           in original // {
             packages = final.lib.filterAttrs (n: _: final.lib.all (b: n != b) bootPkgNames)
               original.packages;
@@ -130,7 +135,7 @@ final: prev: {
                   else module;
                 removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
-                pkg-def = excludeBootPackages pkg-def;
+                pkg-def = excludeBootPackages null pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
                                    final.ghc-boot-packages.${compiler.nix-name}
                                  ]
@@ -148,17 +153,24 @@ final: prev: {
             , pkg-def-extras ? []
             , modules ? []
             , extra-hackages ? []
-            }@args:
+            , compiler-nix-name ? null
+            }:
 
             let
-                pkg-def = excludeBootPackages plan-pkgs.pkgs;
-                # The compiler referenced in the stack config
-                compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
-                patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
-            in mkPkgSet {
+                compiler-nix-name' =
+                  if compiler-nix-name != null
+                    then compiler-nix-name
+                    else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
+                pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
+                patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
+            in
+              # Check that the GHC version of the selected compiler matches the one of the plan
+              assert (final.haskell-nix.compiler.${compiler-nix-name'}.version
+                   == final.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
+              mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   final.ghc-boot-packages.${compiler.nix-name}
+                                   final.ghc-boot-packages.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
@@ -471,7 +483,8 @@ final: prev: {
               args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
             in let pkg-set = mkCabalProjectPkgSet
-                { plan-pkgs = importAndFilterProject {
+                { inherit compiler-nix-name;
+                  plan-pkgs = importAndFilterProject {
                     inherit (callProjectResults) projectNix sourceRepos src;
                   };
                   pkg-def-extras = args.pkg-def-extras or [];
@@ -479,7 +492,7 @@ final: prev: {
                           ++ final.lib.optional (args ? ghcOverride || args ? ghc)
                               { ghc.package = args.ghcOverride or args.ghc; }
                           ++ final.lib.optional (args ? compiler-nix-name)
-                              { compiler.nix-name = args.compiler-nix-name; };
+                              { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
 

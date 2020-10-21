@@ -30,6 +30,7 @@
       ghc884 = true;
       ghc8101 = false;
       ghc8102 = true;
+      ghc8102-experimental = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc8102 = true;
     });
@@ -42,7 +43,7 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (system == "x86_64-linux" && (nixpkgsName == "R2009" || (compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102"))) {
+    in lib.optionalAttrs (system == "x86_64-linux" && (nixpkgsName == "R2009" || (compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8102-experimental"))) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux") {
