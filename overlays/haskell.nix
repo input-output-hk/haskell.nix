@@ -100,6 +100,8 @@ final: prev: {
         # Some boot packages (libiserv) are in lts, but not in hackage,
         # so we should not try to get it from hackage based on the stackage
         # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
+        # The compiler-nix-name allows non default values (like
+        # "ghc8102-experimental").
         excludeBootPackages = compiler-nix-name: pkg-def: hackage:
           let original = pkg-def hackage;
               bootPkgNames = final.lib.attrNames
@@ -161,7 +163,11 @@ final: prev: {
                     else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
-            in mkPkgSet {
+            in
+              # Check that the GHC version of the selected compiler matches the one of the plan
+              assert (final.haskell-nix.compiler.${compiler-nix-name'}.version
+                   == final.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
+              mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
                                    final.ghc-boot-packages.${compiler-nix-name'}
