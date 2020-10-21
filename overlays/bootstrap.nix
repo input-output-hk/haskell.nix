@@ -376,7 +376,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102-experimental; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
                 };
                 inherit sphinx installDeps;
 
