@@ -530,11 +530,12 @@ final: prev: {
 
                       coverageReport = haskellLib.coverageReport (rec {
                         name = package.identifier.name + "-" + package.identifier.version;
-                        inherit (components) library;
+                        library = if components ? library then components.library else null;
                         checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
                         mixLibraries = final.lib.concatMap
                           (pkg: final.lib.optional (pkg.components ? library) pkg.components.library)
                             (final.lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs));
+                        ghc = project.pkg-set.config.ghc.package;
                       });
                     }
                 ) rawProject.hsPkgs
