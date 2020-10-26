@@ -142,6 +142,8 @@
         
             <li><a class="toctree-l3" href="#general-troubleshooting-when-using-cabalprojectstackprojectproject">General troubleshooting when using cabalProject/stackProject/project</a></li>
         
+            <li><a class="toctree-l3" href="#other-specific-issues">Other specific issues</a></li>
+        
         </ul>
     
 
@@ -289,6 +291,14 @@ For example, you might enable profiling.</p>
 <p>Where possible, try to do the configuration in your cabal/stack configuration, e.g. setting <code>profiling: true</code> in <code>cabal.project</code>.
 This will ensure that the two builds agree.</p>
 <p>If you want or need to set some of them in Nix, try bringing the two into sync temporarily for troubleshooting.</p>
+<h2 id="other-specific-issues">Other specific issues<a class="headerlink" href="#other-specific-issues" title="Permanent link">&para;</a></h2>
+<h3 id="why-does-the-build-complain-about-some-files-being-missing">Why does the build complain about some files being missing?<a class="headerlink" href="#why-does-the-build-complain-about-some-files-being-missing" title="Permanent link">&para;</a></h3>
+<p>Sometimes your build works fine outside <code>haskell.nix</code>, but inside the <code>haskell.nix</code> build, cabal complains that some file is missing.
+What is going on?</p>
+<p>The answer is that <code>haskell.nix</code> <em>thoroughly</em> cleans the source <em>by following what is mentioned as required in the cabal file</em>.
+So we only include Haskell sources if they appear in a <code>hs-source-dirs</code> somewhere; and we only include non-Haskell files if they are included in <code>extra-source-files</code> or similar.</p>
+<p>This is good practice anyway: if you do not include such files in <code>extra-source-files</code> then they will not be included in <code>cabal sdist</code>, which will cause problems if you ever upload your package to Hackage.
+But <code>haskell.nix</code> is very picky about it.</p>
               
             </div>
           </div>
