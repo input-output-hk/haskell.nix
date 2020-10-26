@@ -70,3 +70,17 @@ Where possible, try to do the configuration in your cabal/stack configuration, e
 This will ensure that the two builds agree.
 
 If you want or need to set some of them in Nix, try bringing the two into sync temporarily for troubleshooting.
+
+## Other specific issues
+
+### Why does the build complain about some files being missing?
+
+Sometimes your build works fine outside `haskell.nix`, but inside the `haskell.nix` build, cabal complains that some file is missing.
+What is going on?
+
+The answer is that `haskell.nix` *thoroughly* cleans the source *by following what is mentioned as required in the cabal file*.
+So we only include Haskell sources if they appear in a `hs-source-dirs` somewhere; and we only include non-Haskell files if they are included in `extra-source-files` or similar.
+
+This is good practice anyway: if you do not include such files in `extra-source-files` then they will not be included in `cabal sdist`, which will cause problems if you ever upload your package to Hackage.
+But `haskell.nix` is very picky about it.
+
