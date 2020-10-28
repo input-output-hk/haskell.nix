@@ -567,9 +567,11 @@ final: prev: {
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
-                  modules =  final.lib.singleton (mkCacheModule cache)
-                             ++ (args.modules or [])
-                             ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                  modules = final.lib.singleton (mkCacheModule cache)
+                    ++ (args.modules or [])
+                    ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; }
+                    ++ final.lib.optional (args ? compiler-nix-name)
+                        { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                 };
 
                 project = addProjectAndPackageAttrs {

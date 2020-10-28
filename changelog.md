@@ -1,6 +1,10 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Oct 28, 2020
+* Passing `compiler-nix-name` to project functions for `stack.yaml`
+  based projects now overrides the compiler used (was ignored before).
+
 ## Sep 8, 2020
 * Added the ability to generate coverage reports for packages and
   projects.
