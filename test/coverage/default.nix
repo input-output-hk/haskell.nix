@@ -5,7 +5,6 @@ with stdenv.lib;
 let
   projectArgs = {
     src = testSrc "coverage";
-    inherit compiler-nix-name;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -17,7 +16,9 @@ let
     }];
   };
 
-  cabalProj = (cabalProject' projectArgs);
+  # We can easily select a different compiler when using cabal,
+  # but for stack we would need a different resolver to be used..
+  cabalProj = (cabalProject' projectArgs // { inherit compiler-nix-name; });
   stackProj = (stackProject' projectArgs);
 
   exeExt = stdenv.hostPlatform.extensions.executable;
