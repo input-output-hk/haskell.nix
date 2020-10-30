@@ -299,6 +299,9 @@ What is going on?</p>
 So we only include Haskell sources if they appear in a <code>hs-source-dirs</code> somewhere; and we only include non-Haskell files if they are included in <code>extra-source-files</code> or similar.</p>
 <p>This is good practice anyway: if you do not include such files in <code>extra-source-files</code> then they will not be included in <code>cabal sdist</code>, which will cause problems if you ever upload your package to Hackage.
 But <code>haskell.nix</code> is very picky about it.</p>
+<h3 id="why-does-my-executable-depend-on-ghcgcc">Why does my executable depend on GHC/GCC?<a class="headerlink" href="#why-does-my-executable-depend-on-ghcgcc" title="Permanent link">&para;</a></h3>
+<p>You may want to set the <code>dontStrip</code> option to <code>false</code> (see https://github.com/input-output-hk/haskell.nix/issues/829).
+This is not set by default because it can occasionally cause breakage.</p>
               
             </div>
           </div>
