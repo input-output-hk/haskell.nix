@@ -1,0 +1,288 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 7ed9e9d148..468bd593b6 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -192,7 +192,7 @@ int ocTryLoad( ObjectCode* oc );
+  *
+  * MAP_32BIT not available on OpenBSD/amd64
+  */
+-#if (defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH) || defined(aarch64_TARGET_ARCH)) && defined(MAP_32BIT)
++#if (defined(x86_64_HOST_ARCH) || (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))) && defined(MAP_32BIT)
+ #define TRY_MAP_32BIT MAP_32BIT
+ #else
+ #define TRY_MAP_32BIT 0
+@@ -216,11 +216,18 @@ int ocTryLoad( ObjectCode* oc );
+  * We pick a default address based on the OS, but also make this
+  * configurable via an RTS flag (+RTS -xm)
+  */
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH)
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))
+
+ #define MMAP_MAX_RETRY 100
+
+-#if defined(MAP_32BIT)
++#if (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))
++// Try to use stg_upd_frame_info as the base. We need to be within +-4GB of that
++// address, otherwise we violate the aarch64 memory model. Any object we load
++// can potentially reference any of the ones we bake into the binary (and list)
++// in RtsSymbols. Thus we'll need to be within +-4GB of those,
++// stg_upd_frame_info is a good candidate as it's referenced often.
++#define MMAP_32BIT_BASE_DEFAULT (void*)&stg_upd_frame_info;
++#elif defined(MAP_32BIT)
+ // Try to use MAP_32BIT
+ #define MMAP_32BIT_BASE_DEFAULT 0
+ #else
+@@ -502,7 +509,7 @@ initLinker_ (int retain_cafs)
+     }
+ #   endif
+
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH)
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH)
+     if (RtsFlags.MiscFlags.linkerMemBase != 0) {
+         // User-override for mmap_32bit_base
+         mmap_32bit_base = (void*)RtsFlags.MiscFlags.linkerMemBase;
+@@ -881,8 +888,9 @@ SymbolAddr* lookupSymbol_ (SymbolName* lbl)
+  * Symbol name only used for diagnostics output.
+  */
+ SymbolAddr* loadSymbol(SymbolName *lbl, RtsSymbolInfo *pinfo) {
+-    IF_DEBUG(linker, debugBelch("lookupSymbol: value of %s is %p\n", lbl,
+-                                pinfo->value));
++    IF_DEBUG(linker, debugBelch("lookupSymbol: value of %s is %p, owned by %s\n", lbl,
++                                pinfo->value,
++                                pinfo->owner ? OC_INFORMATIVE_FILENAME(pinfo->owner) : "No owner, probably built-in."));
+     ObjectCode* oc = pinfo->owner;
+
+     /* Symbol can be found during linking, but hasn't been relocated. Do so now.
+@@ -906,6 +914,27 @@ SymbolAddr* loadSymbol(SymbolName *lbl, RtsSymbolInfo *pinfo) {
+     return pinfo->value;
+ }
+
++void
++printLoadedObjects() {
++    ObjectCode* oc;
++    for (oc = objects; oc; oc = oc->next) {
++        if (oc->sections != NULL) {
++            int i;
++            printf("%s\n", OC_INFORMATIVE_FILENAME(oc));
++            for (i=0; i < oc->n_sections; i++) {
++                if(oc->sections[i].mapped_start != NULL || oc->sections[i].start != NULL) {
++                    printf("\tsec %2d[alloc: %d; kind: %d]: %p - %p; mmaped: %p - %p\n",
++                        i, oc->sections[i].alloc, oc->sections[i].kind,
++                        oc->sections[i].start,
++                        (void*)((uintptr_t)(oc->sections[i].start) + oc->sections[i].size),
++                        oc->sections[i].mapped_start,
++                        (void*)((uintptr_t)(oc->sections[i].mapped_start) + oc->sections[i].mapped_size));
++                }
++            }
++        }
++   }
++}
++
+ SymbolAddr* lookupSymbol( SymbolName* lbl )
+ {
+     ACQUIRE_LOCK(&linker_mutex);
+@@ -913,6 +942,7 @@ SymbolAddr* lookupSymbol( SymbolName* lbl )
+     if (!r) {
+         errorBelch("^^ Could not load '%s', dependency unresolved. "
+                    "See top entry above.\n", lbl);
++        printLoadedObjects();
+         fflush(stderr);
+     }
+     RELEASE_LOCK(&linker_mutex);
+@@ -1003,6 +1033,23 @@ resolveSymbolAddr (pathchar* buffer, int size,
+ }
+
+ #if RTS_LINKER_USE_MMAP
++
++void*
++mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
++  if(addr == NULL) return mmap(addr, length, prot, flags, fd, offset);
++  // we are going to look for up to pageSize * 1024 * 1024 (4GB) from the
++  // address.
++  size_t pageSize = getPageSize();
++  for(int i = (uintptr_t)addr & (pageSize-1) ? 1 : 0; i < 1024*1024; i++) {
++    void *target = (void*)(((uintptr_t)addr & ~(pageSize-1))+(i*pageSize));
++    void *mem = mmap(target, length, prot, flags, fd, offset);
++    if(mem == NULL) return mem;
++    if(mem == target) return mem;
++    munmap(mem, length);
++  }
++  return NULL;
++}
++
+ //
+ // Returns NULL on failure.
+ //
+@@ -1017,7 +1064,7 @@ mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset)
+    IF_DEBUG(linker, debugBelch("mmapForLinker: start\n"));
+    size = roundUpToPage(bytes);
+
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH) || defined(aarch64_TARGET_ARCH)
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) ||( defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))
+
+     size_t mmap_counter = MMAP_MAX_RETRY;
+ mmap_again:
+@@ -1037,9 +1084,9 @@ mmap_again:
+             debugBelch("mmapForLinker: \tflags      %#0x\n",
+                        MAP_PRIVATE | TRY_MAP_32BIT | fixed | flags));
+
+-   result = mmap(map_addr, size,
+-                 prot,
+-                 MAP_PRIVATE|TRY_MAP_32BIT|fixed|flags, fd, offset);
++   result = mmap_next(map_addr, size,
++                      prot,
++                      MAP_PRIVATE|TRY_MAP_32BIT|fixed|flags, fd, offset);
+
+    if (result == MAP_FAILED) {
+        sysErrorBelch("mmap %" FMT_Word " bytes at %p",(W_)size,map_addr);
+@@ -1047,7 +1094,7 @@ mmap_again:
+        return NULL;
+    }
+
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH) || defined(aarch64_TARGET_ARCH)
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH)
+    if (mmap_32bit_base != 0) {
+        if (result == map_addr) {
+            mmap_32bit_base = (StgWord8*)map_addr + size;
+@@ -1091,6 +1138,28 @@ mmap_again:
+            goto mmap_again;
+        }
+    }
++#elif (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))
++    // for aarch64 we need to make sure we stay within 4GB of the
++    // mmap_32bit_base, and we also do not want to update it.
++//    if (mmap_32bit_base != (void*)&stg_upd_frame_info) {
++    if (result == map_addr) {
++        mmap_32bit_base = (void*)((uintptr_t)map_addr + size);
++    } else {
++        // upper limit 4GB - size of the object file - 1mb wiggle room.
++        if(llabs((uintptr_t)result - (uintptr_t)&stg_upd_frame_info) > (2<<32) - size - (2<<20)) {
++            // not within range :(
++            debugTrace(DEBUG_linker,
++                        "MAP_32BIT didn't work; gave us %lu bytes at 0x%p",
++                        bytes, result);
++            munmap(result, size);
++            // TODO: some abort/mmap_32bit_base recomputation based on
++            //       if mmap_32bit_base is changed, or still at stg_upd_frame_info
++            goto mmap_again;
++        } else {
++            mmap_32bit_base = (void*)((uintptr_t)result + size);
++        }
++    }
++//   }
+ #endif
+
+    IF_DEBUG(linker,
+@@ -1643,6 +1712,9 @@ static HsInt resolveObjs_ (void)
+         r = ocTryLoad(oc);
+         if (!r)
+         {
++            errorBelch("Could not load Object Code %s.\n", OC_INFORMATIVE_FILENAME(oc));
++            printLoadedObjects();
++            fflush(stderr);
+             return r;
+         }
+     }
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index f7ef0da81e..02cb6b814f 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -13,6 +13,7 @@
+
+ #if RTS_LINKER_USE_MMAP
+ #include <sys/mman.h>
++void* mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+ #endif
+
+ #include "BeginPrivate.h"
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 8e477c0425..955d1151d5 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -824,6 +824,26 @@ ocGetNames_ELF ( ObjectCode* oc )
+
+       unsigned curSymbol = 0;
+
++      unsigned long common_size = 0;
++      unsigned long common_used = 0;
++      for(ElfSymbolTable *symTab = oc->info->symbolTables;
++           symTab != NULL; symTab = symTab->next) {
++           for (size_t j = 0; j < symTab->n_symbols; j++) {
++               ElfSymbol *symbol = &symTab->symbols[j];
++               if (SHN_COMMON == symTab->symbols[j].elf_sym->st_shndx) {
++                   common_size += symbol->elf_sym->st_size;
++               }
++           }
++      }
++      void * common_mem = NULL;
++      if(common_size > 0) {
++          common_mem = mmapForLinker(common_size,
++                            PROT_READ | PROT_WRITE,
++                            MAP_ANON | MAP_PRIVATE,
++                            -1, 0);
++          ASSERT(common_mem != NULL);
++      }
++
+       //TODO: we ignore local symbols anyway right? So we can use the
+       //      shdr[i].sh_info to get the index of the first non-local symbol
+       // ie we should use j = shdr[i].sh_info
+@@ -859,12 +879,15 @@ ocGetNames_ELF ( ObjectCode* oc )
+
+                if (shndx == SHN_COMMON) {
+                    isLocal = false;
+-                   symbol->addr = stgCallocBytes(1, symbol->elf_sym->st_size,
+-                                       "ocGetNames_ELF(COMMON)");
+-                   /*
+-                   debugBelch("COMMON symbol, size %d name %s\n",
+-                                   stab[j].st_size, nm);
+-                   */
++                   ASSERT(common_used < common_size);
++                   ASSERT(common_mem);
++                   symbol->addr = (void*)((uintptr_t)common_mem + common_used);
++                   common_used += symbol->elf_sym->st_size;
++                   ASSERT(common_used <= common_size);
++
++                   debugBelch("COMMON symbol, size %ld name %s allocated at %p\n",
++                                   symbol->elf_sym->st_size, nm, symbol->addr);
++
+                    /* Pointless to do addProddableBlock() for this area,
+                       since the linker should never poke around in it. */
+                } else if ((ELF_ST_BIND(symbol->elf_sym->st_info) == STB_GLOBAL
+diff --git a/rts/linker/elf_reloc_aarch64.c b/rts/linker/elf_reloc_aarch64.c
+index a826c58170..7e80bc4183 100644
+--- a/rts/linker/elf_reloc_aarch64.c
++++ b/rts/linker/elf_reloc_aarch64.c
+@@ -310,14 +310,14 @@ relocateObjectCodeAarch64(ObjectCode * oc) {
+                                         symbol->name,
+                                         OC_INFORMATIVE_FILENAME(oc)));
+             if(encodeAddendAarch64(targetSection, rel, addend)) {
+-                sysErrorBelch("Failed to relocate symbol: %s (%s) "
++                debugBelch("REL: Failed to relocate symbol: %s (%s) "
+                               "at %p in %p with addend 0x%" PRIx64 "\n",
+                     symbol->name,
+                     OC_INFORMATIVE_FILENAME(oc),
+                     symbol->addr,
+                     (addr_t)((uint8_t*)targetSection->start + rel->r_offset),
+                     addend);
+-                stg_exit(EXIT_FAILURE);
++                return EXIT_FAILURE;
+             }
+         }
+     }
+@@ -349,14 +349,14 @@ relocateObjectCodeAarch64(ObjectCode * oc) {
+                                         symbol->name,
+                                         OC_INFORMATIVE_FILENAME(oc)));
+             if(encodeAddendAarch64(targetSection, (Elf_Rel*)rel, addend)) {
+-                sysErrorBelch("Failed to relocate symbol: %s (%s) "
++                debugBelch("RELA: Failed to relocate symbol: %s (%s) "
+                               "at %p in %p with addend 0x%" PRIx64 "\n",
+                     symbol->name,
+                     OC_INFORMATIVE_FILENAME(oc),
+                     symbol->addr,
+                     (addr_t)((uint8_t*)targetSection->start + rel->r_offset),
+                     addend);
+-                stg_exit(EXIT_FAILURE);
++                return EXIT_FAILURE;
+             }
+         }
+     }

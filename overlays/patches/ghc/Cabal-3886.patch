@@ -1,0 +1,170 @@
+Submodule libraries/Cabal contains modified content
+diff --git a/libraries/Cabal/Cabal/Distribution/Simple/Program/Ld.hs b/libraries/Cabal/Cabal/Distribution/Simple/Program/Ld.hs
+index 68b5a391a..f4979bf5f 100644
+--- a/libraries/Cabal/Cabal/Distribution/Simple/Program/Ld.hs
++++ b/libraries/Cabal/Cabal/Distribution/Simple/Program/Ld.hs
+@@ -21,7 +21,7 @@ import Distribution.Compat.Prelude
+ import Distribution.Simple.Compiler (arResponseFilesSupported)
+ import Distribution.Simple.LocalBuildInfo (LocalBuildInfo(..))
+ import Distribution.Simple.Program.ResponseFile
+-         ( withResponseFile )
++         ( withResponseFile, withLinkerScript )
+ import Distribution.Simple.Program.Run
+          ( ProgramInvocation, programInvocation, multiStageProgramInvocation
+          , runProgramInvocation )
+@@ -31,6 +31,8 @@ import Distribution.Simple.Setup
+          ( fromFlagOrDefault, configUseResponseFiles )
+ import Distribution.Simple.Utils
+          ( defaultTempFileOptions )
++import Distribution.System
++         ( OS(..), Platform(..) )
+ import Distribution.Verbosity
+          ( Verbosity )
+
+@@ -50,7 +52,71 @@ combineObjectFiles verbosity lbi ld target files = do
+   -- have a slight problem. What we have to do is link files in batches into
+   -- a temp object file and then include that one in the next batch.
+
+-  let simpleArgs  = ["-r", "-o", target]
++  let linkerScriptELF = unlines $
++        [ "/* Linker script to undo -split-sections and merge all sections together when   "
++        , " * linking relocatable object files for GHCi.                                   "
++        , " * ld -r normally retains the individual sections, which is what you would want "
++        , " * if the intention is to eventually link into a binary with --gc-sections, but "
++        , " * it doesn't have a flag for directly doing what we want. */                   "
++        , "SECTIONS                                                                        "
++        , "{                                                                               "
++        , "    .text : {                                                                   "
++        , "        *(.text*)                                                               "
++        , "    }                                                                           "
++        , "    .rodata.cst16 : {                                                           "
++        , "        *(.rodata.cst16*)                                                       "
++        , "    }                                                                           "
++        , "    .rodata : {                                                                 "
++        , "        *(.rodata*)                                                             "
++        , "    }                                                                           "
++        , "    .data.rel.ro : {                                                            "
++        , "        *(.data.rel.ro*)                                                        "
++        , "    }                                                                           "
++        , "    .data : {                                                                   "
++        , "        *(.data*)                                                               "
++        , "    }                                                                           "
++        , "    .bss : {                                                                    "
++        , "        *(.bss*)                                                                "
++        , "    }                                                                           "
++        , "}                                                                               "
++        ]
++
++      linkerScriptPE = unlines $
++        [ "/* Linker script to undo -split-sections and merge all sections together when   "
++        , " * linking relocatable object files for GHCi.                                   "
++        , " * ld -r normally retains the individual sections, which is what you would want "
++        , " * if the intention is to eventually link into a binary with --gc-sections, but "
++        , " * it doesn't have a flag for directly doing what we want. */                   "
++        , "SECTIONS                                                                        "
++        , "{                                                                               "
++        , "    .text : {                                                                   "
++        , "        *(.text$*)                                                              "
++        , "    }                                                                           "
++        , "    .rdata : {                                                                  "
++        , "        *(.rdata$*)                                                             "
++        , "    }                                                                           "
++        , "    .data : {                                                                   "
++        , "        *(.data$*)                                                              "
++        , "    }                                                                           "
++        , "    .pdata : {                                                                  "
++        , "        *(.pdata$*)                                                             "
++        , "    }                                                                           "
++        , "    .xdata : {                                                                  "
++        , "        *(.xdata$*)                                                             "
++        , "    }                                                                           "
++        , "    .bss : {                                                                    "
++        , "        *(.bss$*)                                                               "
++        , "    }                                                                           "
++        , "}                                                                               "
++        ]
++      linkerScript = case hostOS of
++        Windows -> linkerScriptPE
++        _       -> linkerScriptELF
++      linkerScriptArgs = case hostOS of
++        Windows -> []
++        _       -> ["-T"]
++
++      simpleArgs  = ["-r", "-o", target]
+
+       initialArgs = ["-r", "-o", target]
+       middleArgs  = ["-r", "-o", target, tmpfile]
+@@ -63,9 +129,9 @@ combineObjectFiles verbosity lbi ld target files = do
+
+       targetDir   = takeDirectory target
+
+-      invokeWithResponesFile :: FilePath -> ProgramInvocation
+-      invokeWithResponesFile atFile =
+-        programInvocation ld $ simpleArgs ++ ['@' : atFile]
++      invokeWithLinkerScriptAndResponesFile :: FilePath -> FilePath -> ProgramInvocation
++      invokeWithLinkerScriptAndResponesFile script atFile =
++        programInvocation ld $ simpleArgs ++ linkerScriptArgs ++ [ script, '@' : atFile]
+
+       oldVersionManualOverride =
+         fromFlagOrDefault False $ configUseResponseFiles $ configFlags lbi
+@@ -78,10 +144,13 @@ combineObjectFiles verbosity lbi ld target files = do
+     then
+       run $ multiStageProgramInvocation simple (initial, middle, final) files
+     else
+-      withResponseFile verbosity defaultTempFileOptions targetDir "ld.rsp" Nothing files $
+-        \path -> runProgramInvocation verbosity $ invokeWithResponesFile path
++      withLinkerScript verbosity defaultTempFileOptions targetDir "merge_sections.ld" Nothing linkerScript $
++        \scriptPath -> withResponseFile verbosity defaultTempFileOptions targetDir "ld.rsp" Nothing files $
++          \path -> runProgramInvocation verbosity $ invokeWithLinkerScriptAndResponesFile scriptPath path
+
+   where
++    Platform _hostArch hostOS = hostPlatform lbi
++
+     tmpfile        = target <.> "tmp" -- perhaps should use a proper temp file
+
+     run :: [ProgramInvocation] -> IO ()
+diff --git a/libraries/Cabal/Cabal/Distribution/Simple/Program/ResponseFile.hs b/libraries/Cabal/Cabal/Distribution/Simple/Program/ResponseFile.hs
+index e5ef41412..3b038e6b1 100644
+--- a/libraries/Cabal/Cabal/Distribution/Simple/Program/ResponseFile.hs
++++ b/libraries/Cabal/Cabal/Distribution/Simple/Program/ResponseFile.hs
+@@ -10,7 +10,7 @@
+ -- Created     :  23 July 2017
+ ----------------------------------------------------------------------------
+
+-module Distribution.Simple.Program.ResponseFile (withResponseFile) where
++module Distribution.Simple.Program.ResponseFile (withResponseFile, withLinkerScript) where
+
+ import Prelude ()
+ import System.IO (TextEncoding, hSetEncoding, hPutStr, hClose)
+@@ -39,6 +39,25 @@ withResponseFile verbosity tmpFileOpts workDir fileNameTemplate encoding argumen
+     debug verbosity $ ">>> " ++ responseFileName
+     f responseFileName
+
++withLinkerScript
++  :: Verbosity
++  -> TempFileOptions
++  -> FilePath
++  -> FilePath
++  -> Maybe TextEncoding
++  -> String
++  -> (FilePath -> IO a)
++  -> IO a
++withLinkerScript verbosity tmpFileOpts workDir fileNameTemplate encoding linkerScript f =
++  withTempFileEx tmpFileOpts workDir fileNameTemplate $ \linkerScriptName hf -> do
++    traverse_ (hSetEncoding hf) encoding
++    hPutStr hf linkerScript
++    hClose hf
++    debug verbosity $ linkerScriptName ++ " contents: <<<"
++    debug verbosity linkerScript
++    debug verbosity $ ">>> " ++ linkerScriptName
++    f linkerScriptName
++
+ -- Support a gcc-like response file syntax.  Each separate
+ -- argument and its possible parameter(s), will be separated in the
+ -- response file by an actual newline; all other whitespace,
+@@ -56,5 +75,3 @@ escapeResponseFileArg = reverse . foldl' escape []
+         '"'           -> c:'\\':cs
+         _ | isSpace c -> c:'\\':cs
+           | otherwise -> c:cs
+-
+-

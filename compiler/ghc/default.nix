@@ -305,6 +305,7 @@ stdenv.mkDerivation (rec {
 
     inherit llvmPackages;
     inherit enableShared;
+    inherit useLLVM;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";

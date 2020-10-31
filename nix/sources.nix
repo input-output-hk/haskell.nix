@@ -18,8 +18,8 @@ let
     else
       pkgs.fetchzip { inherit (spec) url sha256; };
 
-  fetch_git = spec:
-    builtins.fetchGit { url = spec.repo; inherit (spec) rev ref; };
+  fetch_git = pkgs: spec:
+    pkgs.fetchgit { url = spec.repo; inherit (spec) rev deepClone sha256; };
 
   fetch_builtin-tarball = spec:
     builtins.trace
@@ -73,7 +73,7 @@ let
       abort "ERROR: niv spec ${name} does not have a 'type' attribute"
     else if spec.type == "file" then fetch_file pkgs spec
     else if spec.type == "tarball" then fetch_tarball pkgs spec
-    else if spec.type == "git" then fetch_git spec
+    else if spec.type == "git" then fetch_git pkgs spec
     else if spec.type == "builtin-tarball" then fetch_builtin-tarball spec
     else if spec.type == "builtin-url" then fetch_builtin-url spec
     else

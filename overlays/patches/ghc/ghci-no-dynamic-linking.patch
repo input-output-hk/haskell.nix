@@ -1,0 +1,1991 @@
+diff --git a/compiler/cmm/CmmMachOp.hs b/compiler/cmm/CmmMachOp.hs
+index 15a5827643..fd50db511d 100644
+--- a/compiler/cmm/CmmMachOp.hs
++++ b/compiler/cmm/CmmMachOp.hs
+@@ -562,6 +562,7 @@ data CallishMachOp
+   | MO_SubIntC   Width
+   | MO_U_Mul2    Width
+
++  | MO_ReadBarrier
+   | MO_WriteBarrier
+   | MO_Touch         -- Keep variables live (when using interior pointers)
+
+diff --git a/compiler/cmm/CmmParse.y.source b/compiler/cmm/CmmParse.y.source
+index 4d7e288381..480cd48fd1 100644
+--- a/compiler/cmm/CmmParse.y.source
++++ b/compiler/cmm/CmmParse.y.source
+@@ -998,6 +998,7 @@ machOps = listToUFM $
+ callishMachOps :: UniqFM ([CmmExpr] -> (CallishMachOp, [CmmExpr]))
+ callishMachOps = listToUFM $
+         map (\(x, y) -> (mkFastString x, y)) [
++        ( "read_barrier", (,) MO_ReadBarrier ),
+         ( "write_barrier", (,) MO_WriteBarrier ),
+         ( "memcpy", memcpyLikeTweakArgs MO_Memcpy ),
+         ( "memset", memcpyLikeTweakArgs MO_Memset ),
+diff --git a/compiler/cmm/CmmParse.hs b/compiler/cmm/CmmParse.hs
+index 4d7e288381..480cd48fd1 100644
+--- a/compiler/cmm/CmmParse.hs
++++ b/compiler/cmm/CmmParse.hs
+@@ -2559,6 +2559,7 @@
+ callishMachOps :: UniqFM ([CmmExpr] -> (CallishMachOp, [CmmExpr]))
+ callishMachOps = listToUFM $
+         map (\(x, y) -> (mkFastString x, y)) [
++        ( "read_barrier", (,) MO_ReadBarrier ),
+         ( "write_barrier", (,) MO_WriteBarrier ),
+         ( "memcpy", memcpyLikeTweakArgs MO_Memcpy ),
+         ( "memset", memcpyLikeTweakArgs MO_Memset ),
+diff --git a/compiler/cmm/PprC.hs b/compiler/cmm/PprC.hs
+index 9e8ced88b5..3b6587778e 100644
+--- a/compiler/cmm/PprC.hs
++++ b/compiler/cmm/PprC.hs
+@@ -794,6 +794,7 @@ pprCallishMachOp_for_C mop
+         MO_F32_Exp      -> text "expf"
+         MO_F32_Sqrt     -> text "sqrtf"
+         MO_F32_Fabs     -> text "fabsf"
++        MO_ReadBarrier  -> text "load_load_barrier"
+         MO_WriteBarrier -> text "write_barrier"
+         MO_Memcpy _     -> text "memcpy"
+         MO_Memset _     -> text "memset"
+diff --git a/compiler/codeGen/StgCmmBind.hs b/compiler/codeGen/StgCmmBind.hs
+index aa2b954a95..5b9811cd0f 100644
+--- a/compiler/codeGen/StgCmmBind.hs
++++ b/compiler/codeGen/StgCmmBind.hs
+@@ -629,6 +629,7 @@ emitBlackHoleCode node = do
+
+   when eager_blackholing $ do
+     emitStore (cmmOffsetW dflags node (fixedHdrSizeW dflags)) currentTSOExpr
++    -- See Note [Heap memory barriers] in SMP.h.
+     emitPrimCall [] MO_WriteBarrier []
+     emitStore node (CmmReg (CmmGlobal EagerBlackholeInfo))
+
+diff --git a/compiler/llvmGen/LlvmCodeGen/CodeGen.hs b/compiler/llvmGen/LlvmCodeGen/CodeGen.hs
+index f5d06e54b6..33d5d0c83c 100644
+--- a/compiler/llvmGen/LlvmCodeGen/CodeGen.hs
++++ b/compiler/llvmGen/LlvmCodeGen/CodeGen.hs
+@@ -170,17 +170,25 @@ barrier = do
+     let s = Fence False SyncSeqCst
+     return (unitOL s, [])
+
++-- | Insert a 'barrier', unless the target platform is in the provided list of
++--   exceptions (where no code will be emitted instead).
++barrierUnless :: [Arch] -> LlvmM StmtData
++barrierUnless exs = do
++    platform <- getLlvmPlatform
++    if platformArch platform `elem` exs
++        then return (nilOL, [])
++        else barrier
++
+ -- | Foreign Calls
+ genCall :: ForeignTarget -> [CmmFormal] -> [CmmActual]
+               -> LlvmM StmtData
+
+--- Write barrier needs to be handled specially as it is implemented as an LLVM
+--- intrinsic function.
++-- Barriers need to be handled specially as they are implemented as LLVM
++-- intrinsic functions.
++genCall (PrimTarget MO_ReadBarrier) _ _ =
++    barrierUnless [ArchX86, ArchX86_64, ArchSPARC]
+ genCall (PrimTarget MO_WriteBarrier) _ _ = do
+-    platform <- getLlvmPlatform
+-    if platformArch platform `elem` [ArchX86, ArchX86_64, ArchSPARC]
+-       then return (nilOL, [])
+-       else barrier
++    barrierUnless [ArchX86, ArchX86_64, ArchSPARC]
+
+ genCall (PrimTarget MO_Touch) _ _
+  = return (nilOL, [])
+@@ -817,6 +825,7 @@ cmmPrimOpFunctions mop = do
+     -- We support MO_U_Mul2 through ordinary LLVM mul instruction, see the
+     -- appropriate case of genCall.
+     MO_U_Mul2 {}     -> unsupported
++    MO_ReadBarrier   -> unsupported
+     MO_WriteBarrier  -> unsupported
+     MO_Touch         -> unsupported
+     MO_UF_Conv _     -> unsupported
+diff --git a/compiler/nativeGen/PPC/CodeGen.hs b/compiler/nativeGen/PPC/CodeGen.hs
+index 88b9692920..fa05c68efc 100644
+--- a/compiler/nativeGen/PPC/CodeGen.hs
++++ b/compiler/nativeGen/PPC/CodeGen.hs
+@@ -1096,6 +1096,8 @@ genCCall :: ForeignTarget      -- function to call
+          -> [CmmFormal]        -- where to put the result
+          -> [CmmActual]        -- arguments (of mixed type)
+          -> NatM InstrBlock
++genCCall (PrimTarget MO_ReadBarrier) _ _
++ = return $ unitOL LWSYNC
+ genCCall (PrimTarget MO_WriteBarrier) _ _
+  = return $ unitOL LWSYNC
+
+@@ -2023,6 +2025,7 @@ genCCall' dflags gcp target dest_regs args
+                     MO_AddIntC {}    -> unsupported
+                     MO_SubIntC {}    -> unsupported
+                     MO_U_Mul2 {}     -> unsupported
++                    MO_ReadBarrier   -> unsupported
+                     MO_WriteBarrier  -> unsupported
+                     MO_Touch         -> unsupported
+                     MO_Prefetch_Data _ -> unsupported
+diff --git a/compiler/nativeGen/SPARC/CodeGen.hs b/compiler/nativeGen/SPARC/CodeGen.hs
+index 98e062df62..29e8dbf0f9 100644
+--- a/compiler/nativeGen/SPARC/CodeGen.hs
++++ b/compiler/nativeGen/SPARC/CodeGen.hs
+@@ -401,6 +401,8 @@ genCCall
+ --
+ -- In the SPARC case we don't need a barrier.
+ --
++genCCall (PrimTarget MO_ReadBarrier) _ _
++ = return $ nilOL
+ genCCall (PrimTarget MO_WriteBarrier) _ _
+  = return $ nilOL
+
+@@ -678,6 +680,7 @@ outOfLineMachOp_table mop
+         MO_AddIntC {}    -> unsupported
+         MO_SubIntC {}    -> unsupported
+         MO_U_Mul2 {}     -> unsupported
++        MO_ReadBarrier   -> unsupported
+         MO_WriteBarrier  -> unsupported
+         MO_Touch         -> unsupported
+         (MO_Prefetch_Data _) -> unsupported
+diff --git a/compiler/nativeGen/X86/CodeGen.hs b/compiler/nativeGen/X86/CodeGen.hs
+index 4551754200..98830b1233 100644
+--- a/compiler/nativeGen/X86/CodeGen.hs
++++ b/compiler/nativeGen/X86/CodeGen.hs
+@@ -1809,8 +1809,9 @@ genCCall dflags _ (PrimTarget (MO_Memset align)) _
+         dst_addr = AddrBaseIndex (EABaseReg dst) EAIndexNone
+                    (ImmInteger (n - i))
+
++genCCall _ _ (PrimTarget MO_ReadBarrier) _ _  = return nilOL
+ genCCall _ _ (PrimTarget MO_WriteBarrier) _ _ = return nilOL
+-        -- write barrier compiles to no code on x86/x86-64;
++        -- barriers compile to no code on x86/x86-64;
+         -- we keep it this long in order to prevent earlier optimisations.
+
+ genCCall _ _ (PrimTarget MO_Touch) _ _ = return nilOL
+@@ -2793,6 +2794,7 @@ outOfLineCmmOp mop res args
+               MO_AddWordC {}   -> unsupported
+               MO_SubWordC {}   -> unsupported
+               MO_U_Mul2 {}     -> unsupported
++              MO_ReadBarrier   -> unsupported
+               MO_WriteBarrier  -> unsupported
+               MO_Touch         -> unsupported
+               (MO_Prefetch_Data _ ) -> unsupported
+diff --git a/includes/Cmm.h b/includes/Cmm.h
+index 7334eab8c1..ede77f0c00 100644
+--- a/includes/Cmm.h
++++ b/includes/Cmm.h
+@@ -303,7 +303,9 @@
+ #define ENTER_(ret,x)                                   \
+  again:                                                 \
+   W_ info;                                              \
+-  LOAD_INFO(ret,x)                                       \
++  LOAD_INFO(ret,x)                                      \
++  /* See Note [Heap memory barriers] in SMP.h */        \
++  prim_read_barrier;                                    \
+   switch [INVALID_OBJECT .. N_CLOSURE_TYPES]            \
+          (TO_W_( %INFO_TYPE(%STD_INFO(info)) )) {       \
+   case                                                  \
+@@ -626,6 +628,14 @@
+ #define OVERWRITING_CLOSURE_OFS(c,n) /* nothing */
+ #endif
+
++// Memory barriers.
++// For discussion of how these are used to fence heap object
++// accesses see Note [Heap memory barriers] in SMP.h.
++#if defined(THREADED_RTS)
++#define prim_read_barrier prim %read_barrier()
++#else
++#define prim_read_barrier /* nothing */
++#endif
+ #if defined(THREADED_RTS)
+ #define prim_write_barrier prim %write_barrier()
+ #else
+diff --git a/includes/stg/SMP.h b/includes/stg/SMP.h
+index 4020aef0d9..db6b4b954a 100644
+--- a/includes/stg/SMP.h
++++ b/includes/stg/SMP.h
+@@ -96,6 +96,151 @@ EXTERN_INLINE void write_barrier(void);
+ EXTERN_INLINE void store_load_barrier(void);
+ EXTERN_INLINE void load_load_barrier(void);
+
++/*
++ * Note [Heap memory barriers]
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * Machines with weak memory ordering semantics have consequences for how
++ * closures are observed and mutated. For example, consider a thunk that needs
++ * to be updated to an indirection. In order for the indirection to be safe for
++ * concurrent observers to enter, said observers must read the indirection's
++ * info table before they read the indirectee. Furthermore, the indirectee must
++ * be set before the info table pointer. This ensures that if the observer sees
++ * an IND info table then the indirectee is valid.
++ *
++ * When a closure is updated with an indirection, both its info table and its
++ * indirectee must be written. With weak memory ordering, these two writes can
++ * be arbitrarily reordered, and perhaps even interleaved with other threads'
++ * reads and writes (in the absence of memory barrier instructions). Consider
++ * this example of a bad reordering:
++ *
++ * - An updater writes to a closure's info table (INFO_TYPE is now IND).
++ * - A concurrent observer branches upon reading the closure's INFO_TYPE as IND.
++ * - A concurrent observer reads the closure's indirectee and enters it.
++ * - An updater writes the closure's indirectee.
++ *
++ * Here the update to the indirectee comes too late and the concurrent observer
++ * has jumped off into the abyss. Speculative execution can also cause us
++ * issues, consider:
++ *
++ * - an observer is about to case on a value in closure's info table.
++ * - the observer speculatively reads one or more of closure's fields.
++ * - an updater writes to closure's info table.
++ * - the observer takes a branch based on the new info table value, but with the
++ *   old closure fields!
++ * - the updater writes to the closure's other fields, but its too late.
++ *
++ * Because of these effects, reads and writes to a closure's info table must be
++ * ordered carefully with respect to reads and writes to the closure's other
++ * fields, and memory barriers must be placed to ensure that reads and writes
++ * occur in program order. Specifically, updates to an already existing closure
++ * must follow the following pattern:
++ *
++ * - Update the closure's (non-info table) fields.
++ * - Write barrier.
++ * - Update the closure's info table.
++ *
++ * Observing the fields of an updateable closure (e.g. a THUNK) must follow the
++ * following pattern:
++ *
++ * - Read the closure's info pointer.
++ * - Read barrier.
++ * - Read the closure's (non-info table) fields.
++ *
++ * We must also take care when we expose a newly-allocated closure to other cores
++ * by writing a pointer to it to some shared data structure (e.g. an MVar#, a Message,
++ * or MutVar#). Specifically, we need to ensure that all writes constructing the
++ * closure are visible *before* the write exposing the new closure is made visible:
++ *
++ * - Allocate memory for the closure
++ * - Write the closure's info pointer and fields (ordering betweeen this doesn't
++ *   matter since the closure isn't yet visible to anyone else).
++ * - Write barrier
++ * - Make closure visible to other cores
++ *
++ * Note that thread stacks are inherently thread-local and consequently allocating an
++ * object and introducing a reference to it to our stack needs no barrier.
++ *
++ * There are several ways in which the mutator may make a newly-allocated
++ * closure visible to other cores:
++ *
++ *  - Eager blackholing a THUNK:
++ *    This is protected by an explicit write barrier in the eager blackholing
++ *    code produced by the codegen. See StgCmmBind.emitBlackHoleCode.
++ *
++ *  - Lazy blackholing a THUNK:
++ *    This is is protected by an explicit write barrier in the thread suspension
++ *    code. See ThreadPaused.c:threadPaused.
++ *
++ *  - Updating a BLACKHOLE:
++ *    This case is protected by explicit write barriers in the the update frame
++ *    entry code (see rts/Updates.h).
++ *
++ *  - Blocking on an MVar# (e.g. takeMVar#):
++ *    In this case the appropriate MVar primops (e.g. stg_takeMVarzh).  include
++ *    explicit memory barriers to ensure that the the newly-allocated
++ *    MVAR_TSO_QUEUE is visible to other cores.
++ *
++ *  - Write to an MVar# (e.g. putMVar#):
++ *    This protected by the full barrier implied by the CAS in putMVar#.
++ *
++ *  - Write to a TVar#:
++ *    This is protected by the full barrier implied by the CAS in STM.c:lock_stm.
++ *
++ *  - Write to an Array#, ArrayArray#, or SmallArray#:
++ *    This case is protected by an explicit write barrier in the code produced
++ *    for this primop by the codegen. See StgCmmPrim.doWritePtrArrayOp and
++ *    StgCmmPrim.doWriteSmallPtrArrayOp. Relevant issue: #12469.
++ *
++ *  - Write to MutVar# via writeMutVar#:
++ *    This case is protected by an explicit write barrier in the code produced
++ *    for this primop by the codegen.
++ *
++ *  - Write to MutVar# via atomicModifyMutVar# or casMutVar#:
++ *    This is protected by the full barrier implied by the cmpxchg operations
++ *    in this primops.
++ *
++ *  - Sending a Message to another capability:
++ *    This is protected by the acquition and release of the target capability's
++ *    lock in Messages.c:sendMessage.
++ *
++ * Finally, we must ensure that we flush all cores store buffers before
++ * entering and leaving GC, since stacks may be read by other cores. This
++ * happens as a side-effect of taking and release mutexes (which implies
++ * acquire and release barriers, respectively).
++ *
++ * N.B. recordClosureMutated places a reference to the mutated object on
++ * the capability-local mut_list. Consequently this does not require any memory
++ * barrier.
++ *
++ * During parallel GC we need to be careful during evacuation: before replacing
++ * a closure with a forwarding pointer we must commit a write barrier to ensure
++ * that the copy we made in to-space is visible to other cores.
++ *
++ * However, we can be a bit lax when *reading* during GC. Specifically, the GC
++ * can only make a very limited set of changes to existing closures:
++ *
++ *  - it can replace a closure's info table with stg_WHITEHOLE.
++ *  - it can replace a previously-whitehole'd closure's info table with a
++ *    forwarding pointer
++ *  - it can replace a previously-whitehole'd closure's info table with a
++ *    valid info table pointer (done in eval_thunk_selector)
++ *  - it can update the value of a pointer field after evacuating it
++ *
++ * This is quite nice since we don't need to worry about an interleaving
++ * of writes producing an invalid state: a closure's fields remain valid after
++ * an update of its info table pointer and vice-versa.
++ *
++ * After a round of parallel scavenging we must also ensure that any writes the
++ * GC thread workers made are visible to the main GC thread. This is ensured by
++ * the full barrier implied by the atomic decrement in
++ * GC.c:scavenge_until_all_done.
++ *
++ * The work-stealing queue (WSDeque) also requires barriers; these are
++ * documented in WSDeque.c.
++ *
++ */
++
+ /* ----------------------------------------------------------------------------
+    Implementations
+    ------------------------------------------------------------------------- */
+diff --git a/libraries/ghc-prim/ghc-prim.cabal b/libraries/ghc-prim/ghc-prim.cabal
+index a95f1ecaa8..4866490899 100644
+--- a/libraries/ghc-prim/ghc-prim.cabal
++++ b/libraries/ghc-prim/ghc-prim.cabal
+@@ -66,6 +66,11 @@ Library
+         --         on Windows. Required because of mingw32.
+         extra-libraries: user32, mingw32, mingwex
+
++    if os(linux)
++        -- we need libm, but for musl and other's we might need libc, as libm
++        -- is just an empty shell.
++        extra-libraries: c, m
++
+     c-sources:
+         cbits/atomic.c
+         cbits/bswap.c
+diff --git a/rts/Apply.cmm b/rts/Apply.cmm
+index 0454fd69e2..7d87d4dd75 100644
+--- a/rts/Apply.cmm
++++ b/rts/Apply.cmm
+@@ -62,6 +62,8 @@ again:
+     W_  info;
+     P_ untaggedfun;
+     W_ arity;
++    // We must obey the correct heap object observation pattern in
++    // Note [Heap memory barriers] in SMP.h.
+     untaggedfun = UNTAG(fun);
+     info = %INFO_PTR(untaggedfun);
+     switch [INVALID_OBJECT .. N_CLOSURE_TYPES]
+diff --git a/rts/Compact.cmm b/rts/Compact.cmm
+index 061646846d..bae94a03cd 100644
+--- a/rts/Compact.cmm
++++ b/rts/Compact.cmm
+@@ -53,6 +53,9 @@ import CLOSURE base_GHCziIOziException_cannotCompactPinned_closure;
+ // data structure.  It takes the location to store the address of the
+ // compacted object as an argument, so that it can be tail-recursive.
+ //
++// N.B. No memory barrier (see Note [Heap memory barriers] in SMP.h) is needed
++// here since this is essentially an allocation of a new object which won't
++// be visible to other cores until after we return.
+ stg_compactAddWorkerzh (
+     P_ compact,  // The Compact# object
+     P_ p,        // The object to compact
+diff --git a/rts/Interpreter.c b/rts/Interpreter.c
+index 9eb6560a8c..0540cf964c 100644
+--- a/rts/Interpreter.c
++++ b/rts/Interpreter.c
+@@ -266,7 +266,6 @@ StgClosure * copyPAP  (Capability *cap, StgPAP *oldpap)
+     uint32_t size = PAP_sizeW(oldpap->n_args);
+     StgPAP *pap = (StgPAP *)allocate(cap, size);
+     enterFunCCS(&cap->r, oldpap->header.prof.ccs);
+-    SET_HDR(pap, &stg_PAP_info, cap->r.rCCCS);
+     pap->arity = oldpap->arity;
+     pap->n_args = oldpap->n_args;
+     pap->fun = oldpap->fun;
+@@ -274,6 +273,8 @@ StgClosure * copyPAP  (Capability *cap, StgPAP *oldpap)
+     for (i = 0; i < ((StgPAP *)pap)->n_args; i++) {
+         pap->payload[i] = oldpap->payload[i];
+     }
++    // No write barrier is needed here as this is a new allocation
++    SET_HDR(pap, &stg_PAP_info, cap->r.rCCCS);
+     return (StgClosure *)pap;
+ }
+
+@@ -799,7 +800,6 @@ do_apply:
+                 // build a new PAP and return it.
+                 StgPAP *new_pap;
+                 new_pap = (StgPAP *)allocate(cap, PAP_sizeW(pap->n_args + m));
+-                SET_HDR(new_pap,&stg_PAP_info,cap->r.rCCCS);
+                 new_pap->arity = pap->arity - n;
+                 new_pap->n_args = pap->n_args + m;
+                 new_pap->fun = pap->fun;
+@@ -809,6 +809,8 @@ do_apply:
+                 for (i = 0; i < m; i++) {
+                     new_pap->payload[pap->n_args + i] = (StgClosure *)SpW(i);
+                 }
++                // No write barrier is needed here as this is a new allocation
++                SET_HDR(new_pap,&stg_PAP_info,cap->r.rCCCS);
+                 tagged_obj = (StgClosure *)new_pap;
+                 Sp_addW(m);
+                 goto do_return;
+@@ -844,13 +846,14 @@ do_apply:
+                 StgPAP *pap;
+                 uint32_t i;
+                 pap = (StgPAP *)allocate(cap, PAP_sizeW(m));
+-                SET_HDR(pap, &stg_PAP_info,cap->r.rCCCS);
+                 pap->arity = arity - n;
+                 pap->fun = obj;
+                 pap->n_args = m;
+                 for (i = 0; i < m; i++) {
+                     pap->payload[i] = (StgClosure *)SpW(i);
+                 }
++                // No write barrier is needed here as this is a new allocation
++                SET_HDR(pap, &stg_PAP_info,cap->r.rCCCS);
+                 tagged_obj = (StgClosure *)pap;
+                 Sp_addW(m);
+                 goto do_return;
+@@ -1081,7 +1084,6 @@ run_BCO:
+                   // the BCO
+                   size_words = BCO_BITMAP_SIZE(obj) + 2;
+                   new_aps = (StgAP_STACK *) allocate(cap, AP_STACK_sizeW(size_words));
+-                  SET_HDR(new_aps,&stg_AP_STACK_info,cap->r.rCCCS);
+                   new_aps->size = size_words;
+                   new_aps->fun = &stg_dummy_ret_closure;
+
+@@ -1095,6 +1097,9 @@ run_BCO:
+                      new_aps->payload[i] = (StgClosure *)SpW(i-2);
+                   }
+
++                  // No write barrier is needed here as this is a new allocation
++                  SET_HDR(new_aps,&stg_AP_STACK_info,cap->r.rCCCS);
++
+                   // Arrange the stack to call the breakpoint IO action, and
+                   // continue execution of this BCO when the IO action returns.
+                   //
+@@ -1423,6 +1428,8 @@ run_BCO:
+             ap = (StgAP*)allocate(cap, AP_sizeW(n_payload));
+             SpW(-1) = (W_)ap;
+             ap->n_args = n_payload;
++            // No write barrier is needed here as this is a new allocation
++            // visible only from our stack
+             SET_HDR(ap, &stg_AP_info, cap->r.rCCCS)
+             Sp_subW(1);
+             goto nextInsn;
+@@ -1434,6 +1441,8 @@ run_BCO:
+             ap = (StgAP*)allocate(cap, AP_sizeW(n_payload));
+             SpW(-1) = (W_)ap;
+             ap->n_args = n_payload;
++            // No write barrier is needed here as this is a new allocation
++            // visible only from our stack
+             SET_HDR(ap, &stg_AP_NOUPD_info, cap->r.rCCCS)
+             Sp_subW(1);
+             goto nextInsn;
+@@ -1447,6 +1456,8 @@ run_BCO:
+             SpW(-1) = (W_)pap;
+             pap->n_args = n_payload;
+             pap->arity = arity;
++            // No write barrier is needed here as this is a new allocation
++            // visible only from our stack
+             SET_HDR(pap, &stg_PAP_info, cap->r.rCCCS)
+             Sp_subW(1);
+             goto nextInsn;
+@@ -1522,12 +1533,14 @@ run_BCO:
+                                                itbl->layout.payload.nptrs );
+             StgClosure* con = (StgClosure*)allocate_NONUPD(cap,request);
+             ASSERT( itbl->layout.payload.ptrs + itbl->layout.payload.nptrs > 0);
+-            SET_HDR(con, (StgInfoTable*)BCO_LIT(o_itbl), cap->r.rCCCS);
+             for (i = 0; i < n_words; i++) {
+                 con->payload[i] = (StgClosure*)SpW(i);
+             }
+             Sp_addW(n_words);
+             Sp_subW(1);
++            // No write barrier is needed here as this is a new allocation
++            // visible only from our stack
++            SET_HDR(con, (StgInfoTable*)BCO_LIT(o_itbl), cap->r.rCCCS);
+             SpW(0) = (W_)con;
+             IF_DEBUG(interpreter,
+                      debugBelch("\tBuilt ");
+diff --git a/rts/Linker.c b/rts/Linker.c
+index b7e83858b0..7ed9e9d148 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -192,7 +192,7 @@ int ocTryLoad( ObjectCode* oc );
+  *
+  * MAP_32BIT not available on OpenBSD/amd64
+  */
+-#if defined(x86_64_HOST_ARCH) && defined(MAP_32BIT)
++#if (defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH) || defined(aarch64_TARGET_ARCH)) && defined(MAP_32BIT)
+ #define TRY_MAP_32BIT MAP_32BIT
+ #else
+ #define TRY_MAP_32BIT 0
+@@ -209,10 +209,16 @@ int ocTryLoad( ObjectCode* oc );
+  * in the low 2Gb of the address space and try to allocate memory from
+  * there.
+  *
++ * The same holds for aarch64, where the default, even with PIC, model
++ * is 4GB. The linker is free to emit AARCH64_ADR_PREL_PG_HI21
++ * relocations.
++ *
+  * We pick a default address based on the OS, but also make this
+  * configurable via an RTS flag (+RTS -xm)
+  */
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH)
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH)
++
++#define MMAP_MAX_RETRY 100
+
+ #if defined(MAP_32BIT)
+ // Try to use MAP_32BIT
+@@ -496,7 +502,7 @@ initLinker_ (int retain_cafs)
+     }
+ #   endif
+
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH)
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH)
+     if (RtsFlags.MiscFlags.linkerMemBase != 0) {
+         // User-override for mmap_32bit_base
+         mmap_32bit_base = (void*)RtsFlags.MiscFlags.linkerMemBase;
+@@ -1001,7 +1007,7 @@ resolveSymbolAddr (pathchar* buffer, int size,
+ // Returns NULL on failure.
+ //
+ void *
+-mmapForLinker (size_t bytes, uint32_t flags, int fd, int offset)
++mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset)
+ {
+    void *map_addr = NULL;
+    void *result;
+@@ -1011,9 +1017,14 @@ mmapForLinker (size_t bytes, uint32_t flags, int fd, int offset)
+    IF_DEBUG(linker, debugBelch("mmapForLinker: start\n"));
+    size = roundUpToPage(bytes);
+
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH)
+-mmap_again:
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH) || defined(aarch64_TARGET_ARCH)
+
++    size_t mmap_counter = MMAP_MAX_RETRY;
++mmap_again:
++   if (0 == --mmap_counter) {
++       sysErrorBelch("mmap, small memory model: failed to allocate within 2GB after %d retries.\n", MMAP_MAX_RETRY);
++       stg_exit(EXIT_FAILURE);
++   }
+    if (mmap_32bit_base != 0) {
+        map_addr = mmap_32bit_base;
+    }
+@@ -1021,13 +1032,13 @@ mmap_again:
+
+    IF_DEBUG(linker,
+             debugBelch("mmapForLinker: \tprotection %#0x\n",
+-                       PROT_EXEC | PROT_READ | PROT_WRITE));
++                       prot));
+    IF_DEBUG(linker,
+             debugBelch("mmapForLinker: \tflags      %#0x\n",
+                        MAP_PRIVATE | TRY_MAP_32BIT | fixed | flags));
+
+    result = mmap(map_addr, size,
+-                 PROT_EXEC|PROT_READ|PROT_WRITE,
++                 prot,
+                  MAP_PRIVATE|TRY_MAP_32BIT|fixed|flags, fd, offset);
+
+    if (result == MAP_FAILED) {
+@@ -1036,7 +1047,7 @@ mmap_again:
+        return NULL;
+    }
+
+-#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH)
++#if !defined(ALWAYS_PIC) && defined(x86_64_HOST_ARCH) || defined(aarch64_HOST_ARCH) || defined(aarch64_TARGET_ARCH)
+    if (mmap_32bit_base != 0) {
+        if (result == map_addr) {
+            mmap_32bit_base = (StgWord8*)map_addr + size;
+@@ -1360,9 +1371,9 @@ preloadObjectFile (pathchar *path)
+     * See also the misalignment logic for darwin below.
+     */
+ #if defined(ios_HOST_OS)
+-   image = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
++   image = mmapForLinker(fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+ #else
+-   image = mmap(NULL, fileSize, PROT_READ|PROT_WRITE|PROT_EXEC,
++   image = mmapForLinker(fileSize, PROT_READ|PROT_WRITE|PROT_EXEC,
+                 MAP_PRIVATE, fd, 0);
+ #endif
+
+@@ -1820,4 +1831,3 @@ addSection (Section *s, SectionKind kind, SectionAlloc alloc,
+                        start, (void*)((StgWord)start + size),
+                        size, kind ));
+ }
+-
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index b48fc75966..f7ef0da81e 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -246,7 +246,7 @@ void exitLinker( void );
+ void freeObjectCode (ObjectCode *oc);
+ SymbolAddr* loadSymbol(SymbolName *lbl, RtsSymbolInfo *pinfo);
+
+-void *mmapForLinker (size_t bytes, uint32_t flags, int fd, int offset);
++void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset);
+
+ void addProddableBlock ( ObjectCode* oc, void* start, int size );
+ void checkProddableBlock (ObjectCode *oc, void *addr, size_t size );
+diff --git a/rts/Messages.c b/rts/Messages.c
+index 2b13b6306c..d878db5eda 100644
+--- a/rts/Messages.c
++++ b/rts/Messages.c
+@@ -173,6 +173,7 @@ uint32_t messageBlackHole(Capability *cap, MessageBlackHole *msg)
+                   "blackhole %p", (W_)msg->tso->id, msg->bh);
+
+     info = bh->header.info;
++    load_load_barrier();  // See Note [Heap memory barriers] in SMP.h
+
+     // If we got this message in our inbox, it might be that the
+     // BLACKHOLE has already been updated, and GC has shorted out the
+@@ -196,6 +197,7 @@ loop:
+     // and turns this into an infinite loop.
+     p = UNTAG_CLOSURE((StgClosure*)VOLATILE_LOAD(&((StgInd*)bh)->indirectee));
+     info = p->header.info;
++    load_load_barrier();  // See Note [Heap memory barriers] in SMP.h
+
+     if (info == &stg_IND_info)
+     {
+@@ -226,7 +228,6 @@ loop:
+         bq = (StgBlockingQueue*)allocate(cap, sizeofW(StgBlockingQueue));
+
+         // initialise the BLOCKING_QUEUE object
+-        SET_HDR(bq, &stg_BLOCKING_QUEUE_DIRTY_info, CCS_SYSTEM);
+         bq->bh = bh;
+         bq->queue = msg;
+         bq->owner = owner;
+@@ -238,6 +239,11 @@ loop:
+         // a collision to update a BLACKHOLE and a BLOCKING_QUEUE
+         // becomes orphaned (see updateThunk()).
+         bq->link = owner->bq;
++        SET_HDR(bq, &stg_BLOCKING_QUEUE_DIRTY_info, CCS_SYSTEM);
++        // We are about to make the newly-constructed message visible to other cores;
++        // a barrier is necessary to ensure that all writes are visible.
++        // See Note [Heap memory barriers] in SMP.h.
++        write_barrier();
+         owner->bq = bq;
+         dirty_TSO(cap, owner); // we modified owner->bq
+
+@@ -255,7 +261,7 @@ loop:
+         }
+
+         // point to the BLOCKING_QUEUE from the BLACKHOLE
+-        write_barrier(); // make the BQ visible
++        write_barrier(); // make the BQ visible, see Note [Heap memory barriers].
+         ((StgInd*)bh)->indirectee = (StgClosure *)bq;
+         recordClosureMutated(cap,bh); // bh was mutated
+
+@@ -286,10 +292,14 @@ loop:
+
+         msg->link = bq->queue;
+         bq->queue = msg;
++        // No barrier is necessary here: we are only exposing the
++        // closure to the GC. See Note [Heap memory barriers] in SMP.h.
+         recordClosureMutated(cap,(StgClosure*)msg);
+
+         if (info == &stg_BLOCKING_QUEUE_CLEAN_info) {
+             bq->header.info = &stg_BLOCKING_QUEUE_DIRTY_info;
++            // No barrier is necessary here: we are only exposing the
++            // closure to the GC. See Note [Heap memory barriers] in SMP.h.
+             recordClosureMutated(cap,(StgClosure*)bq);
+         }
+
+diff --git a/rts/PrimOps.cmm b/rts/PrimOps.cmm
+index cbb8e54e28..4274dfb50a 100644
+--- a/rts/PrimOps.cmm
++++ b/rts/PrimOps.cmm
+@@ -105,6 +105,7 @@ stg_newPinnedByteArrayzh ( W_ n )
+        to BA_ALIGN bytes: */
+     p = p + ((-p - SIZEOF_StgArrBytes) & BA_MASK);
+
++    /* No write barrier needed since this is a new allocation. */
+     SET_HDR(p, stg_ARR_WORDS_info, CCCS);
+     StgArrBytes_bytes(p) = n;
+     return (p);
+@@ -147,6 +148,7 @@ stg_newAlignedPinnedByteArrayzh ( W_ n, W_ alignment )
+        <alignment> is a power of 2, which is technically not guaranteed */
+     p = p + ((-p - SIZEOF_StgArrBytes) & (alignment - 1));
+
++    /* No write barrier needed since this is a new allocation. */
+     SET_HDR(p, stg_ARR_WORDS_info, CCCS);
+     StgArrBytes_bytes(p) = n;
+     return (p);
+@@ -257,6 +259,7 @@ stg_newArrayzh ( W_ n /* words */, gcptr init )
+     }
+     TICK_ALLOC_PRIM(SIZEOF_StgMutArrPtrs, WDS(size), 0);
+
++    /* No write barrier needed since this is a new allocation. */
+     SET_HDR(arr, stg_MUT_ARR_PTRS_DIRTY_info, CCCS);
+     StgMutArrPtrs_ptrs(arr) = n;
+     StgMutArrPtrs_size(arr) = size;
+@@ -408,6 +411,7 @@ stg_newSmallArrayzh ( W_ n /* words */, gcptr init )
+     }
+     TICK_ALLOC_PRIM(SIZEOF_StgSmallMutArrPtrs, WDS(n), 0);
+
++    /* No write barrier needed since this is a new allocation. */
+     SET_HDR(arr, stg_SMALL_MUT_ARR_PTRS_DIRTY_info, CCCS);
+     StgSmallMutArrPtrs_ptrs(arr) = n;
+
+@@ -522,6 +526,7 @@ stg_newMutVarzh ( gcptr init )
+     ALLOC_PRIM_P (SIZEOF_StgMutVar, stg_newMutVarzh, init);
+
+     mv = Hp - SIZEOF_StgMutVar + WDS(1);
++    /* No write barrier needed since this is a new allocation. */
+     SET_HDR(mv,stg_MUT_VAR_DIRTY_info,CCCS);
+     StgMutVar_var(mv) = init;
+
+@@ -655,6 +660,7 @@ stg_mkWeakzh ( gcptr key,
+     ALLOC_PRIM (SIZEOF_StgWeak)
+
+     w = Hp - SIZEOF_StgWeak + WDS(1);
++    // No memory barrier needed as this is a new allocation.
+     SET_HDR(w, stg_WEAK_info, CCCS);
+
+     StgWeak_key(w)         = key;
+@@ -770,6 +776,7 @@ stg_deRefWeakzh ( gcptr w )
+     gcptr val;
+
+     info = GET_INFO(w);
++    prim_read_barrier;
+
+     if (info == stg_WHITEHOLE_info) {
+         // w is locked by another thread. Now it's not immediately clear if w is
+@@ -1341,11 +1348,13 @@ stg_readTVarzh (P_ tvar)
+
+ stg_readTVarIOzh ( P_ tvar /* :: TVar a */ )
+ {
+-    W_ result;
++    W_ result, resultinfo;
+
+ again:
+     result = StgTVar_current_value(tvar);
+-    if (%INFO_PTR(result) == stg_TREC_HEADER_info) {
++    resultinfo = %INFO_PTR(result);
++    prim_read_barrier;
++    if (resultinfo == stg_TREC_HEADER_info) {
+         goto again;
+     }
+     return (result);
+@@ -1414,6 +1423,7 @@ stg_newMVarzh ()
+     ALLOC_PRIM_ (SIZEOF_StgMVar, stg_newMVarzh);
+
+     mvar = Hp - SIZEOF_StgMVar + WDS(1);
++    // No memory barrier needed as this is a new allocation.
+     SET_HDR(mvar,stg_MVAR_DIRTY_info,CCCS);
+         // MVARs start dirty: generation 0 has no mutable list
+     StgMVar_head(mvar)  = stg_END_TSO_QUEUE_closure;
+@@ -1438,7 +1448,7 @@ stg_newMVarzh ()
+
+ stg_takeMVarzh ( P_ mvar /* :: MVar a */ )
+ {
+-    W_ val, info, tso, q;
++    W_ val, info, tso, q, qinfo;
+
+     LOCK_CLOSURE(mvar, info);
+
+@@ -1460,9 +1470,12 @@ stg_takeMVarzh ( P_ mvar /* :: MVar a */ )
+
+         q = Hp - SIZEOF_StgMVarTSOQueue + WDS(1);
+
+-        SET_HDR(q, stg_MVAR_TSO_QUEUE_info, CCS_SYSTEM);
+         StgMVarTSOQueue_link(q) = END_TSO_QUEUE;
+         StgMVarTSOQueue_tso(q)  = CurrentTSO;
++        SET_HDR(q, stg_MVAR_TSO_QUEUE_info, CCS_SYSTEM);
++        // Write barrier before we make the new MVAR_TSO_QUEUE
++        // visible to other cores.
++        prim_write_barrier;
+
+         if (StgMVar_head(mvar) == stg_END_TSO_QUEUE_closure) {
+             StgMVar_head(mvar) = q;
+@@ -1492,8 +1505,10 @@ loop:
+         unlockClosure(mvar, info);
+         return (val);
+     }
+-    if (StgHeader_info(q) == stg_IND_info ||
+-        StgHeader_info(q) == stg_MSG_NULL_info) {
++    qinfo = StgHeader_info(q);
++    prim_read_barrier;
++    if (qinfo == stg_IND_info ||
++        qinfo == stg_MSG_NULL_info) {
+         q = StgInd_indirectee(q);
+         goto loop;
+     }
+@@ -1531,7 +1546,7 @@ loop:
+
+ stg_tryTakeMVarzh ( P_ mvar /* :: MVar a */ )
+ {
+-    W_ val, info, tso, q;
++    W_ val, info, tso, q, qinfo;
+
+     LOCK_CLOSURE(mvar, info);
+
+@@ -1558,8 +1573,11 @@ loop:
+         return (1, val);
+     }
+
+-    if (StgHeader_info(q) == stg_IND_info ||
+-        StgHeader_info(q) == stg_MSG_NULL_info) {
++    qinfo = StgHeader_info(q);
++    prim_read_barrier;
++
++    if (qinfo == stg_IND_info ||
++        qinfo == stg_MSG_NULL_info) {
+         q = StgInd_indirectee(q);
+         goto loop;
+     }
+@@ -1598,7 +1616,7 @@ loop:
+ stg_putMVarzh ( P_ mvar, /* :: MVar a */
+                 P_ val,  /* :: a */ )
+ {
+-    W_ info, tso, q;
++    W_ info, tso, q, qinfo;
+
+     LOCK_CLOSURE(mvar, info);
+
+@@ -1618,10 +1636,12 @@ stg_putMVarzh ( P_ mvar, /* :: MVar a */
+
+         q = Hp - SIZEOF_StgMVarTSOQueue + WDS(1);
+
+-        SET_HDR(q, stg_MVAR_TSO_QUEUE_info, CCS_SYSTEM);
+         StgMVarTSOQueue_link(q) = END_TSO_QUEUE;
+         StgMVarTSOQueue_tso(q)  = CurrentTSO;
+
++        SET_HDR(q, stg_MVAR_TSO_QUEUE_info, CCS_SYSTEM);
++        prim_write_barrier;
++
+         if (StgMVar_head(mvar) == stg_END_TSO_QUEUE_closure) {
+             StgMVar_head(mvar) = q;
+         } else {
+@@ -1648,8 +1668,12 @@ loop:
+         unlockClosure(mvar, stg_MVAR_DIRTY_info);
+         return ();
+     }
+-    if (StgHeader_info(q) == stg_IND_info ||
+-        StgHeader_info(q) == stg_MSG_NULL_info) {
++
++    qinfo = StgHeader_info(q);
++    prim_read_barrier;
++
++    if (qinfo == stg_IND_info ||
++        qinfo == stg_MSG_NULL_info) {
+         q = StgInd_indirectee(q);
+         goto loop;
+     }
+@@ -1706,7 +1730,7 @@ loop:
+ stg_tryPutMVarzh ( P_ mvar, /* :: MVar a */
+                    P_ val,  /* :: a */ )
+ {
+-    W_ info, tso, q;
++    W_ info, tso, q, qinfo;
+
+     LOCK_CLOSURE(mvar, info);
+
+@@ -1729,8 +1753,12 @@ loop:
+         unlockClosure(mvar, stg_MVAR_DIRTY_info);
+         return (1);
+     }
+-    if (StgHeader_info(q) == stg_IND_info ||
+-        StgHeader_info(q) == stg_MSG_NULL_info) {
++
++    qinfo = StgHeader_info(q);
++    prim_read_barrier;
++
++    if (qinfo == stg_IND_info ||
++        qinfo == stg_MSG_NULL_info) {
+         q = StgInd_indirectee(q);
+         goto loop;
+     }
+@@ -1801,10 +1829,12 @@ stg_readMVarzh ( P_ mvar, /* :: MVar a */ )
+
+         // readMVars are pushed to the front of the queue, so
+         // they get handled immediately
+-        SET_HDR(q, stg_MVAR_TSO_QUEUE_info, CCS_SYSTEM);
+         StgMVarTSOQueue_link(q) = StgMVar_head(mvar);
+         StgMVarTSOQueue_tso(q)  = CurrentTSO;
+
++        SET_HDR(q, stg_MVAR_TSO_QUEUE_info, CCS_SYSTEM);
++        prim_write_barrier;
++
+         StgTSO__link(CurrentTSO)       = q;
+         StgTSO_block_info(CurrentTSO)  = mvar;
+         StgTSO_why_blocked(CurrentTSO) = BlockedOnMVarRead::I16;
+@@ -1869,6 +1899,10 @@ stg_makeStableNamezh ( P_ obj )
+                                         BYTES_TO_WDS(SIZEOF_StgStableName));
+         SET_HDR(sn_obj, stg_STABLE_NAME_info, CCCS);
+         StgStableName_sn(sn_obj) = index;
++        // This will make the StableName# object visible to other threads;
++        // be sure that its completely visible to other cores.
++        // See Note [Heap memory barriers] in SMP.h.
++        prim_write_barrier;
+         snEntry_sn_obj(W_[stable_name_table] + index*SIZEOF_snEntry) = sn_obj;
+     } else {
+         sn_obj = snEntry_sn_obj(W_[stable_name_table] + index*SIZEOF_snEntry);
+@@ -1910,6 +1944,7 @@ stg_newBCOzh ( P_ instrs,
+     ALLOC_PRIM (bytes);
+
+     bco = Hp - bytes + WDS(1);
++    // No memory barrier necessary as this is a new allocation.
+     SET_HDR(bco, stg_BCO_info, CCS_MAIN);
+
+     StgBCO_instrs(bco)     = instrs;
+@@ -1946,6 +1981,7 @@ stg_mkApUpd0zh ( P_ bco )
+     CCCS_ALLOC(SIZEOF_StgAP);
+
+     ap = Hp - SIZEOF_StgAP + WDS(1);
++    // No memory barrier necessary as this is a new allocation.
+     SET_HDR(ap, stg_AP_info, CCS_MAIN);
+
+     StgAP_n_args(ap) = HALF_W_(0);
+@@ -1958,6 +1994,7 @@ stg_unpackClosurezh ( P_ closure )
+ {
+     W_ info, ptrs, nptrs, p, ptrs_arr, dat_arr;
+     info  = %GET_STD_INFO(UNTAG(closure));
++    prim_read_barrier;
+
+     ptrs  = TO_W_(%INFO_PTRS(info));
+     nptrs = TO_W_(%INFO_NPTRS(info));
+@@ -2279,7 +2316,10 @@ stg_noDuplicatezh /* no arg list: explicit stack layout */
+
+ stg_getApStackValzh ( P_ ap_stack, W_ offset )
+ {
+-   if (%INFO_PTR(UNTAG(ap_stack)) == stg_AP_STACK_info) {
++   W_ ap_stackinfo;
++   ap_stackinfo = %INFO_PTR(UNTAG(ap_stack));
++   prim_read_barrier;
++   if (ap_stackinfo == stg_AP_STACK_info) {
+        return (1,StgAP_STACK_payload(ap_stack,offset));
+    } else {
+        return (0,ap_stack);
+diff --git a/rts/RaiseAsync.c b/rts/RaiseAsync.c
+index ddd6d39ffb..59de87916e 100644
+--- a/rts/RaiseAsync.c
++++ b/rts/RaiseAsync.c
+@@ -870,6 +870,7 @@ raiseAsync(Capability *cap, StgTSO *tso, StgClosure *exception,
+                 ap->payload[i] = (StgClosure *)*sp++;
+             }
+
++            write_barrier(); // XXX: Necessary?
+             SET_HDR(ap,&stg_AP_STACK_info,
+                     ((StgClosure *)frame)->header.prof.ccs /* ToDo */);
+             TICK_ALLOC_UP_THK(WDS(words+1),0);
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 87fa98dd4f..ccfed93714 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -53,7 +53,6 @@
+       SymI_HasProto(signal_handlers)            \
+       SymI_HasProto(stg_sig_install)            \
+       SymI_HasProto(rtsTimerSignal)             \
+-      SymI_HasProto(atexit)                     \
+       SymI_NeedsDataProto(nocldstop)
+ #endif
+
+@@ -932,26 +931,187 @@
+       RTS_USER_SIGNALS_SYMBOLS                                          \
+       RTS_INTCHAR_SYMBOLS
+
+-
+ // 64-bit support functions in libgcc.a
++// See https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html#Libgcc
+ #if defined(__GNUC__) && SIZEOF_VOID_P <= 4 && !defined(_ABIN32)
+ #define RTS_LIBGCC_SYMBOLS                             \
+-      SymI_NeedsProto(__divdi3)                        \
+-      SymI_NeedsProto(__udivdi3)                       \
+-      SymI_NeedsProto(__moddi3)                        \
+-      SymI_NeedsProto(__umoddi3)                       \
+-      SymI_NeedsProto(__muldi3)                        \
+-      SymI_NeedsProto(__ashldi3)                       \
+-      SymI_NeedsProto(__ashrdi3)                       \
+-      SymI_NeedsProto(__lshrdi3)                       \
+-      SymI_NeedsProto(__fixunsdfdi)
++      SymI_NeedsProto(__fixunsdfdi)                    \
++      /* 4 The GCC low-level runtime library         */\
++      /* 4.1.1 Arithmetic functions                  */\
++      /* SymI_NeedsProto(__ashlsi3) */\
++      SymI_NeedsProto(__ashldi3) \
++      /* SymI_NeedsProto(__ashlti3) */\
++      /* These functions return the result of shifting a left by b bits. */\
++      /* SymI_NeedsProto(__ashrsi3) */\
++      SymI_NeedsProto(__ashrdi3) \
++      /* SymI_NeedsProto(__ashrti3) */\
++      /* These functions return the result of arithmetically shifting a right by b bits. */\
++      /* SymI_NeedsProto(__divsi3) */\
++      SymI_NeedsProto(__divdi3) \
++      /* SymI_NeedsProto(__divti3) */\
++      /* These functions return the quotient of the signed division of a and b. */\
++      /* SymI_NeedsProto(__lshrsi3) */ \
++      SymI_NeedsProto(__lshrdi3) \
++      /* SymI_NeedsProto(__lshrti3) */ \
++      /* These functions return the result of logically shifting a right by b bits. */\
++      /* SymI_NeedsProto(__modsi3) */ \
++      SymI_NeedsProto(__moddi3) \
++      /* SymI_NeedsProto(__modti3) */ \
++      /* These functions return the remainder of the signed division of a and b. */\
++      /* SymI_NeedsProto(__mulsi3) */ \
++      SymI_NeedsProto(__muldi3) \
++      /* SymI_NeedsProto(__multi3) */ \
++      /* These functions return the product of a and b. */\
++      SymI_NeedsProto(__negdi2) \
++      /* SymI_NeedsProto(__negti2) */ \
++      /* These functions return the negation of a. */\
++      /* SymI_NeedsProto(__udivsi3) */ \
++      SymI_NeedsProto(__udivdi3) \
++      /* SymI_NeedsProto(__udivti3) */ \
++      /* These functions return the quotient of the unsigned division of a and b. */\
++      SymI_NeedsProto(__udivmoddi4) \
++      /* SymI_NeedsProto(__udivmodti4) */ \
++      /* These functions calculate both the quotient and remainder of the unsigned division of a and b. The return value is the quotient, and the remainder is placed in variable pointed to by c. */\
++      /* SymI_NeedsProto(__umodsi3) */ \
++      SymI_NeedsProto(__umoddi3) \
++      /* SymI_NeedsProto(__umodti3) */ \
++      /* These functions return the remainder of the unsigned division of a and b. */\
++      /* 4.1.2 Comparison functions */\
++      /* The following functions implement integral comparisons. These functions implement a low-level compare, upon which the higher level comparison operators (such as less than and greater than or equal to) can be constructed. The returned values lie in the range zero to two, to allow the high-level operators to be implemented by testing the returned result using either signed or unsigned comparison. */\
++      SymI_NeedsProto(__cmpdi2) \
++      /* SymI_NeedsProto(__cmpti2) */ \
++      /* These functions perform a signed comparison of a and b. If a is less than b, they return 0; if a is greater than b, they return 2; and if a and b are equal they return 1. */\
++      SymI_NeedsProto(__ucmpdi2) \
++      /* SymI_NeedsProto(__ucmpti2) */ \
++      /* These functions perform an unsigned comparison of a and b. If a is less than b, they return 0; if a is greater than b, they return 2; and if a and b are equal they return 1. */\
++      /* 4.1.3 Trapping arithmetic functions */\
++      /* The following functions implement trapping arithmetic. These functions call the libc function abort upon signed arithmetic overflow. */\
++      SymI_NeedsProto(__absvsi2) \
++      SymI_NeedsProto(__absvdi2) \
++      /* These functions return the absolute value of a. */\
++      /* SymI_NeedsProto(__addvsi3) */ \
++      SymI_NeedsProto(__addvdi3) \
++      /* These functions return the sum of a and b; that is a + b. */\
++      /* SymI_NeedsProto(__mulvsi3) */ \
++      SymI_NeedsProto(__mulvdi3) \
++      /* The functions return the product of a and b; that is a * b. */\
++      SymI_NeedsProto(__negvsi2) \
++      SymI_NeedsProto(__negvdi2) \
++      /* These functions return the negation of a; that is -a. */\
++      /* SymI_NeedsProto(__subvsi3) */ \
++      SymI_NeedsProto(__subvdi3) \
++      /* These functions return the difference between b and a; that is a - b. */\
++      /* 4.1.4 Bit operations */\
++      SymI_NeedsProto(__clzsi2) \
++      SymI_NeedsProto(__clzdi2) \
++      /* SymI_NeedsProto(__clzti2) */ \
++      /* These functions return the number of leading 0-bits in a, starting at the most significant bit position. If a is zero, the result is undefined. */\
++      SymI_NeedsProto(__ctzsi2) \
++      SymI_NeedsProto(__ctzdi2) \
++      /* SymI_NeedsProto(__ctzti2) */ \
++      /* These functions return the number of trailing 0-bits in a, starting at the least significant bit position. If a is zero, the result is undefined. */\
++      SymI_NeedsProto(__ffsdi2) \
++      /* SymI_NeedsProto(__ffsti2) */ \
++      /* These functions return the index of the least significant 1-bit in a, or the value zero if a is zero. The least significant bit is index one. */\
++      SymI_NeedsProto(__paritysi2) \
++      SymI_NeedsProto(__paritydi2) \
++      /* SymI_NeedsProto(__parityti2) */\
++      /* These functions return the value zero if the number of bits set in a is even, and the value one otherwise. */\
++      SymI_NeedsProto(__popcountsi2) \
++      SymI_NeedsProto(__popcountdi2) \
++      /* SymI_NeedsProto(__popcountti2) */ \
++      /* These functions return the number of bits set in a. */\
++      SymI_NeedsProto(__bswapsi2) \
++      SymI_NeedsProto(__bswapdi2) \
++      /* armv6l                                      */\
++      /* TODO: should check for __ARM_EABI__         */\
++      SymI_NeedsProto(__aeabi_d2f) \
++      SymI_NeedsProto(__aeabi_d2iz) \
++      SymI_NeedsProto(__aeabi_d2lz) \
++      SymI_NeedsProto(__aeabi_d2uiz) \
++      SymI_NeedsProto(__aeabi_d2ulz) \
++      SymI_NeedsProto(__aeabi_dadd) \
++      SymI_NeedsProto(__aeabi_dcmpeq) \
++      SymI_NeedsProto(__aeabi_dcmpge) \
++      SymI_NeedsProto(__aeabi_dcmpgt) \
++      SymI_NeedsProto(__aeabi_dcmple) \
++      SymI_NeedsProto(__aeabi_dcmplt) \
++      SymI_NeedsProto(__aeabi_dcmpun) \
++      SymI_NeedsProto(__aeabi_ddiv) \
++      SymI_NeedsProto(__aeabi_dmul) \
++      SymI_NeedsProto(__aeabi_dneg) \
++      SymI_NeedsProto(__aeabi_dsub) \
++      SymI_NeedsProto(__aeabi_f2d) \
++      SymI_NeedsProto(__aeabi_f2iz) \
++      SymI_NeedsProto(__aeabi_f2lz) \
++      SymI_NeedsProto(__aeabi_f2uiz) \
++      SymI_NeedsProto(__aeabi_f2ulz) \
++      SymI_NeedsProto(__aeabi_fadd) \
++      SymI_NeedsProto(__aeabi_fcmpeq) \
++      SymI_NeedsProto(__aeabi_fcmpge) \
++      SymI_NeedsProto(__aeabi_fcmpgt) \
++      SymI_NeedsProto(__aeabi_fcmple) \
++      SymI_NeedsProto(__aeabi_fcmplt) \
++      SymI_NeedsProto(__aeabi_fcmpun) \
++      SymI_NeedsProto(__aeabi_fdiv) \
++      SymI_NeedsProto(__aeabi_fmul) \
++      SymI_NeedsProto(__aeabi_fneg) \
++      SymI_NeedsProto(__aeabi_fsub) \
++      SymI_NeedsProto(__aeabi_i2d) \
++      SymI_NeedsProto(__aeabi_i2f) \
++      SymI_NeedsProto(__aeabi_idiv) \
++      SymI_NeedsProto(__aeabi_idivmod) \
++      SymI_NeedsProto(__aeabi_l2d) \
++      SymI_NeedsProto(__aeabi_l2f) \
++      SymI_NeedsProto(__aeabi_lasr) \
++      SymI_NeedsProto(__aeabi_lcmp) \
++      SymI_NeedsProto(__aeabi_ldivmod) \
++      SymI_NeedsProto(__aeabi_llsl) \
++      SymI_NeedsProto(__aeabi_llsr) \
++      SymI_NeedsProto(__aeabi_lmul) \
++      SymI_NeedsProto(__aeabi_ui2d) \
++      SymI_NeedsProto(__aeabi_ui2f) \
++      SymI_NeedsProto(__aeabi_uidiv) \
++      SymI_NeedsProto(__aeabi_uidivmod) \
++      SymI_NeedsProto(__aeabi_ul2d) \
++      SymI_NeedsProto(__aeabi_ul2f) \
++      SymI_NeedsProto(__aeabi_ulcmp) \
++      SymI_NeedsProto(__aeabi_uldivmod)
++
+ #elif defined(__GNUC__) && SIZEOF_VOID_P == 8
+ #define RTS_LIBGCC_SYMBOLS                             \
+       SymI_NeedsProto(__udivti3)                       \
+-      SymI_NeedsProto(__umodti3)
++      SymI_NeedsProto(__umodti3)                       \
++      /* for aarch64                                 */\
++      SymI_NeedsProto(__netf2)                         \
++      SymI_NeedsProto(__addtf3)                        \
++      SymI_NeedsProto(__subtf3)                        \
++      SymI_NeedsProto(__multf3)                        \
++      SymI_NeedsProto(__extenddftf2)                   \
++      SymI_NeedsProto(__fixtfsi)                       \
++      SymI_NeedsProto(__fixunstfsi)                    \
++      SymI_NeedsProto(__floatsitf)                     \
++      SymI_NeedsProto(__floatunsitf)
+ #else
+ #define RTS_LIBGCC_SYMBOLS
+ #endif
++#if !defined(mingw32_HOST_OS)
++#define RTS_SSP_SYMBOLS                                \
++      SymI_NeedsProto(__stack_chk_guard)               \
++      SymI_NeedsProto(__stack_chk_fail)
++#else
++#define RTS_SSP_SYMBOLS
++#endif
++#if !defined(DYNAMIC) && !defined(mingw32_HOST_OS)
++// we need these for static musl builds. However when
++// linking shared objects (DLLs) this will fail, hence
++// we do not include them when building with -DDYNAMIC
++#define RTS_LINKER_SYMBOLS                             \
++      SymI_NeedsProto(__fini_array_start)              \
++      SymI_NeedsProto(__fini_array_end)
++#else
++#define RTS_LINKER_SYMBOLS
++#endif
+
+ #if defined(darwin_HOST_OS) && defined(powerpc_HOST_ARCH)
+       // Symbols that don't have a leading underscore
+@@ -963,7 +1123,11 @@
+ #endif
+
+ /* entirely bogus claims about types of these symbols */
+-#define SymI_NeedsProto(vvv)  extern void vvv(void);
++/* to prevent a bit of define expansion, SymI_NeedsProto is a variadic
++ * macro.  And we'll concat vvv with the __VA_ARGS__. This prevents
++ * vvv from getting macro expanded.
++ */
++#define SymI_NeedsProto(vvv,...) extern void vvv ## __VA_ARGS__ (void);
+ #define SymI_NeedsDataProto(vvv)  extern StgWord vvv[];
+ #if defined(COMPILING_WINDOWS_DLL)
+ #define SymE_HasProto(vvv)    SymE_HasProto(vvv);
+@@ -990,6 +1154,8 @@ RTS_DARWIN_ONLY_SYMBOLS
+ RTS_OPENBSD_ONLY_SYMBOLS
+ RTS_LIBGCC_SYMBOLS
+ RTS_LIBFFI_SYMBOLS
++RTS_SSP_SYMBOLS
++RTS_LINKER_SYMBOLS
+ #undef SymI_NeedsProto
+ #undef SymI_NeedsDataProto
+ #undef SymI_HasProto
+@@ -1009,7 +1175,7 @@ RTS_LIBFFI_SYMBOLS
+ #define SymE_HasDataProto(vvv) \
+                     SymE_HasProto(vvv)
+
+-#define SymI_NeedsProto(vvv) SymI_HasProto(vvv)
++#define SymI_NeedsProto(vvv,...) SymI_HasProto(vvv ## __VA_ARGS__)
+ #define SymI_NeedsDataProto(vvv) SymI_HasDataProto(vvv)
+ #define SymE_NeedsProto(vvv) SymE_HasProto(vvv)
+ #define SymE_NeedsDataProto(vvv) SymE_HasDataProto(vvv)
+@@ -1030,6 +1196,8 @@ RTS_LIBFFI_SYMBOLS
+ #define SymI_HasProto_deprecated(vvv)   \
+    { #vvv, (void*)0xBAADF00D, true },
+
++void *RTS_DYNAMIC = NULL;
++
+ RtsSymbolVal rtsSyms[] = {
+       RTS_SYMBOLS
+       RTS_RET_SYMBOLS
+@@ -1040,11 +1208,14 @@ RtsSymbolVal rtsSyms[] = {
+       RTS_OPENBSD_ONLY_SYMBOLS
+       RTS_LIBGCC_SYMBOLS
+       RTS_LIBFFI_SYMBOLS
++      RTS_SSP_SYMBOLS
++      RTS_LINKER_SYMBOLS
+ #if defined(darwin_HOST_OS) && defined(i386_HOST_ARCH)
+       // dyld stub code contains references to this,
+       // but it should never be called because we treat
+       // lazy pointers as nonlazy.
+       { "dyld_stub_binding_helper", (void*)0xDEADBEEF, false },
+ #endif
++      { "_DYNAMIC", (void*)(&RTS_DYNAMIC), false },
+       { 0, 0, false } /* sentinel */
+ };
+diff --git a/rts/Sparks.c b/rts/Sparks.c
+index bd5e120863..4022691da2 100644
+--- a/rts/Sparks.c
++++ b/rts/Sparks.c
+@@ -182,6 +182,7 @@ pruneSparkQueue (Capability *cap)
+           traceEventSparkFizzle(cap);
+       } else {
+           info = spark->header.info;
++          load_load_barrier();
+           if (IS_FORWARDING_PTR(info)) {
+               tmp = (StgClosure*)UN_FORWARDING_PTR(info);
+               /* if valuable work: shift inside the pool */
+diff --git a/rts/StgMiscClosures.cmm b/rts/StgMiscClosures.cmm
+index e645442033..b368bdad2e 100644
+--- a/rts/StgMiscClosures.cmm
++++ b/rts/StgMiscClosures.cmm
+@@ -292,12 +292,14 @@ INFO_TABLE(stg_BLACKHOLE,1,0,BLACKHOLE,"BLACKHOLE","BLACKHOLE")
+     TICK_ENT_DYN_IND(); /* tick */
+
+ retry:
++    prim_read_barrier;
+     p = StgInd_indirectee(node);
+     if (GETTAG(p) != 0) {
+         return (p);
+     }
+
+     info = StgHeader_info(p);
++    prim_read_barrier;
+     if (info == stg_IND_info) {
+         // This could happen, if e.g. we got a BLOCKING_QUEUE that has
+         // just been replaced with an IND by another thread in
+@@ -313,9 +315,11 @@ retry:
+         ("ptr" msg) = ccall allocate(MyCapability() "ptr",
+                                      BYTES_TO_WDS(SIZEOF_MessageBlackHole));
+
+-        SET_HDR(msg, stg_MSG_BLACKHOLE_info, CCS_SYSTEM);
+         MessageBlackHole_tso(msg) = CurrentTSO;
+         MessageBlackHole_bh(msg) = node;
++        SET_HDR(msg, stg_MSG_BLACKHOLE_info, CCS_SYSTEM);
++        // messageBlackHole has appropriate memory barriers when this object is exposed.
++        // See Note [Heap memory barriers].
+
+         (r) = ccall messageBlackHole(MyCapability() "ptr", msg "ptr");
+
+diff --git a/rts/ThreadPaused.c b/rts/ThreadPaused.c
+index 3f7bddeb79..eca2bb7c72 100644
+--- a/rts/ThreadPaused.c
++++ b/rts/ThreadPaused.c
+@@ -195,6 +195,7 @@ threadPaused(Capability *cap, StgTSO *tso)
+     const StgRetInfoTable *info;
+     const StgInfoTable *bh_info;
+     const StgInfoTable *cur_bh_info USED_IF_THREADS;
++    const StgInfoTable *frame_info;
+     StgClosure *bh;
+     StgPtr stack_end;
+     uint32_t words_to_squeeze = 0;
+@@ -218,6 +219,8 @@ threadPaused(Capability *cap, StgTSO *tso)
+
+     frame = (StgClosure *)tso->stackobj->sp;
+
++    // N.B. We know that the TSO is owned by the current capability so no
++    // memory barriers are needed here.
+     while ((P_)frame < stack_end) {
+         info = get_ret_itbl(frame);
+
+@@ -226,7 +229,8 @@ threadPaused(Capability *cap, StgTSO *tso)
+         case UPDATE_FRAME:
+
+             // If we've already marked this frame, then stop here.
+-            if (frame->header.info == (StgInfoTable *)&stg_marked_upd_frame_info) {
++            frame_info = frame->header.info;
++            if (frame_info == (StgInfoTable *)&stg_marked_upd_frame_info) {
+                 if (prev_was_update_frame) {
+                     words_to_squeeze += sizeofW(StgUpdateFrame);
+                     weight += weight_pending;
+diff --git a/rts/Threads.c b/rts/Threads.c
+index 78c5b6cc84..dc733d3dba 100644
+--- a/rts/Threads.c
++++ b/rts/Threads.c
+@@ -126,6 +126,8 @@ createThread(Capability *cap, W_ size)
+     ACQUIRE_LOCK(&sched_mutex);
+     tso->id = next_thread_id++;  // while we have the mutex
+     tso->global_link = g0->threads;
++    /* Mutations above need no memory barrier since this lock will provide
++     * a release barrier */
+     g0->threads = tso;
+     RELEASE_LOCK(&sched_mutex);
+
+@@ -257,8 +259,10 @@ tryWakeupThread (Capability *cap, StgTSO *tso)
+     {
+         MessageWakeup *msg;
+         msg = (MessageWakeup *)allocate(cap,sizeofW(MessageWakeup));
+-        SET_HDR(msg, &stg_MSG_TRY_WAKEUP_info, CCS_SYSTEM);
+         msg->tso = tso;
++        SET_HDR(msg, &stg_MSG_TRY_WAKEUP_info, CCS_SYSTEM);
++        // Ensure that writes constructing Message are committed before sending.
++        write_barrier();
+         sendMessage(cap, tso->cap, (Message*)msg);
+         debugTraceCap(DEBUG_sched, cap, "message: try wakeup thread %ld on cap %d",
+                       (W_)tso->id, tso->cap->no);
+@@ -363,6 +367,7 @@ wakeBlockingQueue(Capability *cap, StgBlockingQueue *bq)
+     for (msg = bq->queue; msg != (MessageBlackHole*)END_TSO_QUEUE;
+          msg = msg->link) {
+         i = msg->header.info;
++        load_load_barrier();
+         if (i != &stg_IND_info) {
+             ASSERT(i == &stg_MSG_BLACKHOLE_info);
+             tryWakeupThread(cap,msg->tso);
+@@ -398,15 +403,18 @@ checkBlockingQueues (Capability *cap, StgTSO *tso)
+     for (bq = tso->bq; bq != (StgBlockingQueue*)END_TSO_QUEUE; bq = next) {
+         next = bq->link;
+
+-        if (bq->header.info == &stg_IND_info) {
++        const StgInfoTable *bqinfo = bq->header.info;
++        load_load_barrier();  // XXX: Is this needed?
++        if (bqinfo == &stg_IND_info) {
+             // ToDo: could short it out right here, to avoid
+             // traversing this IND multiple times.
+             continue;
+         }
+
+         p = bq->bh;
+-
+-        if (p->header.info != &stg_BLACKHOLE_info ||
++        const StgInfoTable *pinfo = p->header.info;
++        load_load_barrier();
++        if (pinfo != &stg_BLACKHOLE_info ||
+             ((StgInd *)p)->indirectee != (StgClosure*)bq)
+         {
+             wakeBlockingQueue(cap,bq);
+@@ -430,6 +438,7 @@ updateThunk (Capability *cap, StgTSO *tso, StgClosure *thunk, StgClosure *val)
+     const StgInfoTable *i;
+
+     i = thunk->header.info;
++    load_load_barrier();
+     if (i != &stg_BLACKHOLE_info &&
+         i != &stg_CAF_BLACKHOLE_info &&
+         i != &__stg_EAGER_BLACKHOLE_info &&
+@@ -450,6 +459,7 @@ updateThunk (Capability *cap, StgTSO *tso, StgClosure *thunk, StgClosure *val)
+     }
+
+     i = v->header.info;
++    load_load_barrier();
+     if (i == &stg_TSO_info) {
+         checkBlockingQueues(cap, tso);
+         return;
+@@ -673,6 +683,8 @@ threadStackOverflow (Capability *cap, StgTSO *tso)
+         new_stack->sp -= chunk_words;
+     }
+
++    // No write barriers needed; all of the writes above are to structured
++    // owned by our capability.
+     tso->stackobj = new_stack;
+
+     // we're about to run it, better mark it dirty
+@@ -744,6 +756,7 @@ threadStackUnderflow (Capability *cap, StgTSO *tso)
+ bool performTryPutMVar(Capability *cap, StgMVar *mvar, StgClosure *value)
+ {
+     const StgInfoTable *info;
++    const StgInfoTable *qinfo;
+     StgMVarTSOQueue *q;
+     StgTSO *tso;
+
+@@ -768,8 +781,11 @@ loop:
+         unlockClosure((StgClosure*)mvar, &stg_MVAR_DIRTY_info);
+         return true;
+     }
+-    if (q->header.info == &stg_IND_info ||
+-        q->header.info == &stg_MSG_NULL_info) {
++
++    qinfo = q->header.info;
++    load_load_barrier();
++    if (qinfo == &stg_IND_info ||
++        qinfo == &stg_MSG_NULL_info) {
+         q = (StgMVarTSOQueue*)((StgInd*)q)->indirectee;
+         goto loop;
+     }
+diff --git a/rts/TopHandler.c b/rts/TopHandler.c
+index 8e868e6e92..dd8d6a7ab7 100644
+--- a/rts/TopHandler.c
++++ b/rts/TopHandler.c
+@@ -29,6 +29,7 @@ StgTSO *getTopHandlerThread(void) {
+     StgWeak *weak = (StgWeak*)deRefStablePtr(topHandlerPtr);
+     RELEASE_LOCK(&m);
+     const StgInfoTable *info = weak->header.info;
++    load_load_barrier();
+     if (info == &stg_WEAK_info) {
+         StgClosure *key = ((StgWeak*)weak)->key;
+
+diff --git a/rts/Updates.h b/rts/Updates.h
+index 1ba398bd35..1bd3e065af 100644
+--- a/rts/Updates.h
++++ b/rts/Updates.h
+@@ -39,10 +39,16 @@
+                  PROF_HDR_FIELDS(w_,ccs,p2)              \
+                  p_ updatee
+
+-
++/*
++ * Getting the memory barriers correct here is quite tricky. Essentially
++ * the write barrier ensures that any writes to the new indirectee are visible
++ * before we introduce the indirection.
++ * See Note [Heap memory barriers] in SMP.h.
++ */
+ #define updateWithIndirection(p1, p2, and_then) \
+     W_ bd;                                                      \
+                                                                 \
++    prim_write_barrier;                                         \
+     OVERWRITING_CLOSURE(p1);                                    \
+     StgInd_indirectee(p1) = p2;                                 \
+     prim_write_barrier;                                         \
+@@ -69,6 +75,8 @@ INLINE_HEADER void updateWithIndirection (Capability *cap,
+     ASSERT( (P_)p1 != (P_)p2 );
+     /* not necessarily true: ASSERT( !closure_IND(p1) ); */
+     /* occurs in RaiseAsync.c:raiseAsync() */
++    /* See Note [Heap memory barriers] in SMP.h */
++    write_barrier();
+     OVERWRITING_CLOSURE(p1);
+     ((StgInd *)p1)->indirectee = p2;
+     write_barrier();
+diff --git a/rts/Weak.c b/rts/Weak.c
+index a322d822af..ec998c214f 100644
+--- a/rts/Weak.c
++++ b/rts/Weak.c
+@@ -57,7 +57,9 @@ runAllCFinalizers(StgWeak *list)
+         // If there's no major GC between the time that the finalizer for the
+         // object from the oldest generation is manually called and shutdown
+         // we end up running the same finalizer twice. See #7170.
+-        if (w->header.info != &stg_DEAD_WEAK_info) {
++        const StgInfoTable *winfo = w->header.info;
++        load_load_barrier();
++        if (winfo != &stg_DEAD_WEAK_info) {
+             runCFinalizers((StgCFinalizerList *)w->cfinalizers);
+         }
+     }
+@@ -138,6 +140,7 @@ scheduleFinalizers(Capability *cap, StgWeak *list)
+     size = n + mutArrPtrsCardTableSize(n);
+     arr = (StgMutArrPtrs *)allocate(cap, sizeofW(StgMutArrPtrs) + size);
+     TICK_ALLOC_PRIM(sizeofW(StgMutArrPtrs), n, 0);
++    // No write barrier needed here; this array is only going to referred to by this core.
+     SET_HDR(arr, &stg_MUT_ARR_PTRS_FROZEN_CLEAN_info, CCS_SYSTEM);
+     arr->ptrs = n;
+     arr->size = size;
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index ede0482c6b..8e477c0425 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -626,7 +626,7 @@ mapObjectFileSection (int fd, Elf_Word offset, Elf_Word size,
+
+     pageOffset = roundDownToPage(offset);
+     pageSize = roundUpToPage(offset-pageOffset+size);
+-    p = mmapForLinker(pageSize, 0, fd, pageOffset);
++    p = mmapForLinker(pageSize, PROT_READ | PROT_WRITE | PROT_EXEC, 0, fd, pageOffset);
+     if (p == NULL) return NULL;
+     *mapped_size = pageSize;
+     *mapped_offset = pageOffset;
+@@ -688,7 +688,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+            * address might be out of range for sections that are mmaped.
+            */
+           alloc = SECTION_MMAP;
+-          start = mmap(NULL, size,
++          start = mmapForLinker(size,
+                        PROT_READ | PROT_WRITE | PROT_EXEC,
+                        MAP_ANON | MAP_PRIVATE,
+                        -1, 0);
+@@ -732,7 +732,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+           unsigned nstubs = numberOfStubsForSection(oc, i);
+           unsigned stub_space = STUB_SIZE * nstubs;
+
+-          void * mem = mmap(NULL, size+stub_space,
++          void * mem = mmapForLinker(size+stub_space,
+                             PROT_READ | PROT_WRITE | PROT_EXEC,
+                             MAP_ANON | MAP_PRIVATE,
+                             -1, 0);
+diff --git a/rts/linker/LoadArchive.c b/rts/linker/LoadArchive.c
+index 85eedb930d..bcc042f468 100644
+--- a/rts/linker/LoadArchive.c
++++ b/rts/linker/LoadArchive.c
+@@ -465,6 +465,7 @@ static HsInt loadArchive_ (pathchar *path)
+         /* TODO: Stop relying on file extensions to determine input formats.
+                  Instead try to match file headers. See Trac #13103.  */
+         isObject = (thisFileNameSize >= 2 && strncmp(fileName + thisFileNameSize - 2, ".o"  , 2) == 0)
++                || (thisFileNameSize >= 3 && strncmp(fileName + thisFileNameSize - 3, ".lo" , 3) == 0)
+                 || (thisFileNameSize >= 4 && strncmp(fileName + thisFileNameSize - 4, ".p_o", 4) == 0)
+                 || (thisFileNameSize >= 4 && strncmp(fileName + thisFileNameSize - 4, ".obj", 4) == 0);
+
+@@ -497,7 +498,7 @@ static HsInt loadArchive_ (pathchar *path)
+                                                 isThin);
+ #elif defined(darwin_HOST_OS) || defined(ios_HOST_OS)
+             if (RTS_LINKER_USE_MMAP)
+-                image = mmapForLinker(memberSize, MAP_ANONYMOUS, -1, 0);
++                image = mmapForLinker(memberSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS, -1, 0);
+             else {
+                 /* See loadObj() */
+                 misalignment = machoGetMisalignment(f);
+@@ -555,7 +556,7 @@ while reading filename from `%" PATH_FMT "'", path);
+             }
+             DEBUG_LOG("Found GNU-variant file index\n");
+ #if RTS_LINKER_USE_MMAP
+-            gnuFileIndex = mmapForLinker(memberSize + 1, MAP_ANONYMOUS, -1, 0);
++            gnuFileIndex = mmapForLinker(memberSize + 1, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS, -1, 0);
+ #else
+             gnuFileIndex = stgMallocBytes(memberSize + 1, "loadArchive(image)");
+ #endif
+diff --git a/rts/linker/M32Alloc.c b/rts/linker/M32Alloc.c
+index 52b182e54d..3016704bd2 100644
+--- a/rts/linker/M32Alloc.c
++++ b/rts/linker/M32Alloc.c
+@@ -157,7 +157,7 @@ m32_allocator_init(void)
+    // Preallocate the initial M32_MAX_PAGES to ensure that they don't
+    // fragment the memory.
+    size_t pgsz = getPageSize();
+-   char* bigchunk = mmapForLinker(pgsz * M32_MAX_PAGES,MAP_ANONYMOUS,-1,0);
++   char* bigchunk = mmapForLinker(pgsz * M32_MAX_PAGES, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS,-1,0);
+    if (bigchunk == NULL)
+        barf("m32_allocator_init: Failed to map");
+
+@@ -249,7 +249,7 @@ m32_alloc(size_t size, size_t alignment)
+
+    if (m32_is_large_object(size,alignment)) {
+        // large object
+-       return mmapForLinker(size,MAP_ANONYMOUS,-1,0);
++       return mmapForLinker(size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS,-1,0);
+    }
+
+    // small object
+@@ -297,7 +297,7 @@ m32_alloc(size_t size, size_t alignment)
+    }
+
+    // Allocate a new page
+-   void * addr = mmapForLinker(pgsz,MAP_ANONYMOUS,-1,0);
++   void * addr = mmapForLinker(pgsz, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS,-1,0);
+    if (addr == NULL) {
+       return NULL;
+    }
+diff --git a/rts/linker/MachO.c b/rts/linker/MachO.c
+index b6a14d142c..8a48425637 100644
+--- a/rts/linker/MachO.c
++++ b/rts/linker/MachO.c
+@@ -588,7 +588,7 @@ makeGot(ObjectCode * oc) {
+
+     if(got_slots > 0) {
+         oc->info->got_size =  got_slots * sizeof(void*);
+-        oc->info->got_start = mmap(NULL, oc->info->got_size,
++        oc->info->got_start = mmapForLinker(oc->info->got_size,
+                                    PROT_READ | PROT_WRITE,
+                                    MAP_ANON | MAP_PRIVATE,
+                                    -1, 0);
+@@ -1419,7 +1419,7 @@ ocGetNames_MachO(ObjectCode* oc)
+             case S_ZEROFILL:
+             case S_GB_ZEROFILL: {
+                 // See Note [mmap r+w+x]
+-                void * mem = mmap(NULL, section->size,
++                void * mem = mmapForLinker(section->size,
+                                   PROT_READ | PROT_WRITE,
+                                   MAP_ANON | MAP_PRIVATE,
+                                   -1, 0);
+@@ -1472,7 +1472,7 @@ ocGetNames_MachO(ObjectCode* oc)
+                                      * instructions (ldr, br) for each relocation.
+                                      */ 16 * n_ext_sec_sym;
+                 // See Note [mmap r+w+x]
+-                void * mem = mmap(NULL, section->size+stub_space,
++                void * mem = mmapForLinker(section->size+stub_space,
+                                   PROT_READ | PROT_WRITE,
+                                   MAP_ANON | MAP_PRIVATE,
+                                   -1, 0);
+@@ -1502,7 +1502,7 @@ ocGetNames_MachO(ObjectCode* oc)
+             case S_GB_ZEROFILL: {
+                 char * zeroFillArea;
+                 if (RTS_LINKER_USE_MMAP) {
+-                    zeroFillArea = mmapForLinker(section->size, MAP_ANONYMOUS,
++                    zeroFillArea = mmapForLinker(section->size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS,
+                                                  -1, 0);
+                     if (zeroFillArea == NULL) return 0;
+                     memset(zeroFillArea, 0, section->size);
+diff --git a/rts/linker/SymbolExtras.c b/rts/linker/SymbolExtras.c
+index 486fa4a572..f4485bba31 100644
+--- a/rts/linker/SymbolExtras.c
++++ b/rts/linker/SymbolExtras.c
+@@ -52,6 +52,7 @@ int ocAllocateSymbolExtras( ObjectCode* oc, int count, int first )
+
+       /* Keep image and symbol_extras contiguous */
+       void *new = mmapForLinker(n + (sizeof(SymbolExtra) * count),
++                                PROT_READ | PROT_WRITE | PROT_EXEC,
+                                 MAP_ANONYMOUS, -1, 0);
+       if (new) {
+           memcpy(new, oc->image, oc->fileSize);
+diff --git a/rts/linker/elf_got.c b/rts/linker/elf_got.c
+index 0395d169df..5846a94c31 100644
+--- a/rts/linker/elf_got.c
++++ b/rts/linker/elf_got.c
+@@ -44,7 +44,7 @@ makeGot(ObjectCode * oc) {
+     }
+     if(got_slots > 0) {
+         oc->info->got_size = got_slots * sizeof(void *);
+-         void * mem = mmap(NULL, oc->info->got_size,
++         void * mem = mmapForLinker(oc->info->got_size,
+                            PROT_READ | PROT_WRITE,
+                            MAP_ANON | MAP_PRIVATE,
+                            -1, 0);
+diff --git a/rts/linker/elf_reloc_aarch64.c b/rts/linker/elf_reloc_aarch64.c
+index c50ef04080..a826c58170 100644
+--- a/rts/linker/elf_reloc_aarch64.c
++++ b/rts/linker/elf_reloc_aarch64.c
+@@ -1,5 +1,6 @@
+ #include <stdlib.h>
+ #include <assert.h>
++#include <inttypes.h>
+ #include "elf_compat.h"
+ #include "elf_reloc_aarch64.h"
+ #include "util.h"
+@@ -60,6 +61,9 @@ encodeAddendAarch64(Section * section, Elf_Rel * rel, int64_t addend) {
+     /* instructions are 32bit! */
+     addr_t P = (addr_t)((uint8_t*)section->start + rel->r_offset);
+     int exp_shift = -1;
++
++    bool ret = EXIT_SUCCESS;
++
+     switch(ELF64_R_TYPE(rel->r_info)) {
+         /* static misc relocations */
+         /* static data relocations */
+@@ -90,12 +94,21 @@ encodeAddendAarch64(Section * section, Elf_Rel * rel, int64_t addend) {
+             // ...              hi            ] [     Rd     ]
+             //
+             // imm64 = SignExtend(hi:lo:0x000,64)
+-            assert(isInt64(32, addend));
+-            assert((addend & 0xfff) == 0); /* page relative */
+-
+-            *(inst_t *)P = (*(inst_t *)P & 0x9f00001f)
+-                           | (inst_t) (((uint64_t) addend << 17) & 0x60000000)
+-                           | (inst_t) (((uint64_t) addend >> 9) & 0x00ffffe0);
++            // Range is 21 bits + the 12 page relative bits
++            // known to be 0. -2^32 <= X < 2^32
++            if(!isInt64(21+12, addend)) {
++                IF_DEBUG(linker, debugBelch(
++                    "R_AARCH64_ADR_PREL_PG_HI21 addend out of range: 0x%" PRIx64 "\n",
++                    addend));
++                ret = EXIT_FAILURE;
++            } else {
++                assert(isInt64(21+12, addend));
++                assert((addend & 0xfff) == 0); /* page relative */
++
++                *(inst_t *)P = (*(inst_t *)P & 0x9f00001f)
++                            | (inst_t) (((uint64_t) addend << 17) & 0x60000000)
++                            | (inst_t) (((uint64_t) addend >> 9) & 0x00ffffe0);
++            }
+             break;
+         }
+         /* - control flow relocations */
+@@ -103,13 +116,13 @@ encodeAddendAarch64(Section * section, Elf_Rel * rel, int64_t addend) {
+         case COMPAT_R_AARCH64_CALL26: { /* relocate bl ... */
+             assert(isInt64(26+2, addend)); /* X in range */
+             *(inst_t *)P = (*(inst_t *)P & 0xfc000000) /* keep upper 6 (32-6)
+- * bits */
++                                                        * bits */
+                          | ((uint32_t)(addend >> 2) & 0x03ffffff);
+             break;
+         }
+         case COMPAT_R_AARCH64_ADR_GOT_PAGE: {
+-
+-            assert(isInt64(32, addend)); /* X in range */
++            /* range is -2^32 <= X < 2^32 */
++            assert(isInt64(21+12, addend)); /* X in range */
+             assert((addend & 0xfff) == 0); /* page relative */
+
+             *(inst_t *)P = (*(inst_t *)P & 0x9f00001f)
+@@ -159,7 +172,7 @@ encodeAddendAarch64(Section * section, Elf_Rel * rel, int64_t addend) {
+         default:
+             abort();
+     }
+-    return EXIT_SUCCESS;
++    return ret;
+ }
+
+
+@@ -293,7 +306,19 @@ relocateObjectCodeAarch64(ObjectCode * oc) {
+             int64_t addend = decodeAddendAarch64(targetSection, rel);
+
+             addend = computeAddend(targetSection, rel, symbol, addend);
+-            encodeAddendAarch64(targetSection, rel, addend);
++            IF_DEBUG(linker, debugBelch("REL: relocating symbol: %s (%s)\n",
++                                        symbol->name,
++                                        OC_INFORMATIVE_FILENAME(oc)));
++            if(encodeAddendAarch64(targetSection, rel, addend)) {
++                sysErrorBelch("Failed to relocate symbol: %s (%s) "
++                              "at %p in %p with addend 0x%" PRIx64 "\n",
++                    symbol->name,
++                    OC_INFORMATIVE_FILENAME(oc),
++                    symbol->addr,
++                    (addr_t)((uint8_t*)targetSection->start + rel->r_offset),
++                    addend);
++                stg_exit(EXIT_FAILURE);
++            }
+         }
+     }
+     for(ElfRelocationATable *relaTab = oc->info->relaTable;
+@@ -320,7 +345,19 @@ relocateObjectCodeAarch64(ObjectCode * oc) {
+
+             addend = computeAddend(targetSection, (Elf_Rel*)rel,
+                                    symbol, addend);
+-            encodeAddendAarch64(targetSection, (Elf_Rel*)rel, addend);
++            IF_DEBUG(linker, debugBelch("RELA: relocating symbol: %s (%s)\n",
++                                        symbol->name,
++                                        OC_INFORMATIVE_FILENAME(oc)));
++            if(encodeAddendAarch64(targetSection, (Elf_Rel*)rel, addend)) {
++                sysErrorBelch("Failed to relocate symbol: %s (%s) "
++                              "at %p in %p with addend 0x%" PRIx64 "\n",
++                    symbol->name,
++                    OC_INFORMATIVE_FILENAME(oc),
++                    symbol->addr,
++                    (addr_t)((uint8_t*)targetSection->start + rel->r_offset),
++                    addend);
++                stg_exit(EXIT_FAILURE);
++            }
+         }
+     }
+     return EXIT_SUCCESS;
+diff --git a/rts/sm/CNF.c b/rts/sm/CNF.c
+index 6bc58cde75..02d354fa4c 100644
+--- a/rts/sm/CNF.c
++++ b/rts/sm/CNF.c
+@@ -542,8 +542,9 @@ insertCompactHash (Capability *cap,
+                    StgClosure *p, StgClosure *to)
+ {
+     insertHashTable(str->hash, (StgWord)p, (const void*)to);
+-    if (str->header.info == &stg_COMPACT_NFDATA_CLEAN_info) {
+-        str->header.info = &stg_COMPACT_NFDATA_DIRTY_info;
++    const StgInfoTable *strinfo = str->header.info;
++    if (strinfo == &stg_COMPACT_NFDATA_CLEAN_info) {
++        strinfo = &stg_COMPACT_NFDATA_DIRTY_info;
+         recordClosureMutated(cap, (StgClosure*)str);
+     }
+ }
+diff --git a/rts/sm/Evac.c b/rts/sm/Evac.c
+index 289031945d..f080221e28 100644
+--- a/rts/sm/Evac.c
++++ b/rts/sm/Evac.c
+@@ -131,7 +131,7 @@ copy_tag(StgClosure **p, const StgInfoTable *info,
+ #else
+     src->header.info = (const StgInfoTable *)MK_FORWARDING_PTR(to);
+     *p = TAG_CLOSURE(tag,(StgClosure*)to);
+-#endif
++#endif  /* defined(PARALLEL_GC) */
+
+ #if defined(PROFILING)
+     // We store the size of the just evacuated object in the LDV word so that
+@@ -194,7 +194,7 @@ spin:
+         if (info == (W_)&stg_WHITEHOLE_info) {
+ #if defined(PROF_SPIN)
+             whitehole_gc_spin++;
+-#endif
++#endif /* PROF_SPIN */
+             busy_wait_nop();
+             goto spin;
+         }
+@@ -205,7 +205,7 @@ spin:
+     }
+ #else
+     info = (W_)src->header.info;
+-#endif
++#endif /* PARALLEL_GC */
+
+     to = alloc_for_copy(size_to_reserve, gen_no);
+
+@@ -216,8 +216,8 @@ spin:
+     }
+
+     write_barrier();
+-    src->header.info = (const StgInfoTable*)MK_FORWARDING_PTR(to);
+     *p = (StgClosure *)to;
++    src->header.info = (const StgInfoTable*)MK_FORWARDING_PTR(to);
+
+ #if defined(PROFILING)
+     // We store the size of the just evacuated object in the LDV word so that
+@@ -1099,6 +1099,7 @@ selector_chain:
+             //     need the write-barrier stuff.
+             //   - undo the chain we've built to point to p.
+             SET_INFO((StgClosure *)p, (const StgInfoTable *)info_ptr);
++            write_barrier();
+             *q = (StgClosure *)p;
+             if (evac) evacuate(q);
+             unchain_thunk_selectors(prev_thunk_selector, (StgClosure *)p);
+@@ -1109,7 +1110,7 @@ selector_chain:
+     // Save the real info pointer (NOTE: not the same as get_itbl()).
+     info_ptr = (StgWord)p->header.info;
+     SET_INFO((StgClosure *)p,&stg_WHITEHOLE_info);
+-#endif
++#endif /* THREADED_RTS */
+
+     field = INFO_PTR_TO_STRUCT((StgInfoTable *)info_ptr)->layout.selector_offset;
+
+@@ -1165,6 +1166,7 @@ selector_loop:
+                   SET_INFO((StgClosure*)p, (StgInfoTable *)info_ptr);
+                   OVERWRITING_CLOSURE((StgClosure*)p);
+                   SET_INFO((StgClosure*)p, &stg_WHITEHOLE_info);
++                  write_barrier();
+               }
+ #endif
+
+diff --git a/rts/sm/GC.c b/rts/sm/GC.c
+index 90857abe38..09a8f411fe 100644
+--- a/rts/sm/GC.c
++++ b/rts/sm/GC.c
+@@ -1092,6 +1092,8 @@ loop:
+
+     // scavenge_loop() only exits when there's no work to do
+
++    // This atomic decrement also serves as a full barrier to ensure that any
++    // writes we made during scavenging are visible to other threads.
+ #if defined(DEBUG)
+     r = dec_running();
+ #else
+diff --git a/rts/sm/GCAux.c b/rts/sm/GCAux.c
+index 23ed3f0622..a1a2c79c0a 100644
+--- a/rts/sm/GCAux.c
++++ b/rts/sm/GCAux.c
+@@ -83,6 +83,7 @@ isAlive(StgClosure *p)
+     }
+
+     info = INFO_PTR_TO_STRUCT(info);
++    load_load_barrier();
+
+     switch (info->type) {
+
+diff --git a/rts/sm/MarkWeak.c b/rts/sm/MarkWeak.c
+index 88037f6a34..8ed499e9b3 100644
+--- a/rts/sm/MarkWeak.c
++++ b/rts/sm/MarkWeak.c
+@@ -242,16 +242,22 @@ static bool tidyWeakList(generation *gen)
+     last_w = &gen->old_weak_ptr_list;
+     for (w = gen->old_weak_ptr_list; w != NULL; w = next_w) {
+
++        info = w->header.info;
++        /* N.B. This function is executed only during the serial part of GC
++         * so consequently there is no potential for data races and therefore
++         * no need for memory barriers.
++         */
++
+         /* There might be a DEAD_WEAK on the list if finalizeWeak# was
+          * called on a live weak pointer object.  Just remove it.
+          */
+-        if (w->header.info == &stg_DEAD_WEAK_info) {
++        if (info == &stg_DEAD_WEAK_info) {
+             next_w = w->link;
+             *last_w = next_w;
+             continue;
+         }
+
+-        info = get_itbl((StgClosure *)w);
++        info = INFO_PTR_TO_STRUCT(info);
+         switch (info->type) {
+
+         case WEAK:
+diff --git a/rts/sm/Sanity.c b/rts/sm/Sanity.c
+index 748f2f45b0..40cbb42db7 100644
+--- a/rts/sm/Sanity.c
++++ b/rts/sm/Sanity.c
+@@ -233,6 +233,7 @@ checkClosure( const StgClosure* p )
+     p = UNTAG_CONST_CLOSURE(p);
+
+     info = p->header.info;
++    load_load_barrier();
+
+     if (IS_FORWARDING_PTR(info)) {
+         barf("checkClosure: found EVACUATED closure %d", info->type);
+@@ -243,6 +244,7 @@ checkClosure( const StgClosure* p )
+ #endif
+
+     info = INFO_PTR_TO_STRUCT(info);
++    load_load_barrier();
+
+     switch (info->type) {
+
+@@ -564,6 +566,7 @@ checkTSO(StgTSO *tso)
+
+     next = tso->_link;
+     info = (const StgInfoTable*) tso->_link->header.info;
++    load_load_barrier();
+
+     ASSERT(next == END_TSO_QUEUE ||
+            info == &stg_MVAR_TSO_QUEUE_info ||
+diff --git a/rts/sm/Scav.c b/rts/sm/Scav.c
+index 39374c057f..45fe0d0c53 100644
+--- a/rts/sm/Scav.c
++++ b/rts/sm/Scav.c
+@@ -394,7 +394,7 @@ scavenge_block (bdescr *bd)
+   // time around the loop.
+   while (p < bd->free || (bd == ws->todo_bd && p < ws->todo_free)) {
+
+-      ASSERT(bd->link == NULL);
++    ASSERT(bd->link == NULL);
+     ASSERT(LOOKS_LIKE_CLOSURE_PTR(p));
+     info = get_itbl((StgClosure *)p);
+
+@@ -1543,6 +1543,7 @@ scavenge_mutable_list(bdescr *bd, generation *gen)
+             ASSERT(LOOKS_LIKE_CLOSURE_PTR(p));
+
+ #if defined(DEBUG)
++            const StgInfoTable *pinfo;
+             switch (get_itbl((StgClosure *)p)->type) {
+             case MUT_VAR_CLEAN:
+                 // can happen due to concurrent writeMutVars
+@@ -1562,9 +1563,10 @@ scavenge_mutable_list(bdescr *bd, generation *gen)
+             case TREC_CHUNK:
+                 mutlist_TREC_CHUNK++; break;
+             case MUT_PRIM:
+-                if (((StgClosure*)p)->header.info == &stg_TVAR_WATCH_QUEUE_info)
++                pinfo = ((StgClosure*)p)->header.info;
++                if (pinfo == &stg_TVAR_WATCH_QUEUE_info)
+                     mutlist_TVAR_WATCH_QUEUE++;
+-                else if (((StgClosure*)p)->header.info == &stg_TREC_HEADER_info)
++                else if (pinfo == &stg_TREC_HEADER_info)
+                     mutlist_TREC_HEADER++;
+                 else
+                     mutlist_OTHERS++;
+diff --git a/rts/sm/Storage.c b/rts/sm/Storage.c
+index 52dab73709..5edd4fdcfd 100644
+--- a/rts/sm/Storage.c
++++ b/rts/sm/Storage.c
+@@ -407,8 +407,10 @@ lockCAF (StgRegTable *reg, StgIndStatic *caf)
+
+     // Allocate the blackhole indirection closure
+     bh = (StgInd *)allocate(cap, sizeofW(*bh));
+-    SET_HDR(bh, &stg_CAF_BLACKHOLE_info, caf->header.prof.ccs);
+     bh->indirectee = (StgClosure *)cap->r.rCurrentTSO;
++    SET_HDR(bh, &stg_CAF_BLACKHOLE_info, caf->header.prof.ccs);
++    // Ensure that above writes are visible before we introduce reference as CAF indirectee.
++    write_barrier();
+
+     caf->indirectee = (StgClosure *)bh;
+     write_barrier();
+@@ -1081,6 +1083,8 @@ void
+ dirty_MUT_VAR(StgRegTable *reg, StgClosure *p)
+ {
+     Capability *cap = regTableToCapability(reg);
++    // No barrier required here as no other heap object fields are read. See
++    // note [Heap memory barriers] in SMP.h.
+     if (p->header.info == &stg_MUT_VAR_CLEAN_info) {
+         p->header.info = &stg_MUT_VAR_DIRTY_info;
+         recordClosureMutated(cap,p);
+@@ -1090,6 +1094,8 @@ dirty_MUT_VAR(StgRegTable *reg, StgClosure *p)
+ void
+ dirty_TVAR(Capability *cap, StgTVar *p)
+ {
++    // No barrier required here as no other heap object fields are read. See
++    // note [Heap memory barriers] in SMP.h.
+     if (p->header.info == &stg_TVAR_CLEAN_info) {
+         p->header.info = &stg_TVAR_DIRTY_info;
+         recordClosureMutated(cap,(StgClosure*)p);

@@ -1,0 +1,63 @@
+diff --git a/compiler/llvmGen/Llvm/PpLlvm.hs b/compiler/llvmGen/Llvm/PpLlvm.hs
+index b350ab408d..2585326560 100644
+--- a/compiler/llvmGen/Llvm/PpLlvm.hs
++++ b/compiler/llvmGen/Llvm/PpLlvm.hs
+@@ -149,11 +149,12 @@ ppLlvmFunctionHeader (LlvmFunctionDecl n l c r varg p a) args
+         align = case a of
+                      Just a' -> text " align " <> ppr a'
+                      Nothing -> empty
++        bind = text " nonlazybind "
+         args' = map (\((ty,p),n) -> ppr ty <+> ppSpaceJoin p <+> char '%'
+                                     <> ftext n)
+                     (zip p args)
+     in ppr l <+> ppr c <+> ppr r <+> char '@' <> ftext n <> lparen <>
+-        (hsep $ punctuate comma args') <> ptext varg' <> rparen <> align
++        (hsep $ punctuate comma args') <> ptext varg' <> rparen <> bind <> align
+
+ -- | Print out a list of function declaration.
+ ppLlvmFunctionDecls :: LlvmFunctionDecls -> SDoc
+diff --git a/compiler/llvmGen/Llvm/Types.hs b/compiler/llvmGen/Llvm/Types.hs
+index bc7bbaab1b..882040897e 100644
+--- a/compiler/llvmGen/Llvm/Types.hs
++++ b/compiler/llvmGen/Llvm/Types.hs
+@@ -555,6 +555,10 @@ data LlvmFuncAttr
+   -- | This attribute disables prologue / epilogue emission for the function.
+   -- This can have very system-specific consequences.
+   | Naked
++  -- | This attribute suppresses lazy symbol binding for the function. This
++  -- may make calls to the function faster, at the cost of extra program startup
++  -- time if the function is not called during program startup.
++  | NonLazyBind
+   deriving (Eq)
+
+ instance Outputable LlvmFuncAttr where
+@@ -571,6 +575,7 @@ instance Outputable LlvmFuncAttr where
+   ppr NoRedZone          = text "noredzone"
+   ppr NoImplicitFloat    = text "noimplicitfloat"
+   ppr Naked              = text "naked"
++  ppr NonLazyBind        = text "nonlazybind"
+
+
+ -- | Different types to call a function.
+diff --git a/compiler/llvmGen/LlvmCodeGen/Base.hs b/compiler/llvmGen/LlvmCodeGen/Base.hs
+index 6e20da48c1..c1dc50d316 100644
+--- a/compiler/llvmGen/LlvmCodeGen/Base.hs
++++ b/compiler/llvmGen/LlvmCodeGen/Base.hs
+@@ -159,8 +159,16 @@ llvmFunArgs dflags live =
+           isSSE _             = False
+
+ -- | Llvm standard fun attributes
++--
++-- Haskell code needs to always be marked NonLazyBind.
++-- This prevents the compiler from forcing it through
++-- the plt.  This is an issue for haskell functions with
++-- info tables.  Other functions migth use the function
++-- pointer and do relative computations off of it, which
++-- in turn would point somewhere into the PLT instead of
++-- the info-table, *if* we did not pass NonLazyBind.
+ llvmStdFunAttrs :: [LlvmFuncAttr]
+-llvmStdFunAttrs = [NoUnwind]
++llvmStdFunAttrs = [NoUnwind, NonLazyBind]
+
+ -- | Convert a list of types to a list of function parameters
+ -- (each with no parameter attributes)
