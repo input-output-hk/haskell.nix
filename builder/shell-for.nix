@@ -111,11 +111,10 @@ let
     # Need to add hoogle to hsPkgs.
     # inherit (hsPkgs) hoogle;
   } // (
-       if args ? "hoogle"
-       then { hoogle = buildPackages.haskell-nix.tool compiler.nix-name "hoogle" args.hoogle; }
-       else {}
-    )
-  );
+    lib.optionalAttrs (args ? tools && args.tools ? hoogle) {
+      hoogle = buildPackages.haskell-nix.tool compiler.nix-name "hoogle" args.tools.hoogle;
+    }
+  ));
 
   mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools" "hoogle"];
 in
