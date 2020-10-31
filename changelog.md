@@ -1,8 +1,8 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## Oct 30, 2020
-* Passing `hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will
+## Oct 31, 2020
+* Passing `tools.hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will
   use the specified `hoogle` inside `shellFor`. This allows for materialization
   of `hoogle`.
 
