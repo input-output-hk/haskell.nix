@@ -1,6 +1,11 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Oct 31, 2020
+* Passing `tools.hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will
+  use the specified `hoogle` inside `shellFor`. This allows for materialization
+  of `hoogle`.
+
 ## Oct 28, 2020
 * Passing `compiler-nix-name` to project functions for `stack.yaml`
   based projects now overrides the compiler used (was ignored before).
