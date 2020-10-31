@@ -193,6 +193,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#oct-31-2020">Oct 31, 2020</a></li>
+    
+
     <li class="toctree-l2"><a href="#oct-28-2020">Oct 28, 2020</a></li>
     
 
@@ -293,6 +296,12 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="oct-31-2020">Oct 31, 2020<a class="headerlink" href="#oct-31-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Passing <code>tools.hoogle</code> to <code>shellFor</code> with a value suitable for <code>haskel-nix.tool</code> will
+  use the specified <code>hoogle</code> inside <code>shellFor</code>. This allows for materialization
+  of <code>hoogle</code>.</li>
+</ul>
 <h2 id="oct-28-2020">Oct 28, 2020<a class="headerlink" href="#oct-28-2020" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Passing <code>compiler-nix-name</code> to project functions for <code>stack.yaml</code>
