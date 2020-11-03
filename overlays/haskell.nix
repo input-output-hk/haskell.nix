@@ -505,6 +505,7 @@ final: prev: {
                   tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  projectFunction = haskell-nix: haskell-nix.cabalProject' args';
                 };
             in project;
 
@@ -542,10 +543,42 @@ final: prev: {
                 ) rawProject.hsPkgs
                 // {
                   # These are functions not packages
-                  inherit (rawProject.hsPkgs) shellFor makeConfigFiles ghcWithHoogle ghcWithPackages;
+                  inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
+                  shellFor = a: __trace "project.hsPkgs.shellFor has been deprecated in favour of project.shellFor"
+                    (rawProject.hsPkgs.shellFor a);
               });
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
+
+            # Add support for passing in `cross` argument
+            shellFor = shellArgs:
+              if shellArgs ? cross
+                then
+                  let
+                    otherArgs = builtins.removeAttrs shellArgs [ "cross" ];
+                    crossShells = builtins.map (pkgs:
+                      (rawProject.projectFunction pkgs.haskell-nix).shellFor (otherArgs // {
+                        buildInputs = [];
+                        nativeBuildInputs = [];
+                      }))
+                      (shellArgs.cross final.pkgsCross);
+                  in project.hsPkgs.shellFor (otherArgs // {
+                    buildInputs = shellArgs.buildInputs or []
+                      ++ final.lib.concatMap (s: s.buildInputs) crossShells;
+                    nativeBuildInputs = shellArgs.nativeBuildInputs or []
+                      ++ final.lib.concatMap (s: s.nativeBuildInputs
+                        ++ final.lib.optional (s.ghc.targetPrefix != "") (
+                          final.writeShellScriptBin "${s.ghc.targetPrefix}cabal" ''
+                            cabal \
+                              --with-ghc=${s.ghc.targetPrefix}ghc \
+                              --with-ghc-pkg=${s.ghc.targetPrefix}ghc-pkg \
+                              --with-hsc2hs=${s.ghc.targetPrefix}hsc2hs \
+                              $(builtin type -P "${s.ghc.targetPrefix}pkg-config" &> /dev/null && echo "--with-pkg-config=${s.ghc.targetPrefix}pkg-config") \
+                              "$@"
+                          ''
+                        )) crossShells;
+                  })
+                else rawProject.hsPkgs.shellFor shellArgs;
           });
 
         cabalProject =
@@ -554,10 +587,10 @@ final: prev: {
               args = { caller = "hackage-package"; } // args';
               p = cabalProject' args;
             in p.hsPkgs // {
-              inherit (p) plan-nix index-state tool tools roots projectCoverageReport;
+              inherit (p) plan-nix index-state tool tools roots projectCoverageReport shellFor;
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
+              shells.ghc = p.shellFor {};
             };
 
         stackProject' =
@@ -587,10 +620,10 @@ final: prev: {
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
-              inherit (p) stack-nix tool tools roots projectCoverageReport;
+              inherit (p) stack-nix tool tools roots projectCoverageReport shellFor;
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
+              shells.ghc = p.shellFor {};
             };
 
         # `project'` and `project` automatically select between `cabalProject`
