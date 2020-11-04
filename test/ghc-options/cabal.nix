@@ -21,7 +21,7 @@ in recurseIntoAttrs {
 
     buildCommand = ''
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.test-ghc-options.components.exes.test-ghc-options-exe}
+      cat ${haskellLib.check packages.test-ghc-options.components.exes.test-ghc-options-exe}/test-stdout
 
       touch $out
     '';

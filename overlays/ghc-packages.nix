@@ -129,7 +129,7 @@ in rec {
     (ghcName: value: builtins.mapAttrs
       (pkgName: srcAndNix: importSrcAndNix {
         inherit (srcAndNix) src;
-        nix = ghc-boot-packages-nix."${ghcName}" + "/${pkgName}.nix";
+        nix = ghc-boot-packages-nix.${ghcName} + "/${pkgName}.nix";
       }) value)
         ghc-boot-packages-src-and-nix;
 

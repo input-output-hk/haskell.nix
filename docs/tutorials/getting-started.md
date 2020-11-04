@@ -8,28 +8,20 @@ project and its dependencies into Nix code.
 Assuming you have [Nix](https://nixos.org/download.html) installed, you can
 start setting up your project.
 
-## Setting up the Cachix binary cache
+## Setting up the binary cache
 
-You can **avoid compiling GHC and nix-tools** by configuring
-[Cachix](https://cachix.org) so you can benefit from the binary cache built by
-CI:
+IMPORTANT: you *must* do this or you *will* build several copies of GHC!
 
-```bash
-$ nix-env -iA cachix -f https://cachix.org/api/v1/install
-installing 'cachix-0.3.8'
-building '/nix/store/bh176xhpk4wrjm56iahm86wf85jaz23v-user-environment.drv'...
-created 42 symlinks in user environment
+You can configure Nix to use our binary cache, which is pushed to by CI, so should contain the artifacts that you need.
 
-$ cachix use iohk
-Configured https://iohk.cachix.org binary cache in ~/.config/nix/nix.conf
-```
-
-Note: `haskell.nix` currently uses multiple CI providers to build derivations and store outputs. To improve your chances of getting a cache hit, you might want to add the following additional substituter to `~/.config/nix/nix.conf`:
+You need to add the following sections to `/etc/nix/nix.conf` or, if you are a trusted user, `~/.config/nix/nix.conf` (if you don't know what a "trusted user" is, you probably want to do the former).
 
 ```
 trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
 substituters = [...] https://hydra.iohk.io [...]
 ```
+
+This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../reference/troubleshooting#why-am-i-building-ghc).
 
 ## Scaffolding
 
@@ -59,8 +51,8 @@ Add `default.nix`:
     name = "haskell-nix-project";
     src = ./.;
   };
-  # For `cabal.project` based projects specify the GHC version to use.
-  compiler-nix-name = "ghc884"; # Not used for `stack.yaml` based projects.
+  # Specify the GHC version to use.
+  compiler-nix-name = "ghc8102"; # Not required for `stack.yaml` based projects.
 }
 ```
 

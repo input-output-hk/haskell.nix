@@ -31,6 +31,7 @@ let self =
 
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
+, hardeningDisable ? component.hardeningDisable
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
@@ -51,6 +52,9 @@ let self =
 , enableLibraryProfiling ? component.enableLibraryProfiling
 , enableExecutableProfiling ? component.enableExecutableProfiling
 , profilingDetail ? component.profilingDetail
+
+# Coverage
+, doCoverage ? component.doCoverage
 
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
@@ -87,12 +91,17 @@ let
       "$(cat ${configFiles}/configure-flags)"
     ] ++ commonConfigureFlags);
 
+  # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
+  pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;
+
   commonConfigureFlags = ([
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ] ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
+    ] ++ lib.optional (pkgConfigHasPrefix && pkgconfig != [])
+      "--with-pkg-config=${ghc.targetPrefix}pkg-config"
+      ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
     ( # CC
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
@@ -117,6 +126,7 @@ let
       (enableFeature enableExecutableProfiling "executable-profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
+      (enableFeature doCoverage "coverage")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
@@ -279,8 +289,6 @@ let
       runHook postBuild
     '';
 
-    checkPhase = "notice: Tests are only executed by building the .run sub-derivation of this component.";
-
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #
     # Note 2: if a package contains multiple libs (lib + sublibs) SETUP register will generate a
@@ -359,10 +367,17 @@ let
           fi
         done
       '')
+      + (lib.optionalString doCoverage ''
+        mkdir -p $out/share
+        cp -r dist/hpc $out/share
+        cp dist/setup-config $out/
+      '')
       }
       runHook postInstall
     '' + (lib.optionalString keepSource ''
       rm -rf dist
+    '') + (lib.optionalString (haskellLib.isTest componentId) ''
+      echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
 
     shellHook = ''
@@ -376,5 +391,8 @@ let
     inherit
       preBuild postBuild
       preInstall postInstall;
+  }
+  // lib.optionalAttrs (hardeningDisable != []) {
+    inherit hardeningDisable;
   });
 in drv; in self)

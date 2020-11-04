@@ -31,7 +31,6 @@ in { haskell-nix = prev.haskell-nix // {
     };
 
     hlint = {
-      modules = [ { reinstallableLibGhc = true; } ];
       pkg-def-extras = [
         (hackage: {
           packages = {

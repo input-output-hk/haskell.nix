@@ -117,7 +117,7 @@ in {
                 ++ final.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-reinstallable-lib-ghc.patch
-                ++ final.lib.optional (version == "8.6.5") ./patches/ghc/ghc-8.6.5-atomic-arm-arch.patch
+                ++ fromUntil "8.6.5" "8.9"   ./patches/ghc/ghc-8.6.5-atomic-arm-arch.patch
                 ++ final.lib.optional (version == "8.6.5") ./patches/ghc/MR3214-writable-rel-ro-data.patch
                 ++ final.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
                 ++ fromUntil "8.8.2" "8.9"                ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
@@ -135,6 +135,10 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
 
                 ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
+
+                ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
+
+                ++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
@@ -327,14 +331,12 @@ in {
 
                 ghc-patches = ghc-patches "8.8.4";
             };
-            ghc8101 =
-              let
-                buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
-              in final.callPackage ../compiler/ghc {
+            ghc8101 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = buildPkgs.haskell-nix.compiler.ghc884;
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
                 };
                 inherit sphinx installDeps;
 
@@ -349,14 +351,12 @@ in {
 
                 ghc-patches = ghc-patches "8.10.1";
             };
-            ghc8102 =
-              let
-                buildPkgs = import final.path ((import ../. {}).nixpkgsArgs // { system = final.stdenv.system; });
-              in final.callPackage ../compiler/ghc {
+            ghc8102 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = buildPkgs.haskell-nix.compiler.ghc884;
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
                 };
                 inherit sphinx installDeps;
 
@@ -370,6 +370,28 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.2";
+            };
+            # ghc 8.10.2 with patches needed by plutus
+            ghc8102-experimental = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102-experimental; };
+
+                bootPkgs = bootPkgs // {
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "8.10.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "02w8n085bw38vyp694j0lfk5wcnwkdaj7hhp0saj71x74533lmww";
+                };
+
+                ghc-patches = ghc-patches "8.10.2"
+                 ++ [ ./patches/ghc/core-field.patch ];
             };
         } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false) (
          if final.hostPlatform.isGhcjs

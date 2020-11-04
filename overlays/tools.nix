@@ -91,6 +91,9 @@ in { haskell-nix = prev.haskell-nix // {
     );
 
   # Tools not in hackage yet
+  # When adding custom tools here, consider adding them
+  # to the `tools` attribute defined in `build.nix` to make
+  # sure they are cached.
   custom-tools = {
     ghcide.object-code = args:
         (final.haskell-nix.cabalProject (args // {
@@ -121,5 +124,26 @@ in { haskell-nix = prev.haskell-nix // {
             })
           ];
         })).ghcide.components.exes.ghcide;
+
+    haskell-language-server."0.5.1" = args:
+      (final.haskell-nix.cabalProject ( args // {
+        name = "haskell-language-server";
+        src = final.fetchFromGitHub {
+          owner = "haskell";
+          repo = "haskell-language-server";
+          rev = "0.5.1";
+          sha256 = "17nzgpiacmrvwsy2fjx6a6pcpkncqcwfhaijvajm16jpdgni8mik";
+          fetchSubmodules = true;
+        };
+        sha256map = {
+          "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
+        };
+        # Plan issues with the benchmarks, can try removing later
+        configureArgs = "--disable-benchmarks";
+        modules = [{
+          # Tests don't pass for some reason, but this is a somewhat random revision.
+          packages.haskell-language-server.doCheck = false;
+        }];
+      })).haskell-language-server.components.exes.haskell-language-server;
   };
 }; }

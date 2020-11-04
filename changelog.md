@@ -1,6 +1,24 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Oct 31, 2020
+* Passing `tools.hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will
+  use the specified `hoogle` inside `shellFor`. This allows for materialization
+  of `hoogle`.
+
+## Oct 28, 2020
+* Passing `compiler-nix-name` to project functions for `stack.yaml`
+  based projects now overrides the compiler used (was ignored before).
+
+## Sep 8, 2020
+* Added the ability to generate coverage reports for packages and
+  projects.
+* Added the `doCoverage` module option that allows users to choose
+  packages to enable coverage for.
+* Added a `doCoverage` flag to the component builder that outputs HPC
+  information when coverage is enabled.
+* Added test for coverage.
+
 ## July 21, 2020
 * Removed `components.all`, use `symlinkJoin` on components.exes or
  `shellFor` if you need a shell.
