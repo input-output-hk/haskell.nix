@@ -59,8 +59,12 @@ let self =
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 
+# Prelinked ghci libraries; will make iserv faster; especially for static builds.
+, enableLibraryForGhci ? true
+
 # Debug
 , enableDebugRTS ? false
+, enableDWARF ? false
 
 # This will only work with a custom TSan way enabled custom compiler
 , enableTSanRTS ? false
@@ -134,6 +138,7 @@ let
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
       (enableFeature doCoverage "coverage")
+      (enableFeature enableLibraryForGhci "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
@@ -152,6 +157,7 @@ let
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
       ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
+      ++ lib.optional enableDWARF "--ghc-option=-g"
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
