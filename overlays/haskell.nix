@@ -165,8 +165,8 @@ final: prev: {
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
             in
               # Check that the GHC version of the selected compiler matches the one of the plan
-              assert (final.haskell-nix.compiler.${compiler-nix-name'}.version
-                   == final.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
+              assert (final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version
+                   == final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
