@@ -139,6 +139,7 @@ in {
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
 
                 ++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4") ./patches/ghc/Cabal-3886.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
@@ -399,6 +400,7 @@ in {
                 # with the current use of env and exact Deps.
                 (builtins.mapAttrs
                     (_: v: v // {
+                        useLLVM = false;
                         isHaskellNixBootCompiler = true;
                     })
           ({
@@ -608,6 +610,7 @@ in {
             v.overrideAttrs (drv: {
               postInstall = (drv.postInstall or "") + installDeps "";
             }) // {
+              useLLVM = false;
               isHaskellNixBootCompiler = true;
             }
           )

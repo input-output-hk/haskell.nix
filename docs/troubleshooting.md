@@ -84,3 +84,7 @@ So we only include Haskell sources if they appear in a `hs-source-dirs` somewher
 This is good practice anyway: if you do not include such files in `extra-source-files` then they will not be included in `cabal sdist`, which will cause problems if you ever upload your package to Hackage.
 But `haskell.nix` is very picky about it.
 
+### Why does my executable depend on GHC/GCC?
+
+You may want to set the `dontStrip` option to `false` (see https://github.com/input-output-hk/haskell.nix/issues/829).
+This is not set by default because it can occasionally cause breakage.
