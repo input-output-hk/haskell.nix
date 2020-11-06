@@ -218,7 +218,8 @@ final: prev: {
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
             in
-            final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
+            # This is very big, and cheap to build: use runCommandLocal to prefer building it locally
+            final.evalPackages.runCommandLocal dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
