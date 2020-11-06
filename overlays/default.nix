@@ -17,6 +17,7 @@ let
     emscripten = import ./emscripten.nix;
     nix-prefetch-git-minimal = import ./nix-prefetch-git-minimal.nix;
     gobject-introspection = import ./gobject-introspection.nix;
+    shims = import ./shims.nix;
     eval-on-current = import ./eval-on-current.nix;
     eval-on-build = import ./eval-on-build.nix;
   };
@@ -48,6 +49,7 @@ let
     emscripten
     nix-prefetch-git-minimal
     gobject-introspection
+    shims
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
