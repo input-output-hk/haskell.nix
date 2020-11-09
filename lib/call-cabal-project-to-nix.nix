@@ -157,11 +157,11 @@ let
   # restricted-eval mode (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
   # packages: block containing nix store paths of the fetched repos.
-  replaceSoureRepos = projectFile:
+  replaceSoureRepos = evalTime: projectFile:
     let
       blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
+      repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock evalTime cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
       sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
       otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
@@ -183,19 +183,21 @@ let
                  "${f}/" "./.source-repository-packages/${builtins.toString n}/"
               echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
             '')
-              (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
+              (pkgs.lib.lists.range 0 ((builtins.length sourceRepos) - 1))
               sourceRepos
           )
         );
     };
 
-  fixedProject =
+  makeFixedProject = buildTime:
     if rawCabalProject == null
       then {
         sourceRepos = [];
         makeFixedProjectFile = "";
       }
-      else replaceSoureRepos rawCabalProject;
+      else replaceSoureRepos buildTime rawCabalProject;
+  fixedProjectEval = makeFixedProject true;
+  fixedProjectBuild = makeFixedProject false;
 
   # The use of the actual GHC can cause significant problems:
   # * For hydra to assemble a list of jobs from `components.tests` it must
@@ -369,7 +371,7 @@ let
       )
     done
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
-    ${fixedProject.makeFixedProjectFile}
+    ${fixedProjectEval.makeFixedProjectFile}
     ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
       cp ${pkgs.evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
         cabal.project.freeze
@@ -439,5 +441,5 @@ in {
   projectNix = plan-nix;
   index-state = index-state-found;
   inherit src;
-  inherit (fixedProject) sourceRepos;
+  inherit (fixedProjectBuild) sourceRepos;
 }

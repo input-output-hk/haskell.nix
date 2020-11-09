@@ -76,11 +76,11 @@ let
   # Use pkgs.fetchgit if we have a sha256. Add comment like this
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
   # otherwise use __fetchGit.
-  fetchRepo = cabalProjectFileName: lookupSha256: repo:
+  fetchRepo = evalTime: cabalProjectFileName: lookupSha256: repo:
     builtins.map (subdir:
       let sha256 = repo."--sha256" or (lookupSha256 repo);
       in (if sha256 != null
-        then pkgs.evalPackages.fetchgit {
+        then (if evalTime then pkgs.evalPackages.fetchgit else pkgs.fetchgit) {
             url = repo.location;
             rev = repo.tag;
             inherit sha256;
@@ -99,7 +99,7 @@ let
         else ["."]);
 
   # Parse a source-repository-package and fetch it if has `type: git`
-  parseBlock = cabalProjectFileName: lookupSha256: block:
+  parseBlock = evalTime: cabalProjectFileName: lookupSha256: block:
     let
       x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
       attrs = parseBlockLines x.fst;
@@ -110,7 +110,7 @@ let
           otherText = "\nsource-repository-package\n" + block;
         }
         else {
-          sourceRepo = fetchRepo cabalProjectFileName lookupSha256 attrs;
+          sourceRepo = fetchRepo evalTime cabalProjectFileName lookupSha256 attrs;
           otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
         };
 
