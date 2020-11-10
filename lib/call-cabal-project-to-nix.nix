@@ -171,7 +171,7 @@ let
       makeFixedProjectFile = ''
         cp -f ${otherText} ./cabal.project
         chmod +w -R ./cabal.project
-        echo "packages:" >> ./cabal.project
+        printf "\npackages:" >> ./cabal.project
         mkdir -p ./.source-repository-packages
       '' +
         ( pkgs.lib.strings.concatStrings (
