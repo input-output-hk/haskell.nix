@@ -98,6 +98,10 @@ let
         rm -rf utils/pkg-cache/ghc
         cp -r ${ghc.generated} utils/pkg-cache/ghc
 
+        cp ${../overlays/patches/config.sub} ghc/libraries/integer-gmp/config.sub
+        cp ${../overlays/patches/config.sub} ghc/libraries/base/config.sub
+        cp ${../overlays/patches/config.sub} ghc/libraries/unix/config.sub
+
         patchShebangs .
         sed -i 's/gcc /cc /g' utils/makePackages.sh
         ./utils/makePackages.sh copy
