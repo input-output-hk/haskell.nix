@@ -56,7 +56,7 @@ lib.runTests {
   };
 
   testParseBlock1 = {
-    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -65,12 +65,17 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [testRepo];
+      sourceRepo = [{
+        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
+        subdir = ".";
+        url = "https://github.com/input-output-hk/haskell.nix.git";
+      }];
     };
   };
 
   testParseBlock2 = {
-    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -80,12 +85,17 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepo + "/dir")];
+      sourceRepo = [{
+        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
+        subdir = "dir";
+        url = "https://github.com/input-output-hk/haskell.nix.git";
+      }];
     };
   };
 
   testParseBlock3 = {
-    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -95,12 +105,22 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepo + "/dir1") (testRepo + "/dir2")];
+      sourceRepo = [{
+        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
+        subdir = "dir1";
+        url = "https://github.com/input-output-hk/haskell.nix.git";
+      } {
+        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
+        subdir = "dir2";
+        url = "https://github.com/input-output-hk/haskell.nix.git";
+      }];
     };
   };
 
   testParseBlock4 = {
-    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -112,7 +132,17 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepo + "/dir1") (testRepo + "/dir2")];
+      sourceRepo = [{
+        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
+        subdir = "dir1";
+        url = "https://github.com/input-output-hk/haskell.nix.git";
+      } {
+        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
+        subdir = "dir2";
+        url = "https://github.com/input-output-hk/haskell.nix.git";
+      }];
     };
   };
 }
