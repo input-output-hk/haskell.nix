@@ -171,6 +171,7 @@ let
       makeFixedProjectFile = ''
         cp -f ${otherText} ./cabal.project
         chmod +w -R ./cabal.project
+        # The newline here is important in case cabal.project does not have one at the end
         printf "\npackages:" >> ./cabal.project
         mkdir -p ./.source-repository-packages
       '' +
