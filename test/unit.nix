@@ -56,7 +56,7 @@ lib.runTests {
   };
 
   testParseBlock1 = {
-    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -70,7 +70,7 @@ lib.runTests {
   };
 
   testParseBlock2 = {
-    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -85,7 +85,7 @@ lib.runTests {
   };
 
   testParseBlock3 = {
-    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -100,7 +100,7 @@ lib.runTests {
   };
 
   testParseBlock4 = {
-    expr = __toJSON (haskellLib.parseBlock "cabal.project" (_: null) ''
+    expr = __toJSON (haskellLib.parseBlock false "cabal.project" (_: null) ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
