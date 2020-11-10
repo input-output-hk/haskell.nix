@@ -24,6 +24,12 @@ let
     };
     package.identifier.name = "nnn";
   };
+
+  testRepoData = {
+    url = "https://github.com/input-output-hk/haskell.nix.git";
+    ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+    sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
+  };
 in
 lib.runTests {
   # identity function for applyComponents
@@ -59,12 +65,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [{
-        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
-        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
-        subdir = ".";
-        url = "https://github.com/input-output-hk/haskell.nix.git";
-      }];
+      sourceRepo = [(testRepoData // { subdir = "."; })];
     };
   };
 
@@ -79,12 +80,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [{
-        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
-        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
-        subdir = "dir";
-        url = "https://github.com/input-output-hk/haskell.nix.git";
-      }];
+      sourceRepo = [(testRepoData // { subdir = "dir"; })];
     };
   };
 
@@ -99,17 +95,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [{
-        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
-        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
-        subdir = "dir1";
-        url = "https://github.com/input-output-hk/haskell.nix.git";
-      } {
-        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
-        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
-        subdir = "dir2";
-        url = "https://github.com/input-output-hk/haskell.nix.git";
-      }];
+      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
     };
   };
 
@@ -126,17 +112,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [{
-        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
-        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
-        subdir = "dir1";
-        url = "https://github.com/input-output-hk/haskell.nix.git";
-      } {
-        ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
-        sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
-        subdir = "dir2";
-        url = "https://github.com/input-output-hk/haskell.nix.git";
-      }];
+      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
     };
   };
 }
