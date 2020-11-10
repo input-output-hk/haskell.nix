@@ -157,17 +157,44 @@ let
   # restricted-eval mode (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
   # packages: block containing nix store paths of the fetched repos.
-  replaceSoureRepos = evalTime: projectFile:
+
+  hashPath = path:
+    builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
+      "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
+
+  replaceSoureRepos = projectFile:
     let
+      fetchRepo = fetchgit: repoData:
+        let
+          fetched =
+            if repoData.sha256 != null
+            then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
+            else
+              let drv = builtins.fetchGit { inherit (repoData) url ref; };
+              in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
+                (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
+                 drv);
+        in fetched + (if repoData.subdir == "." then "" else "/" + repoData.subdir);
+
       blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock evalTime cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
-      sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
+      repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
+      sourceRepoData = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
       otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
+
+      # we need the repository data twice:
+      # At eval time (below to build the fixed project file)
+      # plan generation
+      # And at built time  (passed out)
+      #
+      # At eval time we want to use fetchgit from evalPackages
+      # but at build time from pkgs proper
+      sourceReposBuild = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData ;
+      sourceReposEval = builtins.map (fetchRepo pkgs.fetchgit) sourceRepoData;
     in {
-      inherit sourceRepos;
+      sourceRepos = sourceReposBuild;
       makeFixedProjectFile = ''
         cp -f ${otherText} ./cabal.project
         chmod +w -R ./cabal.project
@@ -183,21 +210,16 @@ let
                  "${f}/" "./.source-repository-packages/${builtins.toString n}/"
               echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
             '')
-              (pkgs.lib.lists.range 0 ((builtins.length sourceRepos) - 1))
-              sourceRepos
+              (pkgs.lib.lists.range 0 ((builtins.length sourceReposEval) - 1))
+              sourceReposEval
           )
         );
     };
 
-  makeFixedProject = buildTime:
+  fixedProject =
     if rawCabalProject == null
-      then {
-        sourceRepos = [];
-        makeFixedProjectFile = "";
-      }
-      else replaceSoureRepos buildTime rawCabalProject;
-  fixedProjectEval = makeFixedProject true;
-  fixedProjectBuild = makeFixedProject false;
+      then { sourceRepos = []; makeFixedProjectFile = ""; }
+      else replaceSoureRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
   # * For hydra to assemble a list of jobs from `components.tests` it must
@@ -371,7 +393,7 @@ let
       )
     done
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
-    ${fixedProjectEval.makeFixedProjectFile}
+    ${fixedProject.makeFixedProjectFile}
     ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
       cp ${pkgs.evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
         cabal.project.freeze
@@ -441,5 +463,5 @@ in {
   projectNix = plan-nix;
   index-state = index-state-found;
   inherit src;
-  inherit (fixedProjectBuild) sourceRepos;
+  inherit (fixedProject) sourceRepos;
 }

@@ -69,37 +69,24 @@ let
             else __trace "Expected attribute but found `${s}`" { inherit name attrs; }
     ) { name = null; attrs = {}; } (stripComments (unindent blockLines))).attrs;
 
-  hashPath = path:
-    builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
-      "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
-
-  # Use pkgs.fetchgit if we have a sha256. Add comment like this
+  # Gets data for all the repositories to fetch
+  # A comment like
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
-  # otherwise use __fetchGit.
-  fetchRepo = evalTime: cabalProjectFileName: lookupSha256: repo:
+  # will cause use of pkgs.fetchgit, else __fetchGit.
+  extractRepoData = cabalProjectFileName: lookupSha256: repo:
     builtins.map (subdir:
-      let sha256 = repo."--sha256" or (lookupSha256 repo);
-      in (if sha256 != null
-        then (if evalTime then pkgs.evalPackages.fetchgit else pkgs.fetchgit) {
-            url = repo.location;
-            rev = repo.tag;
-            inherit sha256;
-          }
-        else
-          let drv = builtins.fetchGit {
-                url = repo.location;
-                ref = repo.tag;
-              };
-          in  __trace "WARNING: No sha256 found for source-repository-package ${repo.location} ${repo.tag} download may fail in restricted mode (hydra)"
-             (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
-              drv)
-      ) + (if subdir == "." then "" else "/" + subdir))
+      {
+        url = repo.location;
+        ref = repo.tag;
+        sha256 = repo."--sha256" or (lookupSha256 repo);
+        inherit subdir;
+      })
       (if repo ? subdir
         then pkgs.lib.filter (x: x != "") (pkgs.lib.splitString " " repo.subdir)
         else ["."]);
 
-  # Parse a source-repository-package and fetch it if has `type: git`
-  parseBlock = evalTime: cabalProjectFileName: lookupSha256: block:
+  # Parse a source-repository-package and return data of `type: git` repositories
+  parseBlock = cabalProjectFileName: lookupSha256: block:
     let
       x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
       attrs = parseBlockLines x.fst;
@@ -110,7 +97,7 @@ let
           otherText = "\nsource-repository-package\n" + block;
         }
         else {
-          sourceRepo = fetchRepo evalTime cabalProjectFileName lookupSha256 attrs;
+          sourceRepo = extractRepoData cabalProjectFileName lookupSha256 attrs;
           otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
         };
 
