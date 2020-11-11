@@ -43,7 +43,7 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "R2009" && (compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884")) {
+    in lib.optionalAttrs (nixpkgsName == "R2003" && (compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884")) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" && (nixpkgsName == "R2009" || (compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8102-experimental"))) {
     # Windows cross compilation is currently broken on macOS
