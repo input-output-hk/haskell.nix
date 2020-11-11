@@ -184,13 +184,15 @@ let
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
 
-      # we need the repository data twice:
-      # At eval time (below to build the fixed project file)
-      # plan generation
-      # And at built time  (passed out)
-      #
-      # At eval time we want to use fetchgit from evalPackages
-      # but at build time from pkgs proper
+      # we need the repository content twice:
+      # * at eval time (below to build the fixed project file)
+      #   Here we want to use pkgs.evalPackages.fetchgit, so one can calculate
+      #   the build plan for any target without a remote builder
+      # * at built time  (passed out)
+      #   Here we want to use plain pkgs.fetchgit, which is what a builder
+      #   on the target system would use, so that the derivation is unaffected
+      #   and, say, a linux release build job can identify the derivation
+      #   as built by a darwin builder, and fetch it from a cache
       sourceReposBuild = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData ;
       sourceReposEval = builtins.map (fetchRepo pkgs.fetchgit) sourceRepoData;
     in {

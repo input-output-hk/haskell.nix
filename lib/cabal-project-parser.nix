@@ -72,7 +72,8 @@ let
   # Gets data for all the repositories to fetch
   # A comment like
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
-  # will cause use of pkgs.fetchgit, else __fetchGit.
+  # will be trated like a field and returned here
+  # (used in call-cabal-project-to-nix.nix to create a fixed-output derivation)
   extractRepoData = cabalProjectFileName: lookupSha256: repo:
     builtins.map (subdir:
       {
