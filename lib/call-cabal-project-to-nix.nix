@@ -394,7 +394,10 @@ let
             # packages used by the solver (cached-index-state >= index-state-found).
             builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
               index-state-found} \
-        --with-ghc=${ghc.targetPrefix}ghc \
+        -w ${
+          # We are using `-w` rather than `--with-ghc` here to override
+          # the `with-compiler:` in the `cabal.project` file.
+          ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests \
         --enable-benchmarks \
