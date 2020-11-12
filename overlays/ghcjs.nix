@@ -36,7 +36,7 @@ final: prev:
             set -euo pipefail
             exe=$1
             shift
-            ${final.buildPackages.nodejs}/bin/node $exe.jsexe/all.js $@
+            ${final.buildPackages.nodejs}/bin/node $exe $@
           '') + "/bin/node-wrapper")];
         }
       )

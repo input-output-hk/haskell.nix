@@ -184,7 +184,7 @@ let
                      else abort "shellHook should be a string or a function";
 
   exeExt = if stdenv.hostPlatform.isGhcjs then ".jsexe/all.js" else
-    if stdenv.hostPlatform.isWindows then ".exe" else "";
+    stdenv.hostPlatform.extensions.executable;
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
@@ -246,6 +246,7 @@ let
       inherit (package) identifier;
       config = component;
       inherit configFiles executableToolDepends cleanSrc exeName;
+      exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
