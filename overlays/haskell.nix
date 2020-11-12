@@ -542,7 +542,7 @@ final: prev: {
                 ) rawProject.hsPkgs
                 // {
                   # These are functions not packages
-                  inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
+                  inherit (rawProject.hsPkgs) shellFor makeConfigFiles ghcWithHoogle ghcWithPackages;
               });
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
