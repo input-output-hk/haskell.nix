@@ -629,7 +629,7 @@ final: prev: {
         # for `cabalPackage` and `stackPackage`.
         project = args':
           let
-            args = { caller = "project'"; } // args';
+            args = { caller = "project"; } // args';
             p = project' args;
           in p.hsPkgs // {
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
