@@ -90,6 +90,7 @@ pkgs:
     "libsoup-gnome-2.4"                  = [ pkgs."libsoup" ];
     "libsystemd"                         = [ pkgs."systemd" ];
     "libudev"                            = [ pkgs."systemd" ];
+    "libusb-1.0"                         = [ pkgs."libusb1" ];
     "libxml-2.0"                         = [ pkgs."libxml2" ];
     "libzip"                             = [ pkgs."libzip" ];
     "libzmq"                             = [ pkgs."zeromq" ];
