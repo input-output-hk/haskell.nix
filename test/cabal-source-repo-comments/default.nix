@@ -17,7 +17,7 @@ in recurseIntoAttrs {
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
-      exe="${packages.use-cabal-simple.components.exes.use-cabal-simple}/bin/use-cabal-simple${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.use-cabal-simple.components.exes.use-cabal-simple.exePath}"
 
       printf "checking whether executable runs... " >& 2
       cat ${haskellLib.check packages.use-cabal-simple.components.exes.use-cabal-simple}/test-stdout
