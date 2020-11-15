@@ -163,7 +163,7 @@ let
         ]
     );
 
-  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc-options="${package.ghcOptions}"'';
+  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${package.ghcOptions}"'';
 
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
