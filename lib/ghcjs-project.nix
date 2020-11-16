@@ -25,8 +25,14 @@
 , ghc ? pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}
 , ghcjsVersion
 , ghcVersion ? ghc.version
-, happy ? pkgs.haskell-nix.bootstrap.packages.happy-unchecked
-, alex ? pkgs.haskell-nix.bootstrap.packages.alex-unchecked
+, happy ? pkgs.haskell-nix.tool compiler-nix-name "happy" {
+    version = "1.19.12";
+    materialized = ../materialized/ghcjs/happy + "/${compiler-nix-name}";
+  }
+, alex ? pkgs.haskell-nix.tool compiler-nix-name "alex" {
+    version = "3.2.5";
+    materialized = ../materialized/ghcjs/alex + "/${compiler-nix-name}";
+  }
 , cabal-install ? pkgs.haskell-nix.cabal-install.${compiler-nix-name}
 , ...
 }@args:
