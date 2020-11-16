@@ -25,8 +25,8 @@
 , ghc ? pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}
 , ghcjsVersion
 , ghcVersion ? ghc.version
-, happy ? pkgs.haskell-nix.tool compiler-nix-name "happy" "1.19.12"
-, alex ? pkgs.haskell-nix.tool compiler-nix-name "alex" "3.2.5"
+, happy ? pkgs.haskell-nix.bootstrap.packages.happy-unchecked
+, alex ? pkgs.haskell-nix.bootstrap.packages.alex-unchecked
 , cabal-install ? pkgs.haskell-nix.cabal-install.${compiler-nix-name}
 , ...
 }@args:
