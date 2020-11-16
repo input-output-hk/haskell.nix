@@ -183,10 +183,15 @@ let
     coverage = callTest ./coverage { inherit compiler-nix-name; };
 
     unit = unitTests;
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isWindows ) {
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isWindows) {
     # Does not work on ghcjs because it needs zlib.
     # Does not work on windows because it needs mintty.
     shell-for = callTest ./shell-for {};
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs || !stdenv.buildPlatform.isDarwin) {
+    # When using ghcjs on darwin this test fails with
+    # ReferenceError: h$hs_clock_darwin_gettime is not defined
+    # https://github.com/input-output-hk/haskell.nix/issues/925
+    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8102-experimental" ) {
     # Pandoc does not build with ghcjs or ghc 8.10 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
