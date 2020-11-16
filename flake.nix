@@ -1,8 +1,6 @@
 {
   description = "Alternative Haskell Infrastructure for Nixpkgs";
 
-  edition = 201909;
-
   outputs = { self }: {
     # Using the eval-on-build version here as the plan is that
     # `builtins.currentSystem` will not be supported in flakes.

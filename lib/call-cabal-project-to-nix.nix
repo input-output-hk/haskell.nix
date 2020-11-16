@@ -157,21 +157,51 @@ let
   # restricted-eval mode (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
   # packages: block containing nix store paths of the fetched repos.
+
+  hashPath = path:
+    builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
+      "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
+
   replaceSoureRepos = projectFile:
     let
+      fetchRepo = fetchgit: repoData:
+        let
+          fetched =
+            if repoData.sha256 != null
+            then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
+            else
+              let drv = builtins.fetchGit { inherit (repoData) url ref; };
+              in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
+                (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
+                 drv);
+        in fetched + (if repoData.subdir == "." then "" else "/" + repoData.subdir);
+
       blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
-      sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
+      sourceRepoData = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
       otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
+
+      # we need the repository content twice:
+      # * at eval time (below to build the fixed project file)
+      #   Here we want to use pkgs.evalPackages.fetchgit, so one can calculate
+      #   the build plan for any target without a remote builder
+      # * at built time  (passed out)
+      #   Here we want to use plain pkgs.fetchgit, which is what a builder
+      #   on the target system would use, so that the derivation is unaffected
+      #   and, say, a linux release build job can identify the derivation
+      #   as built by a darwin builder, and fetch it from a cache
+      sourceReposBuild = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData ;
+      sourceReposEval = builtins.map (fetchRepo pkgs.fetchgit) sourceRepoData;
     in {
-      inherit sourceRepos;
+      sourceRepos = sourceReposBuild;
       makeFixedProjectFile = ''
         cp -f ${otherText} ./cabal.project
         chmod +w -R ./cabal.project
-        echo "packages:" >> ./cabal.project
+        # The newline here is important in case cabal.project does not have one at the end
+        printf "\npackages:" >> ./cabal.project
         mkdir -p ./.source-repository-packages
       '' +
         ( pkgs.lib.strings.concatStrings (
@@ -183,18 +213,15 @@ let
                  "${f}/" "./.source-repository-packages/${builtins.toString n}/"
               echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
             '')
-              (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
-              sourceRepos
+              (pkgs.lib.lists.range 0 ((builtins.length sourceReposEval) - 1))
+              sourceReposEval
           )
         );
     };
 
   fixedProject =
     if rawCabalProject == null
-      then {
-        sourceRepos = [];
-        makeFixedProjectFile = "";
-      }
+      then { sourceRepos = []; makeFixedProjectFile = ""; }
       else replaceSoureRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
@@ -411,7 +438,10 @@ let
             # packages used by the solver (cached-index-state >= index-state-found).
             builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
               index-state-found} \
-        --with-ghc=${ghc.targetPrefix}ghc \
+        -w ${
+          # We are using `-w` rather than `--with-ghc` here to override
+          # the `with-compiler:` in the `cabal.project` file.
+          ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests \
         --enable-benchmarks \

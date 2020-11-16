@@ -3,8 +3,6 @@ final: prev: with prev;
    let
     ghcPkgOverrides = {
         enableIntegerSimple = false;
-      } // lib.optionalAttrs final.stdenv.hostPlatform.isAarch32 {
-        enableRelocatableStaticLibs = false;
       };
     ghcDrvOverrides = drv: {
         hardeningDisable = (drv.hardeningDisable or []) ++ [ "stackprotector" "format" ] ++ lib.optionals prev.stdenv.hostPlatform.isAarch32 [ "pic" "pie" ];
