@@ -161,7 +161,6 @@ let
     stack-local-resolver = callTest ./stack-local-resolver {};
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     snapshots = callTest ./snapshots {};
-    shell-for = callTest ./shell-for {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
     setup-deps = import ./setup-deps { inherit pkgs compiler-nix-name; };
     callStackToNix = callTest ./call-stack-to-nix {};
@@ -184,6 +183,10 @@ let
     coverage = callTest ./coverage { inherit compiler-nix-name; };
 
     unit = unitTests;
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && stdenv.hostPlatform.isWindows ) {
+    # Does not work on ghcjs because it needs zlib.
+    # Does not work on windows because it needs mintty.
+    shell-for = callTest ./shell-for {};
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8102-experimental" ) {
     # Pandoc does not build with ghcjs or ghc 8.10 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
