@@ -686,6 +686,8 @@ final: prev: {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
+          } // final.lib.optionalAttrs (ifdLevel > 1 && final.stdenv.hostPlatform.isGhcjs) {
+            # GHCJS builds its own template haskell runner.
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
             inherit (final.ghc-extra-packages."${compiler-nix-name}"

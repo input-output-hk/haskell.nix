@@ -92,7 +92,8 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
           } // pkgs.lib.optionalAttrs (runTests && crossSystemName != "aarch64-multiplatform") {
             # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
             inherit (build) tests;
-        }) // pkgs.lib.optionalAttrs (ifdLevel >= 2) {
+        }) // pkgs.lib.optionalAttrs (ifdLevel >= 2 && crossSystemName != "ghcjs") {
+          # GHCJS builds its own template haskell runner.
           remote-iserv = pkgs.ghc-extra-packages."${compiler-nix-name}".remote-iserv.components.exes.remote-iserv;
           iserv-proxy = pkgs.ghc-extra-packages."${compiler-nix-name}".iserv-proxy.components.exes.iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
