@@ -183,7 +183,7 @@ let
     coverage = callTest ./coverage { inherit compiler-nix-name; };
 
     unit = unitTests;
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && stdenv.hostPlatform.isWindows ) {
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isWindows ) {
     # Does not work on ghcjs because it needs zlib.
     # Does not work on windows because it needs mintty.
     shell-for = callTest ./shell-for {};
