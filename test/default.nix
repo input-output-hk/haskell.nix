@@ -154,7 +154,6 @@ let
     cabal-simple = callTest ./cabal-simple { inherit util compiler-nix-name; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
     cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
-    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
