@@ -550,9 +550,9 @@ final: prev: {
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
-            cross = final.lib.mapAttrs (_: pkgs:
+            cross = (final.lib.mapAttrs (_: pkgs:
                 rawProject.projectFunction pkgs.haskell-nix
-              ) final.pkgsCross;
+              ) final.pkgsCross) // { recurseForDerivations = false; };
 
             # Add support for passing in `cross` argument
             shellFor = shellArgs:
