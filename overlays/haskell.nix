@@ -550,6 +550,10 @@ final: prev: {
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
+            cross = final.lib.mapAttrs (_: pkgs:
+                rawProject.projectFunction pkgs.haskell-nix
+              ) final.pkgsCross;
+
             # Add support for passing in `cross` argument
             shellFor = shellArgs:
               if shellArgs ? cross
@@ -587,7 +591,7 @@ final: prev: {
               args = { caller = "hackage-package"; } // args';
               p = cabalProject' args;
             in p.hsPkgs // {
-              inherit (p) plan-nix index-state tool tools roots projectCoverageReport shellFor;
+              inherit (p) plan-nix index-state tool tools roots projectCoverageReport cross shellFor;
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
               shells.ghc = p.shellFor {};
@@ -620,7 +624,7 @@ final: prev: {
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // {
-              inherit (p) stack-nix tool tools roots projectCoverageReport shellFor;
+              inherit (p) stack-nix tool tools roots projectCoverageReport cross shellFor;
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
               shells.ghc = p.shellFor {};
@@ -665,11 +669,12 @@ final: prev: {
             args = { caller = "project"; } // args';
             p = project' args;
           in p.hsPkgs // {
+              inherit (p) tool tools roots projectCoverageReport cross shellFor;
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
               # But we should encourage use of `nix-shell -A shellFor`
               shells.ghc = p.hsPkgs.shellFor {};
             } // final.lib.optionalAttrs (p ? stack-nix) { inherit (p) stack-nix; }
-              // final.lib.optionalAttrs (p ? plan-nix ) { inherit (p) plan-nix;  };
+              // final.lib.optionalAttrs (p ? plan-nix ) { inherit (p) plan-nix index-state;  };
 
         # Like `cabalProject'`, but for building the GHCJS compiler.
         # This is exposed to allow GHCJS developers to work on the GHCJS
