@@ -647,6 +647,8 @@ in {
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";
                 version = "1.24.4";
+                # The license file in hscolour package is LGPL 2.1, but the license field in hscolour.cabal is just LGPL
+                modules = [{ packages.hscolour.package.license = final.lib.mkForce "LGPL-2.1-only"; }];
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
             } // args)).components.exes.HsColour;
