@@ -282,11 +282,11 @@ stdenv.mkDerivation (rec {
     ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
-    if [[ ! -f "$out/bin/${targetPrefix}ghc" ]]; then
+    if ! "$out/bin/${targetPrefix}ghc" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc"
       exit 0
     fi
-    if [[ ! -f "$out/bin/${targetPrefix}ghc-pkg" ]]; then
+    if ! "$out/bin/${targetPrefix}ghc-pkg" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 0
     fi
@@ -305,6 +305,7 @@ stdenv.mkDerivation (rec {
 
     inherit llvmPackages;
     inherit enableShared;
+    inherit useLLVM;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";

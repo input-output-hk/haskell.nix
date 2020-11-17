@@ -17,13 +17,23 @@
 pkgs:
 { name, index }:
 
-pkgs.evalPackages.runCommand "hackage-repo-${name}" { nativeBuildInputs = [ pkgs.evalPackages.nix ]; } ''
+pkgs.evalPackages.runCommandLocal "hackage-repo-${name}" { nativeBuildInputs = [ pkgs.evalPackages.nix ]; } ''
 mkdir -p $out
 export expires="4000-01-01T00:00:00Z"
 
 ln -sf ${index} $out/01-index.tar.gz
 export index_md5=$(nix-hash --flat --type md5 ${index})
 export index_sha256=$(nix-hash --flat --type sha256 ${index})
+${
+  # When possible check the hash we calculate here against the `outputHash`
+  # of the index derivation (when the `extra-hackages` feature is used the index
+  # may not have an outputHash).
+  pkgs.lib.optionalString (index ? outputHash) ''
+    if [[ "${index.outputHash}" != "$index_sha256" ]]; then
+      echo "ERROR See https://github.com/input-output-hk/haskell.nix/issues/884"
+      exit 0
+    fi
+''}
 export index_length=$(stat --printf="%s" ${index})
 
 substituteAll ${./root.json} $out/root.json
