@@ -21,9 +21,10 @@ in recurseIntoAttrs {
     name = "compiler-nix-name-test";
 
     buildCommand = ''
-      exe="${compiler-nix-name}/bin/compiler-nix-name${stdenv.hostPlatform.extensions.executable}"
-      if [[ "$(${toString compiler-nix-name.config.testWrapper} $exe)" != "808" ]]; then
-        echo "Unexpected GHC version" >& 2
+      exe="${compiler-nix-name.exePath}"
+      ver="$(${toString compiler-nix-name.config.testWrapper} $exe)"
+      if [[ "$ver" != "808" ]]; then
+        echo "Unexpected GHC version (expected 808, but got $ver)" >& 2
         false
       else
         touch $out

@@ -19,7 +19,7 @@ in recurseIntoAttrs {
     name = "exe-only-test";
 
     buildCommand = ''
-      exe="${packages.exe-only.components.exes.exe-only}/bin/exe-only${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.exe-only.components.exes.exe-only.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
