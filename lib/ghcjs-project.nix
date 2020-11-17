@@ -26,10 +26,12 @@
 , ghcjsVersion
 , ghcVersion ? ghc.version
 , happy ? pkgs.haskell-nix.tool compiler-nix-name "happy" {
+    index-state = pkgs.haskell-nix.internalHackageIndexState;
     version = "1.19.12";
     materialized = ../materialized/ghcjs/happy + "/${compiler-nix-name}";
   }
 , alex ? pkgs.haskell-nix.tool compiler-nix-name "alex" {
+    index-state = pkgs.haskell-nix.internalHackageIndexState;
     version = "3.2.5";
     materialized = ../materialized/ghcjs/alex + "/${compiler-nix-name}";
   }
