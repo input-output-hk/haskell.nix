@@ -20,6 +20,7 @@ let
     shims = import ./shims.nix;
     eval-on-current = import ./eval-on-current.nix;
     eval-on-build = import ./eval-on-build.nix;
+    ghcjs = import ./ghcjs.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -48,6 +49,7 @@ let
     tools
     emscripten
     nix-prefetch-git-minimal
+    ghcjs
     gobject-introspection
     shims
     # Restore nixpkgs haskell and haskellPackages

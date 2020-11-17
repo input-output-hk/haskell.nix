@@ -2,10 +2,10 @@
 # cabal file to nixpkgs pkgs.
 # See ../docs/dev/pkg-map.md
 pkgs:
-# fetchgit should always come from the buildPackages
+# fetchgit should always come from the evalPackages
 # if it comes from the targetPackages we won't even
 # be able to execute it.
-   { fetchgit = pkgs.buildPackages.fetchgit; }
+   { fetchgit = pkgs.evalPackages.fetchgit; }
 # haskell lib -> nix lib mapping
 # -- linux
 // { crypto = pkgs.openssl;

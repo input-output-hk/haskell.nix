@@ -165,8 +165,8 @@ final: prev: {
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
             in
               # Check that the GHC version of the selected compiler matches the one of the plan
-              assert (final.haskell-nix.compiler.${compiler-nix-name'}.version
-                   == final.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
+              assert (final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version
+                   == final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
@@ -322,7 +322,7 @@ final: prev: {
                 # pkgs.fetchgit doesn't have any way of fetching from a given
                 # ref.
                 assert isNull ref;
-                final.evalPackages.pkgs.fetchgit {
+                final.evalPackages.fetchgit {
                   url = url;
                   rev = rev;
                   sha256 = sha256;
@@ -411,7 +411,7 @@ final: prev: {
                               final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                             )
                         else
-                          final.evalPackages.pkgs.fetchgit { inherit url rev sha256; };
+                          final.evalPackages.fetchgit { inherit url rev sha256; };
                     } // final.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                   };
 
@@ -542,7 +542,7 @@ final: prev: {
                 ) rawProject.hsPkgs
                 // {
                   # These are functions not packages
-                  inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
+                  inherit (rawProject.hsPkgs) shellFor makeConfigFiles ghcWithHoogle ghcWithPackages;
               });
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
@@ -629,7 +629,7 @@ final: prev: {
         # for `cabalPackage` and `stackPackage`.
         project = args':
           let
-            args = { caller = "project'"; } // args';
+            args = { caller = "project"; } // args';
             p = project' args;
           in p.hsPkgs // {
               # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
@@ -686,6 +686,8 @@ final: prev: {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
+          } // final.lib.optionalAttrs (ifdLevel > 1 && !final.stdenv.hostPlatform.isGhcjs) {
+            # GHCJS builds its own template haskell runner.
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
             inherit (final.ghc-extra-packages."${compiler-nix-name}"

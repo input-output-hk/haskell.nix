@@ -32,7 +32,7 @@ in recurseIntoAttrs {
     name = "cabal-simple-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

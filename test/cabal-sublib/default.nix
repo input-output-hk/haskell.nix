@@ -29,7 +29,7 @@ in recurseIntoAttrs {
     name = "cabal-sublib-test";
 
     buildCommand = ''
-      exe="${packages.cabal-sublib.components.exes.cabal-sublib}/bin/cabal-sublib${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-sublib.components.exes.cabal-sublib.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

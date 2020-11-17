@@ -44,19 +44,7 @@ let
     tools = { cabal = "3.2.0.0"; };
   };
 
-in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
- then
-    let skip = runCommand "skip-test-shell-for" {} ''
-      echo "Skipping shell-for test on windows as does not work yet" >& 2
-      touch $out
-    '';
-    in {
-      env = skip;
-      envPkga = skip;
-      envDefault = skip;
-      run = skip;
-    }
- else {
+in recurseIntoAttrs {
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
@@ -87,4 +75,4 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       inherit env envPkga envDefault;
     };
   };
-})
+}
