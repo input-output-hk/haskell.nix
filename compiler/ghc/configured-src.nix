@@ -86,6 +86,9 @@ stdenv.mkDerivation (rec {
             --replace '*-android*|*-gnueabi*)' \
                         '*-android*|*-gnueabi*|*-musleabi*)'
         done
+    '' + stdenv.lib.optionalString (src-spec.version != ghc-version) ''
+        substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        echo '${ghc-version}' > VERSION
     '';
 
     configurePlatforms = [ "build" "host" "target" ];

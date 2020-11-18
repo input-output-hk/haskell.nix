@@ -393,6 +393,9 @@ in {
 
                 ghc-patches = ghc-patches "8.10.2"
                  ++ [ ./patches/ghc/core-field.patch ];
+
+                # Avoid clashes with normal ghc8102
+                ghc-version = "8.10.20201118";
             };
         } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false) (
          if final.hostPlatform.isGhcjs
