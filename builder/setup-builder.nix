@@ -50,8 +50,7 @@ let
       meta = {
         homepage = package.homepage or "";
         description = package.synopsis or "";
-        license = let cabalToNixpkgsLicense = import ../lib/spdx/cabal.nix pkgs;
-                  in cabalToNixpkgsLicense package.license;
+        license = haskellLib.cabalToNixpkgsLicense package.license;
         platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
       };
 
