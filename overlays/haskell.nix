@@ -577,7 +577,11 @@ final: prev: {
                               --with-ghc=${s.ghc.targetPrefix}ghc \
                               --with-ghc-pkg=${s.ghc.targetPrefix}ghc-pkg \
                               --with-hsc2hs=${s.ghc.targetPrefix}hsc2hs \
-                              $(builtin type -P "${s.ghc.targetPrefix}pkg-config" &> /dev/null && echo "--with-pkg-config=${s.ghc.targetPrefix}pkg-config") \
+                              ${final.lib.optionalString (s.ghc.targetPrefix == "js-unknown-ghcjs-") ''
+                                --with-ghcjs=${s.ghc.targetPrefix}ghc \
+                                --with-ghcjs-pkg=${s.ghc.targetPrefix}ghc-pkg \
+                                --ghcjs \
+                              ''} $(builtin type -P "${s.ghc.targetPrefix}pkg-config" &> /dev/null && echo "--with-pkg-config=${s.ghc.targetPrefix}pkg-config") \
                               "$@"
                           ''
                         )) crossShells;
