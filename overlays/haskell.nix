@@ -460,20 +460,28 @@ final: prev: {
             { name
             , compiler-nix-name
             , version
+            , revision ? "default"
             , ... }@args':
             let args = { caller = "hackage-project"; } // args';
                 tarball = final.pkgs.fetchurl {
-                url = "mirror://hackage/${name}-${version}.tar.gz";
-                inherit (hackage.${name}.${version}) sha256; };
-            in let src = final.buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
-                tmp=$(mktemp -d)
-                cd $tmp
-                tar xzf ${tarball}
-                mv "${name}-${version}" $out
-                '';
+                  url = "mirror://hackage/${name}-${version}.tar.gz";
+                  inherit (hackage.${name}.${version}) sha256; };
+                rev = hackage.${name}.${version}.revisions.${revision};
+                cabalFile = final.pkgs.fetchurl {
+                  url = "https://hackage.haskell.org/package/${name}-${version}/revision/${toString rev.revNum}.cabal";
+                  inherit (rev) sha256;
+                };
+            in let src = final.buildPackages.pkgs.runCommand "${name}-${version}-src" { } (''
+                  tmp=$(mktemp -d)
+                  cd $tmp
+                  tar xzf ${tarball}
+                  mv "${name}-${version}" $out
+                '' + final.lib.optionalString (rev.revNum > 0) ''
+                  cp ${cabalFile} $out/${name}.cabal
+                '');
           in cabalProject' (
             (final.haskell-nix.hackageQuirks { inherit name version; }) //
-              builtins.removeAttrs args [ "version" ] // { inherit src; });
+              builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
