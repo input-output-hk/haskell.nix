@@ -471,7 +471,8 @@ final: prev: {
                   url = "https://hackage.haskell.org/package/${name}-${version}/revision/${toString rev.revNum}.cabal";
                   inherit (rev) sha256;
                 };
-            in let src = final.buildPackages.pkgs.runCommand "${name}-${version}-src" { } (''
+                revSuffix = final.lib.optionalString (rev.revNum > 0) "-r${toString rev.revNum}";
+            in let src = final.buildPackages.pkgs.runCommand "${name}-${version}${revSuffix}-src" { } (''
                   tmp=$(mktemp -d)
                   cd $tmp
                   tar xzf ${tarball}
