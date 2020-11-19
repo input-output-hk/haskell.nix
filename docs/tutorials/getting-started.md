@@ -136,13 +136,11 @@ To open a shell for use with `stack` see [the following issue](https://github.co
 If you would prefer not to use niv you can replace
 `sources = import ./nix/sources.nix {};` in the examples with:
 
-```
-  sources = {
+```nix
+let sources = {
     haskellNix = builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz";
   };
 ```
-
-### Pinning the [haskell.nix][] version
 
 The `fetchTarball` call above will always get the latest version, and is
 similar to an auto-updating Nix channel.
@@ -154,8 +152,7 @@ predictable, and faster (because the fixed version is cached).
 Straightforward way of doing this is to change the branch name to a revision.
 
 ```nix
-  # Fetch a specific haskell.nix and import its default.nix
-  sources = {
+let sources = {
     haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz") {};
   };
 ```
