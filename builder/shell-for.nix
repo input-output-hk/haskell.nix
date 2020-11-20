@@ -20,6 +20,7 @@
 , withHoogle ? true
 , exactDeps ? false
 , tools ? {}
+, otherShells ? [] # List of other shells to include in this one
 , ... } @ args:
 
 let
@@ -116,18 +117,35 @@ let
     }
   ));
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools" "otherShells"];
 in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle' hoogleIndex;
+      ++ lib.optional withHoogle' hoogleIndex
+      ++ lib.concatMap (s: s.buildInputs) otherShells;
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
-      ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools);
+      ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
+      ++ lib.concatMap (s: s.nativeBuildInputs) otherShells
+      # If this shell is a cross compilation shell include
+      # wrapper script for running cabal build with appropriat args.
+      ++ lib.optional (ghcEnv.targetPrefix != "") (
+            buildPackages.writeShellScriptBin "${ghcEnv.targetPrefix}cabal" ''
+              cabal \
+                --with-ghc=${ghcEnv.targetPrefix}ghc \
+                --with-ghc-pkg=${ghcEnv.targetPrefix}ghc-pkg \
+                --with-hsc2hs=${ghcEnv.targetPrefix}hsc2hs \
+                ${lib.optionalString (ghcEnv.targetPrefix == "js-unknown-ghcjs-") ''
+                  --with-ghcjs=${ghcEnv.targetPrefix}ghc \
+                  --with-ghcjs-pkg=${ghcEnv.targetPrefix}ghc-pkg \
+                  --ghcjs \
+                ''} $(builtin type -P "${ghcEnv.targetPrefix}pkg-config" &> /dev/null && echo "--with-pkg-config=${ghcEnv.targetPrefix}pkg-config") \
+                "$@"
+              '');
     phases = ["installPhase"];
     installPhase = "echo $nativeBuildInputs $buildInputs > $out";
     LANG = "en_US.UTF-8";

@@ -105,8 +105,8 @@ nix-build -A your-package-name.components.exes.your-exe-name
 To cross compile use the `cross` attribute:
 
 ```
-nix-build -A cross.ghcjs.hsPkgs.your-package-name.components.exes.your-exe-name
-nix-build -A cross.mingwW64.hsPkgs.your-package-name.components.exes.your-exe-name
+nix-build -A projectCross.ghcjs.hsPkgs.your-package-name.components.exes.your-exe-name
+nix-build -A projectCross.mingwW64.hsPkgs.your-package-name.components.exes.your-exe-name
 ```
 
 To open a shell for use with `cabal`, `hlint` and `haskell-language-server` add `shell.nix`:

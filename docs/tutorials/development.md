@@ -63,7 +63,7 @@ in
     buildInputs = [ (import <nixpkgs> {}).git ];
 
     # Sellect cross compilers to include.
-    cross = pkgsCross: with pkgsCross; [
+    crossPlatforms = ps: with ps; [
       ghcjs      # Adds support for `js-unknown-ghcjs-cabal build` in the shell
       # mingwW64 # Adds support for `x86_64-W64-mingw32-cabal build` in the shell
     ];

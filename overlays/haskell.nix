@@ -514,7 +514,8 @@ final: prev: {
                   tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
-                  projectFunction = haskell-nix: haskell-nix.cabalProject' args';
+                  projectFunction = haskell-nix: haskell-nix.cabalProject';
+                  projectArgs = args';
                 };
             in project;
 
@@ -550,52 +551,40 @@ final: prev: {
                       });
                     }
                 ) rawProject.hsPkgs
-                // {
-                  # These are functions not packages
-                  inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
-                  shellFor = a: __trace "project.hsPkgs.shellFor has been deprecated in favour of project.shellFor"
-                    (rawProject.hsPkgs.shellFor a);
-              });
+                // (final.lib.mapAttrs (n:
+                      __trace "project.hsPkgs.${n} has been deprecated in favour of project.${n}"
+                    ) {
+                      # These are functions not packages
+                      inherit (rawProject.hsPkgs) shellFor makeConfigFiles ghcWithHoogle ghcWithPackages;
+                    }
+                  )
+              );
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
-            cross = (final.lib.mapAttrs (_: pkgs:
-                rawProject.projectFunction pkgs.haskell-nix
+            projectCross = (final.lib.mapAttrs (_: pkgs:
+                rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs
               ) final.pkgsCross) // { recurseForDerivations = false; };
+
+            inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
 
             # Add support for passing in `cross` argument
             shellFor = shellArgs:
-              if shellArgs ? cross
-                then
-                  let
-                    otherArgs = builtins.removeAttrs shellArgs [ "cross" ];
-                    crossShells = builtins.map (pkgs:
-                      (rawProject.projectFunction pkgs.haskell-nix).shellFor (otherArgs // {
-                        buildInputs = [];
-                        nativeBuildInputs = [];
-                      }))
-                      (shellArgs.cross final.pkgsCross);
-                  in project.hsPkgs.shellFor (otherArgs // {
-                    buildInputs = shellArgs.buildInputs or []
-                      ++ final.lib.concatMap (s: s.buildInputs) crossShells;
-                    nativeBuildInputs = shellArgs.nativeBuildInputs or []
-                      ++ final.lib.concatMap (s: s.nativeBuildInputs
-                        ++ final.lib.optional (s.ghc.targetPrefix != "") (
-                          final.writeShellScriptBin "${s.ghc.targetPrefix}cabal" ''
-                            cabal \
-                              --with-ghc=${s.ghc.targetPrefix}ghc \
-                              --with-ghc-pkg=${s.ghc.targetPrefix}ghc-pkg \
-                              --with-hsc2hs=${s.ghc.targetPrefix}hsc2hs \
-                              ${final.lib.optionalString (s.ghc.targetPrefix == "js-unknown-ghcjs-") ''
-                                --with-ghcjs=${s.ghc.targetPrefix}ghc \
-                                --with-ghcjs-pkg=${s.ghc.targetPrefix}ghc-pkg \
-                                --ghcjs \
-                              ''} $(builtin type -P "${s.ghc.targetPrefix}pkg-config" &> /dev/null && echo "--with-pkg-config=${s.ghc.targetPrefix}pkg-config") \
-                              "$@"
-                          ''
-                        )) crossShells;
-                  })
-                else rawProject.hsPkgs.shellFor shellArgs;
+              let
+                args' = builtins.removeAttrs shellArgs [ "crossPlatforms" ];
+              in rawProject.hsPkgs.shellFor (args' //
+                final.lib.optionalAttrs (shellArgs ? crossPlatforms) {
+                  otherShells = builtins.map (pkgs:
+                    (rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs).shellFor (args' // {
+                      buildInputs = [];
+                      nativeBuildInputs = [];
+                    }))
+                    (shellArgs.crossPlatforms final.pkgsCross);
+                });
+
+            # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
+            # But we should encourage use of `nix-shell -A shellFor`
+            shells.ghc = project.shellFor {};
           });
 
         cabalProject =
@@ -603,12 +592,7 @@ final: prev: {
             let
               args = { caller = "hackage-package"; } // args';
               p = cabalProject' args;
-            in p.hsPkgs // {
-              inherit (p) plan-nix index-state tool tools roots projectCoverageReport cross shellFor;
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.shellFor {};
-            };
+            in p.hsPkgs // p;
 
         stackProject' =
             { src, ... }@args:
@@ -632,16 +616,13 @@ final: prev: {
                   tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  projectFunction = haskell-nix: haskell-nix.stackProject';
+                  projectArgs = args';
                 };
             in project;
 
         stackProject = args: let p = stackProject' args;
-            in p.hsPkgs // {
-              inherit (p) stack-nix tool tools roots projectCoverageReport cross shellFor;
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.shellFor {};
-            };
+            in p.hsPkgs // p;
 
         # `project'` and `project` automatically select between `cabalProject`
         # and `stackProject` (when possible) by looking for `stack.yaml` or
@@ -681,13 +662,7 @@ final: prev: {
           let
             args = { caller = "project"; } // args';
             p = project' args;
-          in p.hsPkgs // {
-              inherit (p) tool tools roots projectCoverageReport cross shellFor;
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
-            } // final.lib.optionalAttrs (p ? stack-nix) { inherit (p) stack-nix; }
-              // final.lib.optionalAttrs (p ? plan-nix ) { inherit (p) plan-nix index-state;  };
+          in p.hsPkgs // p;
 
         # Like `cabalProject'`, but for building the GHCJS compiler.
         # This is exposed to allow GHCJS developers to work on the GHCJS

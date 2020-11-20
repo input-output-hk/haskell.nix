@@ -167,7 +167,7 @@ Then feeding its result into [mkCabalProjectPkgSet](#mkcabalprojectpkgset) passi
 | `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                     |
 | `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                           | 
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                       |
-| `cross`           | Attrset                                          | Like `pkgs.pkgsCross.X` from nixpkgs `cross.X` returns the project results for cross compilation to X.  So `cross.ghcjs.hsPkgs` is the same as `hsPkgs` but compiled with ghcjs |
+| `projectCross`    | Attrset                                          | Like `pkgs.pkgsCross.X` from nixpkgs `p.projectCross.X` returns the project results for cross compilation to X.  So `p.projectCross.ghcjs.hsPkgs` is the same as `hsPkgs` but compiled with ghcjs |
 
 
 ## mkStackPkgSet
@@ -420,16 +420,16 @@ shellFor =
 ```
 
 
-| Argument       | Type | Description         |
-|----------------|------|---------------------|
-| `packages`     | Function | Package selection function. It takes a list of [Haskell packages](#haskell-package) and returns a subset of these packages. |
-| `components`   | Function | Similar to `packages`, by default all the components of the selected packages are selected. |
-| `additional`   | Function | Similar to `packages`, but the selected packages are built and included in `ghc-pkg list` (not just their dependencies). |
-| `withHoogle`   | Boolean  | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
-| `exactDeps`    | Boolean  | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |
-| `tools`        | Attrset  | Tools to make available e.g. `{ cabal = "3.2.0.0"; }` or `{ cabal = { version = "3.2.0.0"; }; }`. If an AttrSet is provided for a tool, the additional arguments will be passed to the function creating the derivation for that tool. So you can provide an `index-state` or a `materialized` argument like that `{ cabal = { version = "3.2.0.0"; index-state = "2020-10-30T00:00:00Z"; materialized = ./cabal.materialized; }; }` for example. You can specify and materialize the version of hoogle used to construct the hoogle index by including something like `{ hoogle = { version = "5.0.17.15"; index-state = "2020-05-31T00:00:00Z"; materialized = ./hoogle.materialized; }`. Uses a default version of hoogle if omitted. |
-| `cross`        | Function | Platform selection function for cross compilation targets to support eg. `p: with p; [ghcjs mingwW64]`. |
-| `{ ... }`      | Attrset  | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
+| Argument         | Type | Description         |
+|------------------|------|---------------------|
+| `packages`       | Function | Package selection function. It takes a list of [Haskell packages](#haskell-package) and returns a subset of these packages. |
+| `components`     | Function | Similar to `packages`, by default all the components of the selected packages are selected. |
+| `additional`     | Function | Similar to `packages`, but the selected packages are built and included in `ghc-pkg list` (not just their dependencies). |
+| `withHoogle`     | Boolean  | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
+| `exactDeps`      | Boolean  | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |
+| `tools`          | Attrset  | Tools to make available e.g. `{ cabal = "3.2.0.0"; }` or `{ cabal = { version = "3.2.0.0"; }; }`. If an AttrSet is provided for a tool, the additional arguments will be passed to the function creating the derivation for that tool. So you can provide an `index-state` or a `materialized` argument like that `{ cabal = { version = "3.2.0.0"; index-state = "2020-10-30T00:00:00Z"; materialized = ./cabal.materialized; }; }` for example. You can specify and materialize the version of hoogle used to construct the hoogle index by including something like `{ hoogle = { version = "5.0.17.15"; index-state = "2020-05-31T00:00:00Z"; materialized = ./hoogle.materialized; }`. Uses a default version of hoogle if omitted. |
+| `crossPlatforms` | Function | Platform selection function for cross compilation targets to support eg. `ps: with ps; [ghcjs mingwW64]`. |
+| `{ ... }`        | Attrset  | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
 
 **Return value**: a derivation
 
