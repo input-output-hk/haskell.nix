@@ -55,7 +55,7 @@ in
     tools = {
       cabal = "3.2.0.0";
       hlint = "3.2.2";
-      haskell-language-server = "0.5.1";
+      haskell-language-server = "0.6.0";
     };
     # See overlays/tools.nix for more details
 
