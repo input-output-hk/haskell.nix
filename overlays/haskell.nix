@@ -617,7 +617,7 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.stackProject';
-                  projectArgs = args';
+                  projectArgs = args;
                 };
             in project;
 
