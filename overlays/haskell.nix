@@ -555,12 +555,22 @@ final: prev: {
                       });
                     }
                 ) rawProject.hsPkgs
-                // {
-                  # These are functions not packages
-                  inherit (rawProject.hsPkgs) shellFor makeConfigFiles ghcWithHoogle ghcWithPackages;
-              });
+                // (final.lib.mapAttrs (n:
+                      __trace "project.hsPkgs.${n} has been deprecated in favour of project.${n}"
+                    ) {
+                      # These are functions not packages
+                      inherit (rawProject.hsPkgs) shellFor makeConfigFiles ghcWithHoogle ghcWithPackages;
+                    }
+                  )
+              );
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
+
+            inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
+
+            # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
+            # But we should encourage use of `nix-shell -A shellFor`
+            shells.ghc = project.shellFor {};
           });
 
         cabalProject =
@@ -568,12 +578,7 @@ final: prev: {
             let
               args = { caller = "hackage-package"; } // args';
               p = cabalProject' args;
-            in p.hsPkgs // {
-              inherit (p) plan-nix index-state tool tools roots projectCoverageReport;
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
-            };
+            in p.hsPkgs // p;
 
         stackProject' =
             { src, ... }@args:
@@ -601,12 +606,7 @@ final: prev: {
             in project;
 
         stackProject = args: let p = stackProject' args;
-            in p.hsPkgs // {
-              inherit (p) stack-nix tool tools roots projectCoverageReport;
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
-            };
+            in p.hsPkgs // p;
 
         # `project'` and `project` automatically select between `cabalProject`
         # and `stackProject` (when possible) by looking for `stack.yaml` or
@@ -646,12 +646,7 @@ final: prev: {
           let
             args = { caller = "project"; } // args';
             p = project' args;
-          in p.hsPkgs // {
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
-            } // final.lib.optionalAttrs (p ? stack-nix) { inherit (p) stack-nix; }
-              // final.lib.optionalAttrs (p ? plan-nix ) { inherit (p) plan-nix;  };
+          in p.hsPkgs // p;
 
         # Like `cabalProject'`, but for building the GHCJS compiler.
         # This is exposed to allow GHCJS developers to work on the GHCJS
