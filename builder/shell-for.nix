@@ -129,7 +129,7 @@ in
       ++ mkDrvArgs.nativeBuildInputs or []
       ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
       # If this shell is a cross compilation shell include
-      # wrapper script for running cabal build with appropriat args.
+      # wrapper script for running cabal build with appropriate args.
       ++ lib.optional (ghcEnv.targetPrefix != "") (
             buildPackages.writeShellScriptBin "${ghcEnv.targetPrefix}cabal" ''
               cabal \
