@@ -383,6 +383,7 @@ let
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
+    outputs = ["out" "json"];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
@@ -470,6 +471,9 @@ let
     # run `plan-to-nix` in $out.  This should produce files right there with the
     # proper relative paths.
     (cd $out${subDir'} && plan-to-nix --full --plan-json $tmp${subDir'}/dist-newstyle/cache/plan.json -o .)
+
+    # Make the plan.json file available in case we need to debug plan-to-nix
+    cp $tmp${subDir'}/dist-newstyle/cache/plan.json $json
 
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly
