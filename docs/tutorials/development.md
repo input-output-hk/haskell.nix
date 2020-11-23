@@ -54,7 +54,7 @@ in
     # Some common tools can be added with the `tools` argument
     tools = {
       cabal = "3.2.0.0";
-      hlint = "latest";
+      hlint = "latest"; # Selects the latest version in the hackage.nix snapshot
       haskell-language-server = "latest";
     };
     # See overlays/tools.nix for more details
