@@ -163,6 +163,10 @@ in { haskell-nix = prev.haskell-nix // {
           # Plan issues with the benchmarks, can try removing later
           configureArgs = "--disable-benchmarks";
         })).haskell-language-server.components.exes.haskell-language-server;
+      # When adding new versions here, please set "latest" too the latest version
+      # so that `tools = { haskell-language-server = "latest"; }`
+      # will work the same way it does for tools that are in hackage.
+      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.6.0";
     };
   };
 }; }
