@@ -1,6 +1,9 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Nov 24, 2020
+* project.hsPkgs.${n} has been deprecated in favour of project.${n}.
+
 ## Oct 31, 2020
 * Passing `tools.hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will
   use the specified `hoogle` inside `shellFor`. This allows for materialization

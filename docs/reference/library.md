@@ -112,16 +112,16 @@ will be passed to it:
 
 # Top-level attributes
 
-## project
+## project'
 
 Function that accepts attribute set with a `src` attribute and looks for `stack.yaml` file relative to it.
 
-If file exists, it calls [stackProject](#stackproject) function. Otherwise it will call [cabalProject](#cabalproject) function.
+If file exists, it calls [stackProject](#stackproject') function. Otherwise it will call [cabalProject](#cabalproject') function.
 
 **Example**:
 
 ```nix
-pkgs.haskell-nix.project {
+pkgs.haskell-nix.project' {
   # 'cleanGit' cleans a source directory based on the files known by git
   src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
@@ -130,7 +130,7 @@ pkgs.haskell-nix.project {
 }
 ```
 
-## stackProject
+## stackProject'
 
 A function calling [callStackToNix](#callstacktonix) with all arguments.
 
@@ -142,14 +142,13 @@ Then feeding its result into [mkStackPkgSet](#mkstackpkgset) passing also
 | Attribute         | Type                                             | Description                                                                |
 |-------------------|--------------------------------------------------|----------------------------------------------------------------------------|
 | `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                |
-| `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                   |
 | `stack-nix`       |                                                  | `projectNix` attribute of [`callStackToNix`](#callstacktonix) return value |
 | `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                    |
 | `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                          | 
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                      |
 
 
-## cabalProject
+## cabalProject'
 
 A function calling [callCabalProjectToNix](#callcabalprojecttonix) with all arguments.
 
@@ -161,14 +160,18 @@ Then feeding its result into [mkCabalProjectPkgSet](#mkcabalprojectpkgset) passi
 | Attribute         | Type                                             | Description                                                                 |
 |-------------------|--------------------------------------------------|-----------------------------------------------------------------------------|
 | `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                 |
-| `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                    |
 | `plan-nix`        |                                                  | `projectNix` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value  |
 | `index-state`     |                                                  | `index-state` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value |
 | `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                     |
 | `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                           | 
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                       |
 
+## project, cabalProject and stackProject
 
+These versions of the function are the same as project', cabalProject'
+and stackProject', but `hsPkgs` attributes are also included in the
+return value directly.  That way a package can be referenced as
+`(project {...}).foo` instead of `(project' {...}).hsPkgs.foo`.
 
 ## mkStackPkgSet
 
@@ -404,9 +407,11 @@ Sub-component types identify [components](#component) and are one of:
  - `tests`
  - `benchmarks`
 
-# Package-set functions
+# Project functions
 
-These functions exist within the `hsPkgs` package set.
+These functions are included in the `project` return values.
+They also exist within the `hsPkgs` package set of the project,
+but in the future they may be remove them from `hsPkgs`.
 
 ## shellFor
 
