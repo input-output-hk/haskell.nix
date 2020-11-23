@@ -115,8 +115,8 @@ To open a shell for use with `cabal`, `hlint` and `haskell-language-server` add 
 (import ./default.nix).shellFor {
   tools = {
     cabal = "3.2.0.0";
-    hlint = "3.2.2";
-    haskell-language-server = "0.5.1";
+    hlint = "latest";
+    haskell-language-server = "latest";
   };
 }
 ```

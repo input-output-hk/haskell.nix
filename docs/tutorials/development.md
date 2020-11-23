@@ -54,8 +54,8 @@ in
     # Some common tools can be added with the `tools` argument
     tools = {
       cabal = "3.2.0.0";
-      hlint = "3.2.2";
-      haskell-language-server = "0.6.0";
+      hlint = "latest";
+      haskell-language-server = "latest";
     };
     # See overlays/tools.nix for more details
 
