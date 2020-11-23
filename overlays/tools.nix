@@ -163,6 +163,7 @@ in { haskell-nix = prev.haskell-nix // {
           # Plan issues with the benchmarks, can try removing later
           configureArgs = "--disable-benchmarks";
         })).haskell-language-server.components.exes.haskell-language-server;
+      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.6.0";
     };
   };
 }; }
