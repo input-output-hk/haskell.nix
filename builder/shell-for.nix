@@ -20,6 +20,7 @@
 , withHoogle ? true
 , exactDeps ? false
 , tools ? {}
+, otherShells ? [] # List of other shells to include in this one
 , ... } @ args:
 
 let
@@ -116,18 +117,20 @@ let
     }
   ));
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools" "otherShells"];
 in
   stdenv.mkDerivation (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle' hoogleIndex;
+      ++ lib.optional withHoogle' hoogleIndex
+      ++ lib.concatMap (s: s.buildInputs) otherShells;
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
       ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
+      ++ lib.concatMap (s: s.nativeBuildInputs) otherShells
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
       ++ lib.optional (ghcEnv.targetPrefix != "") (

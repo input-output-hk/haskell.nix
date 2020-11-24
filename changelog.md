@@ -4,6 +4,7 @@ that will impact users.
 ## Nov 24, 2020
 * Added `${targetPrefix}cabal` wrapper script for running cross
   compilers in `shellFor`.
+* `otherShells` arg added to `shellFor`.
 
 ## Oct 31, 2020
 * Passing `tools.hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will
