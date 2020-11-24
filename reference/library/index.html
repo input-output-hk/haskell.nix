@@ -947,6 +947,11 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <td>AttrSet of tools to make available e.g. <code>{ cabal = "3.2.0.0"; }</code> or <code>{ cabal = { version = "3.2.0.0"; }; }</code>. If an AttrSet is provided for a tool, the additional arguments will be passed to the function creating the derivation for that tool. So you can provide an <code>index-state</code> or a <code>materialized</code> argument like that <code>{ cabal = { version = "3.2.0.0"; index-state = "2020-10-30T00:00:00Z"; materialized = ./cabal.materialized; }; }</code> for example. You can specify and materialize the version of hoogle used to construct the hoogle index by including something like <code>{ hoogle = { version = "5.0.17.15"; index-state = "2020-05-31T00:00:00Z"; materialized = ./hoogle.materialized; }</code>. Uses a default version of hoogle if omitted.</td>
 </tr>
 <tr>
+<td><code>otherShells   | List     | List of other shells to include in this one.  The</code>buildInputs<code>and</code>nativeBuildInputs` of each will be included.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td><code>{ ... }</code></td>
 <td>Attrset</td>
 <td>All the other arguments are passed to <a href="https://nixos.org/nixpkgs/manual/#sec-using-stdenv"><code>mkDerivation</code></a>.</td>
