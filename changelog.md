@@ -2,6 +2,8 @@ This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
 ## Nov 24, 2020
+* Added `${targetPrefix}cabal` wrapper script for running cross
+  compilers in `shellFor`.
 * `otherShells` arg added to `shellFor`.
 
 ## Oct 31, 2020
