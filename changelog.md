@@ -1,6 +1,9 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Nov 25, 2020
+* Renamed `otherShells` arg for `shellFor` to `inputsFrom`.
+
 ## Nov 24, 2020
 * Added `${targetPrefix}cabal` wrapper script for running cross
   compilers in `shellFor`.

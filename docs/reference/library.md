@@ -428,7 +428,7 @@ shellFor =
 | `withHoogle`   | Boolean  | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
 | `exactDeps`    | Boolean  | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |
 | `tools`        | Function | AttrSet of tools to make available e.g. `{ cabal = "3.2.0.0"; }` or `{ cabal = { version = "3.2.0.0"; }; }`. If an AttrSet is provided for a tool, the additional arguments will be passed to the function creating the derivation for that tool. So you can provide an `index-state` or a `materialized` argument like that `{ cabal = { version = "3.2.0.0"; index-state = "2020-10-30T00:00:00Z"; materialized = ./cabal.materialized; }; }` for example. You can specify and materialize the version of hoogle used to construct the hoogle index by including something like `{ hoogle = { version = "5.0.17.15"; index-state = "2020-05-31T00:00:00Z"; materialized = ./hoogle.materialized; }`. Uses a default version of hoogle if omitted. |
-| `otherShells   | List     | List of other shells to include in this one.  The `buildInputs` and `nativeBuildInputs` of each will be included.
+| `inputsFrom`   | List     | List of other shells to include in this one.  The `buildInputs` and `nativeBuildInputs` of each will be included using [mkShell](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell).
 | `{ ... }`      | Attrset  | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
 
 **Return value**: a derivation
