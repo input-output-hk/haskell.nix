@@ -1,11 +1,18 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Nov 25, 2020
+* The `shellFor` `makeConfigFiles` `ghcWithHoogle` and `ghcWithPackages`
+  functions have been removed from `project.hsPkgs`.  Instead access
+  them from `project` itself (e.g. change `p.hsPkgs.shellFor` to `p.shellFor`).
+* The reflex-platform like `project.shells.ghc` has been removed.
+  If needed, add something like `p // { shells.ghc = p.shellFor {} }`
+  to `shell.nix`.
+
 ## Nov 24, 2020
 * Added `${targetPrefix}cabal` wrapper script for running cross
   compilers in `shellFor`.
 * `otherShells` arg added to `shellFor`.
-* project.hsPkgs.${n} has been deprecated in favour of project.${n}.
 
 ## Oct 31, 2020
 * Passing `tools.hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will

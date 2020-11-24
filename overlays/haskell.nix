@@ -531,7 +531,7 @@ final: prev: {
           final.lib.fix (project':
             let project = project' // { recurseForDerivations = false; };
             in rawProject // rec {
-              hsPkgs = (final.lib.mapAttrs (n: package':
+              hsPkgs = final.lib.mapAttrs (n: package':
                 if package' == null
                   then null
                   else
@@ -554,23 +554,13 @@ final: prev: {
                         ghc = project.pkg-set.config.ghc.package;
                       });
                     }
-                ) rawProject.hsPkgs
-                // (final.lib.mapAttrs (n:
-                      __trace "project.hsPkgs.${n} has been deprecated in favour of project.${n}"
-                    ) {
-                      # These are functions not packages
-                      inherit (rawProject.hsPkgs) shellFor makeConfigFiles ghcWithHoogle ghcWithPackages;
-                    }
-                  )
-              );
+                ) (builtins.removeAttrs rawProject.hsPkgs
+                  # These are functions not packages
+                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" ]);
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
-
-            # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-            # But we should encourage use of `nix-shell -A shellFor`
-            shells.ghc = project.shellFor {};
           });
 
         cabalProject =
