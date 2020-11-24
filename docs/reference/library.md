@@ -410,8 +410,8 @@ Sub-component types identify [components](#component) and are one of:
 # Project functions
 
 These functions are included in the `project` return values.
-They also exist within the `hsPkgs` package set of the project,
-but in the future they may be remove them from `hsPkgs`.
+In the past they also existed within `project.hsPkgs`,
+but have now been removed from there.
 
 ## shellFor
 
