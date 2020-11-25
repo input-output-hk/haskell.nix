@@ -32,8 +32,17 @@ let
         then haskellLib.cleanSourceWith {
           inherit src;
           filter = path: type:
-               pkgs.lib.hasSuffix ("/" + stackYaml) path
-            || (resolver != null && pkgs.lib.hasSuffix ("/" + resolver) path);
+            let
+              origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
+              relPath = pkgs.lib.removePrefix (toString origSrc + "/") path;
+
+              # checks if path1 is a parent directory for path2
+              isParent = path1: path2: pkgs.lib.hasPrefix "${path1}/" path2;
+
+            in
+              (relPath == stackYaml)
+              || (resolver != null && (relPath == resolver || isParent relPath resolver))
+            ;
         }
         else src;
 
