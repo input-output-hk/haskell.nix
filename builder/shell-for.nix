@@ -122,8 +122,7 @@ in
     name = mkDrvArgs.name or name;
 
     buildInputs = systemInputs
-      ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle' hoogleIndex;
+      ++ mkDrvArgs.buildInputs or [];
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
