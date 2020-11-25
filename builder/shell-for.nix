@@ -124,7 +124,6 @@ in
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle' hoogleIndex
       ++ lib.concatMap (s: s.buildInputs) otherShells;
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
