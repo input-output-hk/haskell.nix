@@ -193,6 +193,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#nov-25-2020">Nov 25, 2020</a></li>
+    
+
     <li class="toctree-l2"><a href="#nov-24-2020">Nov 24, 2020</a></li>
     
 
@@ -299,6 +302,15 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="nov-25-2020">Nov 25, 2020<a class="headerlink" href="#nov-25-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The <code>shellFor</code> <code>makeConfigFiles</code> <code>ghcWithHoogle</code> and <code>ghcWithPackages</code>
+  functions have been removed from <code>project.hsPkgs</code>.  Instead access
+  them from <code>project</code> itself (e.g. change <code>p.hsPkgs.shellFor</code> to <code>p.shellFor</code>).</li>
+<li>The reflex-platform like <code>project.shells.ghc</code> has been removed.
+  If needed, add something like <code>p // { shells.ghc = p.shellFor {} }</code>
+  to <code>shell.nix</code>.</li>
+</ul>
 <h2 id="nov-24-2020">Nov 24, 2020<a class="headerlink" href="#nov-24-2020" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Added <code>${targetPrefix}cabal</code> wrapper script for running cross

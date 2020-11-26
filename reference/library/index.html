@@ -150,11 +150,13 @@
     
         <ul>
         
-            <li><a class="toctree-l4" href="#project">project</a></li>
+            <li><a class="toctree-l4" href="#project">project'</a></li>
         
-            <li><a class="toctree-l4" href="#stackproject">stackProject</a></li>
+            <li><a class="toctree-l4" href="#stackproject">stackProject'</a></li>
         
-            <li><a class="toctree-l4" href="#cabalproject">cabalProject</a></li>
+            <li><a class="toctree-l4" href="#cabalproject">cabalProject'</a></li>
+        
+            <li><a class="toctree-l4" href="#project-cabalproject-and-stackproject">project, cabalProject and stackProject</a></li>
         
             <li><a class="toctree-l4" href="#mkstackpkgset">mkStackPkgSet</a></li>
         
@@ -189,7 +191,7 @@
         </ul>
     
 
-    <li class="toctree-l3"><a href="#package-set-functions">Package-set functions</a></li>
+    <li class="toctree-l3"><a href="#project-functions">Project functions</a></li>
     
         <ul>
         
@@ -464,11 +466,11 @@ will be passed to it:</p>
 </tbody>
 </table>
 <h1 id="top-level-attributes">Top-level attributes<a class="headerlink" href="#top-level-attributes" title="Permanent link">&para;</a></h1>
-<h2 id="project">project<a class="headerlink" href="#project" title="Permanent link">&para;</a></h2>
+<h2 id="project">project'<a class="headerlink" href="#project" title="Permanent link">&para;</a></h2>
 <p>Function that accepts attribute set with a <code>src</code> attribute and looks for <code>stack.yaml</code> file relative to it.</p>
-<p>If file exists, it calls <a href="#stackproject">stackProject</a> function. Otherwise it will call <a href="#cabalproject">cabalProject</a> function.</p>
+<p>If file exists, it calls <a href="#stackproject" title=") function. Otherwise it will call [cabalProject](#cabalproject">stackProject</a> function.</p>
 <p><strong>Example</strong>:</p>
-<pre><code class="nix">pkgs.haskell-nix.project {
+<pre><code class="nix">pkgs.haskell-nix.project' {
   # 'cleanGit' cleans a source directory based on the files known by git
   src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = &quot;haskell-nix-project&quot;;
@@ -477,7 +479,7 @@ will be passed to it:</p>
 }
 </code></pre>
 
-<h2 id="stackproject">stackProject<a class="headerlink" href="#stackproject" title="Permanent link">&para;</a></h2>
+<h2 id="stackproject">stackProject'<a class="headerlink" href="#stackproject" title="Permanent link">&para;</a></h2>
 <p>A function calling <a href="#callstacktonix">callStackToNix</a> with all arguments.</p>
 <p>Then feeding its result into <a href="#mkstackpkgset">mkStackPkgSet</a> passing also
 <code>pkg-def-extras</code> and <code>modules</code> arguments.</p>
@@ -495,11 +497,6 @@ will be passed to it:</p>
 <td><code>hsPkgs</code></td>
 <td>Attrset of <a href="#haskell-package">Haskell Packages</a></td>
 <td>Buildable packages, created from <code>packages</code></td>
-</tr>
-<tr>
-<td><code>pkg-set</code></td>
-<td>Attrset</td>
-<td><a href="#package-set"><code>pkgSet</code></a></td>
 </tr>
 <tr>
 <td><code>stack-nix</code></td>
@@ -523,7 +520,7 @@ will be passed to it:</p>
 </tr>
 </tbody>
 </table>
-<h2 id="cabalproject">cabalProject<a class="headerlink" href="#cabalproject" title="Permanent link">&para;</a></h2>
+<h2 id="cabalproject">cabalProject'<a class="headerlink" href="#cabalproject" title="Permanent link">&para;</a></h2>
 <p>A function calling <a href="#callcabalprojecttonix">callCabalProjectToNix</a> with all arguments.</p>
 <p>Then feeding its result into <a href="#mkcabalprojectpkgset">mkCabalProjectPkgSet</a> passing also
 <code>pkg-def-extras</code>, <code>extra-hackages</code> and <code>modules</code> arguments.</p>
@@ -541,11 +538,6 @@ will be passed to it:</p>
 <td><code>hsPkgs</code></td>
 <td>Attrset of <a href="#haskell-package">Haskell Packages</a></td>
 <td>Buildable packages, created from <code>packages</code></td>
-</tr>
-<tr>
-<td><code>pkg-set</code></td>
-<td>Attrset</td>
-<td><a href="#package-set"><code>pkgSet</code></a></td>
 </tr>
 <tr>
 <td><code>plan-nix</code></td>
@@ -574,6 +566,11 @@ will be passed to it:</p>
 </tr>
 </tbody>
 </table>
+<h2 id="project-cabalproject-and-stackproject">project, cabalProject and stackProject<a class="headerlink" href="#project-cabalproject-and-stackproject" title="Permanent link">&para;</a></h2>
+<p>These versions of the function are the same as project', cabalProject'
+and stackProject', but <code>hsPkgs</code> attributes are also included in the
+return value directly.  That way a package can be referenced as
+<code>(project {...}).foo</code> instead of <code>(project' {...}).hsPkgs.foo</code>.</p>
 <h2 id="mkstackpkgset">mkStackPkgSet<a class="headerlink" href="#mkstackpkgset" title="Permanent link">&para;</a></h2>
 <p>Creates a <a href="#package-set">package set</a> based on the <code>pkgs.nix</code> output
 of <code>stack-to-nix</code>.</p>
@@ -897,8 +894,10 @@ they execute.</p>
 <li><code>tests</code></li>
 <li><code>benchmarks</code></li>
 </ul>
-<h1 id="package-set-functions">Package-set functions<a class="headerlink" href="#package-set-functions" title="Permanent link">&para;</a></h1>
-<p>These functions exist within the <code>hsPkgs</code> package set.</p>
+<h1 id="project-functions">Project functions<a class="headerlink" href="#project-functions" title="Permanent link">&para;</a></h1>
+<p>These functions are included in the <code>project</code> return values.
+In the past they also existed within <code>project.hsPkgs</code>,
+but have now been removed from there.</p>
 <h2 id="shellfor">shellFor<a class="headerlink" href="#shellfor" title="Permanent link">&para;</a></h2>
 <p>Create a <code>nix-shell</code> <a href="../../tutorials/development/">development
 environment</a> for developing one or more
