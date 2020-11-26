@@ -1,6 +1,9 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Nov 26, 2020
+* Renamed `otherShells` arg for `shellFor` to `inputsFrom
+
 ## Nov 25, 2020
 * The `shellFor` `makeConfigFiles` `ghcWithHoogle` and `ghcWithPackages`
   functions have been removed from `project.hsPkgs`.  Instead access

@@ -1,4 +1,4 @@
-{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, compiler }:
+{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, compiler }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
@@ -20,7 +20,6 @@
 , withHoogle ? true
 , exactDeps ? false
 , tools ? {}
-, otherShells ? [] # List of other shells to include in this one
 , ... } @ args:
 
 let
@@ -117,19 +116,17 @@ let
     }
   ));
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools" "otherShells"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
 in
-  stdenv.mkDerivation (mkDrvArgs // {
+  mkShell (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
     buildInputs = systemInputs
-      ++ mkDrvArgs.buildInputs or []
-      ++ lib.concatMap (s: s.buildInputs) otherShells;
+      ++ mkDrvArgs.buildInputs or [];
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
       ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
-      ++ lib.concatMap (s: s.nativeBuildInputs) otherShells
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
       ++ lib.optional (ghcEnv.targetPrefix != "") (
