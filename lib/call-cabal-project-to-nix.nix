@@ -370,6 +370,7 @@ let
     inherit materialized;
     sha256 = plan-sha256;
     sha256Arg = "plan-sha256";
+    this = "project.plan-nix" + (if name != null then " for ${name}" else "");
     # Before pinning stuff down we need an index state to use
     reasonNotSafe =
       if !index-state-pinned
