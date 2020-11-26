@@ -239,24 +239,17 @@
             <div class="section">
               
                 <h1 id="haskellnix-nixpkgs-pin">Haskell.nix Nixpkgs Pin<a class="headerlink" href="#haskellnix-nixpkgs-pin" title="Permanent link">&para;</a></h1>
-<p>Haskell.nix contains a Nixpkgs pin in
-<a href="https://github.com/input-output-hk/haskell.nix/blob/master/nixpkgs/github.json"><code>nixpkgs/github.json</code></a>.
-This is the version of Nixpkgs used for builds of <code>nix-tools</code> and
-running the tests.</p>
+<p>Haskell.nix contains several Nixpkgs pins imanaged by <code>niv</code> in
+<code>nix/sources.json</code>.</p>
+<p>These are used in testing various versions of nixpkgs.</p>
 <p>To use haskell.nix the <code>config</code> and <code>overlays</code> need to be applied to
 Nixpkgs.  Users should probably pin a suitable version of nixpkgs, although things might not work for them if their Nixpkgs version is
 too different.</p>
 <p>We aim to keep this pin somewhere on a channel of the <strong>Nixpkgs latest
-stable release</strong>. That is currently 19.09.</p>
+stable release</strong>. That is currently 20.09.</p>
 <p>We also execute tests on MacOS (darwin). The darwin channel is usually
-behind the NixOS channel. So we choose the <code>nixpkgs-19.09-darwin</code>
-channel:</p>
-<pre><code>nix-prefetch-git https://github.com/NixOS/nixpkgs-channels refs/heads/nixpkgs-19.09-darwin
-</code></pre>
-
-<p>Keep the URL in <code>github.json</code> pointing at
-<a href="https://github.com/NixOS/nixpkgs">https://github.com/NixOS/nixpkgs</a>. Case matters because the Hydra
-trusted URL whitelist is case-sensitive.</p>
+behind the NixOS channel. So we follow the <code>nixpkgs-20.09-darwin</code>
+channel.</p>
               
             </div>
           </div>
