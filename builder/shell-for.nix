@@ -3,18 +3,13 @@
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
   # dependencies will be included in the shell's `ghc-pkg list`.
-  packages ? ps:
-    let
-      selected = haskellLib.selectLocalPackages ps;
-    in
-      builtins.trace ("Shell for " + toString (builtins.attrNames selected))
-        (builtins.attrValues selected)
+  packages ? ps: builtins.attrValues (haskellLib.selectLocalPackages ps)
   # `components` function selects components that will be worked on in the shell itself.
   # By default `shellFor` will include the dependencies of all of the components
   # in the selected packages.  If only as subset of the components will be
   # worked on in the shell then we can pass a different `components` function
   # to select those.
-, components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs) 
+, components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs)
   # Additional packages to be added unconditionally
 , additional ? _: []
 , withHoogle ? true
@@ -143,7 +138,10 @@ in
                 "$@"
               '');
     phases = ["installPhase"];
-    installPhase = "echo $nativeBuildInputs $buildInputs > $out";
+    installPhase = ''
+      echo "${"Shell for " + toString (builtins.map (p : p.identifier.name) selectedPackages)}"
+      echo $nativeBuildInputs $buildInputs > $out
+    '';
     LANG = "en_US.UTF-8";
     LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
 

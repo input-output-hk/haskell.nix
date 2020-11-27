@@ -111,8 +111,9 @@ let
     then index-state
     else if cabalProjectIndexState != null
     then cabalProjectIndexState
-    else builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
-      (pkgs.lib.last (builtins.attrNames index-state-hashes));
+    else
+      let latest-index-state = pkgs.lib.last (builtins.attrNames index-state-hashes);
+      in builtins.trace ("No index state specified" + (if name == null then "" else " for " + name) + ", using the latest index state that we know about (${latest-index-state})!") latest-index-state;
 
   index-state-pinned = index-state != null || cabalProjectIndexState != null;
 
@@ -423,6 +424,8 @@ let
     ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
+
+    echo "Using index-state ${index-state-found}"
     HOME=${
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include
@@ -438,8 +441,7 @@ let
             # Setting the desired `index-state` here in case it was not
             # from the cabal.project file. This will further restrict the
             # packages used by the solver (cached-index-state >= index-state-found).
-            builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
-              index-state-found} \
+           index-state-found} \
         -w ${
           # We are using `-w` rather than `--with-ghc` here to override
           # the `with-compiler:` in the `cabal.project` file.
