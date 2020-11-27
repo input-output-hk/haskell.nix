@@ -79,16 +79,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
-        "branch": "nixpkgs-20.03-darwin",
+        "branch": "nixpkgs-20.09-darwin",
         "builtin": false,
         "description": "Nix Packages collection",
         "homepage": null,
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "7f73e46625f508a793700f5110b86f1a53341d6e",
-        "sha256": "1gijn6vm6hwy7sxdjd27qq0hjqpkq04npwbxybd9694x7h806823",
+        "rev": "f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693",
+        "sha256": "156f48manydh8sbrs8j97mzvwdz2zaw51xlm0grrrnns5wa5aaln",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/7f73e46625f508a793700f5110b86f1a53341d6e.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs-2003": {
@@ -106,6 +106,7 @@
     },
     "nixpkgs-2009": {
         "branch": "nixpkgs-20.09-darwin",
+        "builtin": false,
         "description": "Nix Packages collection",
         "homepage": null,
         "owner": "NixOS",
