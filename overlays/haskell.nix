@@ -520,6 +520,8 @@ final: prev: {
                   tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  projectFunction = haskell-nix: haskell-nix.cabalProject';
+                  projectArgs = args';
                 };
             in project;
 
@@ -560,6 +562,10 @@ final: prev: {
 
             projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
+            projectCross = (final.lib.mapAttrs (_: pkgs:
+                rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs
+              ) final.pkgsCross) // { recurseForDerivations = false; };
+
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
           });
 
@@ -592,6 +598,8 @@ final: prev: {
                   tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  projectFunction = haskell-nix: haskell-nix.stackProject';
+                  projectArgs = args;
                 };
             in project;
 
