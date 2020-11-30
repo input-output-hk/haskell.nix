@@ -309,6 +309,11 @@ To build an executable:</p>
 <pre><code class="shell">nix-build -A your-package-name.components.exes.your-exe-name
 </code></pre>
 
+<p>To cross compile use the <code>projectCross</code> attribute:</p>
+<pre><code>nix-build -A projectCross.ghcjs.hsPkgs.your-package-name.components.exes.your-exe-name
+nix-build -A projectCross.mingwW64.hsPkgs.your-package-name.components.exes.your-exe-name
+</code></pre>
+
 <p>To open a shell for use with <code>cabal</code> run:</p>
 <pre><code class="shell">nix-shell -A shellFor
 cabal new-repl your-package-name:library:your-package-name

@@ -564,6 +564,11 @@ will be passed to it:</p>
 <td>Function</td>
 <td><a href="#ghcwithpackages"><code>ghcWithPackages</code></a></td>
 </tr>
+<tr>
+<td><code>projectCross</code></td>
+<td>Attrset</td>
+<td>Like <code>pkgs.pkgsCross.X</code> from nixpkgs <code>p.projectCross.X</code> returns the project results for cross compilation to X.  So <code>p.projectCross.ghcjs.hsPkgs</code> is the same as <code>hsPkgs</code> but compiled with ghcjs</td>
+</tr>
 </tbody>
 </table>
 <h2 id="project-cabalproject-and-stackproject">project, cabalProject and stackProject<a class="headerlink" href="#project-cabalproject-and-stackproject" title="Permanent link">&para;</a></h2>
