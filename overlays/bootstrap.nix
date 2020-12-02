@@ -373,8 +373,8 @@ in {
                 ghc-patches = ghc-patches "8.10.2";
             };
             # ghc 8.10.2 with patches needed by plutus
-            ghc8102-experimental = final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102-experimental; };
+            ghc81020201118 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc81020201118; };
 
                 bootPkgs = bootPkgs // {
                   # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143

@@ -30,7 +30,7 @@
       ghc884 = true;
       ghc8101 = false;
       ghc8102 = true;
-      ghc8102-experimental = true;
+      ghc81020201118 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc8102 = true;
     });
@@ -45,7 +45,7 @@
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "R2003" && (__elem compiler-nix-name ["ghc865" "ghc884"])) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (system == "x86_64-linux" && (nixpkgsName == "R2009" || (!(__elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8102-experimental"])))) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && (nixpkgsName == "R2009" || (!(__elem compiler-nix-name ["ghc8101" "ghc8102" "ghc81020201118"])))) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux") {
