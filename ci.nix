@@ -29,7 +29,7 @@
       ghc884 = true;
       ghc8101 = false;
       ghc8102 = true;
-      ghc81020201118 = true;
+      ghc81020201118 = false;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc8102 = true;
     });
