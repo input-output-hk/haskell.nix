@@ -129,6 +129,7 @@ let
             (n: _: !(builtins.any (x: x == n)
                 ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"])) args) // {
         src = configured-src;
+        index-state = "2020-11-16T00:00:00Z";
         compiler-nix-name = if isGhcjs88 then "ghc884" else "ghc865";
         configureArgs = pkgs.lib.optionalString isGhcjs88 "--constraint='Cabal >=3.0.2.0 && <3.1'";
         materialized = ../materialized + (if isGhcjs88 then "/ghcjs884" else "/ghcjs865");

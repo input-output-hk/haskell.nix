@@ -26,7 +26,7 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = packages.shellFor { tools = { cabal = "3.2.0.0"; }; };
+  test-shell = project.shellFor { tools = { cabal = "3.2.0.0"; }; };
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";

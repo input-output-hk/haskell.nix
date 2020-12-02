@@ -34,6 +34,7 @@ let
     sha256 = stack-sha256;
     sha256Arg = "stack-sha256";
     reasonNotSafe = null;
+    this = "project.stack-nix" + (if name != null then " for ${name}" else "");
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (runCommand (if name == null then "stack-to-nix-pkgs" else name + "-stack-to-nix-pkgs") {

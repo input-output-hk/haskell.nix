@@ -76,9 +76,8 @@ let self =
 
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
-  cleanSrc = if cabal-generator == "hpack" && !(package.cleanHpack or false)
-    then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
-    else haskellLib.cleanCabalComponent package component src;
+  canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
+  cleanSrc = if canCleanSource then haskellLib.cleanCabalComponent package component src else src;
 
   nameOnly = "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
 
@@ -287,6 +286,9 @@ let
       ++ (lib.optional keepSource "source");
 
     configurePhase =
+      (lib.optionalString (!canCleanSource) ''
+      echo "Cleaning component source not supported, leaving it un-cleaned"
+      '') +
       (lib.optionalString keepSource ''
         cp -r . $source
         cd $source

@@ -125,25 +125,48 @@ in { haskell-nix = prev.haskell-nix // {
           ];
         })).ghcide.components.exes.ghcide;
 
-    haskell-language-server."0.5.1" = args:
-      (final.haskell-nix.cabalProject ( args // {
-        name = "haskell-language-server";
-        src = final.fetchFromGitHub {
-          owner = "haskell";
-          repo = "haskell-language-server";
-          rev = "0.5.1";
-          sha256 = "17nzgpiacmrvwsy2fjx6a6pcpkncqcwfhaijvajm16jpdgni8mik";
-          fetchSubmodules = true;
-        };
-        sha256map = {
-          "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
-        };
-        # Plan issues with the benchmarks, can try removing later
-        configureArgs = "--disable-benchmarks";
-        modules = [{
-          # Tests don't pass for some reason, but this is a somewhat random revision.
-          packages.haskell-language-server.doCheck = false;
-        }];
-      })).haskell-language-server.components.exes.haskell-language-server;
+    haskell-language-server = {
+      "0.5.1" = args:
+        (final.haskell-nix.cabalProject ( args // {
+          name = "haskell-language-server";
+          src = final.fetchFromGitHub {
+            owner = "haskell";
+            repo = "haskell-language-server";
+            rev = "0.5.1";
+            sha256 = "17nzgpiacmrvwsy2fjx6a6pcpkncqcwfhaijvajm16jpdgni8mik";
+            fetchSubmodules = true;
+          };
+          sha256map = {
+            "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
+          };
+          # Plan issues with the benchmarks, can try removing later
+          configureArgs = "--disable-benchmarks";
+          modules = [{
+            # Tests don't pass for some reason, but this is a somewhat random revision.
+            packages.haskell-language-server.doCheck = false;
+          }];
+        })).haskell-language-server.components.exes.haskell-language-server;
+      "0.6.0" = args:
+        (final.haskell-nix.cabalProject ( args // {
+          name = "haskell-language-server";
+          src = final.fetchFromGitHub {
+            owner = "haskell";
+            repo = "haskell-language-server";
+            rev = "0.6.0";
+            sha256 = "027fq6752024wzzq9izsilm5lkq9gmpxf82rixbimbijw0yk4pwj";
+            fetchSubmodules = true;
+          };
+          sha256map = {
+            "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
+            "https://github.com/bubba/hie-bios.git"."cec139a1c3da1632d9a59271acc70156413017e7" = "1iqk55jga4naghmh8zak9q7ssxawk820vw8932dhympb767dfkha";
+          };
+          # Plan issues with the benchmarks, can try removing later
+          configureArgs = "--disable-benchmarks";
+        })).haskell-language-server.components.exes.haskell-language-server;
+      # When adding new versions here, please set "latest" too the latest version
+      # so that `tools = { haskell-language-server = "latest"; }`
+      # will work the same way it does for tools that are in hackage.
+      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.6.0";
+    };
   };
 }; }

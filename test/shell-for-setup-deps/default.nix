@@ -13,7 +13,7 @@ let
     }];
   };
 
-  env = project.hsPkgs.shellFor {};
+  env = project.shellFor {};
 
 # Making this work for cross compilers will be difficult as setup-deps are
 # built for the build platform and the shell will be for the host platform.
