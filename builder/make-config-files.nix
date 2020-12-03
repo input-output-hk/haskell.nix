@@ -105,7 +105,7 @@ let
       if [ -n "$l" ]; then
         ${ lib.optionalString ("${ghc.targetPrefix}${fullName}" == "nix-tools-exe-hackage-to-nix-0.1.0.0") ''
           echo B $l
-          ls -l $l/${packageCfgDir}
+          ls -l $l/package.conf.d
 
         ''
         }cp -f "$l/package.conf.d/"*.conf $out/${packageCfgDir}
