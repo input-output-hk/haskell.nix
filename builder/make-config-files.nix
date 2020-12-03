@@ -104,7 +104,7 @@ let
     for l in "${libs}"; do
       if [ -n "$l" ]; then
         ${ lib.optionalString ("${ghc.targetPrefix}${fullName}" == "aeson-lib-microlens-aeson-2.3.0.4") ''
-          echo A $l
+          echo B $l
           ls -l $l/${packageCfgDir}
 
         ''
