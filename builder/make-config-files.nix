@@ -93,12 +93,22 @@ let
 
     for l in "${cfgFiles}"; do
       if [ -n "$l" ]; then
-        cp -f "$l/${packageCfgDir}/"*.conf $out/${packageCfgDir}
+        ${ lib.optionalString ("${ghc.targetPrefix}${fullName}" == "nix-tools-exe-hackage-to-nix-0.1.0.0") ''
+          echo A $l
+          ls -l $l/${packageCfgDir}
+
+        ''
+        }cp -f "$l/${packageCfgDir}/"*.conf $out/${packageCfgDir}
       fi
     done
     for l in "${libs}"; do
       if [ -n "$l" ]; then
-        cp -f "$l/package.conf.d/"*.conf $out/${packageCfgDir}
+        ${ lib.optionalString ("${ghc.targetPrefix}${fullName}" == "nix-tools-exe-hackage-to-nix-0.1.0.0") ''
+          echo B $l
+          ls -l $l/${packageCfgDir}
+
+        ''
+        }cp -f "$l/package.conf.d/"*.conf $out/${packageCfgDir}
       fi
     done
 
