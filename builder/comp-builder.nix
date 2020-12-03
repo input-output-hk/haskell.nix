@@ -329,8 +329,19 @@ let
           for pkg in ${name}.conf/*; do
             ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
           done
+          if ! compgen -G "$out/package.conf.d/*.conf" > /dev/null; then
+            echo 'ERROR: No $out/package.conf.d/*.conf file was not created'
+            exit 0
+          fi
         elif [ -e "${name}.conf" ]; then
           ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
+          if [ ! -e "$out/package.conf.d/${name}.conf" ]; then
+            echo 'ERROR: $out/package.conf.d/${name}.conf was not created'
+            exit 0
+          fi
+        else
+          echo 'ERROR: ${name}.conf is missing
+          exit 0
         fi
 
         mkdir -p $out/exactDep
