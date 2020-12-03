@@ -7,7 +7,10 @@
    ```
 
 
-2. Regenerate materialized files ... how?
+2. If `nix-tools.cabal` or `plan-to-nix` have changed, check the
+   materialized files for each of the compiler nix name in
+   `ls -d materialized/ghc*/nix-tools` with:
 
-   TODO: @hamishmack
-
+   ```
+   nix-build scripts/check-compiler-materialization --argstr compiler-nix-name ghc884
+   ```
