@@ -93,22 +93,12 @@ let
 
     for l in "${cfgFiles}"; do
       if [ -n "$l" ]; then
-        ${ lib.optionalString ("${ghc.targetPrefix}${fullName}" == "aeson-lib-microlens-aeson-2.3.0.4") ''
-          echo A $l
-          ls -l $l/${packageCfgDir}
-
-        ''
-        }cp -f "$l/${packageCfgDir}/"*.conf $out/${packageCfgDir}
+        cp -f "$l/${packageCfgDir}/"*.conf $out/${packageCfgDir}
       fi
     done
     for l in "${libs}"; do
       if [ -n "$l" ]; then
-        ${ lib.optionalString ("${ghc.targetPrefix}${fullName}" == "aeson-lib-microlens-aeson-2.3.0.4") ''
-          echo B $l
-          ls -l $l/${packageCfgDir}
-
-        ''
-        }cp -f "$l/package.conf.d/"*.conf $out/${packageCfgDir}
+        cp -f "$l/package.conf.d/"*.conf $out/${packageCfgDir}
       fi
     done
 
