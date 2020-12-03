@@ -31,7 +31,6 @@ data Source = Source
   , sourceRevision  :: String       -- ^ Revision to use. For protocols where this doesn't make sense (such as HTTP), this
                                     --   should be the empty string.
   , sourceHash      :: Hash         -- ^ The expected hash of the source, if available.
-  , sourceCabalDir  :: String       -- ^ Directory where Cabal file is found.
   } deriving (Show, Eq, Ord, Generic)
 
 instance NFData Source
@@ -69,7 +68,7 @@ instance FromJSON DerivationSource where
   parseJSON _ = error "invalid DerivationSource"
 
 fromDerivationSource :: DerivationSource -> Source
-fromDerivationSource DerivationSource{..} = Source derivUrl derivRevision (Certain derivHash) "."
+fromDerivationSource DerivationSource{..} = Source derivUrl derivRevision (Certain derivHash)
 
 -- | Fetch a source, trying any of the various nix-prefetch-* scripts.
 fetch :: forall a. (String -> MaybeT IO a)      -- ^ This function is passed the output path name as an argument.
@@ -105,7 +104,7 @@ fetch f = runMaybeT . fetchers where
   localArchive :: FilePath -> MaybeT IO (DerivationSource, a)
   localArchive path = do
     absolutePath <- liftIO $ canonicalizePath path
-    unpacked <- snd <$> fetchWith (False, "url", ["--unpack"]) (Source ("file://" ++ absolutePath) "" UnknownHash ".")
+    unpacked <- snd <$> fetchWith (False, "url", ["--unpack"]) (Source ("file://" ++ absolutePath) "" UnknownHash)
     process (DerivationSource "" absolutePath "" "", unpacked)
 
   process :: (DerivationSource, FilePath) -> MaybeT IO (DerivationSource, a)

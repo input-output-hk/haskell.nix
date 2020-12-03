@@ -98,7 +98,7 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
          case cacheHits of
            [] -> do
              fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
-               (Source url rev UnknownHash subdir) >>= \case
+               (Source url rev UnknownHash) >>= \case
                (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
                _ -> return []
            hits ->
@@ -241,7 +241,7 @@ value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
 defaultNixContents = unlines $
   [ "{ haskellNixSrc ? builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz"
   , ", haskellNix ? import haskellNixSrc {}"
-  , ", nixpkgs ? haskellNix.sources.nixpkgs-default }:"
+  , ", nixpkgs ? haskellNix.sources.nixpkgs }:"
   , ""
   , "let"
   , "  pkgs = import nixpkgs haskellNix.nixpkgsArgs;"
