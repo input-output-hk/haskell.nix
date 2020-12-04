@@ -53,6 +53,7 @@
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
 , ghc-version ? src-spec.version
+, ghc-version-date ? null
 , src-spec
 , ghc-patches ? []
 
@@ -138,7 +139,7 @@ let
 
   configured-src = import ./configured-src.nix {
     inherit stdenv fetchurl
-    ghc-version ghc-patches src-spec
+    ghc-version ghc-version-date ghc-patches src-spec
     targetPrefix
     targetPlatform hostPlatform
     targetPackages

@@ -1,5 +1,5 @@
 { stdenv, fetchurl
-, ghc-version, ghc-patches, src-spec
+, ghc-version, ghc-version-date, ghc-patches, src-spec
 , targetPrefix
 , targetPlatform, hostPlatform
 , targetPackages
@@ -89,6 +89,9 @@ stdenv.mkDerivation (rec {
     '' + stdenv.lib.optionalString (src-spec.version != ghc-version) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version}' > VERSION
+    '' + stdenv.lib.optionalString (ghc-version-date != null) ''
+        substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        echo '${ghc-version-date}' > VERSION_DATE
     '';
 
     configurePlatforms = [ "build" "host" "target" ];

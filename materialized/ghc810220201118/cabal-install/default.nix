@@ -61,7 +61,7 @@
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "lukko".revision = (((hackage."lukko")."0.1.1.2").revisions).default;
         "lukko".flags.ofd-locking = true;
-        "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.10").revisions).default;
+        "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.10.2.20201118").revisions).default;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
         "hackage-security".revision = (((hackage."hackage-security")."0.6.0.1").revisions).default;
         "hackage-security".flags.old-directory = false;
@@ -72,8 +72,8 @@
         "integer-gmp".revision = (((hackage."integer-gmp")."1.0.3.0").revisions).default;
         };
       compiler = {
-        version = "8.10.20201118";
-        nix-name = "ghc81020201118";
+        version = "8.10.2.20201118";
+        nix-name = "ghc810220201118";
         packages = {
           "binary" = "0.8.8.0";
           "ghc-prim" = "0.6.1";
@@ -95,7 +95,7 @@
           "filepath" = "1.4.2.1";
           "process" = "1.6.9.0";
           "pretty" = "1.1.3.6";
-          "ghc-boot-th" = "8.10";
+          "ghc-boot-th" = "8.10.2.20201118";
           "array" = "0.5.4.0";
           "integer-gmp" = "1.0.3.0";
           };
