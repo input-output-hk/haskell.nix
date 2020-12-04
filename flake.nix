@@ -13,7 +13,7 @@
     in builtins.mapAttrs (_: fetch) sourcesInfo;
 
     nixpkgsArgs = {
-      inherit (self) config;
+      inherit config;
       overlays = [ self.overlay ];
     };
   in {
@@ -29,7 +29,7 @@
           value = f name;
         }) lst);
     in genAttrs [ "x86_64-linux" "x86_64-darwin" ] (system:
-      import self.sources.nixpkgs
-      (self.nixpkgsArgs // { localSystem = { inherit system; }; }));
+      import sources.nixpkgs
+      (nixpkgsArgs // { localSystem = { inherit system; }; }));
   };
 }
