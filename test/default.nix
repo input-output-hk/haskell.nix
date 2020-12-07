@@ -192,6 +192,7 @@ let
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
     # These do not work on ghcjs because it needs zlib.
     coverage = callTest ./coverage { inherit compiler-nix-name; };
+    coverage-no-libs = callTest ./coverage-no-libs { inherit compiler-nix-name; };
     snapshots = callTest ./snapshots {};
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc810220201118" ) {
     # Pandoc does not build with ghcjs or ghc 8.10 yet (lookup-sha256 and fully-static build pandoc)

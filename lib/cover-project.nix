@@ -48,16 +48,14 @@ let
     then (builtins.head coverageReports).library.project.pkg-set.config.ghc.package or pkgs.ghc
     else pkgs.ghc;
 
-  libs = map (r: r.library) coverageReports;
-
-  projectLibs = map (pkg: pkg.components.library) (lib.attrValues (haskellLib.selectProjectPackages ((lib.head libs).project.hsPkgs)));
+  libs = lib.remove null (map (r: r.library) coverageReports);
 
   mixDirs =
     map
       (l: "${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}")
-      (projectLibs);
+      libs;
 
-  srcDirs = map (l: l.src.outPath) (projectLibs);
+  srcDirs = map (l: l.src.outPath) libs;
 
 in pkgs.runCommand "project-coverage-report"
   ({ nativeBuildInputs = [ (ghc.buildGHC or ghc) pkgs.buildPackages.zip ];
@@ -122,7 +120,7 @@ in pkgs.runCommand "project-coverage-report"
       fi
 
       # Copy mix, tix, and html information over from each report
-      cp -Rn $report/share/hpc/vanilla/mix/$identifier/* $out/share/hpc/vanilla/mix/
+      cp -Rn $report/share/hpc/vanilla/mix/$identifier $out/share/hpc/vanilla/mix/
       cp -R $report/share/hpc/vanilla/tix/* $out/share/hpc/vanilla/tix/
       cp -R $report/share/hpc/vanilla/html/* $out/share/hpc/vanilla/html/
     '') coverageReports)}
