@@ -158,6 +158,7 @@ let
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
     stack-local-resolver = callTest ./stack-local-resolver {};
+    stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir {};
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
     setup-deps = import ./setup-deps { inherit pkgs compiler-nix-name; };
