@@ -560,7 +560,7 @@ final: prev: {
                   # These are functions not packages
                   [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" ]);
 
-            projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
+            projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
             projectCross = (final.lib.mapAttrs (_: pkgs:
                 rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs

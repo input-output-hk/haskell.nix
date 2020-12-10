@@ -2,6 +2,8 @@
 # reports
 { stdenv, pkgs, lib, haskellLib }:
 
+# haskell.nix project
+project:
 # List of coverage reports to accumulate
 coverageReports:
 
@@ -43,10 +45,7 @@ let
   </html>
   '';
 
-  ghc =
-    if (builtins.length coverageReports) > 0
-    then (builtins.head coverageReports).library.project.pkg-set.config.ghc.package or pkgs.ghc
-    else pkgs.ghc;
+  ghc = project.pkg-set.config.ghc.package;
 
   libs = lib.remove null (map (r: r.library) coverageReports);
 
