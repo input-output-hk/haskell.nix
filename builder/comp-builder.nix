@@ -346,6 +346,8 @@ let
           # so we are dealing with a sublib. As we build sublibs separately, the above
           # query should be safe.
           echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+          # Allow package-name:sublib-name to work in build-depends
+          echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
         else
           echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
           exit 0
