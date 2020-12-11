@@ -325,33 +325,35 @@ let
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-        if [ -d "${name}.conf" ]; then
-          for pkg in ${name}.conf/*; do
-            ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
-          done
-        elif [ -e "${name}.conf" ]; then
-          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
-        fi
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
 
         mkdir -p $out/exactDep
         touch $out/exactDep/configure-flags
         touch $out/exactDep/cabal.config
         touch $out/envDep
 
-        if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
-          echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
-          echo "package-id $id" >> $out/envDep
-        elif id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
-          name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
-          # so we are dealing with a sublib. As we build sublibs separately, the above
-          # query should be safe.
-          echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
-          # Allow package-name:sublib-name to work in build-depends
-          echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
-        else
-          echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
-          exit 0
-        fi
+        ${ # The main library in a package has the same name as the package
+           if package.identifier.name == componentId.cname
+             then ''
+               id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output)
+               echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
+               echo "package-id $id" >> $out/envDep
+             ''
+             else
+               # If the component name is not the package name this must be a sublib.
+               # As we build sublibs separately, the following query should be safe.
+               (''
+               id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output)
+               name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
+               echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+               ''
+               # Allow `package-name:sublib-name` to work in `build-depends`
+               # by adding the same `--dependency` again, but with the package
+               # name added.
+               + ''
+               echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+               '')
+        }
         if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
           echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
           echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
@@ -374,21 +376,23 @@ let
       '')
       # In case `setup copy` did not create this
       + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
-      + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
+      + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) (''
         echo "Symlink libffi and gmp .dlls ..."
         for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
+        ''
         # symlink all .dlls into the local directory.
         # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
         # to symlink over dlls as needed.
+        + ''
         echo "Symlink library dependencies..."
         for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
           if [ -d "$libdir" ]; then
             find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
           fi
         done
-      '')
+      ''))
       + (lib.optionalString doCoverage ''
         mkdir -p $out/share
         cp -r dist/hpc $out/share
