@@ -134,11 +134,11 @@ in {
                 ++ fromUntil "8.10" "8.10.2"   ./patches/ghc/67738db10010fd28a8e997b5c8f83ea591b88a0e.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "8.8") ./patches/ghc/ghc-no-system-linker.patch
 
-                ++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
+                #++ fromUntil "8.10.2" "8.12"   ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
 
-                ++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
+                #++ fromUntil "8.10.1" "8.11"   ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4") ./patches/ghc/Cabal-3886.patch
                 ;
         in ({
@@ -366,8 +366,18 @@ in {
 
                 src-spec = rec {
                     version = "8.10.2";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "02w8n085bw38vyp694j0lfk5wcnwkdaj7hhp0saj71x74533lmww";
+                    file = final.runCommand "ghc-${version}-src" {
+                      src = final.fetchgit {
+                        url = "https://gitlab.haskell.org/ghc/ghc.git";
+                        rev = "b0ad86fb84fbd2ac78208e6545c48c7a09e7f4aa";
+                        sha256 = "18sq4bn7wfdmpn04gqxbbcpdlkg7sm8qhylfwc0l6mpry74lybh2";
+                      };
+                    } ''
+                        cp -r --no-preserve=mode $src $out
+                        PATH=$PATH:${final.autoconf}/bin:${final.automake}/bin
+                        cd $out
+                        ${final.python3}/bin/python ./boot
+                      '';
                 };
 
                 ghc-patches = ghc-patches "8.10.2";
