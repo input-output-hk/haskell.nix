@@ -1,10 +1,8 @@
-{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, git, buildPackages, jq }:
+{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, git, buildPackages, jq, sources }:
 
 with stdenv.lib;
 
 let
-  sources = import ../../nix/sources.nix {};
-
   hpc-coveralls-exes = (buildPackages.haskell-nix.project' {
     compiler-nix-name = "ghc865"; # TODO use `inherit compiler-nix-name;` once it is working with 8.8 and 8.10
     src = sources.hpc-coveralls;
