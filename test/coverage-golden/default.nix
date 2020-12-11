@@ -1,14 +1,16 @@
-{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, git, hpc-coveralls, jq }:
+{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, git, buildPackages, jq }:
 
 with stdenv.lib;
 
 let
-  exampleProjectSrc = fetchFromGitHub {
-    owner  = "input-output-hk";
-    repo   = "cardano-shell";
-    rev    = "8e0d6f5548c1c13a9edfeb56e4ea27c0a6d10948";
-    sha256 = "07yjl3agiacmy5irxxmrmm7ffpnvz84zgrylnp3wmcrn417pc5fq";
-  };
+  sources = import ../../nix/sources.nix {};
+
+  hpc-coveralls-exes = (buildPackages.haskell-nix.project' {
+    compiler-nix-name = "ghc865"; # TODO use `inherit compiler-nix-name;` once it is working with 8.8 and 8.10
+    src = sources.hpc-coveralls;
+  }).hsPkgs.hpc-coveralls.components.exes;
+  
+  exampleProjectSrc = sources.cardano-shell;
 
   exampleProject = import "${exampleProjectSrc}" { config = { haskellNix = { coverage = true; }; }; };
   exampleCoverageReport = exampleProject.cardanoShellHaskellPackages.projectCoverageReport;
@@ -17,12 +19,12 @@ in recurseIntoAttrs ({
   run = stdenv.mkDerivation {
     name = "coverage-golden-test";
 
-    buildInputs = [ git jq ];
+    buildInputs = [ git jq hpc-coveralls-exes.hpc-coveralls hpc-coveralls-exes.run-cabal-test ];
     buildCommand = ''
       ########################################################################
       # Test that the coverage reports haven't materially changed
 
-      TRAVIS=1 TRAVIS_JOB_ID=1 ${hpc-coveralls}/bin/hpc-coveralls all \
+      TRAVIS=1 TRAVIS_JOB_ID=1 hpc-coveralls all \
         --package-dir ${exampleProjectSrc}/cardano-shell/ \
         --package-dir ${exampleProjectSrc}/cardano-launcher \
         --hpc-dir ${exampleCoverageReport}/share/hpc/vanilla \

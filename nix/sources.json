@@ -12,6 +12,18 @@
         "url": "https://github.com/haskell/cabal/archive/94aaa8e4720081f9c75497e2735b90f6a819b08e.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "cardano-shell": {
+        "branch": "master",
+        "description": "Node shell, a thin layer for running the node and it's modules.",
+        "homepage": null,
+        "owner": "input-output-hk",
+        "repo": "cardano-shell",
+        "rev": "8e0d6f5548c1c13a9edfeb56e4ea27c0a6d10948",
+        "sha256": "07yjl3agiacmy5irxxmrmm7ffpnvz84zgrylnp3wmcrn417pc5fq",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/cardano-shell/archive/8e0d6f5548c1c13a9edfeb56e4ea27c0a6d10948.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "ghc-8.6.5-iohk": {
         "branch": "release/8.6.5-iohk",
         "deepClone": true,
@@ -24,6 +36,18 @@
         "sha256": "0hma1zsijw9z2i622qnxpmhahbjdjgq68hz1l57bbm3v9nzh21bc",
         "type": "git",
         "url": "https://github.com/input-output-hk/ghc.git",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "hpc-coveralls": {
+        "branch": "master",
+        "description": "coveralls.io support for haskell code coverage with hpc",
+        "homepage": "http://hackage.haskell.org/package/hpc-coveralls",
+        "owner": "sevanspowell",
+        "repo": "hpc-coveralls",
+        "rev": "14df0f7d229f4cd2e79f8eabb1a740097fdfa430",
+        "sha256": "02dmcmqc845s7sdgdnk3xxn7l6jj8faa7547b4cii9mgv09arspj",
+        "type": "tarball",
+        "url": "https://github.com/sevanspowell/hpc-coveralls/archive/14df0f7d229f4cd2e79f8eabb1a740097fdfa430.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
