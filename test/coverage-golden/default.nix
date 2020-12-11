@@ -1,8 +1,13 @@
-{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, git, buildPackages, jq, sources }:
+{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages, sources }:
 
 with stdenv.lib;
 
 let
+  # Using buildPackages.buildPackages here because buildPackages.git
+  # is built with a cross compiler version of gdb (needed by python).
+  # So buildPackages.buildPackages.git is more likely to be in the cache.
+  inherit (buildPackages.buildPackages) jq git;
+
   hpc-coveralls-exes = (buildPackages.haskell-nix.project' {
     compiler-nix-name = "ghc865"; # TODO use `inherit compiler-nix-name;` once it is working with 8.8 and 8.10
     src = sources.hpc-coveralls;
@@ -17,7 +22,7 @@ in recurseIntoAttrs ({
   run = stdenv.mkDerivation {
     name = "coverage-golden-test";
 
-    buildInputs = [ git jq hpc-coveralls-exes.hpc-coveralls hpc-coveralls-exes.run-cabal-test ];
+    nativeBuildInputs = [ git jq hpc-coveralls-exes.hpc-coveralls hpc-coveralls-exes.run-cabal-test ];
     buildCommand = ''
       ########################################################################
       # Test that the coverage reports haven't materially changed
