@@ -14,6 +14,7 @@
     },
     "cardano-shell": {
         "branch": "master",
+        "builtin": false,
         "description": "Node shell, a thin layer for running the node and it's modules.",
         "homepage": null,
         "owner": "input-output-hk",
@@ -40,6 +41,7 @@
     },
     "hpc-coveralls": {
         "branch": "master",
+        "builtin": false,
         "description": "coveralls.io support for haskell code coverage with hpc",
         "homepage": "http://hackage.haskell.org/package/hpc-coveralls",
         "owner": "sevanspowell",
