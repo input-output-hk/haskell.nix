@@ -35,7 +35,7 @@ let
             compilerNixName = "ghc882";
         }
         else {
-            compilerNixName = "ghc844";
+            compilerNixName = "ghc882";
         };
 in {
   haskell-nix = prev.haskell-nix // {
@@ -357,7 +357,7 @@ in {
 
                 bootPkgs = bootPkgs // {
                   # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                  #ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc882;
                 };
                 inherit sphinx installDeps;
 
@@ -381,6 +381,8 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.2";
+
+                ghc-version = "8.10.2.20201212";
             };
             # ghc 8.10.2 with patches needed by plutus
             ghc810220201118 = final.callPackage ../compiler/ghc {
@@ -675,7 +677,7 @@ in {
       let
         # This compiler-nix-name will only be used to build nix-tools and cabal-install
         # when checking materialization of alex, happy and hscolour.
-        compiler-nix-name = "ghc865";
+        compiler-nix-name = "ghc882";
         nix-tools = final.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
         cabal-install = final.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
         # The ghc boot compiler to use to compile alex, happy and hscolour
