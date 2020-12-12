@@ -333,26 +333,34 @@ let
         touch $out/envDep
 
         ${ # The main library in a package has the same name as the package
-           if package.identifier.name == componentId.cname
-             then ''
-               id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output)
-               echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
-               echo "package-id $id" >> $out/envDep
-             ''
-             else
-               # If the component name is not the package name this must be a sublib.
-               # As we build sublibs separately, the following query should be safe.
-               (''
-               id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output)
-               name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
-               echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
-               ''
-               # Allow `package-name:sublib-name` to work in `build-depends`
-               # by adding the same `--dependency` again, but with the package
-               # name added.
-               + ''
-               echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
-               '')
+          if package.identifier.name == componentId.cname
+            then ''
+              if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
+                echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
+                echo "package-id $id" >> $out/envDep
+              else
+                echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
+                exit 0
+              fi
+            ''
+            else
+              # If the component name is not the package name this must be a sublib.
+              # As we build sublibs separately, the following query should be safe.
+              (''
+              if id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
+                name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
+                echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+                ''
+                # Allow `package-name:sublib-name` to work in `build-depends`
+                # by adding the same `--dependency` again, but with the package
+                # name added.
+                + ''
+                echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+              else
+                echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
+                exit 0
+              fi
+              '')
         }
         if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
           echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
