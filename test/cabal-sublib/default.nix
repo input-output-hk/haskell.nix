@@ -17,6 +17,11 @@ let
       packages.cabal-sublib.components.exes.cabal-sublib.depends = [
         config.hsPkgs.cabal-sublib.components.sublibs.slib ];
     })
+    (optionalAttrs (compiler-nix-name == "ghc865") ({config, ...}: {
+      reinstallableLibGhc = true;
+      packages.cabal-sublib.package.buildType = mkForce "Custom";
+      packages.cabal-sublib.package.setup-depends = [config.hsPkgs.Cabal];
+    }))
   ];
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
@@ -24,6 +29,12 @@ let
     inherit compiler-nix-name;
     src = testSrc "cabal-sublib";
     inherit modules;
+    pkg-def-extras = optional (compiler-nix-name == "ghc865")
+      (hackage: {
+        packages = {
+          "Cabal" = (((hackage.Cabal)."3.2.1.0").revisions).default;
+        };
+      });
   };
 
   packages = project.hsPkgs;
