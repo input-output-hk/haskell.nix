@@ -53,6 +53,7 @@ let
     component = {
       depends = config.setup-depends ++ (
         if package.buildType == "Latest"
+            && !stdenv.hostPlatform.isGhcjs # GHCJS will have a custom Cabal in setup-depends
           then [ latestCabalLib ]
           else []
       );
