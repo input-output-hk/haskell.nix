@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, fetchurl, runCommand, comp-builder, setup-builder }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, setup-builder }:
 
 config:
 { flags
@@ -34,10 +34,28 @@ let
     import Distribution.Simple
     main = defaultMain
   '';
+
+  # When buildType is "Simple" the Cabal library used is the one that came with GHC.
+  # Setting buildType to "Latest" uses this version (the latest version from hackage).
+  # This is not materialized, so keep that in mind if you use "Latest".
+  latestCabalLib = (buildPackages.haskell-nix.hackage-package {
+    name = "Cabal";
+    version = "latest";
+    ghcOverride = ghc.passthru.buildGHC or ghc;
+    inherit compiler-nix-name;
+    modules = [{
+      reinstallableLibGhc = true;
+    }];
+  }).components.library;
+
   defaultSetup = setup-builder {
     name = "${ghc.targetPrefix}default-Setup";
     component = {
-      depends = config.setup-depends;
+      depends = config.setup-depends ++ (
+        if package.buildType == "Latest"
+          then [ latestCabalLib ]
+          else []
+      );
       libs = [];
       frameworks = [];
       doExactConfig = false;
@@ -78,7 +96,7 @@ let
   #   ${(ghc.passthru.buildGHC or ghc).targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
   # '';
 
-  setup = if package.buildType == "Simple"
+  setup = if package.buildType == "Simple" || package.buildType == "Latest"
     then defaultSetup
     else setup-builder {
       component = components.setup // {
