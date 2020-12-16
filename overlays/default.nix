@@ -10,6 +10,7 @@ let
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
+    darwin = import ./darwin.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
     musl = import ./musl.nix;
@@ -42,6 +43,7 @@ let
     bootstrap
     ghc
     ghc-packages
+    darwin
     windows
     armv6l-linux
     musl
