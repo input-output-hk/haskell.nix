@@ -46,7 +46,11 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta = {
+      platforms = platforms.all;
+      # This test seeems to be broken on 8.6 and 8.8
+      disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884";
+    };
 
     passthru = {
       # Used for debugging with nix repl

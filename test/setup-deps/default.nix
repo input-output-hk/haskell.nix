@@ -16,17 +16,9 @@ let
   };
 
   packages = project.hsPkgs;
-in recurseIntoAttrs (if stdenv.buildPlatform != stdenv.hostPlatform
- then
-    let skip = pkgs.runCommand "skip-test-setup-deps" {} ''
-      echo "Skipping setup-deps test when cross compiling as it needs the ghc lib" >& 2
-      touch $out
-    '';
-    in {
-      ifdInputs = { plan-nix = skip; };
-      run = skip;
-    }
- else {
+in 
+
+recurseIntoAttrs ({
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -42,8 +34,11 @@ in recurseIntoAttrs (if stdenv.buildPlatform != stdenv.hostPlatform
       touch $out
     '';
 
-    meta.platforms = platforms.unix;
-    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
+    meta = {
+      platforms = platforms.unix;
+      # Building reinstallable lib GHC is broken on 8.10, and we require lib ghc so this won't work with cross-compiling
+      disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || compiler-nix-name == "ghc8102";
+    };
 
     passthru = {
       # Attributes used for debugging with nix repl
