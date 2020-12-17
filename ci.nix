@@ -29,7 +29,7 @@
       ghc884 = true;
       ghc8101 = false;
       ghc8102 = true;
-      ghc810220201118 = true;
+      ghc810220201118 = false;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
