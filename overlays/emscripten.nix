@@ -1,20 +1,23 @@
-final: prev: with final; {
+final: prev: {
+  inherit (import final.haskell-nix.sources.nixpkgs-2003 {
+    overlays = [(final: prev: with final; {
+      binaryen = callPackage ./emscripten/binaryen.nix {};
 
-  binaryen = callPackage ./emscripten/binaryen.nix {};
+      emscriptenVersion = "1.39.1";
 
-  emscriptenVersion = "1.39.1";
+      emscripten = callPackage ./emscripten { };
 
-  emscripten = callPackage ./emscripten { };
+      emscriptenfastcompPackages = dontRecurseIntoAttrs (callPackage ./emscripten/fastcomp { });
 
-  emscriptenfastcompPackages = dontRecurseIntoAttrs (callPackage ./emscripten/fastcomp { });
+      emscriptenfastcomp = emscriptenfastcompPackages.emscriptenfastcomp;
 
-  emscriptenfastcomp = emscriptenfastcompPackages.emscriptenfastcomp;
+      emscriptenupstreamPackages = dontRecurseIntoAttrs (callPackage ./emscripten/upstream { });
 
-  emscriptenupstreamPackages = dontRecurseIntoAttrs (callPackage ./emscripten/upstream { });
+      emscriptenupstream = emscriptenupstreamPackages.emscriptenupstream;
 
-  emscriptenupstream = emscriptenupstreamPackages.emscriptenupstream;
+      # emscriptenPackages = recurseIntoAttrs (callPackage ./emscripten-packages.nix { });
 
-  # emscriptenPackages = recurseIntoAttrs (callPackage ./emscripten-packages.nix { });
-
-  emscriptenStdenv = stdenv // { mkDerivation = buildEmscriptenPackage; };
+      emscriptenStdenv = stdenv // { mkDerivation = buildEmscriptenPackage; };
+    })];
+  }) emscripten emscriptenupstream;
 }
