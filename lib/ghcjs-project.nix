@@ -76,9 +76,6 @@ let
         ++ lib.optionals stdenv.isDarwin [
           pkgs.buildPackages.gcc # https://github.com/ghcjs/ghcjs/issues/663
         ]
-        ++ lib.optionals (stdenv.isDarwin && isGhcjs88) [
-          pkgs.buildPackages.clang
-        ]
         ++ lib.optional isGhcjs88 [ emsdk ];
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {

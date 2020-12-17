@@ -1,5 +1,6 @@
 final: prev: {
   inherit (import final.haskell-nix.sources.nixpkgs-2003 {
+    system = final.stdenv.system;
     overlays = [(final: prev: with final; {
       binaryen = callPackage ./emscripten/binaryen.nix {};
 
