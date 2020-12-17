@@ -239,30 +239,129 @@
             <div class="section">
               
                 <h1 id="supported-ghc-versions">Supported GHC Versions<a class="headerlink" href="#supported-ghc-versions" title="Permanent link">&para;</a></h1>
-<p>The following versions of GHC built on the CI servers and should be included
-in the binary cache (for the default haskell.nix <code>nixpkgs</code>).</p>
-<ul>
-<li>8.6.5 <code>compiler-nix-name = "ghc865";</code></li>
-<li>8.8.3 <code>compiler-nix-name = "ghc883";</code></li>
-<li>8.8.4 <code>compiler-nix-name = "ghc884";</code></li>
-<li>8.10.1 <code>compiler-nix-name = "ghc8101";</code></li>
-<li>8.10.2 <code>compiler-nix-name = "ghc8102";</code></li>
-</ul>
-<p>Full test suite is run against 8.6.5, 8.8.4 and 8.10.2.</p>
-<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix">ci.nix</a>
-for the list of tested GHC versions.</p>
-<p>The following GHC versions are not included in CI and will not be cached:</p>
-<ul>
-<li>8.4.4 <code>compiler-nix-name = "ghc844";</code></li>
-<li>8.6.1 <code>compiler-nix-name = "ghc861";</code></li>
-<li>8.6.2 <code>compiler-nix-name = "ghc862";</code></li>
-<li>8.6.3 <code>compiler-nix-name = "ghc863";</code></li>
-<li>8.6.4 <code>compiler-nix-name = "ghc864";</code></li>
-<li>8.8.1 <code>compiler-nix-name = "ghc881";</code></li>
-<li>8.8.2 <code>compiler-nix-name = "ghc882";</code></li>
-</ul>
-<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix">overlays/bootstrap.nix</a>
-for a list of all the valid <code>compiler-nix-names</code>.</p>
+<p>This table shows which versions of GHC are defined, built by CI, and tested. 
+If you use a combination of nixpkgs version and GHC version which is built by our CI, you should get cache hits from our cache.</p>
+<p>The "nixpkgs versions" refer to the versions that <code>haskell.nix</code> provides; if you use your own version of nixpkgs you will likely not get cache hit</p>
+<table>
+<thead>
+<tr>
+<th>Nixpkgs version</th>
+<th>GHC version</th>
+<th>Defined?</th>
+<th>Built?</th>
+<th>Tested?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20.03</td>
+<td>8.4.4</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.03</td>
+<td>8.6.{1,2,3,4}</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.03</td>
+<td>8.6.5</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>20.03</td>
+<td>8.8.{1,2,3}</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.03</td>
+<td>8.8.4</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.03</td>
+<td>8.10.1</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.03</td>
+<td>8.10.2</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.4.4</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.6.{1,2,3,4}</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.6.5</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.8.{1,2}</td>
+<td>Y</td>
+<td>N</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.8.3</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.8.4</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.10.1</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.10.2</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix">ci.nix</a> for the source of truth about what is built and tested.</p>
+<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix">overlays/bootstrap.nix</a> for a list of all the valid <code>compiler-nix-names</code>.</p>
 <p>See also: <a href="../../dev/adding-new-ghc/">Instructions on adding new GHC versions</a>.</p>
               
             </div>
