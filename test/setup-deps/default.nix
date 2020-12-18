@@ -16,11 +16,17 @@ let
   };
 
   packages = project.hsPkgs;
+  meta = {
+    platforms = platforms.unix;
+    # Building reinstallable lib GHC is broken on 8.10, and we require lib ghc so this won't work with cross-compiling.
+    # Moreover, even building the plan doesn't seem to work in these circumstances.
+    disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || compiler-nix-name == "ghc8102";
+  };
 in 
 
 recurseIntoAttrs ({
   ifdInputs = {
-    inherit (project) plan-nix;
+    plan-nix = addMetaAttrs meta project.plan-nix;
   };
   run = pkgs.stdenv.mkDerivation {
     name = "setup-deps-test";
@@ -34,12 +40,7 @@ recurseIntoAttrs ({
       touch $out
     '';
 
-    meta = {
-      platforms = platforms.unix;
-      # Building reinstallable lib GHC is broken on 8.10, and we require lib ghc so this won't work with cross-compiling
-      disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || compiler-nix-name == "ghc8102";
-    };
-
+    inherit meta;
     passthru = {
       # Attributes used for debugging with nix repl
       inherit project packages;
