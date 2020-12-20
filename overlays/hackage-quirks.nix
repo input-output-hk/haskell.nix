@@ -13,9 +13,11 @@ in { haskell-nix = prev.haskell-nix // {
     # but also for
     # https://github.com/input-output-hk/haskell.nix/issues/422
     cabal-install = {
+      # text 1.2.4.1 is not in hackage yet
       cabalProject = ''
         packages: .
         allow-newer: cabal-install:base
+        constraints: text <=1.2.4.0
       '';
       modules = [
         { reinstallableLibGhc = true; }

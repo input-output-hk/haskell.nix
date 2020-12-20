@@ -252,7 +252,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2020-05-31T00:00:00Z";
+        internalHackageIndexState = "2020-12-17T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
