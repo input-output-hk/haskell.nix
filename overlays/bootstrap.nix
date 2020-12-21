@@ -560,9 +560,11 @@ in {
             name = "nix-tools";
             src = final.haskell-nix.sources.nix-tools;
             index-state = final.haskell-nix.internalHackageIndexState;
+            # text 1.2.4.1 is not in hackage yet. TODO remove the constraint when it is.
             cabalProjectLocal = ''
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
               index-state: ${final.haskell-nix.internalHackageIndexState}
+              constraints: text <1.2.4.1
             '';
             # When building cabal-install (only happens when checking materialization)
             # disable checking of the tools used to avoid infinite recursion.

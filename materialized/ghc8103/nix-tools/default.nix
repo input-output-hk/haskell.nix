@@ -219,8 +219,11 @@
         "deriving-compat".flags.base-4-9 = true;
         "deriving-compat".flags.template-haskell-2-11 = true;
         "deriving-compat".flags.new-functor-classes = true;
-        "text".revision = (((hackage."text")."1.2.4.1").revisions).default;
+        "text".revision = (((hackage."text")."1.2.3.2").revisions).default;
+        "text".flags.integer-simple = false;
+        "text".flags.developer = false;
         "Cabal".revision = (((hackage."Cabal")."3.2.1.0").revisions).default;
+        "Cabal".flags.bundled-binary-generic = false;
         "assoc".revision = (((hackage."assoc")."1.0.2").revisions).default;
         "unordered-containers".revision = (((hackage."unordered-containers")."0.2.13.0").revisions).default;
         "unordered-containers".flags.debug = false;
@@ -318,13 +321,10 @@
           "mtl" = "2.2.2";
           "rts" = "1.0";
           "deepseq" = "1.4.4.0";
-          "parsec" = "3.1.14.0";
           "directory" = "1.3.6.0";
           "template-haskell" = "2.16.0.0";
           "containers" = "0.6.2.1";
           "bytestring" = "0.10.12.0";
-          "text" = "1.2.4.1";
-          "Cabal" = "3.2.1.0";
           "base" = "4.14.1.0";
           "time" = "1.9.3";
           "terminfo" = "0.4.1.4";

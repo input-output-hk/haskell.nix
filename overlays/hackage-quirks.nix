@@ -13,11 +13,11 @@ in { haskell-nix = prev.haskell-nix // {
     # but also for
     # https://github.com/input-output-hk/haskell.nix/issues/422
     cabal-install = {
-      # text 1.2.4.1 is not in hackage yet
+      # text 1.2.4.1 is not in hackage yet. TODO remove the constraint when it is.
       cabalProject = ''
         packages: .
         allow-newer: cabal-install:base
-        constraints: text <=1.2.4.0
+        constraints: text <1.2.4.1
       '';
       modules = [
         { reinstallableLibGhc = true; }
