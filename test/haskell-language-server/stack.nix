@@ -2,7 +2,12 @@
 let
   project = buildPackages.haskell-nix.project' {
     inherit compiler-nix-name;
-    src = evalPackages.haskell-nix.sources.haskell-language-server;
+    src = evalPackages.fetchgit {
+      url = "https://github.com/haskell/haskell-language-server.git";
+      fetchSubmodules = true;
+      rev = "0.7.1";
+      sha256 = "0gkzvjx4dgf53yicinqjshlj80gznx5khb62i7g3kqjr85iy0raa";
+    };
     projectFileName = "stack-${buildPackages.haskell-nix.compiler.${
       if compiler-nix-name == "ghc8103"
         then "ghc8102"
