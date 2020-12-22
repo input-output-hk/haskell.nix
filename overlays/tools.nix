@@ -146,14 +146,18 @@ in { haskell-nix = prev.haskell-nix // {
             packages.haskell-language-server.doCheck = false;
           }];
         })).haskell-language-server.components.exes.haskell-language-server;
-      "0.6.0" = args:
+      # When adding new versions here, please set "latest" too the latest version
+      # so that `tools = { haskell-language-server = "latest"; }`
+      # will work the same way it does for tools that are in hackage.
+      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.7.1";
+    } // final.lib.mapAttrs (rev: sha256:
+      args:
         (final.haskell-nix.cabalProject ( args // {
           name = "haskell-language-server";
           src = final.fetchFromGitHub {
             owner = "haskell";
             repo = "haskell-language-server";
-            rev = "0.6.0";
-            sha256 = "027fq6752024wzzq9izsilm5lkq9gmpxf82rixbimbijw0yk4pwj";
+            inherit rev sha256;
             fetchSubmodules = true;
           };
           sha256map = {
@@ -162,11 +166,10 @@ in { haskell-nix = prev.haskell-nix // {
           };
           # Plan issues with the benchmarks, can try removing later
           configureArgs = "--disable-benchmarks";
-        })).haskell-language-server.components.exes.haskell-language-server;
-      # When adding new versions here, please set "latest" too the latest version
-      # so that `tools = { haskell-language-server = "latest"; }`
-      # will work the same way it does for tools that are in hackage.
-      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.6.0";
+        })).haskell-language-server.components.exes.haskell-language-server
+    ) {
+      "0.6.0" = "027fq6752024wzzq9izsilm5lkq9gmpxf82rixbimbijw0yk4pwj";
+      "0.7.1" = "0gkzvjx4dgf53yicinqjshlj80gznx5khb62i7g3kqjr85iy0raa";
     };
   };
 }; }

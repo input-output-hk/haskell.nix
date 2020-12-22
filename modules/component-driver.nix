@@ -67,7 +67,11 @@ in
       "mtl" "parsec" "process" "text" "time" "transformers"
       "unix" "xhtml" "terminfo"
       # "stm"
-    ];
+    ]
+    # TODO remove this as soon as https://github.com/haskell/text/issues/309
+    # is resolved.
+    ++ lib.optionals (config.compiler.nix-name == "ghc8103") [
+      "text" "binary" "bytestring" "containers" ];
 
   options.bootPkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;
@@ -77,7 +81,10 @@ in
       "rts" "ghc-boot-th"
       "ghc-heap" # since ghc 8.6.
       "ghcjs-prim"
-    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc";
+    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
+      # TODO remove this as soon as https://github.com/haskell/text/issues/309
+      # is resolved.
+      ++ lib.optional (config.compiler.nix-name == "ghc8103") "text";
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;

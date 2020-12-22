@@ -35,11 +35,8 @@
         "template-haskell".revision = (((hackage."template-haskell")."2.16.0.0").revisions).default;
         "containers".revision = (((hackage."containers")."0.6.2.1").revisions).default;
         "bytestring".revision = (((hackage."bytestring")."0.10.12.0").revisions).default;
-        "text".revision = (((hackage."text")."1.2.3.2").revisions).default;
-        "text".flags.integer-simple = false;
-        "text".flags.developer = false;
+        "text".revision = (((hackage."text")."1.2.4.1").revisions).default;
         "Cabal".revision = (((hackage."Cabal")."3.2.1.0").revisions).default;
-        "Cabal".flags.bundled-binary-generic = false;
         "base64-bytestring".revision = (((hackage."base64-bytestring")."1.2.0.1").revisions).default;
         "base".revision = (((hackage."base")."4.14.1.0").revisions).default;
         "time".revision = (((hackage."time")."1.9.3").revisions).default;
@@ -87,10 +84,13 @@
           "mtl" = "2.2.2";
           "rts" = "1.0";
           "deepseq" = "1.4.4.0";
+          "parsec" = "3.1.14.0";
           "directory" = "1.3.6.0";
           "template-haskell" = "2.16.0.0";
           "containers" = "0.6.2.1";
           "bytestring" = "0.10.12.0";
+          "text" = "1.2.4.1";
+          "Cabal" = "3.2.1.0";
           "base" = "4.14.1.0";
           "time" = "1.9.3";
           "transformers" = "0.5.6.2";
