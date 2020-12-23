@@ -39,8 +39,7 @@ let
   # To avoid infinite recursion we have to leave this out for packages
   # needed to build `cabal-install`.
   # GHCJS will have a custom Cabal in setup-depends
-  cabalLibDepends = lib.optional (!stdenv.hostPlatform.isGhcjs
-    && !builtins.elem package.identifier.name
+  cabalLibDepends = lib.optional (!builtins.elem package.identifier.name
       ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
        "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
        "containers" "binary" "mtl" "text" "process" "parsec"]
