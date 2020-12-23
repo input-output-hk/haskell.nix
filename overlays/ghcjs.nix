@@ -1,7 +1,8 @@
 final: prev:
 {
   haskell-nix = prev.haskell-nix // ({
-    defaultModules = prev.haskell-nix.defaultModules ++ final.lib.optional final.stdenv.hostPlatform.isGhcjs ({
+    defaultModules = prev.haskell-nix.defaultModules ++ final.lib.optional final.stdenv.hostPlatform.isGhcjs (
+      ({ pkgs, buildModules, config, lib, ... }: {
         # Allow Cabal to be reinstalled so that custom setups will use a Cabal
         # built with packages.Cabal.patches
         nonReinstallablePkgs =
@@ -28,7 +29,7 @@ final: prev:
           shift
           ${final.buildPackages.nodejs}/bin/node $exe $@
         '') + "/bin/node-wrapper")];
-      }
+      })
     );
   });
 }
