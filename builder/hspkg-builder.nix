@@ -35,28 +35,22 @@ let
     main = defaultMain
   '';
 
-  # When buildType is "Simple" the Cabal library used is the one that came with GHC.
-  # Setting buildType to "Latest" uses this version (the latest version from hackage).
-  # This is not materialized, so keep that in mind if you use "Latest".
-  latestCabalLib = (buildPackages.haskell-nix.hackage-package {
-    name = "Cabal";
-    version = "latest";
-    ghcOverride = ghc.passthru.buildGHC or ghc;
-    inherit compiler-nix-name;
-    modules = [{
-      reinstallableLibGhc = true;
-    }];
-  }).components.library;
+  # Get the Cabal lib used to build `cabal-install`.
+  # To avoid infinite recursion we have to leave this out for packages
+  # needed to build `cabal-install`.
+  # GHCJS will have a custom Cabal in setup-depends
+  cabalLibDepends = lib.optional (!stdenv.hostPlatform.isGhcjs
+    && !builtins.elem package.identifier.name
+      ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
+       "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
+       "containers" "binary" "mtl" "text" "process" "parsec"]
+    )
+    buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
 
   defaultSetup = setup-builder {
     name = "${ghc.targetPrefix}default-Setup";
     component = {
-      depends = config.setup-depends ++ (
-        if package.buildType == "Latest"
-            && !stdenv.hostPlatform.isGhcjs # GHCJS will have a custom Cabal in setup-depends
-          then [ latestCabalLib ]
-          else []
-      );
+      depends = config.setup-depends ++ cabalLibDepends;
       libs = [];
       frameworks = [];
       doExactConfig = false;
@@ -97,11 +91,11 @@ let
   #   ${(ghc.passthru.buildGHC or ghc).targetPrefix}ghc Setup.hs --make -o $out/bin/Setup
   # '';
 
-  setup = if package.buildType == "Simple" || package.buildType == "Latest"
+  setup = if package.buildType == "Simple"
     then defaultSetup
     else setup-builder {
       component = components.setup // {
-        depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
+        depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends ++ cabalLibDepends;
         extraSrcFiles = components.setup.extraSrcFiles ++ [ "Setup.hs" "Setup.lhs" ];
         pkgconfig = if components ? library then components.library.pkgconfig or [] else [];
       };

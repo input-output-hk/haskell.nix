@@ -7,12 +7,6 @@ let
   project = cabalProject' {
     inherit compiler-nix-name;
     src = testSrc "sublib-docs";
-    modules = [
-      (optionalAttrs (compiler-nix-name == "ghc865") {
-        # Use the latest Cabal from hackage when building
-        packages.sublib-docs.package.buildType = mkForce "Latest";
-      })
-    ];
   };
 
   packages = project.hsPkgs;

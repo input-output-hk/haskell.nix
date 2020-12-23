@@ -17,10 +17,6 @@ let
       packages.cabal-sublib.components.exes.cabal-sublib.depends = [
         config.hsPkgs.cabal-sublib.components.sublibs.slib ];
     })
-    (optionalAttrs (compiler-nix-name == "ghc865") {
-      # Use the latest Cabal from hackage when building
-      packages.cabal-sublib.package.buildType = mkForce "Latest";
-    })
   ];
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
