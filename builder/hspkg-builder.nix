@@ -94,7 +94,7 @@ let
     then defaultSetup
     else setup-builder {
       component = components.setup // {
-        depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends ++ cabalLibDepends;
+        depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
         extraSrcFiles = components.setup.extraSrcFiles ++ [ "Setup.hs" "Setup.lhs" ];
         pkgconfig = if components ? library then components.library.pkgconfig or [] else [];
       };
