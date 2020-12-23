@@ -38,11 +38,13 @@ let
   # Get the Cabal lib used to build `cabal-install`.
   # To avoid infinite recursion we have to leave this out for packages
   # needed to build `cabal-install`.
-  # GHCJS will have a custom Cabal in setup-depends
-  cabalLibDepends = lib.optional (!builtins.elem package.identifier.name
-      ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
-       "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
-       "containers" "binary" "mtl" "text" "process" "parsec"]
+  cabalLibDepends = lib.optional (
+      builtins.elem compiler-nix-name["ghc865" "ghc884"]
+    &&
+      !builtins.elem package.identifier.name
+        ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
+         "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
+         "containers" "binary" "mtl" "text" "process" "parsec"]
     )
     buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
 
