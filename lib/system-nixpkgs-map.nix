@@ -17,7 +17,10 @@ pkgs:
      GL = pkgs.libGL;
      GLU = pkgs.libGLU;
      alut = pkgs.freealut;
-     X11 = pkgs.xorg.libX11;
+     X11 = pkgs.buildEnv {
+       name = "x11-haskell-wrapper";
+       paths = with pkgs.xorg; [libX11 libXScrnSaver];
+     };
      Xrandr = pkgs.xorg.libXrandr;
      Xrender = pkgs.xorg.libXrender;
      Xext = pkgs.xorg.libXext;
