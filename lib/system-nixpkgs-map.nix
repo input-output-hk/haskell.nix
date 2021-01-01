@@ -19,6 +19,7 @@ pkgs:
      alut = pkgs.freealut;
      X11 = pkgs.xorg.libX11;
      Xrandr = pkgs.xorg.libXrandr;
+     Xrender = pkgs.xorg.libXrender;
      Xext = pkgs.xorg.libXext;
      Xi = pkgs.xorg.libXi;
      Xxf86vm = pkgs.xorg.libXxf86vm;
