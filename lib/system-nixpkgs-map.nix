@@ -19,7 +19,8 @@ pkgs:
      alut = pkgs.freealut;
      X11 = pkgs.buildEnv {
        name = "x11-haskell-wrapper";
-       paths = with pkgs.xorg; [libX11 libXScrnSaver];
+       paths = with pkgs.xorg; [ libX11 libXScrnSaver libXinerama ]
+               ++ [ pkgs.xlibs.libXinerama.dev ];
      };
      Xrandr = pkgs.xorg.libXrandr;
      Xrender = pkgs.xorg.libXrender;
