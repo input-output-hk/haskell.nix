@@ -82,6 +82,7 @@ final: prev: {
         mkPkgSet =
             { pkg-def  # Base package set. Either from stackage (via stack-to-nix) or from a cabal projects plan file (via plan-to-nix)
             , pkg-def-extras ? [] # Additional packages to augment the Base package set `pkg-def` with.
+            , pkgs-mappers
             , modules ? []
             , extra-hackages ? [] # Extra Hackage repositories to use besides main one.
             }@args:
@@ -91,7 +92,7 @@ final: prev: {
             in
 
             import ../package-set.nix {
-                inherit (args) pkg-def pkg-def-extras;
+                inherit (args) pkg-def pkg-def-extras pkgs-mappers;
                 modules = defaultModules ++ modules;
                 pkgs = final;
                 hackage = hackageAll;
@@ -118,6 +119,7 @@ final: prev: {
         mkStackPkgSet =
             { stack-pkgs  # Path to the output of stack-to-nix
             , pkg-def-extras ? []
+            , pkgs-mappers
             , modules ? []
             }@args:
             let
@@ -135,6 +137,7 @@ final: prev: {
                   else module;
                 removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
+                inherit pkgs-mappers;
                 pkg-def = excludeBootPackages null pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
                                    final.ghc-boot-packages.${compiler.nix-name}
@@ -154,6 +157,7 @@ final: prev: {
             , modules ? []
             , extra-hackages ? []
             , compiler-nix-name ? null
+            , pkgs-mappers
             }:
 
             let
@@ -168,7 +172,7 @@ final: prev: {
               assert (final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version
                    == final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
               mkPkgSet {
-                inherit pkg-def;
+                inherit pkg-def pkgs-mappers;
                 pkg-def-extras = [ plan-pkgs.extras
                                    final.ghc-boot-packages.${compiler-nix-name'}
                                  ]
@@ -461,6 +465,7 @@ final: prev: {
             , compiler-nix-name
             , version ? "latest"
             , revision ? "default"
+            , pkgs-mappers ? {}
             , ... }@args':
             let version' = if version == "latest"
                   then builtins.head (
@@ -488,18 +493,18 @@ final: prev: {
                 '');
           in cabalProject' (
             (final.haskell-nix.hackageQuirks { inherit name; version = version'; }) //
-              builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
+              builtins.removeAttrs args [ "version" "revision" ] // { inherit src pkgs-mappers; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
-            { src, compiler-nix-name, ... }@args':
+            { src, compiler-nix-name, pkgs-mappers ? {}, ... }@args':
             let
               args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
             in let pkg-set = mkCabalProjectPkgSet
-                { inherit compiler-nix-name;
+                { inherit compiler-nix-name pkgs-mappers;
                   plan-pkgs = importAndFilterProject {
                     inherit (callProjectResults) projectNix sourceRepos src;
                   };
@@ -577,13 +582,14 @@ final: prev: {
             in p.hsPkgs // p;
 
         stackProject' =
-            { src, ... }@args:
+            { src, pkgs-mappers ? {}, ... }@args:
             let callProjectResults = callStackToNix ({ inherit cache; } // args);
                 generatedCache = genStackCache args;
                 cache = args.cache or generatedCache;
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
+                  inherit pkgs-mappers;
                   modules = final.lib.singleton (mkCacheModule cache)
                     ++ (args.modules or [])
                     ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; }

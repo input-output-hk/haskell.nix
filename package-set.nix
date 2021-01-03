@@ -1,5 +1,5 @@
-let f = { hackage, pkgs, pkg-def, pkg-def-extras ? [], modules ? [] }: let
-  buildModules = f { inherit hackage pkg-def pkg-def-extras modules; pkgs = pkgs.buildPackages; };
+let f = { hackage, pkgs, pkg-def, pkg-def-extras ? [], pkgs-mappers, modules ? [] }: let
+  buildModules = f { inherit hackage pkg-def pkg-def-extras pkgs-mappers modules; pkgs = pkgs.buildPackages; };
 in pkgs.lib.evalModules {
   modules = modules ++ [
     ({ config, lib, ... }: {
@@ -12,7 +12,11 @@ in pkgs.lib.evalModules {
         # The package descriptions depend on pkgs, which are used to resolve system package dependencies
         # as well as pkgconfPkgs, which are used to resolve pkgconfig name to nixpkgs names.  We simply
         # augment the existing pkgs set with the specific mappings:
-        pkgs = pkgs // (import ./lib/system-nixpkgs-map.nix pkgs);
+        pkgs =
+          let
+            mappedPkgs = pkgs // pkgs-mappers;
+          in
+          mappedPkgs // (import ./lib/system-nixpkgs-map.nix mappedPkgs);
         pkgconfPkgs = import ./lib/pkgconf-nixpkgs-map.nix pkgs;
 
         inherit buildModules;
