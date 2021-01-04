@@ -29,34 +29,23 @@ nixpkgs.overlays = [
 ];
 ```
 
-### Mapping via project parameter
-
-The user may add arbitrary `pkgs` attributes by adding them to `project'`, `cabalProject'` or `stackProject'`
-via `pkgs-mappers`.
-For example:
-
-```nix
-pkgs.haskell-nix.project' {
-  src = ./.;
-  compiler-nix-name = "ghcXYZ";
-  pkgs-mappers =
-  {
-    X11 = pkgs.buildEnv {
-      name = "x11-haskell-wrapper";
-      paths = with pkgs.xorg; [ libX11 libXScrnSaver libXinerama ]
-        ++ [ pkgs.xlibs.libXinerama.dev ];
-    };
-  };
-}
-```
-
 ### Mapping in Haskell.nix
 
 Alternatively, if the name is commonly used, an alias can be added to
 the Haskell.nix sources, so that it's solved for all users.
 
-* [`lib/pkgconf-nixpkgs-map.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/pkgconf-nixpkgs-map.nix) - for `pkgconfig-depends`
-* [`lib/system-nixpkgs-map.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/system-nixpkgs-map.nix) - for `build-tool-depends`, `frameworks`, `extra-libraries`, etc.
+* [`lib/pkgconf-nixpkgs-map.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/pkgconf-nixpkgs-map.nix)
+  — for `pkgconfig-depends`.
+
+  Each mapping entry is a list of packages.
+
+* [`lib/system-nixpkgs-map.nix`](https://github.com/input-output-hk/haskell.nix/blob/master/lib/system-nixpkgs-map.nix)
+  — for `build-tool-depends`, `frameworks`, `extra-libraries`, etc.
+
+  Each name can be mapped to:
+  1. A single package from nixkpgs.
+  2. `null` — eliminates the dependency
+  3. A list of packages — sometimes needed for dependencies such as `X11`.
 
 !!! tip "Open a PR"
     Please go ahead and open a [pull request](https://github.com/input-output-hk/haskell.nix/pulls)
