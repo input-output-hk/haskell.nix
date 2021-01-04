@@ -1,7 +1,12 @@
 {
   description = "Alternative Haskell Infrastructure for Nixpkgs";
 
-  outputs = { self }: let
+  inputs = {
+    # Note: keep this in sync with sources.json!
+    nixpkgs.url = github:NixOS/nixpkgs/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693;
+  };
+
+  outputs = { self, nixpkgs, ... }: let
     config = import ./config.nix;
     # We can't import ./nix/sources.nix directly, because that uses nixpkgs to fetch by default,
     # and importing nixpkgs without specifying localSystem doesn't work on flakes.
@@ -29,7 +34,7 @@
           value = f name;
         }) lst);
     in genAttrs [ "x86_64-linux" "x86_64-darwin" ] (system:
-      import sources.nixpkgs
+      import nixpkgs
       (nixpkgsArgs // { localSystem = { inherit system; }; }));
   };
 }
