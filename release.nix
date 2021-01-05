@@ -10,29 +10,23 @@ let
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
-in rec {
-    r2009-linux = genericPkgs.releaseTools.aggregate {
-      name = "haskell.nix-r2009";
-      meta.description = "All 20.09 jobs";
-      constituents = lib.collect (d: lib.isDerivation d) allJobs.R2009.ghc865.linux;
-    };
-    r2009-darwin = genericPkgs.releaseTools.aggregate {
-      name = "haskell.nix-r2009";
-      meta.description = "All 20.09 jobs";
-      constituents = lib.collect (d: lib.isDerivation d) allJobs.R2009.ghc865.darwin;
-    };
-#    r2003 = genericPkgs.releaseTools.aggregate {
-#      name = "haskell.nix-r2003";
-#      meta.description = "All 20.03 jobs";
-#      constituents = lib.collect (d: lib.isDerivation d) allJobs.R2003.ghc865;
-#    };
-#    # On IOHK Hydra, "required" is a special job that updates the
-#    # GitHub CI status.
-#    required = genericPkgs.releaseTools.aggregate {
-#      name = "haskell.nix-required";
-#      meta.description = "All jobs required to pass CI";
-#      constituents = [ r2003 r2009 ];
-#    };
-  }
+  names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
+    (builtins.attrNames x);
+in
+  builtins.listToAttrs (
+    lib.concatMap (nixpkgsVer:
+      let nixpkgsJobs = allJobs.${nixpkgsVer};
+      in lib.concatMap (compiler-nix-name:
+        let ghcJobs = nixpkgsJobs.${compiler-nix-name};
+        in builtins.map (platform: {
+          name = "required-${nixpkgsVer}-${compiler-nix-name}-${platform}";
+          value = genericPkgs.releaseTools.aggregate {
+            name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${platform}";
+            meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${platform} jobs";
+            constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${platform};
+          };
+        }) (names ghcJobs)
+      ) (names nixpkgsJobs)
+    ) (names allJobs))
 
 

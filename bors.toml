@@ -1,7 +1,22 @@
 status = [
   "buildkite/haskell-dot-nix",
-  "ci/hydra:Cardano:haskell-nix:r2009-linux",
-  "ci/hydra:Cardano:haskell-nix:r2009-darwin",
+  # Generasted in `nix repl` with
+  # __trace (builtins.concatStringsSep "\n" (builtins.map (n: "  \"ci/hydra:Cardano:haskell-nix:${n}\",") (builtins.attrNames (import ./release.nix {})))) {}
+  # TODO automate updating
+  "ci/hydra:Cardano:haskell-nix:required-R2003-ghc865-darwin",
+  "ci/hydra:Cardano:haskell-nix:required-R2003-ghc865-linux",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc8101-darwin",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc8101-linux",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc8102-darwin",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc8102-linux",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc810220201118-darwin",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc810220201118-linux",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc865-darwin",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc865-linux",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc883-darwin",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc883-linux",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc884-darwin",
+  "ci/hydra:Cardano:haskell-nix:required-R2009-ghc884-linux",
 ]
 timeout_sec = 7200
 required_approvals = 1
