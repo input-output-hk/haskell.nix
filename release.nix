@@ -28,6 +28,6 @@ let
           }) (names ghcJobs)
         ) (names nixpkgsJobs)
       ) (names allJobs));
-in { inherit (requiredJobs) required-R2009-ghc865-darwin required-R2009-ghc865-linux; }
+in allJobs // requiredJobs
 
 
