@@ -18,6 +18,7 @@ with pkgs;
   alut = [ freealut ];
   X11 = with xorg; [ libX11 ];
   Xrandr = [ xorg.libXrandr ];
+  Xrender = [ xorg.libXrender ];
   Xss = [ xorg.libXScrnSaver ];
   Xext = [ xorg.libXext ];
   Xi = [ xorg.libXi ];
