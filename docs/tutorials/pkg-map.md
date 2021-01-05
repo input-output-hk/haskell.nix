@@ -29,6 +29,27 @@ nixpkgs.overlays = [
 ];
 ```
 
+### Mapping via project parameter
+
+The user may add arbitrary attributes by adding them to `project'`, `cabalProject'` or `stackProject'`
+via the `system-pkgs-overlay` parameter.
+
+For example:
+
+```nix
+pkgs.haskell-nix.project' {
+  src = ./.;
+  compiler-nix-name = "ghcXYZ";
+  system-pkgs-overlay = self: super: {
+    X11 = super.buildEnv {
+      name = "x11-haskell-wrapper";
+      paths = with super.xorg; [ libX11 libXScrnSaver libXinerama ]
+        ++ [ super.xlibs.libXinerama.dev ];
+    };
+  };
+}
+```
+
 ### Mapping in Haskell.nix
 
 Alternatively, if the name is commonly used, an alias can be added to

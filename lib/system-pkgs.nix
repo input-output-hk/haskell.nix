@@ -7,7 +7,7 @@
 # This package set will be used when resolving system package
 # dependencies of package descriptions.
 
-pkgs:
+{ pkgs, system-pkgs-overlay ? (self: super: {}) }:
 
 let
   buildEnvMaybe = name: paths:
@@ -20,14 +20,19 @@ let
       then buildEnvMaybe name ps
       else ps;
 
+  defaultSystemPkgsMap = builtins.mapAttrs mapPackages (import ./system-nixpkgs-map.nix pkgs);
+
+  # We need to keep nulls, but they get removed when applying the overlay
+  # nullPkgs = pkgs.lib.filterAttrs (name: val: builtins.typeOf val == "null") defaultSystemPkgsMap;
+
+  pkgs' = pkgs
+    # Add mapping on top of nixpkgs base layer.
+    // defaultSystemPkgsMap
+
+    # fetchgit should always come from the evalPackages
+    # if it comes from the targetPackages we won't even
+    # be able to execute it.
+    // { fetchgit = pkgs.evalPackages.fetchgit; };
 in
-  # Base packages.
-  pkgs
-
-  # fetchgit should always come from the evalPackages
-  # if it comes from the targetPackages we won't even
-  # be able to execute it.
-  // { fetchgit = pkgs.evalPackages.fetchgit; }
-
-  # Apply the mapping.
-  // builtins.mapAttrs mapPackages (import ./system-nixpkgs-map.nix pkgs)
+  pkgs'.extend system-pkgs-overlay
+    // defaultSystemPkgsMap # fixme: wrong order

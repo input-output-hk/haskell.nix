@@ -13,7 +13,7 @@
     sysDepError = pkg:
       builtins.throw ''
         The Nixpkgs package set does not contain the package: ${pkg} (system dependency).
-        You may need to augment the system package mapping in haskell.nix so that it can be found.
+        You may need to use the system-pkgs-overlay parameter in haskell.nix so that it can be found.
       '';
     pkgConfDepError = pkg:
       builtins.throw ''

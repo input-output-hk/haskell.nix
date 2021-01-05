@@ -82,6 +82,7 @@ final: prev: {
         mkPkgSet =
             { pkg-def  # Base package set. Either from stackage (via stack-to-nix) or from a cabal projects plan file (via plan-to-nix)
             , pkg-def-extras ? [] # Additional packages to augment the Base package set `pkg-def` with.
+            , system-pkgs-overlay ? (self: super: {})
             , modules ? []
             , extra-hackages ? [] # Extra Hackage repositories to use besides main one.
             }@args:
@@ -91,7 +92,7 @@ final: prev: {
             in
 
             import ../package-set.nix {
-                inherit (args) pkg-def pkg-def-extras;
+                inherit (args) pkg-def pkg-def-extras system-pkgs-overlay;
                 modules = defaultModules ++ modules;
                 pkgs = final;
                 hackage = hackageAll;
@@ -118,6 +119,7 @@ final: prev: {
         mkStackPkgSet =
             { stack-pkgs  # Path to the output of stack-to-nix
             , pkg-def-extras ? []
+            , system-pkgs-overlay ? (self: super: {})
             , modules ? []
             }@args:
             let
@@ -140,6 +142,7 @@ final: prev: {
                                    final.ghc-boot-packages.${compiler.nix-name}
                                  ]
                               ++ pkg-def-extras;
+                inherit system-pkgs-overlay;
                 # set doExactConfig = true. The stackage set should be consistent
                 # and we should trust stackage here!
                 modules = [ { doExactConfig = true; } patchesModule ]
@@ -151,6 +154,7 @@ final: prev: {
         mkCabalProjectPkgSet =
             { plan-pkgs  # Path to the output of plan-to-nix
             , pkg-def-extras ? []
+            , system-pkgs-overlay ? (self: super: {})
             , modules ? []
             , extra-hackages ? []
             , compiler-nix-name ? null
@@ -173,6 +177,7 @@ final: prev: {
                                    final.ghc-boot-packages.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
+                inherit system-pkgs-overlay;
                 # set doExactConfig = true, as we trust cabals resolution for
                 # the plan.
                 modules = [ { doExactConfig = true; } patchesModule ]
@@ -461,6 +466,7 @@ final: prev: {
             , compiler-nix-name
             , version ? "latest"
             , revision ? "default"
+            , system-pkgs-overlay ? (self: super: {})
             , ... }@args':
             let version' = if version == "latest"
                   then builtins.head (
@@ -488,13 +494,13 @@ final: prev: {
                 '');
           in cabalProject' (
             (final.haskell-nix.hackageQuirks { inherit name; version = version'; }) //
-              builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
+              builtins.removeAttrs args [ "version" "revision" ] // { inherit src system-pkgs-overlay; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
-            { src, compiler-nix-name, ... }@args':
+            { src, compiler-nix-name, system-pkgs-overlay ? (self: super: {}), ... }@args':
             let
               args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
@@ -504,6 +510,7 @@ final: prev: {
                     inherit (callProjectResults) projectNix sourceRepos src;
                   };
                   pkg-def-extras = args.pkg-def-extras or [];
+                  inherit system-pkgs-overlay;
                   modules = (args.modules or [])
                           ++ final.lib.optional (args ? ghcOverride || args ? ghc)
                               { ghc.package = args.ghcOverride or args.ghc; }
@@ -577,13 +584,14 @@ final: prev: {
             in p.hsPkgs // p;
 
         stackProject' =
-            { src, ... }@args:
+            { src, system-pkgs-overlay ? (self: super: {}), ... }@args:
             let callProjectResults = callStackToNix ({ inherit cache; } // args);
                 generatedCache = genStackCache args;
                 cache = args.cache or generatedCache;
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
+                  inherit system-pkgs-overlay;
                   modules = final.lib.singleton (mkCacheModule cache)
                     ++ (args.modules or [])
                     ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; }
