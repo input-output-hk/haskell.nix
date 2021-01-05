@@ -10,7 +10,7 @@ let
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
-in allJobs // rec {
+in rec {
     r2009 = genericPkgs.releaseTools.aggregate {
       name = "haskell.nix-r2009";
       meta.description = "All 20.09 jobs";
