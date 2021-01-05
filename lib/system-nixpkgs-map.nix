@@ -16,9 +16,9 @@ with pkgs;
   GL = [ libGL ];
   GLU = [ libGLU ];
   alut = [ freealut ];
-  X11 = with xorg; [ libX11 libXScrnSaver libXinerama ]
-    ++ [ xlibs.libXinerama.dev ];
+  X11 = with xorg; [ libX11 ];
   Xrandr = [ xorg.libXrandr ];
+  Xss = [ xorg.libXScrnSaver ];
   Xext = [ xorg.libXext ];
   Xi = [ xorg.libXi ];
   Xxf86vm = [ xorg.libXxf86vm ];
