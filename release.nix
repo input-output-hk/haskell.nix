@@ -16,18 +16,18 @@ in rec {
       meta.description = "All 20.09 jobs";
       constituents = lib.collect (d: lib.isDerivation d) allJobs.R2009.ghc865;
     };
-    r2003 = genericPkgs.releaseTools.aggregate {
-      name = "haskell.nix-r2003";
-      meta.description = "All 20.03 jobs";
-      constituents = lib.collect (d: lib.isDerivation d) allJobs.R2003.ghc865;
-    };
-    # On IOHK Hydra, "required" is a special job that updates the
-    # GitHub CI status.
-    required = genericPkgs.releaseTools.aggregate {
-      name = "haskell.nix-required";
-      meta.description = "All jobs required to pass CI";
-      constituents = [ r2003 r2009 ];
-    };
+#    r2003 = genericPkgs.releaseTools.aggregate {
+#      name = "haskell.nix-r2003";
+#      meta.description = "All 20.03 jobs";
+#      constituents = lib.collect (d: lib.isDerivation d) allJobs.R2003.ghc865;
+#    };
+#    # On IOHK Hydra, "required" is a special job that updates the
+#    # GitHub CI status.
+#    required = genericPkgs.releaseTools.aggregate {
+#      name = "haskell.nix-required";
+#      meta.description = "All jobs required to pass CI";
+#      constituents = [ r2003 r2009 ];
+#    };
   }
 
 
