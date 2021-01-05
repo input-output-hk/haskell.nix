@@ -12,21 +12,22 @@ let
   allJobs = stripAttrsForHydra (filterDerivations ci);
   names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
     (builtins.attrNames x);
-in
-  builtins.listToAttrs (
-    lib.concatMap (nixpkgsVer:
-      let nixpkgsJobs = allJobs.${nixpkgsVer};
-      in lib.concatMap (compiler-nix-name:
-        let ghcJobs = nixpkgsJobs.${compiler-nix-name};
-        in builtins.map (platform: {
-          name = "required-${nixpkgsVer}-${compiler-nix-name}-${platform}";
-          value = genericPkgs.releaseTools.aggregate {
-            name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${platform}";
-            meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${platform} jobs";
-            constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${platform};
-          };
-        }) (names ghcJobs)
-      ) (names nixpkgsJobs)
-    ) (names allJobs))
+  requiredJobs =
+    builtins.listToAttrs (
+      lib.concatMap (nixpkgsVer:
+        let nixpkgsJobs = allJobs.${nixpkgsVer};
+        in lib.concatMap (compiler-nix-name:
+          let ghcJobs = nixpkgsJobs.${compiler-nix-name};
+          in builtins.map (platform: {
+            name = "required-${nixpkgsVer}-${compiler-nix-name}-${platform}";
+            value = genericPkgs.releaseTools.aggregate {
+              name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${platform}";
+              meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${platform} jobs";
+              constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${platform};
+            };
+          }) (names ghcJobs)
+        ) (names nixpkgsJobs)
+      ) (names allJobs));
+in { inherit (requiredJobs) required-R2009-ghc865-darwin required-R2009-ghc865-linux; }
 
 
