@@ -14,7 +14,7 @@ in rec {
     r2009 = genericPkgs.releaseTools.aggregate {
       name = "haskell.nix-r2009";
       meta.description = "All 20.09 jobs";
-      constituents = lib.collect (d: lib.isDerivation d) allJobs.R2009.ghc865.linux;
+      constituents = lib.collect (d: lib.isDerivation d) allJobs.R2009.ghc865.darwin;
     };
 #    r2003 = genericPkgs.releaseTools.aggregate {
 #      name = "haskell.nix-r2003";
