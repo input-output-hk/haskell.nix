@@ -24,14 +24,12 @@
     # Update supported-ghc-versions.md to reflect any changes made here.
     {
       ghc865 = true;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2003") {
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc883 = false;
       ghc884 = true;
       ghc8101 = false;
       ghc8102 = true;
       ghc810220201118 = false;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
-      ghc8102 = true;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
@@ -42,9 +40,11 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "R2003" && (__elem compiler-nix-name ["ghc865" "ghc884"])) {
+    in lib.optionalAttrs (nixpkgsName == "R2009" && (__elem compiler-nix-name ["ghc865" "ghc884"])) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (system == "x86_64-linux" && (nixpkgsName == "R2009" || (!(__elem compiler-nix-name ["ghc8101" "ghc8102" "ghc810220201118"])))) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && (
+         (nixpkgsName == "R2009" && __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc810220201118"])
+      || (nixpkgsName == "R2003" && __elem compiler-nix-name ["ghc865"]))) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux") {
@@ -52,6 +52,9 @@
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
+  isDisabled = d:
+    let meta = d.meta or {};
+    in meta.disabled or false;
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
@@ -62,7 +65,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
           platformFilter = platformFilterGeneric pkgs system;
-      in filterAttrsOnlyRecursive (_: v: platformFilter v) {
+      in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.recurseIntoAttrs ({
@@ -98,7 +101,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).components.exes.hello;
         })
-      )
+      ))
     )
   )
 )
