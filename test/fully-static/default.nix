@@ -52,7 +52,10 @@ in recurseIntoAttrs {
 
       '') + "touch $out";
 
-    meta.platforms = platforms.all;
+    meta = {
+      # A dependency is broken on Windows, just run on unix
+      platforms = platforms.unix;
+    };
 
     passthru = {
       # Attributes used for debugging with nix repl

@@ -1,5 +1,6 @@
 { pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name } :
-  (haskell-nix.hackage-package {
+  # A dependency is broken on windows, just run this on unix.
+  lib.addMetaAttrs { platforms = lib.platforms.unix; } ((haskell-nix.hackage-package {
     inherit compiler-nix-name;
     name         = "pandoc";
     version      = "2.9.2.1";
@@ -10,4 +11,4 @@
       { "https://github.com/jgm/pandoc-citeproc"."0.17"
           = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
         ."${location}"."${tag}";
-  }).components.exes.pandoc
+  }).components.exes.pandoc)
