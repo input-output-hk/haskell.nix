@@ -52,6 +52,9 @@
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
+  isDisabled = d:
+    let meta = d.meta or {};
+    in meta.disabled or false;
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
@@ -62,7 +65,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
           platformFilter = platformFilterGeneric pkgs system;
-      in filterAttrsOnlyRecursive (_: v: platformFilter v) {
+      in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.recurseIntoAttrs ({
@@ -98,7 +101,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).components.exes.hello;
         })
-      )
+      ))
     )
   )
 )

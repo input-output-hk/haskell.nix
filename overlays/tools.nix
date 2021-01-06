@@ -163,10 +163,23 @@ in { haskell-nix = prev.haskell-nix // {
           # Plan issues with the benchmarks, can try removing later
           configureArgs = "--disable-benchmarks";
         })).haskell-language-server.components.exes.haskell-language-server;
+      "0.8.0" = args:
+        (final.haskell-nix.cabalProject ( args // {
+          name = "haskell-language-server";
+          src = final.fetchFromGitHub {
+            owner = "haskell";
+            repo = "haskell-language-server";
+            rev = "0.8.0";
+            sha256 = "0p6fqs07lajbi2g1wf4w3j5lvwknnk58n12vlg48cs4iz25gp588";
+            fetchSubmodules = true;
+          };
+          # Plan issues with the benchmarks, can try removing later
+          configureArgs = "--disable-benchmarks";
+        })).haskell-language-server.components.exes.haskell-language-server;
       # When adding new versions here, please set "latest" too the latest version
       # so that `tools = { haskell-language-server = "latest"; }`
       # will work the same way it does for tools that are in hackage.
-      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.6.0";
+      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.8.0";
     };
   };
 }; }
