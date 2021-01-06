@@ -36,6 +36,13 @@ let
           }) (names ghcJobs)
         ) (names nixpkgsJobs)
       ) (names allJobs));
-in latestJobs // requiredJobs
+in latestJobs // requiredJobs // {
+    required = genericPkgs.releaseTools.aggregate {
+      name = "haskell.nix-required";
+      meta.description = "All jobs required to pass CI";
+      # Using the names here requires https://github.com/NixOS/hydra/issues/715
+      constituents = builtins.attrNames requiredJobs;
+    };
+ }
 
 
