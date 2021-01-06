@@ -10,6 +10,14 @@ let
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
+  latestJobs = {
+    # All the jobs are included in the `requiredJobs`, but the ones
+    # added here will also included without aggregation, making it easier
+    # to find a failing test.  Keep in mind though that adding too many
+    # of these will slow down eval times.
+    linux = allJobs.R2009.ghc8102.linux.native;
+    darwin = allJobs.R2009.ghc8102.darwin.native;
+  };
   names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
     (builtins.attrNames x);
   requiredJobs =
@@ -28,6 +36,6 @@ let
           }) (names ghcJobs)
         ) (names nixpkgsJobs)
       ) (names allJobs));
-in allJobs // requiredJobs
+in latestJobs // requiredJobs
 
 
