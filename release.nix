@@ -26,14 +26,17 @@ let
         let nixpkgsJobs = allJobs.${nixpkgsVer};
         in lib.concatMap (compiler-nix-name:
           let ghcJobs = nixpkgsJobs.${compiler-nix-name};
-          in builtins.map (platform: {
-            name = "required-${nixpkgsVer}-${compiler-nix-name}-${platform}";
-            value = genericPkgs.releaseTools.aggregate {
-              name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${platform}";
-              meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${platform} jobs";
-              constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${platform};
-            };
-          }) (names ghcJobs)
+          in builtins.concatMap (platform:
+            let platformJobs = ghcJobs.${platform};
+            in builtins.map (crossPlatform: {
+              name = "required-${nixpkgsVer}-${compiler-nix-name}-${platform}-${crossPlatform}";
+              value = genericPkgs.releaseTools.aggregate {
+                name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${platform}-${crossPlatform}";
+                meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${platform} ${crossPlatform} jobs";
+                constituents = lib.collect (d: lib.isDerivation d) platformJobs.${crossPlatform};
+              };
+           }) (names platformJobs)
+         ) (names ghcJobs)
         ) (names nixpkgsJobs)
       ) (names allJobs));
 in latestJobs // requiredJobs // {
