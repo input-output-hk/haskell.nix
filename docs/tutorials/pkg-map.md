@@ -29,6 +29,22 @@ nixpkgs.overlays = [
 ];
 ```
 
+### Replace libraries of components
+
+If a component is missing a dependency it can be added via modules. For example:
+
+``` nix
+project = pkgs.haskell-nix.project' {
+  src = self;
+  compiler-nix-name = "ghc8102";
+  modules = [{
+    # Replace `extra-libraries` dependencies
+    packages.X11.components.library.libs = pkgs.lib.mkForce (with pkgs.xorg;
+        [ libX11 libXrandr libXext libXScrnSaver libXinerama ]);
+  }];
+};
+```
+
 ### Mapping in Haskell.nix
 
 Alternatively, if the name is commonly used, an alias can be added to
