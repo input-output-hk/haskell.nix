@@ -1,5 +1,6 @@
 # Maps of system pkg references from cabal file to nixpkgs pkgs.
-# haskell lib name -> nixpkgs package(s) mapping
+# library name (from `extra-libraries` field of `.cabal` file) -> nixpkgs package(s) mapping.
+# This mapping is used to construct the `libs` component attribute.
 # See ../docs/tutorials/pkg-map.md
 pkgs:
 
