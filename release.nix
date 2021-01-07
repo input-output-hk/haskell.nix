@@ -10,14 +10,6 @@ let
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
-	latestJobs = {
-    # All the jobs are included in the 'required' job, but the ones
-    # added here will also included without aggregation, making it easier
-    # to find a failing test.  Keep in mind though that adding too many
-    # of these will slow down eval times.
-    linux = allJobs.R2009.ghc8102.linux.native or {};
-    darwin = allJobs.R2009.ghc8102.darwin.native or {};
-  };
-in latestJobs // { required = derivationAggregate "haskell.nix-required" allJobs; }
+in allJobs // { required = derivationAggregate "haskell.nix-required" allJobs; }
 
 
