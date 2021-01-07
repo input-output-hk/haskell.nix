@@ -13,6 +13,6 @@
   # see https://github.com/input-output-hk/haskell.nix/pull/988
   packages.X11.components.library.libs = [
     pkgs.xorg.libXScrnSaver
-    pkgs.xorg.libXinerama.dev
+    pkgs.xorg.libXinerama
   ];
 }
