@@ -24,6 +24,7 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
   };
 
@@ -34,6 +35,7 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
   };
 
@@ -44,6 +46,7 @@ let
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
+    # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
   };
 
