@@ -15,6 +15,7 @@
 , withHoogle ? true
 , exactDeps ? false
 , tools ? {}
+, packageSetupDeps ? true
 , ... } @ args:
 
 let
@@ -26,7 +27,8 @@ let
   selectedComponents = components hsPkgs;
 
   # The configs of all the selected components
-  selectedConfigs = map (c: c.config) selectedComponents ++ map (p: p.setup.config) selectedPackages;
+  selectedConfigs = map (c: c.config) selectedComponents
+    ++ lib.optionals packageSetupDeps (map (p: p.setup.config) selectedPackages);
 
   name = if lib.length selectedPackages == 1
     then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
