@@ -24,6 +24,7 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    packageSetupDeps = false;
   };
 
   envPkga = pkgSet.config.hsPkgs.shellFor {
@@ -33,6 +34,7 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    packageSetupDeps = false;
   };
 
   envDefault = pkgSet.config.hsPkgs.shellFor {
@@ -42,6 +44,7 @@ let
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
+    packageSetupDeps = false;
   };
 
 in recurseIntoAttrs {
