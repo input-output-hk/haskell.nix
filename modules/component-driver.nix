@@ -3,6 +3,7 @@ let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
+    compiler-nix-name = config.compiler.nix-name;
     inherit (config) nonReinstallablePkgs hsPkgs compiler;
   };
 
