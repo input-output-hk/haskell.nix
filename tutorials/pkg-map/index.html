@@ -94,6 +94,8 @@
         
             <li><a class="toctree-l4" href="#nixpkgs-overlay">Nixpkgs overlay</a></li>
         
+            <li><a class="toctree-l4" href="#replace-libraries-of-components">Replace libraries of components</a></li>
+        
             <li><a class="toctree-l4" href="#mapping-in-haskellnix">Mapping in Haskell.nix</a></li>
         
         </ul>
@@ -272,13 +274,35 @@ package alias. For example:</p>
 ];
 </code></pre>
 
+<h3 id="replace-libraries-of-components">Replace libraries of components<a class="headerlink" href="#replace-libraries-of-components" title="Permanent link">&para;</a></h3>
+<p>If a component is missing a dependency it can be added via modules. For example:</p>
+<pre><code class="nix">project = pkgs.haskell-nix.project' {
+  src = self;
+  compiler-nix-name = &quot;ghc8102&quot;;
+  modules = [{
+    # Replace `extra-libraries` dependencies
+    packages.X11.components.library.libs = pkgs.lib.mkForce (with pkgs.xorg;
+        [ libX11 libXrandr libXext libXScrnSaver libXinerama ]);
+  }];
+};
+</code></pre>
+
 <h3 id="mapping-in-haskellnix">Mapping in Haskell.nix<a class="headerlink" href="#mapping-in-haskellnix" title="Permanent link">&para;</a></h3>
 <p>Alternatively, if the name is commonly used, an alias can be added to
 the Haskell.nix sources, so that it's solved for all users.</p>
 <ul>
-<li><a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/pkgconf-nixpkgs-map.nix"><code>lib/pkgconf-nixpkgs-map.nix</code></a> - for <code>pkgconfig-depends</code></li>
-<li><a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/system-nixpkgs-map.nix"><code>lib/system-nixpkgs-map.nix</code></a> - for <code>build-tool-depends</code>, <code>frameworks</code>, <code>extra-libraries</code>, etc.</li>
+<li><a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/pkgconf-nixpkgs-map.nix"><code>lib/pkgconf-nixpkgs-map.nix</code></a>
+  — for <code>pkgconfig-depends</code>.</li>
 </ul>
+<p>Each mapping entry is a list of packages.</p>
+<ul>
+<li><a href="https://github.com/input-output-hk/haskell.nix/blob/master/lib/system-nixpkgs-map.nix"><code>lib/system-nixpkgs-map.nix</code></a>
+  — for <code>build-tool-depends</code>, <code>frameworks</code>, <code>extra-libraries</code>, etc.</li>
+</ul>
+<p>Each name can be mapped to:
+  1. A single package from nixkpgs.
+  2. <code>null</code> — eliminates the dependency
+  3. A list of packages — sometimes needed for dependencies such as <code>X11</code>.</p>
 <div class="admonition tip">
 <p class="admonition-title">Open a PR</p>
 <p>Please go ahead and open a <a href="https://github.com/input-output-hk/haskell.nix/pulls">pull request</a>
