@@ -43,8 +43,6 @@ let
     stdenv.hostPlatform.isGhcjs || (
         builtins.elem compiler-nix-name["ghc865" "ghc884"]
       &&
-        !pkgs.haskell-nix.checkMaterialization
-      &&
         !builtins.elem package.identifier.name
           ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
            "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
