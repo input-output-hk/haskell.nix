@@ -61,7 +61,7 @@
         "ed25519".flags.no-donna = true;
         "process".revision = (((hackage."process")."1.6.9.0").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
-        "lukko".revision = (((hackage."lukko")."0.1.1.2").revisions).default;
+        "lukko".revision = (((hackage."lukko")."0.1.1.3").revisions).default;
         "lukko".flags.ofd-locking = true;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.10.3").revisions).default;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
