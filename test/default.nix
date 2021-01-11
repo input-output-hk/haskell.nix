@@ -185,7 +185,7 @@ let
     # Does not work on ghcjs because it needs zlib.
     # Does not work on windows because it needs mintty.
     shell-for = callTest ./shell-for {};
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs || !stdenv.buildPlatform.isDarwin) {
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
     # When using ghcjs on darwin this test fails with
     # ReferenceError: h$hs_clock_darwin_gettime is not defined
     # https://github.com/input-output-hk/haskell.nix/issues/925
