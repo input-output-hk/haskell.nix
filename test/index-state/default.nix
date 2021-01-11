@@ -12,6 +12,8 @@ let
       cabalProject = ''
         packages: .
         allow-newer: cabal-install:base, hackage-security:*
+        package cabal-install
+          flags: -native-dns
       '';
     }).project.hsPkgs.hackage-security.components.library.version;
   version-before = version-used-at "2020-04-06T20:54:34Z";

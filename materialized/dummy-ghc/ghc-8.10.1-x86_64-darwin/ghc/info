@@ -43,7 +43,7 @@
  ,("RTS expects libdw","NO")
  ,("Project version","8.10.1")
  ,("Project Git commit id","5c3cadf5db0d7eb859ff2c278ab07585c7df17b5")
- ,("Booter version","8.8.4")
+ ,("Booter version","8.6.5")
  ,("Stage","2")
  ,("Build platform","x86_64-apple-darwin")
  ,("Host platform","x86_64-apple-darwin")

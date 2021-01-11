@@ -66,9 +66,9 @@ in recurseIntoAttrs {
 
       printf "checking that the 'library' with doExactConfig works... " >& 2
       echo ${decLibrary} >& 2
-    '' + (if stdenv.hostPlatform.isWindows
+    '' + (if stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isGhcjs
       then ''
-        printf "runghc tests are not working yet for windows. skipping. " >& 2
+        printf "runghc tests are not working yet for windows or ghcjs. skipping. " >& 2
       ''
       else ''
         printf "checking that non doExactConfig liarary.env has the dependencies... " >& 2
@@ -82,8 +82,10 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl;
+    meta = {
+      platforms = platforms.all;
+      disabled = stdenv.hostPlatform.isMusl;
+    };
 
     passthru = {
       # Used for debugging with nix repl

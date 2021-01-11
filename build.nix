@@ -21,8 +21,9 @@ in rec {
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs {
-      ghcide-020 = tool compiler-nix-name "ghcide" "0.2.0";
-      cabal-32 = tool compiler-nix-name "cabal" "3.2.0.0";
+      cabal-latest = tool compiler-nix-name "cabal" "latest";
+      hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
+      hlint-latest = tool compiler-nix-name "hlint" "latest";
     }
   );
 

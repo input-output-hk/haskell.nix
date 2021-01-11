@@ -1,0 +1,12 @@
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index b2f90a892d..c552652247 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -140,6 +140,7 @@
+       RTS_WIN64_ONLY(SymI_HasProto(__imp__environ))      \
+       RTS_WIN32_ONLY(SymI_HasProto(_imp___iob))          \
+       RTS_WIN64_ONLY(SymI_HasProto(__iob_func))          \
++      RTS_WIN64_ONLY(SymI_HasProto(__acrt_iob_func))     \
+       /* see Note [Symbols for MinGW's printf] */        \
+       SymI_HasProto(_lock_file)                          \
+       SymI_HasProto(_unlock_file)                        \

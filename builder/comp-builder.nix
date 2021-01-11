@@ -53,28 +53,42 @@ let self =
 , enableExecutableProfiling ? component.enableExecutableProfiling
 , profilingDetail ? component.profilingDetail
 
+# Coverage
+, doCoverage ? component.doCoverage
+
 # Data
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 
+# Prelinked ghci libraries; will make iserv faster; especially for static builds.
+, enableLibraryForGhci ? true
+
 # Debug
 , enableDebugRTS ? false
+, enableDWARF ? false
+
+# This will only work with a custom TSan way enabled custom compiler
+, enableTSanRTS ? false
+
+# LLVM
+, useLLVM ? ghc.useLLVM
+
 }@drvArgs:
 
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
-  cleanSrc = if cabal-generator == "hpack" && !(package.cleanHpack or false)
-    then builtins.trace ("Cleaning component source not supported for hpack package: " + name)
+  canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
+  cleanSrc = if canCleanSource
+    then haskellLib.cleanCabalComponent package component src
+    else
       # We can clean out the siblings though to at least avoid changes to other packages
       # from triggering a rebuild of this one.
-      (if src ? origSrc && src ? filter && src.origSubDir or "" != ""
+      if src ? origSrc && src ? filter && src.origSubDir or "" != ""
         then haskellLib.cleanSourceWith {
           src = src.origSrc;
           subDir = lib.removePrefix "/" src.origSubDir;
           inherit (src) filter;
         }
-        else src
-      )
-    else haskellLib.cleanCabalComponent package component src;
+        else src;
 
   nameOnly = "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
 
@@ -98,12 +112,17 @@ let
       "$(cat ${configFiles}/configure-flags)"
     ] ++ commonConfigureFlags);
 
+  # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
+  pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;
+
   commonConfigureFlags = ([
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
       "--with-hsc2hs=${ghc.targetPrefix}hsc2hs"
-    ] ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
+    ] ++ lib.optional (pkgConfigHasPrefix && pkgconfig != [])
+      "--with-pkg-config=${ghc.targetPrefix}pkg-config"
+      ++ lib.optionals (stdenv.hasCC or (stdenv.cc != null))
     ( # CC
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
@@ -128,6 +147,8 @@ let
       (enableFeature enableExecutableProfiling "executable-profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
+      (enableFeature doCoverage "coverage")
+      (enableFeature enableLibraryForGhci "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
@@ -145,9 +166,14 @@ let
       ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
+      ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
+      ++ lib.optional enableDWARF "--ghc-option=-g"
+      ++ lib.optionals useLLVM [
+        "--ghc-option=-fPIC" "--gcc-option=-fPIC"
+        ]
     );
 
-  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc-options="${package.ghcOptions}"'';
+  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${package.ghcOptions}"'';
 
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
@@ -168,7 +194,7 @@ let
                      else abort "shellHook should be a string or a function";
 
   exeExt = if stdenv.hostPlatform.isGhcjs then ".jsexe/all.js" else
-    if stdenv.hostPlatform.isWindows then ".exe" else "";
+    stdenv.hostPlatform.extensions.executable;
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
@@ -245,6 +271,7 @@ let
       inherit (package) identifier;
       config = component;
       inherit configFiles executableToolDepends cleanSrc exeName;
+      exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
@@ -285,6 +312,9 @@ let
       ++ (lib.optional keepSource "source");
 
     configurePhase =
+      (lib.optionalString (!canCleanSource) ''
+      echo "Cleaning component source not supported, leaving it un-cleaned"
+      '') +
       (lib.optionalString keepSource ''
         cp -r . $source
         cd $source
@@ -321,31 +351,43 @@ let
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-        if [ -d "${name}.conf" ]; then
-          for pkg in ${name}.conf/*; do
-            ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
-          done
-        elif [ -e "${name}.conf" ]; then
-          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
-        fi
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
 
         mkdir -p $out/exactDep
         touch $out/exactDep/configure-flags
         touch $out/exactDep/cabal.config
         touch $out/envDep
 
-        if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
-          echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
-          echo "package-id $id" >> $out/envDep
-        elif id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
-          name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
-          # so we are dealing with a sublib. As we build sublibs separately, the above
-          # query should be safe.
-          echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
-        else
-          echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
-          exit 0
-        fi
+        ${ # The main library in a package has the same name as the package
+          if package.identifier.name == componentId.cname
+            then ''
+              if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
+                echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
+                echo "package-id $id" >> $out/envDep
+              else
+                echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
+                exit 0
+              fi
+            ''
+            else
+              # If the component name is not the package name this must be a sublib.
+              # As we build sublibs separately, the following query should be safe.
+              (''
+              if id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
+                name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
+                echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+                ''
+                # Allow `package-name:sublib-name` to work in `build-depends`
+                # by adding the same `--dependency` again, but with the package
+                # name added.
+                + ''
+                echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+              else
+                echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
+                exit 0
+              fi
+              '')
+        }
         if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
           echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
           echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
@@ -368,20 +410,27 @@ let
       '')
       # In case `setup copy` did not create this
       + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
-      + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
+      + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) (''
         echo "Symlink libffi and gmp .dlls ..."
         for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
+        ''
         # symlink all .dlls into the local directory.
         # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
         # to symlink over dlls as needed.
+        + ''
         echo "Symlink library dependencies..."
         for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
           if [ -d "$libdir" ]; then
             find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
           fi
         done
+      ''))
+      + (lib.optionalString doCoverage ''
+        mkdir -p $out/share
+        cp -r dist/hpc $out/share
+        cp dist/setup-config $out/
       '')
       }
       runHook postInstall

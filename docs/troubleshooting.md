@@ -1,5 +1,29 @@
 # Troubleshooting
 
+## Issues with building and garbage-collection
+
+### Why am I building GHC?
+
+It's easier to list the reverse: when will you *not* build GHC?
+
+- You have configured the [binary cache](tutorials/getting-started.md) correctly.
+- You are using one of the GHC versions which [we support](reference/supported-ghc-versions.md).
+- You are using one of the nixpkgs versions used by our CI (you can access the sources for these [through haskell.nix](tutorials/getting-started.md).
+
+If you think you are doing all of these and you still find you're building GHC, drop us a line.
+
+### Why am I building lots of Haskell packages?
+
+We don't generally cache much of Hackage (there's a lot of it!), except for the parts which are used by our tests.
+So this is expected, unfortunately.
+
+### How do I prevent the evaluation-time dependencies of my project from being garbage-collected?
+
+The `haskell-nix.roots "ghc884"` should include all the evaluation-time dependencies
+and the main build time dependencies of a project using ghc 8.8.4.
+So you can add that to the relevant GC root.
+In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in `release.nix`/`ci.nix`.
+
 ## General troubleshooting when using `cabalProject`/`stackProject`/`project`
 
 ### Does the cabal/stack build work?
@@ -47,26 +71,20 @@ This will ensure that the two builds agree.
 
 If you want or need to set some of them in Nix, try bringing the two into sync temporarily for troubleshooting.
 
-## Specific issues
+## Other specific issues
 
-### Why am I building GHC?
+### Why does the build complain about some files being missing?
 
-It's easier to list the reverse: when will you *not* build GHC?
+Sometimes your build works fine outside `haskell.nix`, but inside the `haskell.nix` build, cabal complains that some file is missing.
+What is going on?
 
-- You have configured the [binary caches](tutorials/getting-started.md) correctly.
-- You are using one of the GHC versions built by our CI (have a look in [ci.nix](../ci.nix) to see what gets built).
-- You are using one of the nixpkgs versions used by our CI (you can access the sources for these [through haskell.nix](tutorials/getting-started.md).
+The answer is that `haskell.nix` *thoroughly* cleans the source *by following what is mentioned as required in the cabal file*.
+So we only include Haskell sources if they appear in a `hs-source-dirs` somewhere; and we only include non-Haskell files if they are included in `extra-source-files` or similar.
 
-If you think you are doing all of these and you still find you're building GHC, drop us a line.
+This is good practice anyway: if you do not include such files in `extra-source-files` then they will not be included in `cabal sdist`, which will cause problems if you ever upload your package to Hackage.
+But `haskell.nix` is very picky about it.
 
-### Why am I building lots of Haskell packages?
+### Why does my executable depend on GHC/GCC?
 
-We don't generally cache much of Hackage (there's a lot of it!), except for the parts which are used by our tests.
-So this is expected, unfortunately.
-
-### How do I prevent the evaluation-time dependencies of my project from being garbage-collected?
-
-The `haskell-nix.roots "ghc884"` should include all the evaluation-time dependencies
-and the main build time dependencies of a project using ghc 8.8.4.
-So you can add that to the relevant GC root.
-In practice, if you're using a CI system like Hydra/Hercules, this means adding it to a job in `release.nix`/`ci.nix`.
+You may want to set the `dontStrip` option to `false` (see https://github.com/input-output-hk/haskell.nix/issues/829).
+This is not set by default because it can occasionally cause breakage.

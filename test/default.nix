@@ -156,14 +156,12 @@ let
     cabal-simple = callTest ./cabal-simple { inherit util compiler-nix-name; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
     cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
-    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
     stack-local-resolver = callTest ./stack-local-resolver {};
+    stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir {};
     stack-remote-resolver = callTest ./stack-remote-resolver {};
-    snapshots = callTest ./snapshots {};
-    shell-for = callTest ./shell-for {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
     setup-deps = import ./setup-deps { inherit pkgs compiler-nix-name; };
     callStackToNix = callTest ./call-stack-to-nix {};
@@ -185,7 +183,22 @@ let
     index-state = callTest ./index-state { inherit compiler-nix-name; };
 
     unit = unitTests;
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" ) {
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isWindows) {
+    # Does not work on ghcjs because it needs zlib.
+    # Does not work on windows because it needs mintty.
+    shell-for = callTest ./shell-for {};
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
+    # When using ghcjs on darwin this test fails with
+    # ReferenceError: h$hs_clock_darwin_gettime is not defined
+    # https://github.com/input-output-hk/haskell.nix/issues/925
+    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
+    # These do not work on ghcjs because it needs zlib.
+    coverage = callTest ./coverage { inherit compiler-nix-name; };
+    coverage-golden = callTest ./coverage-golden { inherit compiler-nix-name;};
+    coverage-no-libs = callTest ./coverage-no-libs { inherit compiler-nix-name; };
+    snapshots = callTest ./snapshots {};
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8103" && compiler-nix-name != "ghc810220201118" ) {
     # Pandoc does not build with ghcjs or ghc 8.10 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
     fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };

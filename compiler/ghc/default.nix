@@ -53,6 +53,7 @@
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
 , ghc-version ? src-spec.version
+, ghc-version-date ? null
 , src-spec
 , ghc-patches ? []
 
@@ -138,7 +139,7 @@ let
 
   configured-src = import ./configured-src.nix {
     inherit stdenv fetchurl
-    ghc-version ghc-patches src-spec
+    ghc-version ghc-version-date ghc-patches src-spec
     targetPrefix
     targetPlatform hostPlatform
     targetPackages
@@ -282,11 +283,11 @@ stdenv.mkDerivation (rec {
     ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
-    if [[ ! -f "$out/bin/${targetPrefix}ghc" ]]; then
+    if ! "$out/bin/${targetPrefix}ghc" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc"
       exit 0
     fi
-    if [[ ! -f "$out/bin/${targetPrefix}ghc-pkg" ]]; then
+    if ! "$out/bin/${targetPrefix}ghc-pkg" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 0
     fi
@@ -305,6 +306,7 @@ stdenv.mkDerivation (rec {
 
     inherit llvmPackages;
     inherit enableShared;
+    inherit useLLVM;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";

@@ -1,5 +1,5 @@
 { stdenv, fetchurl
-, ghc-version, ghc-patches, src-spec
+, ghc-version, ghc-version-date, ghc-patches, src-spec
 , targetPrefix
 , targetPlatform, hostPlatform
 , targetPackages
@@ -19,7 +19,7 @@ stdenv.mkDerivation (rec {
     patches = ghc-patches;
     name = "${targetPrefix}ghc-${ghc-version}-configured-src";
 
-    # Make sure we never relax`$PATH` and hooks support for compatibility.
+    # Make sure we never relax`$PATH` and hooks support for compatability.
     strictDeps = true;
 
     nativeBuildInputs = [
@@ -40,7 +40,9 @@ stdenv.mkDerivation (rec {
 
     postPatch = "patchShebangs .";
 
-    src = fetchurl { inherit (src-spec) url sha256; };
+    src = if src-spec ? file
+        then src-spec.file
+        else fetchurl { inherit (src-spec) url sha256; };
 
     # GHC is a bit confused on its cross terminology.
     preConfigure = ''
@@ -84,6 +86,12 @@ stdenv.mkDerivation (rec {
             --replace '*-android*|*-gnueabi*)' \
                         '*-android*|*-gnueabi*|*-musleabi*)'
         done
+    '' + stdenv.lib.optionalString (src-spec.version != ghc-version) ''
+        substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        echo '${ghc-version}' > VERSION
+    '' + stdenv.lib.optionalString (ghc-version-date != null) ''
+        substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        echo '${ghc-version-date}' > VERSION_DATE
     '';
 
     configurePlatforms = [ "build" "host" "target" ];

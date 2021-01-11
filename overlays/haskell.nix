@@ -100,10 +100,15 @@ final: prev: {
         # Some boot packages (libiserv) are in lts, but not in hackage,
         # so we should not try to get it from hackage based on the stackage
         # info.  Instead we can add ghc-boot-packages to `pkg-def-extras`.
-        excludeBootPackages = pkg-def: hackage:
+        # The compiler-nix-name allows non default values (like
+        # "ghc8102-experimental").
+        excludeBootPackages = compiler-nix-name: pkg-def: hackage:
           let original = pkg-def hackage;
               bootPkgNames = final.lib.attrNames
-                final.ghc-boot-packages.${(pkg-def hackage).compiler.nix-name};
+                final.ghc-boot-packages.${
+                  if compiler-nix-name != null
+                    then compiler-nix-name
+                    else (pkg-def hackage).compiler.nix-name};
           in original // {
             packages = final.lib.filterAttrs (n: _: final.lib.all (b: n != b) bootPkgNames)
               original.packages;
@@ -130,7 +135,7 @@ final: prev: {
                   else module;
                 removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
-                pkg-def = excludeBootPackages pkg-def;
+                pkg-def = excludeBootPackages null pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
                                    final.ghc-boot-packages.${compiler.nix-name}
                                  ]
@@ -148,17 +153,24 @@ final: prev: {
             , pkg-def-extras ? []
             , modules ? []
             , extra-hackages ? []
-            }@args:
+            , compiler-nix-name ? null
+            }:
 
             let
-                pkg-def = excludeBootPackages plan-pkgs.pkgs;
-                # The compiler referenced in the stack config
-                compiler = (plan-pkgs.extras hackage).compiler or (pkg-def hackage).compiler;
-                patchesModule = ghcHackagePatches.${compiler.nix-name} or {};
-            in mkPkgSet {
+                compiler-nix-name' =
+                  if compiler-nix-name != null
+                    then compiler-nix-name
+                    else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
+                pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
+                patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
+            in
+              # Check that the GHC version of the selected compiler matches the one of the plan
+              assert (final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version
+                   == final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
+              mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   final.ghc-boot-packages.${compiler.nix-name}
+                                   final.ghc-boot-packages.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
@@ -206,7 +218,8 @@ final: prev: {
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
             in
-            final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
+            # This is very big, and cheap to build: use runCommandLocal to prefer building it locally
+            final.evalPackages.runCommandLocal dotCabalName { nativeBuildInputs = [ cabal-install ]; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
@@ -239,7 +252,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2020-05-31T00:00:00Z";
+        internalHackageIndexState = "2021-01-08T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -309,7 +322,7 @@ final: prev: {
                 # pkgs.fetchgit doesn't have any way of fetching from a given
                 # ref.
                 assert isNull ref;
-                final.evalPackages.pkgs.fetchgit {
+                final.evalPackages.fetchgit {
                   url = url;
                   rev = rev;
                   sha256 = sha256;
@@ -398,7 +411,7 @@ final: prev: {
                               final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                             )
                         else
-                          final.evalPackages.pkgs.fetchgit { inherit url rev sha256; };
+                          final.evalPackages.fetchgit { inherit url rev sha256; };
                     } // final.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                   };
 
@@ -446,21 +459,36 @@ final: prev: {
         hackage-project =
             { name
             , compiler-nix-name
-            , version
+            , version ? "latest"
+            , revision ? "default"
             , ... }@args':
-            let args = { caller = "hackage-project"; } // args';
+            let version' = if version == "latest"
+                  then builtins.head (
+                    builtins.sort
+                      (a: b: builtins.compareVersions a b > 0)
+                      (builtins.attrNames hackage.${name}))
+                  else version;
+                args = { caller = "hackage-project"; } // args';
                 tarball = final.pkgs.fetchurl {
-                url = "mirror://hackage/${name}-${version}.tar.gz";
-                inherit (hackage.${name}.${version}) sha256; };
-            in let src = final.buildPackages.pkgs.runCommand "${name}-${version}-src" { } ''
-                tmp=$(mktemp -d)
-                cd $tmp
-                tar xzf ${tarball}
-                mv "${name}-${version}" $out
-                '';
+                  url = "mirror://hackage/${name}-${version'}.tar.gz";
+                  inherit (hackage.${name}.${version'}) sha256; };
+                rev = hackage.${name}.${version'}.revisions.${revision};
+                cabalFile = final.pkgs.fetchurl {
+                  url = "https://hackage.haskell.org/package/${name}-${version'}/revision/${toString rev.revNum}.cabal";
+                  inherit (rev) sha256;
+                };
+                revSuffix = final.lib.optionalString (rev.revNum > 0) "-r${toString rev.revNum}";
+            in let src = final.buildPackages.pkgs.runCommand "${name}-${version'}${revSuffix}-src" { } (''
+                  tmp=$(mktemp -d)
+                  cd $tmp
+                  tar xzf ${tarball}
+                  mv "${name}-${version'}" $out
+                '' + final.lib.optionalString (rev.revNum > 0) ''
+                  cp ${cabalFile} $out/${name}.cabal
+                '');
           in cabalProject' (
-            (final.haskell-nix.hackageQuirks { inherit name version; }) //
-              builtins.removeAttrs args [ "version" ] // { inherit src; });
+            (final.haskell-nix.hackageQuirks { inherit name; version = version'; }) //
+              builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
@@ -471,7 +499,8 @@ final: prev: {
               args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
             in let pkg-set = mkCabalProjectPkgSet
-                { plan-pkgs = importAndFilterProject {
+                { inherit compiler-nix-name;
+                  plan-pkgs = importAndFilterProject {
                     inherit (callProjectResults) projectNix sourceRepos src;
                   };
                   pkg-def-extras = args.pkg-def-extras or [];
@@ -479,18 +508,23 @@ final: prev: {
                           ++ final.lib.optional (args ? ghcOverride || args ? ghc)
                               { ghc.package = args.ghcOverride or args.ghc; }
                           ++ final.lib.optional (args ? compiler-nix-name)
-                              { compiler.nix-name = args.compiler-nix-name; };
+                              { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                   extra-hackages = args.extra-hackages or [];
                 };
-            in addProjectAndPackageAttrs {
-              inherit (pkg-set.config) hsPkgs;
-              inherit pkg-set;
-              plan-nix = callProjectResults.projectNix;
-              inherit (callProjectResults) index-state;
-              tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
-              tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
-              roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
-            };
+
+                project = addProjectAndPackageAttrs rec {
+                  inherit (pkg-set.config) hsPkgs;
+                  inherit pkg-set;
+                  plan-nix = callProjectResults.projectNix;
+                  inherit (callProjectResults) index-state;
+                  tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
+                  tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  projectFunction = haskell-nix: haskell-nix.cabalProject';
+                  projectArgs = args';
+                };
+            in project;
+
 
         # Take `hsPkgs` from the `rawProject` and update all the packages and
         # components so they have a `.project` attribute and as well as
@@ -498,25 +532,41 @@ final: prev: {
         addProjectAndPackageAttrs = rawProject:
           final.lib.fix (project':
             let project = project' // { recurseForDerivations = false; };
-            in rawProject // {
-              hsPkgs = (final.lib.mapAttrs (n: package':
+            in rawProject // rec {
+              hsPkgs = final.lib.mapAttrs (n: package':
                 if package' == null
                   then null
                   else
                     let package = package' // { recurseForDerivations = false; };
-                    in package' // {
+                    in package' // rec {
                       components = final.lib.mapAttrs (n: v:
                         if n == "library" || n == "all"
                           then v // { inherit project package; }
                           else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
                       ) package'.components;
                       inherit project;
+
+                      coverageReport = haskellLib.coverageReport (rec {
+                        name = package.identifier.name + "-" + package.identifier.version;
+                        library = if components ? library then components.library else null;
+                        checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
+                        mixLibraries = final.lib.concatMap
+                          (pkg: final.lib.optional (pkg.components ? library) pkg.components.library)
+                            (final.lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs));
+                        ghc = project.pkg-set.config.ghc.package;
+                      });
                     }
-                ) rawProject.hsPkgs
-                // {
+                ) (builtins.removeAttrs rawProject.hsPkgs
                   # These are functions not packages
-                  inherit (rawProject.hsPkgs) shellFor ghcWithHoogle ghcWithPackages;
-              });
+                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" ]);
+
+            projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
+
+            projectCross = (final.lib.mapAttrs (_: pkgs:
+                rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs
+              ) final.pkgsCross) // { recurseForDerivations = false; };
+
+            inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
           });
 
         cabalProject =
@@ -524,12 +574,7 @@ final: prev: {
             let
               args = { caller = "hackage-package"; } // args';
               p = cabalProject' args;
-            in p.hsPkgs // {
-              inherit (p) plan-nix index-state tool tools roots;
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
-            };
+            in p.hsPkgs // p;
 
         stackProject' =
             { src, ... }@args:
@@ -539,26 +584,27 @@ final: prev: {
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
-                  modules =  final.lib.singleton (mkCacheModule cache)
-                             ++ (args.modules or [])
-                             ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; };
+                  modules = final.lib.singleton (mkCacheModule cache)
+                    ++ (args.modules or [])
+                    ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; }
+                    ++ final.lib.optional (args ? compiler-nix-name)
+                        { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                 };
-            in addProjectAndPackageAttrs {
-              inherit (pkg-set.config) hsPkgs;
-              inherit pkg-set;
-              stack-nix = callProjectResults.projectNix;
-              tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
-              tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
-              roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
-           };
+
+                project = addProjectAndPackageAttrs {
+                  inherit (pkg-set.config) hsPkgs;
+                  inherit pkg-set;
+                  stack-nix = callProjectResults.projectNix;
+                  tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
+                  tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
+                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
+                  projectFunction = haskell-nix: haskell-nix.stackProject';
+                  projectArgs = args;
+                };
+            in project;
 
         stackProject = args: let p = stackProject' args;
-            in p.hsPkgs // {
-              inherit (p) stack-nix tool tools roots;
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
-            };
+            in p.hsPkgs // p;
 
         # `project'` and `project` automatically select between `cabalProject`
         # and `stackProject` (when possible) by looking for `stack.yaml` or
@@ -596,14 +642,9 @@ final: prev: {
         # for `cabalPackage` and `stackPackage`.
         project = args':
           let
-            args = { caller = "project'"; } // args';
+            args = { caller = "project"; } // args';
             p = project' args;
-          in p.hsPkgs // {
-              # Provide `nix-shell -A shells.ghc` for users migrating from the reflex-platform.
-              # But we should encourage use of `nix-shell -A shellFor`
-              shells.ghc = p.hsPkgs.shellFor {};
-            } // final.lib.optionalAttrs (p ? stack-nix) { inherit (p) stack-nix; }
-              // final.lib.optionalAttrs (p ? plan-nix ) { inherit (p) plan-nix;  };
+          in p.hsPkgs // p;
 
         # Like `cabalProject'`, but for building the GHCJS compiler.
         # This is exposed to allow GHCJS developers to work on the GHCJS
@@ -651,8 +692,14 @@ final: prev: {
               final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
+            # The internal versions of nix-tools and cabal-install are occasionally used,
+            # but definitely need to be cached in case they are used.
             nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
+            internal-nix-tools = final.buildPackages.haskell-nix.internal-nix-tools;
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
+            internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;
+          } // final.lib.optionalAttrs (ifdLevel > 1 && !final.stdenv.hostPlatform.isGhcjs) {
+            # GHCJS builds its own template haskell runner.
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
             inherit (final.ghc-extra-packages."${compiler-nix-name}"

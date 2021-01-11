@@ -19,14 +19,14 @@ in recurseIntoAttrs {
     name = "sublib-docs-test";
 
     buildCommand = ''
-      exe="${packages.sublib-docs.components.exes.sublib-docs}/bin/sublib-docs${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.sublib-docs.components.exes.sublib-docs.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.sublib-docs.components.exes.sublib-docs}
+      cat ${haskellLib.check packages.sublib-docs.components.exes.sublib-docs}/test-stdout
 
     '' +
     # Musl and Aarch are statically linked..

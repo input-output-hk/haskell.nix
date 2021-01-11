@@ -7,6 +7,9 @@
                  # the output. If this is set but does not exist
                  # the derivation will fail but with a message
                  # advising how to populate it.
+, this ? "this"
+                # A name to use when referring to the thing currently being
+                # materialized. Clients can pass in an attribute name or similar.
 , reasonNotSafe ? null
                  # Some times there a reasont the derivation will
                  # not produce output that can be safely materialized.
@@ -35,8 +38,8 @@ let
 
   unchecked =
     let
-      sha256message = "To make this a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of ${calculateMaterializedSha}";
-      materializeMessage = "To materialize the output entirely, pass a writable path as the `materialized` argument and pass that path to ${generateMaterialized}";
+      sha256message = "To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
+      materializeMessage = "To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe

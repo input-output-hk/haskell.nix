@@ -1,25 +1,21 @@
-{ lib, stdenv, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, compiler }:
+{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, compiler }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
   # dependencies will be included in the shell's `ghc-pkg list`.
-  packages ? ps:
-    let
-      selected = haskellLib.selectLocalPackages ps;
-    in
-      builtins.trace ("Shell for " + toString (builtins.attrNames selected))
-        (builtins.attrValues selected)
+  packages ? ps: builtins.attrValues (haskellLib.selectLocalPackages ps)
   # `components` function selects components that will be worked on in the shell itself.
   # By default `shellFor` will include the dependencies of all of the components
   # in the selected packages.  If only as subset of the components will be
   # worked on in the shell then we can pass a different `components` function
   # to select those.
-, components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs) 
+, components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs)
   # Additional packages to be added unconditionally
 , additional ? _: []
 , withHoogle ? true
 , exactDeps ? false
 , tools ? {}
+, packageSetupDeps ? true
 , ... } @ args:
 
 let
@@ -31,7 +27,8 @@ let
   selectedComponents = components hsPkgs;
 
   # The configs of all the selected components
-  selectedConfigs = map (c: c.config) selectedComponents ++ map (p: p.setup.config) selectedPackages;
+  selectedConfigs = map (c: c.config) selectedComponents
+    ++ lib.optionals packageSetupDeps (map (p: p.setup.config) selectedPackages);
 
   name = if lib.length selectedPackages == 1
     then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
@@ -105,27 +102,48 @@ let
       pname = p.identifier.name;
       haddockDir = lib.const p.haddockDir;
     };
-  in hoogleLocal {
+  in hoogleLocal ({
     packages = map docPackage (haskellLib.flatLibDepends component);
 
     # Need to add hoogle to hsPkgs.
     # inherit (hsPkgs) hoogle;
-  };
+  } // (
+    lib.optionalAttrs (args ? tools && args.tools ? hoogle) {
+      hoogle = buildPackages.haskell-nix.tool compiler.nix-name "hoogle" args.tools.hoogle;
+    }
+  ));
 
   mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
 in
-  stdenv.mkDerivation (mkDrvArgs // {
+  mkShell (mkDrvArgs // {
     name = mkDrvArgs.name or name;
 
     buildInputs = systemInputs
-      ++ mkDrvArgs.buildInputs or []
-      ++ lib.optional withHoogle' hoogleIndex;
+      ++ mkDrvArgs.buildInputs or [];
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
-      ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools);
+      ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
+      # If this shell is a cross compilation shell include
+      # wrapper script for running cabal build with appropriate args.
+      ++ lib.optional (ghcEnv.targetPrefix != "") (
+            buildPackages.writeShellScriptBin "${ghcEnv.targetPrefix}cabal" ''
+              exec cabal \
+                --with-ghc=${ghcEnv.targetPrefix}ghc \
+                --with-ghc-pkg=${ghcEnv.targetPrefix}ghc-pkg \
+                --with-hsc2hs=${ghcEnv.targetPrefix}hsc2hs \
+                ${lib.optionalString (ghcEnv.targetPrefix == "js-unknown-ghcjs-") ''
+                  --with-ghcjs=${ghcEnv.targetPrefix}ghc \
+                  --with-ghcjs-pkg=${ghcEnv.targetPrefix}ghc-pkg \
+                  --ghcjs \
+                ''} $(builtin type -P "${ghcEnv.targetPrefix}pkg-config" &> /dev/null && echo "--with-pkg-config=${ghcEnv.targetPrefix}pkg-config") \
+                "$@"
+              '');
     phases = ["installPhase"];
-    installPhase = "echo $nativeBuildInputs $buildInputs > $out";
+    installPhase = ''
+      echo "${"Shell for " + toString (builtins.map (p : p.identifier.name) selectedPackages)}"
+      echo $nativeBuildInputs $buildInputs > $out
+    '';
     LANG = "en_US.UTF-8";
     LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
 

@@ -19,14 +19,14 @@ in recurseIntoAttrs {
     name = "cabal-22-test";
 
     buildCommand = ''
-      exe="${packages.project.components.exes.project}/bin/project${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.project.components.exes.project.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.project.components.exes.project}
+      cat ${haskellLib.check packages.project.components.exes.project}/test-stdout
 
     '' +
     # Aarch is statically linked and does not produce a .so file.
@@ -56,10 +56,10 @@ in recurseIntoAttrs {
       touch $out
 
       printf "checking whether benchmark ran... " >& 2
-      cat ${haskellLib.check packages.project.components.benchmarks.project-bench}
+      cat ${haskellLib.check packages.project.components.benchmarks.project-bench}/test-stdout
 
       printf "checking whether tests ran... " >& 2
-      cat ${haskellLib.check packages.project.components.tests.unit}
+      cat ${haskellLib.check packages.project.components.tests.unit}/test-stdout
     '';
 
     meta.platforms = platforms.all;

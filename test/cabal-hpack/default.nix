@@ -29,14 +29,14 @@ in recurseIntoAttrs {
     name = "cabal-hpack-test";
 
     buildCommand = ''
-      exe="${packages.cabal-hpack.components.exes.cabal-hpack}/bin/cabal-hpack${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-hpack.components.exes.cabal-hpack.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.cabal-hpack.components.exes.cabal-hpack}
+      cat ${haskellLib.check packages.cabal-hpack.components.exes.cabal-hpack}/test-stdout
     '' + (if stdenv.hostPlatform.isMusl
       then ''
         printf "checking that executable is statically linked... " >& 2

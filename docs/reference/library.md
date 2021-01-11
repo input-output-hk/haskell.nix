@@ -112,16 +112,16 @@ will be passed to it:
 
 # Top-level attributes
 
-## project
+## project'
 
 Function that accepts attribute set with a `src` attribute and looks for `stack.yaml` file relative to it.
 
-If file exists, it calls [stackProject](#stackproject) function. Otherwise it will call [cabalProject](#cabalproject) function.
+If file exists, it calls [stackProject](#stackproject') function. Otherwise it will call [cabalProject](#cabalproject') function.
 
 **Example**:
 
 ```nix
-pkgs.haskell-nix.project {
+pkgs.haskell-nix.project' {
   # 'cleanGit' cleans a source directory based on the files known by git
   src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
@@ -130,7 +130,7 @@ pkgs.haskell-nix.project {
 }
 ```
 
-## stackProject
+## stackProject'
 
 A function calling [callStackToNix](#callstacktonix) with all arguments.
 
@@ -142,14 +142,13 @@ Then feeding its result into [mkStackPkgSet](#mkstackpkgset) passing also
 | Attribute         | Type                                             | Description                                                                |
 |-------------------|--------------------------------------------------|----------------------------------------------------------------------------|
 | `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                |
-| `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                   |
 | `stack-nix`       |                                                  | `projectNix` attribute of [`callStackToNix`](#callstacktonix) return value |
 | `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                    |
 | `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                          | 
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                      |
 
 
-## cabalProject
+## cabalProject'
 
 A function calling [callCabalProjectToNix](#callcabalprojecttonix) with all arguments.
 
@@ -161,14 +160,19 @@ Then feeding its result into [mkCabalProjectPkgSet](#mkcabalprojectpkgset) passi
 | Attribute         | Type                                             | Description                                                                 |
 |-------------------|--------------------------------------------------|-----------------------------------------------------------------------------|
 | `hsPkgs`          | Attrset of [Haskell Packages](#haskell-package)  | Buildable packages, created from `packages`                                 |
-| `pkg-set`         | Attrset                                          | [`pkgSet`](#package-set)                                                    |
 | `plan-nix`        |                                                  | `projectNix` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value  |
 | `index-state`     |                                                  | `index-state` attribute of [`callCabalProjectToNix`](#callcabalprojecttonix) return value |
 | `shellFor`        | Function                                         | [`shellFor`](#shellfor)                                                     |
 | `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                           | 
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                       |
+| `projectCross`    | Attrset                                          | Like `pkgs.pkgsCross.X` from nixpkgs `p.projectCross.X` returns the project results for cross compilation to X.  So `p.projectCross.ghcjs.hsPkgs` is the same as `hsPkgs` but compiled with ghcjs |
 
+## project, cabalProject and stackProject
 
+These versions of the function are the same as project', cabalProject'
+and stackProject', but `hsPkgs` attributes are also included in the
+return value directly.  That way a package can be referenced as
+`(project {...}).foo` instead of `(project' {...}).hsPkgs.foo`.
 
 ## mkStackPkgSet
 
@@ -404,9 +408,11 @@ Sub-component types identify [components](#component) and are one of:
  - `tests`
  - `benchmarks`
 
-# Package-set functions
+# Project functions
 
-These functions exist within the `hsPkgs` package set.
+These functions are included in the `project` return values.
+In the past they also existed within `project.hsPkgs`,
+but have now been removed from there.
 
 ## shellFor
 
@@ -427,7 +433,8 @@ shellFor =
 | `additional`   | Function | Similar to `packages`, but the selected packages are built and included in `ghc-pkg list` (not just their dependencies). |
 | `withHoogle`   | Boolean  | Whether to build a Hoogle documentation index and provide the `hoogle` command. |
 | `exactDeps`    | Boolean  | Prevents the Cabal solver from choosing any package dependency other than what are in the package set. |
-| `tools`        | Function | AttrSet of tools to make available e.g. `{ cabal = "3.2.0.0"; }` or `{ cabal = { version = "3.2.0.0"; }; }` |
+| `tools`        | Function | AttrSet of tools to make available e.g. `{ cabal = "3.2.0.0"; }` or `{ cabal = { version = "3.2.0.0"; }; }`. If an AttrSet is provided for a tool, the additional arguments will be passed to the function creating the derivation for that tool. So you can provide an `index-state` or a `materialized` argument like that `{ cabal = { version = "3.2.0.0"; index-state = "2020-10-30T00:00:00Z"; materialized = ./cabal.materialized; }; }` for example. You can specify and materialize the version of hoogle used to construct the hoogle index by including something like `{ hoogle = { version = "5.0.17.15"; index-state = "2020-05-31T00:00:00Z"; materialized = ./hoogle.materialized; }`. Uses a default version of hoogle if omitted. |
+| `inputsFrom`   | List     | List of other shells to include in this one.  The `buildInputs` and `nativeBuildInputs` of each will be included using [mkShell](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell).
 | `{ ... }`      | Attrset  | All the other arguments are passed to [`mkDerivation`](https://nixos.org/nixpkgs/manual/#sec-using-stdenv). |
 
 **Return value**: a derivation

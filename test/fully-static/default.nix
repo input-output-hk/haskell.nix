@@ -40,7 +40,7 @@ in recurseIntoAttrs {
     buildCommand = flip concatMapStrings
       [ packagesGmp /* packagesIntegerSimple */ ]
       (packages: ''
-        exe="${packages.pandoc.components.exes.pandoc}/bin/pandoc${stdenv.hostPlatform.extensions.executable}"
+        exe="${packages.pandoc.components.exes.pandoc.exePath}"
 
         printf "checking whether executable runs... " >& 2
         ${toString packages.pandoc.components.exes.pandoc.config.testWrapper} $exe --version
@@ -52,7 +52,10 @@ in recurseIntoAttrs {
 
       '') + "touch $out";
 
-    meta.platforms = platforms.all;
+    meta = {
+      # A dependency is broken on Windows, just run on unix
+      platforms = platforms.unix;
+    };
 
     passthru = {
       # Attributes used for debugging with nix repl

@@ -25,9 +25,9 @@ let
     package.identifier.name = "nnn";
   };
 
-  testRepo = pkgs.fetchgit {
+  testRepoData = {
     url = "https://github.com/input-output-hk/haskell.nix.git";
-    rev = "487eea1c249537d34c27f6143dff2b9d5586c657";
+    ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
     sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
   };
 in
@@ -65,7 +65,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [testRepo];
+      sourceRepo = [(testRepoData // { subdir = "."; })];
     };
   };
 
@@ -80,7 +80,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepo + "/dir")];
+      sourceRepo = [(testRepoData // { subdir = "dir"; })];
     };
   };
 
@@ -95,7 +95,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepo + "/dir1") (testRepo + "/dir2")];
+      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
     };
   };
 
@@ -112,7 +112,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepo + "/dir1") (testRepo + "/dir2")];
+      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
     };
   };
 }

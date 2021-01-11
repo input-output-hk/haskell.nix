@@ -21,10 +21,10 @@ in recurseIntoAttrs {
     name = "callStackToNix-test";
 
     buildCommand = ''
-      exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.stack-simple.components.exes.stack-simple-exe.exePath}"
 
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.stack-simple.components.exes.stack-simple-exe}
+      cat ${haskellLib.check packages.stack-simple.components.exes.stack-simple-exe}/test-stdout
 
       touch $out
     '';
