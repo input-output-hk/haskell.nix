@@ -198,17 +198,14 @@ let
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
   # The `cleanSrc.origSubDir` if there is one for use in `prePatch` and `lib/cover.nix`.
-  srcSubDir =
-    if cleanSrc ? origSrc && cleanSrc ? filter
-      then cleanSrc.origSubDir or ""
-      else "";
+  srcSubDir = cleanSrc.origSubDir or "";
 
   # Attributes that are common to both the build and haddock derivations
   commonAttrs = {
       # Remove the origSubDir if there was one so that src points to `cleanSrc.origSrc`
       # when possible.  The `cleanSrc.origSubDir` is then used in `prePatch` instead.
       src =
-        if srcSubDir != ""
+        if cleanSrc ? origSrc && cleanSrc ? filter && srcSubDir != ""
           then haskellLib.cleanSourceWith {
             src = cleanSrc.origSrc;
             inherit (cleanSrc) filter;

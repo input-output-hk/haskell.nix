@@ -1,9 +1,17 @@
-{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitReallyMinimal, buildPackages }:
+{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitMinimal, buildPackages }:
 
 with stdenv.lib;
 
 let
   src = testSrc "githash";
+  git =
+    # Using the cross compiled version here, but currently git does not
+    # seem to cross compile (so this test is disabled for cross compilation in
+    # the test/default.nix file).
+    # Using buildPackages here is not right, but at least gets musl64 test to pass.
+    if stdenv.hostPlatform != stdenv.buildPlatform
+      then buildPackages.buildPackages.gitReallyMinimal
+      else gitMinimal;
   project = haskell-nix.cabalProject' {
     inherit src;
     # When haskell.nix has come from the store (e.g. on hydra) we need to provide
@@ -11,7 +19,7 @@ let
     modules = (optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {
       packages.githash-test.src =
         rec {
-          origSrc = runCommand "githash-test-src" { nativeBuildInputs = [ buildPackages.buildPackages.gitReallyMinimal ]; } ''
+          origSrc = runCommand "githash-test-src" { nativeBuildInputs = [ git ]; } ''
             mkdir -p $out/test/githash
             cd $out
             git init
@@ -22,16 +30,9 @@ let
           origSubDir = "/test/githash";
           origSrcSubDir = origSrc + origSubDir;
           outPath = origSrcSubDir;
-          isProjectPackage = true;
         };
       }) ++ [{
-        packages.githash-test.components.exes.githash-test.build-tools = mkForce [
-          # Using the cross compiled version here, but currently git does not
-          # seem to cross compile (so this test is disabled for cross compilation in
-          # the test/default.nix file).
-          # Using buildPackages here is not right, but at least gets musl64 test to pass.
-          buildPackages.buildPackages.gitReallyMinimal
-        ];
+        packages.githash-test.components.exes.githash-test.build-tools = mkForce [ git ];
       }];
     inherit compiler-nix-name;
   };
