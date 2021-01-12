@@ -22,6 +22,7 @@ let
           origSubDir = "/test/githash";
           origSrcSubDir = origSrc + origSubDir;
           outPath = origSrcSubDir;
+          isProjectPackage = true;
         };
       }) ++ [{
         packages.githash-test.components.exes.githash-test.build-tools = mkForce [
