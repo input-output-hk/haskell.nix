@@ -197,13 +197,18 @@ let
     stdenv.hostPlatform.extensions.executable;
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
+  # The `cleanSrc.origSubDir` if there is one for use in `prePatch` and `lib/cover.nix`.
+  srcSubDir =
+    if cleanSrc ? origSrc && cleanSrc ? filter
+      then cleanSrc.origSubDir or ""
+      else "";
 
   # Attributes that are common to both the build and haddock derivations
   commonAttrs = {
+      # Remove the origSubDir if there was one so that src points to `cleanSrc.origSrc`
+      # when possible.  The `cleanSrc.origSubDir` is then used in `prePatch` instead.
       src =
-        # Remove the origSubDir if there was one so that src points to `cleanSrc.origSrc`
-        # when possible.  The `cleanSrc.origSubDir` is then used in `prePatch` instead.
-        if cleanSrc ? origSrc && cleanSrc ? filter && cleanSrc.origSubDir or "" != ""
+        if srcSubDir != ""
           then haskellLib.cleanSourceWith {
             src = cleanSrc.origSrc;
             inherit (cleanSrc) filter;
@@ -219,8 +224,8 @@ let
 
       prePatch =
         # If the package is in a sub directory `cd` there first
-        (lib.optionalString (cleanSrc.origSubDir or "" != "") ''
-            cd ${lib.removePrefix "/" (cleanSrc.origSubDir or "")}
+        (lib.optionalString (srcSubDir != "") ''
+            cd ${lib.removePrefix "/" srcSubDir}
           ''
         ) + 
         (if cabalFile != null
@@ -270,6 +275,7 @@ let
     passthru = {
       inherit (package) identifier;
       config = component;
+      inherit srcSubDir;
       inherit configFiles executableToolDepends cleanSrc exeName;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;

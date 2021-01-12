@@ -136,6 +136,10 @@ let
 
   testSrcRoot = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
   testSrc = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRoot; inherit subDir; };
+  # Use the following reproduce issues that may arise on hydra as a
+  # result of building a snapshot not a git repo.
+  # testSrcRoot = pkgs.copyPathToStore ./.;
+  # testSrc = subDir: testSrcRoot + "/${subDir}";
   testSrcRootWithGitDir = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
   callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc; });
