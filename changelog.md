@@ -1,6 +1,15 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Jan 14, 2021
+* Added support for cross package refs (with a project).  Relative
+  directory references between packages within a project should now
+  work.
+* Added `includeSiblings` to `cleanSourceWith`.  When `true` it
+  prevents the `subDir` arg from causing filtering of other directories.
+* Added `keepGitDir` to `cleanGit` to allow `.git` directory to be kept
+  (useful for components that use the `githash` package).
+
 ## Nov 26, 2020
 * Renamed `otherShells` arg for `shellFor` to `inputsFrom
 

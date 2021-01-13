@@ -77,7 +77,27 @@ let self =
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
-  cleanSrc = if canCleanSource then haskellLib.cleanCabalComponent package component src else src;
+  # In order to support relative references to other packages we need to use
+  # the `origSrc` diretory as the root `src` for the derivation.
+  # We use `rootAndSubDir` here to split the cleaned source into a `cleanSrc.root`
+  # path (that respects the filtering) and a `cleanSrc.subDir` that
+  # is the sub directory in that root path that contains the package.
+  # `cleanSrc.subDir` is used in `prePatch` and `lib/cover.nix`.
+  cleanSrc = haskellLib.rootAndSubDir (if canCleanSource
+    then haskellLib.cleanCabalComponent package component "${componentId.ctype}-${componentId.cname}" src
+    else
+      # We can clean out the siblings though to at least avoid changes to other packages
+      # from triggering a rebuild of this one.
+      # Passing `subDir` but not `includeSiblings = true;` will exclude anything not
+      # in the `subDir`.
+      if src ? origSrc && src ? filter && src.origSubDir or "" != ""
+        then haskellLib.cleanSourceWith {
+          name = src.name or "source";
+          src = src.origSrc;
+          subDir = lib.removePrefix "/" src.origSubDir;
+          inherit (src) filter;
+        }
+        else src);
 
   nameOnly = "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
 
@@ -189,7 +209,7 @@ let
 
   # Attributes that are common to both the build and haddock derivations
   commonAttrs = {
-      src = cleanSrc;
+      src = cleanSrc.root;
 
       LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
       LC_ALL = "en_US.UTF-8";
@@ -198,14 +218,27 @@ let
 
       SETUP_HS = setup + /bin/Setup;
 
-      prePatch = if (cabalFile != null)
-         then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
-         else
-           # When building hpack package we use the internal nix-tools
-           # (compiled with a fixed GHC version)
-           lib.optionalString (cabal-generator == "hpack") ''
-             ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
-           '';
+      prePatch =
+        # If the package is in a sub directory `cd` there first.
+        # In some cases the `cleanSrc.subDir` will be empty and the `.cabal`
+        # file will be in the root of `src` (`cleanSrc.root`).  This
+        # will happen when:
+        #   * the .cabal file is in the projects `src.origSrc or src`
+        #   * the package src was overridden with a value that does not
+        #     include an `origSubDir`
+        (lib.optionalString (cleanSrc.subDir != "") ''
+            cd ${lib.removePrefix "/" cleanSrc.subDir}
+          ''
+        ) + 
+        (if cabalFile != null
+          then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
+          else
+            # When building hpack package we use the internal nix-tools
+            # (compiled with a fixed GHC version)
+            lib.optionalString (cabal-generator == "hpack") ''
+              ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
+            ''
+        );
     }
     # patches can (if they like) depend on the version and revision of the package.
     // lib.optionalAttrs (patches != []) {
@@ -244,7 +277,9 @@ let
     passthru = {
       inherit (package) identifier;
       config = component;
-      inherit configFiles executableToolDepends cleanSrc exeName;
+      srcSubDir = cleanSrc.subDir;
+      srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
+      inherit configFiles executableToolDepends exeName;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });

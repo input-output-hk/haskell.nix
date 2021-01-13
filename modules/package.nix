@@ -132,6 +132,11 @@ in {
         default = false;
       };
 
+      isProject = mkOption {
+        type = bool;
+        default = false;
+      };
+
       ghcOptions = mkOption {
         type = nullOr str;
         default = null;

@@ -136,6 +136,12 @@ let
 
   testSrcRoot = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
   testSrc = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRoot; inherit subDir; };
+  # Use the following reproduce issues that may arise on hydra as a
+  # result of building a snapshot not a git repo.
+  # testSrcRoot = pkgs.copyPathToStore ./.;
+  # testSrc = subDir: testSrcRoot + "/${subDir}";
+  testSrcRootWithGitDir = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
+  testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
   callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc; });
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
@@ -203,6 +209,9 @@ let
   } // lib.optionalAttrs (!pkgs.haskell-nix.haskellLib.isCrossHost) {
     # Haddock is not included with cross compilers currently
     sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
+    # githash runs git from TH code and this needs a cross compiled git exe
+    # to work correctly.  Cross compiling git is currently brocken.
+    githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the

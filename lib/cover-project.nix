@@ -54,7 +54,7 @@ let
       (l: "${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}")
       libs;
 
-  srcDirs = map (l: l.src.outPath) libs;
+  srcDirs = map (l: l.srcSubDirPath) libs;
 
 in pkgs.runCommand "project-coverage-report"
   ({ nativeBuildInputs = [ (ghc.buildGHC or ghc) pkgs.buildPackages.zip ];
