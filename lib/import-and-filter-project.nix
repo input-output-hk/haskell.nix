@@ -47,7 +47,7 @@ in project // {
             in oldPkg // {
               src = (pkgs.lib).mkDefault packageSrc;
               package = oldPkg.package // {
-                isProjectPackage = (pkgs.lib).mkDefault true;
+                isProject = (pkgs.lib).mkDefault true;
               };
             }) old;
     };

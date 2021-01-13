@@ -132,7 +132,7 @@ in {
         default = false;
       };
 
-      isProjectPackage = mkOption {
+      isProject = mkOption {
         type = bool;
         default = false;
       };

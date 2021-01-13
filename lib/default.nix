@@ -94,7 +94,7 @@ in {
 
   # if it's a project package it has a src attribute set with an origSubDir attribute.
   # project packages are a subset of localPackages
-  isProjectPackage = p: p.isProjectPackage or false;
+  isProjectPackage = p: p.isProject or false;
   selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
 
   # Format a componentId as it should appear as a target on the
