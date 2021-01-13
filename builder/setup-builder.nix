@@ -5,7 +5,8 @@
 , prePatch ? null, postPatch ? null
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
-, cleanSrc ? haskellLib.cleanCabalComponent package component src
+, cleanSrc ? haskellLib.rootAndSubDir (
+    haskellLib.cleanCabalComponent package component "setup" src)
 }:
 
 let
@@ -35,12 +36,7 @@ let
   drv =
     stdenv.mkDerivation ({
       name = "${ghc.targetPrefix}${fullName}";
-      src = if cleanSrc ? origSrc && cleanSrc ? filter && cleanSrc.origSubDir or "" != ""
-        then haskellLib.cleanSourceWith {
-          src = cleanSrc.origSrc;
-          inherit (cleanSrc) filter;
-        }
-        else cleanSrc;
+      src = cleanSrc.root;
       buildInputs = component.libs
         ++ component.frameworks
         ++ builtins.concatLists component.pkgconfig;
@@ -49,6 +45,7 @@ let
       passthru = {
         inherit (package) identifier;
         config = component;
+        srcSubDir = cleanSrc.subDir;
         inherit configFiles cleanSrc;
       };
 
@@ -88,13 +85,12 @@ let
         runHook postInstall
       '';
     }
-    // (lib.optionalAttrs (cleanSrc.origSubDir or "" != "") {
+    // (lib.optionalAttrs (cleanSrc.subDir != "") {
       prePatch =
         # If the package is in a sub directory `cd` there first
-        (lib.optionalString (cleanSrc.origSubDir or "" != "") ''
-            cd ${lib.removePrefix "/" (cleanSrc.origSubDir or "")}
-          ''
-        );
+        ''
+          cd ${lib.removePrefix "/" cleanSrc.subDir}
+        '';
     })
     // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
     // hooks

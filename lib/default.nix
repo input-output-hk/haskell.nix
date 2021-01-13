@@ -273,4 +273,52 @@ in {
   inherit (import ./cabal-project-parser.nix {
     inherit pkgs;
   }) parseIndexState parseBlock;
+
+  # This function is like
+  #   `src + (if subDir == "" then "" else "/" + subDir)`
+  # however when `includeSiblings` is set it maintains
+  # `src.origSrc` if there is one and instead adds to
+  # `src.origSubDir`.  It uses `cleanSourceWith` when possible
+  # to keep `cleanSourceWith` support in the result.
+  appendSubDir = { src, subDir, includeSiblings ? false }:
+    if subDir == ""
+      then src
+      else
+        if haskellLib.canCleanSource src
+          then haskellLib.cleanSourceWith {
+            inherit src subDir includeSiblings;
+          }
+          else let name = src.name or "source" + "-" + __replaceStrings ["/"] ["-"] subDir;
+            in if includeSiblings
+              then rec {
+                # Keep `src.origSrc` so it can be used to allow references
+                # to other parts of that root.
+                inherit name;
+                origSrc = src.origSrc or src;
+                origSubDir = src.origSubDir or "" + "/" + subDir;
+                outPath = origSrc + origSubDir;
+              }
+              else {
+                # We are not going to need other parts of `origSrc` if there
+                # was one and we can ignore it
+                inherit name;
+                outPath = src + "/" + subDir;
+              };
+
+  # Givin a `src` split it into a `root` path (based on `src.origSrc` if
+  # present) and `subDir` (based on `src.origSubDir).  The
+  # `root` will still use the `filter` of `src` if there was one.
+  rootAndSubDir = src: rec {
+    subDir = src.origSubDir or "";
+    root =
+      # Use `cleanSourceWith` to make sure the `filter` is still used
+      if src ? origSrc && src ? filter && subDir != ""
+        then haskellLib.cleanSourceWith {
+          name = src.name or "source" + "-root";
+          src = src.origSrc;
+          # Not passing src.origSubDir so that the result points `origSrc`
+          inherit (src) filter;
+        }
+        else src.origSrc or src;
+  };
 }
