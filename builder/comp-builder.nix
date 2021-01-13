@@ -88,6 +88,8 @@ let
     else
       # We can clean out the siblings though to at least avoid changes to other packages
       # from triggering a rebuild of this one.
+      # Passing `subDir` but not `includeSiblings = true;` will exclude anything not
+      # in the `subDir`.
       if src ? origSrc && src ? filter && src.origSubDir or "" != ""
         then haskellLib.cleanSourceWith {
           name = src.name or "source";
