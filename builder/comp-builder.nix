@@ -278,6 +278,7 @@ let
       inherit (package) identifier;
       config = component;
       srcSubDir = cleanSrc.subDir;
+      srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
       inherit configFiles executableToolDepends exeName;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;

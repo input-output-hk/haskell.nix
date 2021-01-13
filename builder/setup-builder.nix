@@ -47,6 +47,7 @@ let
         inherit (package) identifier;
         config = component;
         srcSubDir = cleanSrc'.subDir;
+        srcSubDirPath = cleanSrc'.root + cleanSrc'.subDir;
         cleanSrc = cleanSrc';
         inherit configFiles;
       };
