@@ -193,6 +193,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#jan-14-2021">Jan 14, 2021</a></li>
+    
+
     <li class="toctree-l2"><a href="#nov-26-2020">Nov 26, 2020</a></li>
     
 
@@ -305,6 +308,16 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="jan-14-2021">Jan 14, 2021<a class="headerlink" href="#jan-14-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added support for cross package refs (with a project).  Relative
+  directory references between packages within a project should now
+  work.</li>
+<li>Added <code>includeSiblings</code> to <code>cleanSourceWith</code>.  When <code>true</code> it
+  prevents the <code>subDir</code> arg from causing filtering of other directories.</li>
+<li>Added <code>keepGitDir</code> to <code>cleanGit</code> to allow <code>.git</code> directory to be kept
+  (useful for components that use the <code>githash</code> package).</li>
+</ul>
 <h2 id="nov-26-2020">Nov 26, 2020<a class="headerlink" href="#nov-26-2020" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Renamed <code>otherShells</code> arg for <code>shellFor</code> to `inputsFrom</li>
