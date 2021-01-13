@@ -111,8 +111,9 @@ let
     then index-state
     else if cabalProjectIndexState != null
     then cabalProjectIndexState
-    else builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
-      (pkgs.lib.last (builtins.attrNames index-state-hashes));
+    else
+      let latest-index-state = pkgs.lib.last (builtins.attrNames index-state-hashes);
+      in builtins.trace ("No index state specified" + (if name == null then "" else " for " + name) + ", using the latest index state that we know about (${latest-index-state})!") latest-index-state;
 
   index-state-pinned = index-state != null || cabalProjectIndexState != null;
 
@@ -369,6 +370,7 @@ let
     inherit materialized;
     sha256 = plan-sha256;
     sha256Arg = "plan-sha256";
+    this = "project.plan-nix" + (if name != null then " for ${name}" else "");
     # Before pinning stuff down we need an index state to use
     reasonNotSafe =
       if !index-state-pinned
@@ -383,6 +385,7 @@ let
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
+    outputs = ["out" "json"];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
@@ -421,6 +424,8 @@ let
     ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
+
+    echo "Using index-state ${index-state-found}"
     HOME=${
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include
@@ -436,8 +441,7 @@ let
             # Setting the desired `index-state` here in case it was not
             # from the cabal.project file. This will further restrict the
             # packages used by the solver (cached-index-state >= index-state-found).
-            builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
-              index-state-found} \
+           index-state-found} \
         -w ${
           # We are using `-w` rather than `--with-ghc` here to override
           # the `with-compiler:` in the `cabal.project` file.
@@ -470,6 +474,9 @@ let
     # run `plan-to-nix` in $out.  This should produce files right there with the
     # proper relative paths.
     (cd $out${subDir'} && plan-to-nix --full --plan-json $tmp${subDir'}/dist-newstyle/cache/plan.json -o .)
+
+    # Make the plan.json file available in case we need to debug plan-to-nix
+    cp $tmp${subDir'}/dist-newstyle/cache/plan.json $json
 
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly

@@ -1,4 +1,19 @@
 final: prev: {
+  # gitMinimal still ships with perl (breaks for windows cross compilation)
+  gitReallyMinimal = (
+    final.git.override {
+      perlSupport = false;
+      pythonSupport = false;
+      withManual = false;
+      withpcre2 = false;
+    }
+  ).overrideAttrs (
+    _: {
+      # installCheck is broken when perl is disabled
+      doInstallCheck = false;
+    }
+  );
+
   # This can reduce closure size of nix-tools:
   #  * Eliminates dependency on python3 (70MB)
   #  * Allows sharing with `fetchgit` as it also uses `gitMinimal` (50MB)

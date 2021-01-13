@@ -10,6 +10,13 @@ let
       #   haddock: No input file(s)
       packages.cabal-sublib.doHaddock = false;
     }
+    # TODO fix plan-to-nix so this is not needed.
+    # This is a manual work around for `plan-to-nix` not
+    # handling `build-depends: cabal-sublib:slib` correctly
+    ({config, ...}: {
+      packages.cabal-sublib.components.exes.cabal-sublib.depends = [
+        config.hsPkgs.cabal-sublib.components.sublibs.slib ];
+    })
   ];
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
@@ -55,7 +62,7 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit packages;
+      inherit packages project;
     };
   };
 }

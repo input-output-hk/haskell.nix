@@ -76,9 +76,28 @@ let self =
 
 let
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
-  cleanSrc = if cabal-generator == "hpack" && !(package.cleanHpack or false)
-    then builtins.trace ("Cleaning component source not supported for hpack package: " + name) src
-    else haskellLib.cleanCabalComponent package component src;
+  canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
+  # In order to support relative references to other packages we need to use
+  # the `origSrc` diretory as the root `src` for the derivation.
+  # We use `rootAndSubDir` here to split the cleaned source into a `cleanSrc.root`
+  # path (that respects the filtering) and a `cleanSrc.subDir` that
+  # is the sub directory in that root path that contains the package.
+  # `cleanSrc.subDir` is used in `prePatch` and `lib/cover.nix`.
+  cleanSrc = haskellLib.rootAndSubDir (if canCleanSource
+    then haskellLib.cleanCabalComponent package component "${componentId.ctype}-${componentId.cname}" src
+    else
+      # We can clean out the siblings though to at least avoid changes to other packages
+      # from triggering a rebuild of this one.
+      # Passing `subDir` but not `includeSiblings = true;` will exclude anything not
+      # in the `subDir`.
+      if src ? origSrc && src ? filter && src.origSubDir or "" != ""
+        then haskellLib.cleanSourceWith {
+          name = src.name or "source";
+          src = src.origSrc;
+          subDir = lib.removePrefix "/" src.origSubDir;
+          inherit (src) filter;
+        }
+        else src);
 
   nameOnly = "${package.identifier.name}-${componentId.ctype}-${componentId.cname}";
 
@@ -190,7 +209,7 @@ let
 
   # Attributes that are common to both the build and haddock derivations
   commonAttrs = {
-      src = cleanSrc;
+      src = cleanSrc.root;
 
       LANG = "en_US.UTF-8";         # GHC needs the locale configured during the Haddock phase.
       LC_ALL = "en_US.UTF-8";
@@ -199,14 +218,27 @@ let
 
       SETUP_HS = setup + /bin/Setup;
 
-      prePatch = if (cabalFile != null)
-         then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
-         else
-           # When building hpack package we use the internal nix-tools
-           # (compiled with a fixed GHC version)
-           lib.optionalString (cabal-generator == "hpack") ''
-             ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
-           '';
+      prePatch =
+        # If the package is in a sub directory `cd` there first.
+        # In some cases the `cleanSrc.subDir` will be empty and the `.cabal`
+        # file will be in the root of `src` (`cleanSrc.root`).  This
+        # will happen when:
+        #   * the .cabal file is in the projects `src.origSrc or src`
+        #   * the package src was overridden with a value that does not
+        #     include an `origSubDir`
+        (lib.optionalString (cleanSrc.subDir != "") ''
+            cd ${lib.removePrefix "/" cleanSrc.subDir}
+          ''
+        ) + 
+        (if cabalFile != null
+          then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
+          else
+            # When building hpack package we use the internal nix-tools
+            # (compiled with a fixed GHC version)
+            lib.optionalString (cabal-generator == "hpack") ''
+              ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
+            ''
+        );
     }
     # patches can (if they like) depend on the version and revision of the package.
     // lib.optionalAttrs (patches != []) {
@@ -245,7 +277,9 @@ let
     passthru = {
       inherit (package) identifier;
       config = component;
-      inherit configFiles executableToolDepends cleanSrc exeName;
+      srcSubDir = cleanSrc.subDir;
+      srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
+      inherit configFiles executableToolDepends exeName;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
@@ -283,6 +317,9 @@ let
       ++ (lib.optional keepSource "source");
 
     configurePhase =
+      (lib.optionalString (!canCleanSource) ''
+      echo "Cleaning component source not supported, leaving it un-cleaned"
+      '') +
       (lib.optionalString keepSource ''
         cp -r . $source
         cd $source
@@ -319,31 +356,43 @@ let
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-        if [ -d "${name}.conf" ]; then
-          for pkg in ${name}.conf/*; do
-            ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register "$pkg"
-          done
-        elif [ -e "${name}.conf" ]; then
-          ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
-        fi
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
 
         mkdir -p $out/exactDep
         touch $out/exactDep/configure-flags
         touch $out/exactDep/cabal.config
         touch $out/envDep
 
-        if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
-          echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
-          echo "package-id $id" >> $out/envDep
-        elif id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
-          name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
-          # so we are dealing with a sublib. As we build sublibs separately, the above
-          # query should be safe.
-          echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
-        else
-          echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
-          exit 0
-        fi
+        ${ # The main library in a package has the same name as the package
+          if package.identifier.name == componentId.cname
+            then ''
+              if id=$(${target-pkg-and-db} field ${package.identifier.name} id --simple-output); then
+                echo "--dependency=${package.identifier.name}=$id" >> $out/exactDep/configure-flags
+                echo "package-id $id" >> $out/envDep
+              else
+                echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
+                exit 0
+              fi
+            ''
+            else
+              # If the component name is not the package name this must be a sublib.
+              # As we build sublibs separately, the following query should be safe.
+              (''
+              if id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
+                name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
+                echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+                ''
+                # Allow `package-name:sublib-name` to work in `build-depends`
+                # by adding the same `--dependency` again, but with the package
+                # name added.
+                + ''
+                echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+              else
+                echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
+                exit 0
+              fi
+              '')
+        }
         if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
           echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
           echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
@@ -366,21 +415,23 @@ let
       '')
       # In case `setup copy` did not create this
       + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
-      + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) ''
+      + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) (''
         echo "Symlink libffi and gmp .dlls ..."
         for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
+        ''
         # symlink all .dlls into the local directory.
         # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
         # to symlink over dlls as needed.
+        + ''
         echo "Symlink library dependencies..."
         for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
           if [ -d "$libdir" ]; then
             find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
           fi
         done
-      '')
+      ''))
       + (lib.optionalString doCoverage ''
         mkdir -p $out/share
         cp -r dist/hpc $out/share

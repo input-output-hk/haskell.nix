@@ -136,6 +136,12 @@ let
 
   testSrcRoot = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
   testSrc = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRoot; inherit subDir; };
+  # Use the following reproduce issues that may arise on hydra as a
+  # result of building a snapshot not a git repo.
+  # testSrcRoot = pkgs.copyPathToStore ./.;
+  # testSrc = subDir: testSrcRoot + "/${subDir}";
+  testSrcRootWithGitDir = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
+  testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
   callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc; });
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
@@ -158,6 +164,7 @@ let
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
     stack-local-resolver = callTest ./stack-local-resolver {};
+    stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir {};
     stack-remote-resolver = callTest ./stack-remote-resolver {};
     shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
     setup-deps = import ./setup-deps { inherit pkgs compiler-nix-name; };
@@ -184,7 +191,7 @@ let
     # Does not work on ghcjs because it needs zlib.
     # Does not work on windows because it needs mintty.
     shell-for = callTest ./shell-for {};
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs || !stdenv.buildPlatform.isDarwin) {
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
     # When using ghcjs on darwin this test fails with
     # ReferenceError: h$hs_clock_darwin_gettime is not defined
     # https://github.com/input-output-hk/haskell.nix/issues/925
@@ -192,14 +199,19 @@ let
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
     # These do not work on ghcjs because it needs zlib.
     coverage = callTest ./coverage { inherit compiler-nix-name; };
+    coverage-golden = callTest ./coverage-golden { inherit compiler-nix-name;};
+    coverage-no-libs = callTest ./coverage-no-libs { inherit compiler-nix-name; };
     snapshots = callTest ./snapshots {};
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8102-experimental" ) {
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8103" && compiler-nix-name != "ghc810220201118" ) {
     # Pandoc does not build with ghcjs or ghc 8.10 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
     fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
   } // lib.optionalAttrs (!pkgs.haskell-nix.haskellLib.isCrossHost) {
     # Haddock is not included with cross compilers currently
     sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
+    # githash runs git from TH code and this needs a cross compiled git exe
+    # to work correctly.  Cross compiling git is currently brocken.
+    githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the
