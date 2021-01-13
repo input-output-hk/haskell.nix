@@ -37,19 +37,18 @@ in project // {
                       then
                         pkgs.lib.lists.elemAt sourceRepos (
                           pkgs.lib.strings.toInt (pkgs.lib.strings.removePrefix srcRepoPrefix subDir))
-                      else (haskellLib.appendSubDir {
+                      else haskellLib.appendSubDir {
                           src = srcRoot;
                           inherit subDir;
                           includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
                                                   # component builder so that relative paths can be used to
                                                   # reference project directories not in the package subDir.
-                        }) // {
-                          # Tag the `src` attribute of the packages that are part of the project
-                          # (but not source repository packages)
-                          isProjectPackageSrc = true;
                         };
             in oldPkg // {
               src = (pkgs.lib).mkDefault packageSrc;
+              package = oldPkg.package // {
+                isProjectPackage = (pkgs.lib).mkDefault true;
+              };
             }) old;
     };
   }
