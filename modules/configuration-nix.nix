@@ -15,4 +15,11 @@
     pkgs.xorg.libXScrnSaver
     pkgs.xorg.libXinerama
   ];
+
+  # These packages have `license: LGPL` in their .cabal file, but
+  # do not specify the version.  Setting the version here on
+  # examination of the license files included in the packages.
+  packages.hscolour.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
+  packages.cpphs.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
+  packages.polyparse.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
 }

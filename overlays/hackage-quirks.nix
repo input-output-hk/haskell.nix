@@ -31,10 +31,6 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
-    cpphs = {
-      modules = [{ packages.cpphs.package.license = final.lib.mkForce "LGPL-2.1-only"; }];
-    };
-
     hpack = {
       modules = [ { reinstallableLibGhc = true; } ];
     };
