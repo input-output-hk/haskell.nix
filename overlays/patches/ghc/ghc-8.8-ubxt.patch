@@ -1,0 +1,1127 @@
+diff --git a/compiler/cmm/SMRep.hs b/compiler/cmm/SMRep.hs
+index 743631527e..b01d6640c3 100644
+--- a/compiler/cmm/SMRep.hs
++++ b/compiler/cmm/SMRep.hs
+@@ -100,7 +100,7 @@ bytesToWordsRoundUp dflags n = (n + word_size - 1) `quot` word_size
+ -- StgWord is a type representing an StgWord on the target platform.
+ -- A Word64 is large enough to hold a Word for either a 32bit or 64bit platform
+ newtype StgWord = StgWord Word64
+-    deriving (Eq, Bits)
++    deriving (Eq, Bits, Show)
+ 
+ fromStgWord :: StgWord -> Integer
+ fromStgWord (StgWord i) = toInteger i
+diff --git a/compiler/ghci/ByteCodeAsm.hs b/compiler/ghci/ByteCodeAsm.hs
+index e3c18b93a2..5d35db192f 100644
+--- a/compiler/ghci/ByteCodeAsm.hs
++++ b/compiler/ghci/ByteCodeAsm.hs
+@@ -7,7 +7,7 @@
+ -- | ByteCodeLink: Bytecode assembler and linker
+ module ByteCodeAsm (
+         assembleBCOs, assembleOneBCO,
+-
++        non_void, -- fixme
+         bcoFreeNames,
+         SizedSeq, sizeSS, ssElts,
+         iNTERP_STACK_CHECK_THRESH
+@@ -30,6 +30,10 @@ import Literal
+ import TyCon
+ import FastString
+ import StgCmmLayout     ( ArgRep(..) )
++import CmmUtils
++import CmmNode
++import CmmCallConv
++import CmmExpr
+ import SMRep
+ import DynFlags
+ import Outputable
+@@ -59,6 +63,8 @@ import Data.List
+ import Data.Map (Map)
+ import Data.Maybe (fromMaybe)
+ import qualified Data.Map as Map
++import qualified Data.ByteString as B
++import qualified Data.ByteString.Char8 as C8
+ 
+ -- -----------------------------------------------------------------------------
+ -- Unlinked BCOs
+@@ -374,10 +380,8 @@ assembleI dflags i = case i of
+   PUSH_ALTS proto          -> do let ul_bco = assembleBCO dflags proto
+                                  p <- ioptr (liftM BCOPtrBCO ul_bco)
+                                  emit bci_PUSH_ALTS [Op p]
+-  PUSH_ALTS_UNLIFTED proto pk
+-                           -> do let ul_bco = assembleBCO dflags proto
+-                                 p <- ioptr (liftM BCOPtrBCO ul_bco)
+-                                 emit (push_alts pk) [Op p]
++  PUSH_ALTS_UNLIFTED proto pks
++                           -> push_alts_unlifted dflags proto pks
+   PUSH_PAD8                -> emit bci_PUSH_PAD8 []
+   PUSH_PAD16               -> emit bci_PUSH_PAD16 []
+   PUSH_PAD32               -> emit bci_PUSH_PAD32 []
+@@ -435,7 +439,7 @@ assembleI dflags i = case i of
+   JMP       l              -> emit bci_JMP [LabelOp l]
+   ENTER                    -> emit bci_ENTER []
+   RETURN                   -> emit bci_RETURN []
+-  RETURN_UBX rep           -> emit (return_ubx rep) []
++  RETURN_UBX reps          -> return_ubx dflags (non_void reps)
+   CCALL off m_addr i       -> do np <- addr m_addr
+                                  emit bci_CCALL [SmallOp off, Op np, SmallOp i]
+   BRK_FUN index uniq cc    -> do p1 <- ptr BCOPtrBreakArray
+@@ -445,6 +449,7 @@ assembleI dflags i = case i of
+                                                    Op q, Op np]
+ 
+   where
++    platform = targetPlatform dflags
+     literal (LitLabel fs (Just sz) _)
+      | platformOS (targetPlatform dflags) == OSMinGW32
+          = litlabel (appendFS fs (mkFastString ('@':show sz)))
+@@ -481,27 +486,100 @@ assembleI dflags i = case i of
+ isLarge :: Word -> Bool
+ isLarge n = n > 65535
+ 
+-push_alts :: ArgRep -> Word16
+-push_alts V   = bci_PUSH_ALTS_V
+-push_alts P   = bci_PUSH_ALTS_P
+-push_alts N   = bci_PUSH_ALTS_N
+-push_alts L   = bci_PUSH_ALTS_L
+-push_alts F   = bci_PUSH_ALTS_F
+-push_alts D   = bci_PUSH_ALTS_D
++push_alts :: [ArgRep] -> Maybe Word16
++push_alts [V]   = Just bci_PUSH_ALTS_V
++push_alts [P]   = Just bci_PUSH_ALTS_P
++push_alts [N]   = Just bci_PUSH_ALTS_N
++push_alts [L]   = Just bci_PUSH_ALTS_L
++push_alts [F]   = Just bci_PUSH_ALTS_F
++push_alts [D]   = Just bci_PUSH_ALTS_D
++push_alts _     = Nothing
++{-
+ push_alts V16 = error "push_alts: vector"
+ push_alts V32 = error "push_alts: vector"
+ push_alts V64 = error "push_alts: vector"
++-}
++
++non_void :: [ArgRep] -> [ArgRep]
++non_void = filter nv
++  where nv V = False
++        nv _ = True
++
++push_alts_unlifted :: DynFlags -> ProtoBCO Name -> [ArgRep] -> Assembler ()
++push_alts_unlifted dflags proto args = do
++  let ul_bco = assembleBCO dflags proto
++  p <- ioptr (liftM BCOPtrBCO ul_bco)
++  -- fixme make proper sig
++  case push_alts args of
++    Just pa -> emit pa [Op p]
++    _       -> do
++      sig <- ubx_tup_sig dflags (non_void args)
++      emit bci_PUSH_ALTS_T [Op p, SmallOp $ fromIntegral (genericLength $ non_void args), Op sig]
++
++return_ubx :: DynFlags -> [ArgRep] -> Assembler () -- Word16
++-- special cases
++return_ubx _ []          = emit bci_RETURN_V []
++return_ubx _ [P]         = emit bci_RETURN_P []
++return_ubx _ [N]         = emit bci_RETURN_N []
++return_ubx _ [L]         = emit bci_RETURN_L []
++return_ubx _ [F]         = emit bci_RETURN_F []
++return_ubx _ [D]         = emit bci_RETURN_D []
++-- general case
++return_ubx dflags nonVoidArgs
++  | isLarge l = panic "return_ubx: tuple too big"
++  | otherwise = do
++      sig <- ubx_tup_sig dflags nonVoidArgs
++      emit bci_RETURN_T [SmallOp $ fromIntegral l, Op sig ]
++  where
++    l = genericLength nonVoidArgs
++    int = words . mkLitI
++    words ws = lit (map BCONPtrWord ws)
++
+ 
+-return_ubx :: ArgRep -> Word16
+-return_ubx V   = bci_RETURN_V
+-return_ubx P   = bci_RETURN_P
+-return_ubx N   = bci_RETURN_N
+-return_ubx L   = bci_RETURN_L
+-return_ubx F   = bci_RETURN_F
+-return_ubx D   = bci_RETURN_D
+-return_ubx V16 = error "return_ubx: vector"
+-return_ubx V32 = error "return_ubx: vector"
+-return_ubx V64 = error "return_ubx: vector"
++ubx_tup_sig :: DynFlags -> [ArgRep] -> Assembler Word
++ubx_tup_sig dflags reps = do  
++  lit [BCONPtrStr bs]
++  where
++    (boff, posns) = assignArgumentsPos dflags 0 NativeReturn toCmm reps
++    toCmm = primRepCmmType dflags . argToPrim 
++    bs    = B.pack $ concatMap sig_bytes posns
++    literal (LitString bs) = lit [BCONPtrStr bs]
++
++
++sig_bytes :: (ArgRep, ParamLocation) -> [Word8]
++sig_bytes (r, loc) = arg_byte r : loc_bytes loc
++
++-- fixme do we get zeroes here?
++loc_bytes :: ParamLocation -> [Word8]
++loc_bytes (StackParam offset)                = [1, fromIntegral offset]
++loc_bytes (RegisterParam (VanillaReg off _)) = [2, fromIntegral off]
++loc_bytes (RegisterParam (FloatReg off)) = [3, fromIntegral off]
++loc_bytes (RegisterParam (DoubleReg off)) = [4, fromIntegral off]
++loc_bytes (RegisterParam (LongReg off)) = [5, fromIntegral off]
++loc_bytes (RegisterParam (XmmReg off)) = [6, fromIntegral off]
++loc_bytes (RegisterParam (YmmReg off)) = [7, fromIntegral off]
++loc_bytes (RegisterParam (ZmmReg off)) = [8, fromIntegral off]
++loc_bytes _ = panic "GHC.ByteCode.Asm.loc_bytes"
++
++
++arg_byte :: ArgRep -> Word8
++arg_byte P = 1
++arg_byte N = 2
++arg_byte L = 3
++arg_byte F = 4
++arg_byte D = 5
++arg_byte _ = panic "GHC.ByteCode.Asm.sig_byte"
++
++
++-- we really shouldn't do this
++argToPrim :: ArgRep -> PrimRep
++argToPrim P = LiftedRep
++argToPrim V = VoidRep
++argToPrim N = WordRep -- UnliftedRep?
++argToPrim L = Word64Rep
++argToPrim F = FloatRep
++argToPrim D = DoubleRep
++argToPrim _ = panic "GHC.ByteCode.argToPrim"
+ 
+ -- Make lists of host-sized words for literals, so that when the
+ -- words are placed in memory at increasing addresses, the
+diff --git a/compiler/ghci/ByteCodeGen.hs b/compiler/ghci/ByteCodeGen.hs
+index 346add07e7..451ba50384 100644
+--- a/compiler/ghci/ByteCodeGen.hs
++++ b/compiler/ghci/ByteCodeGen.hs
+@@ -1,5 +1,6 @@
+ {-# LANGUAGE CPP, MagicHash, RecordWildCards, BangPatterns #-}
+ {-# LANGUAGE GeneralizedNewtypeDeriving #-}
++{-# LANGUAGE StandaloneDeriving #-}
+ {-# OPTIONS_GHC -fprof-auto-top #-}
+ --
+ --  (c) The University of Glasgow 2002-2006
+@@ -75,6 +76,90 @@ import Data.Ord
+ import GHC.Stack.CCS
+ import Data.Either ( partitionEithers )
+ 
++--- debug stuff, remove!
++import qualified Var as Var
++import qualified CostCentre
++import TyCoRep
++import IdInfo
++import UniqDSet
++
++encodeUnique _ = "<U>"
++
++-- this is a hack to be able to use pprShow in a Show instance, should be removed
++{-# NOINLINE hackPprDflags #-}
++hackPprDflags :: DynFlags
++hackPprDflags = unsafeGlobalDynFlags
++
++-- | replace all whitespace with space
++fixSpace :: String -> String
++fixSpace xs = map f xs
++  where
++    f c | isSpace c = ' '
++        | otherwise = c
++
++
++-- fixme make this more informative
++instance Show Type where
++  show ty = fixSpace (showPpr hackPprDflags ty)
++instance Show CostCentre where show _ = "CostCentre"
++instance Show CostCentre.CostCentre where show _ = "CostCentre"
++instance Show CostCentreStack where show _ = "CostCentreStack"
++-- instance Show StgBinderInfo where show _ = "StgBinderInfo"
++showModule m = unitIdString (moduleUnitId m) ++ ":" ++ moduleNameString (moduleName m)
++-- instance Show (UniqFM Id) where show u = "[" ++ show (uniqSetToList u) ++ "]"
++instance Show TyCon where show = show . tyConName
++instance Show Name where
++  show n = case nameModule_maybe n of
++                  Nothing -> show (nameOccName n)
++                  Just m  -> showModule m ++ "." ++ show (nameOccName n)
++instance Show OccName where show = occNameString
++instance Show DataCon where show d = show (dataConName d)
++instance Show Var where show v = "(" ++ show (Var.varName v) ++ "[" ++
++                                 encodeUnique (getKey (getUnique v)) ++
++                                 "]" ++ if isGlobalId v then "G" else "L" ++
++                                 " <" ++ show (idDetails v) ++ "> :: " ++
++                                 show (Var.varType v) ++ ")"
++instance Show IdDetails where
++  show VanillaId          = "VanillaId"
++  show (RecSelId {})      = "RecSelId"
++  show (DataConWorkId dc) = "DataConWorkId " ++ show dc
++  show (DataConWrapId dc) = "DataConWrapId " ++ show dc
++  show (ClassOpId {})     = "ClassOpId"
++  show (PrimOpId {})      = "PrimOpId"
++  show (FCallId {})       = "FCallId"
++  show (TickBoxOpId {})   = "VanillaId"
++  show (DFunId {})        = "DFunId"
++  show CoVarId            = "CoVarId"
++  show (JoinId {})        = "JoinId"
++
++-- deriving instance Show UpdateFlag
++deriving instance Show PrimOpVecCat
++deriving instance Show LitNumType
++deriving instance Show Literal
++deriving instance Show PrimOp
++deriving instance Show AltCon
++deriving instance Show PrimCall
++deriving instance Show ForeignCall
++deriving instance Show CCallTarget
++deriving instance Show CCallSpec
++deriving instance Show CCallConv
++deriving instance Show FunctionOrData
++--
++instance Show Coercion where show co = showPpr hackPprDflags co
++deriving instance Show LeftOrRight
++deriving instance Show Role
++deriving instance Show UnfoldingGuidance
++deriving instance Show UnfoldingSource
++instance Show elem => Show (UniqDSet elem) where
++  show = show . uniqDSetToList
++
++traceCBC :: String -> BcM ()
++traceCBC msg
++  | True      = pure ()
++--  | otherwise = ioToBc (putStrLn msg)
++
++-- end debug stuff
++
+ -- -----------------------------------------------------------------------------
+ -- Generating byte code for a complete module
+ 
+@@ -195,10 +280,10 @@ simpleFreeVars = freeVars
+ type BCInstrList = OrdList BCInstr
+ 
+ newtype ByteOff = ByteOff Int
+-    deriving (Enum, Eq, Integral, Num, Ord, Real)
++    deriving (Enum, Eq, Show, Integral, Num, Ord, Real)
+ 
+ newtype WordOff = WordOff Int
+-    deriving (Enum, Eq, Integral, Num, Ord, Real)
++    deriving (Enum, Eq, Show, Integral, Num, Ord, Real)
+ 
+ wordsToBytes :: DynFlags -> WordOff -> ByteOff
+ wordsToBytes dflags = fromIntegral . (* wORD_SIZE dflags) . fromIntegral
+@@ -222,16 +307,14 @@ type StackDepth = ByteOff
+ -- it after each push/pop.
+ type BCEnv = Map Id StackDepth -- To find vars on the stack
+ 
+-{-
+-ppBCEnv :: BCEnv -> SDoc
++ppBCEnv :: HasDebugCallStack => BCEnv -> SDoc
+ ppBCEnv p
+    = text "begin-env"
+      $$ nest 4 (vcat (map pp_one (sortBy cmp_snd (Map.toList p))))
+      $$ text "end-env"
+      where
+-        pp_one (var, offset) = int offset <> colon <+> ppr var <+> ppr (bcIdArgRep var)
++        pp_one (var, ByteOff offset) = int offset <> colon <+> ppr var <+> ppr (bcIdArgReps var)
+         cmp_snd x y = compare (snd x) (snd y)
+--}
+ 
+ -- Create a BCO and do a spot of peephole optimisation on the insns
+ -- at the same time.
+@@ -315,7 +398,7 @@ schemeTopBind (id, rhs)
+         -- because mkConAppCode treats nullary constructor applications
+         -- by just re-using the single top-level definition.  So
+         -- for the worker itself, we must allocate it directly.
+-    -- ioToBc (putStrLn $ "top level BCO")
++    traceCBC "top level BCO"
+     emitBc (mkProtoBCO dflags (getName id) (toOL [PACK data_con 0, ENTER])
+                        (Right rhs) 0 0 [{-no bitmap-}] False{-not alts-})
+ 
+@@ -341,17 +424,23 @@ schemeR :: [Id]                 -- Free vars of the RHS, ordered as they
+         -> (Id, AnnExpr Id DVarSet)
+         -> BcM (ProtoBCO Name)
+ schemeR fvs (nm, rhs)
+-{-
+-   | trace (showSDoc (
++{-   | trace (showSDoc (
+               (char ' '
+                $$ (ppr.filter (not.isTyVar).dVarSetElems.fst) rhs
+                $$ pprCoreExpr (deAnnotate rhs)
+                $$ char ' '
+               ))) False
+    = undefined
+-   | otherwise
+--}
+-   = schemeR_wrk fvs nm rhs (collect rhs)
++   | otherwise -}
++   = do
++     dflags <- getDynFlags
++     traceCBC ("schemeR:\n" ++ showSDoc dflags (
++                (char ' '
++                $$ (ppr.filter (not.isTyVar).dVarSetElems.fst) rhs
++                $$ pprCoreExpr (deAnnotate rhs)
++                $$ char ' '
++                )))
++     schemeR_wrk fvs nm rhs (collect rhs)
+ 
+ -- If an expression is a lambda (after apply bcView), return the
+ -- list of arguments to the lambda (in R-to-L order) and the
+@@ -466,7 +555,8 @@ fvsToEnv p fvs = [v | v <- dVarSetElems fvs,
+ -- schemeE
+ 
+ returnUnboxedAtom
+-    :: StackDepth
++    :: HasDebugCallStack
++    => StackDepth
+     -> Sequel
+     -> BCEnv
+     -> AnnExpr' Id DVarSet
+@@ -479,7 +569,26 @@ returnUnboxedAtom d s p e e_rep = do
+     (push, szb) <- pushAtom d p e
+     return (push                                 -- value onto stack
+            `appOL`  mkSlideB dflags szb (d - s)  -- clear to sequel
+-           `snocOL` RETURN_UBX e_rep)            -- go
++           `snocOL` RETURN_UBX [e_rep])          -- go
++
++returnUnboxedAtomT
++    :: HasDebugCallStack
++    => StackDepth
++    -> Sequel
++    -> BCEnv
++    -> [AnnExpr' Id DVarSet]
++    -> [ArgRep]
++    -> BcM BCInstrList
++-- Returning an unlifted value.
++-- Heave it on the stack, SLIDE, and RETURN.
++returnUnboxedAtomT d s p es e_reps = do
++    dflags <- getDynFlags
++    let platform = targetPlatform dflags
++    (pushes, szbs) <- unzip <$> mapM (\(off, a) -> pushAtom (d+wordsToBytes dflags off) p a) (zip [0..] es)
++    traceCBC ("returnUnboxedAtomT:\nl: " ++ show (length e_reps) ++ " " ++ show szbs)
++    return (mconcat pushes                                  -- value onto stack
++           `appOL`  mkSlideB dflags (sum szbs) (d - s) -- clear to sequel
++           `snocOL` RETURN_UBX e_reps)             -- go
+ 
+ -- Compile code to apply the given expression to the remaining args
+ -- on the stack, returning a HNF.
+@@ -501,7 +610,7 @@ schemeE d s p e@(AnnVar v)
+                                   AnnApp (bogus_fvs, AnnVar (protectLPJoinPointId v))
+                                          (bogus_fvs, AnnVar voidPrimId)
+                          -- schemeT will call splitApp, dropping the fvs.
+-
++    | isUnboxedTupleType (idType v) = returnUnboxedAtomT d s p [e] (bcIdArgReps v) -- fixme split tuple? yup! BUG BUG BUG!
+     | isUnliftedType (idType v) = returnUnboxedAtom d s p e (bcIdArgRep v)
+     | otherwise                 = schemeT d s p e
+     where
+@@ -772,7 +881,8 @@ Right Fix is to take advantage of join points as goto-labels.
+ -- 4.  Otherwise, it must be a function call.  Push the args
+ --     right to left, SLIDE and ENTER.
+ 
+-schemeT :: StackDepth   -- Stack depth
++schemeT :: HasDebugCallStack
++        => StackDepth   -- Stack depth
+         -> Sequel       -- Sequel depth
+         -> BCEnv        -- stack env
+         -> AnnExpr' Id DVarSet
+@@ -795,11 +905,12 @@ schemeT d s p app
+    | Just con <- maybe_saturated_dcon
+    , isUnboxedTupleCon con
+    = case args_r_to_l of
++     {- special cases should be handled by general now
+         [arg1,arg2] | isVAtom arg1 ->
+                   unboxedTupleReturn d s p arg2
+         [arg1,arg2] | isVAtom arg2 ->
+-                  unboxedTupleReturn d s p arg1
+-        _other -> multiValException
++                  unboxedTupleReturn d s p arg1 -}
++        other -> genericUnboxedTupleReturn d s p other
+ 
+    -- Case 3: Ordinary data constructor
+    | Just con <- maybe_saturated_dcon
+@@ -832,7 +943,8 @@ schemeT d s p app
+ -- leaving it on top of the stack
+ 
+ mkConAppCode
+-    :: StackDepth
++    :: HasDebugCallStack
++    => StackDepth
+     -> Sequel
+     -> BCEnv
+     -> DataCon                  -- The data constructor
+@@ -883,14 +995,22 @@ mkConAppCode orig_d _ p con args_r_to_l =
+ -- returned, even if it is a pointed type.  We always just return.
+ 
+ unboxedTupleReturn
+-    :: StackDepth -> Sequel -> BCEnv -> AnnExpr' Id DVarSet -> BcM BCInstrList
++    :: HasDebugCallStack => StackDepth -> Sequel -> BCEnv -> AnnExpr' Id DVarSet -> BcM BCInstrList
+ unboxedTupleReturn d s p arg = returnUnboxedAtom d s p arg (atomRep arg)
+ 
++genericUnboxedTupleReturn
++    :: HasDebugCallStack => StackDepth -> Sequel -> BCEnv -> [AnnExpr' Id DVarSet] -> BcM BCInstrList
++genericUnboxedTupleReturn d s p args =
++  returnUnboxedAtomT d s p args (map atomRep args)
++  -- panic "genericUnboxedTupleReturn"
++
++
+ -- -----------------------------------------------------------------------------
+ -- Generate code for a tail-call
+ 
+ doTailCall
+-    :: StackDepth
++    :: HasDebugCallStack
++    => StackDepth
+     -> Sequel
+     -> BCEnv
+     -> Id
+@@ -951,7 +1071,8 @@ findPushSeq _
+ -- Case expressions
+ 
+ doCase
+-    :: StackDepth
++    :: HasDebugCallStack
++    => StackDepth
+     -> Sequel
+     -> BCEnv
+     -> AnnExpr Id DVarSet
+@@ -961,9 +1082,6 @@ doCase
+                  -- don't enter the result
+     -> BcM BCInstrList
+ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+-  | typePrimRep (idType bndr) `lengthExceeds` 1
+-  = multiValException
+-  | otherwise
+   = do
+      dflags <- getDynFlags
+      let
+@@ -982,6 +1100,7 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+         save_ccs_size_b | profiling = 2 * wordSize dflags
+                         | otherwise = 0
+ 
++        bndr_size = wordsToBytes dflags (idSizeW dflags bndr)
+         -- An unlifted value gets an extra info table pushed on top
+         -- when it is returned.
+         unlifted_itbl_size_b :: StackDepth
+@@ -990,7 +1109,7 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+ 
+         -- depth of stack after the return value has been pushed
+         d_bndr =
+-            d + ret_frame_size_b + wordsToBytes dflags (idSizeW dflags bndr)
++            d + ret_frame_size_b + bndr_size -- wordsToBytes dflags (idSizeW dflags bndr)
+ 
+         -- depth of stack after the extra info table for an unboxed return
+         -- has been pushed, if any.  This is the stack depth at the
+@@ -1018,11 +1137,24 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+            | null real_bndrs = do
+                 rhs_code <- schemeE d_alts s p_alts rhs
+                 return (my_discr alt, rhs_code)
+-           -- If an alt attempts to match on an unboxed tuple or sum, we must
+-           -- bail out, as the bytecode compiler can't handle them.
+-           -- (See Trac #14608.)
+-           | any (\bndr -> typePrimRep (idType bndr) `lengthExceeds` 1) bndrs
+-           = multiValException
++           | isUnboxedTupleType bndr_ty =
++             let (tot_wds, _ptrs_wds, args_offsets) =
++                     mkVirtHeapOffsets dflags NoHeader
++                         [ NonVoid (bcIdPrimRep id, id)
++                         | NonVoid id <- nonVoidIds real_bndrs
++                         ]
++
++                 stack_bot = d_alts -- + wordsToBytes platform size
++                 tuple_start = d_bndr -- stack_bot - wordsToBytes platform (WordOff tot_wds + 1)
++               
++                 p' = Map.insertList
++                        [ (arg, tuple_start - ByteOff offset)
++                        | (NonVoid arg, offset) <- args_offsets ]
++                        p_alts
++             in do
++               traceCBC ("ubx tup cont: " ++ show (stack_bot,tuple_start,tot_wds) ++ "\n" ++  show args_offsets)
++               rhs_code <- schemeE stack_bot s p' rhs
++               return (NoDiscr, rhs_code)
+            -- algebraic alt with some binders
+            | otherwise =
+              let (tot_wds, _ptrs_wds, args_offsets) =
+@@ -1050,7 +1182,7 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+         my_discr (DEFAULT, _, _) = NoDiscr {-shouldn't really happen-}
+         my_discr (DataAlt dc, _, _)
+            | isUnboxedTupleCon dc || isUnboxedSumCon dc
+-           = multiValException
++           = NoDiscr
+            | otherwise
+            = DiscrP (fromIntegral (dataConTag dc - fIRST_TAG))
+         my_discr (LitAlt l, _, _)
+@@ -1092,7 +1224,8 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+           -- NB: unboxed tuple cases bind the scrut binder to the same offset
+           -- as one of the alt binders, so we have to remove any duplicates here:
+           rel_slots = nub $ map fromIntegral $ concat (map spread binds)
+-          spread (id, offset) | isFollowableArg (bcIdArgRep id) = [ rel_offset ]
++          spread (id, offset) | isUnboxedTupleType (idType id) = []
++                              | isFollowableArg (bcIdArgRep id) = [ rel_offset ]
+                               | otherwise                      = []
+                 where rel_offset = trunc16W $ bytesToWords dflags (d - offset)
+ 
+@@ -1103,8 +1236,14 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+          alt_bco_name = getName bndr
+          alt_bco = mkProtoBCO dflags alt_bco_name alt_final (Left alts)
+                        0{-no arity-} bitmap_size bitmap True{-is alts-}
+---     trace ("case: bndr = " ++ showSDocDebug (ppr bndr) ++ "\ndepth = " ++ show d ++ "\nenv = \n" ++ showSDocDebug (ppBCEnv p) ++
+---            "\n      bitmap = " ++ show bitmap) $ do
++     traceCBC (
++                 "case: bndr = " ++ showSDocDebug dflags (ppr bndr) ++
++                 "\nbndr_size = " ++ show bndr_size ++
++                 "\ndepth = " ++ show d ++
++                 "\nenv = \n" ++ showSDocDebug dflags (ppBCEnv p) ++
++                 "\n      bitmap = " ++ show bitmap ++
++                 "\n      ret_frame_size = " ++ show ret_frame_size_b
++              )
+ 
+      scrut_code <- schemeE (d + ret_frame_size_b + save_ccs_size_b)
+                            (d + ret_frame_size_b + save_ccs_size_b)
+@@ -1112,7 +1251,7 @@ doCase d s p (_,scrut) bndr alts is_unboxed_tuple
+      alt_bco' <- emitBc alt_bco
+      let push_alts
+             | isAlgCase = PUSH_ALTS alt_bco'
+-            | otherwise = PUSH_ALTS_UNLIFTED alt_bco' (typeArgRep bndr_ty)
++            | otherwise = PUSH_ALTS_UNLIFTED alt_bco' (typeArgReps bndr_ty)
+      return (push_alts `consOL` scrut_code)
+ 
+ 
+@@ -1328,7 +1467,7 @@ generateCCall d0 s p (CCallSpec target cconv safety) fn args_r_to_l
+          -- slide and return
+          d_after_r_min_s = bytesToWords dflags (d_after_r - s)
+          wrapup       = mkSlideW (trunc16W r_sizeW) (d_after_r_min_s - r_sizeW)
+-                        `snocOL` RETURN_UBX (toArgRep r_rep)
++                        `snocOL` RETURN_UBX [toArgRep r_rep]
+          --trace (show (arg1_offW, args_offW  ,  (map argRepSizeW a_reps) )) $
+      return (
+          push_args `appOL`
+@@ -1461,7 +1600,8 @@ a 1-word null. See Trac #8383.
+ 
+ 
+ implement_tagToId
+-    :: StackDepth
++    :: HasDebugCallStack
++    => StackDepth
+     -> Sequel
+     -> BCEnv
+     -> AnnExpr' Id DVarSet
+@@ -1512,7 +1652,7 @@ implement_tagToId d s p arg names
+ -- depth 6 stack has valid words 0 .. 5.
+ 
+ pushAtom
+-    :: StackDepth -> BCEnv -> AnnExpr' Id DVarSet -> BcM (BCInstrList, ByteOff)
++    :: HasDebugCallStack => StackDepth -> BCEnv -> AnnExpr' Id DVarSet -> BcM (BCInstrList, ByteOff)
+ pushAtom d p e
+    | Just e' <- bcView e
+    = pushAtom d p e'
+@@ -1608,7 +1748,7 @@ pushAtom _ _ expr
+ -- This is slightly different to @pushAtom@ due to the fact that we allow
+ -- packing constructor fields. See also @mkConAppCode@ and @pushPadding@.
+ pushConstrAtom
+-    :: StackDepth -> BCEnv -> AnnExpr' Id DVarSet -> BcM (BCInstrList, ByteOff)
++    :: HasDebugCallStack => StackDepth -> BCEnv -> AnnExpr' Id DVarSet -> BcM (BCInstrList, ByteOff)
+ 
+ pushConstrAtom _ _ (AnnLit lit@(LitFloat _)) =
+     return (unitOL (PUSH_UBX32 lit), 4)
+@@ -1628,7 +1768,7 @@ pushConstrAtom d p (AnnVar v)
+ 
+ pushConstrAtom d p expr = pushAtom d p expr
+ 
+-pushPadding :: Int -> (BCInstrList, ByteOff)
++pushPadding :: HasDebugCallStack => Int -> (BCInstrList, ByteOff)
+ pushPadding !n = go n (nilOL, 0)
+   where
+     go n acc@(!instrs, !off) = case n of
+@@ -1644,7 +1784,8 @@ pushPadding !n = go n (nilOL, 0)
+ -- of making a multiway branch using a switch tree.
+ -- What a load of hassle!
+ 
+-mkMultiBranch :: Maybe Int      -- # datacons in tycon, if alg alt
++mkMultiBranch :: HasDebugCallStack
++              => Maybe Int      -- # datacons in tycon, if alg alt
+                                 -- a hint; generates better code
+                                 -- Nothing is always safe
+               -> [(Discr, BCInstrList)]
+@@ -1780,22 +1921,30 @@ instance Outputable Discr where
+ lookupBCEnv_maybe :: Id -> BCEnv -> Maybe ByteOff
+ lookupBCEnv_maybe = Map.lookup
+ 
+-idSizeW :: DynFlags -> Id -> WordOff
+-idSizeW dflags = WordOff . argRepSizeW dflags . bcIdArgRep
++idSizeW :: HasDebugCallStack => DynFlags -> Id -> WordOff
++idSizeW platform = WordOff . sum . map (argRepSizeW platform) . bcIdArgReps
+ 
+-idSizeCon :: DynFlags -> Id -> ByteOff
+-idSizeCon dflags = ByteOff . primRepSizeB dflags . bcIdPrimRep
++-- fixme this doesn't widen stuff to word width
++idSizeCon :: HasDebugCallStack => DynFlags -> Id -> ByteOff
++-- idSizeCon dflags = ByteOff . primRepSizeB dflags . bcIdPrimRep
++idSizeCon dflags = ByteOff . sum . map (primRepSizeB dflags) . bcIdPrimReps
+ 
+-bcIdArgRep :: Id -> ArgRep
++bcIdArgRep :: HasDebugCallStack => Id -> ArgRep
+ bcIdArgRep = toArgRep . bcIdPrimRep
+ 
+-bcIdPrimRep :: Id -> PrimRep
++bcIdPrimRep :: HasDebugCallStack => Id -> PrimRep
+ bcIdPrimRep id
+   | [rep] <- typePrimRepArgs (idType id)
+   = rep
+   | otherwise
+   = pprPanic "bcIdPrimRep" (ppr id <+> dcolon <+> ppr (idType id))
+ 
++bcIdArgReps :: HasDebugCallStack => Id -> [ArgRep]
++bcIdArgReps = map toArgRep . bcIdPrimReps
++
++bcIdPrimReps :: HasDebugCallStack => Id -> [PrimRep]
++bcIdPrimReps id = typePrimRepArgs (idType id)
++
+ repSizeWords :: DynFlags -> PrimRep -> WordOff
+ repSizeWords dflags rep = WordOff $ argRepSizeW dflags (toArgRep rep)
+ 
+@@ -1808,8 +1957,9 @@ isVoidArg V = True
+ isVoidArg _ = False
+ 
+ -- See bug #1257
+-multiValException :: a
+-multiValException = throwGhcException (ProgramError
++multiValException :: HasCallStack => a
++multiValException = -- throwGhcException (ProgramError
++  pprPanic "multiValException" (text
+   ("Error: bytecode compiler can't handle unboxed tuples and sums.\n"++
+    "  Possibly due to foreign import/export decls in source.\n"++
+    "  Workaround: use -fobject-code, or compile this module to .o separately."))
+@@ -1857,7 +2007,7 @@ splitApp (AnnApp (_,f) (_,a))    = case splitApp f of
+ splitApp e                       = (e, [])
+ 
+ 
+-bcView :: AnnExpr' Var ann -> Maybe (AnnExpr' Var ann)
++bcView :: HasDebugCallStack => AnnExpr' Var ann -> Maybe (AnnExpr' Var ann)
+ -- The "bytecode view" of a term discards
+ --  a) type abstractions
+ --  b) type applications
+@@ -1878,7 +2028,7 @@ isVAtom (AnnVar v)              = isVoidArg (bcIdArgRep v)
+ isVAtom (AnnCoercion {})        = True
+ isVAtom _                     = False
+ 
+-atomPrimRep :: AnnExpr' Id ann -> PrimRep
++atomPrimRep :: HasDebugCallStack => AnnExpr' Id ann -> PrimRep
+ atomPrimRep e | Just e' <- bcView e = atomPrimRep e'
+ atomPrimRep (AnnVar v)              = bcIdPrimRep v
+ atomPrimRep (AnnLit l)              = typePrimRep1 (literalType l)
+@@ -1890,7 +2040,7 @@ atomPrimRep (AnnCase _ _ ty _)      = ASSERT(typePrimRep ty == [LiftedRep]) Lift
+ atomPrimRep (AnnCoercion {})        = VoidRep
+ atomPrimRep other = pprPanic "atomPrimRep" (ppr (deAnnotate' other))
+ 
+-atomRep :: AnnExpr' Id ann -> ArgRep
++atomRep :: HasDebugCallStack => AnnExpr' Id ann -> ArgRep
+ atomRep e = toArgRep (atomPrimRep e)
+ 
+ -- | Let szsw be the sizes in bytes of some items pushed onto the stack, which
+@@ -1899,9 +2049,13 @@ atomRep e = toArgRep (atomPrimRep e)
+ mkStackOffsets :: ByteOff -> [ByteOff] -> [ByteOff]
+ mkStackOffsets original_depth szsb = tail (scanl' (+) original_depth szsb)
+ 
+-typeArgRep :: Type -> ArgRep
++typeArgRep :: HasDebugCallStack => Type -> ArgRep
+ typeArgRep = toArgRep . typePrimRep1
+ 
++typeArgReps :: HasDebugCallStack => Type -> [ArgRep]
++typeArgReps = map toArgRep . typePrimRepArgs -- typePrimRepArgs (idType id)
++
++
+ -- -----------------------------------------------------------------------------
+ -- The bytecode generator's monad
+ 
+diff --git a/compiler/ghci/ByteCodeInstr.hs b/compiler/ghci/ByteCodeInstr.hs
+index d405e1ade7..debe4672e4 100644
+--- a/compiler/ghci/ByteCodeInstr.hs
++++ b/compiler/ghci/ByteCodeInstr.hs
+@@ -86,7 +86,7 @@ data BCInstr
+ 
+    -- Push an alt continuation
+    | PUSH_ALTS          (ProtoBCO Name)
+-   | PUSH_ALTS_UNLIFTED (ProtoBCO Name) ArgRep
++   | PUSH_ALTS_UNLIFTED (ProtoBCO Name) [ArgRep]
+ 
+    -- Pushing 8, 16 and 32 bits of padding (for constructors).
+    | PUSH_PAD8
+@@ -169,8 +169,8 @@ data BCInstr
+ 
+    -- To Infinity And Beyond
+    | ENTER
+-   | RETURN             -- return a lifted value
+-   | RETURN_UBX ArgRep -- return an unlifted value, here's its rep
++   | RETURN              -- return a lifted value
++   | RETURN_UBX [ArgRep] -- return an unlifted value, here's its rep
+ 
+    -- Breakpoints
+    | BRK_FUN          Word16 Unique (RemotePtr CostCentre)
+diff --git a/includes/rts/Bytecodes.h b/includes/rts/Bytecodes.h
+index e5d55f694f..c42476a201 100644
+--- a/includes/rts/Bytecodes.h
++++ b/includes/rts/Bytecodes.h
+@@ -91,6 +91,9 @@
+ #define bci_BRK_FUN			66
+ #define bci_TESTLT_W   			67
+ #define bci_TESTEQ_W  			68
++
++#define bci_RETURN_T          70
++#define bci_PUSH_ALTS_T       71
+ /* If you need to go past 255 then you will run into the flags */
+ 
+ /* If you need to go below 0x0100 then you will run into the instructions */
+diff --git a/includes/stg/MiscClosures.h b/includes/stg/MiscClosures.h
+index 8c4cb9fc8c..ee4c990ca8 100644
+--- a/includes/stg/MiscClosures.h
++++ b/includes/stg/MiscClosures.h
+@@ -86,6 +86,18 @@ RTS_RET(stg_ctoi_F1);
+ RTS_RET(stg_ctoi_D1);
+ RTS_RET(stg_ctoi_L1);
+ RTS_RET(stg_ctoi_V);
++RTS_RET(stg_ctoi_T);
++
++RTS_RET(stg_save_R1_p);
++RTS_RET(stg_save_R2_p);
++RTS_RET(stg_save_R3_p);
++RTS_RET(stg_save_R1_n);
++RTS_RET(stg_save_R2_n);
++RTS_RET(stg_save_R3_n);
++RTS_RET(stg_save_D1);
++RTS_RET(stg_save_D2);
++RTS_RET(stg_save_F1);
++RTS_RET(stg_save_F2);
+ 
+ RTS_RET(stg_apply_interp);
+ 
+diff --git a/rts/Disassembler.c b/rts/Disassembler.c
+index 01d6c3b1d9..1afbe0aea2 100644
+--- a/rts/Disassembler.c
++++ b/rts/Disassembler.c
+@@ -148,6 +148,13 @@ disInstr ( StgBCO *bco, int pc )
+          debugBelch("PUSH_ALTS_V  " ); printPtr( ptrs[instrs[pc]] );
+          debugBelch("\n");
+          pc += 1; break;
++      case bci_PUSH_ALTS_T:
++         // fixme final size of instruction
++         debugBelch("PUSH_ALTS_T  "); printPtr( ptrs[instrs[pc]] );
++         debugBelch(" %d ", instrs[pc+1]);
++         printTupleSig(literals[instrs[pc+2]]);
++         debugBelch("\n");
++         pc += 3; break;
+       case bci_PUSH_PAD8:
+          debugBelch("PUSH_PAD8\n");
+          pc += 1; break;
+@@ -313,7 +320,14 @@ disInstr ( StgBCO *bco, int pc )
+       case bci_RETURN_V:
+          debugBelch("RETURN_V\n" );
+          break;
+-
++      case bci_RETURN_T:
++         // fixme update for final size of return_t instr
++         // fixme indirection to literals?
++         debugBelch("RETURN_T %d ", instrs[pc]);
++         printTupleSig( literals[instrs[pc+1]] );
++         debugBelch("\n");
++         pc += 2;
++         break;
+       default:
+          barf("disInstr: unknown opcode %u", (unsigned int) instr);
+    }
+diff --git a/rts/Interpreter.c b/rts/Interpreter.c
+index 2d68a1ce3a..91ac83c445 100644
+--- a/rts/Interpreter.c
++++ b/rts/Interpreter.c
+@@ -364,6 +364,10 @@ interpretBCO (Capability* cap)
+     //       do_return_unboxed, below.
+     //
+     else {
++        IF_DEBUG(interpreter,
++                 debugBelch("warning: do_return_unboxed unhandled case\n");
++                );
++
+         goto do_return_unboxed;
+     }
+ 
+@@ -673,35 +677,71 @@ do_return:
+ 
+ do_return_unboxed:
+     {
++        // debugBelch("returning unboxed\n");
+         int offset;
+-
+-        ASSERT(    SpW(0) == (W_)&stg_ret_v_info
++        int ubx_tup;
++        if(SpW(0) == (W_)&stg_ret_v_info
+                 || SpW(0) == (W_)&stg_ret_p_info
+                 || SpW(0) == (W_)&stg_ret_n_info
+                 || SpW(0) == (W_)&stg_ret_f_info
+                 || SpW(0) == (W_)&stg_ret_d_info
+                 || SpW(0) == (W_)&stg_ret_l_info
+-            );
++            ) {
++                IF_DEBUG(interpreter,
++                   debugBelch("normal unboxed return\n");
++                );
++                ubx_tup = 0;
++            } else {
++                ubx_tup = SpW(0);
++                IF_DEBUG(interpreter,
++                    debugBelch("tuple unboxed return size %d\n", ubx_tup);
++                );
++            }
+ 
+         IF_DEBUG(interpreter,
+              debugBelch(
+              "\n---------------------------------------------------------------\n");
+-             debugBelch("Returning: "); printObj(obj);
++             debugBelch("Returning unboxed x: "); // printObj(obj);
+              debugBelch("Sp = %p\n", Sp);
+ #if defined(PROFILING)
+              fprintCCS(stderr, cap->r.rCCCS);
+              debugBelch("\n");
+ #endif
+              debugBelch("\n");
+-             printStackChunk(Sp,cap->r.rCurrentTSO->stackobj->stack+cap->r.rCurrentTSO->stackobj->stack_size);
++             debugBelch("printing stack chunk\n");
++             if(!ubx_tup) {
++                 printStackChunk(Sp,cap->r.rCurrentTSO->stackobj->stack+cap->r.rCurrentTSO->stackobj->stack_size);
++             }
+              debugBelch("\n\n");
+             );
+ 
++        IF_DEBUG(interpreter,
++            debugBelch("before offset\n");
++        );
++
+         // get the offset of the stg_ctoi_ret_XXX itbl
+-        offset = stack_frame_sizeW((StgClosure *)Sp);
++        // fixme changed to after return!
++        if(ubx_tup) { 
++            offset = ubx_tup + 1;
++        } else {
++            offset = stack_frame_sizeW((StgClosure *)Sp);
++        }
++        /* if(bci == bci_RETURN_T) {
++            debugBelch("unboxed tuple, adjusting offset\n");
++            offset = 0;
++        } */
++        // yeah it crashes here
++        IF_DEBUG(interpreter,
++            debugBelch("offset: %d\n", offset);
++        );
++
+ 
+         switch (get_itbl((StgClosure*)(Sp_plusW(offset)))->type) {
+ 
++        IF_DEBUG(interpreter,
++            debugBelch("got itable\n");
++        );
++
+         case RET_BCO:
+             // Returning to an interpreted continuation: put the object on
+             // the stack, and start executing the BCO.
+@@ -988,16 +1028,16 @@ run_BCO:
+         ASSERT(bciPtr < bcoSize);
+         IF_DEBUG(interpreter,
+                  //if (do_print_stack) {
+-                 //debugBelch("\n-- BEGIN stack\n");
+-                 //printStack(Sp,cap->r.rCurrentTSO->stack+cap->r.rCurrentTSO->stack_size,iSu);
+-                 //debugBelch("-- END stack\n\n");
++                 // debugBelch("\n-- BEGIN stack\n");
++                 // printStack(Sp,cap->r.rCurrentTSO->stack+cap->r.rCurrentTSO->stack_size,iSu);
++                 // debugBelch("-- END stack\n\n");
+                  //}
+                  debugBelch("Sp = %p   pc = %-4d ", Sp, bciPtr);
+                  disInstr(bco,bciPtr);
+-                 if (0) { int i;
++                 if (1) { int i;
+                  debugBelch("\n");
+-                 for (i = 8; i >= 0; i--) {
+-                     debugBelch("%d  %p\n", i, (void *) SpW(i));
++                 for (i = 42; i >= 0; i--) {
++                     debugBelch("%d  %p (%ld)\n", i, (void *) SpW(i), SpW(i));
+                  }
+                  debugBelch("\n");
+                  }
+@@ -1326,6 +1366,22 @@ run_BCO:
+             goto nextInsn;
+         }
+ 
++        case bci_PUSH_ALTS_T: {
++            int o_bco = BCO_GET_LARGE_ARG;
++            int size = BCO_NEXT;
++            char* lit = literals[BCO_GET_LARGE_ARG];
++            /* fixme push shape on stack? */
++            SpW(-2) = (W_)&stg_ctoi_T_info; /* fixme */
++            SpW(-1) = BCO_PTR(o_bco);
++            Sp_subW(2);
++#if defined(PROFILING)
++            Sp_subW(2);
++            SpW(1) = (W_)cap->r.rCCCS;
++            SpW(0) = (W_)&stg_restore_cccs_info;
++#endif
++            goto nextInsn;
++        }
++
+         case bci_PUSH_APPLY_N:
+             Sp_subW(1); SpW(0) = (W_)&stg_ap_n_info;
+             goto nextInsn;
+@@ -1705,6 +1761,16 @@ run_BCO:
+             Sp_subW(1);
+             SpW(0) = (W_)&stg_ret_v_info;
+             goto do_return_unboxed;
++        case bci_RETURN_T: {
++            // fixme should we fix to large args for tuples if needed?
++            int size = BCO_NEXT; // BCO_GET_LARGE_ARG;
++            char* shape = literals[BCO_GET_LARGE_ARG];
++            // debugBelch("returning unboxed tup size: %d\n", size);
++            Sp_subW(1);
++            SpW(0) = size; // fixme have proper frame here
++            // Sp_addW(size);
++            goto do_return_unboxed;
++        }
+ 
+         case bci_SWIZZLE: {
+             int stkoff = BCO_NEXT;
+diff --git a/rts/Printer.c b/rts/Printer.c
+index 291f529e8f..56380f0b26 100644
+--- a/rts/Printer.c
++++ b/rts/Printer.c
+@@ -646,6 +646,20 @@ void printTSO( StgTSO *tso )
+     printStack( tso->stackobj );
+ }
+ 
++
++void printTupleSig ( const unsigned char* sig)
++{
++    const char* arg_tys = "_PNLFD";
++    const char* loc_tys = "_SRFDLXYZ";
++    while(*sig) {
++        int arg_ty = (int)sig[0];
++        int loc_ty = (int)sig[1];
++        int off    = (int)sig[2];
++        debugBelch("%c%c%d ", arg_tys[arg_ty], loc_tys[loc_ty], off);
++        sig += 3;
++    }
++}
++
+ /* --------------------------------------------------------------------------
+  * Address printing code
+  *
+diff --git a/rts/Printer.h b/rts/Printer.h
+index d2eaf010c6..5f571b3f17 100644
+--- a/rts/Printer.h
++++ b/rts/Printer.h
+@@ -12,7 +12,6 @@
+ 
+ extern void        printPtr        ( StgPtr p );
+ extern void        printObj        ( StgClosure *obj );
+-
+ extern const char *  closure_type_names[];
+ 
+ void               info_hdr_type   ( const StgClosure *closure, char *res );
+diff --git a/rts/StgMiscClosures.cmm b/rts/StgMiscClosures.cmm
+index e80ce45172..50b47771ad 100644
+--- a/rts/StgMiscClosures.cmm
++++ b/rts/StgMiscClosures.cmm
+@@ -195,6 +195,102 @@ INFO_TABLE_RET( stg_ctoi_V, RET_BCO )
+     jump stg_yield_to_interpreter [];
+ }
+ 
++/*
++ * When the returned value is an unboxed tuple
++ */
++INFO_TABLE_RET( stg_ctoi_T, RET_BCO )
++    /* explicit stack */
++{
++    Sp_adj(-1);
++    jump stg_yield_to_interpreter [];
++}
++
++INFO_TABLE_RET ( stg_save_R1_p, RET_BCO )
++{
++    Sp(1) = R1;
++    Sp(0) = stg_ret_p_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++INFO_TABLE_RET ( stg_save_R2_p, RET_BCO )
++{
++    Sp(1) = R1;
++    Sp(0) = stg_ret_p_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++
++}
++
++INFO_TABLE_RET ( stg_save_R3_p, RET_BCO )
++{
++    Sp(1) = R1;
++    Sp(0) = stg_ret_p_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++INFO_TABLE_RET ( stg_save_R1_n, RET_BCO )
++{
++    Sp(1) = R1;
++    Sp(0) = stg_ret_n_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++INFO_TABLE_RET ( stg_save_R2_n, RET_BCO )
++{
++    Sp(1) = R1;
++    Sp(0) = stg_ret_n_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++
++}
++
++INFO_TABLE_RET ( stg_save_R3_n, RET_BCO )
++{
++    Sp(1) = R1;
++    Sp(0) = stg_ret_n_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++INFO_TABLE_RET ( stg_save_D1, RET_BCO )
++{
++    // check offset for 64 bit
++    // Sp_adj(-1) - SIZEOF_DOUBLE;
++
++    D_[Sp + WDS(1)] = D1;
++    Sp(0) = stg_ret_d_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++INFO_TABLE_RET ( stg_save_D2, RET_BCO )
++{
++    D_[Sp + WDS(1)] = D2;
++    Sp(0) = stg_ret_d_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++INFO_TABLE_RET ( stg_save_F1, RET_BCO )
++{
++    F_[Sp + WDS(1)] = F1;
++    Sp(0) = stg_ret_f_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++INFO_TABLE_RET ( stg_save_F2, RET_BCO )
++{
++    F_[Sp + WDS(1)] = F2;
++    Sp(0) = stg_ret_f_info;
++    Sp_adj(2);
++    jump %ENTRY_CODE(Sp(0)) [*];
++}
++
++
+ /*
+  * Dummy info table pushed on the top of the stack when the interpreter
+  * should apply the BCO on the stack to its arguments, also on the

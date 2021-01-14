@@ -2,30 +2,41 @@
 # conditionals need to be in the leafs! If we attach the conditional to the root
 # node (e.g. the whole customization here), they will be evaluated at the wrong time
 # and not end up with the expected changes we want.
-self: super:
+final: prev:
 {
    # on windows we have this habit of putting libraries
-   # into `bin`, wheras on unix it's usually `lib`. For
+   # into `bin`, whereas on unix it's usually `lib`. For
    # this confuses nix easily. So we'll just move the
    # .dll's from `bin` into `$out/lib`. Such that they
    # are trivially found.
-  #  openssl = super.openssl.overrideAttrs (drv: {
-  #   #  postInstall = with super.stdenv; drv.postInstall + lib.optionalString hostPlatform.isWindows ''
+  #  openssl = prev.openssl.overrideAttrs (drv: {
+  #   #  postInstall = with prev.stdenv; drv.postInstall + lib.optionalString hostPlatform.isWindows ''
   #   #    cp $bin/bin/*.dll $out/lib/
   #   #  '';
   #   postFixup = "";
   #  });
 
-   mfpr = super.mfpr.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ super.stdenv.lib.optional super.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+   mfpr = prev.mfpr.overrideAttrs (drv: {
+     configureFlags = (drv.configureFlags or []) ++ prev.stdenv.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
 
-   libmpc = super.libmpc.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ super.stdenv.lib.optional super.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+   libmpc = prev.libmpc.overrideAttrs (drv: {
+     configureFlags = (drv.configureFlags or []) ++ prev.stdenv.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
 
-   haskell-nix = super.haskell-nix // ({
-     defaultModules = super.haskell-nix.defaultModules ++ [
+   binutils-unwrapped = prev.binutils-unwrapped.overrideAttrs (attrs: {
+     patches = attrs.patches ++ final.lib.optional (final.stdenv.targetPlatform.isWindows && attrs.version or "" == "2.31.1") (
+       final.fetchpatch {
+         name = "plugin-target-handling-patch";
+         url = "https://sourceware.org/git/?p=binutils-gdb.git;a=patch;h=999d6dff80fab12d22c2a8d91923db6bde7fb3e5";
+         excludes = ["bfd/ChangeLog"];
+         sha256 = "0a60w52wrf6qzchsiviprmcblq0q1fv1rbkx4gkk482dmvx4j0l6";
+       }
+     );
+   });
+
+   haskell-nix = prev.haskell-nix // ({
+     defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
       let
         withTH = import ./mingw_w64.nix {
@@ -34,17 +45,18 @@ self: super:
           wine = pkgs.buildPackages.winePackages.minimal;
           inherit (pkgs.windows) mingw_w64_pthreads;
           inherit (pkgs) gmp;
+          inherit (pkgs.buildPackages) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (self.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
+          inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
           # remote-iserv however needs to come from the regular packages as it has to
           # run on the target host.
-          inherit (self.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
+          inherit (final.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
-          # Therfore let's enable doCrossCheck here!
+          # Therefore let's enable doCrossCheck here!
           doCrossCheck = pkgs.stdenv.hostPlatform.isWindows;
         };
       in {
@@ -61,7 +73,7 @@ self: super:
           # dependencies) and then placing them somewhere where wine+remote-iserv
           # will find them.
           remote-iserv.postInstall = pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
-            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp ]; in ''
+            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp pkgs.libsodium ]; in ''
             for p in ${lib.concatStringsSep " "extra-libs}; do
               find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
               find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
@@ -78,9 +90,9 @@ self: super:
           #   }
           #   else null)) ];
 
-          # clock 0.7.2 needs to be patche to support cross compilation.
+          # clock 0.7.2 needs to be patched to support cross compilation.
           clock.patches              = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: (if version == "0.7.2" then ./patches/clock-0.7.2.patch else null)) ];
-          # nix calles this package crypto
+          # nix calls this package crypto
           cryptonite-openssl.patches = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.7" then ./patches/cryptonite-openssl-0.7.patch else null) ];
 
           # this patch seems to be rather flaky and highly dependent on

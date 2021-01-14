@@ -21,7 +21,7 @@ writeScript "check-closure-size.sh" ''
   echo "$nt"
 
   total=$(awk '$2 == "total" { print $1; }' <<< "$nt")
-  
+
   if [ $total -gt ${toString limitMB} ]; then
     echo "Closure size exceeds limit of ${toString limitMB}MB!"
     exit 1

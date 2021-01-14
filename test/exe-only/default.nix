@@ -1,10 +1,11 @@
 # Test a package set
-{ stdenv, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = haskell-nix.cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "exe-only";
   };
 
@@ -18,14 +19,14 @@ in recurseIntoAttrs {
     name = "exe-only-test";
 
     buildCommand = ''
-      exe="${packages.exe-only.components.exes.exe-only}/bin/exe-only${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.exe-only.components.exes.exe-only.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable ran... " >& 2
-      cat ${haskellLib.check packages.exe-only.components.exes.exe-only}
+      cat ${haskellLib.check packages.exe-only.components.exes.exe-only}/test-stdout
     '' +
     # Aarch are statically linked and does not have ldd for these tests.
     optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (
@@ -40,11 +41,6 @@ in recurseIntoAttrs {
         otool -L $exe |grep .dylib
     '') + ''
 
-      printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.exe-only.components.all}/bin/exe-only${stdenv.hostPlatform.extensions.executable}"
-      test -f "$all_exe"
-      echo "$all_exe" >& 2
-
       touch $out
     '';
 
@@ -53,10 +49,6 @@ in recurseIntoAttrs {
     passthru = {
       # Used for debugging with nix repl
       inherit packages;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = util.addCabalInstall packages.exe-only.components.all;
     };
   };
 }

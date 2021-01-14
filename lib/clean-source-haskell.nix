@@ -1,7 +1,7 @@
 # This is a source filter function which cleans common build products
 # and files not needed to do a haskell build from a source directory.
 #
-# This can avoid unecessary builds when these files change.
+# This can avoid unnecessary builds when these files change.
 #
 # It should be used with "pkgs.lib.cleanSourceWith". Alternatively,
 # use the convenience function "cleanSourceHaskell".
@@ -35,21 +35,7 @@ rec {
         src = lib.cleanSource src;
         inherit name;
       };
-      # Copy function from 19.09 for compatibility with 19.03.
-      # Does require at least Nix 2.0.
-      compat = let
-        isFiltered = src ? _isLibCleanSourceWith;
-        origSrc = if isFiltered then src.origSrc else src;
-        filter' = name: type: haskellSourceFilter name type && lib.cleanSourceFilter name type;
-        name' = if name != null then name else if isFiltered then src.name else baseNameOf src;
-      in {
-        inherit origSrc;
-        filter = filter';
-        outPath = builtins.path { filter = filter'; path = origSrc; name = name'; };
-        _isLibCleanSourceWith = true;
-        name = name';
-      };
     in
       if (builtins.typeOf src) == "path"
-      then (if lib.versionAtLeast lib.version "19.09" then clean else compat) else src;
+      then clean else src;
 }

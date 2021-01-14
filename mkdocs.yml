@@ -16,6 +16,8 @@ repo_url: https://github.com/input-output-hk/haskell.nix
 permalink: true
 markdown_extensions:
   - admonition
+  - footnotes
+  - tables
   - toc:
       permalink: true
 
@@ -23,25 +25,34 @@ markdown_extensions:
 # right now is 0.17.5
 pages:
   - 'Introduction': index.md
+  - 'Motivation': motivation.md
   - 'Architecture': architecture.md
-  - 'User Guide':
-    - 'General': user-guide.md
-    - 'Creating Nix builds for your projects': user-guide/projects.md
-    - 'Stack Projects': user-guide/stack-projects.md
-    - 'Cabal Projects': user-guide/cabal-projects.md
-    - 'How to create a development environment': user-guide/development.md
-    - 'How to cross-compile your project': user-guide/cross-compilation.md
+  - 'Tutorials':
+    - 'Getting Started': tutorials/getting-started.md
+    - 'Creating a development environment': tutorials/development.md
+    - 'Sourcing files only part of git repository using cleanGit': tutorials/clean-git.md
+    - 'Handling git repositories in projects': tutorials/source-repository-hashes.md
+    - 'Mapping non-Haskell dependencies to Nixpkgs': tutorials/pkg-map.md
+    - 'Bumping Hackage and Stackage snapshots': tutorials/hackage-stackage.md
+    - 'Materialization: Speeding up Nix evaluation': tutorials/materialization.md
+    - 'Cross-compiling your project': tutorials/cross-compilation.md
+    - 'Generating coverage information': tutorials/coverage.md
   - 'Reference':
+    - 'Suported GHC versions': reference/supported-ghc-versions.md
     - 'Command-line tools': reference/commands.md
     - 'Haskell.nix Library': reference/library.md
     - 'Module options': reference/modules.md
+  - 'Troubleshooting': troubleshooting.md
   - 'Templates / Abstraction':
     - 'IOHKs nix library': iohk-nix.md
   - 'Dev Notes':
     - 'Architecture': dev/dev-architecture.md
+    - 'Installing nix-tools': dev/installing-nix-tools.md
+    - 'Manually generating Nix expressions': dev/manually-generating-nix-expressions.md
     - 'Maintainer Scripts': dev/maintainer-scripts.md
-    - 'Mapping non-Haskell dependencies to Nixpkgs': dev/pkg-map.md
     - 'Nixpkgs Pin': dev/nixpkgs-pin.md
     - 'Removing withPackage wrapper': dev/removing-with-package-wrapper.md
     - 'Test Suite': dev/tests.md
+    - 'Adding a new GHC version': dev/adding-new-ghc.md
+    - 'Coverage': dev/coverage.md
   - 'ChangeLog': changelog.md

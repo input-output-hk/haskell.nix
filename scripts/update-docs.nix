@@ -1,13 +1,11 @@
 { stdenv, writeScript, coreutils, glibc, git, openssh, gnused, mkdocs
-, python3, generatedOptions }:
+, generatedOptions }:
 
 with stdenv.lib;
 
 let
   repo = "git@github.com:input-output-hk/haskell.nix.git";
   sshKey = "/run/keys/buildkite-haskell-dot-nix-ssh-private";
-  # Doesn't work with Python 2 in 20.03, fixed in master in https://github.com/NixOS/nixpkgs/commit/ee17a6a8379ffd791309b13143d76431f2f671df
-  py3mkdocs = mkdocs.override { python = python3; };
 in
   # update-docs depends on glibc which doesn't build on darwin
   meta.addMetaAttrs { platforms = platforms.linux; } (writeScript "update-docs.sh" ''
@@ -15,7 +13,7 @@ in
 
     set -euo pipefail
 
-    export PATH="${makeBinPath [ coreutils glibc git openssh gnused py3mkdocs ]}"
+    export PATH="${makeBinPath [ coreutils glibc git openssh gnused mkdocs ]}"
 
     source ${./git.env}
 
@@ -23,8 +21,7 @@ in
     cd $(git rev-parse --show-toplevel)
 
     echo "Preprocessing..."
-    cat docs/reference/modules-preamble.md ${generatedOptions} |
-      sed -e "s,$PWD/\?,," > docs/reference/modules.md
+    cat ${generatedOptions} > docs/reference/modules.md
 
     echo "Building..."
     rm -rf site

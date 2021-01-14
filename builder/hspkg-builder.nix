@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, fetchurl, runCommand, comp-builder, setup-builder }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, setup-builder }:
 
 config:
 { flags
@@ -34,10 +34,27 @@ let
     import Distribution.Simple
     main = defaultMain
   '';
+
+  # Get the Cabal lib used to build `cabal-install`.
+  # To avoid infinite recursion we have to leave this out for packages
+  # needed to build `cabal-install`.
+  # We always do this for ghcjs as the patched version of Cabal is needed.
+  cabalLibDepends = lib.optional (
+    stdenv.hostPlatform.isGhcjs || (
+        builtins.elem compiler-nix-name["ghc865" "ghc884"]
+      &&
+        !builtins.elem package.identifier.name
+          ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
+           "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
+           "containers" "binary" "mtl" "text" "process" "parsec"]
+      )
+    )
+    buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
+
   defaultSetup = setup-builder {
     name = "${ghc.targetPrefix}default-Setup";
     component = {
-      depends = config.setup-depends;
+      depends = config.setup-depends ++ cabalLibDepends;
       libs = [];
       frameworks = [];
       doExactConfig = false;
@@ -84,6 +101,7 @@ let
       component = components.setup // {
         depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
         extraSrcFiles = components.setup.extraSrcFiles ++ [ "Setup.hs" "Setup.lhs" ];
+        pkgconfig = if components ? library then components.library.pkgconfig or [] else [];
       };
       inherit package name src flags revision patches defaultSetupSrc;
       inherit (pkg) preUnpack postUnpack;
@@ -100,7 +118,7 @@ in rec {
   checks = pkgs.recurseIntoAttrs (builtins.mapAttrs
     (_: d: haskellLib.check d)
       (lib.filterAttrs (_: d: d.config.doCheck) components.tests));
-  inherit (package) identifier detailLevel isLocal;
+  inherit (package) identifier detailLevel isLocal isProject;
   inherit setup cabalFile;
   isHaskell = true;
   inherit src;

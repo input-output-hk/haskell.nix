@@ -1,4 +1,4 @@
-# Create a local hackare repo, we can use as a repository in a cabal config
+# Create a local hackage repo, we can use as a repository in a cabal config
 #
 # This will include:
 # - 01-index.tar.gz (the index file)
@@ -12,18 +12,28 @@
 #
 # We will create a completely unsigned bare repository.  Using signing keys within
 # nix would be pointless as we'd have to hardcode them to produce the same output
-# reproducably.
+# reproducibly.
 #
-{ pkgs, hackageTarball }:
-{ index-state, sha256, ... }@args:
-let index = hackageTarball args; in
-pkgs.runCommand "hackage-repo-${builtins.replaceStrings [":"] [""] index-state}" { nativeBuildInputs = [ pkgs.buildPackages.nix ]; } ''
+pkgs:
+{ name, index }:
+
+pkgs.evalPackages.runCommandLocal "hackage-repo-${name}" { nativeBuildInputs = [ pkgs.evalPackages.nix ]; } ''
 mkdir -p $out
 export expires="4000-01-01T00:00:00Z"
 
 ln -sf ${index} $out/01-index.tar.gz
 export index_md5=$(nix-hash --flat --type md5 ${index})
 export index_sha256=$(nix-hash --flat --type sha256 ${index})
+${
+  # When possible check the hash we calculate here against the `outputHash`
+  # of the index derivation (when the `extra-hackages` feature is used the index
+  # may not have an outputHash).
+  pkgs.lib.optionalString (index ? outputHash) ''
+    if [[ "${index.outputHash}" != "$index_sha256" ]]; then
+      echo "ERROR See https://github.com/input-output-hk/haskell.nix/issues/884"
+      exit 0
+    fi
+''}
 export index_length=$(stat --printf="%s" ${index})
 
 substituteAll ${./root.json} $out/root.json

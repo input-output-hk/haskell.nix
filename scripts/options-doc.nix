@@ -15,15 +15,47 @@ let
   # Apply the package set function to get NixOS options.
   inherit (import ../package-set.nix { hackage = null; inherit pkgs pkg-def; }) options;
 
-  # Use code from the NixOS manual to generate Docbook XML options list.
-  manual = import (pkgs.path + /nixos/doc/manual) {
-    inherit pkgs options;
-    config.meta.doc = [];
-    version = "testing";
-    revision = "testing";
-  };
-in
-  # Convert docbook options list to markdown
-  pkgs.runCommand "options.md" {} ''
-    ${pkgs.buildPackages.pandoc}/bin/pandoc -s -f docbook -t markdown_strict ${manual.generatedSources}/options-db.xml -o $out
-  ''
+  optionsNix = (pkgs.nixosOptionsDoc { inherit options; }).optionsNix;
+
+  optionsMarkdown = lib.concatStringsSep "\n" (lib.mapAttrsToList singleMarkdown optionsNix);
+
+  singleMarkdown = name: value: ''
+    ## ${name}
+
+    ${value.description}
+
+    **Type**: ${value.type}
+
+    ${ if lib.hasAttr "default" value
+       then ''
+        **Default**: ${builtins.toJSON value.default}
+      ''
+      else "**No Default**"
+    }
+    ${ if value.readOnly
+       then "**Read Only**"
+      else ""
+    }
+    ${ if lib.hasAttr "example" value
+       then ''
+        **Example**:
+
+        ${builtins.toJSON value.example}
+      ''
+      else "**No Example**"
+    }
+
+  '';
+
+in builtins.toFile "options.md" ''
+Haskell.nix modules options for packages and components.
+
+!!! note "Generated"
+    This documentation is generated from Nix sources in the
+    [`modules`](https://github.com/input-output-hk/haskell.nix/tree/master/modules)
+    subdirectory using `scripts/update-docs.nix`
+
+# Configuration Options
+
+${optionsMarkdown}
+''

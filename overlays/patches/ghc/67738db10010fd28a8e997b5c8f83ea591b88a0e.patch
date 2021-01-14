@@ -1,0 +1,107 @@
+From 67738db10010fd28a8e997b5c8f83ea591b88a0e Mon Sep 17 00:00:00 2001
+From: Travis Whitaker <pi.boy.travis@gmail.com>
+Date: Wed, 6 May 2020 04:14:47 +0000
+Subject: [PATCH] Build a threaded stage 1 if the bootstrapping GHC supports
+ it.
+
+---
+ compiler/ghc.mk                  |  6 ++++++
+ configure.ac                     | 15 +++++++++++++++
+ ghc/ghc.mk                       |  9 ++++++++-
+ mk/config.mk.in                  |  3 +++
+ 8 files changed, 98 insertions(+), 21 deletions(-)
+
+diff --git a/compiler/ghc.mk b/compiler/ghc.mk
+index 6a2dadc820..6e86b73e8d 100644
+--- a/compiler/ghc.mk
++++ b/compiler/ghc.mk
+@@ -194,6 +194,12 @@ ifeq "$(GhcThreaded)" "YES"
+ compiler_stage2_CONFIGURE_OPTS += --ghc-option=-optc-DTHREADED_RTS
+ endif
+
++# If the bootstrapping GHC supplies the threaded RTS, then we can have a
++# threaded stage 1 too.
++ifeq "$(GhcThreadedRts)" "YES"
++compiler_stage1_CONFIGURE_OPTS += --ghc-option=-optc-DTHREADED_RTS
++endif
++
+ ifeq "$(GhcWithNativeCodeGen)" "YES"
+ compiler_stage1_CONFIGURE_OPTS += --flags=ncg
+ compiler_stage2_CONFIGURE_OPTS += --flags=ncg
+diff --git a/configure.ac b/configure.ac
+index a621814700..bac2cfde5e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -124,6 +124,9 @@ AC_ARG_VAR(CC_STAGE0, [C compiler command (bootstrap)])
+ AC_ARG_VAR(LD_STAGE0, [Linker command (bootstrap)])
+ AC_ARG_VAR(AR_STAGE0, [Archive command (bootstrap)])
+
++dnl RTS ways supplied by the bootstrapping compiler.
++AC_ARG_VAR(RTS_WAYS_STAGE0, [RTS ways])
++
+ if test "$WithGhc" != ""; then
+   FPTOOLS_GHC_VERSION([GhcVersion], [GhcMajVersion], [GhcMinVersion], [GhcPatchLevel])dnl
+
+@@ -151,6 +154,17 @@ if test "$WithGhc" != ""; then
+   fi
+   BOOTSTRAPPING_GHC_INFO_FIELD([AR_OPTS_STAGE0],[ar flags])
+   BOOTSTRAPPING_GHC_INFO_FIELD([ArSupportsAtFile_STAGE0],[ar supports at file])
++  BOOTSTRAPPING_GHC_INFO_FIELD([RTS_WAYS_STAGE0],[RTS ways])
++
++  dnl Check whether or not the bootstrapping GHC has a threaded RTS. This
++  dnl determines whether or not we can have a threaded stage 1.
++  dnl See Note [Linking ghc-bin against threaded stage0 RTS] in
++  dnl hadrian/src/Settings/Packages.hs for details.
++  if echo ${RTS_WAYS_STAGE0} | grep '.*thr.*' 2>&1 >/dev/null; then
++      AC_SUBST(GhcThreadedRts, YES)
++  else
++      AC_SUBST(GhcThreadedRts, NO)
++  fi
+ fi
+
+ dnl ** Must have GHC to build GHC
+@@ -1454,6 +1468,7 @@ Configure completed successfully.
+ echo "\
+    Bootstrapping using   : $WithGhc
+       which is version   : $GhcVersion
++      with threaded RTS? : $GhcThreadedRts
+ "
+
+ if test "x$CcLlvmBackend" = "xYES"; then
+diff --git a/ghc/ghc.mk b/ghc/ghc.mk
+index 8c112a054f..5512d50710 100644
+--- a/ghc/ghc.mk
++++ b/ghc/ghc.mk
+@@ -66,8 +66,15 @@ else
+ ghc_stage2_CONFIGURE_OPTS += -f-threaded
+ ghc_stage3_CONFIGURE_OPTS += -f-threaded
+ endif
+-# Stage-0 compiler isn't guaranteed to have a threaded RTS.
++
++# If stage 0 supplies a threaded RTS, we can use it for stage 1.
++# See Note [Linking ghc-bin against threaded stage0 RTS] in
++# hadrian/src/Settings/Packages.hs for details.
++ifeq "$(GhcThreadedRts)" "YES"
++ghc_stage1_MORE_HC_OPTS += -threaded
++else
+ ghc_stage1_CONFIGURE_OPTS += -f-threaded
++endif
+
+ ifeq "$(GhcProfiled)" "YES"
+ ghc_stage2_PROGRAM_WAY = p
+diff --git a/mk/config.mk.in b/mk/config.mk.in
+index 791dc5acc0..250d41ebe6 100644
+--- a/mk/config.mk.in
++++ b/mk/config.mk.in
+@@ -199,6 +199,9 @@ endif
+ # `GhcUnregisterised` mode doesn't allow that.
+ GhcWithSMP := $(strip $(if $(filter YESNO, $(ArchSupportsSMP)$(GhcUnregisterised)),YES,NO))
+
++# Whether or not the bootstrapping GHC supplies a threaded RTS.
++GhcThreadedRts = @GhcThreadedRts@
++
+ # Whether to include GHCi in the compiler.  Depends on whether the RTS linker
+ # has support for this OS/ARCH combination.
+
+--
+2.25.0

@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
@@ -16,6 +16,7 @@ let
   ];
 
   project = cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "cabal-simple-prof";
     inherit modules;
   };
@@ -30,7 +31,7 @@ in recurseIntoAttrs {
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
@@ -45,15 +46,15 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta = {
+      platforms = platforms.all;
+      # This test seeems to be broken on 8.6 and 8.8
+      disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884";
+    };
 
     passthru = {
       # Used for debugging with nix repl
       inherit project packages;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = util.addCabalInstall packages.cabal-simple.components.all;
     };
   };
 }

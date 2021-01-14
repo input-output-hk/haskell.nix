@@ -132,6 +132,11 @@ in {
         default = false;
       };
 
+      isProject = mkOption {
+        type = bool;
+        default = false;
+      };
+
       ghcOptions = mkOption {
         type = nullOr str;
         default = null;
@@ -226,7 +231,7 @@ in {
           doExactConfig = false;
           # We have to set hsSourceDirs or cleanCabalComponent will
           # include everything (and as a result all the components of
-          # the package will depend on eveything in the package).
+          # the package will depend on everything in the package).
           # TODO find a better way
           hsSourceDirs = ["setup-src"];
           includeDirs = [];
@@ -263,15 +268,6 @@ in {
         type = attrsOf componentType;
         default = {};
       };
-      all = mkOption {
-        type = componentType;
-        apply = all: all // {
-          # TODO: Should this check for the entire component
-          # definition to match, rather than just the identifier?
-          depends = builtins.filter (p: p.identifier != config.package.identifier) all.depends;
-        };
-        description = "The merged dependencies of all other components";
-      };
     };
 
     name = mkOption {
@@ -305,29 +301,4 @@ in {
       default = [];
     };
   };
-
-  # This has one quirk. Manually setting options on the all component
-  # will be considered a conflict. This is almost always fine; most
-  # settings should be modified in either the package options, or an
-  # individual component's options. When this isn't sufficient,
-  # mkForce is a reasonable workaround.
-  #
-  # An alternative solution to mkForce for many of the options where
-  # this is relevant would be to switch from the bool type to
-  # something like an anyBool type, which would merge definitions by
-  # returning true if any is true.
-  config.components.all =
-    let allComps = haskellLib.getAllComponents config;
-    in lib.mkMerge (
-      builtins.map (c:
-        # Exclude attributes that are likely to have conflicting definitions
-        # (a common use case for `all` is in `shellFor` and it only has an
-        # install phase).
-        builtins.removeAttrs c ["preCheck" "postCheck" "keepSource"]
-      ) allComps
-    ) // {
-      # If any one of the components needs us to keep the source
-      # then keep it for the `all` component
-      keepSource = lib.foldl' (x: comp: x || comp.keepSource) false allComps;
-    };
 }

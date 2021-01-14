@@ -7,13 +7,13 @@ in pkgs.lib.evalModules {
       _module.args = {
         # this is *not* the hasekllLib from nixpkgs; it is rather our own
         # library from haskell.nix
-        haskellLib = let hl = import ./lib { inherit lib; inherit (pkgs) stdenv runCommand recurseIntoAttrs git srcOnly; haskellLib = hl; }; in hl;
+        haskellLib = let hl = import ./lib { inherit pkgs lib; inherit (pkgs) stdenv recurseIntoAttrs srcOnly; haskellLib = hl; }; in hl;
 
         # The package descriptions depend on pkgs, which are used to resolve system package dependencies
         # as well as pkgconfPkgs, which are used to resolve pkgconfig name to nixpkgs names.  We simply
         # augment the existing pkgs set with the specific mappings:
-        pkgs = pkgs // (import ./lib/system-nixpkgs-map.nix pkgs);
-        pkgconfPkgs = pkgs // (import ./lib/pkgconf-nixpkgs-map.nix pkgs);
+        pkgs = import ./lib/system-pkgs.nix pkgs;
+        pkgconfPkgs = import ./lib/pkgconf-nixpkgs-map.nix pkgs;
 
         inherit buildModules;
       };
@@ -40,7 +40,7 @@ in pkgs.lib.evalModules {
         in let pkg-def' = strip-pkg-def pkg-def;
         # The desugar reason.
         #
-        # it is quite combersome to write
+        # it is quite cumbersome to write
         # (hackage: { packages.x.revision = hackage...;
         #             packages.y.revision = import ./foo.nix; })
         # where we'd rather write:
@@ -82,6 +82,9 @@ in pkgs.lib.evalModules {
       ;
 
     })
+
+    # Error handlers
+    ./modules/error-handler.nix
 
     # Supplies metadata
     ./modules/cabal.nix

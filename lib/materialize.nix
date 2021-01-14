@@ -1,4 +1,4 @@
-{ pkgs, nix, runCommand, checkMaterialization }@defaults:
+{ pkgs, nix, runCommand, writeShellScript, checkMaterialization }@defaults:
 { sha256 ? null  # Has to make this a fixed output derivation
 , sha256Arg ? "sha256"
                  # Name of the sha256 argument for more meaningful
@@ -7,6 +7,9 @@
                  # the output. If this is set but does not exist
                  # the derivation will fail but with a message
                  # advising how to populate it.
+, this ? "this"
+                # A name to use when referring to the thing currently being
+                # materialized. Clients can pass in an attribute name or similar.
 , reasonNotSafe ? null
                  # Some times there a reasont the derivation will
                  # not produce output that can be safely materialized.
@@ -34,37 +37,31 @@ let
       else x;
 
   unchecked =
-    if reasonNotSafe != null
+    let
+      sha256message = "To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
+      materializeMessage = "To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
+    in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
         traceIgnoringSha256 reasonNotSafe
           (traceIgnoringMaterialized reasonNotSafe calculateNoHash)
-    else if sha256 == null && materialized == null
+    else if materialized != null
+      then calculateUseMaterialized
+    else if sha256 != null
       then
-        # Let the user know how to calculate a sha256 to use to make this
-        # a fixed output derivation.
-        builtins.trace ("Get `${sha256Arg}` with `nix-hash --base32 --type sha256 "
-          + toString calculateNoHash + "/`") (traceIgnoringMaterialized
-            "${sha256Arg} is not set" calculateNoHash)
-    else if materialized == null
-      then
-        # To avoid any IFD dependencies add a `materialized` copy somewhere
-        # and pass it in.
-        builtins.trace ("To materialize, point `materialized` to a copy of " + toString calculateUseHash)
-          calculateUseHash
-    else
-      # Everything is in place we can safely use the sha256 and materialized
-      calculateUseMaterialized;
+        # Let the user know how to materialize if they want to.
+        builtins.trace materializeMessage calculateUseHash
+    else # materialized == null && sha256 == null
+        # Let the user know how to calculate a sha256 or materialize if they want to.
+        builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
-  checked = runCommand name {
-    buildInputs = [ nix ];
-  } (''
+  checked = runCommand name {} (''
         ERR=$(mktemp -d)/errors.txt
       ''
     + (pkgs.lib.optionalString (sha256 != null) ''
-        NEW_HASH=$(nix-hash --base32 --type sha256 ${calculateNoHash})
-        if [ "${sha256}" != "$NEW_HASH" ]; then
+        NEW_HASH=$(${calculateMaterializedSha})
+        if [[ ${sha256} != $NEW_HASH ]]; then
           echo Changes to ${name} not reflected in ${sha256Arg}
           diff -ru ${calculateUseHash} ${calculateNoHash} || true
           echo "Calculated hash for ${name} was not ${sha256}. New hash is :" >> $ERR
@@ -76,9 +73,7 @@ let
     + (
       if materialized != null && !__pathExists materialized
         then ''
-          echo "Materialized nix used for ${name} is missing. To fix run :" >> $ERR
-          echo "    cp -r ${calculateNoHash} ${toString materialized}"      >> $ERR
-          echo "    chmod -R +w ${toString materialized}"                   >> $ERR
+          echo "Materialized nix used for ${name} is missing. To fix run: ${updateMaterialized}" >> $ERR
           cat $ERR
           false
         ''
@@ -89,18 +84,15 @@ let
               else
               echo Changes to plan not reflected in materialized nix for ${name}
               diff -ru ${materialized} ${calculateNoHash} || true
-              echo "Materialized nix used for ${name} incorrect. To fix run :" >> $ERR
-              echo "    rm -rf ${toString materialized}"                       >> $ERR
-              echo "    cp -r ${calculateNoHash} ${toString materialized}"     >> $ERR
-              echo "    chmod -R +w ${toString materialized}"                  >> $ERR
+              echo "Materialized nix used for ${name} incorrect. To fix run: ${updateMaterialized}" >> $ERR
             fi
           '')
         + ''
-            if [ -e $ERR ]; then
+            if [[ -e $ERR ]]; then
               cat $ERR
               false
             else
-              cp -r ${unchecked} $out
+              cp -Lr ${unchecked} $out
               # Make sure output files can be removed from the sandbox
               chmod -R +w $out
             fi
@@ -114,10 +106,10 @@ let
   };
   calculateNoHash = derivation;
   calculateUseHash =
-    # Use `cp -r` here to get rid of symlinks so we know the result
+    # Use `cp -Lr` here to get rid of symlinks so we know the result
     # can be safely materialized (no symlinks to the store).
     runCommand name hashArgs ''
-      cp -r ${derivation} $out
+      cp -Lr ${derivation} $out
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out
     '';
@@ -125,17 +117,43 @@ let
     assert materialized != null;
     assert __pathExists materialized;
     runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
-      cp -r ${materialized} $out
+      cp -Lr ${materialized} $out
       # Make sure output files can be removed from the sandbox
       chmod -R +w $out
     '';
+  calculateMaterializedSha =
+    writeShellScript "calculateSha" ''${nix}/bin/nix-hash --base32 --type sha256 ${calculateNoHash}'';
+
+  # Generate the materialized files in a particular path.
+  generateMaterialized =
+    writeShellScript "generateMaterialized" ''
+      TARGET=$1
+
+      # Crudely try and guard people from writing to the Nix store accidentally
+      if [[ ''${TARGET##/nix/store/} != $TARGET ]]; then
+         echo "Attempted to write to $TARGET in the Nix store! Put your materialized files somewhere else!"
+         exit 1
+      fi
+
+      # Generate the files
+      rm -rf $TARGET
+      cp -r ${calculateNoHash} "$TARGET"
+      chmod -R +w "$TARGET"
+  '';
+  # Update the materialized files at 'materialized', which must already be set.
+  updateMaterialized =
+    assert materialized != null;
+    writeShellScript "updateMaterialized" ''${generateMaterialized} ${toString materialized}'';
 
   # Materialized location was specified, but the files are not there.
   missingMaterialized = materialized != null && !__pathExists materialized;
 
-in
   # Use the checked version if requested or if the `materialized` version
   # is missing (perhaps deleted or not created yet).
-  if checkMaterialization || missingMaterialized
+  result = if checkMaterialization || missingMaterialized
     then checked
-    else unchecked
+    else unchecked;
+
+in result
+   # Also include the scripts for fixing materialization files in passthru.
+   // { passthru = (result.passthru or {}) // { inherit generateMaterialized updateMaterialized calculateMaterializedSha; }; }

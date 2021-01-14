@@ -1,10 +1,11 @@
-{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
-    index-state = "2019-04-30T00:00:00Z";
+    inherit compiler-nix-name;
+    index-state = "2020-05-25T00:00:00Z";
     src = testSrc "ghc-options";
     # TODO find a way to get the ghc-options into plan.json so we can use it in plan-to-nix
     modules = [ { packages.test-ghc-options.package.ghcOptions = "-DTEST_GHC_OPTION"; } ];
@@ -20,7 +21,7 @@ in recurseIntoAttrs {
 
     buildCommand = ''
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.test-ghc-options.components.exes.test-ghc-options-exe}
+      cat ${haskellLib.check packages.test-ghc-options.components.exes.test-ghc-options-exe}/test-stdout
 
       touch $out
     '';

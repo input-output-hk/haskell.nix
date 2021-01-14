@@ -1,0 +1,7 @@
+name: stack-remote-resolver
+
+dependencies:
+- base
+
+library:
+  source-dirs: src

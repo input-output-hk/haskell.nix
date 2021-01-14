@@ -1,8 +1,32 @@
-{ stdenv, lib, haskellLib, runCommand, git, recurseIntoAttrs, srcOnly }:
+{ pkgs, stdenv, lib, haskellLib, recurseIntoAttrs, srcOnly }:
+
 
 with haskellLib;
 
-{
+let
+  # Why `final.evalPackages.buildPackages.gitMinimal`?
+  # Why not just final.evalPackages.gitMinimal?
+  #
+  # A problem arises when `evalPackages` is `buildPackages`.i
+  # As may be the case in a flake.
+  #
+  # It turns out `git` depends on `gdb` in a round about way:
+  #  git -> openssh -> libfido2 -> systemd -> python libxml -> Cython -> gdb
+  # Somewhere in that chain there should perhaps be a `buildPackages` so
+  # that the `gdb` that is used is not the one for debugging code in
+  # the `final` (but instead the one for debugging code in
+  # `final.buildPackages`).
+  #
+  # Using `final.buildPackages.git` causes two problems:
+  #
+  #   * Multiple versions of `git` (and that dependency chain
+  #     to `gdb` are needed when cross compiling).
+  #   * When `gdb` does not exist for `js`, so when cross
+  #     compiling with ghcjs `final.buildPackages.git` fails
+  #     to build at all.
+  inherit (pkgs.evalPackages.buildPackages) gitMinimal;
+
+in {
   # Within the package components, these are the attribute names of
   # nested attrsets.
   subComponentTypes = [
@@ -28,13 +52,11 @@ with haskellLib;
           tys;
     in libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc:
-    lib.optional c.buildable c ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
 
   componentPrefix = {
-    # Are all of these right?
     sublibs = "lib";
-    foreignlibs = "foreignlib";
+    foreignlibs = "flib";
     exes = "exe";
     tests = "test";
     benchmarks = "bench";
@@ -45,19 +67,16 @@ with haskellLib;
       comps = config.components;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
-      applyAllComp = f { cname = config.package.identifier.name; ctype = "all"; };
       buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true);
       libComp = if comps.library == null || !(comps.library.buildable or true)
         then {}
-        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "all" "setup" ]));
+        else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "setup" ]));
       subComps = lib.mapAttrs
         (ctype: attrs: lib.mapAttrs (applySubComp ctype) (buildableAttrs attrs))
         (builtins.intersectAttrs (lib.genAttrs subComponentTypes (_: null)) comps);
-      allComp = { all = applyAllComp comps.all; };
-    in subComps // libComp // allComp;
+    in subComps // libComp;
 
   isLibrary = componentId: componentId.ctype == "lib";
-  isAll = componentId: componentId.ctype == "all";
   isExe = componentId: componentId.ctype == "exe";
   isTest = componentId: componentId.ctype == "test";
   isBenchmark = componentId: componentId.ctype == "bench";
@@ -66,8 +85,7 @@ with haskellLib;
     || isTest componentId
     || isBenchmark componentId;
   mayHaveExecutable = componentId:
-       isExecutableType componentId
-    || isAll componentId;
+       isExecutableType componentId;
 
   # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
   # This is used to make the default `packages` list for `shellFor`.
@@ -76,26 +94,12 @@ with haskellLib;
 
   # if it's a project package it has a src attribute set with an origSubDir attribute.
   # project packages are a subset of localPackages
-  isProjectPackage = p: p ? src && p.src ? origSubDir;
+  isProjectPackage = p: p.isProject or false;
   selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
-  componentSetupTarget = componentId: component:
-    if componentId.ctype == "all"
-    then ""
-    else
-      if component.isDoctest
-      # TODO: Why is this needed???
-      then "--enable-tests"
-      else "${componentId.ctype}:${componentId.cname}";
-
-  # Format a componentId as it should appear as a target on the
-  # command line of the setup script.
-  componentBuildTarget = componentId: component:
-    if componentId.ctype == "all"
-    then ""
-    else "${componentId.ctype}:${componentId.cname}";
+  componentTarget = componentId:"${componentId.ctype}:${componentId.cname}";
 
   # Remove null or empty values from an attrset.
   optionalHooks = lib.filterAttrs (_: hook: hook != null && hook != "");
@@ -189,16 +193,53 @@ with haskellLib;
 
   # Use cleanSourceWith to filter just the files needed for a particular
   # component of a package
-  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith; };
+  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith canCleanSource; };
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
-    inherit lib runCommand git cleanSourceWith;
+    inherit lib cleanSourceWith;
+    git = gitMinimal;
+    inherit (pkgs.evalPackages) runCommand;
   };
+
+  # Some times it is handy to temporarily use a relative path between git
+  # repos.  If the repos are individually cleaned this is not possible
+  # (since the cleaned version of one repo will never include the files
+  # of the other).
+  #
+  # `cleanGits` allows us to specify a root directory and any number of
+  # sub directories containing git repos.
+  #
+  # See docs/user-guide/clean-git.md for details of how to use this
+  # with `cabalProject`.
+  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }@args:
+    let
+      # List of filters, one for each git directory.
+      filters = builtins.map (subDir:
+        (pkgs.haskell-nix.haskellLib.cleanGit {
+          src = pkgs.haskell-nix.haskellLib.cleanSourceWith {
+            inherit src subDir;
+          };
+        }).filter) gitDirs;
+    in pkgs.haskell-nix.haskellLib.cleanSourceWith {
+      inherit src name caller;
+      # Keep files that match any of the filters
+      filter = path: type: pkgs.lib.any (f: f path type) filters;
+    };
 
   # Check a test component
   check = import ./check.nix {
     inherit stdenv lib haskellLib srcOnly;
+  };
+
+  # Do coverage of a package
+  coverageReport = import ./cover.nix {
+    inherit stdenv lib haskellLib pkgs;
+  };
+
+  # Do coverage of a project
+  projectCoverageReport = import ./cover-project.nix {
+    inherit stdenv lib haskellLib pkgs;
   };
 
   # Use `isCrossHost` to identify when we are cross compiling and
@@ -207,16 +248,80 @@ with haskellLib;
   # In most cases we do not want to treat musl as a cross compiler.
   # For instance when building ghc we want to include ghci.
   isCrossHost = stdenv.hostPlatform != stdenv.buildPlatform
-    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl);
+    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl && stdenv.buildPlatform.isx86 && stdenv.hostPlatform.isx86);
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
-    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl);
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.isx86 && stdenv.targetPlatform.isx86);
+  # Native musl build-host-target combo
+  isNativeMusl = stdenv.hostPlatform.isMusl
+    && stdenv.buildPlatform == stdenv.hostPlatform
+    && stdenv.hostPlatform == stdenv.targetPlatform;
 
   # Takes a version number or attr set of arguments (for cabalProject)
-  # and conversios it to an attr set of argments.  This allows
+  # and converts it to an attr set of arguments.  This allows
   # the use of "1.0.0.0" or { version = "1.0.0.0"; ... }
   versionOrArgsToArgs = versionOrArgs:
     if lib.isAttrs versionOrArgs
       then versionOrArgs
       else { version = versionOrArgs; };
+
+  # Find the resolver in the stack.yaml file and fetch it if a sha256 value is provided
+  fetchResolver = import ./fetch-resolver.nix {
+    inherit (pkgs.evalPackages) pkgs;
+  };
+
+  inherit (import ./cabal-project-parser.nix {
+    inherit pkgs;
+  }) parseIndexState parseBlock;
+
+
+  cabalToNixpkgsLicense = import ./spdx/cabal.nix pkgs;
+
+  # This function is like
+  #   `src + (if subDir == "" then "" else "/" + subDir)`
+  # however when `includeSiblings` is set it maintains
+  # `src.origSrc` if there is one and instead adds to
+  # `src.origSubDir`.  It uses `cleanSourceWith` when possible
+  # to keep `cleanSourceWith` support in the result.
+  appendSubDir = { src, subDir, includeSiblings ? false }:
+    if subDir == ""
+      then src
+      else
+        if haskellLib.canCleanSource src
+          then haskellLib.cleanSourceWith {
+            inherit src subDir includeSiblings;
+          }
+          else let name = src.name or "source" + "-" + __replaceStrings ["/"] ["-"] subDir;
+            in if includeSiblings
+              then rec {
+                # Keep `src.origSrc` so it can be used to allow references
+                # to other parts of that root.
+                inherit name;
+                origSrc = src.origSrc or src;
+                origSubDir = src.origSubDir or "" + "/" + subDir;
+                outPath = origSrc + origSubDir;
+              }
+              else {
+                # We are not going to need other parts of `origSrc` if there
+                # was one and we can ignore it
+                inherit name;
+                outPath = src + "/" + subDir;
+              };
+
+  # Givin a `src` split it into a `root` path (based on `src.origSrc` if
+  # present) and `subDir` (based on `src.origSubDir).  The
+  # `root` will still use the `filter` of `src` if there was one.
+  rootAndSubDir = src: rec {
+    subDir = src.origSubDir or "";
+    root =
+      # Use `cleanSourceWith` to make sure the `filter` is still used
+      if src ? origSrc && src ? filter && subDir != ""
+        then haskellLib.cleanSourceWith {
+          name = src.name or "source" + "-root";
+          src = src.origSrc;
+          # Not passing src.origSubDir so that the result points `origSrc`
+          inherit (src) filter;
+        }
+        else src.origSrc or src;
+  };
 }

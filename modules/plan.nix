@@ -1,5 +1,5 @@
 # The plan (that is, a package set description like an LTS set or a
-# plan.nix (derived from plan.json)) will producde a structure that
+# plan.nix (derived from plan.json)) will produce a structure that
 # looks like, which is stored in config.plan.pkg-def:
 #
 # { packages = { "package" = { revision = hackageConfigs.$package.$version.revisions.default;
@@ -16,9 +16,9 @@ with lib;
 with types;
 
 let
-  # dealing with str is a bit annoying espectially with `nullOr str` as that apparently defaults to ""
+  # dealing with str is a bit annoying especially with `nullOr str` as that apparently defaults to ""
   # instead of null :shrug:.  This then messes with our option inheritance logic.
-  # Hence we have a uniqueStr type that ensures multiple identially defined options are collapsed
+  # Hence we have a uniqueStr type that ensures multiple identically defined options are collapsed
   # without raising an error. And a way to fetch default options that will retain `null` if the
   # option is not defined or "".
   getDefaultOrNull = def: key: if def ? ${key} && def.${key} != "" then def.${key} else null;
@@ -101,7 +101,17 @@ let
           doHyperlinkSource = mkOption {
             description = "Link documentation to the source code.";
             type = bool;
-            default = (def.doHoogle or true);
+            default = (def.doHyperlinkSource or true);
+          };
+          doQuickjump = mkOption {
+            description = "Generate an index for interactive documentation navigation.";
+            type = bool;
+            default = (def.doQuickjump or true);
+          };
+          doCoverage = mkOption {
+            description = "Enable production of test coverage reports.";
+            type = bool;
+            default = (def.doCoverage or false);
           };
           dontPatchELF = mkOption {
             description = "If set, the patchelf command is not used to remove unnecessary RPATH entries. Only applies to Linux.";
@@ -154,7 +164,7 @@ let
 
     profilingDetail = mkOption {
       type = nullOr uniqueStr;
-      default = (def.profilingDetail or "exported-functions");
+      default = (def.profilingDetail or "default");
     };
 
     keepSource = mkOption {
@@ -219,6 +229,10 @@ let
       type = nullOr uniqueStr;
       default = getDefaultOrNull def "postHaddock";
     };
+    hardeningDisable = mkOption {
+      type = listOfFilteringNulls str;
+      default = (def.hardeningDisable or []);
+    };
   };
 
 
@@ -233,7 +247,7 @@ in {
       type =
         let mod_args = {
           inherit pkgs pkgconfPkgs haskellLib;
-          inherit (config) hsPkgs;
+          inherit (config) hsPkgs errorHandler;
           inherit (config.cabal) system compiler;
         }; in
           attrsOf (submodule (import ./package.nix {
@@ -264,7 +278,7 @@ in {
 
   config = let module = config.plan.pkg-def config.hackage.configs; in {
     inherit (module) compiler;
-    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
+    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, errorHandler, pkgconfPkgs, ... }@modArgs:
 
       let m = if revision == null
               then (abort "${name} has no revision!")

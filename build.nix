@@ -5,36 +5,48 @@
 let
   haskellNix = (import ./default.nix {});
 in
-{ nixpkgs ? haskellNix.sources.nixpkgs-default
+{ nixpkgs ? haskellNix.sources.nixpkgs
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , ifdLevel ? 1000
+, compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 }:
 
 let
   haskell = pkgs.haskell-nix;
+  buildHaskell = pkgs.buildPackages.haskell-nix;
+  tool = buildHaskell.tool;
 in rec {
-  tests = import ./test/default.nix { inherit pkgs ifdLevel; };
+  tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
 
-  tools = pkgs.lib.optionalAttrs (ifdLevel >= 3)
-    (pkgs.recurseIntoAttrs
-      (pkgs.lib.mapAttrs (_: ghc:
-        let
-          tool = name: version: pkgs.buildPackages.haskell-nix.tool name { inherit version ghc; };
-        in pkgs.recurseIntoAttrs {
-            cabal-32 = tool "cabal" "3.2.0.0";
-            ghcide   = tool "ghcide" "object-code";
-          } // pkgs.lib.optionalAttrs (ghc.version == "8.6.5") {
-            cabal-30 = tool "cabal" "3.0.0.0";
-          }) { inherit (pkgs.buildPackages.haskell-nix.compiler) ghc865 ghc883; }));
+  tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
+    pkgs.recurseIntoAttrs {
+      cabal-latest = tool compiler-nix-name "cabal" "latest";
+      hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
+      hlint-latest = tool compiler-nix-name "hlint" "latest";
+    }
+  );
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
   # The dontRecurseIntoAttrs prevents these from building on hydra
   # as not all of them can work in restricted eval mode (as they
   # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
-    update-hackage = haskell.callPackage ./scripts/update-hackage.nix {};
-    update-stackage = haskell.callPackage ./scripts/update-stackage.nix {};
+    update-hackage = import ./scripts/update-hackage.nix {
+      inherit (pkgs) stdenv writeScript coreutils glibc git
+        openssh nix-prefetch-git gawk bash curl findutils;
+      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+      nix-tools = haskell.internal-nix-tools;
+      cabal-install = haskell.internal-cabal-install;
+      inherit (haskell) update-index-state-hashes;
+    };
+    update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
+      inherit (pkgs) stdenv writeScript coreutils glibc git
+        openssh nix-prefetch-git gawk bash curl findutils;
+      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+      nix-tools = haskell.internal-nix-tools;
+      cabal-install = haskell.internal-cabal-install;
+    };
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };
@@ -46,8 +58,14 @@ in rec {
     # use)
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
-      inherit (haskell) nix-tools;
+      # Includes cabal-install since this is commonly used.
+      nix-tools = pkgs.linkFarm "common-tools" [
+        { name = "nix-tools";     path = haskell.nix-tools.${compiler-nix-name}; }
+        { name = "cabal-install"; path = haskell.cabal-install.${compiler-nix-name}; }
+      ];
     };
+    check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
+    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {};
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra

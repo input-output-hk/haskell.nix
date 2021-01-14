@@ -1,6 +1,6 @@
 # From https://github.com/NixOS/nix/issues/2944
 { lib, runCommand, git, cleanSourceWith }:
-{ name ? null, src, subDir ? "" }:
+{ name ? null, src, subDir ? "", includeSiblings ? false, keepGitDir ? false }:
 
 # The function call
 #
@@ -24,24 +24,6 @@ with builtins;
 # is shared among multiple invocations of gitSource:
 
 let
-  filter_from_list = root: files:
-    let
-      all_paren_dirs = p:
-        if p == "." || p == "/"
-        then []
-        else [ p ] ++ all_paren_dirs (dirOf p);
-
-      whitelist_set = listToAttrs (
-        concatMap (p:
-          let full_path = toString (root + "/${p}"); in
-          map (p': { name = p'; value = true; }) (all_paren_dirs full_path)
-        ) files
-      );
-    in
-    p: t: hasAttr (toString p) whitelist_set;
-
-  has_prefix = prefix: s:
-    prefix == builtins.substring 0 (builtins.stringLength prefix) s;
   remove_prefix = prefix: s:
     builtins.substring
       (builtins.stringLength prefix)
@@ -49,13 +31,15 @@ let
       s;
 
   lines = s: filter (x : x != [] && x != "") (split "\n" s);
+
+  origSrcSubDir = toString (src.origSrcSubDir or src);
 in
 
-if builtins.pathExists (toString src + "/.git")
+if builtins.pathExists (origSrcSubDir + "/.git")
 then
   let
-    hasIndex = builtins.pathExists (toString src + "/.git/index");
-    isWorktree = (builtins.readDir (toString src)).".git" == "regular";
+    hasIndex = builtins.pathExists (origSrcSubDir + "/.git/index");
+    isWorktree = (builtins.readDir origSrcSubDir).".git" == "regular";
 
     # Identify the .git directory and filter just the files that we need.
     gitDir = cleanSourceWith ({
@@ -72,19 +56,19 @@ then
       if hasIndex
         then { inherit src; subDir = ".git"; }
         else if !isWorktree
-          then abort "cleanGit: ${toString src + "/.git"} has no index file"
+          then abort "cleanGit: ${origSrcSubDir + "/.git"} has no index file"
           else {
             # likely a git worktree, so follow the indirection
             src =
               let
-                git_content = lines (readFile (toString src + "/.git"));
+                git_content = lines (readFile (origSrcSubDir + "/.git"));
                 first_line = head git_content;
                 prefix = "gitdir: ";
-                ok = length git_content == 1 && has_prefix prefix first_line;
+                ok = length git_content == 1 && lib.hasPrefix prefix first_line;
               in
                 if ok
                 then /. + remove_prefix prefix first_line
-                else abort "gitSource.nix: Cannot parse ${toString src + "/.git"}";
+                else abort "gitSource.nix: Cannot parse ${origSrcSubDir + "/.git"}";
     }));
 
     # Worktrees have a commondir pointing to the common `.git` dir.  We need the
@@ -100,7 +84,7 @@ then
         else gitDir + "/config";
 
     # We need the .gitmodules file for submoules to work.
-    gitModulesStr = toString src + "/.gitmodules";
+    gitModulesStr = origSrcSubDir + "/.gitmodules";
     gitModules = builtins.path { name = "gitmodules"; path = gitModulesStr; };
 
     gitSubmoduleFiles = cleanSourceWith {
@@ -144,17 +128,39 @@ then
 
     whitelist = lines (readFile (whitelist_file.out));
 
-    filter = filter_from_list src whitelist;
+    all_paren_dirs = p:
+        if p == "." || p == "/"
+        then []
+        else [ p ] ++ all_paren_dirs (dirOf p);
+
+    # All the paths that we need to keep as a set (including parent dirs)
+    whitelist_set = listToAttrs (
+        concatMap (p:
+          # Using `origSrcSubDir` (if present) makes it possible to cleanGit src that
+          # has already been cleaned with cleanSrcWith.
+          let full_path = src.origSrcSubDir or (toString src) + "/${p}"; in
+          map (p': { name = p'; value = true; }) (all_paren_dirs full_path)
+        ) whitelist
+      );
+
+    # Identify files in the `.git` dir
+    isGitDirPath = path: 
+          path == origSrcSubDir + "/.git"
+        || lib.hasPrefix (origSrcSubDir + "/.git/") path;
+
+    filter = path: type:
+         hasAttr (toString path) whitelist_set
+      || (keepGitDir && isGitDirPath path);
   in
     cleanSourceWith {
       caller = "cleanGit";
-      inherit name src subDir filter;
+      inherit name src subDir includeSiblings filter;
     }
 
 else
-  trace "gitSource.nix: ${toString src} does not seem to be a git repository,\nassuming it is a clean checkout." (
+  trace "haskell-nix.haskellLib.cleanGit: ${origSrcSubDir} does not seem to be a git repository,\nassuming it is a clean checkout." (
     cleanSourceWith {
       caller = "cleanGit";
-      inherit name src subDir;
+      inherit name src subDir includeSiblings;
     }
   )

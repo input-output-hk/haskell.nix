@@ -1,17 +1,21 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs, compiler }:
 
 let
   # Builds a single component of a package.
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix {
-    inherit ghc haskellLib makeConfigFiles ghcForComponent hsPkgs;
+    inherit ghc haskellLib makeConfigFiles haddockBuilder ghcForComponent hsPkgs compiler;
+  };
+
+  haddockBuilder = haskellLib.weakCallPackage pkgs ./haddock-builder.nix {
+    inherit ghc ghcForComponent haskellLib makeConfigFiles nonReinstallablePkgs;
   };
 
   setup-builder = haskellLib.weakCallPackage pkgs ./setup-builder.nix {
     ghc = (ghc.passthru.buildGHC or ghc);
     hsPkgs = hsPkgs.buildPackages;
     # We need to use the buildPackages stdenv to build the setup-builder.
-    # in the native case, it would be the same in the corss case however
-    # re *really* want to build the Setup.hs on the build machine and not
+    # in the native case, it would be the same in the cross case however
+    # we *really* want to build the Setup.hs on the build machine and not
     # have the stdenv confuse it with the target/host env.
     inherit (buildPackages) stdenv;
     inherit buildPackages pkgconfig;
@@ -21,7 +25,7 @@ let
   # Wraps GHC to provide dependencies in a way that works for both the
   # component builder and for nix-shells.
   ghcForComponent = import ./ghc-for-component-wrapper.nix {
-    inherit lib ghc;
+    inherit lib ghc haskellLib;
     inherit (buildPackages) stdenv runCommand makeWrapper;
     inherit (buildPackages.xorg) lndir;
   };
@@ -40,10 +44,14 @@ let
 
   hoogleLocal = let
     nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.haskellPackages.hoogle.components.exes.hoogle }:
-    haskellLib.weakCallPackage pkgs nixpkgsHoogle { 
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool compiler.nix-name "hoogle" {
+        version = "5.0.17.15";
+        index-state = pkgs.haskell-nix.internalHackageIndexState;
+      }
+    }:
+    haskellLib.weakCallPackage pkgs nixpkgsHoogle {
       # For musl we can use haddock from the buildGHC
-      ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl
+      ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
         then ghc.buildGHC
         else ghc;
       inherit packages hoogle;
@@ -51,9 +59,8 @@ let
 
   # Same as haskellPackages.shellFor in nixpkgs.
   shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {
-    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib buildPackages;
+    inherit hsPkgs ghcForComponent makeConfigFiles hoogleLocal haskellLib buildPackages compiler;
     inherit (buildPackages) glibcLocales;
-    buildGHC = ghc.passthru.buildGHC or ghc;
   };
 
   # Same as haskellPackages.ghcWithPackages and ghcWithHoogle in nixpkgs.
@@ -68,10 +75,10 @@ in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
   build-package = haskellLib.weakCallPackage pkgs ./hspkg-builder.nix {
-    inherit haskellLib ghc comp-builder setup-builder;
+    inherit haskellLib ghc compiler-nix-name comp-builder setup-builder;
   };
 
-  inherit shellFor;
+  inherit shellFor makeConfigFiles;
 
   ghcWithPackages = withPackages { withHoogle = false; };
   ghcWithHoogle = withPackages { withHoogle = true; };

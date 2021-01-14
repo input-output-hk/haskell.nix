@@ -1,10 +1,11 @@
-{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
-    index-state = "2019-04-30T00:00:00Z";
+    inherit compiler-nix-name;
+    index-state = "2020-05-25T00:00:00Z";
     src = testSrc "buildable";
     modules = [ { packages.buildable-test.flags.exclude-broken = true; } ];
   };
@@ -17,10 +18,10 @@ in recurseIntoAttrs {
   run = stdenv.mkDerivation {
     name = "buildable-test";
 
-    buildCommand = 
+    buildCommand =
       (concatStrings (mapAttrsToList (name: value: ''
         printf "checking whether executable runs... " >& 2
-        cat ${haskellLib.check value}
+        cat ${haskellLib.check value}/test-stdout
       '') packages.buildable-test.components.exes)) + ''
       touch $out
     '';

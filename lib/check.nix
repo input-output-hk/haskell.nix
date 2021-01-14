@@ -15,7 +15,7 @@ in stdenv.mkDerivation ({
   src = drv.source or (srcOnly drv);
 
   passthru = {
-    inherit (drv) identifier config configFiles executableToolDepends cleanSrc env;
+    inherit (drv) identifier config configFiles executableToolDepends cleanSrc env exeName;
   };
 
   inherit (drv) meta LANG LC_ALL buildInputs nativeBuildInputs;
@@ -27,14 +27,17 @@ in stdenv.mkDerivation ({
   # If doCheck or doCrossCheck are false we may still build this
   # component and we want it to quietly succeed.
   buildPhase = ''
-      touch $out
+    mkdir $out
 
-      runHook preCheck
+    runHook preCheck
 
-      ${toString component.testWrapper} ${drv}/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out
+    ${toString component.testWrapper} ${drv}/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out/test-stdout
 
-      runHook postCheck
-    '';
+    # Copy over tix files, if they exist
+    find . -iname '${drv.exeName}.tix' -exec mkdir -p $out/share/hpc/vanilla/tix/${drv.exeName} \; -exec cp {} $out/share/hpc/vanilla/tix/${drv.exeName}/ \;
+
+    runHook postCheck
+  '';
 } // haskellLib.optionalHooks {
   inherit (component) preCheck postCheck;
 }

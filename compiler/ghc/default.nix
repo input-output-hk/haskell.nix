@@ -7,7 +7,7 @@
 
 # build-tools
 , bootPkgs
-, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx
+, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl
 , autoreconfHook
 , bash
 
@@ -19,7 +19,7 @@
   libffi ? null
 
 , useLLVM ? !stdenv.targetPlatform.isx86
-, # LLVM is conceptually a run-time-only depedendency, but for
+, # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
   buildLlvmPackages, llvmPackages
@@ -35,7 +35,9 @@
   # platform). Static libs are always built.
   enableShared ? !haskell-nix.haskellLib.isCrossTarget
 
-, # Whetherto build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
+, enableLibraryProfiling ? true
+
+, # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
 , # What flavour to build. An empty string indicates no
@@ -51,6 +53,7 @@
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
 , ghc-version ? src-spec.version
+, ghc-version-date ? null
 , src-spec
 , ghc-patches ? []
 
@@ -66,13 +69,17 @@ let
 
   inherit (bootPkgs) ghc;
 
-  # TODO check if this posible fix for segfaults works or not.
+  # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
+    # on native platforms targetPlatform.{libffi, gmp} do not exist; thus fall back
+    # to the non-targetPlatform version in those cases.
+    let targetLibffi = targetPackages.libffi or libffi; in
+    # we need to set `dontDisableStatic` for musl for libffi to work.
     if stdenv.targetPlatform.isMusl
-    then targetPackages.libffi.overrideAttrs (old: { dontDisableStatic = true; })
-    else if targetPlatform != hostPlatform
-    then targetPackages.libffi
-    else libffi;
+    then targetLibffi.overrideAttrs (old: { dontDisableStatic = true; })
+    else targetLibffi;
+
+  targetGmp = targetPackages.gmp or gmp;
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = stdenv.lib.optionalString
@@ -101,18 +108,26 @@ let
   '' + stdenv.lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
+  # musl doesn't have a system-linker. Only on x86, and on x86 we need it, as
+  # our elf linker for x86_64 is broken.
+  + stdenv.lib.optionalString (targetPlatform.isMusl && !targetPlatform.isx86) ''
+    compiler_CONFIGURE_OPTS += --flags=-dynamic-system-linker
+  ''
   # While split sections are now enabled by default in ghc 8.8 for windows,
   # the seem to lead to `too many sections` errors when building base for
   # profiling.
   + stdenv.lib.optionalString targetPlatform.isWindows ''
     SplitSections = NO
+  '' + stdenv.lib.optionalString (!enableLibraryProfiling) ''
+    BUILD_PROF_LIBS = NO
   '';
 
   # Splicer will pull out correct variations
   libDeps = platform: stdenv.lib.optional enableTerminfo [ ncurses ]
     ++ [targetLibffi]
     ++ stdenv.lib.optional (!enableIntegerSimple) gmp
-    ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv;
+    ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
+    ++ stdenv.lib.optional (platform.isLinux && !platform.isAarch32) numactl;
 
   toolsForTarget =
     if hostPlatform == buildPlatform then
@@ -122,109 +137,25 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
-in let configured-src = stdenv.mkDerivation (rec {
-
-        version = ghc-version;
-
-        patches = ghc-patches;
-
-        name = "${targetPrefix}ghc-${ghc-version}-configured-src";
-
-
-  nativeBuildInputs = [
-    perl autoconf automake m4 python3 sphinx
-    ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-  ] ++ stdenv.lib.optional (patches != []) autoreconfHook;
-
-  # For building runtime libs
-  depsBuildTarget = toolsForTarget;
-
-  buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
-
-  propagatedBuildInputs = [ targetPackages.stdenv.cc ]
-    ++ stdenv.lib.optional useLLVM llvmPackages.llvm;
-
-  depsTargetTarget = map stdenv.lib.getDev (libDeps targetPlatform);
-  depsTargetTargetPropagated = map (stdenv.lib.getOutput "out") (libDeps targetPlatform);
-
-  postPatch = "patchShebangs .";
-
-        src = fetchurl { inherit (src-spec) url sha256; };
-
-        # GHC is a bit confused on its cross terminology.
-        preConfigure = ''
-            for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
-            export "''${env#TARGET_}=''${!env}"
-            done
-            # GHC is a bit confused on its cross terminology, as these would normally be
-            # the *host* tools.
-            export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
-            export CXX="${targetCC}/bin/${targetCC.targetPrefix}cxx"
-            # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
-            export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${stdenv.lib.optionalString targetPlatform.isAarch32 ".gold"}"
-            export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
-            export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
-            export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
-            export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
-            export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
-            export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
-
-            echo -n "${buildMK}" > mk/build.mk
-            sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
-        '' + stdenv.lib.optionalString (!stdenv.isDarwin) ''
-            export NIX_LDFLAGS+=" -rpath $out/lib/ghc-${version}"
-        '' + stdenv.lib.optionalString stdenv.isDarwin ''
-            export NIX_LDFLAGS+=" -no_dtrace_dof"
-        '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
-            sed -i -e '5i ,("armv7a-unknown-linux-androideabi", ("e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64", "cortex-a8", ""))' llvm-targets
-        '' + stdenv.lib.optionalString targetPlatform.isMusl ''
-            echo "patching llvm-targets for musl targets..."
-            echo "Cloning these existing '*-linux-gnu*' targets:"
-            grep linux-gnu llvm-targets | sed 's/^/  /'
-            echo "(go go gadget sed)"
-            sed -i 's,\(^.*linux-\)gnu\(.*\)$,\0\n\1musl\2,' llvm-targets
-            echo "llvm-targets now contains these '*-linux-musl*' targets:"
-            grep linux-musl llvm-targets | sed 's/^/  /'
-
-            echo "And now patching to preserve '-musleabi' as done with '-gnueabi'"
-            # (aclocal.m4 is actual source, but patch configure as well since we don't re-gen)
-            for x in configure aclocal.m4; do
-                substituteInPlace $x \
-                --replace '*-android*|*-gnueabi*)' \
-                            '*-android*|*-gnueabi*|*-musleabi*)'
-            done
-        '';
-
-        # TODO(@Ericson2314): Always pass "--target" and always prefix.
-        configurePlatforms = [ "build" "host" ]
-            ++ stdenv.lib.optional (targetPlatform != hostPlatform) "target";
-        # `--with` flags for libraries needed for RTS linker
-        configureFlags = [
-            "--datadir=$doc/share/doc/ghc"
-            "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
-        ] ++ stdenv.lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-        ] ++ stdenv.lib.optional (!enableIntegerSimple) [
-            "--with-gmp-includes=${targetPackages.gmp.dev}/include" "--with-gmp-libraries=${targetPackages.gmp.out}/lib"
-        ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
-            "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
-        ] ++ stdenv.lib.optionals (targetPlatform != hostPlatform) [
-            "--enable-bootstrap-with-devel-snapshot"
-        ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
-            "--disable-large-address-space"
-        ] ++ stdenv.lib.optionals (targetPlatform.isAarch32) [
-            "CFLAGS=-fuse-ld=gold"
-            "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
-            "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-        ] ;
-
-        outputs = [ "out" ];
-        phases = [ "unpackPhase" "patchPhase" ]
-              ++ stdenv.lib.optional (ghc-patches != []) "autoreconfPhase"
-              ++ [ "configurePhase" "installPhase" ];
-        installPhase = "cp -r . $out";
-    });
-
-  drv =stdenv.mkDerivation (rec {
+  configured-src = import ./configured-src.nix {
+    inherit stdenv fetchurl
+    ghc-version ghc-version-date ghc-patches src-spec
+    targetPrefix
+    targetPlatform hostPlatform
+    targetPackages
+    perl autoconf automake m4 python3 sphinx ghc bootPkgs
+    autoreconfHook toolsForTarget bash
+    libDeps
+    useLLVM llvmPackages
+    targetCC
+    enableIntegerSimple targetGmp
+    ncurses targetLibffi libiconv
+    disableLargeAddressSpace
+    buildMK
+    ;
+  };
+in
+stdenv.mkDerivation (rec {
   version = ghc-version;
   name = "${targetPrefix}ghc-${version}";
 
@@ -244,8 +175,8 @@ in let configured-src = stdenv.mkDerivation (rec {
              "distPhase"
              ];
 
-  # ghc hardcodes the TOP dir durcing config, this breaks when
-  # splitting the configured src from the the build process.
+  # ghc hardcodes the TOP dir during config, this breaks when
+  # splitting the configured src from the build process.
   postUnpack = ''
     (cd $sourceRoot
      TOP=$(cat mk/config.mk|grep ^TOP|awk -F\  '{ print $3 }')
@@ -270,9 +201,9 @@ in let configured-src = stdenv.mkDerivation (rec {
   enableParallelBuilding = true;
   postPatch = "patchShebangs .";
 
-  outputs = [ "out" "doc" ];
+  outputs = [ "out" "doc" "generated" ];
 
-  # Make sure we never relax`$PATH` and hooks support for compatability.
+  # Make sure we never relax`$PATH` and hooks support for compatibility.
   strictDeps = true;
 
   # Don’t add -liconv to LDFLAGS automatically so that GHC will add it itself.
@@ -323,20 +254,66 @@ in let configured-src = stdenv.mkDerivation (rec {
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
-  '' + installDeps targetPrefix;
+
+    # Save generated files for needed when building ghcjs
+    mkdir -p $generated/includes/dist-derivedconstants/header
+    cp includes/dist-derivedconstants/header/GHCConstantsHaskellExports.hs \
+       includes/dist-derivedconstants/header/GHCConstantsHaskellType.hs \
+       includes/dist-derivedconstants/header/GHCConstantsHaskellWrappers.hs \
+       $generated/includes/dist-derivedconstants/header
+    if [[ -f includes/ghcplatform.h ]]; then
+      cp includes/ghcplatform.h $generated/includes
+    elif [[ -f includes/dist-install/build/ghcplatform.h ]]; then
+      cp includes/dist-install/build/ghcplatform.h $generated/includes
+    fi
+    mkdir -p $generated/compiler/stage2/build
+    cp compiler/stage2/build/Config.hs $generated/compiler/stage2/build || true
+    mkdir -p $generated/rts/build
+    cp rts/build/config.hs-incl $generated/rts/build || true
+
+    # Save generated files for needed when building ghc-boot
+    mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
+    if [[ -f libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
+      cp libraries/ghc-boot/dist-install/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
+    fi
+    if [[ -f libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
+      cp libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
+    fi
+
+    ${installDeps targetPrefix}
+
+    # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
+    if ! "$out/bin/${targetPrefix}ghc" --version; then
+      echo "ERROR: Missing file $out/bin/${targetPrefix}ghc"
+      exit 0
+    fi
+    if ! "$out/bin/${targetPrefix}ghc-pkg" --version; then
+      echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
+      exit 0
+    fi
+    if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
+      echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
+      exit 0
+    fi
+    if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
+      echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
+      exit 0
+    fi
+  '';
 
   passthru = {
     inherit bootPkgs targetPrefix;
 
     inherit llvmPackages;
     inherit enableShared;
+    inherit useLLVM;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
 
     configured-src = configured-src;
 
-    # Used to detect non haskell-nix compilers (accedental use of nixpkgs compilers can lead to unexpected errors)
+    # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
   } // extra-passthru;
 
@@ -351,6 +328,4 @@ in let configured-src = stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-});
-
-in drv
+})

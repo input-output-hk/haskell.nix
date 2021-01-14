@@ -3,11 +3,11 @@
 with stdenv.lib;
 
 let
-  stack = importAndFilterProject (callStackToNix {
+  callProjectResults = callStackToNix {
     src = testSrc "stack-simple";
-  });
+  };
   pkgSet = mkStackPkgSet {
-    stack-pkgs = stack.pkgs;
+    stack-pkgs = importAndFilterProject callProjectResults;
     pkg-def-extras = [];
     modules = [];
   };
@@ -15,16 +15,16 @@ let
 
 in recurseIntoAttrs {
   ifdInputs = {
-    stack-nix = stack.nix;
+    stack-nix = callProjectResults.projectNix;
   };
   run = stdenv.mkDerivation {
     name = "callStackToNix-test";
 
     buildCommand = ''
-      exe="${packages.stack-simple.components.exes.stack-simple-exe}/bin/stack-simple-exe${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.stack-simple.components.exes.stack-simple-exe.exePath}"
 
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.stack-simple.components.exes.stack-simple-exe}
+      cat ${haskellLib.check packages.stack-simple.components.exes.stack-simple-exe}/test-stdout
 
       touch $out
     '';

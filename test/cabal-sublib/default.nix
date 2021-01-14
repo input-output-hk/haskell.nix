@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc }:
+{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
@@ -10,10 +10,18 @@ let
       #   haddock: No input file(s)
       packages.cabal-sublib.doHaddock = false;
     }
+    # TODO fix plan-to-nix so this is not needed.
+    # This is a manual work around for `plan-to-nix` not
+    # handling `build-depends: cabal-sublib:slib` correctly
+    ({config, ...}: {
+      packages.cabal-sublib.components.exes.cabal-sublib.depends = [
+        config.hsPkgs.cabal-sublib.components.sublibs.slib ];
+    })
   ];
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
   project = cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "cabal-sublib";
     inherit modules;
   };
@@ -28,14 +36,14 @@ in recurseIntoAttrs {
     name = "cabal-sublib-test";
 
     buildCommand = ''
-      exe="${packages.cabal-sublib.components.exes.cabal-sublib}/bin/cabal-sublib${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-sublib.components.exes.cabal-sublib.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
 
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.cabal-sublib.components.exes.cabal-sublib}
+      cat ${haskellLib.check packages.cabal-sublib.components.exes.cabal-sublib}/test-stdout
 
     '' +
     # Musl and Aarch are statically linked..
@@ -47,11 +55,6 @@ in recurseIntoAttrs {
       otool -L $exe |grep .dylib
     '') + ''
 
-      printf "Checking that \"all\" component has the programs... " >& 2
-      all_exe="${packages.cabal-sublib.components.all}/bin/cabal-sublib${stdenv.hostPlatform.extensions.executable}"
-      test -f "$all_exe"
-      echo "$all_exe" >& 2
-
       touch $out
     '';
 
@@ -59,11 +62,7 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit packages;
-
-      # Used for testing externally with nix-shell (../tests.sh).
-      # This just adds cabal-install to the existing shells.
-      test-shell = util.addCabalInstall packages.cabal-sublib.components.all;
+      inherit packages project;
     };
   };
 }

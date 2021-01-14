@@ -1,7 +1,7 @@
-self: super:
+final: prev:
 {
-   haskell-nix = super.haskell-nix // ({
-     defaultModules = super.haskell-nix.defaultModules ++ [
+   haskell-nix = prev.haskell-nix // ({
+     defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
       let
         withTH = import ./linux-cross.nix {
@@ -15,10 +15,10 @@ self: super:
           inherit (pkgs) gmp;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (self.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
+          inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
           # remote-iserv however needs to come from the regular packages as it has to
           # run on the target host.
-          inherit (self.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
+          inherit (final.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           extra-test-libs = [
             # pkgs.rocksdb
@@ -28,14 +28,14 @@ self: super:
           ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
-          # Therfore let's enable doCrossCheck here!
+          # Therefore let's enable doCrossCheck here!
           doCrossCheck = pkgs.stdenv.hostPlatform.isWindows;
         };
       in {
         packages = {
-          # clock 0.7.2 needs to be patche to support cross compilation.
+          # clock 0.7.2 needs to be patched to support cross compilation.
           clock.patches              = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isAarch32 [ ({ version, revision }: (if version == "0.7.2" then ./patches/clock-0.7.2.patch else null)) ];
-          # nix calles this package crypto
+          # nix calls this package crypto
         #   cryptonite-openssl.patches = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.7" then ./patches/cryptonite-openssl-0.7.patch else null) ];
 
         #   http-client.patches        = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.5.14" then ./patches/http-client-0.5.14.patch else null) ];

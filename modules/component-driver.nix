@@ -3,15 +3,16 @@ let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
-    inherit (config) nonReinstallablePkgs hsPkgs;
+    compiler-nix-name = config.compiler.nix-name;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler;
   };
 
 in
 
 {
-  # this has a slightly modified option type. we will *overwrite* any previous
+  # This has a slightly modified option type. We will *overwrite* any previous
   # setting of nonRelocatablePkgs, instead of merging them.  Otherwise you
-  # have no chance of removing packages retroacively.  We might improvie this
+  # have no chance of removing packages retroactively.  We might improve this
   # by implementing a logic that would allow +xxx to be added, -xxx to be removed
   # and if it's not a list of -/+ prefixed strings, be assumed to be overwriting.
   # This seems ugly.
@@ -65,26 +66,33 @@ in
       # "ghci" "haskeline"
       "hpc"
       "mtl" "parsec" "process" "text" "time" "transformers"
-      "unix" "xhtml"
-      # "stm" "terminfo"
-    ];
+      "unix" "xhtml" "terminfo"
+      # "stm"
+    ]
+    # TODO remove this as soon as https://github.com/haskell/text/issues/309
+    # is resolved.
+    ++ lib.optionals (config.compiler.nix-name == "ghc8103") [
+      "text" "binary" "bytestring" "containers" ];
 
   options.bootPkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;
   };
 
   config.bootPkgs =  [
-     "rts" "ghc-boot-th"
-     "ghc-heap" # since ghc 8.6.
-  ]
-    ++ lib.optional (!config.reinstallableLibGhc) "ghc";
+      "rts" "ghc-boot-th"
+      "ghc-heap" # since ghc 8.6.
+      "ghcjs-prim"
+    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
+      # TODO remove this as soon as https://github.com/haskell/text/issues/309
+      # is resolved.
+      ++ lib.optional (config.compiler.nix-name == "ghc8103") "text";
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
   };
 
   config.hsPkgs =
-    { inherit (builder) shellFor ghcWithPackages ghcWithHoogle;
+    { inherit (builder) shellFor makeConfigFiles ghcWithPackages ghcWithHoogle;
       buildPackages = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs

@@ -1,7 +1,7 @@
-{ stackProject', recurseIntoAttrs, testSrc }:
+{ project', recurseIntoAttrs, testSrc }:
 
 let
-  project = stackProject' {
+  project = project' {
     src = testSrc "stack-local-resolver";
   };
   packages = project.hsPkgs;

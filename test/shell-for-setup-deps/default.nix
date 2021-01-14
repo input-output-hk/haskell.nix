@@ -1,9 +1,10 @@
-{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
 
 with stdenv.lib;
 
 let
   project = cabalProject' {
+    inherit compiler-nix-name;
     src = testSrc "shell-for-setup-deps";
     modules = [{
       # Package has no exposed modules which causes
@@ -12,25 +13,9 @@ let
     }];
   };
 
-  env = project.hsPkgs.shellFor {};
+  env = project.shellFor {};
 
-# Making this work for cross compilers will be dificult as setup-deps are
-# built for the build platform and the shell will be for the host platform.
-# We probably need a shell that provides both build and host ghc
-# and corrisponding package DBs and a way to use them.
-# This problem affects musl as well as the build libraries are linked to glibc.
-in recurseIntoAttrs (if stdenv.buildPlatform != stdenv.hostPlatform
- then
-    let skip = runCommand "skipping-test-shell-for-setup-deps" {} ''
-      echo "Skipping shell-for-setup-deps test on cross compilers (does not work yet)" >& 2
-      touch $out
-    '';
-    in {
-      ifdInputs = { plan-nix = skip; };
-      env = skip;
-      run = skip;
-    }
- else {
+in recurseIntoAttrs ({
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -51,8 +36,15 @@ in recurseIntoAttrs (if stdenv.buildPlatform != stdenv.hostPlatform
       touch $out
     '';
 
-    meta.platforms = platforms.all;
-    meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform;
+    meta = {
+      platforms = platforms.all;
+      # Making this work for cross compilers will be difficult as setup-deps are
+      # built for the build platform and the shell will be for the host platform.
+      # We probably need a shell that provides both build and host ghc
+      # and corresponding package DBs and a way to use them.
+      # This problem affects musl as well as the build libraries are linked to glibc.
+      disabled = stdenv.buildPlatform != stdenv.hostPlatform;
+    };
 
     passthru = {
       # Used for debugging with nix repl
