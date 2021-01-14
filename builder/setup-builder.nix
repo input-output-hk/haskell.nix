@@ -1,4 +1,4 @@
-{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
+{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
 { component, package, name, src, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
@@ -55,11 +55,7 @@ let
       meta = {
         homepage = package.homepage or "";
         description = package.synopsis or "";
-        license =
-          let
-            license-map = import ../lib/cabal-licenses.nix lib;
-          in license-map.${package.license} or
-            (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
+        license = haskellLib.cabalToNixpkgsLicense package.license;
         platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
       };
 

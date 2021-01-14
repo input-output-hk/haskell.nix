@@ -274,6 +274,9 @@ in {
     inherit pkgs;
   }) parseIndexState parseBlock;
 
+
+  cabalToNixpkgsLicense = import ./spdx/cabal.nix pkgs;
+
   # This function is like
   #   `src + (if subDir == "" then "" else "/" + subDir)`
   # however when `includeSiblings` is set it maintains

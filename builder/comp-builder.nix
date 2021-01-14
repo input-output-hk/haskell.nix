@@ -1,4 +1,4 @@
-{ stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
 lib.makeOverridable (
 let self =
 { componentId
@@ -295,11 +295,7 @@ let
     meta = {
       homepage = package.homepage or "";
       description = package.synopsis or "";
-      license =
-        let
-          license-map = import ../lib/cabal-licenses.nix lib;
-        in license-map.${package.license} or
-          (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
+      license = haskellLib.cabalToNixpkgsLicense package.license;
       platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
     };
 
