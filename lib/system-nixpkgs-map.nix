@@ -73,7 +73,7 @@ with pkgs;
   boost_wave = [ boost ];
   boost_wserialization = [ boost ];
   tensorflow = [ libtensorflow ];
-  odbc = [ unixODBC ];
+  odbc = [ freetds ];
   opencv = [ opencv3 ];
   icuuc = [ icu ];
   icui18n = [ icu ];
