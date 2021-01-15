@@ -13,11 +13,16 @@ let
 
   packages = project.hsPkgs;
 
-in recurseIntoAttrs ({
-  ifdInputs = {
-    inherit (project) plan-nix;
+  meta = {
+    platforms = platforms.all;
+    # Making this work for cross compilers will be difficult.
+    disabled = stdenv.buildPlatform != stdenv.hostPlatform;
   };
 
+in recurseIntoAttrs ({
+  ifdInputs = {
+    plan-nix = addMetaAttrs meta project.plan-nix;
+  };
   run = stdenv.mkDerivation {
     name = "cabal-doctests-test";
 
@@ -29,12 +34,6 @@ in recurseIntoAttrs ({
 
       touch $out
     '';
-
-    meta = {
-      platforms = platforms.all;
-      # Making this work for cross compilers will be difficult.
-      disabled = stdenv.buildPlatform != stdenv.hostPlatform;
-    };
 
     passthru = {
       # Used for debugging with nix repl
