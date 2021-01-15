@@ -73,6 +73,10 @@ with pkgs;
   boost_wave = [ boost ];
   boost_wserialization = [ boost ];
   tensorflow = [ libtensorflow ];
+  # odbc package requires both freetds (https://github.com/fpco/odbc/commit/9457377089dbe84d8c329560fa1bc1a2797c821d)
+  # and unixODBC packages to be installed in order to successfully
+  # compile C sources (https://github.com/fpco/odbc/blob/master/cbits/odbc.c)
+  odbc = [ freetds unixODBC ];
   opencv = [ opencv3 ];
   icuuc = [ icu ];
   icui18n = [ icu ];
