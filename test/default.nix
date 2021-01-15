@@ -179,7 +179,7 @@ let
     ghc-options-stack = callTest ./ghc-options/stack.nix {};
     exe-only = callTest ./exe-only { inherit util compiler-nix-name; };
     stack-source-repo = callTest ./stack-source-repo {};
-    cabal-doctests = callTest ./cabal-doctests {};
+    cabal-doctests = callTest ./cabal-doctests { inherit util compiler-nix-name; };
     extra-hackage = callTest ./extra-hackage { inherit compiler-nix-name; };
     compiler-nix-name = callTest ./compiler-nix-name {};
     hls-cabal = callTest ./haskell-language-server/cabal.nix { inherit compiler-nix-name; };

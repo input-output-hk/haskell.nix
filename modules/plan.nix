@@ -138,7 +138,8 @@ let
             type = bool;
             default = (def.enableShared or true);
           };
-          isDoctest = mkOption {
+          configureAllComponents = mkOption {
+            description = "If set all the components in the package are configured (useful for cabal-doctest).";
             type = bool;
             default = false;
           };

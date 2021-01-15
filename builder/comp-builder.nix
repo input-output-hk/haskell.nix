@@ -23,7 +23,14 @@ let self =
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
-, isDoctest ? component.isDoctest
+, configureAllComponents ? component.configureAllComponents ||
+    # When set, configure all the components in the package
+    # (not just the one we are building).
+    # Enable for tests in packages that use cabal-doctest.
+    ( haskellLib.isTest componentId &&
+      lib.any (x: x.identifier.name or "" == "cabal-doctest") package.setup-depends
+    )
+, allComponent # Used when `configureAllComponents` is set to get a suitable configuration. 
 
 , build-tools ? component.build-tools
 , pkgconfig ? component.pkgconfig
@@ -107,8 +114,12 @@ let
   needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
 
   configFiles = makeConfigFiles {
+    component =
+      if configureAllComponents
+        then allComponent
+        else component;
     inherit (package) identifier;
-    inherit component fullName flags needsProfiling;
+    inherit fullName flags needsProfiling;
   };
 
   enableFeature = enable: feature:
@@ -118,8 +129,13 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
-      "${haskellLib.componentTarget componentId}"
-      "$(cat ${configFiles}/configure-flags)"
+    ] ++ (
+      # If configureAllComponents is set we should not specify the component
+      # and Setup will attempt to configure them all.
+      if configureAllComponents
+        then ["--enable-tests" "--enable-benchmarks"]
+        else ["${haskellLib.componentTarget componentId}"]
+    ) ++ [ "$(cat ${configFiles}/configure-flags)"
     ] ++ commonConfigureFlags);
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
