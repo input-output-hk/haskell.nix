@@ -21,8 +21,6 @@ trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNG
 substituters = [...] https://hydra.iohk.io [...]
 ```
 
-This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../reference/troubleshooting#why-am-i-building-ghc).
-
 If you're running NixOS, you need to add/update the following in your `/etc/nixos/configuration.nix` files instead.
 
 ```
@@ -34,6 +32,8 @@ nix.binaryCaches = [
   "https://hydra.iohk.io"
 ];
 ```
+
+This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../reference/troubleshooting#why-am-i-building-ghc).
 
 ## Scaffolding
 
