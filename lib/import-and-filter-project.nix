@@ -47,7 +47,7 @@ in project // {
                       toInt (removePrefix srcRepoPrefix subDir));
                   }
                 else {
-                    # Source does match project prefix, but is not a source repository package
+                    # Source does match project prefix and it is not from a source repository
                     isProject = true;
                     packageSrc = haskellLib.appendSubDir {
                       src = srcRoot;
