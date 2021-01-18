@@ -48,7 +48,7 @@ in project // {
                   }
                 else {
                     # The source is some other location
-                    isProject = false;
+                    isProject = true;
                     packageSrc = haskellLib.appendSubDir {
                       src = srcRoot;
                       inherit subDir;
