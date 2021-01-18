@@ -155,7 +155,7 @@ pkgs:
     "webkit2gtk-4.0"                     = [ pkgs."webkitgtk" ];
     "webkit2gtk-web-extension-4.0"       = [ pkgs."webkitgtk" ];
     "webkitgtk-3.0"                      = [ pkgs."webkitgtk24x-gtk3" ]; # These are the old APIs, of which 2.4 is the last provider, so map directly to that
-    "vulkan"                             = [ pkgs."vulkan-loader" ];
+    "vulkan"                             = [ pkgs."vulkan-loader" ]; # vulkan-loader provides vulkan.pc file for pkg-config.
     "X11"                                = [ pkgs.xorg."libX11" ];
     "x11"                                = [ pkgs.xorg."xlibsWrapper" ];
     "xau"                                = [ pkgs.xorg."libXau" ];
