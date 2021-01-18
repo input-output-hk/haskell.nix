@@ -35,8 +35,8 @@ in project // {
               packageInfo =
                 if !hasPrefix (toString projectNix) (toString oldPkg.src.content)
                   then {
-                    # Source location matches prefix matches project
-                    isProject = true;
+                    # Source location does not match project prefix
+                    isProject = false;
                     packageSrc = toString oldPkg.src.content;
                   }
                 else if hasPrefix srcRepoPrefix subDir
