@@ -14,7 +14,6 @@ in licenses // {
       shortName = "Other License";
       fullName = "Unidentified Other License";
       url = "https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/";
-      free = false;
     };
   NONE = null;
 }
