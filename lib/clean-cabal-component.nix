@@ -64,7 +64,7 @@ in
              [dataDir]
           ++ hsSourceDirs
           ++ includeDirs
-          ++ builtins.map (f: dataDir + f) package.dataFiles
+          ++ builtins.map (f: combinePaths dataDir f) package.dataFiles
           ++ otherSourceFiles
           ++ builtins.map (d: combinePaths subDir d) (
                # These need the subDir added
