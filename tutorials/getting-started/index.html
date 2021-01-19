@@ -263,6 +263,16 @@ start setting up your project.</p>
 substituters = [...] https://hydra.iohk.io [...]
 </code></pre>
 
+<p>If you're running NixOS, you need to add/update the following in your <code>/etc/nixos/configuration.nix</code> files instead.</p>
+<pre><code># Binary Cache for Haskell.nix
+nix.binaryCachePublicKeys = [
+  &quot;hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=&quot;
+];
+nix.binaryCaches = [
+  &quot;https://hydra.iohk.io&quot;
+];
+</code></pre>
+
 <p>This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding <a href="../reference/troubleshooting#why-am-i-building-ghc">troubleshooting section</a>.</p>
 <h2 id="scaffolding">Scaffolding<a class="headerlink" href="#scaffolding" title="Permanent link">&para;</a></h2>
 <p>The following work with <code>stack.yaml</code> and <code>cabal.project</code> based
