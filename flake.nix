@@ -17,6 +17,7 @@
       overlays = [ self.overlay ];
     };
   in {
+    inherit sources;
     # Using the eval-on-build version here as the plan is that
     # `builtins.currentSystem` will not be supported in flakes.
     # https://github.com/NixOS/rfcs/pull/49/files#diff-a5a138ca225433534de8d260f225fe31R429
