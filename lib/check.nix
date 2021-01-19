@@ -30,7 +30,7 @@ in stdenv.mkDerivation ({
     mkdir $out
     ${
       # Change to the source sub directory if there is one.
-      lib.optionalString (drv ? srcSubDir) ''
+      lib.optionalString (drv.srcSubDir or "" != "") ''
         cd ${lib.removePrefix "/" drv.srcSubDir}
       ''
     }
