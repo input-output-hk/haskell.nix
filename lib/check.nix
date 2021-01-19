@@ -28,6 +28,12 @@ in stdenv.mkDerivation ({
   # component and we want it to quietly succeed.
   buildPhase = ''
     mkdir $out
+    ${
+      # Change to the source sub directory if there is one.
+      lib.optionalString (drv ? srcSubDir) ''
+        cd ${lib.removePrefix "/" drv.srcSubDir}
+      ''
+    }
 
     runHook preCheck
 
