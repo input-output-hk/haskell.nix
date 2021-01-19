@@ -18,6 +18,7 @@ let
   tool = buildHaskell.tool;
 in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
+  inherit haskell;
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs {
