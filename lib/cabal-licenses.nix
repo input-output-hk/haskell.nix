@@ -14,7 +14,8 @@ in licenses // {
       shortName = "Other License";
       fullName = "Unidentified Other License";
       url = "https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/";
-      free = false;
+      # Not setting `free` here. The license may or may not be `free`.
+      # See https://github.com/input-output-hk/haskell.nix/pull/1006
     };
   NONE = null;
 }
