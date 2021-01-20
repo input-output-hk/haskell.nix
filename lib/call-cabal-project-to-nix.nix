@@ -76,14 +76,28 @@ let
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
   maybeCleanedSource =
-    if haskellLib.canCleanSource src
-      then (haskellLib.cleanSourceWith {
-        name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
-        src = src.origSrc or src;
-        filter = path: type: (!(src ? filter) || src.filter path type) && (
-          type == "directory" ||
-          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); })
-      else src.origSrc or src;
+    let
+      name' = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
+      filter = path: type: (!(src ? filter) || src.filter path type) && (
+        type == "directory" ||
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]);
+    in
+      # Using `copyTextDir` means that the resulting derivation is the same
+      # for all hydra invocations and the same when run localy.  Increasing
+      # cache hits and avoiding the number of times `cabal configure` must
+      # be run.
+      haskellLib.copyTextDir {
+        name = name';
+        inherit filter;
+        src =
+          if haskellLib.canCleanSource src
+            then haskellLib.cleanSourceWith {
+              name = name';
+              inherit filter;
+              src = src.origSrc or src;
+            }
+            else src.origSrc or src;
+    };
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
   # access to the store is restricted.  If origSrc was already in the store

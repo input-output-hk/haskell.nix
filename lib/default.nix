@@ -324,4 +324,53 @@ in {
         }
         else src.origSrc or src;
   };
+
+  # This is an efficient way to find the empty directories after
+  # the filter is applied.  It visits every directory just once.
+  filterMap = { src, filter, basePath ? "" }: rec {
+      # Filtered directory entries for this directory.
+      dir = pkgs.lib.filterAttrs
+          (name: filter (basePath + "/${name}"))
+          (__readDir src);
+      # The same as dir, but excluding empty directories.
+      nonEmpty = pkgs.lib.filterAttrs (name: _:
+          !(subDirs.${name}.isEmpty or false)
+        ) dir;
+      # Result of calling `filterMap` on all sub directories
+      subDirs = pkgs.lib.mapAttrs (name: _:
+        haskellLib.filterMap {
+          inherit filter;
+          src = src + "/${name}";
+          basePath = basePath + "/${name}";
+        }) (pkgs.lib.filterAttrs (_: type: type == "directory") dir);
+      # Is this directory empty?
+      isEmpty = pkgs.lib.length (pkgs.lib.attrValues nonEmpty) == 0;
+    };
+
+  # Copy filtered files into a new derivation, but use __readFile
+  # and writeTextFile so that only changes to the selected files
+  # will result in a new derivation.
+  copyTextDir = {
+        name ? "source"
+      , src
+      , filter ? path: type: true
+      , basePath ? ""
+      , filterMap ? haskellLib.filterMap { inherit src filter basePath; }
+    }:
+    pkgs.evalPackages.linkFarm name (
+      pkgs.lib.mapAttrsToList (name: type: {
+        inherit name;
+        path =
+          if type == "directory"
+            then haskellLib.copyTextDir {
+              inherit name filter;
+              src = src + "/${name}";
+              basePath = basePath + "/${name}";
+              filterMap = filterMap.subDirs.${name};
+            }
+            else pkgs.evalPackages.writeTextFile {
+              inherit name;
+              text = __readFile (src + "/${name}");
+            };
+        }) (filterMap.nonEmpty));
 }
