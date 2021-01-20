@@ -336,7 +336,7 @@ in {
       nonEmpty = pkgs.lib.filterAttrs (name: _:
           !(subDirs.${name}.isEmpty or false)
         ) dir;
-      # Result of calling `filterMap` on all sub directories
+      # Result of calling `filterMap` on all sub directories.
       subDirs = pkgs.lib.mapAttrs (name: _:
         haskellLib.filterMap {
           inherit filter;
