@@ -357,10 +357,10 @@ in {
       , basePath ? ""
       , filterMap ? haskellLib.filterMap { inherit src filter basePath; }
     }:
-    pkgs.evalPackages.linkFarm name (
-      pkgs.lib.mapAttrsToList (name: type: {
-        inherit name;
-        path =
+    pkgs.evalPackages.symlinkJoin {
+      inherit name;
+      paths =
+        pkgs.lib.mapAttrsToList (name: type:
           if type == "directory"
             then haskellLib.copyTextDir {
               inherit name filter;
@@ -371,6 +371,8 @@ in {
             else pkgs.evalPackages.writeTextFile {
               inherit name;
               text = __readFile (src + "/${name}");
-            };
-        }) (filterMap.nonEmpty));
+              destination = basePath + "/${name}";
+            }
+        ) (filterMap.nonEmpty);
+    };
 }
