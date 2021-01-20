@@ -327,7 +327,7 @@ in {
 
   # This is an efficient way to find the empty directories after
   # the filter is applied.  It visits every directory just once.
-  filterMap = { src, filter, basePath ? "" }: rec {
+  filterMap = { src, filter, basePath }: rec {
       # Filtered directory entries for this directory.
       dir = pkgs.lib.filterAttrs
           (name: filter (basePath + "/${name}"))
@@ -354,7 +354,8 @@ in {
         name ? "source"
       , src
       , filter ? path: type: true
-      , basePath ? ""
+      , basePath ? toString src
+      , subDir ? ""
       , filterMap ? haskellLib.filterMap { inherit src filter basePath; }
     }:
     pkgs.evalPackages.symlinkJoin {
@@ -366,12 +367,13 @@ in {
               inherit name filter;
               src = src + "/${name}";
               basePath = basePath + "/${name}";
+              subDir = subDir + "/${name}";
               filterMap = filterMap.subDirs.${name};
             }
             else pkgs.evalPackages.writeTextFile {
               inherit name;
               text = __readFile (src + "/${name}");
-              destination = basePath + "/${name}";
+              destination = subDir + "/${name}";
             }
         ) (filterMap.nonEmpty);
     };
