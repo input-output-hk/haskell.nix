@@ -78,9 +78,9 @@ let
   maybeCleanedSource =
     let
       name' = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
-      filter = path: type: (!(src ? filter) || src.filter path type) && (
+      filter = path: type:
         type == "directory" ||
-        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]);
+        pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ];
     in
       # Using `copyTextDir` means that the resulting derivation is the same
       # for all hydra invocations and the same when run localy.  Increasing
@@ -93,7 +93,7 @@ let
           if haskellLib.canCleanSource src
             then haskellLib.cleanSourceWith {
               name = name';
-              inherit filter;
+              filter = path: type: (!(src ? filter) || src.filter path type) && filter path type;
               src = src.origSrc or src;
             }
             else src.origSrc or src;
