@@ -97,7 +97,7 @@ in { haskell-nix = prev.haskell-nix // {
   # sure they are cached.
   custom-tools = {
     # Currently everything we want is in hackage.
-    # Before addy anything here consider uploading to hackage instead.
+    # Before adding anything here consider uploading to hackage instead.
     # If that is not possible look at the git history of this file to see examples
     # of how to add a custom-tool.
   };
