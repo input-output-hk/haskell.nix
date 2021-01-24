@@ -13,6 +13,7 @@ with pkgs;
   "stdc++-6" = null;
   ssl = [ openssl ];
   z = [ zlib ];
+  pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
   GLU = [ libGLU ];
