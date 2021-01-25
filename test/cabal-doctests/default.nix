@@ -33,6 +33,12 @@ in recurseIntoAttrs ({
       touch $out
     '';
 
+    meta = {
+      platforms = platforms.all;
+      # Making cabal-doctest work for cross compilers will be difficult.
+      disabled = stdenv.buildPlatform != stdenv.hostPlatform;
+    };
+
     passthru = {
       # Used for debugging with nix repl
       inherit project packages;
