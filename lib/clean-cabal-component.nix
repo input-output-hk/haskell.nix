@@ -58,16 +58,20 @@ in
         hsSourceDirs = builtins.map (d: combinePaths subDir d) component.hsSourceDirs
           ++ (if component.hsSourceDirs == [] then [subDir] else []);
         includeDirs = builtins.map (d: combinePaths subDir d) component.includeDirs;
-        dirsNeeded = builtins.map (d: combinePaths subDir d) (
+        # paths that will be needed (used to check if a parent dir should be included)
+        dirsNeeded =
+          # These already include subDir
              [dataDir]
           ++ hsSourceDirs
           ++ includeDirs
-          ++ package.licenseFiles
-          ++ package.extraSrcFiles
-          ++ component.extraSrcFiles
-          ++ package.extraDocFiles
-          ++ builtins.map (f: dataDir + f) package.dataFiles
-          ++ otherSourceFiles);
+          ++ builtins.map (f: combinePaths dataDir f) package.dataFiles
+          ++ otherSourceFiles
+          ++ builtins.map (d: combinePaths subDir d) (
+               # These need the subDir added
+               package.licenseFiles
+            ++ package.extraSrcFiles
+            ++ component.extraSrcFiles
+            ++ package.extraDocFiles);
         fileMatch = dir: list:
           let
             prefixes = builtins.map (f: combinePaths dir f) (

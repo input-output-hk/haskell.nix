@@ -13,6 +13,7 @@ with pkgs;
   "stdc++-6" = null;
   ssl = [ openssl ];
   z = [ zlib ];
+  pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
   GLU = [ libGLU ];
@@ -73,6 +74,9 @@ with pkgs;
   boost_wave = [ boost ];
   boost_wserialization = [ boost ];
   tensorflow = [ libtensorflow ];
+  # odbc package requires unixODBC packages to be installed in order to successfully
+  # compile C sources (https://github.com/fpco/odbc/blob/master/cbits/odbc.c)
+  odbc = [ unixODBC ];
   opencv = [ opencv3 ];
   icuuc = [ icu ];
   icui18n = [ icu ];
