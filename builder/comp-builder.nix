@@ -53,7 +53,7 @@ let self =
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 , quickjump ? component.doQuickjump # Generate an index for interactive documentation navigation
-, keepSource ? component.keepSource  # Build from `source` output in the store then delete `dist`
+, keepSource ? component.keepSource || configureAllComponents # Build from `source` output in the store then delete `dist`
 , setupHaddockFlags ? component.setupHaddockFlags
 
 # Profiling
@@ -83,6 +83,11 @@ let self =
 }@drvArgs:
 
 let
+  componentForSetup =
+    if configureAllComponents
+      then allComponent
+      else component;
+
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
   # In order to support relative references to other packages we need to use
@@ -92,7 +97,7 @@ let
   # is the sub directory in that root path that contains the package.
   # `cleanSrc.subDir` is used in `prePatch` and `lib/cover.nix`.
   cleanSrc = haskellLib.rootAndSubDir (if canCleanSource
-    then haskellLib.cleanCabalComponent package component "${componentId.ctype}-${componentId.cname}" src
+    then haskellLib.cleanCabalComponent package componentForSetup "${componentId.ctype}-${componentId.cname}" src
     else
       # We can clean out the siblings though to at least avoid changes to other packages
       # from triggering a rebuild of this one.
@@ -114,10 +119,7 @@ let
   needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
 
   configFiles = makeConfigFiles {
-    component =
-      if configureAllComponents
-        then allComponent
-        else component;
+    component = componentForSetup;
     inherit (package) identifier;
     inherit fullName flags needsProfiling;
   };
@@ -333,7 +335,7 @@ let
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source");
 
-    configurePhase =
+    prePatch =
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
       '') +
@@ -341,7 +343,9 @@ let
         cp -r . $source
         cd $source
         chmod -R +w .
-      '') + ''
+      '') + commonAttrs.prePatch;
+
+    configurePhase = ''
       runHook preConfigure
       echo Configure flags:
       printf "%q " ${finalConfigureFlags}
@@ -369,7 +373,11 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
-      $SETUP_HS copy ${lib.concatStringsSep " " setupInstallFlags}
+      $SETUP_HS copy ${lib.concatStringsSep " " (
+        setupInstallFlags
+        ++ lib.optional configureAllComponents
+              (haskellLib.componentTarget componentId)
+      )}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -456,9 +464,24 @@ let
       '')
       }
       runHook postInstall
-    '' + (lib.optionalString keepSource ''
-      rm -rf dist
-    '') + (lib.optionalString (haskellLib.isTest componentId) ''
+    '' + (
+      # Keep just the autogen files and package.conf.inplace package
+      # DB (probably empty unless this is a library component).
+      # We also have to remove any refernces to $out to avoid
+      # circular references.
+      if configureAllComponents
+        then ''
+          mv dist dist-tmp-dir
+          mkdir -p dist/build
+          mv dist-tmp-dir/build/${componentId.cname}/autogen dist/build/
+          mv dist-tmp-dir/package.conf.inplace dist/
+          remove-references-to -t $out dist/build/autogen/*
+          rm -rf dist-tmp-dir
+        ''
+        else lib.optionalString keepSource ''
+          rm -rf dist
+        ''
+    ) + (lib.optionalString (haskellLib.isTest componentId) ''
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
 

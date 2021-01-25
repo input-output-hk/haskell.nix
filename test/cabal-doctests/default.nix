@@ -28,9 +28,7 @@ in recurseIntoAttrs ({
 
     buildCommand = ''
       printf "Checking that doctest tests have run ... " >& 2
-      doctest_output="${packages.cabal-doctests-test.checks.doctests}"
-      test -f "$doctest_output"
-      cat "$doctest_output" >& 2
+      cat ${packages.cabal-doctests-test.checks.doctests}/test-stdout >& 2
 
       touch $out
     '';
