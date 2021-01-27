@@ -172,7 +172,7 @@ let
     writeHieFiles = mkOption {
       type = bool;
       default = (def.writeHieFiles or false);
-      description = "Write component `.hie` in the store in a `hie` output";
+      description = "Write component `.hie` files in the store in a `hie` output";
     };
   };
   packageOptions = def: componentOptions def // {
