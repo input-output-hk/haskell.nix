@@ -39,6 +39,7 @@ let self =
                # ghc's internal linker seems to be broken on x86.
                && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
+, writeHieFiles ? component.writeHieFiles
 
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
@@ -180,6 +181,9 @@ let
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
+      ++ lib.optionals writeHieFiles [
+        "--ghc-option=-fwrite-ide-info" "--ghc-option=-hiedir$hie"
+        ]
     );
 
   setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${package.ghcOptions}"'';
@@ -314,7 +318,8 @@ let
 
     outputs = ["out" ]
       ++ (lib.optional enableSeparateDataOutput "data")
-      ++ (lib.optional keepSource "source");
+      ++ (lib.optional keepSource "source")
+      ++ (lib.optional writeHieFiles "hie");
 
     configurePhase =
       (lib.optionalString (!canCleanSource) ''

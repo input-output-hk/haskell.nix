@@ -168,6 +168,12 @@ let
       default = (def.keepSource or false);
       description = "Keep component source in the store in a `source` output";
     };
+
+    writeHieFiles = mkOption {
+      type = bool;
+      default = (def.writeHieFiles or false);
+      description = "Write component `.hie` in the store in a `hie` output";
+    };
   };
   packageOptions = def: componentOptions def // {
     preUnpack = mkOption {
