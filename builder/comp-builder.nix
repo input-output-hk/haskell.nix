@@ -120,7 +120,15 @@ let
     [ "--prefix=$out"
       "${haskellLib.componentTarget componentId}"
       "$(cat ${configFiles}/configure-flags)"
-    ] ++ commonConfigureFlags);
+    ] ++ commonConfigureFlags
+      ++ # We don't specify this in 'commonConfigureFlags', as these are also
+         # used by haddock-builder.nix. If we do specify these options in
+         # commonConfigureFlags, then the haddock-builder will fail, because it
+         # sets its own outputs which *don't* include $hie
+         lib.optionals writeHieFiles [
+           "--ghc-option=-fwrite-ide-info" "--ghc-option=-hiedir$hie"
+         ]
+  );
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
   pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;
@@ -180,9 +188,6 @@ let
       ++ lib.optional enableDWARF "--ghc-option=-g"
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
-        ]
-      ++ lib.optionals writeHieFiles [
-        "--ghc-option=-fwrite-ide-info" "--ghc-option=-hiedir$hie"
         ]
     );
 
