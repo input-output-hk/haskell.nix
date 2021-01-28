@@ -1,7 +1,7 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
 { supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
-, ifdLevel ? 3
+, ifdLevel ? 1
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false }:
