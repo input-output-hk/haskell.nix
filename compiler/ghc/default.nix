@@ -37,8 +37,8 @@
 
 , enableLibraryProfiling ? true
 
-, # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
-  enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
+, # Whether to build terminfo. 
+  enableTerminfo ? !stdenv.targetPlatform.isWindows
 
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
