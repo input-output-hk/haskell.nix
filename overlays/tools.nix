@@ -149,7 +149,7 @@ in { haskell-nix = prev.haskell-nix // {
       # When adding new versions here, please set "latest" too the latest version
       # so that `tools = { haskell-language-server = "latest"; }`
       # will work the same way it does for tools that are in hackage.
-      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.8.0";
+      "latest" = final.haskell-nix.custom-tools.haskell-language-server."0.9.0";
     } // final.lib.mapAttrs (rev: sha256:
       args:
         (final.haskell-nix.cabalProject ( args // {
@@ -163,6 +163,7 @@ in { haskell-nix = prev.haskell-nix // {
           sha256map = {
             "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
             "https://github.com/bubba/hie-bios.git"."cec139a1c3da1632d9a59271acc70156413017e7" = "1iqk55jga4naghmh8zak9q7ssxawk820vw8932dhympb767dfkha";
+            "https://github.com/alanz/ghc-exactprint.git"."6748e24da18a6cea985d20cc3e1e7920cb743795" = "18r41290xnlizgdwkvz16s7v8k2znc7h215sb1snw6ga8lbv60rb";
           };
           # Plan issues with the benchmarks, can try removing later
           configureArgs = "--disable-benchmarks";
@@ -171,6 +172,7 @@ in { haskell-nix = prev.haskell-nix // {
       "0.6.0" = "027fq6752024wzzq9izsilm5lkq9gmpxf82rixbimbijw0yk4pwj";
       "0.7.1" = "0gkzvjx4dgf53yicinqjshlj80gznx5khb62i7g3kqjr85iy0raa";
       "0.8.0" = "0p6fqs07lajbi2g1wf4w3j5lvwknnk58n12vlg48cs4iz25gp588";
+      "0.9.0" = "18g0d7zac9xwywmp57dcrjnvms70f2mawviswskix78cv0iv4sk5";
     };
   };
 }; }
