@@ -48,7 +48,6 @@ in { haskell-nix = prev.haskell-nix // {
   # Tools better known by their exe name.
   toolPackageName = {
     cabal = "cabal-install";
-    haskell-language-server-wrapper = "haskell-language-server";
   };
 
   # Packages that are better known by their package name.  We are not
