@@ -11,6 +11,7 @@
   nixpkgsVersions = {
     "R2003" = "nixpkgs-2003";
     "R2009" = "nixpkgs-2009";
+    "unstable" = "nixpkgs-unstable";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
     inherit (import ./default.nix { inherit checkMaterialization; }) nixpkgsArgs;
@@ -30,6 +31,9 @@
       ghc8102 = false;
       ghc8103 = true;
       ghc810220201118 = false;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
+      ghc884 = true;
+      ghc8103 = true;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
