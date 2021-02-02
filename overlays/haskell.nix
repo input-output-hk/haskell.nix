@@ -688,7 +688,7 @@ final: prev: {
             # that one too (for instance for the boot compiler for ghc8103 is currently
             # ghc865).
             bootBootPkgs = final.recurseIntoAttrs
-              final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.bootPkgs.ghc.bootPkgs;
+              final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.bootPkgs.ghc.bootPkgs or {};
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
               final.ghc-boot-packages-nix.${compiler-nix-name};
