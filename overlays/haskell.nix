@@ -682,9 +682,13 @@ final: prev: {
             inherit (final) glibcLocales;
           } // final.lib.optionalAttrs (ifdLevel > 0) {
             # Things that require one IFD to build (the inputs should be in level 0)
-            boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
-            boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
-            boot-hscolour = final.buildPackages.haskell-nix.bootstrap.packages.hscolour;
+            bootPkgs = final.recurseIntoAttrs
+              final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.bootPkgs;
+            # In case the boot compiler not the old-ghc-nix should pin the bootPkgs for
+            # that one too (for instance for the boot compiler for ghc8103 is currently
+            # ghc865).
+            bootBootPkgs = final.recurseIntoAttrs
+              final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.bootPkgs.ghc.bootPkgs;
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
               final.ghc-boot-packages-nix.${compiler-nix-name};
