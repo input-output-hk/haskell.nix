@@ -9,7 +9,7 @@
   inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   sources = import ./nix/sources.nix {};
   nixpkgsVersions = {
-#    "R2003" = "nixpkgs-2003";
+    "R2003" = "nixpkgs-2003";
     "R2009" = "nixpkgs-2009";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
@@ -25,11 +25,11 @@
     {
       ghc865 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
-#      ghc883 = false;
+      ghc883 = false;
       ghc884 = true;
-#      ghc8102 = false;
+      ghc8102 = false;
       ghc8103 = true;
-#      ghc810220201118 = false;
+      ghc810220201118 = false;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!

@@ -438,6 +438,9 @@ in {
                 ghc = buildGHC;
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.6.5" {
                 passthru = {
+                    bootPkgs = {
+                      ghc = buildGHC;
+                    };
                     inherit targetPrefix;
                     version = "8.6.5";
                     isHaskellNixCompiler = true;
@@ -508,6 +511,9 @@ in {
                 compiler-nix-name = "ghc884";
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.4" {
                 passthru = {
+                    bootPkgs = {
+                      ghc = buildGHC;
+                    };
                     inherit targetPrefix;
                     version = "8.8.4";
                     isHaskellNixCompiler = true;
