@@ -1,27 +1,27 @@
 # Supported GHC Versions
 
-This table shows which versions of GHC are defined, built by CI, and tested. 
-If you use a combination of nixpkgs version and GHC version which is built by our CI, you should get cache hits from our cache.
 
-The "nixpkgs versions" refer to the versions that `haskell.nix` provides; if you use your own version of nixpkgs you will likely not get cache hit
+The following GHC versions are defined in `haskell.nix` (i.e. there is a derivation for them even if it isn't necessarily cached):
+- 8.4.4
+- 8.6.{1,2,3,4,5}
+- 8.8.{1,2,3,4}
+- 8.10.{1,2,3}
 
-| Nixpkgs version | GHC version   | Defined? | Built? | Tested? |
-| --------------- | ------------- | -------- | ------ | ------- |
-| 20.03           | 8.4.4         | Y        | N      | N       |
-| 20.03           | 8.6.{1,2,3,4} | Y        | N      | N       |
-| 20.03           | 8.6.5         | Y        | Y      | Y       |
-| 20.03           | 8.8.{1,2,3}   | Y        | N      | N       |
-| 20.03           | 8.8.4         | Y        | N      | N       |
-| 20.03           | 8.10.1        | Y        | N      | N       |
-| 20.03           | 8.10.2        | Y        | N      | N       |
-| 20.09           | 8.4.4         | Y        | N      | N       |
-| 20.09           | 8.6.{1,2,3,4} | Y        | N      | N       |
-| 20.09           | 8.6.5         | Y        | Y      | Y       |
-| 20.09           | 8.8.{1,2}     | Y        | N      | N       |
-| 20.09           | 8.8.3         | Y        | Y      | N       |
-| 20.09           | 8.8.4         | Y        | Y      | Y       |
-| 20.09           | 8.10.1        | Y        | Y      | N       |
-| 20.09           | 8.10.2        | Y        | Y      | Y       |
+The following table shows the nixpkgs/GHC versions which are built by CI, and which of those are tested.
+If you use a combination of nixpkgs version and GHC version which is in this table, you should get cache hits from our cache.
+The "nixpkgs versions" refer to the versions that `haskell.nix` provides; if you use your own version of nixpkgs you will likely not get cache hit.
+
+| Nixpkgs version  | GHC version | Tested? |
+|------------------|-------------|---------|
+| 20.03            | 8.6.5       | Y       |
+| 20.09            | 8.6.5       | Y       |
+| 20.09            | 8.8.3       | N       |
+| 20.09            | 8.8.4       | Y       |
+| 20.09            | 8.10.2      | N       |
+| 20.09            | 8.10.3      | Y       |
+| nixpkgs-unstable | 8.6.5       | Y       |
+| nixpkgs-unstable | 8.8.4       | Y       |
+| nixpkgs-unstable | 8.10.3      | Y       |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix) for the source of truth about what is built and tested.
 
