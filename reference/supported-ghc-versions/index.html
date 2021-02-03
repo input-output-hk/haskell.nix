@@ -239,123 +239,66 @@
             <div class="section">
               
                 <h1 id="supported-ghc-versions">Supported GHC Versions<a class="headerlink" href="#supported-ghc-versions" title="Permanent link">&para;</a></h1>
-<p>This table shows which versions of GHC are defined, built by CI, and tested. 
-If you use a combination of nixpkgs version and GHC version which is built by our CI, you should get cache hits from our cache.</p>
-<p>The "nixpkgs versions" refer to the versions that <code>haskell.nix</code> provides; if you use your own version of nixpkgs you will likely not get cache hit</p>
+<p>The following GHC versions are defined in <code>haskell.nix</code> (i.e. there is a derivation for them even if it isn't necessarily cached):
+- 8.4.4
+- 8.6.{1,2,3,4,5}
+- 8.8.{1,2,3,4}
+- 8.10.{1,2,3}</p>
+<p>The following table shows the nixpkgs/GHC versions which are built by CI, and which of those are tested.
+If you use a combination of nixpkgs version and GHC version which is in this table, you should get cache hits from our cache.
+The "nixpkgs versions" refer to the versions that <code>haskell.nix</code> provides; if you use your own version of nixpkgs you will likely not get cache hit.</p>
 <table>
 <thead>
 <tr>
 <th>Nixpkgs version</th>
 <th>GHC version</th>
-<th>Defined?</th>
-<th>Built?</th>
 <th>Tested?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>20.03</td>
-<td>8.4.4</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-</tr>
-<tr>
-<td>20.03</td>
-<td>8.6.{1,2,3,4}</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-</tr>
-<tr>
-<td>20.03</td>
 <td>8.6.5</td>
 <td>Y</td>
-<td>Y</td>
-<td>Y</td>
-</tr>
-<tr>
-<td>20.03</td>
-<td>8.8.{1,2,3}</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-</tr>
-<tr>
-<td>20.03</td>
-<td>8.8.4</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-</tr>
-<tr>
-<td>20.03</td>
-<td>8.10.1</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-</tr>
-<tr>
-<td>20.03</td>
-<td>8.10.2</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-</tr>
-<tr>
-<td>20.09</td>
-<td>8.4.4</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
-</tr>
-<tr>
-<td>20.09</td>
-<td>8.6.{1,2,3,4}</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
 </tr>
 <tr>
 <td>20.09</td>
 <td>8.6.5</td>
 <td>Y</td>
-<td>Y</td>
-<td>Y</td>
-</tr>
-<tr>
-<td>20.09</td>
-<td>8.8.{1,2}</td>
-<td>Y</td>
-<td>N</td>
-<td>N</td>
 </tr>
 <tr>
 <td>20.09</td>
 <td>8.8.3</td>
-<td>Y</td>
-<td>Y</td>
 <td>N</td>
 </tr>
 <tr>
 <td>20.09</td>
 <td>8.8.4</td>
 <td>Y</td>
-<td>Y</td>
-<td>Y</td>
-</tr>
-<tr>
-<td>20.09</td>
-<td>8.10.1</td>
-<td>Y</td>
-<td>Y</td>
-<td>N</td>
 </tr>
 <tr>
 <td>20.09</td>
 <td>8.10.2</td>
+<td>N</td>
+</tr>
+<tr>
+<td>20.09</td>
+<td>8.10.3</td>
 <td>Y</td>
+</tr>
+<tr>
+<td>nixpkgs-unstable</td>
+<td>8.6.5</td>
 <td>Y</td>
+</tr>
+<tr>
+<td>nixpkgs-unstable</td>
+<td>8.8.4</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>nixpkgs-unstable</td>
+<td>8.10.3</td>
 <td>Y</td>
 </tr>
 </tbody>
