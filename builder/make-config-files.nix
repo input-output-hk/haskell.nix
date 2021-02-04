@@ -109,6 +109,7 @@ let
           cp -f "''${files[@]}" $out/${packageCfgDir}
         else
           echo "$l/package.conf.d didn't contain any *.conf files!"
+          exit 1
         fi
       fi
     done
