@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, testSrc, tool, compiler-nix-name }:
+{ stdenv, lib, testSrc, tool, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   # The hackage-security 0.6.0.1 was uploaded at 2020-04-06T20:54:35Z

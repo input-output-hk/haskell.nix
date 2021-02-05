@@ -1,4 +1,4 @@
-{ stdenv, fetchurl
+{ stdenv, lib, fetchurl
 , ghc-version, ghc-version-date, ghc-patches, src-spec
 , targetPrefix
 , targetPlatform, hostPlatform
@@ -25,7 +25,7 @@ stdenv.mkDerivation (rec {
     nativeBuildInputs = [
         perl autoconf automake m4 python3 sphinx
         ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-    ] ++ stdenv.lib.optional (patches != []) autoreconfHook;
+    ] ++ lib.optional (patches != []) autoreconfHook;
 
     # For building runtime libs
     depsBuildTarget = toolsForTarget;
@@ -33,10 +33,10 @@ stdenv.mkDerivation (rec {
     buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
     propagatedBuildInputs = [ targetPackages.stdenv.cc ]
-        ++ stdenv.lib.optional useLLVM llvmPackages.llvm;
+        ++ lib.optional useLLVM llvmPackages.llvm;
 
-    depsTargetTarget = map stdenv.lib.getDev (libDeps targetPlatform);
-    depsTargetTargetPropagated = map (stdenv.lib.getOutput "out") (libDeps targetPlatform);
+    depsTargetTarget = map lib.getDev (libDeps targetPlatform);
+    depsTargetTargetPropagated = map (lib.getOutput "out") (libDeps targetPlatform);
 
     postPatch = "patchShebangs .";
 
@@ -54,7 +54,7 @@ stdenv.mkDerivation (rec {
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}cxx"
         # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
-        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${stdenv.lib.optionalString targetPlatform.isAarch32 ".gold"}"
+        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
         export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
@@ -64,13 +64,13 @@ stdenv.mkDerivation (rec {
 
         echo -n "${buildMK}" > mk/build.mk
         sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
-    '' + stdenv.lib.optionalString (!stdenv.isDarwin) ''
+    '' + lib.optionalString (!stdenv.isDarwin) ''
         export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${version}"
-    '' + stdenv.lib.optionalString stdenv.isDarwin ''
+    '' + lib.optionalString stdenv.isDarwin ''
         export NIX_LDFLAGS+=" -no_dtrace_dof"
-    '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
+    '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
         sed -i -e '5i ,("armv7a-unknown-linux-androideabi", ("e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64", "cortex-a8", ""))' llvm-targets
-    '' + stdenv.lib.optionalString targetPlatform.isMusl ''
+    '' + lib.optionalString targetPlatform.isMusl ''
         echo "patching llvm-targets for musl targets..."
         echo "Cloning these existing '*-linux-gnu*' targets:"
         grep linux-gnu llvm-targets | sed 's/^/  /'
@@ -86,10 +86,10 @@ stdenv.mkDerivation (rec {
             --replace '*-android*|*-gnueabi*)' \
                         '*-android*|*-gnueabi*|*-musleabi*)'
         done
-    '' + stdenv.lib.optionalString (src-spec.version != ghc-version) ''
+    '' + lib.optionalString (src-spec.version != ghc-version) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version}' > VERSION
-    '' + stdenv.lib.optionalString (ghc-version-date != null) ''
+    '' + lib.optionalString (ghc-version-date != null) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version-date}' > VERSION_DATE
     '';
@@ -99,16 +99,16 @@ stdenv.mkDerivation (rec {
     configureFlags = [
         "--datadir=$doc/share/doc/ghc"
         "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
-    ] ++ stdenv.lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-    ] ++ stdenv.lib.optional (!enableIntegerSimple) [
+    ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
+    ] ++ lib.optional (!enableIntegerSimple) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
-    ] ++ stdenv.lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
+    ] ++ lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
         "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
-    ] ++ stdenv.lib.optionals (targetPlatform != hostPlatform) [
+    ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--enable-bootstrap-with-devel-snapshot"
-    ] ++ stdenv.lib.optionals (disableLargeAddressSpace) [
+    ] ++ lib.optionals (disableLargeAddressSpace) [
         "--disable-large-address-space"
-    ] ++ stdenv.lib.optionals (targetPlatform.isAarch32) [
+    ] ++ lib.optionals (targetPlatform.isAarch32) [
         "CFLAGS=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
@@ -116,7 +116,7 @@ stdenv.mkDerivation (rec {
 
     outputs = [ "out" ];
     phases = [ "unpackPhase" "patchPhase" ]
-            ++ stdenv.lib.optional (ghc-patches != []) "autoreconfPhase"
+            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
             ++ [ "configurePhase" "installPhase" ];
     installPhase = "cp -r . $out";
 })

@@ -1,6 +1,6 @@
 { stdenv, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   projectArgs = {

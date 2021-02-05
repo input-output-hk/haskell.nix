@@ -90,7 +90,7 @@ executables you must add package overrides to:
 ```nix
 {
   packages.bench.components.exes.bench.configureFlags =
-    stdenv.lib.optionals stdenv.hostPlatform.isMusl [
+    lib.optionals stdenv.hostPlatform.isMusl [
       "--disable-executable-dynamic"
       "--disable-shared"
       "--ghc-option=-optl=-pthread"

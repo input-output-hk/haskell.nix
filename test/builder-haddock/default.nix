@@ -1,6 +1,6 @@
-{ mkCabalProjectPkgSet, stdenv, testSrc }:
+{ mkCabalProjectPkgSet, stdenv, lib, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {

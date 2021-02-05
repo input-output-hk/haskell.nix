@@ -56,7 +56,7 @@ let
         homepage = package.homepage or "";
         description = package.synopsis or "";
         license = haskellLib.cabalToNixpkgsLicense package.license;
-        platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
+        platforms = if component.platforms == null then lib.platforms.all else component.platforms;
       };
 
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
