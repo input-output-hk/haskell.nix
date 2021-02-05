@@ -285,19 +285,19 @@ stdenv.mkDerivation (rec {
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
     if ! "$out/bin/${targetPrefix}ghc" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc"
-      exit 0
+      exit 1
     fi
     if ! "$out/bin/${targetPrefix}ghc-pkg" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
-      exit 0
+      exit 1
     fi
     if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
       echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
-      exit 0
+      exit 1
     fi
     if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
       echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
-      exit 0
+      exit 1
     fi
   '';
 

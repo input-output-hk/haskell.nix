@@ -31,7 +31,7 @@ ${
   pkgs.lib.optionalString (index ? outputHash) ''
     if [[ "${index.outputHash}" != "$index_sha256" ]]; then
       echo "ERROR See https://github.com/input-output-hk/haskell.nix/issues/884"
-      exit 0
+      exit 1
     fi
 ''}
 export index_length=$(stat --printf="%s" ${index})
