@@ -52,9 +52,12 @@
       || (nixpkgsName == "R2003" && __elem compiler-nix-name ["ghc865"]))) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName != "R2003") {
+  } // lib.optionalAttrs (system == "x86_64-linux"
+      && !(nixpkgsName == "R2003" && compiler-nix-name == "ghc884")) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
+    # We also skip these for the R2003 was build of ghc884 (we only need the
+    # native so ifdLevel 1 includes compiler needed in ifdLevel2 eval)
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
   isDisabled = d:
