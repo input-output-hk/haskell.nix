@@ -373,6 +373,13 @@ let
                 echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
                 exit 1
               fi
+              if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
+                echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
+                echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
+              else
+                echo 'ERROR: ${package.identifier.name} version could not be found with ${target-pkg-and-db}'
+                exit 1
+              fi
             ''
             else
               # If the component name is not the package name this must be a sublib.
@@ -393,13 +400,6 @@ let
               fi
               '')
         }
-        if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
-          echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
-          echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
-        else
-          echo 'ERROR: ${package.identifier.name} version could not be found with ${target-pkg-and-db}'
-          exit 1
-        fi
       ''}
       ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
         mkdir -p $out/bin
