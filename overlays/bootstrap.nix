@@ -393,6 +393,26 @@ in {
 
                 ghc-patches = ghc-patches "8.10.3";
             };
+            ghc8104 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104; };
+
+                bootPkgs = bootPkgs // {
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "8.10.4";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
+                };
+
+                ghc-patches = ghc-patches "8.10.4";
+            };
             # ghc 8.10.2 with patches needed by plutus
             ghc810220201118 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810220201118; };
