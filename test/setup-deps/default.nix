@@ -20,7 +20,7 @@ let
     platforms = platforms.unix;
     # Building reinstallable lib GHC is broken on 8.10, and we require lib ghc so this won't work with cross-compiling.
     # Moreover, even building the plan doesn't seem to work in these circumstances.
-    disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || compiler-nix-name == "ghc8102" || compiler-nix-name == "ghc8103";
+    disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810220201118"];
   };
 in 
 
