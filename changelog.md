@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## Jan 25, 2021
+## Feb 8, 2021
 * Removed older versions of haskell-language-server from custom-tools
   (0.8.0 is in hackage so we can still get that version).
 
