@@ -205,7 +205,7 @@ let
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc8103" && compiler-nix-name != "ghc810220201118" ) {
     # Pandoc does not build with ghcjs or ghc 8.10 yet (lookup-sha256 and fully-static build pandoc)
     lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
-    fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
+    # fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
   } // lib.optionalAttrs (!pkgs.haskell-nix.haskellLib.isCrossHost) {
     # Haddock is not included with cross compilers currently
     sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
