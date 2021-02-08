@@ -15,10 +15,7 @@ The "nixpkgs versions" refer to the versions that `haskell.nix` provides; if you
 |------------------|-------------|---------|
 | 20.03            | 8.6.5       | Y       |
 | 20.09            | 8.6.5       | Y       |
-| 20.09            | 8.8.3       | N       |
 | 20.09            | 8.8.4       | Y       |
-| 20.09            | 8.10.2      | N       |
-| 20.09            | 8.10.3      | N       |
 | 20.09            | 8.10.4      | Y       |
 | nixpkgs-unstable | 8.6.5       | Y       |
 | nixpkgs-unstable | 8.8.4       | Y       |
