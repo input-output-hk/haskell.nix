@@ -34,7 +34,7 @@
       ghc810220201118 = false;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc884 = true;
-      ghc8103 = true;
+      ghc8104 = true;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
