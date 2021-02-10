@@ -1,11 +1,11 @@
 { stackProject'
-, stdenv, gmp6, openssl, zlib, libffi
+, stdenv, lib, gmp6, openssl, zlib, libffi
 , buildPackages
 , recurseIntoAttrs
 , testSrc
 }:
 
-with stdenv.lib;
+with lib;
 
 let
   # Grab the compiler name from stack-to-nix output.

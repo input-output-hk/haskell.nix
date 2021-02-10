@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   modules = [

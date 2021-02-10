@@ -296,7 +296,7 @@ let
       homepage = package.homepage or "";
       description = package.synopsis or "";
       license = haskellLib.cabalToNixpkgsLicense package.license;
-      platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
+      platforms = if platforms == null then lib.platforms.all else platforms;
     };
 
     propagatedBuildInputs =

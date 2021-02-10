@@ -266,7 +266,7 @@ final: prev: {
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
             inherit (final.haskell-nix) indexStateHashesPath;
-            inherit (final) coreutils nix writeShellScriptBin stdenv curl;
+            inherit (final) coreutils nix writeShellScriptBin stdenv lib curl;
             # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
             nix-tools = final.haskell-nix.internal-nix-tools;
         };

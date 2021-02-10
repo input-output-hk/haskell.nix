@@ -1,6 +1,6 @@
-{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = cabalProject' {

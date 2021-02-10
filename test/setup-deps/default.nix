@@ -1,7 +1,7 @@
 { pkgs, compiler-nix-name }:
 
 with pkgs;
-with stdenv.lib;
+with lib;
 
 let
   project = haskell-nix.cabalProject' {

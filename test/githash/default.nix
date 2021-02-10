@@ -1,6 +1,6 @@
-{ stdenv, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitMinimal, buildPackages }:
+{ stdenv, lib, haskell-nix, recurseIntoAttrs, testSrc, compiler-nix-name, runCommand, gitMinimal, buildPackages }:
 
-with stdenv.lib;
+with lib;
 
 let
   src = testSrc "githash";

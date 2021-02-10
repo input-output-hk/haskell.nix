@@ -119,6 +119,7 @@
     },
     "nixpkgs-unstable": {
         "branch": "nixpkgs-unstable",
+        "builtin": false,
         "description": "Nix Packages collection",
         "homepage": "",
         "owner": "NixOS",
@@ -127,6 +128,19 @@
         "sha256": "0idvgvpgnzvk03yvd77lrca9qib936fq2x690jvk5gk3blsckz3r",
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/410bbd828cdc6156aecd5bc91772ad3a6b1099c7.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "old-ghc-nix": {
+        "branch": "master",
+        "builtin": false,
+        "description": "Old and New GHC",
+        "homepage": null,
+        "owner": "angerman",
+        "repo": "old-ghc-nix",
+        "rev": "131ce9ae27d7b7afdd1d3ce8c3a74483e60b91bb",
+        "sha256": "0n62qr7hrqmy6h80736ji47ln759sk845g43f9cprpmcs9m4wl9i",
+        "type": "tarball",
+        "url": "https://github.com/angerman/old-ghc-nix/archive/131ce9ae27d7b7afdd1d3ce8c3a74483e60b91bb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

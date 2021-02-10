@@ -1,6 +1,6 @@
-{ stdenv, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = cabalProject' {

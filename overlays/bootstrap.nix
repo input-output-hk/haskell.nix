@@ -735,7 +735,7 @@ in {
               isHaskellNixBootCompiler = true;
             }
           )
-          (import ../compiler/old-ghc-nix { pkgs = final; });
+          (import sources.old-ghc-nix { pkgs = final; });
 
         packages = {
             # now that we have nix-tools and hpack, we can just

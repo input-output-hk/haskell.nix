@@ -1,6 +1,6 @@
-{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages, sources }:
+{ stdenv, lib, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages, sources }:
 
-with stdenv.lib;
+with lib;
 
 let
   # Using buildPackages.buildPackages here because buildPackages.git
