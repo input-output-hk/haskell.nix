@@ -33,7 +33,7 @@ in rec {
   # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = import ./scripts/update-hackage.nix {
-      inherit (pkgs) stdenv writeScript coreutils glibc git
+      inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nix-prefetch-git gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
