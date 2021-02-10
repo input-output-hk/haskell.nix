@@ -1,3 +1,3 @@
-{ sourcesOverride ? {}, compiler-nix-name ? "ghc883" }:
-(import ./. { inherit sourcesOverride compiler-nix-name; }).shell
+{ compiler-nix-name ? "ghc8104" }:
+(import ./. { inherit compiler-nix-name; }).shell
     

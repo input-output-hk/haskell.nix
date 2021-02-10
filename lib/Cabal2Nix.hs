@@ -55,13 +55,14 @@ errorHandler = "errorHandler"
 pkgconfPkgs = "pkgconfPkgs"
 flags  = "flags"
 
-buildDepError, sysDepError, pkgConfDepError, exeDepError, legacyExeDepError, buildToolDepError :: Text
+buildDepError, sysDepError, pkgConfDepError, exeDepError, legacyExeDepError, buildToolDepError, setupDepError :: Text
 buildDepError = "buildDepError"
 sysDepError = "sysDepError"
 pkgConfDepError = "pkgConfDepError"
 exeDepError = "exeDepError"
 legacyExeDepError = "legacyExeDepError"
 buildToolDepError = "buildToolDepError"
+setupDepError = "setupDepError"
 
 ($//?) :: NExpr -> Maybe NExpr -> NExpr
 lhs $//? (Just e) = lhs $// e
@@ -198,7 +199,7 @@ toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
     ] ++
     [ "isLocal"     $= mkBool True | isLocal
     ] ++
-    [ "setup-depends" $= toNix (BuildToolDependency . depPkgName <$> deps) | Just deps <- [setupDepends <$> setupBuildInfo pd ]] ++
+    [ "setup-depends" $= toNix (SetupDependency . depPkgName <$> deps) | Just deps <- [setupDepends <$> setupBuildInfo pd ]] ++
     if detailLevel == MinimalDetails
       then []
       else
@@ -241,7 +242,8 @@ mkPrivateHackageUrl hackageUrl pi' =
     pkgNameVersion = unPackageName (pkgName pi') <> "-" <> show (pretty (pkgVersion pi'))
 
 newtype SysDependency = SysDependency { unSysDependency :: String } deriving (Show, Eq, Ord)
-newtype BuildToolDependency = BuildToolDependency { unBuildToolDependency :: PackageName } deriving (Show, Eq, Ord)
+newtype SetupDependency = SetupDependency { unSetupDependency :: PackageName } deriving (Show, Eq, Ord)
+data BuildToolDependency = BuildToolDependency PackageName UnqualComponentName deriving (Show, Eq, Ord)
 
 mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
@@ -278,11 +280,11 @@ toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
                       [ "mainPath"     $= toNix p | Just p <- [shakeTree . fmap (maybeToList . getMainPath) $ comp] ])
               where name = fromString $ unUnqualComponentName unQualName
                     toolDeps = getToolDependencies (packageDescription gpd)
-                    toBuildToolDep (ExeDependency pkg _ _) = BuildToolDependency pkg
+                    toBuildToolDep (ExeDependency pkg c _) = BuildToolDependency pkg c
                     getToolDependencies pkg bi =
                            map toBuildToolDep (buildToolDepends bi)
                         <> map (\led -> maybe (guess led) toBuildToolDep $ desugarBuildTool pkg led) (buildTools bi)
-                    guess (LegacyExeDependency n _) = BuildToolDependency (mkPackageName n)
+                    guess (LegacyExeDependency n _) = BuildToolDependency (mkPackageName n) (mkUnqualComponentName n)
           components = mkNonRecSet $
             [ component "library" lib | Just lib <- [condLibrary gpd] ] ++
             (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condSubLibraries gpd ]) ++
@@ -313,16 +315,30 @@ instance ToNixExpr ExeDependency where
     where
       pkg = fromString . show . pretty $ pkgName'
 
-instance ToNixExpr BuildToolDependency where
-  toNix (BuildToolDependency pkgName') =
+instance ToNixExpr SetupDependency where
+  toNix (SetupDependency pkgName') =
       -- TODO once https://github.com/haskell-nix/hnix/issues/52
       -- is reolved use something like:
       -- [nix| hsPkgs.buildPackages.$((pkgName)) or pkgs.buildPackages.$((pkgName)) ]
       selectOr (mkSym hsPkgs) buildPackagesDotName
-        (selectOr (mkSym pkgs) buildPackagesDotName (mkSym errorHandler @. buildToolDepError @@ mkStr pkg))
+        (selectOr (mkSym pkgs) buildPackagesDotName (mkSym errorHandler @. setupDepError @@ mkStr pkg))
     where
       pkg = fromString . show . pretty $ pkgName'
       buildPackagesDotName = mkSelector "buildPackages" <> mkSelector pkg
+
+instance ToNixExpr BuildToolDependency where
+  toNix (BuildToolDependency pkgName' componentName') =
+      selectOr (mkSym hsPkgs) (
+             mkSelector "buildPackages"
+          <> mkSelector pkg
+          <> mkSelector "components"
+          <> mkSelector "exes"
+          <> mkSelector componentName)
+        (selectOr (mkSym pkgs) (mkSelector "buildPackages" <> mkSelector componentName)
+          (mkSym errorHandler @. buildToolDepError @@ mkStr (pkg <> ":" <> componentName)))
+    where
+      pkg = fromString . show . pretty $ pkgName'
+      componentName = fromString . show . pretty $ componentName'
 
 instance ToNixExpr LegacyExeDependency where
   toNix (LegacyExeDependency name _versionRange) = selectOr (mkSym hsPkgs) (mkSelector $ quoted pkg) (mkSym errorHandler @. legacyExeDepError @@ mkStr pkg)
