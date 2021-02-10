@@ -5,7 +5,7 @@ The following GHC versions are defined in `haskell.nix` (i.e. there is a derivat
 - 8.4.4
 - 8.6.{1,2,3,4,5}
 - 8.8.{1,2,3,4}
-- 8.10.{1,2,3}
+- 8.10.{1,2,3,4}
 
 The following table shows the nixpkgs/GHC versions which are built by CI, and which of those are tested.
 If you use a combination of nixpkgs version and GHC version which is in this table, you should get cache hits from our cache.
@@ -15,13 +15,11 @@ The "nixpkgs versions" refer to the versions that `haskell.nix` provides; if you
 |------------------|-------------|---------|
 | 20.03            | 8.6.5       | Y       |
 | 20.09            | 8.6.5       | Y       |
-| 20.09            | 8.8.3       | N       |
 | 20.09            | 8.8.4       | Y       |
-| 20.09            | 8.10.2      | N       |
-| 20.09            | 8.10.3      | Y       |
+| 20.09            | 8.10.4      | Y       |
 | nixpkgs-unstable | 8.6.5       | Y       |
 | nixpkgs-unstable | 8.8.4       | Y       |
-| nixpkgs-unstable | 8.10.3      | Y       |
+| nixpkgs-unstable | 8.10.4      | Y       |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix) for the source of truth about what is built and tested.
 
