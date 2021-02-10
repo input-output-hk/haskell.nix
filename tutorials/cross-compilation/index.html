@@ -319,7 +319,7 @@ executables you must add package overrides to:</p>
 </ol>
 <pre><code class="nix">{
   packages.bench.components.exes.bench.configureFlags =
-    stdenv.lib.optionals stdenv.hostPlatform.isMusl [
+    lib.optionals stdenv.hostPlatform.isMusl [
       &quot;--disable-executable-dynamic&quot;
       &quot;--disable-shared&quot;
       &quot;--ghc-option=-optl=-pthread&quot;
