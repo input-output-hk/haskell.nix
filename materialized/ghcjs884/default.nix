@@ -81,6 +81,8 @@
         "cryptonite".flags.support_pclmuldq = false;
         "cryptonite".flags.check_alignment = false;
         "cryptonite".flags.old_toolchain_inliner = false;
+        "alex".revision = (((hackage."alex")."3.2.5").revisions).default;
+        "alex".flags.small_base = true;
         "clock".revision = (((hackage."clock")."0.8").revisions).default;
         "clock".flags.llvm = false;
         "adjunctions".revision = (((hackage."adjunctions")."4.4").revisions).default;
@@ -256,7 +258,8 @@
         "colour".revision = (((hackage."colour")."2.3.5").revisions).default;
         "transformers-base".revision = (((hackage."transformers-base")."0.4.5.2").revisions).default;
         "transformers-base".flags.orphaninstances = true;
-        "happy".revision = (((hackage."happy")."1.20.0").revisions).default;
+        "happy".revision = (((hackage."happy")."1.19.12").revisions).default;
+        "happy".flags.small_base = true;
         "file-embed".revision = (((hackage."file-embed")."0.0.13.0").revisions).default;
         "byteable".revision = (((hackage."byteable")."0.1.1").revisions).default;
         "hpc".revision = (((hackage."hpc")."0.6.0.3").revisions).default;
