@@ -36,7 +36,7 @@
         ];
       detailLevel = "FullDetails";
       licenseFiles = [ "LICENSE" ];
-      dataDir = "";
+      dataDir = ".";
       dataFiles = [];
       extraSrcFiles = [
         "README.md"
