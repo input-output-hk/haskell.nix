@@ -170,7 +170,9 @@ final: prev: {
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   final.ghc-boot-packages.${compiler-nix-name'}
+                                   # Using the -unchecked version here to avoid infinite
+                                   # recursion issues when checkMaterialization = true
+                                   final.ghc-boot-packages-unchecked.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for

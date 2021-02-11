@@ -38,7 +38,7 @@ let
 
   # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
-  combineAndMaterialize = ghcName: bootPackages:
+  combineAndMaterialize = unchecked: ghcName: bootPackages:
       let
         # Not all the boot packages for ghc 8.8 and above can be
         # processed yet by `nix-tools`, so we are not materializing the
@@ -48,6 +48,8 @@ let
           ghcName == "ghc865" || (pkgName != "base" && pkgName != "ghc-heap"));
       in (final.haskell-nix.materialize ({
           materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
+        } // final.lib.optionalAttrs unchecked {
+          checkMaterialization = false;
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
           (_: srcAndNix: srcAndNix.nix) (skipBroken bootPackages))));
 
@@ -121,7 +123,11 @@ in rec {
 
   # All the ghc boot package nix files for each ghc.
   ghc-boot-packages-nix = builtins.mapAttrs
-    combineAndMaterialize
+    (combineAndMaterialize false)
+      ghc-boot-packages-src-and-nix;
+
+  ghc-boot-packages-nix-unchecked = builtins.mapAttrs
+    (combineAndMaterialize true)
       ghc-boot-packages-src-and-nix;
 
   # The import nix results for each ghc boot package for each ghc.
@@ -130,6 +136,14 @@ in rec {
       (pkgName: srcAndNix: importSrcAndNix {
         inherit (srcAndNix) src;
         nix = ghc-boot-packages-nix.${ghcName} + "/${pkgName}.nix";
+      }) value)
+        ghc-boot-packages-src-and-nix;
+
+  ghc-boot-packages-unchecked = builtins.mapAttrs
+    (ghcName: value: builtins.mapAttrs
+      (pkgName: srcAndNix: importSrcAndNix {
+        inherit (srcAndNix) src;
+        nix = ghc-boot-packages-nix-unchecked.${ghcName} + "/${pkgName}.nix";
       }) value)
         ghc-boot-packages-src-and-nix;
 
