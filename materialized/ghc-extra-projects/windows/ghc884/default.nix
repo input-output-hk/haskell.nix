@@ -7,7 +7,7 @@
         "ghc-heap".revision = (((hackage."ghc-heap")."8.8.4").revisions).default;
         "mtl".revision = (((hackage."mtl")."2.2.2").revisions).default;
         "rts".revision = (((hackage."rts")."1.0").revisions).default;
-        "alex".revision = (((hackage."alex")."3.2.5").revisions).default;
+        "alex".revision = (((hackage."alex")."3.2.6").revisions).default;
         "alex".flags.small_base = true;
         "deepseq".revision = (((hackage."deepseq")."1.4.4.0").revisions).default;
         "network".revision = (((hackage."network")."2.8.0.1").revisions).default;
@@ -17,10 +17,9 @@
         "base".revision = (((hackage."base")."4.13.0.0").revisions).default;
         "time".revision = (((hackage."time")."1.9.3").revisions).default;
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;
-        "happy".revision = (((hackage."happy")."1.19.12").revisions).default;
-        "happy".flags.small_base = true;
+        "happy".revision = (((hackage."happy")."1.20.0").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
-        "process".revision = (((hackage."process")."1.6.9.0").revisions).default;
+        "process".revision = (((hackage."process")."1.6.10.0").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.8.4").revisions).default;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
