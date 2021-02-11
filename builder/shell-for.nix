@@ -59,8 +59,8 @@ let
   # Given a list of derivations, removes those which are components of packages which were selected as part of the shell.
   removeSelectedInputs =
     # All the components of the selected packages: we shouldn't add any of these as dependencies
-    let selectedPackageComponents = lib.concatMap haskellLib.getAllComponents selectedPackages;
-    in lib.filter (input: !(builtins.elem input selectedPackageComponents));
+    let selectedPackageComponents = map (x: x.name) (lib.concatMap haskellLib.getAllComponents selectedPackages);
+    in lib.filter (input: !(builtins.elem input.name selectedPackageComponents));
 
   # We need to remove any dependencies which are selected packages (see above).
   # `depends` contains packages so we use 'removeSelectedPackages`.

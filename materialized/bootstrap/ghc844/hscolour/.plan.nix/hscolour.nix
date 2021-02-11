@@ -24,7 +24,7 @@
       isLocal = true;
       detailLevel = "FullDetails";
       licenseFiles = [ "LICENCE-LGPL" ];
-      dataDir = "";
+      dataDir = ".";
       dataFiles = [ "hscolour.css" "data/rgb24-example-.hscolour" ];
       extraSrcFiles = [];
       extraTmpFiles = [];
