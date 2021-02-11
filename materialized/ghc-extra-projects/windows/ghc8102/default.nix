@@ -15,7 +15,7 @@
         "time".revision = (((hackage."time")."1.9.3").revisions).default;
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
-        "process".revision = (((hackage."process")."1.6.9.0").revisions).default;
+        "process".revision = (((hackage."process")."1.6.10.0").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.10.2").revisions).default;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
