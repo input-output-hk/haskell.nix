@@ -29,10 +29,10 @@
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc884 = true;
       ghc8104 = true;
-      ghc810220201118 = false;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc884 = true;
       ghc8104 = true;
+      ghc810420210212 = false;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
     # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
@@ -46,7 +46,7 @@
     in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc865" "ghc884"])) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" && (
-         (nixpkgsName == "R2009" && __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810220201118"])
+         (nixpkgsName == "R2009" && __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"])
       || (nixpkgsName == "R2003" && __elem compiler-nix-name ["ghc865"]))) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
