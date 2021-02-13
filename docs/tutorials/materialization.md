@@ -2,7 +2,7 @@
 
 ## What is materialization?
 
-Capturing and storing the nix files for a project so that they do
+Capturing and storing the Nix files for a project so that they do
 not need to be built (or checked).  This allows us to cache the input
 of an IFD (import from derivation).
 
@@ -16,26 +16,28 @@ dependencies of nix-tools for instance).
   is not unusual for it to take 5 seconds per project).
 
 * They can be slow to build (or download) on machines that do not
-  yet have them in the nix store.
+  yet have them in the Nix store.
 
-* Hydra does not show progress because it does not provide feedback
-  until it has a list of jobs and the list of jobs cannot depends
-  on the nix being present (although this is often blamed on IFD
-  it would be the same if it wrote out JSON files and read them in)
+* Hydra does not show progress because it does not provide feedback until it
+  has a list of jobs and the list of jobs cannot depend on the Nix expressions
+  being present (although this is often blamed on IFD it would be the same if
+  it wrote out JSON files and read them in)
 
-## When is it ok to materialize?
+## When is it OK to materialize?
 
-* The nix is unlikely to change frequently (and when it does you
+* The Nix expressions are unlikely to change frequently (and when it does you
   are happy to manually update it).
 
-* You are happy to script something to update the materialized
-  nix files automatically.
-* You are certain that the IFD you materialize is not `system`-dependent. If it was you'd
-   obtain different nix expressions depending on which `system` the IFD was evaluated.
+* You are happy to script something to update the materialized Nix files
+  automatically.
 
-## How can we materialize the nix files?
+* You are certain that the IFD you materialize is not `system`-dependent. If it
+  was you'd obtain different Nix expressions depending on which `system` the
+  IFD was evaluated.
 
-Lets say we want to build `hlint`.  We might start with an `hlint`
+## How can we materialize the Nix files?
+
+Lets say we want to build `hlint`.  We might start with an `hlint.nix`
 file that looks like this:
 
 ```nix
@@ -105,13 +107,13 @@ let inherit (import ./. {}) sources nixpkgsArgs;
 in hlint.components.exes.hlint
 ```
 
-Just adding the hash might help reuse of the cached nix, but nix will
-still calculate all the dependencies (which can add seconds to
-`nix-build` and `nix-shell` commands when no other work is needed)
-and users who do not yet have the dependencies in their store will have
-to wait while they are built or downloaded.
+Just adding the hash might help reuse of the cached Nix expressions, but Nix
+will still calculate all the dependencies (which can add seconds to `nix-build`
+and `nix-shell` commands when no other work is needed) and users who do not yet
+have the dependencies in their store will have to wait while they are built or
+downloaded.
 
-Running nix build again gives us a hint on what we can do next:
+Running `nix-build` again gives us a hint on what we can do next:
 
 ```
 $ nix-build hlint.nix
@@ -120,7 +122,7 @@ trace: To materialize, point `materialized` to a copy of /nix/store/kk047cqsjvbj
 /nix/store/rnfz66v7k8i38c8rsmchzsyqjrmrbdpk-hlint-2.2.11-exe-hlint
 ```
 
-To capture the nix we can do something like:
+To capture the Nix expressions we can do something like:
 
 ```nix
 let inherit (import ./. {}) sources nixpkgsArgs;
@@ -136,7 +138,7 @@ let inherit (import ./. {}) sources nixpkgsArgs;
 in hlint.components.exes.hlint
 ```
 
-Now we can copy the nix files needed and build with:
+Now we can copy the Nix files needed and build with:
 
 ```
 $ cp -r /nix/store/8z6p4237rin3c6c1lmjwshmj8rdqrhw2-hlint-plan-to-nix-pkgs hlint.materialized
@@ -153,6 +155,7 @@ Let's pretend we had to go back to `hlint` version `2.2.10`.
 We can tell haskell.nix to check the materialization either by:
 
 * Removing the materialization files with `rm -rf hlint.materialized`
+
 * Temporarily adding `checkMaterialization = true;`
 
 If we choose to add the `checkMaterialization` flag you would have:
@@ -190,11 +193,12 @@ error: build of '/nix/store/a5zmgfjfxahapw0q8hd2da5bg7knqvbx-hlint-plan-to-nix-p
 (use '--show-trace' to show detailed location information)
 ```
 
-Checking the materialization requires nix to do all the work that materialization
-avoids.  So while it might be tempting to leave `checkMaterialization = true` all
-the time, we would be better off just removing `materialized` and `plan-sha256`.
+Checking the materialization requires Nix to do all the work that
+materialization avoids.  So while it might be tempting to leave
+`checkMaterialization = true` all the time, we would be better off just
+removing `materialized` and `plan-sha256`.
 
-## How can we update the nix files with a script?
+## How can we update the Nix files with a script?
 
 There are versions of the functions (`project'`, `cabalProject'`,
 `stackProject'` and `hackage-project`) that also return the nix as
@@ -231,7 +235,7 @@ Yes and it gives us the same speed improvement, however:
 * It does not help at all in `restricted-eval` mode (Hydra).
 
 * Users will still wind up building or downloading the dependencies
-  needed to build the nix files (if they do not have them).
+  needed to build the Nix files (if they do not have them).
 
 For those reasons it might be best to make a copy instead
 of using the `/nix/store/...` path directly.
