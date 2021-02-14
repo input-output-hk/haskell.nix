@@ -37,9 +37,16 @@ let
       then "/"
       else ""
     ) + normalizeRelativePath path;
-  combinePaths = a: b: if isAbsolutePath b
-    then b
-    else normalizePath (a + "/" + b);
+  combinePaths = a: b:
+    if isAbsolutePath b
+      then b
+    else normalizePath (
+      if a == ""
+        then b
+      else if b == ""
+        then a
+      else a + "/" + b
+    );
   # Like normalizePath but with a trailing / when needed
   normalizeDir = dir:
     let p = normalizePath dir;
