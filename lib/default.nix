@@ -314,14 +314,17 @@ in {
   rootAndSubDir = src: rec {
     subDir = src.origSubDir or "";
     root =
-      # Use `cleanSourceWith` to make sure the `filter` is still used
-      if src ? origSrc && src ? filter && subDir != ""
-        then haskellLib.cleanSourceWith {
-          name = src.name or "source" + "-root";
-          src = src.origSrc;
-          # Not passing src.origSubDir so that the result points `origSrc`
-          inherit (src) filter;
-        }
-        else src.origSrc or src;
+      if subDir == ""
+        then src # if there was no subdir use the original src
+        else
+          # Use `cleanSourceWith` to make sure the `filter` is still used
+          if src ? origSrc && src ? filter
+            then haskellLib.cleanSourceWith {
+              name = src.name or "source" + "-root";
+              src = src.origSrc;
+              # Not passing src.origSubDir so that the result points `origSrc`
+              inherit (src) filter;
+            }
+            else src.origSrc or src;  # If there is a subDir and origSrc (but no filter) use origSrc
   };
 }
