@@ -25,4 +25,5 @@
   allOverlays = import ./overlays args;
   nixpkgsArgs = { inherit config overlays system; };
   pkgs = import sources.nixpkgs nixpkgsArgs;
+  pkgs-unstable = import sources.nixpkgs-unstable nixpkgsArgs;
 }

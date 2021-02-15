@@ -1,0 +1,68 @@
+diff --git a/libraries/ghc-prim/ghc-prim.cabal b/libraries/ghc-prim/ghc-prim.cabal
+index c633124..2bd51c0 100644
+--- a/libraries/ghc-prim/ghc-prim.cabal
++++ b/libraries/ghc-prim/ghc-prim.cabal
+@@ -70,7 +70,7 @@ Library
+     if os(linux)
+         -- we need libm, but for musl and other's we might need libc, as libm
+         -- is just an empty shell.
+-        extra-libraries: c, m
++        extra-libraries: gcc, c, m
+
+     c-sources:
+         cbits/atomic.c
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 9ca696c..b4a85e5 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -1000,6 +1000,18 @@
+ #define RTS_LIBGCC_SYMBOLS
+ #endif
+
++
++#if !defined(DYNAMIC) && defined(linux_HOST_OS)
++// we need these for static musl builds. However when
++// linking shared objects (DLLs) this will fail, hence
++// we do not include them when building with -DDYNAMIC
++#define RTS_LINKER_SYMBOLS                             \
++      SymI_NeedsProto(__fini_array_start)              \
++      SymI_NeedsProto(__fini_array_end)
++#else
++#define RTS_LINKER_SYMBOLS
++#endif
++
+ /* entirely bogus claims about types of these symbols */
+ #define SymI_NeedsProto(vvv)  extern void vvv(void);
+ #define SymI_NeedsDataProto(vvv)  extern StgWord vvv[];
+@@ -1028,6 +1040,7 @@ RTS_DARWIN_ONLY_SYMBOLS
+ RTS_OPENBSD_ONLY_SYMBOLS
+ RTS_LIBGCC_SYMBOLS
+ RTS_LIBFFI_SYMBOLS
++RTS_LINKER_SYMBOLS
+ #undef SymI_NeedsProto
+ #undef SymI_NeedsDataProto
+ #undef SymI_HasProto
+@@ -1068,6 +1081,8 @@ RTS_LIBFFI_SYMBOLS
+ #define SymI_HasProto_deprecated(vvv)   \
+    { #vvv, (void*)0xBAADF00D, true },
+
++void *RTS_DYNAMIC = NULL;
++
+ RtsSymbolVal rtsSyms[] = {
+       RTS_SYMBOLS
+       RTS_RET_SYMBOLS
+@@ -1078,6 +1093,7 @@ RtsSymbolVal rtsSyms[] = {
+       RTS_OPENBSD_ONLY_SYMBOLS
+       RTS_LIBGCC_SYMBOLS
+       RTS_LIBFFI_SYMBOLS
++      RTS_LINKER_SYMBOLS
+       SymI_HasDataProto(nonmoving_write_barrier_enabled)
+ #if defined(darwin_HOST_OS) && defined(i386_HOST_ARCH)
+       // dyld stub code contains references to this,
+@@ -1085,5 +1101,6 @@ RtsSymbolVal rtsSyms[] = {
+       // lazy pointers as nonlazy.
+       { "dyld_stub_binding_helper", (void*)0xDEADBEEF, false },
+ #endif
++      { "_DYNAMIC", (void*)(&RTS_DYNAMIC), false },
+       { 0, 0, false } /* sentinel */
+ };

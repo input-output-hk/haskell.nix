@@ -315,7 +315,7 @@ let
       homepage = package.homepage or "";
       description = package.synopsis or "";
       license = haskellLib.cabalToNixpkgsLicense package.license;
-      platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
+      platforms = if platforms == null then lib.platforms.all else platforms;
     };
 
     propagatedBuildInputs =
@@ -396,7 +396,14 @@ let
                 echo "package-id $id" >> $out/envDep
               else
                 echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
-                exit 0
+                exit 1
+              fi
+              if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
+                echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
+                echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
+              else
+                echo 'ERROR: ${package.identifier.name} version could not be found with ${target-pkg-and-db}'
+                exit 1
               fi
             ''
             else
@@ -414,17 +421,10 @@ let
                 echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
               else
                 echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
-                exit 0
+                exit 1
               fi
               '')
         }
-        if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
-          echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
-          echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
-        else
-          echo 'ERROR: ${package.identifier.name} version could not be found with ${target-pkg-and-db}'
-          exit 0
-        fi
       ''}
       ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
         mkdir -p $out/bin
@@ -497,7 +497,7 @@ let
       preBuild postBuild
       preInstall postInstall;
   }
-  // lib.optionalAttrs (hardeningDisable != []) {
-    inherit hardeningDisable;
+  // lib.optionalAttrs (hardeningDisable != [] || stdenv.hostPlatform.isMusl) {
+    hardeningDisable = hardeningDisable ++ lib.optional stdenv.hostPlatform.isMusl "pie";
   });
 in drv; in self)

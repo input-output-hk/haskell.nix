@@ -93,12 +93,24 @@ let
 
     for l in "${cfgFiles}"; do
       if [ -n "$l" ]; then
-        cp -f "$l/${packageCfgDir}/"*.conf $out/${packageCfgDir}
+        files=("$l/${packageCfgDir}/"*.conf)
+        if (( ''${#files[@]} )); then
+          cp -f "''${files[@]}" $out/${packageCfgDir}
+        else
+          echo "$l/${packageCfgDir} didn't contain any *.conf files!"
+          exit 1
+        fi
       fi
     done
     for l in "${libs}"; do
       if [ -n "$l" ]; then
-        cp -f "$l/package.conf.d/"*.conf $out/${packageCfgDir}
+        files=("$l/package.conf.d/"*.conf)
+        if (( ''${#files[@]} )); then
+          cp -f "''${files[@]}" $out/${packageCfgDir}
+        else
+          echo "$l/package.conf.d didn't contain any *.conf files!"
+          exit 1
+        fi
       fi
     done
 

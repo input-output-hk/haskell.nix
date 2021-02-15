@@ -37,6 +37,13 @@ let
         else {
             compilerNixName = "ghc844";
         };
+    latestVer = {
+      "8.6" = "8.6.5";
+      "8.8" = "8.8.4";
+      "8.10" = "8.10.4";
+    };
+    traceWarnOld = v: x: __trace
+      "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x;
 in {
   haskell-nix = prev.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
@@ -136,6 +143,9 @@ in {
 
                 ++ fromUntil "8.10.2" "8.10.3" ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
+                # See https://github.com/input-output-hk/haskell.nix/issues/1027
+                ++ final.lib.optional (versionAtLeast "8.10.3" && final.targetPlatform.isAarch64) ./patches/ghc/3434.patch
+
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
 
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
@@ -165,7 +175,7 @@ in {
                             ++ [ hsc2hs-align-conditionals-patch D5123-patch ]
                             ++ final.lib.optional final.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
             };
-            ghc861 = final.callPackage ../compiler/ghc {
+            ghc861 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc861; };
 
                 inherit sphinx installDeps;
@@ -184,8 +194,8 @@ in {
                 };
 
                 ghc-patches = [ D5123-patch ];
-            };
-            ghc862 = final.callPackage ../compiler/ghc {
+            });
+            ghc862 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc862; };
 
                 inherit sphinx installDeps;
@@ -205,8 +215,8 @@ in {
 
                 ghc-patches = ghc-patches "8.6.2"
                             ++ [ D5123-patch ];
-            };
-            ghc863 = final.callPackage ../compiler/ghc {
+            });
+            ghc863 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc863; };
 
                 inherit sphinx installDeps;
@@ -226,8 +236,8 @@ in {
 
                 ghc-patches = ghc-patches "8.6.3"
                             ++ [ D5123-patch ];
-            };
-            ghc864 = final.callPackage ../compiler/ghc {
+            });
+            ghc864 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc864; };
 
                 inherit sphinx installDeps;
@@ -247,7 +257,7 @@ in {
 
                 ghc-patches = ghc-patches "8.6.4"
                             ++ [ D5123-patch ];
-            };
+            });
             ghc865 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865; };
 
@@ -269,7 +279,7 @@ in {
                 ghc-patches = ghc-patches "8.6.5"
                             ++ [ D5123-patch haddock-900-patch ];
             };
-            ghc881 = final.callPackage ../compiler/ghc {
+            ghc881 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc881; };
 
                 inherit bootPkgs sphinx installDeps;
@@ -284,8 +294,8 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.8.1";
-            };
-            ghc882 = final.callPackage ../compiler/ghc {
+            });
+            ghc882 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc882; };
 
                 inherit bootPkgs sphinx installDeps;
@@ -300,8 +310,8 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.8.2";
-            };
-            ghc883 = final.callPackage ../compiler/ghc {
+            });
+            ghc883 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc883; };
 
                 inherit bootPkgs sphinx installDeps;
@@ -316,7 +326,7 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.8.3";
-            };
+            });
             ghc884 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc884; };
 
@@ -333,7 +343,7 @@ in {
 
                 ghc-patches = ghc-patches "8.8.4";
             };
-            ghc8101 = final.callPackage ../compiler/ghc {
+            ghc8101 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
@@ -352,8 +362,8 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.1";
-            };
-            ghc8102 = final.callPackage ../compiler/ghc {
+            });
+            ghc8102 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
@@ -372,8 +382,8 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.2";
-            };
-            ghc8103 = final.callPackage ../compiler/ghc {
+            });
+            ghc8103 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8103; };
 
                 bootPkgs = bootPkgs // {
@@ -392,6 +402,26 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.3";
+            });
+            ghc8104 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104; };
+
+                bootPkgs = bootPkgs // {
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "8.10.4";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
+                };
+
+                ghc-patches = ghc-patches "8.10.4";
             };
             # ghc 8.10.2 with patches needed by plutus
             ghc810220201118 = final.callPackage ../compiler/ghc {
@@ -708,7 +738,7 @@ in {
               isHaskellNixBootCompiler = true;
             }
           )
-          (import ../compiler/old-ghc-nix { pkgs = final; });
+          (import sources.old-ghc-nix { pkgs = final; });
 
         packages = {
             # now that we have nix-tools and hpack, we can just

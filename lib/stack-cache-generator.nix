@@ -13,6 +13,13 @@
   if sha256map != null
     then { location, tag, ...}: sha256map."${location}"."${tag}"
     else _: null
+, branchMap    ? null
+                     # A way to specify in which branch a git commit can
+                     # be found
+, lookupBranch ?
+  if branchMap != null
+    then { location, tag, ...}: branchMap."${location}"."${tag}" or null
+    else _: null
 , resolverSha256 ? null
 , nix-tools ? pkgs.haskell-nix.internal-nix-tools # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
 , ...
@@ -84,15 +91,19 @@ concatMap (dep:
                   location = dep.url;
                   tag = dep.rev;
                 };
+            branch = lookupBranch {
+              location = dep.url;
+              tag = dep.rev;
+            };
             pkgsrc =
               if !is-private && sha256 != null
                 then pkgs.fetchgit {
                   inherit (dep) url rev;
                   inherit sha256;
                 }
-                else builtins.fetchGit {
+                else builtins.fetchGit ({
                   inherit (dep) url rev;
-                };
+                } // pkgs.lib.optionalAttrs (branch != null) { ref = branch; });
         in map (subdir: {
                 name = cabalName "${pkgsrc}/${subdir}";
                 inherit (dep) url rev;

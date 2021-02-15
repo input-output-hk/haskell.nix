@@ -1,6 +1,6 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {

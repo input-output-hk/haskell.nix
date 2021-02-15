@@ -1,6 +1,6 @@
-{ stdenv, util, mkPkgSet, recurseIntoAttrs, testSrc }:
+{ stdenv, lib, util, mkPkgSet, recurseIntoAttrs, testSrc }:
 
-with stdenv.lib;
+with lib;
 with util;
 
 let
