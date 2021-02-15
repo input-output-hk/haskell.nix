@@ -65,11 +65,6 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
-    haskell-language-server = {
-      # Pin for now as current hackage is broken
-      index-state = "2021-02-08T00:00:00Z";
-    };
-
   }."${name}" or {};
 
 }; }
