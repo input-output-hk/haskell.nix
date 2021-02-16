@@ -71,7 +71,6 @@ in { haskell-nix = prev.haskell-nix // {
         allow-newer: haskell-language-server:ghcide
         constraints: ghcide <0.7.4
       '';
-      configureArgs = "--disable-benchmarks --disable-tests";
     };
 
   }."${name}" or {};
