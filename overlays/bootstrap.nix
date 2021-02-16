@@ -423,9 +423,9 @@ in {
 
                 ghc-patches = ghc-patches "8.10.4";
             };
-            # ghc 8.10.2 with patches needed by plutus
-            ghc810220201118 = final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810220201118; };
+            # ghc 8.10.4 with patches needed by plutus
+            ghc810420210212 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
 
                 bootPkgs = bootPkgs // {
                   # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
@@ -437,16 +437,15 @@ in {
                 llvmPackages = final.llvmPackages_9;
 
                 src-spec = rec {
-                    version = "8.10.2";
+                    version = "8.10.4";
                     url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "02w8n085bw38vyp694j0lfk5wcnwkdaj7hhp0saj71x74533lmww";
+                    sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
                 };
-
-                ghc-patches = ghc-patches "8.10.2"
+                ghc-patches = ghc-patches "8.10.4"
                  ++ [ ./patches/ghc/core-field.patch ];
 
-                # Avoid clashes with normal ghc8102
-                ghc-version = "8.10.2.20201118";
+                # Avoid clashes with normal ghc8104
+                ghc-version = "8.10.4.20210212";
             };
         } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false) (
          if final.hostPlatform.isGhcjs
