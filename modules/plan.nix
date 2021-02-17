@@ -232,7 +232,6 @@ let
     ghcOptions = mkOption {
       type = listOfFilteringNulls str;
       default = def.ghcOptions or [];
-      merge = a: b: __trace "HELLO";
     };
   };
 
