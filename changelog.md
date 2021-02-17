@@ -1,6 +1,15 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Feb 17, 2021
+* `ghcOptions` has been moved from package and is now a list of strings.
+    old: packages.x.package.ghcOptions = "someGHCoption";
+    new: packages.x.ghcOptions = ["someGHCoption"];
+  To specify ghcOptions for all packages:
+    ghcOptions = ["someGHCoption"];
+  For a single component:
+    packages.x.compoents.library.ghcOptions = ["someGHCoption"];
+
 ## Feb 8, 2021
 * Removed older versions of haskell-language-server from custom-tools
   (0.8.0 is in hackage so we can still get that version).

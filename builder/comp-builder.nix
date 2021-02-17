@@ -40,6 +40,8 @@ let self =
                && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
+, ghcOptions ? component.ghcOptions
+
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
 , doHoogle ? component.doHoogle # Also build a hoogle index
@@ -180,9 +182,8 @@ let
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
+      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${o}"'') ghcOptions
     );
-
-  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${package.ghcOptions}"'';
 
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
@@ -258,7 +259,7 @@ let
 
   haddock = haddockBuilder {
     inherit componentId component package flags commonConfigureFlags
-      commonAttrs revision setupGhcOptions doHaddock
+      commonAttrs revision doHaddock
       doHoogle hyperlinkSource quickjump setupHaddockFlags
       needsProfiling configFiles preHaddock postHaddock pkgconfig;
 
@@ -336,7 +337,7 @@ let
     buildPhase = ''
       runHook preBuild
       # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
+      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
       runHook postBuild
     '';
 

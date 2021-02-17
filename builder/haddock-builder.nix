@@ -16,7 +16,6 @@
 , hyperlinkSource
 , quickjump
 , setupHaddockFlags
-, setupGhcOptions
 
 , needsProfiling
 , componentDrv
@@ -108,7 +107,7 @@ let
         ${lib.optionalString doHoogle "--hoogle"} \
         ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
         ${lib.optionalString quickjump "--quickjump"} \
-        ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
+        ${lib.concatStringsSep " " setupHaddockFlags}
       }
       runHook postHaddock
     '';
