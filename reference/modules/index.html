@@ -183,6 +183,8 @@
         
             <li><a class="toctree-l4" href="#ghcpackage">ghc.package</a></li>
         
+            <li><a class="toctree-l4" href="#ghcoptions">ghcOptions</a></li>
+        
             <li><a class="toctree-l4" href="#hackageconfigs">hackage.configs</a></li>
         
             <li><a class="toctree-l4" href="#hackagedb">hackage.db</a></li>
@@ -254,6 +256,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksextrasrcfiles">packages..components.benchmarks..extraSrcFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksframeworks">packages..components.benchmarks..frameworks</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsbenchmarksghcoptions">packages..components.benchmarks..ghcOptions</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarkshardeningdisable">packages..components.benchmarks..hardeningDisable</a></li>
         
@@ -369,6 +373,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentsexesframeworks">packages..components.exes..frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentsexesghcoptions">packages..components.exes..ghcOptions</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentsexeshardeningdisable">packages..components.exes..hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsexeshssourcedirs">packages..components.exes..hsSourceDirs</a></li>
@@ -482,6 +488,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsextrasrcfiles">packages..components.foreignlibs..extraSrcFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsframeworks">packages..components.foreignlibs..frameworks</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsforeignlibsghcoptions">packages..components.foreignlibs..ghcOptions</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibshardeningdisable">packages..components.foreignlibs..hardeningDisable</a></li>
         
@@ -597,6 +605,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentslibraryframeworks">packages..components.library.frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentslibraryghcoptions">packages..components.library.ghcOptions</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentslibraryhardeningdisable">packages..components.library.hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentslibraryhssourcedirs">packages..components.library.hsSourceDirs</a></li>
@@ -710,6 +720,8 @@
             <li><a class="toctree-l4" href="#packagescomponentssetupextrasrcfiles">packages..components.setup.extraSrcFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetupframeworks">packages..components.setup.frameworks</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentssetupghcoptions">packages..components.setup.ghcOptions</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetuphardeningdisable">packages..components.setup.hardeningDisable</a></li>
         
@@ -825,6 +837,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentssublibsframeworks">packages..components.sublibs..frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentssublibsghcoptions">packages..components.sublibs..ghcOptions</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentssublibshardeningdisable">packages..components.sublibs..hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssublibshssourcedirs">packages..components.sublibs..hsSourceDirs</a></li>
@@ -939,6 +953,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentstestsframeworks">packages..components.tests..frameworks</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentstestsghcoptions">packages..components.tests..ghcOptions</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentstestshardeningdisable">packages..components.tests..hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentstestshssourcedirs">packages..components.tests..hsSourceDirs</a></li>
@@ -1035,6 +1051,8 @@
         
             <li><a class="toctree-l4" href="#packagesflags">packages..flags</a></li>
         
+            <li><a class="toctree-l4" href="#packagesghcoptions">packages..ghcOptions</a></li>
+        
             <li><a class="toctree-l4" href="#packageshardeningdisable">packages..hardeningDisable</a></li>
         
             <li><a class="toctree-l4" href="#packageskeepsource">packages..keepSource</a></li>
@@ -1062,8 +1080,6 @@
             <li><a class="toctree-l4" href="#packagespackageextrasrcfiles">packages..package.extraSrcFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagespackageextratmpfiles">packages..package.extraTmpFiles</a></li>
-        
-            <li><a class="toctree-l4" href="#packagespackageghcoptions">packages..package.ghcOptions</a></li>
         
             <li><a class="toctree-l4" href="#packagespackagehomepage">packages..package.homepage</a></li>
         
@@ -1428,6 +1444,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: package</p>
 <p><strong>Default</strong>: "pkgs.buildPackages.haskell-nix.compiler.${config.compiler.nix-name}"</p>
 <p><strong>No Example</strong></p>
+<h2 id="ghcoptions">ghcOptions<a class="headerlink" href="#ghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="hackageconfigs">hackage.configs<a class="headerlink" href="#hackageconfigs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: unspecified</p>
@@ -1606,6 +1627,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <h2 id="packagescomponentsbenchmarksframeworks">packages.<name>.components.benchmarks.<name>.frameworks<a class="headerlink" href="#packagescomponentsbenchmarksframeworks" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of packages</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentsbenchmarksghcoptions">packages.<name>.components.benchmarks.<name>.ghcOptions<a class="headerlink" href="#packagescomponentsbenchmarksghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkshardeningdisable">packages.<name>.components.benchmarks.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentsbenchmarkshardeningdisable" title="Permanent link">&para;</a></h2>
@@ -1894,6 +1920,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentsexesghcoptions">packages.<name>.components.exes.<name>.ghcOptions<a class="headerlink" href="#packagescomponentsexesghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexeshardeningdisable">packages.<name>.components.exes.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentsexeshardeningdisable" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of strings</p>
@@ -2178,6 +2209,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <h2 id="packagescomponentsforeignlibsframeworks">packages.<name>.components.foreignlibs.<name>.frameworks<a class="headerlink" href="#packagescomponentsforeignlibsframeworks" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of packages</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentsforeignlibsghcoptions">packages.<name>.components.foreignlibs.<name>.ghcOptions<a class="headerlink" href="#packagescomponentsforeignlibsghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibshardeningdisable">packages.<name>.components.foreignlibs.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentsforeignlibshardeningdisable" title="Permanent link">&para;</a></h2>
@@ -2466,6 +2502,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentslibraryghcoptions">packages.<name>.components.library.ghcOptions<a class="headerlink" href="#packagescomponentslibraryghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryhardeningdisable">packages.<name>.components.library.hardeningDisable<a class="headerlink" href="#packagescomponentslibraryhardeningdisable" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of strings</p>
@@ -2750,6 +2791,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <h2 id="packagescomponentssetupframeworks">packages.<name>.components.setup.frameworks<a class="headerlink" href="#packagescomponentssetupframeworks" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of packages</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentssetupghcoptions">packages.<name>.components.setup.ghcOptions<a class="headerlink" href="#packagescomponentssetupghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuphardeningdisable">packages.<name>.components.setup.hardeningDisable<a class="headerlink" href="#packagescomponentssetuphardeningdisable" title="Permanent link">&para;</a></h2>
@@ -3038,6 +3084,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentssublibsghcoptions">packages.<name>.components.sublibs.<name>.ghcOptions<a class="headerlink" href="#packagescomponentssublibsghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibshardeningdisable">packages.<name>.components.sublibs.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentssublibshardeningdisable" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of strings</p>
@@ -3324,6 +3375,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of packages</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentstestsghcoptions">packages.<name>.components.tests.<name>.ghcOptions<a class="headerlink" href="#packagescomponentstestsghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestshardeningdisable">packages.<name>.components.tests.<name>.hardeningDisable<a class="headerlink" href="#packagescomponentstestshardeningdisable" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of strings</p>
@@ -3565,6 +3621,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: attribute set of booleans</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
+<h2 id="packagesghcoptions">packages.<name>.ghcOptions<a class="headerlink" href="#packagesghcoptions" title="Permanent link">&para;</a></h2>
+<p>This option has no description.</p>
+<p><strong>Type</strong>: list of strings</p>
+<p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
 <h2 id="packageshardeningdisable">packages.<name>.hardeningDisable<a class="headerlink" href="#packageshardeningdisable" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of strings</p>
@@ -3634,11 +3695,6 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of unspecifieds</p>
 <p><strong>Default</strong>: []</p>
-<p><strong>No Example</strong></p>
-<h2 id="packagespackageghcoptions">packages.<name>.package.ghcOptions<a class="headerlink" href="#packagespackageghcoptions" title="Permanent link">&para;</a></h2>
-<p>This option has no description.</p>
-<p><strong>Type</strong>: null or string</p>
-<p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagehomepage">packages.<name>.package.homepage<a class="headerlink" href="#packagespackagehomepage" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>

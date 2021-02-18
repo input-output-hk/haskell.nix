@@ -193,6 +193,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#feb-18-2021">Feb 18, 2021</a></li>
+    
+
     <li class="toctree-l2"><a href="#feb-8-2021">Feb 8, 2021</a></li>
     
 
@@ -311,6 +314,16 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="feb-18-2021">Feb 18, 2021<a class="headerlink" href="#feb-18-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ghcOptions</code> has been moved from package and is now a list of strings.
+    old: packages.x.package.ghcOptions = "someGHCoption";
+    new: packages.x.ghcOptions = ["someGHCoption"];
+  To specify ghcOptions for all packages:
+    ghcOptions = ["someGHCoption"];
+  For a single component:
+    packages.x.compoents.library.ghcOptions = ["someGHCoption"];</li>
+</ul>
 <h2 id="feb-8-2021">Feb 8, 2021<a class="headerlink" href="#feb-8-2021" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Removed older versions of haskell-language-server from custom-tools
