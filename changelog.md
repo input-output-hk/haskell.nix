@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## Feb 17, 2021
+## Feb 18, 2021
 * `ghcOptions` has been moved from package and is now a list of strings.
     old: packages.x.package.ghcOptions = "someGHCoption";
     new: packages.x.ghcOptions = ["someGHCoption"];
