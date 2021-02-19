@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, dwarfdump }:
 
 with lib;
 
@@ -26,7 +26,8 @@ in recurseIntoAttrs {
 
       # fixme:
       printf "checking whether executable included DWARF debug info... " >& 2
-      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe
+      (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c 'libraries/base/[A-Za-z0-9/]*\.hs'
+      (${dwarfdump}/bin/dwarfdump $exe || true) | grep -c '\/Main\.hs'
 
       touch $out
     '';
