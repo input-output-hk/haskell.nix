@@ -115,6 +115,8 @@ stdenv.mkDerivation (rec {
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
     ] ++ lib.optionals enableDebug [
         "--enable-dwarf-unwind"
+        "--with-libdw-includes=${lib.getDev elfutils}/include"
+        "--with-libdw-libraries=${lib.getLib elfutils}/lib"
     ];
 
     outputs = [ "out" ];
