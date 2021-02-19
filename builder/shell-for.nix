@@ -16,7 +16,7 @@
 , exactDeps ? false
 , tools ? {}
 , packageSetupDeps ? true
-, enableDWARF
+, enableDWARF ? false
 , ... } @ args:
 
 let
