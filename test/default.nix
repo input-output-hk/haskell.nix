@@ -159,7 +159,6 @@ let
   allTests = {
     cabal-simple = callTest ./cabal-simple { inherit util compiler-nix-name; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
-    cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
     cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
@@ -213,7 +212,9 @@ let
     # githash runs git from TH code and this needs a cross compiled git exe
     # to work correctly.  Cross compiling git is currently brocken.
     githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
-  };
+  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isLinux && !(__elem compiler-nix-name ["ghc865" "ghc884"])) {
+    cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
+  }
 
   # This is the same as allTests, but filter out all the key/vaules from the
   # tests other than the "ifdInputs" key if the input ifdLevel is less than 3.
