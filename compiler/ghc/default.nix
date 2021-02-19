@@ -37,7 +37,7 @@
 
 , enableLibraryProfiling ? true
 
-, enableDebug ? stdenv.targetPlatform.isLinux
+, enableDebug ? stdenv.targetPlatform.isLinux && builtins.compareVersions ghc-version "8.10.2" >= 0
 
 , # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
