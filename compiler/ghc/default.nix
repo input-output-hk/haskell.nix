@@ -7,7 +7,7 @@
 
 # build-tools
 , bootPkgs
-, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl
+, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils
 , autoreconfHook
 , bash
 
@@ -154,7 +154,7 @@ let
     useLLVM llvmPackages
     targetCC
     enableIntegerSimple targetGmp
-    enableDebug
+    enableDebug elfutils
     ncurses targetLibffi libiconv
     disableLargeAddressSpace
     buildMK

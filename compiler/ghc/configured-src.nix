@@ -9,7 +9,7 @@
 , useLLVM, llvmPackages
 , targetCC
 , enableIntegerSimple, targetGmp
-, enableDebug
+, enableDebug, elfutils
 , ncurses, targetLibffi, libiconv
 , disableLargeAddressSpace
 , buildMK
