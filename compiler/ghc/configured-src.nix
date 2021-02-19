@@ -9,6 +9,7 @@
 , useLLVM, llvmPackages
 , targetCC
 , enableIntegerSimple, targetGmp
+, enableDebug
 , ncurses, targetLibffi, libiconv
 , disableLargeAddressSpace
 , buildMK
@@ -112,7 +113,9 @@ stdenv.mkDerivation (rec {
         "CFLAGS=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-    ] ;
+    ] ++ lib.optionals enableDebug [
+        "--enable-dwarf-unwind"
+    ];
 
     outputs = [ "out" ];
     phases = [ "unpackPhase" "patchPhase" ]

@@ -37,6 +37,8 @@
 
 , enableLibraryProfiling ? true
 
+, enableDebug ? stdenv.targetPlatform.isLinux
+
 , # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
@@ -103,6 +105,9 @@ let
   '' + lib.optionalString enableRelocatedStaticLibs ''
     GhcLibHcOpts += -fPIC
     GhcRtsHcOpts += -fPIC
+  '' + lib.optionalString enableDebug ''
+    GhcLibHcOpts += -g3
+    GhcRtsHcOpts += -g3
   '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
   '' + lib.optionalString (!enableTerminfo) ''
@@ -149,6 +154,7 @@ let
     useLLVM llvmPackages
     targetCC
     enableIntegerSimple targetGmp
+    enableDebug
     ncurses targetLibffi libiconv
     disableLargeAddressSpace
     buildMK
