@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -77,6 +77,14 @@ let self =
 }@drvArgs:
 
 let
+  # Ignore attempts to include DWARF info when it is not possible
+  enableDWARF = drvArgs.enableDWARF or false
+    && stdenv.targetPlatform.isLinux
+    && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
+
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+  setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
+
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
   # In order to support relative references to other packages we need to use
@@ -107,14 +115,9 @@ let
 
   needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
 
-  # Ignore attempts to include DWARF info when it is not possible
-  enableDWARF = drvArgs.enableDWARF or false
-    && stdenv.targetPlatform.isLinux
-    && builtins.compareVersions ghc.ghc-version "8.10.2" >= 0;
-
   configFiles = makeConfigFiles {
     inherit (package) identifier;
-    inherit component fullName flags needsProfiling;
+    inherit component fullName flags needsProfiling enableDWARF;
   };
 
   enableFeature = enable: feature:
@@ -285,7 +288,7 @@ let
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
-      inherit configFiles executableToolDepends exeName;
+      inherit configFiles executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });

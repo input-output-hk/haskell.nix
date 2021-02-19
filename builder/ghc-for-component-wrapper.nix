@@ -16,6 +16,8 @@
 }:
 
 let
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+
   inherit (configFiles) targetPrefix ghcCommand ghcCommandCaps packageCfgDir;
   libDir         = "$out/${configFiles.libDir}";
   docDir         = "$out/share/doc/ghc/html";
@@ -23,7 +25,6 @@ let
   haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
     then ghc.buildGHC
     else ghc;
-  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
 in runCommand "${componentName}-${ghc.name}-env" {
   preferLocalBuild = true;

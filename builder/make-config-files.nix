@@ -1,8 +1,10 @@
-{ stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }:
+{ stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }@defaults:
 
 { identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv }:
 
 let
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
     echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
