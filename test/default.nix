@@ -214,7 +214,7 @@ let
     githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
   } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isLinux && !(__elem compiler-nix-name ["ghc865" "ghc884"])) {
     cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
-  }
+  };
 
   # This is the same as allTests, but filter out all the key/vaules from the
   # tests other than the "ifdInputs" key if the input ifdLevel is less than 3.
