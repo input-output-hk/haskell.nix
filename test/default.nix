@@ -1,6 +1,6 @@
 { haskellNix ? import ../default.nix { inherit checkMaterialization; }
 , pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? haskellNix.sources.nixpkgs
+, nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name
@@ -159,6 +159,7 @@ let
   allTests = {
     cabal-simple = callTest ./cabal-simple { inherit util compiler-nix-name; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
+    cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
     cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};

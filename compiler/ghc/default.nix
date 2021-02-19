@@ -3,6 +3,7 @@
 # haskell.nix ships its own version of the ghc expression as it needs more
 # control over the expression to isolate it against varying <nixpkgs> and
 # allow us to customize it to the way haskell.nix works.
+let self =
 { stdenv, lib, haskell-nix, targetPackages
 
 # build-tools
@@ -37,7 +38,7 @@
 
 , enableLibraryProfiling ? true
 
-, enableDebug ? stdenv.targetPlatform.isLinux && builtins.compareVersions ghc-version "8.10.2" >= 0
+, enableDWARF ? false
 
 , # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
@@ -61,7 +62,7 @@
 
 # extra values we want to have available as passthru values.
 , extra-passthru ? {}
-}:
+}@args:
 
 assert !enableIntegerSimple -> gmp != null;
 
@@ -105,7 +106,7 @@ let
   '' + lib.optionalString enableRelocatedStaticLibs ''
     GhcLibHcOpts += -fPIC
     GhcRtsHcOpts += -fPIC
-  '' + lib.optionalString enableDebug ''
+  '' + lib.optionalString enableDWARF ''
     GhcLibHcOpts += -g3
     GhcRtsHcOpts += -g3
   '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
@@ -154,7 +155,7 @@ let
     useLLVM llvmPackages
     targetCC
     enableIntegerSimple targetGmp
-    enableDebug elfutils
+    enableDWARF elfutils
     ncurses targetLibffi libiconv
     disableLargeAddressSpace
     buildMK
@@ -321,6 +322,12 @@ stdenv.mkDerivation (rec {
 
     # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
+
+    # The same GHC, but with debug enabled (if it can be)
+    dwarf = lib.makeOverridable self (args // {
+      enableDWARF = stdenv.targetPlatform.isLinux
+        && builtins.compareVersions ghc-version "8.10.2" >= 0;
+    });
   } // extra-passthru;
 
   meta = {
@@ -334,4 +341,5 @@ stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-})
+});
+in self

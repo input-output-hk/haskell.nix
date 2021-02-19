@@ -7,11 +7,12 @@
 # database.
 
 { lib, stdenv, ghc, runCommand, lndir, makeWrapper, haskellLib
-}:
+}@defaults:
 
 { componentName  # Full derivation name of the component
 , configFiles    # The component's "config" derivation
 , postInstall ? ""
+, enableDWARF
 }:
 
 let
@@ -22,6 +23,7 @@ let
   haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
     then ghc.buildGHC
     else ghc;
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
 in runCommand "${componentName}-${ghc.name}-env" {
   preferLocalBuild = true;

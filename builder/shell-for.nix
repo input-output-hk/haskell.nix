@@ -93,6 +93,7 @@ let
     postInstall = lib.optionalString withHoogle' ''
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
+    inherit (component) enableDWARF;
   };
 
   hoogleIndex = let

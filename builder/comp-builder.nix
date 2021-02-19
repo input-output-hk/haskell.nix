@@ -107,6 +107,11 @@ let
 
   needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
 
+  # Ignore attempts to include DWARF info when it is not possible
+  enableDWARF = drvArgs.enableDWARF or false
+    && stdenv.targetPlatform.isLinux
+    && builtins.compareVersions ghc.ghc-version "8.10.2" >= 0;
+
   configFiles = makeConfigFiles {
     inherit (package) identifier;
     inherit component fullName flags needsProfiling;
@@ -178,7 +183,7 @@ let
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
       ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
-      ++ lib.optional enableDWARF "--ghc-option=-g"
+      ++ lib.optional enableDWARF "--ghc-option=-g3"
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
@@ -195,7 +200,7 @@ let
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
   shellWrappers = ghcForComponent {
     componentName = fullName;
-    inherit configFiles;
+    inherit configFiles enableDWARF;
   };
 
   # In order to let shell hooks make package-specific things like Hoogle databases
@@ -284,6 +289,7 @@ let
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
+      dwarf = self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`
