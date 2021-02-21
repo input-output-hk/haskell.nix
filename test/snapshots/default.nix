@@ -1,6 +1,6 @@
-{ stdenv, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   env = snapshots."lts-14.13".ghcWithHoogle

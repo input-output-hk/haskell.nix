@@ -1,6 +1,6 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   # This test could use cabalProject', but it does so that it

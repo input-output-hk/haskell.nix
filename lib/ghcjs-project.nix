@@ -35,7 +35,16 @@
     version = "3.2.5";
     materialized = ../materialized/ghcjs/alex + "/${compiler-nix-name}";
   }
-, cabal-install ? pkgs.haskell-nix.cabal-install.${compiler-nix-name}
+, cabal-install ? pkgs.haskell-nix.tool compiler-nix-name "cabal" {
+    index-state = pkgs.haskell-nix.internalHackageIndexState;
+    version = "3.2.0.0";
+    # Cabal 3.2.1.0 no longer supports he mix of `cabal-version`,
+    # lack of `custom-setup` and `v1-install` used by ghcjs boot.
+    cabalProjectLocal = ''
+      constraints: Cabal <3.2.1.0
+    '';
+    materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
+  }
 , ...
 }@args:
 let

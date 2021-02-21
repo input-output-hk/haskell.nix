@@ -3,7 +3,7 @@
 # haskell.nix ships its own version of the ghc expression as it needs more
 # control over the expression to isolate it against varying <nixpkgs> and
 # allow us to customize it to the way haskell.nix works.
-{ stdenv, haskell-nix, targetPackages
+{ stdenv, lib, haskell-nix, targetPackages
 
 # build-tools
 , bootPkgs
@@ -26,7 +26,7 @@
 
 , # If enabled, GHC will be built with the GPL-free but slower integer-simple
   # library instead of the faster but GPLed integer-gmp library.
-  enableIntegerSimple ? !(stdenv.lib.any (stdenv.lib.meta.platformMatch stdenv.hostPlatform) gmp.meta.platforms), gmp
+  enableIntegerSimple ? !(lib.any (lib.meta.platformMatch stdenv.hostPlatform) gmp.meta.platforms), gmp
 
 , # If enabled, use -fPIC when compiling static libs.
   enableRelocatedStaticLibs ? stdenv.targetPlatform != stdenv.hostPlatform && !stdenv.targetPlatform.isAarch32
@@ -42,7 +42,7 @@
 
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
-  ghcFlavour ? stdenv.lib.optionalString haskell-nix.haskellLib.isCrossTarget (
+  ghcFlavour ? lib.optionalString haskell-nix.haskellLib.isCrossTarget (
     if useLLVM
       then "perf-cross"
       else "perf-cross-ncg"
@@ -82,7 +82,7 @@ let
   targetGmp = targetPackages.gmp or gmp;
 
   # TODO(@Ericson2314) Make unconditional
-  targetPrefix = stdenv.lib.optionalString
+  targetPrefix = lib.optionalString
     (targetPlatform != hostPlatform)
     "${targetPlatform.config}-";
 
@@ -93,52 +93,52 @@ let
     endif
     DYNAMIC_GHC_PROGRAMS = ${if enableShared then "YES" else "NO"}
     INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
-  '' + stdenv.lib.optionalString (targetPlatform != hostPlatform) ''
+  '' + lib.optionalString (targetPlatform != hostPlatform) ''
     CrossCompilePrefix = ${targetPrefix}
-  '' + stdenv.lib.optionalString isCrossTarget ''
+  '' + lib.optionalString isCrossTarget ''
     Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
     HADDOCK_DOCS = NO
     BUILD_SPHINX_HTML = NO
     BUILD_SPHINX_PDF = NO
-  '' + stdenv.lib.optionalString enableRelocatedStaticLibs ''
+  '' + lib.optionalString enableRelocatedStaticLibs ''
     GhcLibHcOpts += -fPIC
     GhcRtsHcOpts += -fPIC
-  '' + stdenv.lib.optionalString targetPlatform.useAndroidPrebuilt ''
+  '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
     EXTRA_CC_OPTS += -std=gnu99
-  '' + stdenv.lib.optionalString (!enableTerminfo) ''
+  '' + lib.optionalString (!enableTerminfo) ''
     WITH_TERMINFO=NO
   ''
   # musl doesn't have a system-linker. Only on x86, and on x86 we need it, as
   # our elf linker for x86_64 is broken.
-  + stdenv.lib.optionalString (targetPlatform.isMusl && !targetPlatform.isx86) ''
+  + lib.optionalString (targetPlatform.isMusl && !targetPlatform.isx86) ''
     compiler_CONFIGURE_OPTS += --flags=-dynamic-system-linker
   ''
   # While split sections are now enabled by default in ghc 8.8 for windows,
   # the seem to lead to `too many sections` errors when building base for
   # profiling.
-  + stdenv.lib.optionalString targetPlatform.isWindows ''
+  + lib.optionalString targetPlatform.isWindows ''
     SplitSections = NO
-  '' + stdenv.lib.optionalString (!enableLibraryProfiling) ''
+  '' + lib.optionalString (!enableLibraryProfiling) ''
     BUILD_PROF_LIBS = NO
   '';
 
   # Splicer will pull out correct variations
-  libDeps = platform: stdenv.lib.optional enableTerminfo [ ncurses ]
+  libDeps = platform: lib.optional enableTerminfo [ ncurses ]
     ++ [targetLibffi]
-    ++ stdenv.lib.optional (!enableIntegerSimple) gmp
-    ++ stdenv.lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
-    ++ stdenv.lib.optional (platform.isLinux && !platform.isAarch32) numactl;
+    ++ lib.optional (!enableIntegerSimple) gmp
+    ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
+    ++ lib.optional (platform.isLinux && !platform.isAarch32) numactl;
 
   toolsForTarget =
     if hostPlatform == buildPlatform then
-      [ targetPackages.stdenv.cc ] ++ stdenv.lib.optional useLLVM llvmPackages.llvm
+      [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
     else assert targetPlatform == hostPlatform; # build != host == target
-      [ stdenv.cc ] ++ stdenv.lib.optional useLLVM buildLlvmPackages.llvm;
+      [ stdenv.cc ] ++ lib.optional useLLVM buildLlvmPackages.llvm;
 
   targetCC = builtins.head toolsForTarget;
 
   configured-src = import ./configured-src.nix {
-    inherit stdenv fetchurl
+    inherit stdenv lib fetchurl
     ghc-version ghc-version-date ghc-patches src-spec
     targetPrefix
     targetPlatform hostPlatform
@@ -212,7 +212,7 @@ stdenv.mkDerivation (rec {
   nativeBuildInputs = [
     perl autoconf automake m4 python3 sphinx
     ghc bootPkgs.alex bootPkgs.happy bootPkgs.hscolour
-  ] ++ stdenv.lib.optional (patches != []) autoreconfHook;
+  ] ++ lib.optional (patches != []) autoreconfHook;
 
   # For building runtime libs
   depsBuildTarget = toolsForTarget;
@@ -220,14 +220,14 @@ stdenv.mkDerivation (rec {
   buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
   propagatedBuildInputs = [ targetPackages.stdenv.cc ]
-    ++ stdenv.lib.optional useLLVM llvmPackages.llvm;
+    ++ lib.optional useLLVM llvmPackages.llvm;
 
-  depsTargetTarget = map stdenv.lib.getDev (libDeps targetPlatform);
-  depsTargetTargetPropagated = map (stdenv.lib.getOutput "out") (libDeps targetPlatform);
+  depsTargetTarget = map lib.getDev (libDeps targetPlatform);
+  depsTargetTargetPropagated = map (lib.getOutput "out") (libDeps targetPlatform);
 
   # required, because otherwise all symbols from HSffi.o are stripped, and
   # that in turn causes GHCi to abort
-  stripDebugFlags = [ "-S" ] ++ stdenv.lib.optional (!targetPlatform.isDarwin) "--keep-file-symbols";
+  stripDebugFlags = [ "-S" ] ++ lib.optional (!targetPlatform.isDarwin) "--keep-file-symbols";
 
   # See #63511 - the only unstripped file is the debug rts which isn't meant to
   # be stripped.
@@ -236,8 +236,8 @@ stdenv.mkDerivation (rec {
   checkTarget = "test";
 
   hardeningDisable = [ "format" ]
-                   ++ stdenv.lib.optional stdenv.targetPlatform.isAarch32 "pic"
-                   ++ stdenv.lib.optional stdenv.targetPlatform.isMusl "pie";
+                   ++ lib.optional stdenv.targetPlatform.isAarch32 "pic"
+                   ++ lib.optional stdenv.targetPlatform.isMusl "pie";
 
   postInstall = ''
     # Install the bash completion file.
@@ -250,7 +250,7 @@ stdenv.mkDerivation (rec {
       # The ghcprog fixup is for musl (where runhaskell script just needs to point to the correct
       # ghc program to work).
       sed -i \
-        -e '2i export PATH="$PATH:${stdenv.lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' \
+        -e '2i export PATH="$PATH:${lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' \
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
@@ -285,19 +285,19 @@ stdenv.mkDerivation (rec {
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
     if ! "$out/bin/${targetPrefix}ghc" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc"
-      exit 0
+      exit 1
     fi
     if ! "$out/bin/${targetPrefix}ghc-pkg" --version; then
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
-      exit 0
+      exit 1
     fi
     if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
       echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
-      exit 0
+      exit 1
     fi
     if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
       echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
-      exit 0
+      exit 1
     fi
   '';
 
@@ -324,7 +324,7 @@ stdenv.mkDerivation (rec {
     inherit (ghc.meta) license platforms;
   };
 
-} // stdenv.lib.optionalAttrs targetPlatform.useAndroidPrebuilt {
+} // lib.optionalAttrs targetPlatform.useAndroidPrebuilt {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;

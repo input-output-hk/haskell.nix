@@ -15,6 +15,7 @@
 , withHoogle ? true
 , exactDeps ? false
 , tools ? {}
+, packageSetupDeps ? true
 , ... } @ args:
 
 let
@@ -26,7 +27,8 @@ let
   selectedComponents = components hsPkgs;
 
   # The configs of all the selected components
-  selectedConfigs = map (c: c.config) selectedComponents ++ map (p: p.setup.config) selectedPackages;
+  selectedConfigs = map (c: c.config) selectedComponents
+    ++ lib.optionals packageSetupDeps (map (p: p.setup.config) selectedPackages);
 
   name = if lib.length selectedPackages == 1
     then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
@@ -57,8 +59,8 @@ let
   # Given a list of derivations, removes those which are components of packages which were selected as part of the shell.
   removeSelectedInputs =
     # All the components of the selected packages: we shouldn't add any of these as dependencies
-    let selectedPackageComponents = lib.concatMap haskellLib.getAllComponents selectedPackages;
-    in lib.filter (input: !(builtins.elem input selectedPackageComponents));
+    let selectedPackageComponents = map (x: x.name) (lib.concatMap haskellLib.getAllComponents selectedPackages);
+    in lib.filter (input: !(builtins.elem input.name selectedPackageComponents));
 
   # We need to remove any dependencies which are selected packages (see above).
   # `depends` contains packages so we use 'removeSelectedPackages`.

@@ -1,6 +1,6 @@
-{ stdenv, writeScript }:
+{ stdenv, lib, writeScript }:
 
-with stdenv.lib;
+with lib;
 
 writeScript "check-materialization-concurrency.sh" ''
   #!${stdenv.shell}

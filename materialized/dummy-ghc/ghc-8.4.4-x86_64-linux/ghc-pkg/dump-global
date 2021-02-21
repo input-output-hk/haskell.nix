@@ -657,12 +657,12 @@ abi-depends: base-4.11.1.0=5dd741007d6cdd784ac4032dc52ae6cd
              containers-0.5.11.0=e0faa336d346ac4d4359e1f41cd5c793
              array-0.5.2.0=03a64bb9d4be6771406b73145e6e58e1
              filepath-1.4.2=27f5ec6358f0ec240d827eaa0860b2af
-             template-haskell-2.13.0.0=5403c6ee814a9f714bb46b8713d84769
+             template-haskell-2.13.0.0=87d935369842db0114b18a4f5cccd520
              hpc-0.6.0.3=b0226a6fb3c6681995359ece2929495f
              transformers-0.5.5.0=b5d2f6cdac279ec17c0fad50f5348c4f
              ghc-boot-8.4.4=17a9f8091d49597104125d406bbf74ae
              ghc-boot-th-8.4.4=d8bd507419aa2dc5daee657f9d2838de
-             ghci-8.4.4=fa97ba583df9728c74ddeb01f64277f3
+             ghci-8.4.4=973ae1f70f738efadae73c1d6af83b15
              unix-2.7.2.2=fe53d1beb580ee5f786dd05bcc179784
              terminfo-0.4.1.1=7c97c2b70b9b909e033361885d99c5fd
 ---
@@ -807,7 +807,7 @@ abi-depends: array-0.5.2.0=03a64bb9d4be6771406b73145e6e58e1
              filepath-1.4.2=27f5ec6358f0ec240d827eaa0860b2af
              ghc-boot-8.4.4=17a9f8091d49597104125d406bbf74ae
              ghc-boot-th-8.4.4=d8bd507419aa2dc5daee657f9d2838de
-             template-haskell-2.13.0.0=5403c6ee814a9f714bb46b8713d84769
+             template-haskell-2.13.0.0=87d935369842db0114b18a4f5cccd520
              transformers-0.5.5.0=b5d2f6cdac279ec17c0fad50f5348c4f
              unix-2.7.2.2=fe53d1beb580ee5f786dd05bcc179784
 ---
@@ -914,31 +914,6 @@ extra-libraries:
 depends:
     ghc-prim-0.5.2.0
 abi-depends: ghc-prim-0.5.2.0=0a2596c0f516eb6cbf13841c1f06715e
----
-name: libiserv
-version: 8.4.4
-id: libiserv-8.4.4
-key: libiserv-8.4.4
-license: BSD-3-Clause
-copyright: XXX
-maintainer: XXX
-author: XXX
-synopsis: Provides shared functionality between iserv and iserv-proxy
-category: Development
-exposed: True
-exposed-modules:
-    GHCi.Utils Lib
-hs-libraries: HSlibiserv-8.4.4
-depends:
-    base-4.11.1.0 binary-0.8.5.1 bytestring-0.10.8.2
-    containers-0.5.11.0 deepseq-1.4.3.0 ghci-8.4.4 unix-2.7.2.2
-abi-depends: base-4.11.1.0=5dd741007d6cdd784ac4032dc52ae6cd
-             binary-0.8.5.1=24ea694af446178c140cf5fd8325d353
-             bytestring-0.10.8.2=76891e933d92454fc24dbda9667e7672
-             containers-0.5.11.0=e0faa336d346ac4d4359e1f41cd5c793
-             deepseq-1.4.3.0=17e4fcaae52d394a15cfa6f2abc91bb0
-             ghci-8.4.4=fa97ba583df9728c74ddeb01f64277f3
-             unix-2.7.2.2=fe53d1beb580ee5f786dd05bcc179784
 ---
 name: mtl
 version: 2.2.2
@@ -1092,9 +1067,9 @@ key: rts
 license: BSD-3-Clause
 maintainer: glasgow-haskell-users@haskell.org
 exposed: True
-hs-libraries: HSrts
+hs-libraries: HSrts Cffi
 extra-libraries:
-    m rt dl ffi numa pthread
+    m rt dl pthread
 includes:
     Stg.h
 ld-options: "-Wl,-u,base_GHCziTopHandler_runIO_closure"

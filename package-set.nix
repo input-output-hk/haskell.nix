@@ -12,7 +12,7 @@ in pkgs.lib.evalModules {
         # The package descriptions depend on pkgs, which are used to resolve system package dependencies
         # as well as pkgconfPkgs, which are used to resolve pkgconfig name to nixpkgs names.  We simply
         # augment the existing pkgs set with the specific mappings:
-        pkgs = pkgs // (import ./lib/system-nixpkgs-map.nix pkgs);
+        pkgs = import ./lib/system-pkgs.nix pkgs;
         pkgconfPkgs = import ./lib/pkgconf-nixpkgs-map.nix pkgs;
 
         inherit buildModules;

@@ -1,14 +1,16 @@
-{ stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
+{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
 { component, package, name, src, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
 , prePatch ? null, postPatch ? null
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
-, cleanSrc ? haskellLib.cleanCabalComponent package component src
+, cleanSrc ? haskellLib.cleanCabalComponent package component "setup" src
 }:
 
 let
+  cleanSrc' = haskellLib.rootAndSubDir cleanSrc;
+
   fullName = "${name}-setup";
 
   includeGhcPackage = lib.any (p: p.identifier.name == "ghc") component.depends;
@@ -35,7 +37,7 @@ let
   drv =
     stdenv.mkDerivation ({
       name = "${ghc.targetPrefix}${fullName}";
-      src = cleanSrc;
+      src = cleanSrc'.root;
       buildInputs = component.libs
         ++ component.frameworks
         ++ builtins.concatLists component.pkgconfig;
@@ -44,18 +46,17 @@ let
       passthru = {
         inherit (package) identifier;
         config = component;
-        inherit configFiles cleanSrc;
+        srcSubDir = cleanSrc'.subDir;
+        srcSubDirPath = cleanSrc'.root + cleanSrc'.subDir;
+        cleanSrc = cleanSrc';
+        inherit configFiles;
       };
 
       meta = {
         homepage = package.homepage or "";
         description = package.synopsis or "";
-        license =
-          let
-            license-map = import ../lib/cabal-licenses.nix lib;
-          in license-map.${package.license} or
-            (builtins.trace "WARNING: license \"${package.license}\" not found" license-map.LicenseRef-OtherLicense);
-        platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
+        license = haskellLib.cabalToNixpkgsLicense package.license;
+        platforms = if component.platforms == null then lib.platforms.all else component.platforms;
       };
 
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
@@ -83,6 +84,13 @@ let
         runHook postInstall
       '';
     }
+    // (lib.optionalAttrs (cleanSrc'.subDir != "") {
+      prePatch =
+        # If the package is in a sub directory `cd` there first
+        ''
+          cd ${lib.removePrefix "/" cleanSrc'.subDir}
+        '';
+    })
     // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
     // hooks
   );

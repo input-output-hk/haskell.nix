@@ -170,7 +170,9 @@ final: prev: {
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   final.ghc-boot-packages.${compiler-nix-name'}
+                                   # Using the -unchecked version here to avoid infinite
+                                   # recursion issues when checkMaterialization = true
+                                   final.ghc-boot-packages-unchecked.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
@@ -252,7 +254,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2020-05-31T00:00:00Z";
+        internalHackageIndexState = "2021-01-08T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -266,7 +268,7 @@ final: prev: {
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
             inherit (final.haskell-nix) indexStateHashesPath;
-            inherit (final) coreutils nix writeShellScriptBin stdenv curl;
+            inherit (final) coreutils nix writeShellScriptBin stdenv lib curl;
             # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
             nix-tools = final.haskell-nix.internal-nix-tools;
         };
