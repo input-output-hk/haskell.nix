@@ -2,7 +2,7 @@ This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
 ## Feb 22, 2021
-* Add `.dwarf` to build any component with DWARF dugug info on linux
+* Add `.dwarf` to build any component with DWARF dubug info on linux
   (ghc >=8.10.2).
 * Pass `enableDWARF` to `shellFor` for to get a shell where all the
   components are the `.dwarf` ones.
