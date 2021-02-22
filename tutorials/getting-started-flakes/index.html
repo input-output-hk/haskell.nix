@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Getting started with flakes - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Getting started with flakes";
+    var mkdocs_page_input_path = "tutorials/getting-started-flakes.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../motivation/">Motivation</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Tutorials</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../getting-started/">Getting Started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../development/">Creating a development environment</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../clean-git/">Sourcing files only part of git repository using cleanGit</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../source-repository-hashes/">Handling git repositories in projects</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../materialization/">Materialization: Speeding up Nix evaluation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../cross-compilation/">Cross-compiling your project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../coverage/">Generating coverage information</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Reference</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../reference/supported-ghc-versions/">Suported GHC versions</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/commands/">Command-line tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/library/">Haskell.nix Library</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../reference/modules/">Module options</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../troubleshooting/">Troubleshooting</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Templates / Abstraction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../iohk-nix/">IOHKs nix library</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Dev Notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../dev/dev-architecture/">Architecture</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/installing-nix-tools/">Installing nix-tools</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/manually-generating-nix-expressions/">Manually generating Nix expressions</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/maintainer-scripts/">Maintainer Scripts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/nixpkgs-pin/">Nixpkgs Pin</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/tests/">Test Suite</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/adding-new-ghc/">Adding a new GHC version</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../dev/coverage/">Coverage</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../changelog/">ChangeLog</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Alternative Haskell Infrastructure for Nixpkgs</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Getting started with flakes</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/tutorials/getting-started-flakes.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="getting-started-with-flakes">Getting started with flakes<a class="headerlink" href="#getting-started-with-flakes" title="Permanent link">&para;</a></h1>
+<p>This version of the getting started guide is for users who
+are using <a href="https://nixos.wiki/wiki/Flakes">Nix Flakes</a>.
+The non flakes version of the guide is <a href="../getting-started/">here</a>.</p>
+<p><code>haskell.nix</code> can automatically translate your
+<a href="https://cabal.readthedocs.io/en/latest/cabal-project.html">Cabal</a>
+or <a href="https://docs.haskellstack.org/en/stable/README/#quick-start-guide">Stack</a>
+project and its dependencies into Nix code.</p>
+<p>Assuming you have <a href="https://nixos.org/download.html">Nix</a> installed, you can
+start setting up your project.</p>
+<h2 id="setting-up-the-binary-cache">Setting up the binary cache<a class="headerlink" href="#setting-up-the-binary-cache" title="Permanent link">&para;</a></h2>
+<p>IMPORTANT: you <em>must</em> do this or you <em>will</em> build several copies of GHC!</p>
+<p>You can configure Nix to use our binary cache, which is pushed to by CI, so should contain the artifacts that you need.</p>
+<p>You need to add the following sections to <code>/etc/nix/nix.conf</code> or, if you are a trusted user, <code>~/.config/nix/nix.conf</code> (if you don't know what a "trusted user" is, you probably want to do the former).</p>
+<pre><code>trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
+substituters = [...] https://hydra.iohk.io [...]
+</code></pre>
+
+<p>This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding <a href="../reference/troubleshooting#why-am-i-building-ghc">troubleshooting section</a>.</p>
+<h2 id="scaffolding">Scaffolding<a class="headerlink" href="#scaffolding" title="Permanent link">&para;</a></h2>
+<p>The following work with <code>stack.yaml</code> and <code>cabal.project</code> based
+projects.</p>
+<p>Add <code>flake.nix</code>:</p>
+<pre><code class="nix">{
+  description = &quot;A very basic flake&quot;;
+  inputs.haskellNix.url = &quot;github:input-output-hk/haskell.nix&quot;;
+  inputs.nixpkgs.follows = &quot;haskellNix/nixpkgs-unstable&quot;;
+  inputs.flake-utils.url = &quot;github:numtide/flake-utils&quot;;
+  outputs = { self, nixpkgs, flake-utils, haskellNix }:
+    flake-utils.lib.eachSystem [ &quot;x86_64-linux&quot; &quot;x86_64-darwin&quot; ] (system:
+    let
+      overlays = [ haskellNix.overlay
+        (final: prev: {
+          # This overlay adds our project to pkgs
+          helloProject =
+            final.haskell-nix.project' {
+              src = ./.;
+              compiler-nix-name = &quot;ghc8104&quot;;
+            };
+        })
+      ];
+      pkgs = import nixpkgs { inherit system overlays; };
+      flake = pkgs.helloProject.flake {};
+    in flake // {
+      # Built by `nix build .`
+      defaultPackage = flake.packages.&quot;hello:exe:hello&quot;;
+
+      # This is used by `nix develop .` to open a shell for use with
+      # `cabal`, `hlint` and `haskell-language-server`
+      devShell = pkgs.helloProject.shellFor {
+        tools = {
+          cabal = &quot;latest&quot;;
+          hlint = &quot;latest&quot;;
+          haskell-language-server = &quot;latest&quot;;
+        };
+      };
+    });
+}
+</code></pre>
+
+<div class="admonition note">
+<p class="admonition-title">git dependencies</p>
+<p>If you have git dependencies in your project, you'll need
+to <a href="../source-repository-hashes/">calculate sha256 hashes for them</a>.</p>
+</div>
+<h3 id="working-with-a-project">Working with a project<a class="headerlink" href="#working-with-a-project" title="Permanent link">&para;</a></h3>
+<p>Top-level attributes are Haskell packages (incl. dependencies) part of your project.</p>
+<p>To build the library component of a package in the project run:</p>
+<pre><code class="shell">nix build .#your-package-name:lib:your-package-name
+</code></pre>
+
+<p>There are also other components such as <code>exe</code>, <code>test</code> and <code>benchmark</code>.
+To build an executable:</p>
+<pre><code class="shell">nix build .#your-package-name:exe:your-exe-name
+</code></pre>
+
+<p>To use the <code>devShell</code> provided by the flake run:</p>
+<pre><code class="shell">nix develop .
+cabal repl your-package-name:lib:your-package-name
+cabal build your-package-name
+</code></pre>
+
+<p>To open a shell for use with <code>stack</code> see <a href="https://github.com/input-output-hk/haskell.nix/issues/689#issuecomment-643832619">the following issue</a>.</p>
+<h2 id="going-forward">Going forward<a class="headerlink" href="#going-forward" title="Permanent link">&para;</a></h2>
+<p>Read through <a href="../../reference/library/#project">project</a> function reference to see how the API works.</p>
+<p>There are a number of things to explore further in the tutorials section.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>
