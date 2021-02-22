@@ -1,7 +1,15 @@
 {
   description = "Alternative Haskell Infrastructure for Nixpkgs";
 
-  outputs = { self }:
+  inputs = {
+    # Note: keep this in sync with sources.json!
+    nixpkgs.url = github:NixOS/nixpkgs/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693;
+    nixpkgs-2003.url = github:NixOS/nixpkgs/7f73e46625f508a793700f5110b86f1a53341d6e;
+    nixpkgs-2009.url = github:NixOS/nixpkgs/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693;
+    nixpkgs-unstable.url = github:NixOS/nixpkgs/410bbd828cdc6156aecd5bc91772ad3a6b1099c7;
+  };
+
+  outputs = { self, nixpkgs, ... }:
   {
 
     internal = rec {
@@ -27,7 +35,7 @@
     # `builtins.currentSystem` will not be supported in flakes.
     # https://github.com/NixOS/rfcs/pull/49/files#diff-a5a138ca225433534de8d260f225fe31R429
     overlay = self.overlays.combined-eval-on-build;
-    overlays = self.internal.overlaysOverrideable { sourcesOverride = self.sources; };
+    overlays = self.internal.overlaysOverrideable { sourcesOverride = self.internal.sources; };
 
     legacyPackages = let
       genAttrs = lst: f:
@@ -36,7 +44,7 @@
           value = f name;
         }) lst);
     in genAttrs [ "x86_64-linux" "x86_64-darwin" ] (system:
-      import self.internal.sources.nixpkgs
+      import nixpkgs
       (self.internal.nixpkgsArgs // { localSystem = { inherit system; }; }));
   };
 }

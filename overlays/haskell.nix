@@ -560,7 +560,7 @@ final: prev: {
                     }
                 ) (builtins.removeAttrs rawProject.hsPkgs
                   # These are functions not packages
-                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" ]);
+                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" "buildPackages" ]);
 
             projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
@@ -568,6 +568,59 @@ final: prev: {
                 rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
+            # Helper function that can be used to make a Nix Flake out of a project
+            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
+            # for an example flake.nix file.
+            # This flake function maps the build outputs to the flake `packages`,
+            # `checks` and `apps` output attributes.
+            flake = {
+                packages ? haskellLib.selectProjectPackages
+              }:
+              let packageNames = builtins.attrNames (packages project.hsPkgs);
+              in {
+                # Used by:
+                #   `nix build .#pkg-name:lib:pkg-name`
+                #   `nix build .#pkg-name:lib:sublib-name`
+                #   `nix build .#pkg-name:exe:exe-name`
+                #   `nix build .#pkg-name:test:test-name`
+                packages = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.optional (package.components ? library)
+                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:lib:${n}"; value = v; })
+                        (package.components.sublibs)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = v; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = v; })
+                        (package.components.tests)
+                  ) packageNames);
+                # Used by:
+                #   `nix check .#pkg-name:test:test-name`
+                checks = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                        { name = "${packageName}:test:${n}"; value = v; })
+                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
+                  ) packageNames);
+                # Used by:
+                #   `nix run .#pkg-name:exe:exe-name`
+                #   `nix run .#pkg-name:test:test-name`
+                apps = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.tests)
+                  ) packageNames);
+              };
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
           });
 
