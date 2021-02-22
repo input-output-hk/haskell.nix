@@ -569,28 +569,8 @@ final: prev: {
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
             # Helper function that can be used to make a Nix Flake out of a project
-            # by including a flake.nix like this:
-            # {
-            #   description = "A very basic flake";
-            #   inputs.nixpkgs.url = "github:NixOS/nixpkgs?rev=07e5844fdf6fe99f41229d7392ce81cfe191bcfc";
-            #   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
-            #   inputs.flake-utils.url = "github:numtide/flake-utils";
-            #   outputs = { self, nixpkgs, haskellNix, flake-utils }:
-            #     flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
-            #       let
-            #         pkgs = haskellNix.legacyPackages.${system};
-            #         project = pkgs.haskell-nix.project' {
-            #           src = ./.;
-            #           compiler-nix-name = "ghc884";
-            #         };
-            #      in project.flake {} // {
-            #        # Built by `nix build .`
-            #        defaultPackage = project.hsPkgs.hello.components.exes.hello;
-            #        # Used by `nix develop .`
-            #        devShell = project.shellFor { tools = { cabal = "3.2.0.0"; }; };
-            #      }
-            #    );
-            # }
+            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
+            # for an example flake.nix file.
             # This flake function maps the build outputs to the flake `packages`,
             # `checks` and `apps` output attributes.
             flake = {
