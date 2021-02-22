@@ -7,14 +7,17 @@
 # database.
 
 { lib, stdenv, ghc, runCommand, lndir, makeWrapper, haskellLib
-}:
+}@defaults:
 
 { componentName  # Full derivation name of the component
 , configFiles    # The component's "config" derivation
 , postInstall ? ""
+, enableDWARF
 }:
 
 let
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+
   inherit (configFiles) targetPrefix ghcCommand ghcCommandCaps packageCfgDir;
   libDir         = "$out/${configFiles.libDir}";
   docDir         = "$out/share/doc/ghc/html";

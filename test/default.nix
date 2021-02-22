@@ -1,6 +1,6 @@
 { haskellNix ? import ../default.nix { inherit checkMaterialization; }
 , pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? haskellNix.sources.nixpkgs
+, nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name
@@ -212,6 +212,10 @@ let
     # githash runs git from TH code and this needs a cross compiled git exe
     # to work correctly.  Cross compiling git is currently brocken.
     githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
+  } // lib.optionalAttrs (
+      stdenv.hostPlatform.isLinux && !pkgs.haskell-nix.haskellLib.isCrossHost && !stdenv.hostPlatform.isMusl
+      && !(__elem compiler-nix-name ["ghc865" "ghc884"])) {
+    cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the

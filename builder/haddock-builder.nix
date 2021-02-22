@@ -54,6 +54,7 @@ let
   shellWrappers = ghcForComponent {
     componentName = fullName;
     configFiles = docsConfigFiles;
+    inherit (componentDrv) enableDWARF;
   };
 
   drv = stdenv.mkDerivation (commonAttrs // {
