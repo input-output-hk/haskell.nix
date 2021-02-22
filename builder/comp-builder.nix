@@ -80,7 +80,8 @@ let
   # Ignore attempts to include DWARF info when it is not possible
   enableDWARF = drvArgs.enableDWARF or false
     && stdenv.hostPlatform.isLinux
-    && !pkgs.haskell-nix.haskellLib.isCrossHost
+    && !haskellLib.isCrossHost
+    && !stdenv.hostPlatform.isMusl
     && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
 
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;

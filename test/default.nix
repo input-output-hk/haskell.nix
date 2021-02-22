@@ -213,7 +213,7 @@ let
     # to work correctly.  Cross compiling git is currently brocken.
     githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
   } // lib.optionalAttrs (
-      stdenv.hostPlatform.isLinux && !pkgs.haskell-nix.haskellLib.isCrossHost
+      stdenv.hostPlatform.isLinux && !pkgs.haskell-nix.haskellLib.isCrossHost && !stdenv.hostPlatform.isMusl
       && !(__elem compiler-nix-name ["ghc865" "ghc884"])) {
     cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
   };
