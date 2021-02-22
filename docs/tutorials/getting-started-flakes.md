@@ -37,32 +37,38 @@ Add `flake.nix`:
 ```nix
 {
   description = "A very basic flake";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs?rev=07e5844fdf6fe99f41229d7392ce81cfe191bcfc";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  outputs = { self, nixpkgs, haskellNix, flake-utils }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
-      let
-        pkgs = haskellNix.legacyPackages.${system};
-        project = pkgs.haskell-nix.project' {
-          src = ./.;
-          compiler-nix-name = "ghc884";
+  outputs = { self, nixpkgs, flake-utils, haskellNix }:
+    flake-utils.lib.eachSystem [ "x86_64-darwin" ] (system:
+    let
+      overlays = [ haskellNix.overlay
+        (final: prev: {
+          # This overlay adds our project to pkgs
+          helloProject =
+            final.haskell-nix.project' {
+              src = ./.;
+              compiler-nix-name = "ghc8104";
+            };
+        })
+      ];
+      pkgs = import nixpkgs { inherit system overlays; };
+      flake = pkgs.helloProject.flake {};
+    in flake // {
+      # Built by `nix build .`
+      defaultPackage = flake.packages."hello:exe:hello";
+      
+      # This is used by `nix develop .` to open a shell for use with
+      # `cabal`, `hlint` and `haskell-language-server`
+      devShell = pkgs.helloProject.shellFor {
+        tools = {
+          cabal = "latest";
+          hlint = "latest";
+          haskell-language-server = "latest";
         };
-     in project.flake {} // {
-       # Built by `nix build .`
-       defaultPackage = project.hsPkgs.hello.components.exes.hello;
-       
-       # This is used by `nix develop .` to open a shell for use with
-       # `cabal`, `hlint` and `haskell-language-server`
-       devShell = project.shellFor {
-         tools = {
-           cabal = "3.2.0.0";
-           hlint = "latest";
-           haskell-language-server = "latest";
-         };
-       };
-     }
-   );
+      };
+    });
 }
 ```
 
