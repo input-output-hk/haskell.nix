@@ -9,6 +9,7 @@
 , useLLVM, llvmPackages
 , targetCC
 , enableIntegerSimple, targetGmp
+, enableDWARF, elfutils
 , ncurses, targetLibffi, libiconv
 , disableLargeAddressSpace
 , buildMK
@@ -112,7 +113,11 @@ stdenv.mkDerivation (rec {
         "CFLAGS=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-    ] ;
+    ] ++ lib.optionals enableDWARF [
+        "--enable-dwarf-unwind"
+        "--with-libdw-includes=${lib.getDev elfutils}/include"
+        "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ];
 
     outputs = [ "out" ];
     phases = [ "unpackPhase" "patchPhase" ]

@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -77,6 +77,16 @@ let self =
 }@drvArgs:
 
 let
+  # Ignore attempts to include DWARF info when it is not possible
+  enableDWARF = drvArgs.enableDWARF or false
+    && stdenv.hostPlatform.isLinux
+    && !haskellLib.isCrossHost
+    && !stdenv.hostPlatform.isMusl
+    && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
+
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+  setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
+
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
   # In order to support relative references to other packages we need to use
@@ -109,7 +119,7 @@ let
 
   configFiles = makeConfigFiles {
     inherit (package) identifier;
-    inherit component fullName flags needsProfiling;
+    inherit component fullName flags needsProfiling enableDWARF;
   };
 
   enableFeature = enable: feature:
@@ -178,7 +188,7 @@ let
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
       ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
-      ++ lib.optional enableDWARF "--ghc-option=-g"
+      ++ lib.optional enableDWARF "--ghc-option=-g3"
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
@@ -195,7 +205,7 @@ let
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
   shellWrappers = ghcForComponent {
     componentName = fullName;
-    inherit configFiles;
+    inherit configFiles enableDWARF;
   };
 
   # In order to let shell hooks make package-specific things like Hoogle databases
@@ -280,10 +290,11 @@ let
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
-      inherit configFiles executableToolDepends exeName;
+      inherit configFiles executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
+      dwarf = self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`

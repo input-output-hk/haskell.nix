@@ -16,6 +16,7 @@
 , exactDeps ? false
 , tools ? {}
 , packageSetupDeps ? true
+, enableDWARF ? false
 , ... } @ args:
 
 let
@@ -93,6 +94,7 @@ let
     postInstall = lib.optionalString withHoogle' ''
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
+    inherit enableDWARF;
   };
 
   hoogleIndex = let

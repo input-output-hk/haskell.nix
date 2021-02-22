@@ -1,6 +1,12 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Feb 22, 2021
+* Add `.debug` to build any component with DWARF dugug info on linux
+  (ghc >=8.10.2).
+* Pass `enableDWARF` to `shellFor` for to get a shell where all the
+  components are the `.debug` ones.
+
 ## Feb 18, 2021
 * `ghcOptions` has been moved from package and is now a list of strings.
     old: packages.x.package.ghcOptions = "someGHCoption";

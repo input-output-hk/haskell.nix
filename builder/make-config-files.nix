@@ -1,8 +1,10 @@
-{ stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }:
+{ stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }@defaults:
 
-{ identifier, component, fullName, flags ? {}, needsProfiling ? false, chooseDrv ? drv: drv }:
+{ identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv }:
 
 let
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
     echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
     echo "${field}: ${lib.concatStringsSep " " xs}" >> $out/cabal.config
@@ -47,9 +49,10 @@ let
   # TODO investigate why this is needed
   # TODO find out why p ? configFiles helps (for instance for `R1909.aarch64-unknown-linux-gnu.tests.cabal-22.run.x86_64-linux`)
   libDeps = map chooseDrv (
-    (if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
+    (if enableDWARF then (x: map (p: p.dwarf or p) x) else x: x)
+    ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
     (lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
-    (map getLibComponent component.depends))
+    (map getLibComponent component.depends)))
   );
   cfgFiles =
     let xs = map
