@@ -36,7 +36,7 @@ in recurseIntoAttrs {
       platforms = platforms.all;
       # DWARF only works on linux with GHC 8.10.2 and newer
       disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884"
-        || !stdenv.hostPlatform.isLinux || pkgs.haskell-nix.haskellLib.isCrossHost;
+        || !stdenv.hostPlatform.isLinux || haskellLib.isCrossHost;
     };
 
     passthru = {
