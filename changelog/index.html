@@ -193,6 +193,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#feb-22-2021">Feb 22, 2021</a></li>
+    
+
     <li class="toctree-l2"><a href="#feb-18-2021">Feb 18, 2021</a></li>
     
 
@@ -314,6 +317,13 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="feb-22-2021">Feb 22, 2021<a class="headerlink" href="#feb-22-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add <code>.debug</code> to build any component with DWARF dugug info on linux
+  (ghc &gt;=8.10.2).</li>
+<li>Pass <code>enableDWARF</code> to <code>shellFor</code> for to get a shell where all the
+  components are the <code>.debug</code> ones.</li>
+</ul>
 <h2 id="feb-18-2021">Feb 18, 2021<a class="headerlink" href="#feb-18-2021" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>ghcOptions</code> has been moved from package and is now a list of strings.
