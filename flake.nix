@@ -35,7 +35,7 @@
     # `builtins.currentSystem` will not be supported in flakes.
     # https://github.com/NixOS/rfcs/pull/49/files#diff-a5a138ca225433534de8d260f225fe31R429
     overlay = self.overlays.combined-eval-on-build;
-    overlays = self.internal.overlaysOverrideable { sourcesOverride = self.sources; };
+    overlays = self.internal.overlaysOverrideable { sourcesOverride = self.internal.sources; };
 
     legacyPackages = let
       genAttrs = lst: f:
