@@ -385,7 +385,7 @@ let
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
-    outputs = ["out" "json"];
+    outputs = ["out" "json" "freeze"];
   } ''
     tmp=$(mktemp -d)
     cd $tmp
@@ -421,6 +421,7 @@ let
     ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
       cp ${pkgs.evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
         cabal.project.freeze
+      chmod +w cabal.project.freeze
     ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
@@ -436,7 +437,7 @@ let
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
-    } cabal v2-configure \
+    } cabal v2-freeze \
         --index-state=${
             # Setting the desired `index-state` here in case it was not
             # from the cabal.project file. This will further restrict the
@@ -452,6 +453,10 @@ let
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
             "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
         ${configureArgs}
+
+    cp cabal.project.freeze $freeze
+    # Not needed any more (we don't want it to wind up in the $out hash)
+    rm cabal.project.freeze
 
     mkdir -p $out
 
