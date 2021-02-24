@@ -15,6 +15,9 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
 
   numactl = prev.numactl.overrideAttrs (_: { configureFlags = "--enable-static"; });
 
+  # See https://github.com/input-output-hk/haskell.nix/issues/948
+  postgresql = prev.postgresql.override { enableSystemd = false; };
+
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });
 } // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.trivial.release "20.03") {

@@ -115,6 +115,7 @@ pkgs:
     "png"                                = [ pkgs."libpng" ];
     "poppler-glib"                       = [ pkgs."poppler" ];
     "pq"                                 = [ pkgs."postgresql" ];
+    "libpq"                              = [ pkgs."postgresql" ];
     "pthread"                            = [];
     "pulse"                              = [ pkgs."libpulseaudio" ];
     "pulse-simple"                       = [ pkgs."libpulseaudio" ];

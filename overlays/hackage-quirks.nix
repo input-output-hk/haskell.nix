@@ -73,6 +73,15 @@ in { haskell-nix = prev.haskell-nix // {
       '';
     };
 
+    # See https://github.com/input-output-hk/haskell.nix/issues/948
+    postgrest = {
+      cabalProject = ''
+        packages: .
+        package postgresql-libpq
+          flags: +use-pkg-config
+      '';
+    };
+
   }."${name}" or {};
 
 }; }
