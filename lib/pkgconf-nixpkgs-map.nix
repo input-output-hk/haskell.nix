@@ -21,7 +21,6 @@ pkgs:
     "cairo-ps"                           = [ pkgs."cairo" ];
     "cairo-svg"                          = [ pkgs."cairo" ];
     "crypt"                              = []; # provided by glibc
-    "crypto"                             = [ pkgs."openssl" ];
     "curses"                             = [ pkgs."ncurses" ];
     "dbusmenu-glib-0.4"                  = [ pkgs."libdbusmenu" ];
     "dbusmenu-gtk3-0.4"                  = [ pkgs."libdbusmenu-gtk3" ]; # do we also need pkgs."gtk3"
@@ -80,6 +79,7 @@ pkgs:
     "lber"                               = [ pkgs."openldap" ];
     "ldap"                               = [ pkgs."openldap" ];
     "libavutil"                          = [ pkgs."ffmpeg" ];
+    "libcrypto"                          = [ pkgs."openssl".dev ];
     "libgsasl"                           = [ pkgs."gsasl" ];
     "libpcre"                            = [ pkgs."pcre" ];
     "libqrencode"                        = [ pkgs."qrencode" ];
@@ -88,6 +88,7 @@ pkgs:
     "libsecp256k1"                       = [ pkgs."secp256k1" ];
     "libsoup-2.4"                        = [ pkgs."libsoup" ];
     "libsoup-gnome-2.4"                  = [ pkgs."libsoup" ];
+    "libssl"                             = [ pkgs."openssl".dev ];
     "libsystemd"                         = [ pkgs."systemd" ];
     "libudev"                            = [ pkgs."systemd" ];
     "libusb-1.0"                         = [ pkgs."libusb1" ];
@@ -137,7 +138,6 @@ pkgs:
     "sodium"                             = [ pkgs."libsodium" ];
     "sqlite3"                            = [ pkgs."sqlite" ];
     "ssh2"                               = [ pkgs."libssh2" ];
-    "ssl"                                = [ pkgs."openssl" ];
     "statgrab"                           = [ pkgs."libstatgrab" ];
     "stdc++"                             = []; # What is that?
     "stdc++.dll"                         = []; # What is that?
