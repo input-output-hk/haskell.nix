@@ -119,14 +119,14 @@ index faee723bd2..0f7073f15c 100644
      writeBinMem bh hi_path
  
 diff --git a/compiler/iface/IfaceSyn.hs b/compiler/iface/IfaceSyn.hs
-index f691300157..9662667172 100644
+index f691300157..21cce269c9 100644
 --- a/compiler/iface/IfaceSyn.hs
 +++ b/compiler/iface/IfaceSyn.hs
 @@ -22,6 +22,7 @@ module IfaceSyn (
          IfaceAxBranch(..),
          IfaceTyConParent(..),
          IfaceCompleteMatch(..),
-+        IfaceModGuts(..),
++        -- IfaceModGuts(..),
  
          -- * Binding names
          IfaceTopBndr,
@@ -149,7 +149,7 @@ index f691300157..9662667172 100644
 +import GHC.Hs.Doc ( ArgDocMap, DeclDocMap, HsDocString )
 +import Avail
 +import RdrName
-+import {-# SOURCE #-} HscTypes
++-- import {-# SOURCE #-} HscTypes
 +import NameEnv
 +import DynFlags
 +
@@ -170,39 +170,39 @@ index f691300157..9662667172 100644
 ++************************************************************************
 ++-}
 +
-+data IfaceModGuts = IfaceModGuts {
-+    img_module        :: !Module,
-+    img_hsc_src       :: HscSource,
-+    img_loc           :: SrcSpan,
-+    img_exports       :: ![AvailInfo],
-+    img_deps          :: !Dependencies,
-+    img_usages        :: ![Usage],
-+    img_used_th       :: !Bool,
-+    img_rdr_env       :: !GlobalRdrEnv,
-+    img_fix_env       :: !FixityEnv,
-+    img_tcs           :: ![IfaceTyCon],
-+    img_insts         :: ![IfaceClsInst],
-+    img_fam_insts     :: ![IfaceFamInst],
-+    img_patsyns       :: ![IfaceDecl],
-+    img_rules         :: ![IfaceRule],
-+    img_binds         :: ![IfaceBinding],
-+    img_foreign       :: !ForeignStubs,
-+    img_foreign_files :: ![(ForeignSrcLang, FilePath)],
-+    img_warns         :: !Warnings,
-+    img_anns          :: [Annotation],
-+    img_complete_sigs :: [CompleteMatch],
-+    img_hpc_info      :: !HpcInfo,
-+    img_modBreaks     :: !(Maybe ModBreaks),
-+    img_inst_env      :: [IfaceClsInst],
-+    img_fam_inst_env  :: [IfaceFamInst],
-+    img_safe_haskell  :: SafeHaskellMode,
-+    img_trust_pkg     :: Bool,
-+    img_doc_hdr       :: !(Maybe HsDocString),
-+    img_decl_docs     :: !DeclDocMap,
-+    img_arg_docs      :: !ArgDocMap
-+  }
-+
++-- data IfaceModGuts = IfaceModGuts {
++--     img_module        :: !Module,
++--     img_hsc_src       :: HscSource,
++--     img_loc           :: SrcSpan,
++--     img_exports       :: ![AvailInfo],
++--     img_deps          :: !Dependencies,
++--     img_usages        :: ![Usage],
++--     img_used_th       :: !Bool,
++--     img_rdr_env       :: !GlobalRdrEnv,
++--     img_fix_env       :: !FixityEnv,
++--     img_tcs           :: ![IfaceTyCon],
++--     img_insts         :: ![IfaceClsInst],
++--     img_fam_insts     :: ![IfaceFamInst],
++--     img_patsyns       :: ![IfaceDecl],
++--     img_rules         :: ![IfaceRule],
++--     img_binds         :: ![IfaceBinding],
++--     img_foreign       :: !ForeignStubs,
++--     img_foreign_files :: ![(ForeignSrcLang, FilePath)],
++--     img_warns         :: !Warnings,
++--     img_anns          :: [Annotation],
++--     img_complete_sigs :: [CompleteMatch],
++--     img_hpc_info      :: !HpcInfo,
++--     img_modBreaks     :: !(Maybe ModBreaks),
++--     img_inst_env      :: [IfaceClsInst],
++--     img_fam_inst_env  :: [IfaceFamInst],
++--     img_safe_haskell  :: SafeHaskellMode,
++--     img_trust_pkg     :: Bool,
++--     img_doc_hdr       :: !(Maybe HsDocString),
++--     img_decl_docs     :: !DeclDocMap,
++--     img_arg_docs      :: !ArgDocMap
++--   }
  
++
 +{-
  ************************************************************************
  *                                                                      *
@@ -211,51 +211,72 @@ index f691300157..9662667172 100644
    put_ bh (IfaceCompleteMatch cs ts) = put_ bh cs >> put_ bh ts
    get bh = IfaceCompleteMatch <$> get bh <*> get bh
  
-+instance Binary IfaceModGuts where
-+  put_ bh (IfaceModGuts f1 f2 f3 f4 f5 f6 f7 _f8 _f9 f10 f11 f12 f13 f14 f15 f16 f17 f18
-+                        f19 f20 f21 _f22 f23 f24 f25 f26 f27 f28 f29) = do
-+    put_ bh f1
-+    put_ bh f2
-+    put_ bh f3
-+    put_ bh f4
-+    put_ bh f5
-+    put_ bh f6
-+    put_ bh f7
-+    -- put_ bh f8
-+    -- put_ bh f9
-+    put_ bh f10
-+    put_ bh f11
-+    put_ bh f12
-+    put_ bh f13
-+    put_ bh f14
-+    put_ bh f15
-+    put_ bh f16
-+    put_ bh f17
-+    put_ bh f18
-+    put_ bh f19
-+    put_ bh f20
-+    put_ bh f21
-+    put_ bh f23
-+    put_ bh f24
-+    put_ bh f25
-+    put_ bh f26
-+    put_ bh f27
-+    put_ bh f28
-+    put_ bh f29
++-- instance Binary IfaceModGuts where
++--   put_ bh (IfaceModGuts f1 f2 f3 f4 f5 f6 f7 _f8 _f9 f10 f11 f12 f13 f14 f15 f16 f17 f18
++--                         f19 f20 f21 _f22 f23 f24 f25 f26 f27 f28 f29) = do
++--     put_ bh f1
++--     put_ bh f2
++--     put_ bh f3
++--     put_ bh f4
++--     put_ bh f5
++--     put_ bh f6
++--     put_ bh f7
++--     -- put_ bh f8
++--     -- put_ bh f9
++--     put_ bh f10
++--     put_ bh f11
++--     put_ bh f12
++--     put_ bh f13
++--     put_ bh f14
++--     put_ bh f15
++--     put_ bh f16
++--     put_ bh f17
++--     put_ bh f18
++--     put_ bh f19
++--     put_ bh f20
++--     put_ bh f21
++--     put_ bh f23
++--     put_ bh f24
++--     put_ bh f25
++--     put_ bh f26
++--     put_ bh f27
++--     put_ bh f28
++--     put_ bh f29
 +
-+  get bh = IfaceModGuts <$> get bh <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
-+                        <*> get bh <*> return emptyOccEnv <*> return emptyNameEnv <*> get bh <*> get bh <*> get bh
-+                        <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
-+                        <*> get bh <*> get bh <*> get bh <*> return Nothing <*> get bh <*> get bh
-+                        <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
++--   get bh = IfaceModGuts <$> get bh <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
++--                         <*> get bh <*> return emptyOccEnv <*> return emptyNameEnv <*> get bh <*> get bh <*> get bh
++--                         <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
++--                         <*> get bh <*> get bh <*> get bh <*> return Nothing <*> get bh <*> get bh
++--                         <*> get bh <*> get bh <*> get bh <*> get bh <*> get bh
  
  {-
  ************************************************************************
 diff --git a/compiler/iface/LoadIface.hs b/compiler/iface/LoadIface.hs
-index 8d327e528d..06cdb90800 100644
+index 8d327e528d..4073d0dc4d 100644
 --- a/compiler/iface/LoadIface.hs
 +++ b/compiler/iface/LoadIface.hs
-@@ -48,6 +48,7 @@ import HscTypes
+@@ -29,7 +29,9 @@ module LoadIface (
+         needWiredInHomeIface, loadWiredInHomeIface,
+ 
+         pprModIfaceSimple,
+-        ifaceStats, pprModIface, showIface
++        ifaceStats, pprModIface, showIface,
++
++        loadCoreBindings
+    ) where
+ 
+ #include "HsVersions.h"
+@@ -38,7 +40,8 @@ import GhcPrelude
+ 
+ import {-# SOURCE #-}   TcIface( tcIfaceDecl, tcIfaceRules, tcIfaceInst,
+                                  tcIfaceFamInst,
+-                                 tcIfaceAnnotations, tcIfaceCompleteSigs )
++                                 tcIfaceAnnotations, tcIfaceCompleteSigs,
++                                 topLevelNames, tcIfaceBinding )
+ 
+ import DynFlags
+ import IfaceSyn
+@@ -48,6 +51,7 @@ import HscTypes
  import BasicTypes hiding (SuccessFlag(..))
  import TcRnMonad
  
@@ -263,7 +284,12 @@ index 8d327e528d..06cdb90800 100644
  import Constants
  import PrelNames
  import PrelInfo
-@@ -83,6 +84,7 @@ import Plugins
+@@ -79,10 +83,12 @@ import FieldLabel
+ import RnModIface
+ import UniqDSet
+ import Plugins
++import CoreSyn
+ 
  import Control.Monad
  import Control.Exception
  import Data.IORef
@@ -271,7 +297,7 @@ index 8d327e528d..06cdb90800 100644
  import System.FilePath
  
  {-
-@@ -1155,6 +1157,7 @@ pprModIface iface@ModIface{ mi_final_exts = exts }
+@@ -1155,6 +1161,7 @@ pprModIface iface@ModIface{ mi_final_exts = exts }
          , text "module header:" $$ nest 2 (ppr (mi_doc_hdr iface))
          , text "declaration docs:" $$ nest 2 (ppr (mi_decl_docs iface))
          , text "arg docs:" $$ nest 2 (ppr (mi_arg_docs iface))
@@ -279,7 +305,7 @@ index 8d327e528d..06cdb90800 100644
          ]
    where
      pp_hsc_src HsBootFile = text "[boot]"
-@@ -1244,6 +1247,11 @@ pprIfaceAnnotation :: IfaceAnnotation -> SDoc
+@@ -1244,6 +1251,11 @@ pprIfaceAnnotation :: IfaceAnnotation -> SDoc
  pprIfaceAnnotation (IfaceAnnotation { ifAnnotatedTarget = target, ifAnnotatedValue = serialized })
    = ppr target <+> text "annotated by" <+> ppr serialized
  
@@ -291,8 +317,23 @@ index 8d327e528d..06cdb90800 100644
  {-
  *********************************************************
  *                                                       *
+@@ -1287,3 +1299,14 @@ homeModError mod location
+            Just file -> space <> parens (text file)
+            Nothing   -> Outputable.empty)
+     <+> text "which is not loaded"
++
++loadCoreBindings :: ModIface -> IfL (Maybe [Bind CoreBndr])
++loadCoreBindings iface = do
++  ncu    <- mkNameCacheUpdater
++  mbinds <- liftIO (readIfaceFieldWith "ghc/phase/core" (getWithUserData ncu) iface)
++  case mbinds of
++    Nothing     -> return Nothing
++    Just ibinds -> do
++      ids <- join <$> mapM topLevelNames ibinds
++      extendIfaceIdEnv ids $
++        Just <$> mapM tcIfaceBinding ibinds
 diff --git a/compiler/iface/MkIface.hs b/compiler/iface/MkIface.hs
-index 8e66a67f58..5c472526c5 100644
+index 8e66a67f58..9cb513cdd9 100644
 --- a/compiler/iface/MkIface.hs
 +++ b/compiler/iface/MkIface.hs
 @@ -23,7 +23,8 @@ module MkIface (
@@ -301,7 +342,7 @@ index 8e66a67f58..5c472526c5 100644
          coAxiomToIfaceDecl,
 -        tyThingToIfaceDecl -- Converting things to their Iface equivalents
 +        tyThingToIfaceDecl, -- Converting things to their Iface equivalents
-+        toIfaceModGuts
++        -- toIfaceModGuts
   ) where
  
  {-
@@ -385,44 +426,44 @@ index 8e66a67f58..5c472526c5 100644
 +
 +--------------------------
 +
-+toIfaceModGuts :: ModGuts -> IfaceModGuts
-+toIfaceModGuts (ModGuts f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14 f15 f16 f17 f18
-+                        f19 f20 f21 f22 f23 f24 f25 f26 f27 f28 f29) =
-+  IfaceModGuts
-+    f1
-+    f2
-+    f3
-+    f4
-+    f5
-+    f6
-+    f7
-+    f8
-+    f9
-+    (map toIfaceTyCon f10)
-+    (map instanceToIfaceInst f11)
-+    (map famInstToIfaceFamInst f12)
-+    (map patSynToIfaceDecl f13)
-+    (map coreRuleToIfaceRule f14)
-+    (map toIfaceBind f15)
-+    f16
-+    f17
-+    f18
-+    f19
-+    f20
-+    f21
-+    f22
-+    (map instanceToIfaceInst $ instEnvElts f23)
-+    (map famInstToIfaceFamInst $ famInstEnvElts f24)
-+    f25
-+    f26
-+    f27
-+    f28
-+    f29
++-- toIfaceModGuts :: ModGuts -> IfaceModGuts
++-- toIfaceModGuts (ModGuts f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14 f15 f16 f17 f18
++--                         f19 f20 f21 f22 f23 f24 f25 f26 f27 f28 f29) =
++--   IfaceModGuts
++--     f1
++--     f2
++--     f3
++--     f4
++--     f5
++--     f6
++--     f7
++--     f8
++--     f9
++--     (map toIfaceTyCon f10)
++--     (map instanceToIfaceInst f11)
++--     (map famInstToIfaceFamInst f12)
++--     (map patSynToIfaceDecl f13)
++--     (map coreRuleToIfaceRule f14)
++--     (map toIfaceBind f15)
++--     f16
++--     f17
++--     f18
++--     f19
++--     f20
++--     f21
++--     f22
++--     (map instanceToIfaceInst $ instEnvElts f23)
++--     (map famInstToIfaceFamInst $ famInstEnvElts f24)
++--     f25
++--     f26
++--     f27
++--     f28
++--     f29
 diff --git a/compiler/iface/TcIface.hs b/compiler/iface/TcIface.hs
-index 077c66371e..3d9882f624 100644
+index 077c66371e..7296c3af50 100644
 --- a/compiler/iface/TcIface.hs
 +++ b/compiler/iface/TcIface.hs
-@@ -17,7 +17,9 @@ module TcIface (
+@@ -17,7 +17,10 @@ module TcIface (
          tcIfaceDecl, tcIfaceInst, tcIfaceFamInst, tcIfaceRules,
          tcIfaceAnnotations, tcIfaceCompleteSigs,
          tcIfaceExpr,    -- Desired by HERMIT (#7683)
@@ -430,9 +471,69 @@ index 077c66371e..3d9882f624 100644
 +        tcIfaceGlobal,
 +        tcIfaceType,
 +        tcJoinInfo,
++        topLevelNames, tcIfaceBinding,
   ) where
  
  #include "HsVersions.h"
+@@ -1820,3 +1823,30 @@ bindIfaceTyConBinderX :: (IfaceBndr -> (TyCoVar -> IfL a) -> IfL a)
+ bindIfaceTyConBinderX bind_tv (Bndr tv vis) thing_inside
+   = bind_tv tv $ \tv' ->
+     thing_inside (Bndr tv' vis)
++
++topLevelNames :: IfaceBinding -> IfL [Id]
++topLevelNames b = case b of
++  IfaceNonRec letbndr rhs -> (:[]) <$> go letbndr rhs
++  IfaceRec    pairs       -> mapM (uncurry go) pairs
++  where
++    go (IfLetBndr fs ty info ji) _ = do
++      -- name <- newIfaceName (mkVarOccFS fs)
++      name <- lookupIfaceTop (mkVarOccFS fs)
++      ty'  <- tcIfaceType ty
++      info' <- tcIdInfo False TopLevel name ty' info
++      let id = mkLocalIdOrCoVarWithInfo name ty' info'
++                     `asJoinId_maybe` tcJoinInfo ji
++      return $ mkLocalIdOrCoVarWithInfo name ty' info'
++      -- return $ mkLocalId name ty'
++
++tcIfaceBinding :: IfaceBinding -> IfL (Bind Id)
++tcIfaceBinding b =
++  case b of
++    IfaceNonRec letbndr rhs -> uncurry NonRec <$> go letbndr rhs
++    IfaceRec    pairs       -> Rec <$> mapM (uncurry go) pairs
++  where
++    go (IfLetBndr fs _ _ _) rhs = do
++        ident <- tcIfaceLclId fs
++        -- ty'   <- tcIfaceType ty
++        rhs'  <- tcIfaceExpr rhs
++        return (ident, rhs')
+diff --git a/compiler/iface/TcIface.hs-boot b/compiler/iface/TcIface.hs-boot
+index f137f13305..6a8351494b 100644
+--- a/compiler/iface/TcIface.hs-boot
++++ b/compiler/iface/TcIface.hs-boot
+@@ -2,7 +2,7 @@ module TcIface where
+ 
+ import GhcPrelude
+ import IfaceSyn    ( IfaceDecl, IfaceClsInst, IfaceFamInst, IfaceRule,
+-                     IfaceAnnotation, IfaceCompleteMatch )
++                     IfaceAnnotation, IfaceCompleteMatch, IfaceBinding )
+ import TyCoRep     ( TyThing )
+ import TcRnTypes   ( IfL )
+ import InstEnv     ( ClsInst )
+@@ -10,6 +10,8 @@ import FamInstEnv  ( FamInst )
+ import CoreSyn     ( CoreRule )
+ import HscTypes    ( CompleteMatch )
+ import Annotations ( Annotation )
++import CoreSyn     ( Bind )
++import Id          ( Id )
+ 
+ tcIfaceDecl         :: Bool -> IfaceDecl -> IfL TyThing
+ tcIfaceRules        :: Bool -> [IfaceRule] -> IfL [CoreRule]
+@@ -17,3 +19,5 @@ tcIfaceInst         :: IfaceClsInst -> IfL ClsInst
+ tcIfaceFamInst      :: IfaceFamInst -> IfL FamInst
+ tcIfaceAnnotations  :: [IfaceAnnotation] -> IfL [Annotation]
+ tcIfaceCompleteSigs :: [IfaceCompleteMatch] -> IfL [CompleteMatch]
++topLevelNames       :: IfaceBinding -> IfL [Id]
++tcIfaceBinding      :: IfaceBinding -> IfL (Bind Id)
 diff --git a/compiler/main/Annotations.hs b/compiler/main/Annotations.hs
 index 82d80aae43..4088d93565 100644
 --- a/compiler/main/Annotations.hs
@@ -449,7 +550,7 @@ index 82d80aae43..4088d93565 100644
                                  --   allows recovery of its value at a given type,
                                  --   and can be persisted to an interface file
 diff --git a/compiler/main/DynFlags.hs b/compiler/main/DynFlags.hs
-index 03bb5292da..65048a7860 100644
+index 2ea0b3d5e9..22f20c0991 100644
 --- a/compiler/main/DynFlags.hs
 +++ b/compiler/main/DynFlags.hs
 @@ -250,6 +250,7 @@ module DynFlags (
@@ -495,7 +596,7 @@ index 03bb5292da..65048a7860 100644
  instance Show SafeHaskellMode where
      show Sf_None         = "None"
      show Sf_Unsafe       = "Unsafe"
-@@ -3183,6 +3205,10 @@ dynamic_flags_deps = [
+@@ -3197,6 +3219,10 @@ dynamic_flags_deps = [
    , make_ord_flag defGhcFlag "dynamic-too"
          (NoArg (setGeneralFlag Opt_BuildDynamicToo))
  
@@ -506,7 +607,7 @@ index 03bb5292da..65048a7860 100644
          ------- Keeping temporary files -------------------------------------
       -- These can be singular (think ghc -c) or plural (think ghc --make)
    , make_ord_flag defGhcFlag "keep-hc-file"
-@@ -4593,6 +4619,9 @@ defaultFlags settings
+@@ -4606,6 +4632,9 @@ defaultFlags settings
        Opt_SharedImplib,
        Opt_SimplPreInlining,
        Opt_VersionMacros
@@ -841,33 +942,6 @@ index 6bc090499f..fdc4e06aad 100644
 +unregisterInterfaceData name env = do
 +  ext_fs <- readIORef (hsc_ext_fields env)
 +  writeIORef (hsc_ext_fields env) (deleteField name ext_fs)
-diff --git a/compiler/main/HscTypes.hs-boot b/compiler/main/HscTypes.hs-boot
-new file mode 100755
-index 0000000000..584381b60b
---- /dev/null
-+++ b/compiler/main/HscTypes.hs-boot
-@@ -0,0 +1,21 @@
-+module HscTypes where
-+
-+import NameEnv
-+import Binary
-+
-+data Dependencies
-+data Usage
-+type FixityEnv = NameEnv FixItem
-+data FixItem
-+data ForeignStubs
-+data Warnings
-+data CompleteMatch
-+data HpcInfo
-+
-+instance Binary Dependencies
-+instance Binary Usage
-+instance Binary ForeignStubs
-+instance Binary Warnings
-+instance Binary CompleteMatch
-+instance Binary HpcInfo
-+instance Binary FixItem
 diff --git a/compiler/utils/Binary.hs b/compiler/utils/Binary.hs
 index 503dd31690..61a9dd159e 100644
 --- a/compiler/utils/Binary.hs
