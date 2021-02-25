@@ -133,7 +133,7 @@ flags2nix pkgFlags =
 ghcOptions2nix :: GhcOptions -> [Binding NExpr]
 ghcOptions2nix ghcOptions =
   [ quoted pkgName $= mkNonRecSet
-    [ "package" $= mkNonRecSet [ "ghcOptions" $= mkStr opts ] ]
+    [ "ghcOptions" $= mkList [ mkStr opts ] ]
   | (pkgName, opts) <- HM.toList ghcOptions
   ]
 
