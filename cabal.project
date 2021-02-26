@@ -1,12 +1,12 @@
-index-state: 2021-02-08T00:00:00Z
+index-state: 2021-02-25T00:00:00Z
 
 packages: .
 
 source-repository-package
     type: git
     location: https://github.com/hamishmack/hackage-db.git
-    tag: 3f12730c0d6092efce142cad87264e7b7eb2b05a
-    --sha256: 13nl8swdd3g1rh14f29v6nhnzaxgc8l70vs6hviw8qgdpbxvhs45
+    tag: 173783814c9e2d7b80d5d4b5a628334361a0b34a
+    --sha256: sha256-T6cKhYvCaWua6S87PYo6LrOvhg2JGjdjm2XLan9300Y=
 
 -- hnix requires hnix-store-core < 0.2, however hnix-store-core-0.1 breaks
 -- plan construction.

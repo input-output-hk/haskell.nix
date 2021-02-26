@@ -29,7 +29,7 @@ library
                      , Stack2nix.Project
                      , Stack2nix.Stack
   build-depends:       base >=4 && <4.15
-                     , Cabal >= 3.2 && <3.3
+                     , Cabal >= 3.4 && <3.5
                      , aeson
                      , aeson-pretty
                      , base16-bytestring
