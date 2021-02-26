@@ -222,7 +222,8 @@
         "deriving-compat".flags.template-haskell-2-11 = true;
         "deriving-compat".flags.new-functor-classes = true;
         "text".revision = (((hackage."text")."1.2.4.1").revisions).default;
-        "Cabal".revision = (((hackage."Cabal")."3.2.1.0").revisions).default;
+        "Cabal".revision = (((hackage."Cabal")."3.4.0.0").revisions).default;
+        "Cabal".flags.bundled-binary-generic = false;
         "assoc".revision = (((hackage."assoc")."1.0.2").revisions).default;
         "unordered-containers".revision = (((hackage."unordered-containers")."0.2.13.0").revisions).default;
         "unordered-containers".flags.debug = false;
