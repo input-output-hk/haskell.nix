@@ -671,7 +671,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
             then compiler-nix-name
-            else "ghc865";
+            else "ghc8104";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
 
