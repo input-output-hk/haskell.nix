@@ -252,7 +252,7 @@ index f691300157..21cce269c9 100644
  {-
  ************************************************************************
 diff --git a/compiler/iface/LoadIface.hs b/compiler/iface/LoadIface.hs
-index 8d327e528d..4073d0dc4d 100644
+index 8d327e528d..9f409a17e6 100644
 --- a/compiler/iface/LoadIface.hs
 +++ b/compiler/iface/LoadIface.hs
 @@ -29,7 +29,9 @@ module LoadIface (
@@ -325,7 +325,7 @@ index 8d327e528d..4073d0dc4d 100644
 +loadCoreBindings :: ModIface -> IfL (Maybe [Bind CoreBndr])
 +loadCoreBindings iface = do
 +  ncu    <- mkNameCacheUpdater
-+  mbinds <- liftIO (readIfaceFieldWith "ghc/phase/core" (getWithUserData ncu) iface)
++  mbinds <- liftIO (readIfaceFieldWith "ghc/phase/ModGuts" (getWithUserData ncu) iface)
 +  case mbinds of
 +    Nothing     -> return Nothing
 +    Just ibinds -> do
