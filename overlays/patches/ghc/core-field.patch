@@ -618,7 +618,7 @@ index 2ea0b3d5e9..22f20c0991 100644
  
      ++ [f | (ns,f) <- optLevelFlags, 0 `elem` ns]
 diff --git a/compiler/main/HscMain.hs b/compiler/main/HscMain.hs
-index 9bb6b4e391..25265aa67d 100644
+index 9bb6b4e391..71c18f5f21 100644
 --- a/compiler/main/HscMain.hs
 +++ b/compiler/main/HscMain.hs
 @@ -180,6 +180,9 @@ import HieTypes         ( getAsts, hie_asts, hie_module )
@@ -647,14 +647,26 @@ index 9bb6b4e391..25265aa67d 100644
                    ,  hsc_type_env_var = Nothing
                    ,  hsc_iserv        = iserv_mvar
                    ,  hsc_dynLinker    = emptyDynLinker
-@@ -833,11 +838,14 @@ finish summary tc_result mb_old_hash = do
+@@ -822,6 +827,11 @@ finish summary tc_result mb_old_hash = do
+       -- exceptions are when the Module is Ghc.Prim or when it is not a
+       -- HsSrcFile Module.
+       desugared_guts0 <- hscDesugar' (ms_location summary) tc_result
++
++      when (gopt Opt_Write_Phase_Core (hsc_dflags hsc_env)) $
++        liftIO $ registerInterfaceDataWith "ghc/phase/ModGuts" hsc_env $ \bh ->
++          putWithUserData (const $ return ()) bh (map toIfaceBind $ mg_binds desugared_guts0)
++
+       if target == HscNothing
+         -- We are not generating code, so we can skip simplification
+         -- and generate a simple interface.
+@@ -833,11 +843,14 @@ finish summary tc_result mb_old_hash = do
            (cg_guts, details) <- {-# SCC "CoreTidy" #-}
                liftIO $ tidyProgram hsc_env desugared_guts
  
 -          let !partial_iface =
 -                {-# SCC "HscMain.mkPartialIface" #-}
 +          when (gopt Opt_Write_Phase_Core (hsc_dflags hsc_env)) $
-+            liftIO $ registerInterfaceDataWith "ghc/phase/core" hsc_env $ \bh ->
++            liftIO $ registerInterfaceDataWith "ghc/phase/CgGuts" hsc_env $ \bh ->
 +              putWithUserData (const $ return ()) bh (map toIfaceBind $ cg_binds cg_guts)
 +
 +          !partial_iface <- {-# SCC "HscMain.mkPartialIface" #-}
