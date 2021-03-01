@@ -22,6 +22,9 @@ in { haskell-nix = prev.haskell-nix // {
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
         (lib.optionalAttrs (version == "3.2.0.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
+        })
+        (lib.optionalAttrs (builtins.compareVersions version "3.0.0.0" >= 0
+            && builtins.compareVersions version "3.5" < 0) {
           # Include patches needed for ghcjs
           packages.Cabal.patches = [
             ./patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff
