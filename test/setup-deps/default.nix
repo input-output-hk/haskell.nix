@@ -42,7 +42,7 @@ recurseIntoAttrs ({
     inherit meta;
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit project packages;
+      inherit project;
     };
   };
 })
