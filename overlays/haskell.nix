@@ -591,7 +591,7 @@ final: prev: {
             getPackage = packageName:
               if rawProject.pkg-set ? configurationError
                 then
-                  # This is an empty package for which 
+                  # A minimal proxy for a package when cabal configure failed
                   let package = {
                     # Including the project so that things like:
                     #  (p.getPackage "hello").project.tool "hlint" "latest"
