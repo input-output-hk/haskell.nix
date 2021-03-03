@@ -425,8 +425,10 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
-    echo "Using index-state ${index-state-found}"
-    HOME=${
+    mkdir -p $out
+
+    echo "Using index-state ${index-state-found}" | tee -a cabal-configure.out
+    if (HOME=${
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include
       # some packages that will be excluded by `index-state-found`
@@ -451,9 +453,7 @@ let
         --enable-benchmarks \
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
             "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
-        ${configureArgs}
-
-    mkdir -p $out
+        ${configureArgs} 2>&1 | tee -a cabal-configure.out); then
 
     # ensure we have all our .cabal files (also those generated from package.yaml) files.
     # otherwise we'd need to be careful about putting the `cabal-generator = hpack` into
@@ -491,6 +491,16 @@ let
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
+    else
+      # When cabal configure fails copy the output that we captured above and
+      # use `failed-cabal-configure.nix` to make a suitable derviation with.
+      cp cabal-configure.out $out
+      cp ${./failed-cabal-configure.nix} $out/default.nix
+
+      # Theere is not much we can do here for JSON, but this output is only used
+      # for diagnosing issues (so a human readable error should be ok).
+      echo "Cabal configure failed see $out/cabal-configure.out for details" > $json
+    fi
   '');
 in {
   projectNix = plan-nix;

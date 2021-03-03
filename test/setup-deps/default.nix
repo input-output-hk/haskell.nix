@@ -15,7 +15,6 @@ let
     { reinstallableLibGhc = true; } ];
   };
 
-  packages = project.hsPkgs;
   meta = {
     platforms = platforms.unix;
     # Building reinstallable lib GHC is broken on 8.10, and we require lib ghc so this won't work with cross-compiling.
@@ -32,7 +31,7 @@ recurseIntoAttrs ({
     name = "setup-deps-test";
 
     buildCommand = ''
-      exe="${packages.pkg.components.exes.pkg}/bin/pkg"
+      exe="${project.getComponent "pkg:exe:pkg"}/bin/pkg"
 
       printf "checking whether executable runs... " >& 2
       $exe

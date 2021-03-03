@@ -80,9 +80,9 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
-          iserv-proxy = pkgs.ghc-extra-packages."${compiler-nix-name}".iserv-proxy.components.exes.iserv-proxy;
+          iserv-proxy = pkgs.ghc-extra-packages."${compiler-nix-name}".getComponent "iserv-proxy:exe:iserv-proxy";
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).components.exes.hello;
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).getComponent "exe:hello";
         });
       }
       //
@@ -102,10 +102,10 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
             inherit (build) tests;
         }) // pkgs.lib.optionalAttrs (ifdLevel >= 2 && crossSystemName != "ghcjs") {
           # GHCJS builds its own template haskell runner.
-          remote-iserv = pkgs.ghc-extra-packages."${compiler-nix-name}".remote-iserv.components.exes.remote-iserv;
-          iserv-proxy = pkgs.ghc-extra-packages."${compiler-nix-name}".iserv-proxy.components.exes.iserv-proxy;
+          remote-iserv = pkgs.ghc-extra-packages."${compiler-nix-name}".getComponent "remote-iserv:exe:remote-iserv";
+          iserv-proxy = pkgs.ghc-extra-packages."${compiler-nix-name}".getComponent "iserv-proxy:exe:iserv-proxy";
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).components.exes.hello;
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).getComponent "exe:hello";
         })
       ))
     )
