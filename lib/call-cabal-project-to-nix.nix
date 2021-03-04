@@ -426,6 +426,10 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
+    # Using `cabal v2-freeze` will configure the project (since
+    # it is not configured yet), taking the existing `cabal.project.freeze`
+    # file into account.  Then it "writes out a freeze file which
+    # records all of the versions and flags that are picked" (from cabal docs).
     echo "Using index-state ${index-state-found}"
     HOME=${
       # This creates `.cabal` directory that is as it would have
