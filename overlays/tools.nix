@@ -66,7 +66,7 @@ in { haskell-nix = prev.haskell-nix // {
           { configureArgs = "--disable-benchmarks --disable-tests"; }
           // args
           // { name = final.haskell-nix.toolPackageName.${name} or name; }))
-          .components.exes."${final.haskell-nix.packageToolName.${name} or name}";
+          .getComponent "exe:${final.haskell-nix.packageToolName.${name} or name}";
 
   tool = compiler-nix-name: name: versionOrArgs:
     let

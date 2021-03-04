@@ -21,8 +21,6 @@ let
     inherit modules;
   };
 
-  packages = project.hsPkgs;
-
 in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
@@ -31,7 +29,7 @@ in recurseIntoAttrs {
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
+      exe="${(project.getComponent "cabal-simple:exe:cabal-simple").exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
@@ -41,7 +39,7 @@ in recurseIntoAttrs {
       # Curiosity: cross compilers prodcing profiling with `+RTS -p -h` lead to the following cryptic message:
       #   cabal-simple: invalid heap profile option: -h*
       # Hence we pass `-hc`.
-      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -hc
+      ${toString (project.getComponent "cabal-simple:exe:cabal-simple").config.testWrapper} $exe +RTS -p -hc
 
       touch $out
     '';
@@ -54,7 +52,7 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit project packages;
+      inherit project;
     };
   };
 }

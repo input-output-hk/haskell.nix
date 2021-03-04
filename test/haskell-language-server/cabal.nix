@@ -5,5 +5,5 @@ in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
   };
-  build = project.hsPkgs.haskell-language-server.components.exes.haskell-language-server;
+  build = project.getComponent "haskell-language-server:exe:haskell-language-server";
 }

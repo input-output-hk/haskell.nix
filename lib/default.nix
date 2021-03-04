@@ -62,6 +62,12 @@ in {
     benchmarks = "bench";
   };
 
+  # For looking up the components attribute based on the cabal component type
+  prefixComponent =
+    lib.listToAttrs (
+      lib.mapAttrsToList (value: name: { inherit name value; })
+        componentPrefix);
+
   applyComponents = f: config:
     let
       comps = config.components;

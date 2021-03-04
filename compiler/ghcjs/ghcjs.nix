@@ -24,21 +24,21 @@ let
     all-ghcjs = pkgs.buildPackages.symlinkJoin {
         name = "ghcjs-${ghcjsVersion}-symlinked";
         paths = [
-            ghcjs.components.exes.ghcjs
-            ghcjs.components.exes.ghcjs-pkg
-            ghcjs.components.exes.ghcjs-boot
-            ghcjs.components.exes.ghcjs-dumparchive
+            (ghcjs.getComponent "exe:ghcjs")
+            (ghcjs.getComponent "exe:ghcjs-pkg")
+            (ghcjs.getComponent "exe:ghcjs-boot")
+            (ghcjs.getComponent "exe:ghcjs-dumparchive")
         ] ++ (if isGhcjs88
           then [
-            ghcjs.components.exes.haddock
-            ghcjs.components.exes.private-ghcjs-run
-            ghcjs.components.exes.private-ghcjs-unlit
-            ghcjs.components.exes.private-ghcjs-hsc2hs
+            (ghcjs.getComponent "exe:haddock")
+            (ghcjs.getComponent "exe:private-ghcjs-run")
+            (ghcjs.getComponent "exe:private-ghcjs-unlit")
+            (ghcjs.getComponent "exe:private-ghcjs-hsc2hs")
           ]
           else [
-            ghcjs.components.exes.haddock-ghcjs
-            ghcjs.components.exes.hsc2hs-ghcjs
-            ghcjs.components.exes.ghcjs-run
+            (ghcjs.getComponent "exe:haddock-ghcjs")
+            (ghcjs.getComponent "exe:hsc2hs-ghcjs")
+            (ghcjs.getComponent "exe:ghcjs-run")
           ]);
     };
     libexec = "libexec/${builtins.replaceStrings ["darwin" "i686"] ["osx" "i386"] pkgs.stdenv.buildPlatform.system}-${ghc.name}/ghcjs-${ghcVersion}";
@@ -68,9 +68,9 @@ let
             lndir ${all-ghcjs}/bin $out/bin
             chmod -R +w $out/bin
             rm $out/bin/ghcjs-boot
-            cp ${ghcjs.components.exes.ghcjs-boot}/bin/ghcjs-boot $out/bin
+            cp ${ghcjs.getComponent "exe:ghcjs-boot"}/bin/ghcjs-boot $out/bin
             rm $out/bin/haddock
-            cp ${ghcjs.components.exes.haddock}/bin/haddock $out/bin
+            cp ${ghcjs.getComponent "exe:haddock"}/bin/haddock $out/bin
 
             wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib"
             wrapProgram $out/bin/haddock --add-flags "-B$out/lib"
