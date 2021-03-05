@@ -63,7 +63,7 @@ let
             cabal-install
         ];
 
-    inherit (pkgs.buildPakcages) emscriptenupstream emscripten emsdk;
+    inherit (pkgs.buildPackages) emscriptenupstream emscripten emsdk;
 
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
@@ -73,11 +73,7 @@ let
             gmp
             pkgconfig
         ]
-        ++ [ ghc cabal-install ]
-        ++ lib.optionals stdenv.isDarwin [
-          pkgs.buildPackages.gcc # https://github.com/ghcjs/ghcjs/issues/663
-        ]
-        ++ lib.optional isGhcjs88 [ emsdk ];
+        ++ [ ghc cabal-install emsdk ];
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {
         buildInputs = configureInputs;
