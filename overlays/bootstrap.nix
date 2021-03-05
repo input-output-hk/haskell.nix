@@ -463,7 +463,7 @@ in {
             ghc865 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc865;
                 in let ghcjs865 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
-                ghcjsVersion =  "8.6.0.1";
+                ghcjsVersion =  "8.6.0.0.10";
                 ghc = buildGHC;
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.6.5" {
                 passthru = {

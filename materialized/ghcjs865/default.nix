@@ -69,6 +69,7 @@
         "zlib".flags.pkg-config = false;
         "rts".revision = (((hackage."rts")."1.0").revisions).default;
         "easy-file".revision = (((hackage."easy-file")."0.2.2").revisions).default;
+        "ghci".revision = (((hackage."ghci")."8.6.5").revisions).default;
         "th-expand-syns".revision = (((hackage."th-expand-syns")."0.4.6.0").revisions).default;
         "regex-posix".revision = (((hackage."regex-posix")."0.96.0.0").revisions).default;
         "regex-posix".flags._regex-posix-clib = false;
@@ -82,8 +83,6 @@
         "cryptonite".flags.support_pclmuldq = false;
         "cryptonite".flags.check_alignment = false;
         "cryptonite".flags.old_toolchain_inliner = false;
-        "alex".revision = (((hackage."alex")."3.2.5").revisions).default;
-        "alex".flags.small_base = true;
         "clock".revision = (((hackage."clock")."0.8").revisions).default;
         "clock".flags.llvm = false;
         "system-fileio".revision = (((hackage."system-fileio")."0.3.16.4").revisions).default;
@@ -128,6 +127,7 @@
         "websockets".flags.example = false;
         "conduit".revision = (((hackage."conduit")."1.3.3").revisions).default;
         "constraints".revision = (((hackage."constraints")."0.12").revisions).default;
+        "ghc-compact".revision = (((hackage."ghc-compact")."0.1.0.0").revisions).default;
         "semigroups".revision = (((hackage."semigroups")."0.19.1").revisions).default;
         "semigroups".flags.bytestring = true;
         "semigroups".flags.unordered-containers = true;
@@ -150,11 +150,9 @@
         "hsc2hs".revision = (((hackage."hsc2hs")."0.68.7").revisions).default;
         "hsc2hs".flags.in-ghc-tree = false;
         "directory".revision = (((hackage."directory")."1.3.3.0").revisions).default;
-        "yaml".revision = (((hackage."yaml")."0.10.4.0").revisions).default;
+        "yaml".revision = (((hackage."yaml")."0.11.5.0").revisions).default;
         "yaml".flags.no-exe = true;
         "yaml".flags.no-examples = true;
-        "yaml".flags.system-libyaml = false;
-        "yaml".flags.no-unicode = false;
         "transformers-compat".revision = (((hackage."transformers-compat")."0.6.6").revisions).default;
         "transformers-compat".flags.five = false;
         "transformers-compat".flags.generic-deriving = true;
@@ -303,8 +301,11 @@
         "kan-extensions".revision = (((hackage."kan-extensions")."5.2.1").revisions).default;
         "wai-logger".revision = (((hackage."wai-logger")."2.3.6").revisions).default;
         "th-lift".revision = (((hackage."th-lift")."0.8.2").revisions).default;
+        "libyaml".revision = (((hackage."libyaml")."0.1.2").revisions).default;
+        "libyaml".flags.system-libyaml = false;
+        "libyaml".flags.no-unicode = false;
         "resourcet".revision = (((hackage."resourcet")."1.2.4.2").revisions).default;
-        "webdriver".revision = (((hackage."webdriver")."0.8.5").revisions).default;
+        "webdriver".revision = (((hackage."webdriver")."0.9.0.1").revisions).default;
         "webdriver".flags.network-uri = true;
         "webdriver".flags.developer = false;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
@@ -347,7 +348,9 @@
           "ghc-heap" = "8.6.5";
           "mtl" = "2.2.2";
           "rts" = "1.0";
+          "ghci" = "8.6.5";
           "deepseq" = "1.4.4.0";
+          "ghc-compact" = "0.1.0.0";
           "parsec" = "3.1.13.0";
           "directory" = "1.3.3.0";
           "template-haskell" = "2.14.0.0";
@@ -375,10 +378,8 @@
       packages = {
         haddock-library-ghcjs = ./.plan.nix/haddock-library-ghcjs.nix;
         ghcjs-th = ./.plan.nix/ghcjs-th.nix;
-        ghc-api-ghcjs = ./.plan.nix/ghc-api-ghcjs.nix;
         ghci-ghcjs = ./.plan.nix/ghci-ghcjs.nix;
         ghcjs = ./.plan.nix/ghcjs.nix;
-        haddock-api-ghcjs = ./.plan.nix/haddock-api-ghcjs.nix;
         template-haskell-ghcjs = ./.plan.nix/template-haskell-ghcjs.nix;
         };
       };
@@ -390,28 +391,22 @@
           "ghcjs-th" = {
             flags = { "use-host-template-haskell" = lib.mkOverride 900 false; };
             };
-          "ghc-api-ghcjs" = {
-            flags = {
-              "stage1" = lib.mkOverride 900 false;
-              "stage2" = lib.mkOverride 900 true;
-              "debug" = lib.mkOverride 900 false;
-              "stage3" = lib.mkOverride 900 false;
-              "use-host-template-haskell" = lib.mkOverride 900 false;
-              "ghci" = lib.mkOverride 900 true;
-              "terminfo" = lib.mkOverride 900 true;
-              };
-            };
           "ghci-ghcjs" = { flags = { "ghci" = lib.mkOverride 900 true; }; };
           "ghcjs" = {
             flags = {
               "compiler-only" = lib.mkOverride 900 false;
+              "stage1" = lib.mkOverride 900 false;
               "runtime-assertions" = lib.mkOverride 900 false;
               "no-wrapper-install" = lib.mkOverride 900 false;
-              "use-host-template-haskell" = lib.mkOverride 900 false;
+              "stage2" = lib.mkOverride 900 true;
+              "debug" = lib.mkOverride 900 false;
+              "stage3" = lib.mkOverride 900 false;
+              "use-host-template-haskell" = lib.mkOverride 900 true;
               "disable-optimizer" = lib.mkOverride 900 false;
+              "ghci" = lib.mkOverride 900 true;
+              "terminfo" = lib.mkOverride 900 true;
               };
             };
-          "haddock-api-ghcjs" = { flags = {}; };
           "template-haskell-ghcjs" = { flags = {}; };
           };
         })

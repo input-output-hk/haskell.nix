@@ -1,7 +1,7 @@
 { pkgs
 , ghcjsSrcJson ? ./ghcjs-src.json
 , ghcjsSrc ? pkgs.buildPackages.fetchgit (builtins.fromJSON (builtins.readFile ghcjsSrcJson))
-, ghcjsVersion ? "8.6.0.1"
+, ghcjsVersion ? "8.6.0.0.10"
 , ghcVersion ? "8.6.5"
 , compiler-nix-name ? if builtins.compareVersions ghcjsVersion "8.8.0.0" > 0
   then "ghc884"
@@ -24,21 +24,25 @@ let
     all-ghcjs = pkgs.buildPackages.symlinkJoin {
         name = "ghcjs-${ghcjsVersion}-symlinked";
         paths = [
-            (ghcjs.getComponent "exe:ghcjs")
-            (ghcjs.getComponent "exe:ghcjs-pkg")
             (ghcjs.getComponent "exe:ghcjs-boot")
-            (ghcjs.getComponent "exe:ghcjs-dumparchive")
         ] ++ (if isGhcjs88
           then [
+            (ghcjs.getComponent "exe:ghcjs")
+            (ghcjs.getComponent "exe:ghcjs-pkg")
+            (ghcjs.getComponent "exe:private-ghcjs-hsc2hs")
             (ghcjs.getComponent "exe:haddock")
+            (ghcjs.getComponent "exe:ghcjs-dumparchive")
+            (ghcjs.getComponent "exe:private-ghcjs-run")
+            (ghcjs.getComponent "exe:private-ghcjs-unlit")
+          ]
+          else [
+            (ghcjs.getComponent "exe:private-ghcjs-ghcjs")
+            (ghcjs.getComponent "exe:private-ghcjs-ghcjs-pkg")
             (ghcjs.getComponent "exe:private-ghcjs-run")
             (ghcjs.getComponent "exe:private-ghcjs-unlit")
             (ghcjs.getComponent "exe:private-ghcjs-hsc2hs")
-          ]
-          else [
-            (ghcjs.getComponent "exe:haddock-ghcjs")
-            (ghcjs.getComponent "exe:hsc2hs-ghcjs")
-            (ghcjs.getComponent "exe:ghcjs-run")
+            (ghcjs.getComponent "exe:private-ghcjs-haddock")
+            (ghcjs.getComponent "exe:private-ghcjs-ghcjs-dumparchive")
           ]);
     };
     libexec = "libexec/${builtins.replaceStrings ["darwin" "i686"] ["osx" "i386"] pkgs.stdenv.buildPlatform.system}-${ghc.name}/ghcjs-${ghcVersion}";
