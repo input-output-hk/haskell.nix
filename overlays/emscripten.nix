@@ -38,7 +38,9 @@ in {
           if [[ -e "$f.py" ]]; then
             rm "$f"
             echo '#!'${final.runtimeShell} > "$f"
-            echo 'export HOME=$(mktemp -d)' >> "$f"
+            echo 'if [[ ! -d $HOME ]]; then' >> "$f"
+            echo '  export HOME=$(mktemp -d)' >> "$f"
+            echo 'fi' >> "$f"
             echo 'exec "'$f.py'" "$@"' >> "$f"
             chmod +x "$f"
           fi
