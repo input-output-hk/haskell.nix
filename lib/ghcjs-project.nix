@@ -62,17 +62,9 @@ let
             alex
             cabal-install
         ];
-    # nixpkgs does not have an emsdk, this derivation uses symlinks to make something
-    # that matches enought for `ghcjs-boot` to work
-    emscriptenupstream = pkgs.buildPackages.emscriptenupstream;
-    emscripten = pkgs.buildPackages.emscripten.override {
-      emscriptenBackend = emscriptenupstream;
-    };
-    emsdk = pkgs.linkFarm "emsdk" [
-      { name = "upstream/bin"; path = emscriptenupstream + "/bin"; }
-      { name = "upstream/emscripten"; path = emscripten + "/bin"; }
-      { name = "share"; path = emscripten + "/share"; }
-    ];
+
+    inherit (pkgs.buildPakcages) emscriptenupstream emscripten emsdk;
+
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
             nodejs
