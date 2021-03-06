@@ -85,9 +85,9 @@ let
             mkdir -p $out/lib/ghcjs-${ghcVersion}
             lndir ${all-ghcjs}/${libexec} $out/bin
 
-            wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
+            wrapProgram $out/bin/private-ghcjs-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
+            wrapProgram $out/bin/private-ghcjs-haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
+            wrapProgram $out/bin/private-ghcjs-ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
           ''
         }
         # Avoid timeouts while unix package runs hsc2hs (it does not print anything
