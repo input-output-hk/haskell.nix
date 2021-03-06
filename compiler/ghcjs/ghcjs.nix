@@ -86,7 +86,7 @@ let
             lndir ${all-ghcjs}/${libexec} $out/bin
 
             wrapProgram $out/bin/private-ghcjs-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/private-ghcjs-haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
+            wrapProgram $out/bin/private-ghcjs-haddock --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
             wrapProgram $out/bin/private-ghcjs-ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
           ''
         }
