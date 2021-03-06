@@ -83,6 +83,7 @@ let
           else ''
             mkdir -p $out
             lndir ${all-ghcjs} $out
+            mkdir -p $out/lib/ghcjs-${ghcVersion}
             rm $out/bin/ghcjs-boot
             cp ${ghcjs.getComponent "exe:ghcjs-boot"}/bin/ghcjs-boot $out/bin
             wrapProgram $out/bin/ghcjs-boot --set ghcjs_libexecdir $out/bin
