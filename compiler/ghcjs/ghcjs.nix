@@ -81,13 +81,16 @@ let
             wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
           ''
           else ''
-            mkdir -p $out/bin
+            mkdir -p $out
+            lndir ${all-ghcjs} $out
+            rm $out/bin/ghcjs-boot
+            cp ${ghcjs.getComponent "exe:ghcjs-boot"}/bin/ghcjs-boot $out/bin
+            wrapProgram $out/bin/ghcjs-boot --set ghcjs_libexecdir $out/${libexec}
             mkdir -p $out/lib/ghcjs-${ghcVersion}
-            lndir ${all-ghcjs}/${libexec} $out/bin
 
-            wrapProgram $out/bin/private-ghcjs-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/private-ghcjs-haddock --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/private-ghcjs-ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
+            wrapProgram $out/${libexec}/private-ghcjs-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
+            wrapProgram $out/${libexec}/private-ghcjs-haddock --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
+            wrapProgram $out/${libexec}/private-ghcjs-ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
           ''
         }
         # Avoid timeouts while unix package runs hsc2hs (it does not print anything
@@ -105,12 +108,12 @@ let
             # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
             ''
             env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
-              PYTHON=${pkgs.buildPackages.python3}/bin/python3 \
               $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock \
               || (echo failed > $TMP/done; false)
             ''
           else ''
-            env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin \
+            env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
+              $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} \
               || (echo failed > $TMP/done; false)
           ''
         }
