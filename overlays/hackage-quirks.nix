@@ -69,10 +69,11 @@ in { haskell-nix = prev.haskell-nix // {
     };
 
     haskell-language-server = {
+      # This is still needed for HLS 0.9.0.0 because ghcide 0.7.3 has no upper
+      # bound for haddock-library. 
       cabalProject = ''
         packages: .
-        allow-newer: haskell-language-server:ghcide
-        constraints: ghcide <0.7.4, hls-plugin-api <0.7.1.0, hls-retrie-plugin <0.1.1.1, haddock-library <1.10
+        constraints: haddock-library <1.10
       '';
     };
 
