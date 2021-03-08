@@ -89,9 +89,9 @@ let
             wrapProgram $out/bin/ghcjs-boot --set ghcjs_libexecdir $out/bin
             mv $out/${libexec}/* $out/bin
 
-            wrapProgram $out/bin/private-ghcjs-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/private-ghcjs-haddock --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/private-ghcjs-ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
+            wrapProgram $out/bin/private-ghcjs-ghcjs --add-flags "-B$out/lib"
+            wrapProgram $out/bin/private-ghcjs-haddock --add-flags "-B$out/lib"
+            wrapProgram $out/bin/private-ghcjs-ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
           ''
         }
         # Avoid timeouts while unix package runs hsc2hs (it does not print anything
@@ -114,7 +114,7 @@ let
             ''
           else ''
             env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
-              $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} \
+              $out/bin/ghcjs-boot -j1 --with-ghcjs-libdir=$out --with-emsdk=${project.emsdk} \
               || (echo failed > $TMP/done; false)
           ''
         }

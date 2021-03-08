@@ -111,14 +111,7 @@ let
         sed -i 's/gcc /cc /g' utils/makePackages.sh
         ./utils/makePackages.sh copy
 
-        ${
-          # nuke the HsBaseConfig.h from base.buildinfo.in; this will
-          # prevent it from being installed and provide incorrect values.
-          pkgs.lib.optionalString (!isGhcjs88) ''
-            echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
-            sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
-          ''
-        }'';
+        '';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (

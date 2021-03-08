@@ -489,7 +489,7 @@ in {
                 cd ..
                 mkdir lib
                 cd lib
-                cp -R ${ghcjs865}/lib/ghcjs-8.6.5 ${targetPrefix}ghc-8.6.5
+                cp -R ${ghcjs865}/lib ${targetPrefix}ghc-8.6.5
             '' + installDeps targetPrefix);
             ghc883 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc883;
                 in let ghcjs883 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
