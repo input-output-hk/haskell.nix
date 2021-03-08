@@ -1,4 +1,8 @@
-# stack-to-nix
+# Command line tools
+
+To install the command line tools refer to the [Installing nix-tools](https://input-output-hk.github.io/haskell.nix/dev/manually-generating-nix-expressions/) section.
+
+## stack-to-nix
 
 ```
 stack-to-nix - a stack to nix converter
@@ -28,7 +32,7 @@ output directory, it will create a basic one with a
 
 [cache-issue]: https://github.com/input-output-hk/haskell.nix/issues/57
 
-# plan-to-nix
+## plan-to-nix
 
 ```
 plan-to-nix - a stack to nix converter
@@ -65,7 +69,7 @@ these files.
     generated, remove `.nix-tools.cache`
     (The open issue is [#57][cache-issue]).
 
-# cabal-to-nix
+## cabal-to-nix
 
 ```
 Usage: cabal-to-nix FILE.cabal
