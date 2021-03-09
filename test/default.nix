@@ -180,7 +180,6 @@ let
     exe-only = callTest ./exe-only { inherit util compiler-nix-name; };
     stack-source-repo = callTest ./stack-source-repo {};
     extra-hackage = callTest ./extra-hackage { inherit compiler-nix-name; };
-    compiler-nix-name = callTest ./compiler-nix-name {};
     hls-cabal = callTest ./haskell-language-server/cabal.nix { inherit compiler-nix-name; };
     hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
     cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
