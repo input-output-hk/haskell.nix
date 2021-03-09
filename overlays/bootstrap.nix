@@ -465,7 +465,8 @@ in {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.0.10";
                 ghc = buildGHC;
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.6.5" {
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.evalPackages.runCommand "${targetPrefix}ghc-8.6.5" {
+                nativeBuildInputs = [ final.evalPackages.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.6.5";
@@ -487,9 +488,9 @@ in {
                 ln -s ${ghcjs865}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
-                mkdir lib
+                mkdir -p lib/${targetPrefix}ghc-8.6.5
                 cd lib
-                cp -R ${ghcjs865}/lib ${targetPrefix}ghc-8.6.5
+                lndir ${ghcjs865}/lib ${targetPrefix}ghc-8.6.5
             '' + installDeps targetPrefix);
             ghc883 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc883;
                 in let ghcjs883 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
@@ -498,7 +499,8 @@ in {
                 ghc = buildGHC;
                 ghcVersion = "8.8.3";
                 compiler-nix-name = "ghc883";
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.3" {
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.evalPackages.runCommand "${targetPrefix}ghc-8.8.3" {
+                nativeBuildInputs = [ final.evalPackages.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.3";
@@ -520,9 +522,9 @@ in {
                 ln -s ${ghcjs883}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
-                mkdir lib
+                mkdir -p lib/${targetPrefix}ghc-8.8.3
                 cd lib
-                cp -R ${ghcjs883}/lib ${targetPrefix}ghc-8.8.3
+                lndir ${ghcjs883}/lib ${targetPrefix}ghc-8.8.3
             '' + installDeps targetPrefix);
             ghc884 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc884;
                 in let ghcjs884 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
@@ -531,7 +533,8 @@ in {
                 ghc = buildGHC;
                 ghcVersion = "8.8.4";
                 compiler-nix-name = "ghc884";
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.4" {
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.evalPackages.runCommand "${targetPrefix}ghc-8.8.4" {
+                nativeBuildInputs = [ final.evalPackages.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.4";
@@ -553,9 +556,9 @@ in {
                 ln -s ${ghcjs884}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
-                mkdir lib
+                mkdir -p lib/${targetPrefix}ghc-8.8.4
                 cd lib
-                cp -R ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
+                lndir ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
             '' + installDeps targetPrefix);
         }))));
 
