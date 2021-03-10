@@ -465,8 +465,8 @@ in {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.0.10";
                 ghc = buildGHC;
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.evalPackages.runCommand "${targetPrefix}ghc-8.6.5" {
-                nativeBuildInputs = [ final.evalPackages.xorg.lndir ];
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.6.5" {
+                nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.6.5";
