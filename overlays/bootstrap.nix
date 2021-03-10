@@ -499,8 +499,8 @@ in {
                 ghc = buildGHC;
                 ghcVersion = "8.8.3";
                 compiler-nix-name = "ghc883";
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.evalPackages.runCommand "${targetPrefix}ghc-8.8.3" {
-                nativeBuildInputs = [ final.evalPackages.xorg.lndir ];
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.3" {
+                nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.3";
@@ -533,8 +533,8 @@ in {
                 ghc = buildGHC;
                 ghcVersion = "8.8.4";
                 compiler-nix-name = "ghc884";
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.evalPackages.runCommand "${targetPrefix}ghc-8.8.4" {
-                nativeBuildInputs = [ final.evalPackages.xorg.lndir ];
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.4" {
+                nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.4";
