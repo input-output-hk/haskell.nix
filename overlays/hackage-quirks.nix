@@ -68,15 +68,6 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
-    haskell-language-server = {
-      # This is still needed for HLS 0.9.0.0 because ghcide 0.7.3 has no upper
-      # bound for haddock-library. 
-      cabalProject = ''
-        packages: .
-        constraints: haddock-library <1.10
-      '';
-    };
-
     # See https://github.com/input-output-hk/haskell.nix/issues/948
     postgrest = {
       cabalProject = ''
