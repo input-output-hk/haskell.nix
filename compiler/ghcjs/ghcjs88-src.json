@@ -1,6 +1,6 @@
 {
   "url": "https://github.com/ghcjs/ghcjs",
-  "rev": "df8100c1791a6d29420fff9c282f571d9bc89a76",
-  "sha256": "sha256-g+RZuHlNotY/sg4mG9akSB1pF9FQMq2B+uYoSYZM/Go=",
+  "rev": "839a291b6c9a6d98df4f1a343d3781e5925bd317",
+  "sha256": "sha256-vLnxBBYORd0TD8mtqc7ZDf/wSfxk2J3egQqBXdU7Ftk=",
   "fetchSubmodules": true
 }
