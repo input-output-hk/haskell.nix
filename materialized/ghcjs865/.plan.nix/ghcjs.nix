@@ -13,7 +13,13 @@
       no-wrapper-install = false;
       disable-optimizer = false;
       runtime-assertions = false;
-      use-host-template-haskell = false;
+      use-host-template-haskell = true;
+      debug = false;
+      ghci = true;
+      stage1 = false;
+      stage2 = true;
+      stage3 = false;
+      terminfo = true;
       };
     package = {
       specVersion = "2.0";
@@ -31,12 +37,6 @@
       setup-depends = [
         (hsPkgs.buildPackages.base or (pkgs.buildPackages.base or (errorHandler.setupDepError "base")))
         (hsPkgs.buildPackages.Cabal or (pkgs.buildPackages.Cabal or (errorHandler.setupDepError "Cabal")))
-        (hsPkgs.buildPackages.containers or (pkgs.buildPackages.containers or (errorHandler.setupDepError "containers")))
-        (hsPkgs.buildPackages.filepath or (pkgs.buildPackages.filepath or (errorHandler.setupDepError "filepath")))
-        (hsPkgs.buildPackages.directory or (pkgs.buildPackages.directory or (errorHandler.setupDepError "directory")))
-        (hsPkgs.buildPackages.process or (pkgs.buildPackages.process or (errorHandler.setupDepError "process")))
-        (hsPkgs.buildPackages.template-haskell or (pkgs.buildPackages.template-haskell or (errorHandler.setupDepError "template-haskell")))
-        (hsPkgs.buildPackages.transformers or (pkgs.buildPackages.transformers or (errorHandler.setupDepError "transformers")))
         ];
       detailLevel = "FullDetails";
       licenseFiles = [ "LICENSE" ];
@@ -53,19 +53,45 @@
         "README.markdown"
         "test/LICENSE"
         "test/ghcjs-testsuite.cabal"
-        "stack.yaml"
+        "ghc/compiler/Unique.h"
+        "ghc/compiler/HsVersions.h"
+        "ghc/compiler/nativeGen/NCG.h"
+        "ghc/compiler/parser/cutils.h"
+        "ghc/compiler/utils/md5.h"
+        "ghc/includes/CodeGen.Platform.hs"
+        "lib/ghc-api-ghcjs/autogen/Config.hs"
+        "lib/ghc-api-ghcjs/autogen/864/Config.hs"
+        "lib/ghc-api-ghcjs/autogen/863/Config.hs"
+        "lib/ghc-api-ghcjs/includes/GHCConstantsHaskellExports.hs"
+        "lib/ghc-api-ghcjs/includes/GHCConstantsHaskellType.hs"
+        "lib/ghc-api-ghcjs/includes/GHCConstantsHaskellWrappers.hs"
+        "lib/ghc-api-ghcjs/includes/*.h"
+        "lib/ghc-api-ghcjs/includes/*.hs-incl"
+        "ghc/includes/rts/*.h"
+        "ghc/includes/rts/storage/*.h"
+        "ghc/includes/MachDeps.h"
+        "ghc/includes/Rts.h"
+        "ghc/includes/RtsAPI.h"
+        "ghc/includes/Stg.h"
+        "ghc/includes/HsFFI.h"
+        "ghc/includes/Cmm.h"
+        "ghc/includes/stg/*.h"
+        "ghc/utils/unlit/fs.h"
+        "ghc/driver/utils/cwrapper.h"
+        "ghc/driver/utils/getLocation.h"
+        "utils/wrapper/getline.h"
         ];
       extraTmpFiles = [];
       extraDocFiles = [];
       };
     components = {
       "library" = {
-        depends = [
+        depends = (([
           (hsPkgs."base" or (errorHandler.buildDepError "base"))
           (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
-          (hsPkgs."ghc-api-ghcjs" or (errorHandler.buildDepError "ghc-api-ghcjs"))
-          (hsPkgs."ghcjs-th" or (errorHandler.buildDepError "ghcjs-th"))
           (hsPkgs."ghc-boot" or (errorHandler.buildDepError "ghc-boot"))
+          (hsPkgs."ghc-heap" or (errorHandler.buildDepError "ghc-heap"))
+          (hsPkgs."ghc-compact" or (errorHandler.buildDepError "ghc-compact"))
           (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
           (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
@@ -102,15 +128,46 @@
           (hsPkgs."parsec" or (errorHandler.buildDepError "parsec"))
           (hsPkgs."haskell-src-exts" or (errorHandler.buildDepError "haskell-src-exts"))
           (hsPkgs."haskell-src-meta" or (errorHandler.buildDepError "haskell-src-meta"))
+          (hsPkgs."base" or (errorHandler.buildDepError "base"))
+          (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
+          (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
+          (hsPkgs."process" or (errorHandler.buildDepError "process"))
+          (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
+          (hsPkgs."binary" or (errorHandler.buildDepError "binary"))
+          (hsPkgs."time" or (errorHandler.buildDepError "time"))
+          (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
+          (hsPkgs."array" or (errorHandler.buildDepError "array"))
+          (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
+          (hsPkgs."hpc" or (errorHandler.buildDepError "hpc"))
+          (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
+          (hsPkgs."ghc-boot" or (errorHandler.buildDepError "ghc-boot"))
+          (hsPkgs."ghc-boot-th" or (errorHandler.buildDepError "ghc-boot-th"))
+          (hsPkgs."ghc-heap" or (errorHandler.buildDepError "ghc-heap"))
           ] ++ (if flags.use-host-template-haskell
           then [ (hsPkgs."ghci" or (errorHandler.buildDepError "ghci")) ]
           else [
             (hsPkgs."template-haskell-ghcjs" or (errorHandler.buildDepError "template-haskell-ghcjs"))
             (hsPkgs."ghci-ghcjs" or (errorHandler.buildDepError "ghci-ghcjs"))
-            ]);
+            ])) ++ (if flags.use-host-template-haskell || compiler.isGhcjs && true
+          then [
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
+            ]
+          else [
+            (hsPkgs."template-haskell-ghcjs" or (errorHandler.buildDepError "template-haskell-ghcjs"))
+            (hsPkgs."ghci-ghcjs" or (errorHandler.buildDepError "ghci-ghcjs"))
+            ])) ++ (if system.isWindows
+          then [ (hsPkgs."Win32" or (errorHandler.buildDepError "Win32")) ]
+          else [
+            (hsPkgs."unix" or (errorHandler.buildDepError "unix"))
+            ] ++ (pkgs.lib).optional (flags.terminfo) (hsPkgs."terminfo" or (errorHandler.buildDepError "terminfo")));
+        build-tools = [
+          (hsPkgs.buildPackages.happy.components.exes.happy or (pkgs.buildPackages.happy or (errorHandler.buildToolDepError "happy:happy")))
+          ];
         buildable = true;
         modules = [
           "Paths_ghcjs"
+          "GhcPrelude"
           "Gen2/Generator"
           "Gen2/Profiling"
           "Gen2/Floater"
@@ -146,22 +203,514 @@
           "Compiler/Plugins"
           "Compiler/Program"
           "Compiler/GhcjsProgram"
+          "Compiler/Platform"
           "Compiler/Settings"
           "Compiler/Utils"
           "Compiler/Variants"
           "Compiler/JMacro"
           "Compiler/JMacro/Base"
           "Compiler/JMacro/Lens"
-          "Compiler/JMacro/QQ"
           "Compiler/JMacro/ParseTH"
+          "Compiler/JMacro/QQ"
           "Compiler/JMacro/Util"
+          "Compiler/JMacro/Combinators"
+          "Compiler/JMacro/Symbols"
           "GHCJS"
+          "GHCJS/Prim/TH/Eval"
+          "GHCJS/Prim/TH/Serialized"
+          "GHCJS/Prim/TH/Types"
+          "Ar"
+          "FileCleanup"
+          "DriverBkp"
+          "BkpSyn"
+          "NameShape"
+          "RnModIface"
+          "Avail"
+          "AsmUtils"
+          "BasicTypes"
+          "ConLike"
+          "DataCon"
+          "PatSyn"
+          "Demand"
+          "Debug"
+          "Exception"
+          "FieldLabel"
+          "GhcMonad"
+          "Hooks"
+          "Id"
+          "IdInfo"
+          "Lexeme"
+          "Literal"
+          "Llvm"
+          "Llvm/AbsSyn"
+          "Llvm/MetaData"
+          "Llvm/PpLlvm"
+          "Llvm/Types"
+          "LlvmCodeGen"
+          "LlvmCodeGen/Base"
+          "LlvmCodeGen/CodeGen"
+          "LlvmCodeGen/Data"
+          "LlvmCodeGen/Ppr"
+          "LlvmCodeGen/Regs"
+          "LlvmMangler"
+          "MkId"
+          "Module"
+          "Name"
+          "NameEnv"
+          "NameSet"
+          "OccName"
+          "RdrName"
+          "NameCache"
+          "SrcLoc"
+          "UniqSupply"
+          "Unique"
+          "Var"
+          "VarEnv"
+          "VarSet"
+          "UnVarGraph"
+          "BlockId"
+          "CLabel"
+          "Cmm"
+          "CmmBuildInfoTables"
+          "CmmPipeline"
+          "CmmCallConv"
+          "CmmCommonBlockElim"
+          "CmmImplementSwitchPlans"
+          "CmmContFlowOpt"
+          "CmmExpr"
+          "CmmInfo"
+          "CmmLex"
+          "CmmLint"
+          "CmmLive"
+          "CmmMachOp"
+          "CmmMonad"
+          "CmmSwitch"
+          "CmmNode"
+          "CmmOpt"
+          "CmmParse"
+          "CmmProcPoint"
+          "CmmSink"
+          "CmmType"
+          "CmmUtils"
+          "CmmLayoutStack"
+          "EnumSet"
+          "MkGraph"
+          "PprBase"
+          "PprC"
+          "PprCmm"
+          "PprCmmDecl"
+          "PprCmmExpr"
+          "Bitmap"
+          "CodeGen/Platform"
+          "CodeGen/Platform/ARM"
+          "CodeGen/Platform/ARM64"
+          "CodeGen/Platform/NoRegs"
+          "CodeGen/Platform/PPC"
+          "CodeGen/Platform/PPC_Darwin"
+          "CodeGen/Platform/SPARC"
+          "CodeGen/Platform/X86"
+          "CodeGen/Platform/X86_64"
+          "CgUtils"
+          "StgCmm"
+          "StgCmmBind"
+          "StgCmmClosure"
+          "StgCmmCon"
+          "StgCmmEnv"
+          "StgCmmExpr"
+          "StgCmmForeign"
+          "StgCmmHeap"
+          "StgCmmHpc"
+          "StgCmmArgRep"
+          "StgCmmLayout"
+          "StgCmmMonad"
+          "StgCmmPrim"
+          "StgCmmProf"
+          "StgCmmTicky"
+          "StgCmmUtils"
+          "StgCmmExtCode"
+          "SMRep"
+          "CoreArity"
+          "CoreFVs"
+          "CoreLint"
+          "CorePrep"
+          "CoreSubst"
+          "CoreOpt"
+          "CoreSyn"
+          "TrieMap"
+          "CoreTidy"
+          "CoreUnfold"
+          "CoreUtils"
+          "CoreMap"
+          "CoreSeq"
+          "CoreStats"
+          "MkCore"
+          "PprCore"
+          "PmExpr"
+          "TmOracle"
+          "Check"
+          "Coverage"
+          "Desugar"
+          "DsArrows"
+          "DsBinds"
+          "DsCCall"
+          "DsExpr"
+          "DsForeign"
+          "DsGRHSs"
+          "DsListComp"
+          "DsMonad"
+          "DsUsage"
+          "DsUtils"
+          "ExtractDocs"
+          "Match"
+          "MatchCon"
+          "MatchLit"
+          "HsBinds"
+          "HsDecls"
+          "HsDoc"
+          "HsExpr"
+          "HsImpExp"
+          "HsLit"
+          "PlaceHolder"
+          "HsExtension"
+          "HsInstances"
+          "HsPat"
+          "HsSyn"
+          "HsTypes"
+          "HsUtils"
+          "HsDumpAst"
+          "BinIface"
+          "BinFingerprint"
+          "BuildTyCl"
+          "IfaceEnv"
+          "IfaceSyn"
+          "IfaceType"
+          "ToIface"
+          "LoadIface"
+          "MkIface"
+          "TcIface"
+          "FlagChecker"
+          "Annotations"
+          "CmdLineParser"
+          "CodeOutput"
+          "Config"
+          "Constants"
+          "DriverMkDepend"
+          "DriverPhases"
+          "PipelineMonad"
+          "DriverPipeline"
+          "DynFlags"
+          "ErrUtils"
+          "Finder"
+          "GHC"
+          "GhcMake"
+          "GhcPlugins"
+          "DynamicLoading"
+          "HeaderInfo"
+          "HscMain"
+          "HscStats"
+          "HscTypes"
+          "InteractiveEval"
+          "InteractiveEvalTypes"
+          "PackageConfig"
+          "Packages"
+          "PlatformConstants"
+          "Plugins"
+          "TcPluginM"
+          "PprTyThing"
+          "StaticPtrTable"
+          "SysTools"
+          "SysTools/BaseDir"
+          "SysTools/Terminal"
+          "SysTools/ExtraObj"
+          "SysTools/Info"
+          "SysTools/Process"
+          "SysTools/Tasks"
+          "Elf"
+          "TidyPgm"
+          "Ctype"
+          "HaddockUtils"
+          "Lexer"
+          "OptCoercion"
+          "Parser"
+          "RdrHsSyn"
+          "ApiAnnotation"
+          "ForeignCall"
+          "KnownUniques"
+          "PrelInfo"
+          "PrelNames"
+          "PrelRules"
+          "PrimOp"
+          "TysPrim"
+          "TysWiredIn"
+          "CostCentre"
+          "CostCentreState"
+          "ProfInit"
+          "RnBinds"
+          "RnEnv"
+          "RnExpr"
+          "RnHsDoc"
+          "RnNames"
+          "RnPat"
+          "RnSource"
+          "RnSplice"
+          "RnTypes"
+          "RnFixity"
+          "RnUtils"
+          "RnUnbound"
+          "CoreMonad"
+          "CSE"
+          "FloatIn"
+          "FloatOut"
+          "LiberateCase"
+          "OccurAnal"
+          "SAT"
+          "SetLevels"
+          "SimplCore"
+          "SimplEnv"
+          "SimplMonad"
+          "SimplUtils"
+          "Simplify"
+          "SimplStg"
+          "StgStats"
+          "StgCse"
+          "UnariseStg"
+          "RepType"
+          "Rules"
+          "SpecConstr"
+          "Specialise"
+          "CoreToStg"
+          "StgLint"
+          "StgSyn"
+          "CallArity"
+          "DmdAnal"
+          "Exitify"
+          "WorkWrap"
+          "WwLib"
+          "FamInst"
+          "Inst"
+          "TcAnnotations"
+          "TcArrows"
+          "TcBinds"
+          "TcSigs"
+          "TcClassDcl"
+          "TcDefaults"
+          "TcDeriv"
+          "TcDerivInfer"
+          "TcDerivUtils"
+          "TcEnv"
+          "TcExpr"
+          "TcForeign"
+          "TcGenDeriv"
+          "TcGenFunctor"
+          "TcGenGenerics"
+          "TcHsSyn"
+          "TcHsType"
+          "TcInstDcls"
+          "TcMType"
+          "TcValidity"
+          "TcMatches"
+          "TcPat"
+          "TcPatSyn"
+          "TcRnDriver"
+          "TcBackpack"
+          "TcRnExports"
+          "TcRnMonad"
+          "TcRnTypes"
+          "TcRules"
+          "TcSimplify"
+          "TcHoleErrors"
+          "TcErrors"
+          "TcTyClsDecls"
+          "TcTyDecls"
+          "TcTypeable"
+          "TcType"
+          "TcEvidence"
+          "TcEvTerm"
+          "TcUnify"
+          "TcInteract"
+          "TcCanonical"
+          "TcFlatten"
+          "TcSMonad"
+          "TcTypeNats"
+          "TcSplice"
+          "Class"
+          "Coercion"
+          "DsMeta"
+          "THNames"
+          "FamInstEnv"
+          "FunDeps"
+          "InstEnv"
+          "TyCon"
+          "CoAxiom"
+          "Kind"
+          "Type"
+          "TyCoRep"
+          "Unify"
+          "Bag"
+          "Binary"
+          "BooleanFormula"
+          "BufWrite"
+          "Digraph"
+          "Encoding"
+          "FastFunctions"
+          "FastMutInt"
+          "FastString"
+          "FastStringEnv"
+          "Fingerprint"
+          "FiniteMap"
+          "FV"
+          "GraphBase"
+          "GraphColor"
+          "GraphOps"
+          "GraphPpr"
+          "IOEnv"
+          "Json"
+          "ListSetOps"
+          "ListT"
+          "Maybes"
+          "MonadUtils"
+          "OrdList"
+          "Outputable"
+          "Pair"
+          "Panic"
+          "PprColour"
+          "Pretty"
+          "State"
+          "Stream"
+          "StringBuffer"
+          "UniqDFM"
+          "UniqDSet"
+          "UniqFM"
+          "UniqMap"
+          "UniqSet"
+          "Util"
+          "Hoopl/Block"
+          "Hoopl/Collections"
+          "Hoopl/Dataflow"
+          "Hoopl/Graph"
+          "Hoopl/Label"
+          "AsmCodeGen"
+          "TargetReg"
+          "NCGMonad"
+          "Instruction"
+          "Format"
+          "Reg"
+          "RegClass"
+          "PIC"
+          "Platform"
+          "CPrim"
+          "X86/Regs"
+          "X86/RegInfo"
+          "X86/Instr"
+          "X86/Cond"
+          "X86/Ppr"
+          "X86/CodeGen"
+          "PPC/Regs"
+          "PPC/RegInfo"
+          "PPC/Instr"
+          "PPC/Cond"
+          "PPC/Ppr"
+          "PPC/CodeGen"
+          "SPARC/Base"
+          "SPARC/Regs"
+          "SPARC/Imm"
+          "SPARC/AddrMode"
+          "SPARC/Cond"
+          "SPARC/Instr"
+          "SPARC/Stack"
+          "SPARC/ShortcutJump"
+          "SPARC/Ppr"
+          "SPARC/CodeGen"
+          "SPARC/CodeGen/Amode"
+          "SPARC/CodeGen/Base"
+          "SPARC/CodeGen/CondCode"
+          "SPARC/CodeGen/Gen32"
+          "SPARC/CodeGen/Gen64"
+          "SPARC/CodeGen/Sanity"
+          "SPARC/CodeGen/Expand"
+          "RegAlloc/Liveness"
+          "RegAlloc/Graph/Main"
+          "RegAlloc/Graph/Stats"
+          "RegAlloc/Graph/ArchBase"
+          "RegAlloc/Graph/ArchX86"
+          "RegAlloc/Graph/Coalesce"
+          "RegAlloc/Graph/Spill"
+          "RegAlloc/Graph/SpillClean"
+          "RegAlloc/Graph/SpillCost"
+          "RegAlloc/Graph/TrivColorable"
+          "RegAlloc/Linear/Main"
+          "RegAlloc/Linear/JoinToTargets"
+          "RegAlloc/Linear/State"
+          "RegAlloc/Linear/Stats"
+          "RegAlloc/Linear/FreeRegs"
+          "RegAlloc/Linear/StackMap"
+          "RegAlloc/Linear/Base"
+          "RegAlloc/Linear/X86/FreeRegs"
+          "RegAlloc/Linear/X86_64/FreeRegs"
+          "RegAlloc/Linear/PPC/FreeRegs"
+          "RegAlloc/Linear/SPARC/FreeRegs"
+          "Dwarf"
+          "Dwarf/Types"
+          "Dwarf/Constants"
+          "Convert"
+          "ByteCodeTypes"
+          "ByteCodeAsm"
+          "ByteCodeGen"
+          "ByteCodeInstr"
+          "ByteCodeItbls"
+          "ByteCodeLink"
+          "Debugger"
+          "Linker"
+          "RtClosureInspect"
+          "GHCi"
           ];
-        hsSourceDirs = [ "src" ];
-        includeDirs = [ "include" ];
+        cSources = [
+          "ghc/compiler/parser/cutils.c"
+          "ghc/compiler/cbits/genSym.c"
+          ];
+        hsSourceDirs = [
+          "lib/ghcjs-th"
+          "src"
+          "lib/ghc-api-ghcjs/autogen"
+          "ghc/compiler/backpack"
+          "ghc/compiler/basicTypes"
+          "ghc/compiler/cmm"
+          "ghc/compiler/codeGen"
+          "ghc/compiler/coreSyn"
+          "ghc/compiler/deSugar"
+          "ghc/compiler/ghci"
+          "ghc/compiler/hsSyn"
+          "ghc/compiler/iface"
+          "ghc/compiler/llvmGen"
+          "ghc/compiler/main"
+          "ghc/compiler/nativeGen"
+          "ghc/compiler/parser"
+          "ghc/compiler/prelude"
+          "ghc/compiler/profiling"
+          "ghc/compiler/rename"
+          "ghc/compiler/simplCore"
+          "ghc/compiler/simplStg"
+          "ghc/compiler/specialise"
+          "ghc/compiler/stgSyn"
+          "ghc/compiler/stranal"
+          "ghc/compiler/typecheck"
+          "ghc/compiler/types"
+          "ghc/compiler/utils"
+          "lib/ghc-api-ghcjs/autogen"
+          ] ++ (if system.isWindows
+          then [ "src-platform/windows" ]
+          else [ "src-platform/unix" ]);
+        includeDirs = [
+          "ghc/compiler"
+          "ghc/compiler/parser"
+          "ghc/compiler/utils"
+          "lib/ghc-api-ghcjs/includes"
+          "lib/ghc-api-ghcjs/autogen"
+          "ghc/includes"
+          ];
         };
       exes = {
-        "ghcjs" = {
+        "private-ghcjs-ghcjs" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
@@ -170,39 +719,7 @@
           hsSourceDirs = [ "src-bin" ];
           mainPath = [ "Main.hs" ];
           };
-        "haddock-ghcjs" = {
-          depends = [
-            (hsPkgs."ghc-api-ghcjs" or (errorHandler.buildDepError "ghc-api-ghcjs"))
-            (hsPkgs."haddock-api-ghcjs" or (errorHandler.buildDepError "haddock-api-ghcjs"))
-            (hsPkgs."base" or (errorHandler.buildDepError "base"))
-            (hsPkgs."process" or (errorHandler.buildDepError "process"))
-            (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
-            (hsPkgs."transformers-compat" or (errorHandler.buildDepError "transformers-compat"))
-            (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-            (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
-            (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
-            (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
-            ];
-          buildable = true;
-          modules = [ "ResponseFile" ];
-          hsSourceDirs = [ "src-bin" "src-bin/haddock" ];
-          mainPath = [
-            "Haddock.hs"
-            ] ++ (pkgs.lib).optional (system.isWindows) "";
-          };
-        "hsc2hs-ghcjs" = {
-          depends = [
-            (hsPkgs."base" or (errorHandler.buildDepError "base"))
-            (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
-            (hsPkgs."process" or (errorHandler.buildDepError "process"))
-            ];
-          buildable = true;
-          hsSourceDirs = [ "src-bin" ];
-          mainPath = [
-            "Hsc2Hs.hs"
-            ] ++ (pkgs.lib).optional (system.isWindows) "";
-          };
-        "ghcjs-pkg" = {
+        "private-ghcjs-ghcjs-pkg" = {
           depends = [
             (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
@@ -251,13 +768,12 @@
             (hsPkgs."unix-compat" or (errorHandler.buildDepError "unix-compat"))
             (hsPkgs."executable-path" or (errorHandler.buildDepError "executable-path"))
             ];
-          buildable = if flags.compiler-only then false else true;
+          buildable = true;
+          modules = [ "Paths_ghcjs" ];
           hsSourceDirs = [ "src-bin" ];
-          mainPath = ([
-            "Boot.hs"
-            ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional (system.isWindows) "";
+          mainPath = [ "Boot.hs" ] ++ (pkgs.lib).optional (system.isWindows) "";
           };
-        "ghcjs-run" = {
+        "private-ghcjs-run" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
@@ -270,11 +786,151 @@
             "Run.hs"
             ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional (system.isWindows) "";
           };
-        "ghcjs-dumparchive" = {
+        "private-ghcjs-wrapper" = {
+          buildable = if flags.compiler-only || !system.isWindows
+            then false
+            else true;
+          cSources = [
+            "ghc/driver/utils/getLocation.c"
+            "ghc/driver/utils/cwrapper.c"
+            "utils/wrapper/getline.c"
+            ];
+          hsSourceDirs = [ "utils/wrapper" ];
+          includeDirs = [ "ghc/driver/utils" ];
+          includes = [
+            "ghc/driver/utils/cwrapper.h"
+            "ghc/driver/utils/getLocation.h"
+            "utils/wrapper/getline.h"
+            ];
+          mainPath = [
+            "wrapper.c"
+            ] ++ (pkgs.lib).optional (flags.compiler-only || !system.isWindows) "";
+          };
+        "private-ghcjs-unlit" = {
+          buildable = if flags.compiler-only then false else true;
+          cSources = [ "ghc/utils/unlit/fs.c" ];
+          hsSourceDirs = [ "ghc/utils/unlit" ];
+          includes = [ "ghc/utils/unlit/fs.h" ];
+          mainPath = [
+            "unlit.c"
+            ] ++ (pkgs.lib).optional (flags.compiler-only) "";
+          };
+        "private-ghcjs-touchy" = {
+          buildable = if flags.compiler-only || !system.isWindows
+            then false
+            else true;
+          hsSourceDirs = [ "ghc/utils/touchy" ];
+          mainPath = [
+            "touchy.c"
+            ] ++ (pkgs.lib).optional (flags.compiler-only || !system.isWindows) "";
+          };
+        "private-ghcjs-hsc2hs" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
+            (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
+            (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
+            (hsPkgs."process" or (errorHandler.buildDepError "process"))
+            ];
+          buildable = if flags.compiler-only then false else true;
+          modules = [
+            "C"
+            "Common"
+            "CrossCodegen"
+            "DirectCodegen"
+            "Flags"
+            "HSCParser"
+            "ATTParser"
+            "UtilsCodegen"
+            "Compat/ResponseFile"
+            "Paths_ghcjs"
+            ];
+          hsSourceDirs = [ "ghc/utils/hsc2hs" ];
+          mainPath = [
+            "Main.hs"
+            ] ++ (pkgs.lib).optional (flags.compiler-only) "";
+          };
+        "private-ghcjs-haddock" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            ] ++ (pkgs.lib).optionals true [
+            (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
+            (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
+            (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
+            (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
+            (hsPkgs."array" or (errorHandler.buildDepError "array"))
+            (hsPkgs."xhtml" or (errorHandler.buildDepError "xhtml"))
+            (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
+            (hsPkgs."ghc-boot" or (errorHandler.buildDepError "ghc-boot"))
+            (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
+            (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
+            (hsPkgs."parsec" or (errorHandler.buildDepError "parsec"))
+            (hsPkgs."text" or (errorHandler.buildDepError "text"))
+            (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
+            ];
+          buildable = if flags.compiler-only then false else true;
+          modules = (pkgs.lib).optionals true [
+            "Documentation/Haddock/Parser"
+            "Documentation/Haddock/Parser/Monad"
+            "Documentation/Haddock/Types"
+            "Documentation/Haddock/Doc"
+            "Documentation/Haddock/Utf8"
+            "Documentation/Haddock/Parser/Util"
+            "Documentation/Haddock/Markup"
+            "Documentation/Haddock"
+            "Haddock"
+            "Haddock/Interface"
+            "Haddock/Interface/Json"
+            "Haddock/Interface/Rename"
+            "Haddock/Interface/Create"
+            "Haddock/Interface/AttachInstances"
+            "Haddock/Interface/LexParseRn"
+            "Haddock/Interface/ParseModuleHeader"
+            "Haddock/Interface/Specialize"
+            "Haddock/Parser"
+            "Haddock/Utils"
+            "Haddock/Utils/Json"
+            "Haddock/Backends/Xhtml"
+            "Haddock/Backends/Xhtml/Decl"
+            "Haddock/Backends/Xhtml/DocMarkup"
+            "Haddock/Backends/Xhtml/Layout"
+            "Haddock/Backends/Xhtml/Meta"
+            "Haddock/Backends/Xhtml/Names"
+            "Haddock/Backends/Xhtml/Themes"
+            "Haddock/Backends/Xhtml/Types"
+            "Haddock/Backends/Xhtml/Utils"
+            "Haddock/Backends/LaTeX"
+            "Haddock/Backends/HaddockDB"
+            "Haddock/Backends/Hoogle"
+            "Haddock/Backends/Hyperlinker"
+            "Haddock/Backends/Hyperlinker/Ast"
+            "Haddock/Backends/Hyperlinker/Parser"
+            "Haddock/Backends/Hyperlinker/Renderer"
+            "Haddock/Backends/Hyperlinker/Types"
+            "Haddock/Backends/Hyperlinker/Utils"
+            "Haddock/ModuleTree"
+            "Haddock/Types"
+            "Haddock/Doc"
+            "Haddock/Version"
+            "Haddock/InterfaceFile"
+            "Haddock/Options"
+            "Haddock/GhcUtils"
+            "Haddock/Syb"
+            "Haddock/Convert"
+            "Paths_ghcjs"
+            ];
+          hsSourceDirs = [ "src-bin" ] ++ (pkgs.lib).optionals true [
+            "ghc/utils/haddock/haddock-api/src"
+            "ghc/utils/haddock/haddock-library/src"
+            ];
+          mainPath = ([
+            "HaddockDriver.hs"
+            ] ++ (pkgs.lib).optional (flags.compiler-only) "") ++ (pkgs.lib).optional true "";
+          };
+        "private-ghcjs-ghcjs-dumparchive" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
-            (hsPkgs."ghc-api-ghcjs" or (errorHandler.buildDepError "ghc-api-ghcjs"))
             (hsPkgs."ghcjs" or (errorHandler.buildDepError "ghcjs"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))

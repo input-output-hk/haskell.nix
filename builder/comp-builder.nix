@@ -329,6 +329,10 @@ let
       ++ (lib.optional keepSource "source");
 
     configurePhase =
+      # emcc is very slow if it cannot cache stuff in $HOME
+      (lib.optionalString (stdenv.hostPlatform.isGhcjs) ''
+      export HOME=$(mktemp -d)
+      '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
       '') +
