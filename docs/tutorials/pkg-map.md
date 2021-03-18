@@ -3,10 +3,10 @@
 Cabal files may contain dependencies to external non-Haskell
 dependencies via:
 
-* [`build-tool-depends`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-build-tool-depends)
-* [`pkgconfig-depends`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-pkgconfig-depends)
-* [`frameworks`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-frameworks)
-* [`extra-libraries`](https://cabal.readthedocs.io/en/latest/developing-packages.html#pkg-field-extra-libraries)
+* [`build-tool-depends`](https://cabal.readthedocs.io/en/latest/cabal-package.html#pkg-field-build-tool-depends)
+* [`pkgconfig-depends`](https://cabal.readthedocs.io/en/latest/cabal-package.html#pkg-field-pkgconfig-depends)
+* [`frameworks`](https://cabal.readthedocs.io/en/latest/cabal-package.html#pkg-field-frameworks)
+* [`extra-libraries`](https://cabal.readthedocs.io/en/latest/cabal-package.html#pkg-field-extra-libraries)
 
 If there is a `pkgs` attribute in Nixpkgs that matches the name given
 in the Cabal file, then it will be added as a dependency (see the
