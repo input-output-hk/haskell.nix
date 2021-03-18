@@ -1,24 +1,21 @@
-lib: with lib.licenses;
-{ BSD-3-Clause = bsd3;
-  BSD-2-Clause = bsd2;
-  MIT = mit;
-  "MPL-2.0" = mpl20;
-  ISC = isc;
-  "LGPL-2.1-only"     = lgpl21;
-  "LGPL-3.0-only"     = lgpl3;
-  "GPL-2.0-only"      = gpl2;
-  "GPL-2.0-or-later"  = gpl2Plus;
-  "GPL-3.0-only"      = gpl3;
-  "AGPL-3.0-only"     = agpl3;
-  "AGPL-3.0-or-later" = agpl3Plus;
-  "Apache-2.0"        = asl20;
-  "GPL-2.0-or-later AND BSD-3-Clause" = [gpl2Plus bsd3];
+pkgs:
+let licenses = import spdx/licenses.nix pkgs;
+in licenses // {
   # Generic
-  LicenseRef-Apache = "Apache";
-  LicenseRef-GPL = "GPL";
-  LicenseRef-LGPL = "LGPL";
-  LicenseRef-NCSA = ncsa;
-  LicenseRef-PublicDomain = publicDomain;
-  LicenseRef-OtherLicense = null;
+  LicenseRef-PublicDomain = {
+      spdxId = "LicenseRef-PublicDomain";
+      shortName = "Public Domain";
+      fullName = "This work is dedicated to the Public Domain";
+      url = "https://wikipedia.org/wiki/Public_domain";
+      free = true;
+    };
+  LicenseRef-OtherLicense = {
+      spdxId = "LicenseRef-OtherLicense";
+      shortName = "Other License";
+      fullName = "Unidentified Other License";
+      url = "https://spdx.github.io/spdx-spec/appendix-IV-SPDX-license-expressions/";
+      # Not setting `free` here. The license may or may not be `free`.
+      # See https://github.com/input-output-hk/haskell.nix/pull/1006
+    };
   NONE = null;
 }

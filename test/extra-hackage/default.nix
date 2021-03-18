@@ -1,6 +1,6 @@
-{ stdenv, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
 
@@ -36,7 +36,7 @@ in recurseIntoAttrs {
     name = "external-hackage-test";
 
     buildCommand = ''
-      exe="${packages.external-package-user.components.exes.external-package-user}/bin/external-package-user${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.external-package-user.components.exes.external-package-user.exePath}"
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
       # fixme: run on target platform when cross-compiled

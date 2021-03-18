@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   modules = [
@@ -29,7 +29,7 @@ in recurseIntoAttrs {
     name = "cabal-hpack-test";
 
     buildCommand = ''
-      exe="${packages.cabal-hpack.components.exes.cabal-hpack}/bin/cabal-hpack${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-hpack.components.exes.cabal-hpack.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

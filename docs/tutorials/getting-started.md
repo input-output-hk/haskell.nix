@@ -21,7 +21,19 @@ trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNG
 substituters = [...] https://hydra.iohk.io [...]
 ```
 
-This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../reference/troubleshooting#why-am-i-building-ghc).
+If you're running NixOS, you need to add/update the following in your `/etc/nixos/configuration.nix` files instead.
+
+```
+# Binary Cache for Haskell.nix
+nix.binaryCachePublicKeys = [
+  "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+];
+nix.binaryCaches = [
+  "https://hydra.iohk.io"
+];
+```
+
+This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../../troubleshooting#why-am-i-building-ghc).
 
 ## Scaffolding
 
@@ -37,7 +49,7 @@ Add `default.nix`:
 # haskell.nix provides access to the nixpkgs pins which are used by our CI,
 # hence you will be more likely to get cache hits when using these.
 # But you can also just use your own, e.g. '<nixpkgs>'.
-, nixpkgsSrc ? haskellNix.sources.nixpkgs-2003
+, nixpkgsSrc ? haskellNix.sources.nixpkgs-2009
 
 # haskell.nix provides some arguments to be passed to nixpkgs, including some
 # patches and also the haskell.nix functionality itself as an overlay.
@@ -75,6 +87,13 @@ To build an executable:
 
 ```shell
 nix-build -A your-package-name.components.exes.your-exe-name
+```
+
+To cross compile use the `projectCross` attribute:
+
+```
+nix-build -A projectCross.ghcjs.hsPkgs.your-package-name.components.exes.your-exe-name
+nix-build -A projectCross.mingwW64.hsPkgs.your-package-name.components.exes.your-exe-name
 ```
 
 To open a shell for use with `cabal` run:

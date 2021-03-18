@@ -10,6 +10,6 @@
 - Overridable configuration
 - Cross compile Haskell packages
 
-[^1]: See [Nixpkgs current Users' Guide to Haskell Infrastructure](https://nixos.org/nixpkgs/manual/#users-guide-to-the-haskell-infrastructure) for comparison.
+[^1]: See [Nixpkgs current Users' Guide to Haskell Infrastructure](https://haskell4nix.readthedocs.io/) for comparison.
 
 

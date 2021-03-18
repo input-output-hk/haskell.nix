@@ -1,6 +1,6 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {
@@ -24,6 +24,8 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    # Avoid duplicate package issues when runghc looks for packages
+    packageSetupDeps = false;
   };
 
   envPkga = pkgSet.config.hsPkgs.shellFor {
@@ -33,6 +35,8 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    # Avoid duplicate package issues when runghc looks for packages
+    packageSetupDeps = false;
   };
 
   envDefault = pkgSet.config.hsPkgs.shellFor {
@@ -42,21 +46,11 @@ let
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
+    # Avoid duplicate package issues when runghc looks for packages
+    packageSetupDeps = false;
   };
 
-in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
- then
-    let skip = runCommand "skip-test-shell-for" {} ''
-      echo "Skipping shell-for test on windows as does not work yet" >& 2
-      touch $out
-    '';
-    in {
-      env = skip;
-      envPkga = skip;
-      envDefault = skip;
-      run = skip;
-    }
- else {
+in recurseIntoAttrs {
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
@@ -76,8 +70,10 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       touch $out
     '';
 
-    meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
+    meta = {
+      platforms = platforms.unix;
+      disabled = stdenv.hostPlatform.isMusl;
+    };
 
     passthru = {
       # Used for debugging with nix repl
@@ -87,4 +83,4 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       inherit env envPkga envDefault;
     };
   };
-})
+}

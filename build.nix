@@ -21,9 +21,9 @@ in rec {
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs {
-      ghcide-020 = tool compiler-nix-name "ghcide" "0.2.0";
-      cabal-32 = tool compiler-nix-name "cabal" "3.2.0.0";
-      hls-051 = tool compiler-nix-name "haskell-language-server" "0.5.1";
+      cabal-latest = tool compiler-nix-name "cabal" "latest";
+      hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
+      hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
     }
   );
 
@@ -33,7 +33,7 @@ in rec {
   # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = import ./scripts/update-hackage.nix {
-      inherit (pkgs) stdenv writeScript coreutils glibc git
+      inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nix-prefetch-git gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
@@ -41,7 +41,7 @@ in rec {
       inherit (haskell) update-index-state-hashes;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
-      inherit (pkgs) stdenv writeScript coreutils glibc git
+      inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nix-prefetch-git gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;

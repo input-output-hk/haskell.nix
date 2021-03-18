@@ -37,7 +37,7 @@ themselves. This is what the [`shellFor`][shellFor] function does.
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  hsPkgs = import ./default.nix { inherit pkgs; };
+  hsPkgs = import ./default.nix { };
 in
   hsPkgs.shellFor {
     # Include only the *local* packages of your project.
@@ -100,7 +100,7 @@ selects packages from the larger package set.
 # shell.nix
 let
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = import haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
+  nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
   haskell.haskellPackages.ghcWithPackages (ps: with ps;
@@ -119,7 +119,7 @@ project.
 ```nix
 let
   haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = import haskellNix.sources.nixpkgs-1909 haskellNix.nixpkgsArgs;
+  nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
   haskell = nixpkgs.haskell-nix;
 in
   haskell.snapshots."lts-13.18".alex.components.exes.alex

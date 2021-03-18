@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = cabalProject' {
@@ -19,7 +19,7 @@ in recurseIntoAttrs {
     name = "sublib-docs-test";
 
     buildCommand = ''
-      exe="${packages.sublib-docs.components.exes.sublib-docs}/bin/sublib-docs${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.sublib-docs.components.exes.sublib-docs.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

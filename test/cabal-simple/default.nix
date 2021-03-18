@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   modules = [
@@ -26,13 +26,13 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = packages.shellFor { tools = { cabal = "3.2.0.0"; }; };
+  test-shell = project.shellFor { tools = { cabal = "3.2.0.0"; }; };
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

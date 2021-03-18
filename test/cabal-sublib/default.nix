@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   modules = [
@@ -29,7 +29,7 @@ in recurseIntoAttrs {
     name = "cabal-sublib-test";
 
     buildCommand = ''
-      exe="${packages.cabal-sublib.components.exes.cabal-sublib}/bin/cabal-sublib${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-sublib.components.exes.cabal-sublib.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
@@ -55,7 +55,7 @@ in recurseIntoAttrs {
 
     passthru = {
       # Used for debugging with nix repl
-      inherit packages;
+      inherit packages project;
     };
   };
 }

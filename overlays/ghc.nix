@@ -3,8 +3,6 @@ final: prev: with prev;
    let
     ghcPkgOverrides = {
         enableIntegerSimple = false;
-      } // lib.optionalAttrs final.stdenv.hostPlatform.isAarch32 {
-        enableRelocatableStaticLibs = false;
       };
     ghcDrvOverrides = drv: {
         hardeningDisable = (drv.hardeningDisable or []) ++ [ "stackprotector" "format" ] ++ lib.optionals prev.stdenv.hostPlatform.isAarch32 [ "pic" "pie" ];
@@ -23,7 +21,9 @@ final: prev: with prev;
        && !lib.hasPrefix "ghcjs" name
        && !lib.hasSuffix "Binary" name;
      overrideCompiler = compiler:
-       (compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides;
+       ((compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides) // {
+         dwarf = overrideCompiler compiler.dwarf;
+       };
    in
      lib.recursiveUpdate prev.haskell-nix {
        compiler = lib.mapAttrs (_name: overrideCompiler)

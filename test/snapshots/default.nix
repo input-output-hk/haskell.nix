@@ -1,32 +1,17 @@
-{ stdenv, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   env = snapshots."lts-14.13".ghcWithHoogle
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
-in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
- then
-    let skip = runCommand "skip-test-snapshot" {} ''
-      echo "Skipping snapshot test on windows as does not work yet" >& 2
-      touch $out
-    '';
-    in {
-      env = skip;
-      run = skip;
-    }
- else {
+in recurseIntoAttrs {
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
 
-    buildCommand = if stdenv.hostPlatform.isWindows
-      then ''
-        printf "snapshot test is not working yet for windows. skipping. " >& 2
-        touch $out
-      ''
-      else ''
+    buildCommand = ''
       ########################################################################
       # test single component from haskellPackages
 
@@ -41,7 +26,7 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
 
     ''
     # Hoogle support is currently disabled in cross compiler shells
-    + (optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) ''
+    + (optionalString (stdenv.buildPlatform == stdenv.hostPlatform) ''
         printf "checking that the ghcWithPackages env has a hoogle index...\n" >& 2
         ${env}/bin/hoogle search Conduit --count=100 | grep ConduitT
     '') +''
@@ -54,4 +39,4 @@ in recurseIntoAttrs (if stdenv.hostPlatform.isWindows
       inherit env;
     };
   };
-})
+}

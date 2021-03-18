@@ -44,6 +44,7 @@ in
 
 let
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
+  nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
   ghc' =
     if ghcOverride != null
@@ -111,8 +112,9 @@ let
     then index-state
     else if cabalProjectIndexState != null
     then cabalProjectIndexState
-    else builtins.trace ("Using latest index state" + (if name == null then "" else " for " + name) + "!")
-      (pkgs.lib.last (builtins.attrNames index-state-hashes));
+    else
+      let latest-index-state = pkgs.lib.last (builtins.attrNames index-state-hashes);
+      in builtins.trace ("No index state specified" + (if name == null then "" else " for " + name) + ", using the latest index state that we know about (${latest-index-state})!") latest-index-state;
 
   index-state-pinned = index-state != null || cabalProjectIndexState != null;
 
@@ -157,21 +159,51 @@ let
   # restricted-eval mode (as long as a sha256 is included).
   # Replace source-repository-package blocks that have a sha256 with
   # packages: block containing nix store paths of the fetched repos.
+
+  hashPath = path:
+    builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
+      "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
+
   replaceSoureRepos = projectFile:
     let
+      fetchRepo = fetchgit: repoData:
+        let
+          fetched =
+            if repoData.sha256 != null
+            then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
+            else
+              let drv = builtins.fetchGit { inherit (repoData) url ref; };
+              in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
+                (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
+                 drv);
+        in fetched + (if repoData.subdir == "." then "" else "/" + repoData.subdir);
+
       blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
-      sourceRepos = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
+      sourceRepoData = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
       otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
+
+      # we need the repository content twice:
+      # * at eval time (below to build the fixed project file)
+      #   Here we want to use pkgs.evalPackages.fetchgit, so one can calculate
+      #   the build plan for any target without a remote builder
+      # * at built time  (passed out)
+      #   Here we want to use plain pkgs.fetchgit, which is what a builder
+      #   on the target system would use, so that the derivation is unaffected
+      #   and, say, a linux release build job can identify the derivation
+      #   as built by a darwin builder, and fetch it from a cache
+      sourceReposBuild = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData ;
+      sourceReposEval = builtins.map (fetchRepo pkgs.fetchgit) sourceRepoData;
     in {
-      inherit sourceRepos;
+      sourceRepos = sourceReposBuild;
       makeFixedProjectFile = ''
         cp -f ${otherText} ./cabal.project
         chmod +w -R ./cabal.project
-        echo "packages:" >> ./cabal.project
+        # The newline here is important in case cabal.project does not have one at the end
+        printf "\npackages:" >> ./cabal.project
         mkdir -p ./.source-repository-packages
       '' +
         ( pkgs.lib.strings.concatStrings (
@@ -183,18 +215,15 @@ let
                  "${f}/" "./.source-repository-packages/${builtins.toString n}/"
               echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
             '')
-              (pkgs.lib.lists.range 0 ((builtins.length fixedProject.sourceRepos) - 1))
-              sourceRepos
+              (pkgs.lib.lists.range 0 ((builtins.length sourceReposEval) - 1))
+              sourceReposEval
           )
         );
     };
 
   fixedProject =
     if rawCabalProject == null
-      then {
-        sourceRepos = [];
-        makeFixedProjectFile = "";
-      }
+      then { sourceRepos = []; makeFixedProjectFile = ""; }
       else replaceSoureRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
@@ -240,6 +269,11 @@ let
     ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
     ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
     ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
+    ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+      ${ghc.targetPrefix}ghc --numeric-ghc-version > $out/ghc/numeric-ghc-version
+      ${ghc.targetPrefix}ghc --numeric-ghcjs-version > $out/ghc/numeric-ghcjs-version
+      ${ghc.targetPrefix}ghc-pkg --numeric-ghcjs-version > $out/ghc-pkg/numeric-ghcjs-version
+    ''}
     # The order of the `ghc-pkg dump` output seems to be non
     # deterministic so we need to sort it so that it is always
     # the same.
@@ -274,6 +308,14 @@ let
         --numeric-version*)
           cat ${dummy-ghc-data}/ghc/numeric-version
           ;;
+      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+        --numeric-ghc-version*)
+          cat ${dummy-ghc-data}/ghc/numeric-ghc-version
+          ;;
+        --numeric-ghcjs-version*)
+          cat ${dummy-ghc-data}/ghc/numeric-ghcjs-version
+          ;;
+      ''}
         --supported-languages*)
           cat ${dummy-ghc-data}/ghc/supported-languages
           ;;
@@ -306,6 +348,11 @@ let
         --version)
           cat ${dummy-ghc-data}/ghc-pkg/version
           ;;
+      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+        --numeric-ghcjs-version)
+          cat ${dummy-ghc-data}/ghc-pkg/numeric-ghcjs-version
+          ;;
+      ''}
         'dump --global -v0')
           cat ${dummy-ghc-data}/ghc-pkg/dump-global
           ;;
@@ -324,6 +371,7 @@ let
     inherit materialized;
     sha256 = plan-sha256;
     sha256Arg = "plan-sha256";
+    this = "project.plan-nix" + (if name != null then " for ${name}" else "");
     # Before pinning stuff down we need an index state to use
     reasonNotSafe =
       if !index-state-pinned
@@ -331,13 +379,40 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (pkgs.evalPackages.runCommand (if name == null then "plan-to-nix-pkgs" else name + "-plan-to-nix-pkgs") {
+  }) (pkgs.evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
     nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
+    outputs = [
+      "out"           # The results of plan-to-nix
+      # These two output will be present if in cabal configure failed.
+      # They are used to provide passthru.json and passthru.freeze that
+      # check first for cabal configure failure.
+      "maybeJson"    # The `plan.json` file generated by cabal and used for `plan-to-nix` input
+      "maybeFreeze"  # The `cabal.project.freeze` file created by `cabal v2-freeze`
+    ];
+    passthru =
+      let
+        checkCabalConfigure = ''
+          if [[ -f ${plan-nix}/cabal-configure.out ]]; then
+            cat ${plan-nix}/cabal-configure.out
+            exit 1
+          fi
+        '';
+      in {
+        # These check for cabal configure failure
+        json = pkgs.evalPackages.runCommand (nameAndSuffix "plan-json") {} ''
+          ${checkCabalConfigure}
+          cp ${plan-nix.maybeJson} $out
+        '';
+        freeze = pkgs.evalPackages.runCommand (nameAndSuffix "plan-freeze") {} ''
+          ${checkCabalConfigure}
+          cp ${plan-nix.maybeFreeze} $out
+        '';
+      };
   } ''
     tmp=$(mktemp -d)
     cd $tmp
@@ -373,10 +448,19 @@ let
     ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
       cp ${pkgs.evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
         cabal.project.freeze
+      chmod +w cabal.project.freeze
     ''}
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
-    HOME=${
+
+    mkdir -p $out
+
+    # Using `cabal v2-freeze` will configure the project (since
+    # it is not configured yet), taking the existing `cabal.project.freeze`
+    # file into account.  Then it "writes out a freeze file which
+    # records all of the versions and flags that are picked" (from cabal docs).
+    echo "Using index-state ${index-state-found}"
+    if(HOME=${
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include
       # some packages that will be excluded by `index-state-found`
@@ -386,20 +470,26 @@ let
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
-    } cabal v2-configure \
+    } cabal v2-freeze \
         --index-state=${
             # Setting the desired `index-state` here in case it was not
             # from the cabal.project file. This will further restrict the
             # packages used by the solver (cached-index-state >= index-state-found).
-            builtins.trace ("Using index-state: ${index-state-found}" + (if name == null then "" else " for " + name))
-              index-state-found} \
-        --with-ghc=${ghc.targetPrefix}ghc \
+           index-state-found} \
+        -w ${
+          # We are using `-w` rather than `--with-ghc` here to override
+          # the `with-compiler:` in the `cabal.project` file.
+          ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
         --enable-tests \
         --enable-benchmarks \
-        ${configureArgs}
+        ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
+            "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
+        ${configureArgs} 2>&1 | tee -a cabal-configure.out); then
 
-    mkdir -p $out
+    cp cabal.project.freeze $maybeFreeze
+    # Not needed any more (we don't want it to wind up in the $out hash)
+    rm cabal.project.freeze
 
     # ensure we have all our .cabal files (also those generated from package.yaml) files.
     # otherwise we'd need to be careful about putting the `cabal-generator = hpack` into
@@ -421,6 +511,9 @@ let
     # proper relative paths.
     (cd $out${subDir'} && plan-to-nix --full --plan-json $tmp${subDir'}/dist-newstyle/cache/plan.json -o .)
 
+    # Make the plan.json file available in case we need to debug plan-to-nix
+    cp $tmp${subDir'}/dist-newstyle/cache/plan.json $maybeJson
+
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly
     # without affecting the nix).
@@ -434,6 +527,24 @@ let
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
+    else
+      # Check that this was a solver failure that (not some other
+      # possibly non deterministic failure).
+      # TODO replace grep once https://github.com/haskell/cabal/issues/5191
+      # is fixed.
+      grep "cabal: Could not resolve dependencies" cabal-configure.out
+
+      # When cabal configure fails copy the output that we captured above and
+      # use `failed-cabal-configure.nix` to make a suitable derviation with.
+      cp cabal-configure.out $out
+      cp ${./failed-cabal-configure.nix} $out/default.nix
+
+      # These should only be used indirectly by `passthru.json` and `passthru.freeze`.
+      # Those derivations will check for `cabal-configure.out` out first to see if
+      # it is ok to use these files.
+      echo "Cabal configure failed see $out/cabal-configure.out for details" > $maybeJson
+      echo "Cabal configure failed see $out/cabal-configure.out for details" > $maybeFreeze
+    fi
   '');
 in {
   projectNix = plan-nix;

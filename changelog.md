@@ -1,6 +1,50 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Feb 22, 2021
+* Add `.dwarf` to build any component with DWARF dubug info on linux
+  (ghc >=8.10.2).
+* Pass `enableDWARF` to `shellFor` for to get a shell where all the
+  components are the `.dwarf` ones.
+
+## Feb 18, 2021
+* `ghcOptions` has been moved from package and is now a list of strings.
+    old: packages.x.package.ghcOptions = "someGHCoption";
+    new: packages.x.ghcOptions = ["someGHCoption"];
+  To specify ghcOptions for all packages:
+    ghcOptions = ["someGHCoption"];
+  For a single component:
+    packages.x.compoents.library.ghcOptions = ["someGHCoption"];
+
+## Feb 8, 2021
+* Removed older versions of haskell-language-server from custom-tools
+  (0.8.0 is in hackage so we can still get that version).
+
+## Jan 14, 2021
+* Added support for cross package refs (with a project).  Relative
+  directory references between packages within a project should now
+  work.
+* Added `includeSiblings` to `cleanSourceWith`.  When `true` it
+  prevents the `subDir` arg from causing filtering of other directories.
+* Added `keepGitDir` to `cleanGit` to allow `.git` directory to be kept
+  (useful for components that use the `githash` package).
+
+## Nov 26, 2020
+* Renamed `otherShells` arg for `shellFor` to `inputsFrom
+
+## Nov 25, 2020
+* The `shellFor` `makeConfigFiles` `ghcWithHoogle` and `ghcWithPackages`
+  functions have been removed from `project.hsPkgs`.  Instead access
+  them from `project` itself (e.g. change `p.hsPkgs.shellFor` to `p.shellFor`).
+* The reflex-platform like `project.shells.ghc` has been removed.
+  If needed, add something like `p // { shells.ghc = p.shellFor {} }`
+  to `shell.nix`.
+
+## Nov 24, 2020
+* Added `${targetPrefix}cabal` wrapper script for running cross
+  compilers in `shellFor`.
+* `otherShells` arg added to `shellFor`.
+
 ## Oct 31, 2020
 * Passing `tools.hoogle` to `shellFor` with a value suitable for `haskel-nix.tool` will
   use the specified `hoogle` inside `shellFor`. This allows for materialization

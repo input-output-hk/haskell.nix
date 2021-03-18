@@ -7,6 +7,9 @@
                  # the output. If this is set but does not exist
                  # the derivation will fail but with a message
                  # advising how to populate it.
+, this ? "this"
+                # A name to use when referring to the thing currently being
+                # materialized. Clients can pass in an attribute name or similar.
 , reasonNotSafe ? null
                  # Some times there a reasont the derivation will
                  # not produce output that can be safely materialized.
@@ -35,8 +38,8 @@ let
 
   unchecked =
     let
-      sha256message = "To make this a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of ${calculateMaterializedSha}";
-      materializeMessage = "To materialize the output entirely, pass a writable path as the `materialized` argument and pass that path to ${generateMaterialized}";
+      sha256message = "To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
+      materializeMessage = "To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
@@ -53,7 +56,14 @@ let
         builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
-  checked = runCommand name {} (''
+  checked =
+    # Let the user know what we are checking.  This is useful for debugging issues
+    # where materialization fails to prevent infinite recurstion when:
+    #   checkMaterialization = true;
+    (if materialized != null
+      then __trace "Checking materialization in ${toString materialized}"
+      else x: x)
+    runCommand name {} (''
         ERR=$(mktemp -d)/errors.txt
       ''
     + (pkgs.lib.optionalString (sha256 != null) ''

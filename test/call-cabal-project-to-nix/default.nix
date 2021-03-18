@@ -1,6 +1,6 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   # This test could use cabalProject', but it does so that it
@@ -26,7 +26,7 @@ in recurseIntoAttrs {
     name = "call-cabal-project-to-nix-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple}/bin/cabal-simple${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
 
       printf "checking whether executable runs... " >& 2
       cat ${haskellLib.check packages.cabal-simple.components.exes.cabal-simple}/test-stdout

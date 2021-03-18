@@ -16,7 +16,6 @@
 , hyperlinkSource
 , quickjump
 , setupHaddockFlags
-, setupGhcOptions
 
 , needsProfiling
 , componentDrv
@@ -55,6 +54,7 @@ let
   shellWrappers = ghcForComponent {
     componentName = fullName;
     configFiles = docsConfigFiles;
+    inherit (componentDrv) enableDWARF;
   };
 
   drv = stdenv.mkDerivation (commonAttrs // {
@@ -108,7 +108,7 @@ let
         ${lib.optionalString doHoogle "--hoogle"} \
         ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
         ${lib.optionalString quickjump "--quickjump"} \
-        ${lib.concatStringsSep " " (setupHaddockFlags ++ setupGhcOptions)}
+        ${lib.concatStringsSep " " setupHaddockFlags}
       }
       runHook postHaddock
     '';

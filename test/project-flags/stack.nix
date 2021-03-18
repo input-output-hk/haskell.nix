@@ -1,6 +1,6 @@
-{ stdenv, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = stackProject' {
@@ -16,7 +16,7 @@ in recurseIntoAttrs {
     name = "callStackToNix-test";
 
     buildCommand = ''
-      exe="${packages.test-project-flags.components.exes.test-project-flags-exe}/bin/test-project-flags-exe${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.test-project-flags.components.exes.test-project-flags-exe.exePath}"
 
       printf "checking whether executable runs... " >& 2
       cat ${haskellLib.check packages.test-project-flags.components.exes.test-project-flags-exe}/test-stdout

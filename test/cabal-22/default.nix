@@ -1,6 +1,6 @@
-{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = cabalProject' {
@@ -19,7 +19,7 @@ in recurseIntoAttrs {
     name = "cabal-22-test";
 
     buildCommand = ''
-      exe="${packages.project.components.exes.project}/bin/project${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.project.components.exes.project.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

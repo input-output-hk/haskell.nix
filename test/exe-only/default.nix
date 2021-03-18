@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = haskell-nix.cabalProject' {
@@ -19,7 +19,7 @@ in recurseIntoAttrs {
     name = "exe-only-test";
 
     buildCommand = ''
-      exe="${packages.exe-only.components.exes.exe-only}/bin/exe-only${stdenv.hostPlatform.extensions.executable}"
+      exe="${packages.exe-only.components.exes.exe-only.exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2

@@ -1,84 +1,90 @@
-# Maps of system pkg references from
-# cabal file to nixpkgs pkgs.
-# See ../docs/dev/pkg-map.md
+# Maps of system pkg references from cabal file to nixpkgs pkgs.
+# library name (from `extra-libraries` field of `.cabal` file) -> nixpkgs package(s) mapping.
+# This mapping is used to construct the `libs` component attribute.
+# See ../docs/tutorials/pkg-map.md
 pkgs:
-# fetchgit should always come from the buildPackages
-# if it comes from the targetPackages we won't even
-# be able to execute it.
-   { fetchgit = pkgs.buildPackages.fetchgit; }
-# haskell lib -> nix lib mapping
+
+with pkgs;
+
 # -- linux
-// { crypto = pkgs.openssl;
-     "c++" = null; # no libc++
-     "stdc++" = null; "stdc++-6" = null;
-     ssl = pkgs.openssl;
-     z = pkgs.zlib;
-     pthread = null; # available by default
-     GL = pkgs.libGL;
-     GLU = pkgs.libGLU;
-     alut = pkgs.freealut;
-     X11 = pkgs.xorg.libX11;
-     Xrandr = pkgs.xorg.libXrandr;
-     Xext = pkgs.xorg.libXext;
-     Xi = pkgs.xorg.libXi;
-     Xxf86vm = pkgs.xorg.libXxf86vm;
-     Xcursor = pkgs.xorg.libXcursor;
-     Xinerama = pkgs.xorg.libXinerama;
-     mysqlclient = pkgs.mysql;
-     Imlib2 = pkgs.imlib2;
-     asound = pkgs.alsaLib;
-     ffi = null;
-     bz2 = pkgs.bzip2;
-     util = pkgs.utillinux;
-     magic = pkgs.file;
-     pq = pkgs.postgresql;
-     iconv = pkgs.libiconv;
-     lapack = pkgs.liblapack;
-     boost_atomic = pkgs.boost;
-     boost_chrono = pkgs.boost;
-     boost_container = pkgs.boost;
-     boost_context = pkgs.boost;
-     boost_contract = pkgs.boost;
-     boost_coroutine = pkgs.boost;
-     boost_date_time = pkgs.boost;
-     boost_fiber = pkgs.boost;
-     boost_filesystem = pkgs.boost;
-     boost_graph = pkgs.boost;
-     boost_iostreams = pkgs.boost;
-     boost_locale = pkgs.boost;
-     boost_log_setup = pkgs.boost;
-     boost_log = pkgs.boost;
-     boost_math_c99f = pkgs.boost;
-     boost_math_c99l = pkgs.boost;
-     boost_math_c99 = pkgs.boost;
-     boost_math_tr1f = pkgs.boost;
-     boost_math_tr1l = pkgs.boost;
-     boost_math_tr1 = pkgs.boost;
-     boost_prg_exec_monitor = pkgs.boost;
-     boost_program_options = pkgs.boost;
-     boost_random = pkgs.boost;
-     boost_regex = pkgs.boost;
-     boost_serialization = pkgs.boost;
-     boost_signals = pkgs.boost;
-     boost_stacktrace_addr2line = pkgs.boost;
-     boost_stacktrace_basic = pkgs.boost;
-     boost_stacktrace_noop = pkgs.boost;
-     boost_system = pkgs.boost;
-     boost_thread = pkgs.boost;
-     boost_timer = pkgs.boost;
-     boost_type_erasure = pkgs.boost;
-     boost_unit_test_framework = pkgs.boost;
-     boost_wave = pkgs.boost;
-     boost_wserialization = pkgs.boost;
-     tensorflow = pkgs.libtensorflow;
-     opencv = pkgs.opencv3;
-     icuuc = pkgs.icu;
-     icui18n = pkgs.icu;
-     icudata = pkgs.icu;
-     vulkan = pkgs.vulkan-loader;
-     sodium = pkgs.libsodium;
-     gfortran = pkgs.gfortran.cc.lib;
-   }
+{ crypto = [ openssl ];
+  "c++" = null; # no libc++
+  "stdc++" = null;
+  "stdc++-6" = null;
+  ssl = [ openssl ];
+  z = [ zlib ];
+  pcap = [ libpcap ];
+  pthread = null; # available by default
+  GL = [ libGL ];
+  GLU = [ libGLU ];
+  alut = [ freealut ];
+  X11 = with xorg; [ libX11 ];
+  Xrandr = [ xorg.libXrandr ];
+  Xrender = [ xorg.libXrender ];
+  Xss = [ xorg.libXScrnSaver ];
+  Xext = [ xorg.libXext ];
+  Xi = [ xorg.libXi ];
+  Xxf86vm = [ xorg.libXxf86vm ];
+  Xcursor = [ xorg.libXcursor ];
+  Xinerama = [ xorg.libXinerama ];
+  mysqlclient = [ mysql ];
+  Imlib2 = [ imlib2 ];
+  asound = [ alsaLib ];
+  ffi = null;
+  bz2 = [ bzip2 ];
+  util = [ utillinux ];
+  magic = [ file ];
+  pq = [ postgresql ];
+  iconv = [ libiconv ];
+  lapack = [ liblapack ];
+  boost_atomic = [ boost ];
+  boost_chrono = [ boost ];
+  boost_container = [ boost ];
+  boost_context = [ boost ];
+  boost_contract = [ boost ];
+  boost_coroutine = [ boost ];
+  boost_date_time = [ boost ];
+  boost_fiber = [ boost ];
+  boost_filesystem = [ boost ];
+  boost_graph = [ boost ];
+  boost_iostreams = [ boost ];
+  boost_locale = [ boost ];
+  boost_log_setup = [ boost ];
+  boost_log = [ boost ];
+  boost_math_c99f = [ boost ];
+  boost_math_c99l = [ boost ];
+  boost_math_c99 = [ boost ];
+  boost_math_tr1f = [ boost ];
+  boost_math_tr1l = [ boost ];
+  boost_math_tr1 = [ boost ];
+  boost_prg_exec_monitor = [ boost ];
+  boost_program_options = [ boost ];
+  boost_random = [ boost ];
+  boost_regex = [ boost ];
+  boost_serialization = [ boost ];
+  boost_signals = [ boost ];
+  boost_stacktrace_addr2line = [ boost ];
+  boost_stacktrace_basic = [ boost ];
+  boost_stacktrace_noop = [ boost ];
+  boost_system = [ boost ];
+  boost_thread = [ boost ];
+  boost_timer = [ boost ];
+  boost_type_erasure = [ boost ];
+  boost_unit_test_framework = [ boost ];
+  boost_wave = [ boost ];
+  boost_wserialization = [ boost ];
+  tensorflow = [ libtensorflow ];
+  # odbc package requires unixODBC packages to be installed in order to successfully
+  # compile C sources (https://github.com/fpco/odbc/blob/master/cbits/odbc.c)
+  odbc = [ unixODBC ];
+  opencv = [ opencv3 ];
+  icuuc = [ icu ];
+  icui18n = [ icu ];
+  icudata = [ icu ];
+  vulkan = [ vulkan-loader ];
+  sodium = [ libsodium ];
+  gfortran = [ gfortran.cc.lib ];
+}
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
      shell32 = null; shfolder = null; shlwapi = null; user32 = null;
@@ -88,7 +94,7 @@ pkgs:
      # if it's not we have more severe
      # issues anyway.
      gcc_s_seh-1 = null;
-     ssl32 = null; eay32 = pkgs.openssl;
+     ssl32 = null; eay32 = [ openssl ];
      iphlpapi = null; # IP Help API
      msvcrt = null; # this is the libc
      Crypt32 = null;
@@ -96,4 +102,4 @@ pkgs:
    }
 # -- os x
 # NB: these map almost 1:1 to the framework names
-// pkgs.darwin.apple_sdk.frameworks
+// darwin.apple_sdk.frameworks

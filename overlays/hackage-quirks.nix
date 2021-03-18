@@ -23,6 +23,14 @@ in { haskell-nix = prev.haskell-nix // {
         (lib.optionalAttrs (version == "3.2.0.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
         })
+        (lib.optionalAttrs (builtins.compareVersions version "3.0.0.0" >= 0
+            && builtins.compareVersions version "3.5" < 0) {
+          # Include patches needed for ghcjs
+          packages.Cabal.patches = [
+            ./patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff
+            ./patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff
+          ];
+        })
       ];
     };
 
@@ -58,6 +66,24 @@ in { haskell-nix = prev.haskell-nix // {
           };
         })
       ];
+    };
+
+    # See https://github.com/input-output-hk/haskell.nix/issues/948
+    postgrest = {
+      cabalProject = ''
+        packages: .
+        package postgresql-libpq
+          flags: +use-pkg-config
+      '';
+      modules = [(
+       {pkgs, ...}: final.lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+         # The order of -lssl and -lcrypto is important here
+         packages.postgrest.configureFlags = [
+           "--ghc-option=-optl=-lssl"
+           "--ghc-option=-optl=-lcrypto"
+           "--ghc-option=-optl=-L${pkgs.openssl.out}/lib"
+         ];
+      })];
     };
 
   }."${name}" or {};

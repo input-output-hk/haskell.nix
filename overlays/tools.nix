@@ -62,8 +62,11 @@ in { haskell-nix = prev.haskell-nix // {
       args = { caller = "hackage-tool"; } // args';
     in
       (final.haskell-nix.hackage-package
-        (args // { name = final.haskell-nix.toolPackageName.${name} or name; }))
-          .components.exes."${final.haskell-nix.packageToolName.${name} or name}";
+        ( # Disable benchmarks and tests by default (since we only want the exe component)
+          { configureArgs = "--disable-benchmarks --disable-tests"; }
+          // args
+          // { name = final.haskell-nix.toolPackageName.${name} or name; }))
+          .getComponent "exe:${final.haskell-nix.packageToolName.${name} or name}";
 
   tool = compiler-nix-name: name: versionOrArgs:
     let
@@ -95,55 +98,9 @@ in { haskell-nix = prev.haskell-nix // {
   # to the `tools` attribute defined in `build.nix` to make
   # sure they are cached.
   custom-tools = {
-    ghcide.object-code = args:
-        (final.haskell-nix.cabalProject (args // {
-          name = "ghcide";
-          src = final.fetchFromGitHub {
-            owner = "mpickering";
-            repo = "ghcide";
-            rev = "706c59c97c25c66798815c1dc3ee6885a298918a";
-            sha256 = "0d158xifwvz0y69ah98ckxakzqpz229mq7rpf2bpbmwhnpw3jmm6";
-          };
-          modules = [({config, ...}: {
-            packages.ghcide.configureFlags = lib.optional (!final.stdenv.targetPlatform.isMusl)
-                                              "--enable-executable-dynamic";
-            nonReinstallablePkgs = [ "Cabal" "array" "base" "binary" "bytestring" "containers" "deepseq"
-                                     "directory" "filepath" "ghc" "ghc-boot" "ghc-boot-th" "ghc-compact"
-                                     "ghc-heap" "ghc-prim" "ghci" "haskeline" "hpc" "integer-gmp"
-                                     "libiserv" "mtl" "parsec" "pretty" "process" "rts" "stm"
-                                     "template-haskell" "terminfo" "text" "time" "transformers" "unix"
-                                     "xhtml"
-                                   ];
-          })];
-          pkg-def-extras = [
-                 (hackage: {
-              packages = {
-                "alex" = (((hackage.alex)."3.2.5").revisions).default;
-                "happy" = (((hackage.happy)."1.19.12").revisions).default;
-              };
-            })
-          ];
-        })).ghcide.components.exes.ghcide;
-
-    haskell-language-server."0.5.1" = args:
-      (final.haskell-nix.cabalProject ( args // {
-        name = "haskell-language-server";
-        src = final.fetchFromGitHub {
-          owner = "haskell";
-          repo = "haskell-language-server";
-          rev = "0.5.1";
-          sha256 = "17nzgpiacmrvwsy2fjx6a6pcpkncqcwfhaijvajm16jpdgni8mik";
-          fetchSubmodules = true;
-        };
-        sha256map = {
-          "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
-        };
-        # Plan issues with the benchmarks, can try removing later
-        configureArgs = "--disable-benchmarks";
-        modules = [{
-          # Tests don't pass for some reason, but this is a somewhat random revision.
-          packages.haskell-language-server.doCheck = false;
-        }];
-      })).haskell-language-server.components.exes.haskell-language-server;
+    # Currently everything we want is in hackage.
+    # Before adding anything here consider uploading to hackage instead.
+    # If that is not possible look at the git history of this file to see examples
+    # of how to add a custom-tool.
   };
 }; }

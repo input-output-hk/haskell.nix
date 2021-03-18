@@ -3,6 +3,7 @@ let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
+    compiler-nix-name = config.compiler.nix-name;
     inherit (config) nonReinstallablePkgs hsPkgs compiler;
   };
 
@@ -67,7 +68,11 @@ in
       "mtl" "parsec" "process" "text" "time" "transformers"
       "unix" "xhtml" "terminfo"
       # "stm"
-    ];
+    ]
+    # TODO remove this as soon as https://github.com/haskell/text/issues/309
+    # is resolved.
+    ++ lib.optionals (config.compiler.nix-name == "ghc8103") [
+      "text" "binary" "bytestring" "containers" ];
 
   options.bootPkgs = lib.mkOption {
     type = lib.types.listOf lib.types.str;
@@ -76,14 +81,18 @@ in
   config.bootPkgs =  [
       "rts" "ghc-boot-th"
       "ghc-heap" # since ghc 8.6.
-    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc";
+      "ghcjs-prim"
+    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
+      # TODO remove this as soon as https://github.com/haskell/text/issues/309
+      # is resolved.
+      ++ lib.optional (config.compiler.nix-name == "ghc8103") "text";
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
   };
 
   config.hsPkgs =
-    { inherit (builder) shellFor ghcWithPackages ghcWithHoogle;
+    { inherit (builder) shellFor makeConfigFiles ghcWithPackages ghcWithHoogle;
       buildPackages = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
