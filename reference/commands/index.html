@@ -123,13 +123,17 @@
     <a class="current" href="./">Command-line tools</a>
     <ul class="subnav">
             
-    <li class="toctree-l3"><a href="#stack-to-nix">stack-to-nix</a></li>
+    <li class="toctree-l3"><a href="#command-line-tools">Command line tools</a></li>
     
-
-    <li class="toctree-l3"><a href="#plan-to-nix">plan-to-nix</a></li>
-    
-
-    <li class="toctree-l3"><a href="#cabal-to-nix">cabal-to-nix</a></li>
+        <ul>
+        
+            <li><a class="toctree-l4" href="#stack-to-nix">stack-to-nix</a></li>
+        
+            <li><a class="toctree-l4" href="#plan-to-nix">plan-to-nix</a></li>
+        
+            <li><a class="toctree-l4" href="#cabal-to-nix">cabal-to-nix</a></li>
+        
+        </ul>
     
 
     </ul>
@@ -248,7 +252,9 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="stack-to-nix">stack-to-nix<a class="headerlink" href="#stack-to-nix" title="Permanent link">&para;</a></h1>
+                <h1 id="command-line-tools">Command line tools<a class="headerlink" href="#command-line-tools" title="Permanent link">&para;</a></h1>
+<p>To install the command line tools refer to the <a href="https://input-output-hk.github.io/haskell.nix/dev/manually-generating-nix-expressions/">Installing nix-tools</a> section.</p>
+<h2 id="stack-to-nix">stack-to-nix<a class="headerlink" href="#stack-to-nix" title="Permanent link">&para;</a></h2>
 <pre><code>stack-to-nix - a stack to nix converter
 
 Usage: stack-to-nix (-o|--output DIR) [--stack-yaml FILE]
@@ -274,7 +280,7 @@ output directory, it will create a basic one with a
 generated, remove <code>.stack-to-nix.cache</code>
 (The open issue is <a href="https://github.com/input-output-hk/haskell.nix/issues/57">#57</a>).</p>
 </div>
-<h1 id="plan-to-nix">plan-to-nix<a class="headerlink" href="#plan-to-nix" title="Permanent link">&para;</a></h1>
+<h2 id="plan-to-nix">plan-to-nix<a class="headerlink" href="#plan-to-nix" title="Permanent link">&para;</a></h2>
 <pre><code>plan-to-nix - a stack to nix converter
 
 Usage: plan-to-nix (-o|--output DIR) [--plan-json FILE] [--cabal-project FILE]
@@ -307,7 +313,7 @@ these files.</p>
 generated, remove <code>.nix-tools.cache</code>
 (The open issue is <a href="https://github.com/input-output-hk/haskell.nix/issues/57">#57</a>).</p>
 </div>
-<h1 id="cabal-to-nix">cabal-to-nix<a class="headerlink" href="#cabal-to-nix" title="Permanent link">&para;</a></h1>
+<h2 id="cabal-to-nix">cabal-to-nix<a class="headerlink" href="#cabal-to-nix" title="Permanent link">&para;</a></h2>
 <pre><code>Usage: cabal-to-nix FILE.cabal
 </code></pre>
 
