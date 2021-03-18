@@ -528,6 +528,12 @@ let
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
     mv $out${subDir'}/pkgs.nix $out${subDir'}/default.nix
     else
+      # Check that this was a solver failure that (not some other
+      # possibly non deterministic failure).
+      # TODO replace grep once https://github.com/haskell/cabal/issues/5191
+      # is fixed.
+      grep "cabal: Could not resolve dependencies" cabal-configure.out
+
       # When cabal configure fails copy the output that we captured above and
       # use `failed-cabal-configure.nix` to make a suitable derviation with.
       cp cabal-configure.out $out

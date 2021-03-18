@@ -87,32 +87,37 @@ then
     gitModulesStr = origSrcSubDir + "/.gitmodules";
     gitModules = builtins.path { name = "gitmodules"; path = gitModulesStr; };
 
-    gitSubmoduleFiles = cleanSourceWith {
-      caller = "cleanGit";
-      name = (if name == null then "" else name + "-") + "gitSubmoduleFiles";
-      inherit src;
-      filter = path: type:
-          type == "directory" # TODO get sudmodule directories from `.gitmodules`
-                              # and use that to filter directory tree here
-        ||
-          lib.any (i: (lib.hasSuffix i path)) [
-            "/.git" ".gitmodules" ".git/config" ".git/index" ".git/HEAD" ".git/objects" ".git/refs" ] ||
-          (lib.strings.hasInfix ".git/modules/" path &&
+    # Files from the git repository related knownSubmoduleDirs.
+    gitSubmoduleFiles = knownSubmoduleDirs:
+      let pathsNeeded = map (p: toString (src.origSrcSubDir or src) + "/${p}") (
+            lib.concatMap (x: all_paren_dirs (x + "/.git")) knownSubmoduleDirs);
+      in cleanSourceWith {
+        caller = "cleanGit";
+        name = (if name == null then "" else name + "-") + "gitSubmoduleFiles";
+        inherit src;
+        filter = path: type:
+            elem path pathsNeeded
+          ||
             lib.any (i: (lib.hasSuffix i path)) [
-              "config" "index" "HEAD" "objects" "refs" ]);
-    };
+              ".gitmodules" ".git/config" ".git/index" ".git/HEAD" ".git/objects" ".git/refs" ]
+          ||
+            (lib.strings.hasInfix ".git/modules/" path &&
+              lib.any (i: (lib.hasSuffix i path)) [
+                "config" "index" "HEAD" "objects" "refs" ]);
+      };
+
+    hasSubmodules = !isWorktree && builtins.pathExists gitModulesStr;
 
     # Make a temporary dir that looks enough like the real thing for
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
-    whitelist_file =
-      runCommand "git-ls-files" {envVariable = true;} ''
+    whitelist_files = knownSubmoduleDirs:
+      runCommand "git-ls-files" {} ''
         tmp=$(mktemp -d)
         cd $tmp
-        ${ lib.optionalString (!isWorktree && builtins.pathExists gitModulesStr) ''
-          cp -ra ${gitSubmoduleFiles}/. $tmp
+        ${ lib.optionalString hasSubmodules ''
+          cp -ra ${gitSubmoduleFiles knownSubmoduleDirs}/. $tmp
           chmod +w -R $tmp
-          rm -rf .git
         ''}
         cp -r ${gitDir} .git
         chmod +w -R .git
@@ -123,10 +128,37 @@ then
         ${ lib.optionalString (isWorktree && builtins.pathExists gitModulesStr) ''
           cp ${gitModules} ./.gitmodules
         ''}
-        ${git}/bin/git ls-files --recurse-submodules > $out
+        mkdir $out
+        ${ lib.optionalString hasSubmodules ''
+          ${git}/bin/git submodule status --recursive | awk '{ print $2 }' > $out/submoduleDirs
+        ''}
+        ${git}/bin/git ls-files --recurse-submodules > $out/files
       '';
 
-    whitelist = lines (readFile (whitelist_file.out));
+    # Find the submodules 
+    whitelist_recursive = knownSubmoduleDirs:
+      let
+        # Get the new list of submoduleDirs and files
+        # (useing the submoduleDirs we already know about)
+        files = whitelist_files knownSubmoduleDirs;
+        new = {
+          submoduleDirs = lines (readFile (files + "/submoduleDirs"));
+          files = lines (readFile (files + "/files"));
+        };
+      in
+        # If we are not expecting submodules or if the new list does not
+        # contain any additional submodules we are done.
+        if !hasSubmodules || lib.all (x: elem x knownSubmoduleDirs) new.submoduleDirs
+          then new
+          else
+            # Look again using what we know now about the submodules
+            whitelist_recursive new.submoduleDirs;
+
+    # Use empty as a starting point for looking for submodules.
+    # We could allow a list to be passed into cleanGit, but when testing
+    # on the `ghcjs` repo (one with a lot of submodules) it did not
+    # make much of a difference to the speed of `cleanGit`.
+    whitelist = whitelist_recursive [];
 
     all_paren_dirs = p:
         if p == "." || p == "/"
@@ -138,9 +170,9 @@ then
         concatMap (p:
           # Using `origSrcSubDir` (if present) makes it possible to cleanGit src that
           # has already been cleaned with cleanSrcWith.
-          let full_path = src.origSrcSubDir or (toString src) + "/${p}"; in
+          let full_path = toString (src.origSrcSubDir or src) + "/${p}"; in
           map (p': { name = p'; value = true; }) (all_paren_dirs full_path)
-        ) whitelist
+        ) whitelist.files
       );
 
     # Identify files in the `.git` dir
@@ -155,6 +187,9 @@ then
     cleanSourceWith {
       caller = "cleanGit";
       inherit name src subDir includeSiblings filter;
+    } // {
+      # For testing
+      # inherit whitelist whitelist_set;
     }
 
 else

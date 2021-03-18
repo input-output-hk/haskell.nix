@@ -1,6 +1,10 @@
 final: prev:
 let
-    installDeps = targetPrefix: ''
+    installDeps = targetPrefix:
+      # First checks that ghc-pkg runs first with `--version` as failures in the `for` and
+      # `if` statements will be masked.
+      ''
+      $out/bin/${targetPrefix}ghc-pkg --version
       for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
         mkdir -p $out/exactDeps/$P
         touch $out/exactDeps/$P/configure-flags
