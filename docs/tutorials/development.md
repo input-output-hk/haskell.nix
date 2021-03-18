@@ -37,7 +37,7 @@ themselves. This is what the [`shellFor`][shellFor] function does.
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  hsPkgs = import ./default.nix { inherit pkgs; };
+  hsPkgs = import ./default.nix { };
 in
   hsPkgs.shellFor {
     # Include only the *local* packages of your project.
