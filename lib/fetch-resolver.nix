@@ -5,10 +5,12 @@
 , resolverSha256 ? null
 }:
 let
+    srcDir = src.origSrcSubDir or src;
+
     # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
     # access to the store is restricted.  If origSrc was already in the store
     # you can pass the project in as a string.
-    rawStackYaml = builtins.readFile ((src.origSrcSubDir or src) + ("/" + stackYaml));
+    rawStackYaml = builtins.readFile (srcDir + "/${stackYaml}");
 
     # Determine the resolver as it may point to another file we need
     # to look at.
@@ -28,6 +30,8 @@ let
           url = resolver;
           sha256 = resolverSha256;
         }
-        else null;
+      else if resolver != null && __pathExists (srcDir + "/${resolver}")
+        then srcDir + "/${resolver}"
+      else null;
 
 in { inherit resolver fetchedResolver; }
