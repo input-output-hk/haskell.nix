@@ -215,11 +215,6 @@ in {
         type = bool;
         default = false;
       };
-
-      ghcOptions = mkOption {
-        type = nullOr str;
-        default = null;
-      };
     };
 
     components = {

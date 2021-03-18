@@ -463,9 +463,10 @@ in {
             ghc865 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc865;
                 in let ghcjs865 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
-                ghcjsVersion =  "8.6.0.1";
+                ghcjsVersion =  "8.6.0.0.10";
                 ghc = buildGHC;
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.6.5" {
+                nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.6.5";
@@ -476,9 +477,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        # setting gcc is stupid. non-emscripten ghcjs has no cc.
-                        # however cabal insists on compiling the c sources. m(
-                        "--with-gcc=${final.buildPackages.stdenv.cc}/bin/cc"
+                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -489,9 +488,9 @@ in {
                 ln -s ${ghcjs865}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
-                mkdir lib
+                mkdir -p lib/${targetPrefix}ghc-8.6.5
                 cd lib
-                cp -R ${ghcjs865}/lib/ghcjs-8.6.5 ${targetPrefix}ghc-8.6.5
+                lndir ${ghcjs865}/lib ${targetPrefix}ghc-8.6.5
             '' + installDeps targetPrefix);
             ghc883 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc883;
                 in let ghcjs883 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
@@ -501,6 +500,7 @@ in {
                 ghcVersion = "8.8.3";
                 compiler-nix-name = "ghc883";
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.3" {
+                nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.3";
@@ -511,9 +511,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        # setting gcc is stupid. non-emscripten ghcjs has no cc.
-                        # however cabal insists on compiling the c sources. m(
-                        "--with-gcc=${final.buildPackages.stdenv.cc}/bin/cc"
+                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -524,9 +522,9 @@ in {
                 ln -s ${ghcjs883}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
-                mkdir lib
+                mkdir -p lib/${targetPrefix}ghc-8.8.3
                 cd lib
-                cp -R ${ghcjs883}/lib ${targetPrefix}ghc-8.8.3
+                lndir ${ghcjs883}/lib ${targetPrefix}ghc-8.8.3
             '' + installDeps targetPrefix);
             ghc884 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc884;
                 in let ghcjs884 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
@@ -536,6 +534,7 @@ in {
                 ghcVersion = "8.8.4";
                 compiler-nix-name = "ghc884";
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.4" {
+                nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
                     version = "8.8.4";
@@ -546,9 +545,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        # setting gcc is stupid. non-emscripten ghcjs has no cc.
-                        # however cabal insists on compiling the c sources. m(
-                        "--with-gcc=${final.buildPackages.stdenv.cc}/bin/cc"
+                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -559,9 +556,9 @@ in {
                 ln -s ${ghcjs884}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
-                mkdir lib
+                mkdir -p lib/${targetPrefix}ghc-8.8.4
                 cd lib
-                cp -R ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
+                lndir ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
             '' + installDeps targetPrefix);
         }))));
 
@@ -574,20 +571,22 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.hackage-package ({
         name = "cabal-install";
-        version = "3.2.0.0";
+        version = "3.4.0.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         # When building cabal-install (only happens when checking materialization)
         # disable checking of the tools used to avoid infinite recursion.
         cabal-install = final.evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
         nix-tools = final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
-      } // args)).components.exes.cabal;
+      } // args)).getComponent "exe:cabal";
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
         project =
           final.haskell-nix.cabalProject ({
             name = "nix-tools";
             src = final.haskell-nix.sources.nix-tools;
+            # This is a handy way to use a local git clone of nix-tools when developing
+            # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
             index-state = final.haskell-nix.internalHackageIndexState;
             cabalProjectLocal = ''
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
@@ -615,7 +614,22 @@ in {
                 ];
             }];
           } // args);
-        exes = project.nix-tools.components.exes // project.hpack.components.exes;
+        exes =
+          let
+            package = project.getPackage "nix-tools";
+          in (builtins.map (name: package.getComponent "exe:${name}") [
+            "cabal-to-nix"
+            "hashes-to-nix"
+            "plan-to-nix"
+            "hackage-to-nix"
+            "lts-to-nix"
+            "stack-to-nix"
+            "truncate-index"
+            "stack-repos"
+            "cabal-name"
+          ]) ++ [
+            (project.getComponent "hpack:exe:hpack")
+          ];
         tools = [
           final.buildPackages.nix
           # Double buildPackages is intentional, see comment in lib/default.nix for details.
@@ -624,7 +638,7 @@ in {
     in
       final.symlinkJoin {
         name = "nix-tools";
-        paths = builtins.attrValues exes;
+        paths = exes;
         buildInputs = [ final.makeWrapper ];
         meta.platforms = final.lib.platforms.all;
         # We wrap the -to-nix executables with the executables from `tools` (e.g. nix-prefetch-git)
@@ -657,7 +671,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
             then compiler-nix-name
-            else "ghc865";
+            else "ghc8104";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
     nix-tools = final.lib.mapAttrs (compiler-nix-name: _:
@@ -669,7 +683,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
             then compiler-nix-name
-            else "ghc865";
+            else "ghc8104";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
 
@@ -772,7 +786,7 @@ in {
                 version = "1.24.4";
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
-            } // args)).components.exes.HsColour;
+            } // args)).getComponent "exe:HsColour";
             hscolour = bootstrap.packages.hscolour-tool {};
             hscolour-unchecked = bootstrap.packages.hscolour-tool { checkMaterialization = false; };
         };

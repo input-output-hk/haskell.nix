@@ -62,17 +62,9 @@ let
             alex
             cabal-install
         ];
-    # nixpkgs does not have an emsdk, this derivation uses symlinks to make something
-    # that matches enought for `ghcjs-boot` to work
-    emscriptenupstream = pkgs.buildPackages.emscriptenupstream;
-    emscripten = pkgs.buildPackages.emscripten.override {
-      emscriptenBackend = emscriptenupstream;
-    };
-    emsdk = pkgs.linkFarm "emsdk" [
-      { name = "upstream/bin"; path = emscriptenupstream + "/bin"; }
-      { name = "upstream/emscripten"; path = emscripten + "/bin"; }
-      { name = "share"; path = emscripten + "/share"; }
-    ];
+
+    inherit (pkgs.buildPackages) emscriptenupstream emscripten emsdk;
+
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
             nodejs
@@ -81,11 +73,7 @@ let
             gmp
             pkgconfig
         ]
-        ++ [ ghc cabal-install ]
-        ++ lib.optionals stdenv.isDarwin [
-          pkgs.buildPackages.gcc # https://github.com/ghcjs/ghcjs/issues/663
-        ]
-        ++ lib.optional isGhcjs88 [ emsdk ];
+        ++ [ ghc cabal-install emsdk ];
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {
         buildInputs = configureInputs;
@@ -123,14 +111,7 @@ let
         sed -i 's/gcc /cc /g' utils/makePackages.sh
         ./utils/makePackages.sh copy
 
-        ${
-          # nuke the HsBaseConfig.h from base.buildinfo.in; this will
-          # prevent it from being installed and provide incorrect values.
-          pkgs.lib.optionalString (!isGhcjs88) ''
-            echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
-            sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
-          ''
-        }'';
+        '';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (

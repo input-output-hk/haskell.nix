@@ -23,7 +23,7 @@ in rec {
     pkgs.recurseIntoAttrs {
       cabal-latest = tool compiler-nix-name "cabal" "latest";
       hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
-      hlint-latest = tool compiler-nix-name "hlint" "latest";
+      hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
     }
   );
 

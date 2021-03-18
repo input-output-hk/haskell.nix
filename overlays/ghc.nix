@@ -21,7 +21,9 @@ final: prev: with prev;
        && !lib.hasPrefix "ghcjs" name
        && !lib.hasSuffix "Binary" name;
      overrideCompiler = compiler:
-       (compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides;
+       ((compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides) // {
+         dwarf = overrideCompiler compiler.dwarf;
+       };
    in
      lib.recursiveUpdate prev.haskell-nix {
        compiler = lib.mapAttrs (_name: overrideCompiler)

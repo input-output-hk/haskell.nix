@@ -1,7 +1,7 @@
 { pkgs
 , ghcjsSrcJson ? ./ghcjs-src.json
 , ghcjsSrc ? pkgs.buildPackages.fetchgit (builtins.fromJSON (builtins.readFile ghcjsSrcJson))
-, ghcjsVersion ? "8.6.0.1"
+, ghcjsVersion ? "8.6.0.0.10"
 , ghcVersion ? "8.6.5"
 , compiler-nix-name ? if builtins.compareVersions ghcjsVersion "8.8.0.0" > 0
   then "ghc884"
@@ -24,21 +24,25 @@ let
     all-ghcjs = pkgs.buildPackages.symlinkJoin {
         name = "ghcjs-${ghcjsVersion}-symlinked";
         paths = [
-            ghcjs.components.exes.ghcjs
-            ghcjs.components.exes.ghcjs-pkg
-            ghcjs.components.exes.ghcjs-boot
-            ghcjs.components.exes.ghcjs-dumparchive
+            (ghcjs.getComponent "exe:ghcjs-boot")
         ] ++ (if isGhcjs88
           then [
-            ghcjs.components.exes.haddock
-            ghcjs.components.exes.private-ghcjs-run
-            ghcjs.components.exes.private-ghcjs-unlit
-            ghcjs.components.exes.private-ghcjs-hsc2hs
+            (ghcjs.getComponent "exe:ghcjs")
+            (ghcjs.getComponent "exe:ghcjs-pkg")
+            (ghcjs.getComponent "exe:private-ghcjs-hsc2hs")
+            (ghcjs.getComponent "exe:haddock")
+            (ghcjs.getComponent "exe:ghcjs-dumparchive")
+            (ghcjs.getComponent "exe:private-ghcjs-run")
+            (ghcjs.getComponent "exe:private-ghcjs-unlit")
           ]
           else [
-            ghcjs.components.exes.haddock-ghcjs
-            ghcjs.components.exes.hsc2hs-ghcjs
-            ghcjs.components.exes.ghcjs-run
+            (ghcjs.getComponent "exe:private-ghcjs-ghcjs")
+            (ghcjs.getComponent "exe:private-ghcjs-ghcjs-pkg")
+            (ghcjs.getComponent "exe:private-ghcjs-run")
+            (ghcjs.getComponent "exe:private-ghcjs-unlit")
+            (ghcjs.getComponent "exe:private-ghcjs-hsc2hs")
+            (ghcjs.getComponent "exe:private-ghcjs-haddock")
+            (ghcjs.getComponent "exe:private-ghcjs-ghcjs-dumparchive")
           ]);
     };
     libexec = "libexec/${builtins.replaceStrings ["darwin" "i686"] ["osx" "i386"] pkgs.stdenv.buildPlatform.system}-${ghc.name}/ghcjs-${ghcVersion}";
@@ -68,22 +72,26 @@ let
             lndir ${all-ghcjs}/bin $out/bin
             chmod -R +w $out/bin
             rm $out/bin/ghcjs-boot
-            cp ${ghcjs.components.exes.ghcjs-boot}/bin/ghcjs-boot $out/bin
+            cp ${ghcjs.getComponent "exe:ghcjs-boot"}/bin/ghcjs-boot $out/bin
             rm $out/bin/haddock
-            cp ${ghcjs.components.exes.haddock}/bin/haddock $out/bin
+            cp ${ghcjs.getComponent "exe:haddock"}/bin/haddock $out/bin
 
             wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib"
             wrapProgram $out/bin/haddock --add-flags "-B$out/lib"
             wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
           ''
           else ''
-            mkdir -p $out/bin
+            mkdir -p $out
+            lndir ${all-ghcjs} $out
             mkdir -p $out/lib/ghcjs-${ghcVersion}
-            lndir ${all-ghcjs}/${libexec} $out/bin
+            rm $out/bin/ghcjs-boot
+            cp ${ghcjs.getComponent "exe:ghcjs-boot"}/bin/ghcjs-boot $out/bin
+            wrapProgram $out/bin/ghcjs-boot --set ghcjs_libexecdir $out/bin
+            mv $out/${libexec}/* $out/bin
 
-            wrapProgram $out/bin/ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/haddock-ghcjs --add-flags "-B$out/lib/ghcjs-${ghcVersion}"
-            wrapProgram $out/bin/ghcjs-pkg --add-flags "--global-package-db=$out/lib/ghcjs-${ghcVersion}/package.conf.d"
+            wrapProgram $out/bin/private-ghcjs-ghcjs --add-flags "-B$out/lib"
+            wrapProgram $out/bin/private-ghcjs-haddock --add-flags "-B$out/lib"
+            wrapProgram $out/bin/private-ghcjs-ghcjs-pkg --add-flags "--global-package-db=$out/lib/package.conf.d"
           ''
         }
         # Avoid timeouts while unix package runs hsc2hs (it does not print anything
@@ -101,12 +109,12 @@ let
             # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
             ''
             env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
-              PYTHON=${pkgs.buildPackages.python3}/bin/python3 \
               $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock \
               || (echo failed > $TMP/done; false)
             ''
           else ''
-            env PATH=$out/bin:$PATH $out/bin/ghcjs-boot -j1 --with-ghcjs-bin $out/bin \
+            env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
+              $out/bin/ghcjs-boot -j1 --with-ghcjs-libdir=$out --with-emsdk=${project.emsdk} \
               || (echo failed > $TMP/done; false)
           ''
         }

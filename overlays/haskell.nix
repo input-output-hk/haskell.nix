@@ -254,7 +254,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2021-01-08T00:00:00Z";
+        internalHackageIndexState = "2021-02-25T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -457,7 +457,7 @@ final: prev: {
         hackage-package =
           { name, compiler-nix-name, ... }@args':
           let args = { caller = "hackage-package"; } // args';
-          in (hackage-project args).hsPkgs.${name};
+          in (hackage-project args).getPackage name;
         hackage-project =
             { name
             , compiler-nix-name
@@ -500,11 +500,19 @@ final: prev: {
             let
               args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
-            in let pkg-set = mkCabalProjectPkgSet
-                { inherit compiler-nix-name;
-                  plan-pkgs = importAndFilterProject {
-                    inherit (callProjectResults) projectNix sourceRepos src;
+              plan-pkgs = importAndFilterProject {
+                inherit (callProjectResults) projectNix sourceRepos src;
+              };
+              pkg-set = if plan-pkgs ? configurationError
+                then {
+                  inherit (plan-pkgs) configurationError;
+                  config = {
+                    compiler.nix-name = compiler-nix-name;
+                    hsPkgs = {};
                   };
+                }
+                else mkCabalProjectPkgSet
+                { inherit compiler-nix-name plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
                           ++ final.lib.optional (args ? ghcOverride || args ? ghc)
@@ -514,7 +522,7 @@ final: prev: {
                   extra-hackages = args.extra-hackages or [];
                 };
 
-                project = addProjectAndPackageAttrs rec {
+              project = addProjectAndPackageAttrs rec {
                   inherit (pkg-set.config) hsPkgs;
                   inherit pkg-set;
                   plan-nix = callProjectResults.projectNix;
@@ -535,7 +543,7 @@ final: prev: {
           final.lib.fix (project':
             let project = project' // { recurseForDerivations = false; };
             in rawProject // rec {
-              hsPkgs = final.lib.mapAttrs (n: package':
+              hsPkgs = final.lib.mapAttrs (packageName: package':
                 if package' == null
                   then null
                   else
@@ -547,6 +555,16 @@ final: prev: {
                           else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
                       ) package'.components;
                       inherit project;
+
+                      # Look up a component in the package based on ctype:name
+                      getComponent = componentName:
+                        let m = builtins.match "(lib|flib|exe|test|bench):([^:]*)" componentName;
+                        in
+                          assert final.lib.asserts.assertMsg (m != null)
+                            "Invalid package component name ${componentName}.  Expected it to start with one of lib: flib: exe: test: or bench:";
+                          if builtins.elemAt m 0 == "lib" && builtins.elemAt m 1 == packageName
+                            then components.library
+                            else components.${haskellLib.prefixComponent.${builtins.elemAt m 0}}.${builtins.elemAt m 1};
 
                       coverageReport = haskellLib.coverageReport (rec {
                         name = package.identifier.name + "-" + package.identifier.version;
@@ -560,7 +578,7 @@ final: prev: {
                     }
                 ) (builtins.removeAttrs rawProject.hsPkgs
                   # These are functions not packages
-                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" ]);
+                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" "buildPackages" ]);
 
             projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
@@ -568,6 +586,101 @@ final: prev: {
                 rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
+            # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
+            # cabal configure errors are defered until the components derivation builds.
+            getPackage = packageName:
+              if rawProject.pkg-set ? configurationError
+                then
+                  # A minimal proxy for a package when cabal configure failed
+                  let package = {
+                    # Including the project so that things like:
+                    #  (p.getPackage "hello").project.tool "hlint" "latest"
+                    # will still work even if "hello" failed to configure.
+                    inherit project;
+
+                    # Defer configure time errors for the library component
+                    #  (p.getPackage "hello").components.library
+                    components.library = package.getComponent "lib:${packageName}";
+
+                    # This procide a derivation (even though the component may
+                    # not exist at all).  The derivation will never build
+                    # and simple outputs the result of cabal configure.
+                    getComponent = componentName:
+                      final.evalPackages.runCommand "cabal-configure-error" {
+                        passthru = {
+                          inherit project package;
+                        };
+                      } ''
+                        cat ${rawProject.pkg-set.configurationError}
+                        echo Unable to find component ${packageName}:${componentName}  \
+                          due to the above cabal configuration error
+                        exit 1
+                      '';
+                  };
+                  in package
+                else project.hsPkgs.${packageName};
+
+            # Look a component in the project based on `pkg:ctype:name`
+            getComponent = componentName:
+              let m = builtins.match "([^:]*):(lib|flib|exe|test|bench):([^:]*)" componentName;
+              in
+                assert final.lib.asserts.assertMsg (m != null)
+                  "Invalid package component name ${componentName}.  Expected package:ctype:component (where ctype is one of lib, flib, exe, test, or bench)";
+                (getPackage (builtins.elemAt m 0)).getComponent "${builtins.elemAt m 1}:${builtins.elemAt m 2}";
+
+            # Helper function that can be used to make a Nix Flake out of a project
+            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
+            # for an example flake.nix file.
+            # This flake function maps the build outputs to the flake `packages`,
+            # `checks` and `apps` output attributes.
+            flake = {
+                packages ? haskellLib.selectProjectPackages
+              }:
+              let packageNames = builtins.attrNames (packages project.hsPkgs);
+              in {
+                # Used by:
+                #   `nix build .#pkg-name:lib:pkg-name`
+                #   `nix build .#pkg-name:lib:sublib-name`
+                #   `nix build .#pkg-name:exe:exe-name`
+                #   `nix build .#pkg-name:test:test-name`
+                packages = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.optional (package.components ? library)
+                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:lib:${n}"; value = v; })
+                        (package.components.sublibs)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = v; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = v; })
+                        (package.components.tests)
+                  ) packageNames);
+                # Used by:
+                #   `nix check .#pkg-name:test:test-name`
+                checks = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                        { name = "${packageName}:test:${n}"; value = v; })
+                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
+                  ) packageNames);
+                # Used by:
+                #   `nix run .#pkg-name:exe:exe-name`
+                #   `nix run .#pkg-name:test:test-name`
+                apps = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.tests)
+                  ) packageNames);
+              };
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
           });
 

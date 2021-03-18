@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -48,6 +48,8 @@ let self =
                && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 
+, ghcOptions ? component.ghcOptions
+
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
 , doHoogle ? component.doHoogle # Also build a hoogle index
@@ -88,6 +90,16 @@ let
       then allComponent
       else component;
 
+  # Ignore attempts to include DWARF info when it is not possible
+  enableDWARF = drvArgs.enableDWARF or false
+    && stdenv.hostPlatform.isLinux
+    && !haskellLib.isCrossHost
+    && !stdenv.hostPlatform.isMusl
+    && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
+
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+  setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
+
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
   # In order to support relative references to other packages we need to use
@@ -121,7 +133,7 @@ let
   configFiles = makeConfigFiles {
     component = componentForSetup;
     inherit (package) identifier;
-    inherit fullName flags needsProfiling;
+    inherit fullName flags needsProfiling enableDWARF;
   };
 
   enableFeature = enable: feature:
@@ -195,13 +207,12 @@ let
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
       ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
-      ++ lib.optional enableDWARF "--ghc-option=-g"
+      ++ lib.optional enableDWARF "--ghc-option=-g3"
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
+      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${o}"'') ghcOptions
     );
-
-  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${package.ghcOptions}"'';
 
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
@@ -213,7 +224,7 @@ let
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
   shellWrappers = ghcForComponent {
     componentName = fullName;
-    inherit configFiles;
+    inherit configFiles enableDWARF;
   };
 
   # In order to let shell hooks make package-specific things like Hoogle databases
@@ -277,7 +288,7 @@ let
 
   haddock = haddockBuilder {
     inherit componentId component package flags commonConfigureFlags
-      commonAttrs revision setupGhcOptions doHaddock
+      commonAttrs revision doHaddock
       doHoogle hyperlinkSource quickjump setupHaddockFlags
       needsProfiling configFiles preHaddock postHaddock pkgconfig;
 
@@ -298,10 +309,11 @@ let
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
-      inherit configFiles executableToolDepends exeName;
+      inherit configFiles executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
+      dwarf = self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`
@@ -336,6 +348,10 @@ let
       ++ (lib.optional keepSource "source");
 
     prePatch =
+      # emcc is very slow if it cannot cache stuff in $HOME
+      (lib.optionalString (stdenv.hostPlatform.isGhcjs) ''
+      export HOME=$(mktemp -d)
+      '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
       '') +
@@ -357,7 +373,7 @@ let
     buildPhase = ''
       runHook preBuild
       # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
+      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
       runHook postBuild
     '';
 
