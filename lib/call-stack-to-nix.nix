@@ -23,9 +23,20 @@ let
     }) resolver fetchedResolver;
 
   subDir' = src.origSubDir or "";
+  subDir = pkgs.lib.strings.removePrefix "/" subDir';
+  maybeCleanedSource =
+    if haskellLib.canCleanSource src
+      then (haskellLib.cleanSourceWith {
+        name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
+        src = src.origSrc or src;
+        filter = path: type: (!(src ? filter) || src.filter path type) && (
+          type == "directory" ||
+          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ stackYaml ".cabal" "package.yaml" ]); })
+      else src.origSrc or src;
+
   stackToNixArgs = builtins.concatStringsSep " " [
     "--full"
-    "--stack-yaml=$SRC/${stackYaml}"
+    "--stack-yaml=$SRC${subDir'}/${stackYaml}"
     (if ignorePackageYaml then "--ignore-package-yaml" else "")
     "-o ."
   ];
@@ -46,18 +57,22 @@ let
     preferLocalBuild = false;
   } (''
     mkdir -p $out${subDir'}
+    SRC=$(mktemp -d)
+    cd $SRC
+    # if maybeCleanedSource is empty, this means it's a new
+    # project where the files haven't been added to the git
+    # repo yet. We fail early and provide a useful error
+    # message to prevent headaches (#290).
+    if [ -z "$(ls -A ${maybeCleanedSource})" ]; then
+      echo "cleaned source is empty. Did you forget to 'git add -A'?"; exit 1;
+    fi
+    lndir -silent "${maybeCleanedSource}/." $SRC
+    ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${
-    # If no resolver was fetched use the original stack.yaml
-    if fetchedResolver == null
-    then ''
-      SRC=${src}
-    ''
-    else
+    # If a resolver was fetched use the it instead of the original stack.yaml
+    pkgs.lib.optionalString (fetchedResolver != null)
       # Replace the resolver path in the stack.yaml with the fetched version
       ''
-      SRC=$(mktemp -d)
-      cd $SRC
-      lndir -silent "${src}/." $SRC
       rm ${stackYaml}
       cp ${src}/${stackYaml} .
       chmod +w ${stackYaml}
@@ -71,7 +86,7 @@ let
     # We need to strip out any references to $src, as those won't
     # be accessable in restricted mode.
     for nixf in $(find $out -name "*.nix" -type f); do
-      substituteInPlace $nixf --replace "$SRC" "."
+      substituteInPlace $nixf --replace "$SRC${subDir'}" "."
     done
 
     # move pkgs.nix to default.nix ensure we can just nix `import` the result.
