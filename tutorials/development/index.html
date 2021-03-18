@@ -289,7 +289,7 @@ themselves. This is what the <a href="../../reference/library/#shellfor"><code>s
 { pkgs ? import &lt;nixpkgs&gt; {} }:
 
 let
-  hsPkgs = import ./default.nix { inherit pkgs; };
+  hsPkgs = import ./default.nix { };
 in
   hsPkgs.shellFor {
     # Include only the *local* packages of your project.
