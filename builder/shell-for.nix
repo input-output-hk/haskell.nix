@@ -128,10 +128,12 @@ in
       ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
+      # Includes `--with-compiler` in case the `cabal.project` file has `with-compiler:` in it.
       ++ lib.optional (ghcEnv.targetPrefix != "") (
             buildPackages.writeShellScriptBin "${ghcEnv.targetPrefix}cabal" ''
               exec cabal \
                 --with-ghc=${ghcEnv.targetPrefix}ghc \
+                --with-compiler=${ghcEnv.targetPrefix}ghc \
                 --with-ghc-pkg=${ghcEnv.targetPrefix}ghc-pkg \
                 --with-hsc2hs=${ghcEnv.targetPrefix}hsc2hs \
                 ${lib.optionalString (ghcEnv.targetPrefix == "js-unknown-ghcjs-") ''
