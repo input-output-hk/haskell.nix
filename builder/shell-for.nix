@@ -9,7 +9,7 @@
   # in the selected packages.  If only as subset of the components will be
   # worked on in the shell then we can pass a different `components` function
   # to select those.
-, components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs)
+, components ? ps: lib.concatMap haskellLib.getAllComponents (packages ps)
   # Additional packages to be added unconditionally
 , additional ? _: []
 , withHoogle ? true
@@ -50,26 +50,20 @@ let
   # We have to do this slightly differently because we will be looking at the actual components rather
   # than the packages.
 
-  # Given a list of packages, removes those which were selected as part of the shell.
-  # We do this on the basis of their identifiers being the same, not direct equality (why?).
-  removeSelectedPackages =
-    # All the identifiers of the selected packages
-    let selectedPackageIds = map (p: p.identifier) selectedPackages;
-    in lib.filter (input: !(builtins.elem (input.identifier or null) selectedPackageIds));
-
-  # Given a list of derivations, removes those which are components of packages which were selected as part of the shell.
+  # Given a list of `depends`, removes those which are components of packages which were selected as part of the shell.
   removeSelectedInputs =
     # All the components of the selected packages: we shouldn't add any of these as dependencies
-    let selectedPackageComponents = map (x: x.name) (lib.concatMap haskellLib.getAllComponents selectedPackages);
-    in lib.filter (input: !(builtins.elem input.name selectedPackageComponents));
+    let selectedPackageComponents = map (x: x.name) selectedComponents;
+    in lib.filter (input:
+      !(builtins.elem ((haskellLib.dependToLib input).name or null) selectedPackageComponents));
 
   # We need to remove any dependencies which are selected packages (see above).
-  # `depends` contains packages so we use 'removeSelectedPackages`.
-  packageInputs = removeSelectedPackages (lib.concatMap (cfg: cfg.depends) selectedConfigs) ++ additionalPackages;
+  packageInputs = removeSelectedInputs (lib.concatMap (cfg: cfg.depends) selectedConfigs)
+    ++ additionalPackages;
 
   # Add the system libraries and build tools of the selected haskell packages to the shell.
   # We need to remove any inputs which are selected components (see above).
-  # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends`  contain component
+  # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends` contain component
   # derivations, not packages, so we use `removeSelectedInputs`).
   systemInputs = removeSelectedInputs (lib.concatMap
     (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents);
@@ -115,7 +109,7 @@ let
     }
   ));
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "components" "additional" "withHoogle" "tools"];
 in
   mkShell (mkDrvArgs // {
     name = mkDrvArgs.name or name;

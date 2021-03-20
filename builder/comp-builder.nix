@@ -318,7 +318,7 @@ let
       ++ builtins.concatLists pkgconfig;
 
     buildInputs = component.libs
-      ++ map (d: d.components.library or d) component.depends;
+      ++ map haskellLib.dependToLib component.depends;
 
     nativeBuildInputs =
       [shellWrappers buildPackages.removeReferencesTo]

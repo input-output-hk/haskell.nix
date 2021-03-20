@@ -333,4 +333,8 @@ in {
             }
             else src.origSrc or src;  # If there is a subDir and origSrc (but no filter) use origSrc
   };
+
+  # Converts from a `compoent.depends` value to a library derivation.
+  # In the case of sublibs the `depends` value should already be the derivation.
+  dependToLib = d: d.components.library or d;
 }
