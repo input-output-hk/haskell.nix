@@ -10,6 +10,7 @@
 }:
 let
     isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" > 0;
+    isGhcjs810 = builtins.compareVersions ghcjsVersion "8.10.0.0" > 0;
 
     project = pkgs.buildPackages.haskell-nix.ghcjsProject {
         src = ghcjsSrc;
@@ -109,7 +110,7 @@ let
             # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
             ''
             env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
-              $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock \
+              $out/bin/ghcjs-boot ${ pkgs.lib.optionalString (!isGhcjs810) "-j1" } --with-emsdk=${project.emsdk} --no-prof --no-haddock \
               || (echo failed > $TMP/done; false)
             ''
           else ''
