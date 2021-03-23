@@ -30,7 +30,7 @@ let self =
     ( haskellLib.isTest componentId &&
       lib.any (x: x.identifier.name or "" == "cabal-doctest") package.setup-depends
     )
-, allComponent # Used when `configureAllComponents` is set to get a suitable configuration. 
+, allComponent # Used when `configureAllComponents` is set to get a suitable configuration.
 
 , build-tools ? component.build-tools
 , pkgconfig ? component.pkgconfig
@@ -259,7 +259,7 @@ let
         (lib.optionalString (cleanSrc.subDir != "") ''
             cd ${lib.removePrefix "/" cleanSrc.subDir}
           ''
-        ) + 
+        ) +
         (if cabalFile != null
           then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
           else
@@ -485,19 +485,21 @@ let
       # DB (probably empty unless this is a library component).
       # We also have to remove any refernces to $out to avoid
       # circular references.
-      if configureAllComponents
-        then ''
-          mv dist dist-tmp-dir
-          mkdir -p dist/build
+      lib.optionalString (configureAllComponents || keepSource) ''
+        mv dist dist-tmp-dir
+        mkdir -p dist/build
+        if [ -d dist-tmp-dir/build/${componentId.cname} ]; then
           mv dist-tmp-dir/build/${componentId.cname}/autogen dist/build/
-          mv dist-tmp-dir/package.conf.inplace dist/
-          remove-references-to -t $out dist/build/autogen/*
-          rm -rf dist-tmp-dir
-        ''
-        else lib.optionalString keepSource ''
-          rm -rf dist
-        ''
-    ) + (lib.optionalString (haskellLib.isTest componentId) ''
+        else
+          mv dist-tmp-dir/build/autogen dist/build/
+        fi
+        mv dist-tmp-dir/package.conf.inplace dist/
+        remove-references-to -t $out dist/build/autogen/*
+        rm -rf dist-tmp-dir
+      ''
+    ) + (lib.optionalString (keepSource && haskellLib.isLibrary componentId) ''
+        remove-references-to -t $out ${name}.conf
+    '') + (lib.optionalString (haskellLib.isTest componentId) ''
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
 
