@@ -22,7 +22,7 @@
       };
     package = {
       specVersion = "2.4";
-      identifier = { name = "ghcjs"; version = "8.10.2"; };
+      identifier = { name = "ghcjs"; version = "8.10.4"; };
       license = "MIT";
       copyright = "Victor Nazarov, Hamish Mackenzie, Luite Stegeman";
       maintainer = "Luite Stegeman <stegeman@gmail.com>";

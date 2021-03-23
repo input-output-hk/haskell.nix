@@ -569,7 +569,7 @@ in {
             ghc8104 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104;
                 in let ghcjs8104 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
-                ghcjsVersion =  "8.10.0.0.1";
+                ghcjsVersion =  "8.10.2";
                 ghc = buildGHC;
                 ghcVersion = "8.10.4";
                 compiler-nix-name = "ghc8104";

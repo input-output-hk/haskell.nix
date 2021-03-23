@@ -36,7 +36,7 @@
     materialized = ../materialized/ghcjs/alex + "/${compiler-nix-name}";
   }
 , cabal-install ?
-  if (builtins.compareVersions ghcjsVersion "8.10.0.0" > 0)
+  if (builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0)
   then pkgs.haskell-nix.tool compiler-nix-name "cabal" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
     version = "3.4.0.0";
@@ -55,8 +55,8 @@
 , ...
 }@args:
 let
-    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" > 0;
-    isGhcjs810 = builtins.compareVersions ghcjsVersion "8.10.0.0" > 0;
+    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" >= 0;
+    isGhcjs810 = builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0;
 
     # Inputs needed to configure the GHCJS source tree
     configureInputs = with pkgs; [

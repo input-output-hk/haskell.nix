@@ -9,8 +9,8 @@
 , ghc ? pkgs.buildPackages.ghc
 }:
 let
-    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" > 0;
-    isGhcjs810 = builtins.compareVersions ghcjsVersion "8.10.0.0" > 0;
+    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" >= 0;
+    isGhcjs810 = builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0;
 
     project = pkgs.buildPackages.haskell-nix.ghcjsProject {
         src = ghcjsSrc;
