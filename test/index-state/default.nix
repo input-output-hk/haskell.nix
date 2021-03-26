@@ -37,6 +37,9 @@ in
     '';
 
     meta.platforms = platforms.all;
+    # Does not work for GHCJS
+    meta.disabled = !stdenv.hostPlatform.isGhcjs;
+    
 
     passthru = {
       # Used for debugging with nix repl
