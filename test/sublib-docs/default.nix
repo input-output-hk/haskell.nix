@@ -12,6 +12,8 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
+  # Haddock is not included with cross compilers currently
+  meta.disabled = haskellLib.isCrossHost;
   ifdInputs = {
     inherit (project) plan-nix;
   };

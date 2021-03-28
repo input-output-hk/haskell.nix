@@ -20,11 +20,12 @@ in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
-    pkgs.recurseIntoAttrs {
+    pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" "latest";
+    } // pkgs.lib.optionalAttrs (compiler-nix-name != "ghc901") {
       hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
       hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
-    }
+    })
   );
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.

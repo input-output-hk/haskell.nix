@@ -8,6 +8,7 @@ let self =
 
 # build-tools
 , bootPkgs
+, buildPackages
 , autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils
 , autoreconfHook
 , bash
@@ -100,6 +101,9 @@ let
     CrossCompilePrefix = ${targetPrefix}
   '' + lib.optionalString isCrossTarget ''
     Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
+  ''
+    # GHC 9.0.1 fails to compile for musl unless HADDOC_DOCS = NO
+    + lib.optionalString (isCrossTarget || (targetPlatform.isMusl && builtins.compareVersions ghc-version "9.0.1" >= 0)) ''
     HADDOCK_DOCS = NO
     BUILD_SPHINX_HTML = NO
     BUILD_SPHINX_PDF = NO
@@ -337,6 +341,11 @@ stdenv.mkDerivation (rec {
     inherit (ghc.meta) license platforms;
   };
 
+  # Needed for `haddock` to work on source that includes non ASCII chars
+  LANG = "en_US.UTF-8";
+  LC_ALL = "en_US.UTF-8";
+} // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
+  LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
 } // lib.optionalAttrs targetPlatform.useAndroidPrebuilt {
   dontStrip = true;
   dontPatchELF = true;

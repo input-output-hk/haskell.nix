@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
+{ stdenv, util, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages }:
 
 with stdenv.lib;
 
@@ -20,6 +20,9 @@ let
   };
 
 in recurseIntoAttrs ({
+  # Making cabal-doctest work for cross compilers will be difficult.
+  meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform || builtins.compareVersions
+    buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.0" >= 0;
   ifdInputs = {
     plan-nix = addMetaAttrs meta project.plan-nix;
   };
@@ -35,8 +38,6 @@ in recurseIntoAttrs ({
 
     meta = {
       platforms = platforms.all;
-      # Making cabal-doctest work for cross compilers will be difficult.
-      disabled = stdenv.buildPlatform != stdenv.hostPlatform;
     };
 
     passthru = {

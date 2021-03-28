@@ -23,4 +23,7 @@ in recurseIntoAttrs {
     inherit (project) stack-nix;
   };
   build = project.hsPkgs.haskell-language-server.components.exes.haskell-language-server;
+
+  # Haskell Language Server does not build for GHC 9 yet
+  meta.disabled = compiler-nix-name == "ghc901";
 }
