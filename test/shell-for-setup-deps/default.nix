@@ -16,6 +16,8 @@ let
   env = project.shellFor {};
 
 in recurseIntoAttrs ({
+  meta.disabled = compiler-nix-name == "ghc901";
+
   ifdInputs = {
     inherit (project) plan-nix;
   };

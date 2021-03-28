@@ -7,6 +7,8 @@ let
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
 in recurseIntoAttrs {
+  # Does not work on ghcjs because it needs zlib.
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";

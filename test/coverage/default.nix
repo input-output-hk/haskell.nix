@@ -24,6 +24,8 @@ let
   exeExt = stdenv.hostPlatform.extensions.executable;
 
 in recurseIntoAttrs ({
+  # Does not work on ghcjs because it needs zlib.
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {
     name = "coverage-test";
 

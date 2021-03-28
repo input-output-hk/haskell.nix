@@ -39,37 +39,35 @@ let
   # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
   combineAndMaterialize = unchecked: ghcName: bootPackages:
-      let
-        # Not all the boot packages for ghc 8.8 and above can be
-        # processed yet by `nix-tools`, so we are not materializing the
-        # ones that currently fail.
-        # (we need to upgrade `nix-tools` to Cabal 3 for them to work)
-        skipBroken = final.lib.filterAttrs (pkgName: _:
-          ghcName == "ghc865" || (pkgName != "base" && pkgName != "ghc-heap"));
-      in (final.haskell-nix.materialize ({
+      (final.haskell-nix.materialize ({
           materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
         } // final.lib.optionalAttrs unchecked {
           checkMaterialization = false;
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
-          (_: srcAndNix: srcAndNix.nix) (skipBroken bootPackages))));
+          (_: srcAndNix: srcAndNix.nix) bootPackages)));
 
   # Import the nix and src.
   importSrcAndNix = srcAndNix:
       args: (import srcAndNix.nix args) // { inherit (srcAndNix) src; };
 
   # The packages in GHC source and the locations of them
-  ghc-extra-pkgs = {
+  ghc-extra-pkgs = ghcVersion: {
       ghc          = "compiler";
       base         = "libraries/base";
       bytestring   = "libraries/bytestring";
       ghci         = "libraries/ghci";
       ghc-boot     = "libraries/ghc-boot";
       ghc-heap     = "libraries/ghc-heap";
+      ghc-prim     = "libraries/ghc-prim";
       hpc          = "libraries/hpc";
+      integer-gmp  = "libraries/integer-gmp";
       libiserv     = "libraries/libiserv";
+      template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
       remote-iserv = "utils/remote-iserv";
       iserv-proxy  = "utils/iserv-proxy";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
+      ghc-bignum   = "libraries/ghc-bignum";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on
@@ -98,27 +96,27 @@ let
 
 in rec {
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
-    (ghcName: value: builtins.mapAttrs
+    (ghcName: ghc: builtins.mapAttrs
       (pkgName: dir: rec {
         src =
           # Add in the generated files needed by ghc-boot
           if dir == "libraries/ghc-boot"
             then final.evalPackages.runCommand "ghc-boot-src" {} ''
-              cp -Lr ${value.passthru.configured-src}/${dir} $out
+              cp -Lr ${ghc.passthru.configured-src}/${dir} $out
               chmod -R +w $out
-              cp -Lr ${value.generated}/libraries/ghc-boot/dist-install/build/GHC/* $out/GHC
+              cp -Lr ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/* $out/GHC
             ''
             else if dir == "compiler"
             then final.evalPackages.runCommand "ghc-src" {} ''
-              cp -Lr ${value.passthru.configured-src}/${dir} $out
+              cp -Lr ${ghc.passthru.configured-src}/${dir} $out
               chmod -R +w $out
-              if [[ -f ${value.generated}/compiler/stage2/build/Config.hs ]]; then
-                cp -Lr ${value.generated}/compiler/stage2/build/Config.hs $out
+              if [[ -f ${ghc.generated}/compiler/stage2/build/Config.hs ]]; then
+                cp -Lr ${ghc.generated}/compiler/stage2/build/Config.hs $out
               fi
             ''
-            else "${value.passthru.configured-src}/${dir}";
+            else "${ghc.passthru.configured-src}/${dir}";
         nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
-      }) ghc-extra-pkgs)
+      }) (ghc-extra-pkgs ghc.version))
     final.buildPackages.haskell-nix.compiler;
 
   # All the ghc boot package nix files for each ghc.
@@ -148,20 +146,20 @@ in rec {
         ghc-boot-packages-src-and-nix;
 
   # Derivation with cabal.project for use with `cabalProject'` for each ghc. 
-  ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (name: value:
+  ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (ghcName: ghc:
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
-        (final.lib.filterAttrs (n: _: n != "base" && n != "ghc-heap") ghc-extra-pkgs);
+        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" ])) (ghc-extra-pkgs ghc.version));
     in final.stdenv.mkDerivation {
-      name = "ghc-extra-pkgs-cabal-project-${name}";
+      name = "ghc-extra-pkgs-cabal-project-${ghcName}";
       phases = [ "buildPhase" ];
       # Copy each cabal file from the configured ghc source and
       # add a suitable cabal.project file.
       buildPhase = ''
         ${final.lib.concatStrings (final.lib.mapAttrsToList (_: dir: ''
           mkdir -p $out/${dir}
-          cp ${value.passthru.configured-src}/${dir}/*.cabal $out/${dir}
+          cp ${ghc.passthru.configured-src}/${dir}/*.cabal $out/${dir}
           # Remove references to libffi as the are not cross platform
           # and will break memoization (we will need to add them back)
           sed -i 's|/nix/store/.*-libffi.*/include||' $out/${dir}/*.cabal

@@ -7,7 +7,6 @@ let
   # tests using callCabalProjectToNix and importAndFilterProject
   callProjectResults = callCabalProjectToNix {
     inherit compiler-nix-name;
-    index-state = "2020-05-25T00:00:00Z";
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
   };

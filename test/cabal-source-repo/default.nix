@@ -5,7 +5,6 @@ with lib;
 let
   project = cabalProject' {
     inherit compiler-nix-name;
-    index-state = "2020-05-25T00:00:00Z";
     src = testSrc "cabal-source-repo";
   };
   packages = project.hsPkgs;
