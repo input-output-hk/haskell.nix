@@ -23,7 +23,7 @@ let
 
 in recurseIntoAttrs {
   # This test seeems to be broken on 8.6 and 8.8 and ghcjs
-  disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884" || stdenv.hostPlatform.isGhcjs;
+  meta.disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884" || stdenv.hostPlatform.isGhcjs;
   ifdInputs = {
     inherit (project) plan-nix;
   };
