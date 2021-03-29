@@ -39,7 +39,8 @@ in
     meta.platforms = platforms.all;
     # This test will need to be updated to use newer hackage index-state for it
     # to work with GHC 9 and above.
-    meta.disabled = compiler-nix-name == "ghc901";
+    # Does not work for GHCJS
+    meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name == "ghc901";
     
 
     passthru = {

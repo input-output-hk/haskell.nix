@@ -585,6 +585,40 @@ in {
                 cd lib
                 lndir ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
             '' + installDeps targetPrefix);
+            ghc8104 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104;
+                in let ghcjs8104 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
+                ghcjsVersion =  "8.10.2";
+                ghc = buildGHC;
+                ghcVersion = "8.10.4";
+                compiler-nix-name = "ghc8104";
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.4" {
+                nativeBuildInputs = [ final.xorg.lndir ];
+                passthru = {
+                    inherit targetPrefix;
+                    version = "8.10.4";
+                    isHaskellNixCompiler = true;
+                    enableShared = false;
+                    inherit (ghcjs8104) configured-src bundled-ghcjs project;
+                    inherit buildGHC;
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                    ];
+                };
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
+                mkdir -p $out/bin
+                cd $out/bin
+                ln -s ${ghcjs8104}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${ghcjs8104}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
+                cd ..
+                mkdir -p lib/${targetPrefix}ghc-8.10.4
+                cd lib
+                lndir ${ghcjs8104}/lib ${targetPrefix}ghc-8.10.4
+            '' + installDeps targetPrefix);
         }))));
 
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`

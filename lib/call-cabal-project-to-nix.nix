@@ -453,8 +453,6 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
-    mkdir -p $out
-
     # Using `cabal v2-freeze` will configure the project (since
     # it is not configured yet), taking the existing `cabal.project.freeze`
     # file into account.  Then it "writes out a freeze file which
@@ -486,6 +484,8 @@ let
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
             "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
         ${configureArgs} 2>&1 | tee -a cabal-configure.out); then
+
+    mkdir -p $out
 
     cp cabal.project.freeze $maybeFreeze
     # Not needed any more (we don't want it to wind up in the $out hash)
@@ -536,14 +536,15 @@ let
 
       # When cabal configure fails copy the output that we captured above and
       # use `failed-cabal-configure.nix` to make a suitable derviation with.
-      cp cabal-configure.out $out
-      cp ${./failed-cabal-configure.nix} $out/default.nix
+      mkdir -p $out${subDir'}
+      cp cabal-configure.out $out${subDir'}
+      cp ${./failed-cabal-configure.nix} $out${subDir'}/default.nix
 
       # These should only be used indirectly by `passthru.json` and `passthru.freeze`.
       # Those derivations will check for `cabal-configure.out` out first to see if
       # it is ok to use these files.
-      echo "Cabal configure failed see $out/cabal-configure.out for details" > $maybeJson
-      echo "Cabal configure failed see $out/cabal-configure.out for details" > $maybeFreeze
+      echo "Cabal configure failed see $out${subDir'}/cabal-configure.out for details" > $maybeJson
+      echo "Cabal configure failed see $out${subDir'}/cabal-configure.out for details" > $maybeFreeze
     fi
   '');
 in {
