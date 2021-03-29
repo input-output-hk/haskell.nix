@@ -105,12 +105,16 @@ let
           fi
         done
         } &
-        ${ if isGhcjs88
-          then
-            # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
-            ''
+        ${
+          # Unsets NIX_CFLAGS_COMPILE so the osx version of iconv.h is not used by mistake
+          if isGhcjs810 then ''
             env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
-              $out/bin/ghcjs-boot ${ pkgs.lib.optionalString (!isGhcjs810) "-j1" } --with-emsdk=${project.emsdk} --no-prof --no-haddock \
+              $out/bin/ghcjs-boot --with-emsdk=${project.emsdk} --no-haddock \
+              || (echo failed > $TMP/done; false)
+            ''
+          else if isGhcjs88 then ''
+            env -u NIX_CFLAGS_COMPILE PATH=$out/bin:$PATH \
+              $out/bin/ghcjs-boot -j1 --with-emsdk=${project.emsdk} --no-prof --no-haddock \
               || (echo failed > $TMP/done; false)
             ''
           else ''
