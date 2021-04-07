@@ -690,7 +690,8 @@ final: prev: {
         stackProject' =
           projectModule: haskellLib.evalProjectModule ../modules/stack-project.nix projectModule (
             { src, ... }@args:
-            let callProjectResults = callStackToNix ({ inherit cache; } // args);
+            let callProjectResults = callStackToNix (args
+                  // final.lib.optionalAttrs (args.cache == null) { inherit cache; });
                 generatedCache = genStackCache args;
                 cache = if args.cache != null then args.cache else generatedCache;
             in let pkg-set = mkStackPkgSet
