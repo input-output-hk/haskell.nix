@@ -632,10 +632,6 @@ in {
         name = "cabal-install";
         version = "3.4.0.0";
         index-state = final.haskell-nix.internalHackageIndexState;
-        # When building cabal-install (only happens when checking materialization)
-        # disable checking of the tools used to avoid infinite recursion.
-        cabal-install = final.evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
-        nix-tools = final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args)).getComponent "exe:cabal";
     nix-tools-set = { compiler-nix-name, ... }@args:
@@ -648,6 +644,7 @@ in {
             else args.compiler-nix-name;
         project =
           final.haskell-nix.cabalProject ({
+            caller = "nix-tools-set";
             name = "nix-tools";
             src = final.haskell-nix.sources.nix-tools;
             # This is a handy way to use a local git clone of nix-tools when developing
@@ -657,10 +654,6 @@ in {
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
               index-state: ${final.haskell-nix.internalHackageIndexState}
             '';
-            # When building cabal-install (only happens when checking materialization)
-            # disable checking of the tools used to avoid infinite recursion.
-            cabal-install = final.evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
-            nix-tools = final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
             materialized = ../materialized + "/${compiler-nix-name}/nix-tools";
             modules = [{
               packages.transformers-compat.components.library.doExactConfig = true;

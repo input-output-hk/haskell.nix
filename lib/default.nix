@@ -333,4 +333,16 @@ in {
             }
             else src.origSrc or src;  # If there is a subDir and origSrc (but no filter) use origSrc
   };
+
+  evalProjectModule = projectType: m: f: f
+      (lib.evalModules {
+        modules = [m] ++ [
+          (import projectType)
+          ({ config, lib, ... }: {
+            _module.args = {
+              inherit pkgs;
+            };
+          })
+        ];
+      }).config;
 }

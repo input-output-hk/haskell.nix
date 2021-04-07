@@ -21,8 +21,6 @@ in
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
-, nix-tools     ? evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}     # When building cabal projects we use the nix-tools
-, cabal-install ? evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name} # and cabal-install compiled with matching ghc version
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
                      # If the tests and benchmarks are not needed and they
@@ -43,6 +41,14 @@ in
 }@args:
 
 let
+  # These defaults are hear rather than in modules/cabal-project.nix to make them
+  # lazy enough to avoid infinite recursion issues.
+  nix-tools = if args.nix-tools or null != null
+    then args.nix-tools
+    else evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
+  cabal-install = if args.cabal-install or null != null
+    then args.cabal-install
+    else evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 

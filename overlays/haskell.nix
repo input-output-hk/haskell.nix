@@ -496,6 +496,7 @@ final: prev: {
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
+          projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
             { src, compiler-nix-name, ... }@args':
             let
               args = { caller = "cabalProject'"; } // args';
@@ -515,10 +516,9 @@ final: prev: {
                 { inherit compiler-nix-name plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
-                          ++ final.lib.optional (args ? ghcOverride || args ? ghc)
-                              { ghc.package = args.ghcOverride or args.ghc; }
-                          ++ final.lib.optional (args ? compiler-nix-name)
-                              { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
+                          ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
+                              { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
+                          ++ [ { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; } ];
                   extra-hackages = args.extra-hackages or [];
                 };
 
@@ -531,9 +531,9 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
-                  projectArgs = args';
+                  inherit projectModule;
                 };
-            in project;
+            in project);
 
 
         # Take `hsPkgs` from the `rawProject` and update all the packages and
@@ -583,7 +583,7 @@ final: prev: {
             projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
             projectCross = (final.lib.mapAttrs (_: pkgs:
-                rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs
+                rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
@@ -684,25 +684,22 @@ final: prev: {
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
           });
 
-        cabalProject =
-            { src, compiler-nix-name, ... }@args':
-            let
-              args = { caller = "hackage-package"; } // args';
-              p = cabalProject' args;
+        cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // p;
 
         stackProject' =
+          projectModule: haskellLib.evalProjectModule ../modules/stack-project.nix projectModule (
             { src, ... }@args:
             let callProjectResults = callStackToNix ({ inherit cache; } // args);
                 generatedCache = genStackCache args;
-                cache = args.cache or generatedCache;
+                cache = if args.cache != null then args.cache else generatedCache;
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules = final.lib.singleton (mkCacheModule cache)
                     ++ (args.modules or [])
-                    ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; }
-                    ++ final.lib.optional (args ? compiler-nix-name)
+                    ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
+                    ++ final.lib.optional (args.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                 };
 
@@ -714,9 +711,9 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.stackProject';
-                  projectArgs = args;
+                  inherit projectModule;
                 };
-            in project;
+            in project);
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // p;
@@ -732,7 +729,7 @@ final: prev: {
         # used (as it will use a default `cabal.project`).
         project' = { src, projectFileName ? null, ... }@args':
           let
-            args = { caller = "project'"; } // args';
+            args = { caller = "project'"; } // final.lib.filterAttrs (n: _: n != "projectFileName") args';
             dir = __readDir (src.origSrcSubDir or src);
             exists = fileName: builtins.elem (dir.${fileName} or "") ["regular" "symlink"];
             stackYamlExists    = exists "stack.yaml";
