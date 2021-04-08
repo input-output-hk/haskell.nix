@@ -43,6 +43,8 @@ in
 let
   # These defaults are hear rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
+  # Using null as the default also improves performance as they are not forced by the
+  # nix module system for `nix-tools-unchecked` and `cabal-install-unchecked`.
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
     else evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
