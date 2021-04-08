@@ -39,6 +39,15 @@ This can be tricky to get setup properly. If you're still having trouble getting
 
 [Niv](https://github.com/nmattia/niv) is a command line tool for keeping tack of Nix project dependencies.
 
+This guide assumes that the `sources.haskellNix` will be set to point
+a pinned copy of the haskell.nix github repo.  One easy way to do this
+is to use Niv.  If you prefer not to use Niv another option is described
+in the in the "Using haskell.nix without niv" section of this document.
+
+If you want to use Nix Flakes to pin your dependencies then you should
+consider following the [Getting started with flakes](./getting-started-flakes.md)
+document instead of this one.
+
 After installing niv you can initialize niv and pin the latest haskell.nix
 commit by running the following in the root directory of the project:
 
@@ -143,7 +152,7 @@ cabal new-build your-package-name
 
 To open a shell for use with `stack` see [the following issue](https://github.com/input-output-hk/haskell.nix/issues/689#issuecomment-643832619).
 
-## Using haskell.nix without niv
+## Using haskell.nix without Niv
 
 If you would prefer not to use niv you can replace
 `sources = import ./nix/sources.nix {};` in the examples with:
