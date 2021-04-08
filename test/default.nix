@@ -1,6 +1,6 @@
 { haskellNix ? import ../default.nix { inherit checkMaterialization; }
 , pkgs ? import nixpkgs nixpkgsArgs
-, nixpkgs ? haskellNix.sources.nixpkgs
+, nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name
@@ -10,6 +10,9 @@
 with pkgs;
 
 let
+  inherit (import ../ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
+  isDisabled = d: d.meta.disabled or false;
+
   # Set recurseForDerivations for both children and grand-children values in
   # the input association list, but only if the key is "ifdInputs".
   #
@@ -53,7 +56,8 @@ let
   # The values in the input association list must be attribute sets themselves.
   addIfdInputsToVal = builtins.mapAttrs (_: val: withIfdInputs val);
 
-  # Keep only the attribute with the key "ifdInputs".
+  # Keep only the attribute with the key "ifdInputs" and "meta".
+  # Meta is needed for `meta.disabled` to work at this level.
   #
   # filterAttrsIfdInputs :: AttrSet -> AttrSet
   #
@@ -62,7 +66,7 @@ let
   #
   # >>> filterAttrsIfdInputs { foobar = "hello" }
   # { }
-  filterAttrsIfdInputs = pkgs.lib.filterAttrs (n: _: n == "ifdInputs");
+  filterAttrsIfdInputs = pkgs.lib.filterAttrs (n: _: n == "ifdInputs" || n == "meta");
 
   # Remove all keys and values in a attribute set where the key
   # doesn't equal "ifdInputs".  Set the "recurseForDerivations"
@@ -136,6 +140,12 @@ let
 
   testSrcRoot = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
   testSrc = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRoot; inherit subDir; };
+  # Use the following reproduce issues that may arise on hydra as a
+  # result of building a snapshot not a git repo.
+  # testSrcRoot = pkgs.copyPathToStore ./.;
+  # testSrc = subDir: testSrcRoot + "/${subDir}";
+  testSrcRootWithGitDir = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
+  testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
   callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc; });
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
@@ -152,6 +162,7 @@ let
   # All tests.
   allTests = {
     cabal-simple = callTest ./cabal-simple { inherit util compiler-nix-name; };
+    cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
     cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
     with-packages = callTest ./with-packages { inherit util; };
@@ -173,34 +184,24 @@ let
     ghc-options-stack = callTest ./ghc-options/stack.nix {};
     exe-only = callTest ./exe-only { inherit util compiler-nix-name; };
     stack-source-repo = callTest ./stack-source-repo {};
+    cabal-doctests = callTest ./cabal-doctests { inherit util compiler-nix-name; };
     extra-hackage = callTest ./extra-hackage { inherit compiler-nix-name; };
-    compiler-nix-name = callTest ./compiler-nix-name {};
     hls-cabal = callTest ./haskell-language-server/cabal.nix { inherit compiler-nix-name; };
     hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
     cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
     index-state = callTest ./index-state { inherit compiler-nix-name; };
+    lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
+    # fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
+    shell-for = callTest ./shell-for {};
+    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
+    coverage = callTest ./coverage { inherit compiler-nix-name; };
+    coverage-golden = callTest ./coverage-golden { inherit compiler-nix-name;};
+    coverage-no-libs = callTest ./coverage-no-libs { inherit compiler-nix-name; };
+    snapshots = callTest ./snapshots {};
+    sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
+    githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
 
     unit = unitTests;
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && !stdenv.hostPlatform.isWindows) {
-    # Does not work on ghcjs because it needs zlib.
-    # Does not work on windows because it needs mintty.
-    shell-for = callTest ./shell-for {};
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs || !stdenv.buildPlatform.isDarwin) {
-    # When using ghcjs on darwin this test fails with
-    # ReferenceError: h$hs_clock_darwin_gettime is not defined
-    # https://github.com/input-output-hk/haskell.nix/issues/925
-    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs) {
-    # These do not work on ghcjs because it needs zlib.
-    coverage = callTest ./coverage { inherit compiler-nix-name; };
-    snapshots = callTest ./snapshots {};
-  } // lib.optionalAttrs (!stdenv.hostPlatform.isGhcjs && compiler-nix-name != "ghc8101" && compiler-nix-name != "ghc8102" && compiler-nix-name != "ghc810220201118" ) {
-    # Pandoc does not build with ghcjs or ghc 8.10 yet (lookup-sha256 and fully-static build pandoc)
-    lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
-    fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
-  } // lib.optionalAttrs (!pkgs.haskell-nix.haskellLib.isCrossHost) {
-    # Haddock is not included with cross compilers currently
-    sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
   };
 
   # This is the same as allTests, but filter out all the key/vaules from the
@@ -225,7 +226,8 @@ let
   # - input ifdLevel is 3 or greater: return allTests
   optionalIfdTests = ifdLevel:
     pkgs.lib.optionalAttrs (ifdLevel > 1) (allTestsWithIfdInputs ifdLevel);
-in pkgs.recurseIntoAttrs (optionalIfdTests ifdLevel)
+in filterAttrsOnlyRecursive (_: v: !(isDisabled v))
+  (pkgs.recurseIntoAttrs (optionalIfdTests ifdLevel))
 
 ## more possible test cases
 # 1. fully static linking

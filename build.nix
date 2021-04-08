@@ -20,11 +20,12 @@ in rec {
   tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
-    pkgs.recurseIntoAttrs {
+    pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" "latest";
+    } // pkgs.lib.optionalAttrs (compiler-nix-name != "ghc901") {
       hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
-      hlint-latest = tool compiler-nix-name "hlint" "latest";
-    }
+      hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
+    })
   );
 
   # Scripts for keeping Hackage and Stackage up to date, and CI tasks.
@@ -33,7 +34,7 @@ in rec {
   # are not pure).
   maintainer-scripts = pkgs.dontRecurseIntoAttrs {
     update-hackage = import ./scripts/update-hackage.nix {
-      inherit (pkgs) stdenv writeScript coreutils glibc git
+      inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nix-prefetch-git gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
@@ -41,7 +42,7 @@ in rec {
       inherit (haskell) update-index-state-hashes;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
-      inherit (pkgs) stdenv writeScript coreutils glibc git
+      inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nix-prefetch-git gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;

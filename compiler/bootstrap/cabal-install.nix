@@ -1,4 +1,4 @@
-{ fetchurl, hackage, stdenv, ghc, zlib, src, version }:
+{ fetchurl, hackage, stdenv, lib, ghc, zlib, src, version }:
 let dependencies =
  [ { name = "deepseq";           version = "1.4.3.0";   }
    { name = "binary";            version = "0.8.5.1";   }
@@ -42,7 +42,7 @@ in stdenv.mkDerivation ({
   };
 
   meta = {
-    platforms = stdenv.lib.platforms.all;
+    platforms = lib.platforms.all;
   };
 
   nativeBuildInputs = [ ghc zlib ];

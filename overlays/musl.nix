@@ -9,11 +9,17 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   zlib = prev.zlib.override { splitStaticOutput = false; };
 
   # and a few more packages that need their static libs explicitly enabled
+  bzip2 = prev.bzip2.overrideAttrs (_: { dontDisableStatic = true; });
   gmp = prev.gmp.override { withStatic = true; };
   ncurses = prev.ncurses.override { enableStatic = true; };
   libsodium = prev.libsodium.overrideAttrs (_: { dontDisableStatic = true; });
 
   numactl = prev.numactl.overrideAttrs (_: { configureFlags = "--enable-static"; });
+
+  # See https://github.com/input-output-hk/haskell.nix/issues/948
+  postgresql = (prev.postgresql.overrideAttrs (old: { dontDisableStatic = true; }))
+    .override { enableSystemd = false; };
+  openssl = prev.openssl.override { static = true; };
 
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });

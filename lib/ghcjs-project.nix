@@ -35,11 +35,28 @@
     version = "3.2.5";
     materialized = ../materialized/ghcjs/alex + "/${compiler-nix-name}";
   }
-, cabal-install ? pkgs.haskell-nix.cabal-install.${compiler-nix-name}
+, cabal-install ?
+  if (builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0)
+  then pkgs.haskell-nix.tool compiler-nix-name "cabal" {
+    index-state = pkgs.haskell-nix.internalHackageIndexState;
+    version = "3.4.0.0";
+    materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
+  }
+  else pkgs.haskell-nix.tool compiler-nix-name "cabal" {
+    index-state = pkgs.haskell-nix.internalHackageIndexState;
+    version = "3.2.0.0";
+    # Cabal 3.2.1.0 no longer supports he mix of `cabal-version`,
+    # lack of `custom-setup` and `v1-install` used by ghcjs boot.
+    cabalProjectLocal = ''
+      constraints: Cabal <3.2.1.0
+    '';
+    materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
+  }
 , ...
 }@args:
 let
-    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" > 0;
+    isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" >= 0;
+    isGhcjs810 = builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0;
 
     # Inputs needed to configure the GHCJS source tree
     configureInputs = with pkgs; [
@@ -53,17 +70,9 @@ let
             alex
             cabal-install
         ];
-    # nixpkgs does not have an emsdk, this derivation uses symlinks to make something
-    # that matches enought for `ghcjs-boot` to work
-    emscriptenupstream = pkgs.buildPackages.emscriptenupstream;
-    emscripten = pkgs.buildPackages.emscripten.override {
-      emscriptenBackend = emscriptenupstream;
-    };
-    emsdk = pkgs.linkFarm "emsdk" [
-      { name = "upstream/bin"; path = emscriptenupstream + "/bin"; }
-      { name = "upstream/emscripten"; path = emscripten + "/bin"; }
-      { name = "share"; path = emscripten + "/share"; }
-    ];
+
+    inherit (pkgs.buildPackages) emscriptenupstream emscripten emsdk;
+
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
             nodejs
@@ -72,11 +81,7 @@ let
             gmp
             pkgconfig
         ]
-        ++ [ ghc cabal-install ]
-        ++ lib.optionals stdenv.isDarwin [
-          pkgs.buildPackages.gcc # https://github.com/ghcjs/ghcjs/issues/663
-        ]
-        ++ lib.optional isGhcjs88 [ emsdk ];
+        ++ [ ghc cabal-install emsdk ];
     # Configured the GHCJS source
     configured-src = pkgs.runCommand "configured-ghcjs-src" {
         buildInputs = configureInputs;
@@ -114,14 +119,7 @@ let
         sed -i 's/gcc /cc /g' utils/makePackages.sh
         ./utils/makePackages.sh copy
 
-        ${
-          # nuke the HsBaseConfig.h from base.buildinfo.in; this will
-          # prevent it from being installed and provide incorrect values.
-          pkgs.lib.optionalString (!isGhcjs88) ''
-            echo "    build-tool-depends: alex:alex, happy:happy <= 1.19.9" >> lib/ghc-api-ghcjs/ghc-api-ghcjs.cabal
-            sed -i 's/HsBaseConfig.h//g' lib/boot/pkg/base/base.buildinfo.in
-          ''
-        }'';
+        '';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (
@@ -129,10 +127,10 @@ let
             (n: _: !(builtins.any (x: x == n)
                 ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"])) args) // {
         src = configured-src;
-        index-state = "2020-11-16T00:00:00Z";
-        compiler-nix-name = if isGhcjs88 then "ghc884" else "ghc865";
-        configureArgs = pkgs.lib.optionalString isGhcjs88 "--constraint='Cabal >=3.0.2.0 && <3.1'";
-        materialized = ../materialized + (if isGhcjs88 then "/ghcjs884" else "/ghcjs865");
+        index-state = "2021-03-20T00:00:00Z";
+        compiler-nix-name = if isGhcjs810 then "ghc8104" else if isGhcjs88 then "ghc884" else "ghc865";
+        configureArgs = pkgs.lib.optionalString (isGhcjs88 && !isGhcjs810) "--constraint='Cabal >=3.0.2.0 && <3.1'";
+        materialized = ../materialized + (if isGhcjs810 then "/ghcjs8104" else if isGhcjs88 then "/ghcjs884" else "/ghcjs865");
         modules = [
             {
                 # we need ghc-boot in here for ghcjs.

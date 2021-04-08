@@ -170,7 +170,9 @@ final: prev: {
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
-                                   final.ghc-boot-packages.${compiler-nix-name'}
+                                   # Using the -unchecked version here to avoid infinite
+                                   # recursion issues when checkMaterialization = true
+                                   final.ghc-boot-packages-unchecked.${compiler-nix-name'}
                                  ]
                              ++ pkg-def-extras;
                 # set doExactConfig = true, as we trust cabals resolution for
@@ -252,7 +254,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2020-05-31T00:00:00Z";
+        internalHackageIndexState = "2021-02-25T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -266,7 +268,7 @@ final: prev: {
 
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
             inherit (final.haskell-nix) indexStateHashesPath;
-            inherit (final) coreutils nix writeShellScriptBin stdenv curl;
+            inherit (final) coreutils nix writeShellScriptBin stdenv lib curl;
             # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
             nix-tools = final.haskell-nix.internal-nix-tools;
         };
@@ -455,7 +457,7 @@ final: prev: {
         hackage-package =
           { name, compiler-nix-name, ... }@args':
           let args = { caller = "hackage-package"; } // args';
-          in (hackage-project args).hsPkgs.${name};
+          in (hackage-project args).getPackage name;
         hackage-project =
             { name
             , compiler-nix-name
@@ -494,25 +496,33 @@ final: prev: {
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
         cabalProject' =
+          projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
             { src, compiler-nix-name, ... }@args':
             let
               args = { caller = "cabalProject'"; } // args';
               callProjectResults = callCabalProjectToNix args;
-            in let pkg-set = mkCabalProjectPkgSet
-                { inherit compiler-nix-name;
-                  plan-pkgs = importAndFilterProject {
-                    inherit (callProjectResults) projectNix sourceRepos src;
+              plan-pkgs = importAndFilterProject {
+                inherit (callProjectResults) projectNix sourceRepos src;
+              };
+              pkg-set = if plan-pkgs ? configurationError
+                then {
+                  inherit (plan-pkgs) configurationError;
+                  config = {
+                    compiler.nix-name = compiler-nix-name;
+                    hsPkgs = {};
                   };
+                }
+                else mkCabalProjectPkgSet
+                { inherit compiler-nix-name plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = (args.modules or [])
-                          ++ final.lib.optional (args ? ghcOverride || args ? ghc)
-                              { ghc.package = args.ghcOverride or args.ghc; }
-                          ++ final.lib.optional (args ? compiler-nix-name)
-                              { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
+                          ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
+                              { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
+                          ++ [ { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; } ];
                   extra-hackages = args.extra-hackages or [];
                 };
 
-                project = addProjectAndPackageAttrs rec {
+              project = addProjectAndPackageAttrs rec {
                   inherit (pkg-set.config) hsPkgs;
                   inherit pkg-set;
                   plan-nix = callProjectResults.projectNix;
@@ -521,9 +531,9 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
-                  projectArgs = args';
+                  inherit projectModule;
                 };
-            in project;
+            in project);
 
 
         # Take `hsPkgs` from the `rawProject` and update all the packages and
@@ -533,7 +543,7 @@ final: prev: {
           final.lib.fix (project':
             let project = project' // { recurseForDerivations = false; };
             in rawProject // rec {
-              hsPkgs = final.lib.mapAttrs (n: package':
+              hsPkgs = final.lib.mapAttrs (packageName: package':
                 if package' == null
                   then null
                   else
@@ -545,6 +555,16 @@ final: prev: {
                           else final.lib.mapAttrs (_: c: c // { inherit project package; }) v
                       ) package'.components;
                       inherit project;
+
+                      # Look up a component in the package based on ctype:name
+                      getComponent = componentName:
+                        let m = builtins.match "(lib|flib|exe|test|bench):([^:]*)" componentName;
+                        in
+                          assert final.lib.asserts.assertMsg (m != null)
+                            "Invalid package component name ${componentName}.  Expected it to start with one of lib: flib: exe: test: or bench:";
+                          if builtins.elemAt m 0 == "lib" && builtins.elemAt m 1 == packageName
+                            then components.library
+                            else components.${haskellLib.prefixComponent.${builtins.elemAt m 0}}.${builtins.elemAt m 1};
 
                       coverageReport = haskellLib.coverageReport (rec {
                         name = package.identifier.name + "-" + package.identifier.version;
@@ -558,36 +578,129 @@ final: prev: {
                     }
                 ) (builtins.removeAttrs rawProject.hsPkgs
                   # These are functions not packages
-                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" ]);
+                  [ "shellFor" "makeConfigFiles" "ghcWithHoogle" "ghcWithPackages" "buildPackages" ]);
 
-            projectCoverageReport = haskellLib.projectCoverageReport (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
+            projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
             projectCross = (final.lib.mapAttrs (_: pkgs:
-                rawProject.projectFunction pkgs.haskell-nix rawProject.projectArgs
+                rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
+            # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
+            # cabal configure errors are defered until the components derivation builds.
+            getPackage = packageName:
+              if rawProject.pkg-set ? configurationError
+                then
+                  # A minimal proxy for a package when cabal configure failed
+                  let package = {
+                    # Including the project so that things like:
+                    #  (p.getPackage "hello").project.tool "hlint" "latest"
+                    # will still work even if "hello" failed to configure.
+                    inherit project;
+
+                    # Defer configure time errors for the library component
+                    #  (p.getPackage "hello").components.library
+                    components.library = package.getComponent "lib:${packageName}";
+
+                    # This procide a derivation (even though the component may
+                    # not exist at all).  The derivation will never build
+                    # and simple outputs the result of cabal configure.
+                    getComponent = componentName:
+                      final.evalPackages.runCommand "cabal-configure-error" {
+                        passthru = {
+                          inherit project package;
+                        };
+                      } ''
+                        cat ${rawProject.pkg-set.configurationError}
+                        echo Unable to find component ${packageName}:${componentName}  \
+                          due to the above cabal configuration error
+                        exit 1
+                      '';
+                  };
+                  in package
+                else project.hsPkgs.${packageName};
+
+            # Look a component in the project based on `pkg:ctype:name`
+            getComponent = componentName:
+              let m = builtins.match "([^:]*):(lib|flib|exe|test|bench):([^:]*)" componentName;
+              in
+                assert final.lib.asserts.assertMsg (m != null)
+                  "Invalid package component name ${componentName}.  Expected package:ctype:component (where ctype is one of lib, flib, exe, test, or bench)";
+                (getPackage (builtins.elemAt m 0)).getComponent "${builtins.elemAt m 1}:${builtins.elemAt m 2}";
+
+            # Helper function that can be used to make a Nix Flake out of a project
+            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
+            # for an example flake.nix file.
+            # This flake function maps the build outputs to the flake `packages`,
+            # `checks` and `apps` output attributes.
+            flake = {
+                packages ? haskellLib.selectProjectPackages
+              }:
+              let packageNames = builtins.attrNames (packages project.hsPkgs);
+              in {
+                # Used by:
+                #   `nix build .#pkg-name:lib:pkg-name`
+                #   `nix build .#pkg-name:lib:sublib-name`
+                #   `nix build .#pkg-name:exe:exe-name`
+                #   `nix build .#pkg-name:test:test-name`
+                packages = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.optional (package.components ? library)
+                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:lib:${n}"; value = v; })
+                        (package.components.sublibs)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = v; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = v; })
+                        (package.components.tests)
+                  ) packageNames);
+                # Used by:
+                #   `nix check .#pkg-name:test:test-name`
+                checks = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                        { name = "${packageName}:test:${n}"; value = v; })
+                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
+                  ) packageNames);
+                # Used by:
+                #   `nix run .#pkg-name:exe:exe-name`
+                #   `nix run .#pkg-name:test:test-name`
+                apps = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.tests)
+                  ) packageNames);
+              };
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
           });
 
-        cabalProject =
-            { src, compiler-nix-name, ... }@args':
-            let
-              args = { caller = "hackage-package"; } // args';
-              p = cabalProject' args;
+        cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // p;
 
         stackProject' =
+          projectModule: haskellLib.evalProjectModule ../modules/stack-project.nix projectModule (
             { src, ... }@args:
-            let callProjectResults = callStackToNix ({ inherit cache; } // args);
+            let callProjectResults = callStackToNix (args
+                  // final.lib.optionalAttrs (args.cache == null) { inherit cache; });
                 generatedCache = genStackCache args;
-                cache = args.cache or generatedCache;
+                cache = if args.cache != null then args.cache else generatedCache;
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules = final.lib.singleton (mkCacheModule cache)
                     ++ (args.modules or [])
-                    ++ final.lib.optional (args ? ghc) { ghc.package = args.ghc; }
-                    ++ final.lib.optional (args ? compiler-nix-name)
+                    ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
+                    ++ final.lib.optional (args.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                 };
 
@@ -599,9 +712,9 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.stackProject';
-                  projectArgs = args;
+                  inherit projectModule;
                 };
-            in project;
+            in project);
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // p;
@@ -617,7 +730,7 @@ final: prev: {
         # used (as it will use a default `cabal.project`).
         project' = { src, projectFileName ? null, ... }@args':
           let
-            args = { caller = "project'"; } // args';
+            args = { caller = "project'"; } // final.lib.filterAttrs (n: _: n != "projectFileName") args';
             dir = __readDir (src.origSrcSubDir or src);
             exists = fileName: builtins.elem (dir.${fileName} or "") ["regular" "symlink"];
             stackYamlExists    = exists "stack.yaml";
@@ -692,8 +805,12 @@ final: prev: {
               final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
           } // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
+            # The internal versions of nix-tools and cabal-install are occasionally used,
+            # but definitely need to be cached in case they are used.
             nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
+            internal-nix-tools = final.buildPackages.haskell-nix.internal-nix-tools;
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
+            internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;
           } // final.lib.optionalAttrs (ifdLevel > 1 && !final.stdenv.hostPlatform.isGhcjs) {
             # GHCJS builds its own template haskell runner.
             # These seem to be the only things we use from `ghc-extra-packages`

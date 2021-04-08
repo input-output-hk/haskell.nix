@@ -138,6 +138,11 @@ let
             type = bool;
             default = (def.enableShared or true);
           };
+          configureAllComponents = mkOption {
+            description = "If set all the components in the package are configured (useful for cabal-doctest).";
+            type = bool;
+            default = false;
+          };
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
             type = unspecified; # Can be either a string or a function
@@ -228,6 +233,10 @@ let
     hardeningDisable = mkOption {
       type = listOfFilteringNulls str;
       default = (def.hardeningDisable or []);
+    };
+    ghcOptions = mkOption {
+      type = listOfFilteringNulls str;
+      default = def.ghcOptions or [];
     };
   };
 

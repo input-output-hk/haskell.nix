@@ -12,7 +12,6 @@
         "base".revision = (((hackage."base")."4.12.0.0").revisions).default;
         "time".revision = (((hackage."time")."1.8.0.2").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
-        "process".revision = (((hackage."process")."1.6.5.0").revisions).default;
         "array".revision = (((hackage."array")."0.5.3.0").revisions).default;
         "integer-gmp".revision = (((hackage."integer-gmp")."1.0.2.0").revisions).default;
         };
@@ -30,7 +29,6 @@
           "base" = "4.12.0.0";
           "time" = "1.8.0.2";
           "filepath" = "1.4.2.1";
-          "process" = "1.6.5.0";
           "array" = "0.5.3.0";
           "integer-gmp" = "1.0.2.0";
           };

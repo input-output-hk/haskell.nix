@@ -1,11 +1,11 @@
 { stackProject'
-, stdenv, gmp6, openssl, zlib, libffi
+, stdenv, lib, gmp6, openssl, zlib, libffi
 , buildPackages
 , recurseIntoAttrs
 , testSrc
 }:
 
-with stdenv.lib;
+with lib;
 
 let
   # Grab the compiler name from stack-to-nix output.
@@ -52,7 +52,10 @@ in recurseIntoAttrs {
 
       '') + "touch $out";
 
-    meta.platforms = platforms.all;
+    meta = {
+      # A dependency is broken on Windows, just run on unix
+      platforms = platforms.unix;
+    };
 
     passthru = {
       # Attributes used for debugging with nix repl

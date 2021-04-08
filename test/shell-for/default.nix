@@ -1,6 +1,6 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {
@@ -24,6 +24,8 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    # Avoid duplicate package issues when runghc looks for packages
+    packageSetupDeps = false;
   };
 
   envPkga = pkgSet.config.hsPkgs.shellFor {
@@ -33,6 +35,8 @@ let
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
     exactDeps = true;
+    # Avoid duplicate package issues when runghc looks for packages
+    packageSetupDeps = false;
   };
 
   envDefault = pkgSet.config.hsPkgs.shellFor {
@@ -42,9 +46,14 @@ let
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
     tools = { cabal = "3.2.0.0"; };
+    # Avoid duplicate package issues when runghc looks for packages
+    packageSetupDeps = false;
   };
 
 in recurseIntoAttrs {
+  # Does not work on ghcjs because it needs zlib.
+  # Does not work on windows because it needs mintty.
+  meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows;
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
@@ -64,8 +73,9 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isWindows;
+    meta = {
+      platforms = platforms.unix;
+    };
 
     passthru = {
       # Used for debugging with nix repl

@@ -3,6 +3,7 @@ let
   builder = haskellLib.weakCallPackage pkgs ../builder {
     inherit haskellLib;
     ghc = config.ghc.package;
+    compiler-nix-name = config.compiler.nix-name;
     inherit (config) nonReinstallablePkgs hsPkgs compiler;
   };
 
@@ -58,6 +59,9 @@ in
       # ghcjs custom packages
       "ghcjs-prim" "ghcjs-th"
     ]
+    # TODO make this unconditional
+    ++ lib.optionals (config.compiler.nix-name == "ghc901") [
+      "ghc-bignum" ]
     ++ lib.optionals (!config.reinstallableLibGhc) [
       "ghc-boot"
       "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
@@ -77,7 +81,7 @@ in
       "rts" "ghc-boot-th"
       "ghc-heap" # since ghc 8.6.
       "ghcjs-prim"
-    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc";
+   ] ++ lib.optional (!config.reinstallableLibGhc) "ghc";
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;

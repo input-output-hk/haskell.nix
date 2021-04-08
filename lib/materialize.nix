@@ -56,7 +56,14 @@ let
         builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
-  checked = runCommand name {} (''
+  checked =
+    # Let the user know what we are checking.  This is useful for debugging issues
+    # where materialization fails to prevent infinite recurstion when:
+    #   checkMaterialization = true;
+    (if materialized != null
+      then __trace "Checking materialization in ${toString materialized}"
+      else x: x)
+    runCommand name {} (''
         ERR=$(mktemp -d)/errors.txt
       ''
     + (pkgs.lib.optionalString (sha256 != null) ''
