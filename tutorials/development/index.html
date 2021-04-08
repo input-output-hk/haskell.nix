@@ -286,13 +286,14 @@ components), then you will need a development environment that
 contains the <em>dependencies</em> of your packages, but not the packages
 themselves. This is what the <a href="../../reference/library/#shellfor"><code>shellFor</code></a> function does.</p>
 <pre><code class="nix"># shell.nix
-{ pkgs ? import &lt;nixpkgs&gt; {} }:
-
 let
-  hsPkgs = import ./default.nix { };
+  project = import ./default.nix;
 in
-  hsPkgs.shellFor {
-    # Include only the *local* packages of your project.
+  project.shellFor {
+    # ALL of these arguments are optional.
+
+    # List of packages from the project you want to work on in
+    # the shell (default is all the projects local packages).
     packages = ps: with ps; [
       pkga
       pkgb
@@ -302,15 +303,16 @@ in
     # and provides a &quot;hoogle&quot; command to search the index.
     withHoogle = true;
 
-    # You might want some extra tools in the shell (optional).
-
     # Some common tools can be added with the `tools` argument
-    tools = { cabal = &quot;3.2.0.0&quot;; hlint = &quot;2.2.11&quot;; };
+    tools = {
+      cabal = &quot;3.2.0.0&quot;;
+      hlint = &quot;latest&quot;; # Selects the latest version in the hackage.nix snapshot
+      haskell-language-server = &quot;latest&quot;;
+    };
     # See overlays/tools.nix for more details
 
     # Some you may need to get some other way.
-    buildInputs = with pkgs.haskellPackages;
-      [ ghcid ];
+    buildInputs = [ (import &lt;nixpkgs&gt; {}).git ];
 
     # Prevents cabal from choosing alternate plans, so that
     # *all* dependencies are provided by Nix.
@@ -323,15 +325,15 @@ in
 <p>If you need a local Hoogle for all the dependencies of your project create this file</p>
 <pre><code class="nix"># shell-hoogle.nix
 let
-  hsPkgs = import ./default.nix {};
+  project = import ./default.nix {};
 in
-  hsPkgs.shellFor {
+  project.shellFor {
       packages = ps: [ps.my-package];
       withHoogle = true;
   }
 </code></pre>
 
-<p>and  run <code>nix-shell shell-hoogle.nix --run "hoogle server --local"</code>.
+<p>and run <code>nix-shell shell-hoogle.nix --run "hoogle server --local"</code>.
 This will open a local Hoogle server at <code>http://127.0.0.1:8080</code>.</p>
 <h2 id="how-to-get-an-ad-hoc-development-shell-including-certain-packages">How to get an ad-hoc development shell including certain packages<a class="headerlink" href="#how-to-get-an-ad-hoc-development-shell-including-certain-packages" title="Permanent link">&para;</a></h2>
 <p>This creates a development environment with the given packages

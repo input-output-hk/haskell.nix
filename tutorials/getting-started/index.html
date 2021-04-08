@@ -78,7 +78,11 @@
         
             <li><a class="toctree-l4" href="#setting-up-the-binary-cache">Setting up the binary cache</a></li>
         
+            <li><a class="toctree-l4" href="#niv">Niv</a></li>
+        
             <li><a class="toctree-l4" href="#scaffolding">Scaffolding</a></li>
+        
+            <li><a class="toctree-l4" href="#using-haskellnix-without-niv">Using haskell.nix without Niv</a></li>
         
             <li><a class="toctree-l4" href="#going-forward">Going forward</a></li>
         
@@ -278,25 +282,51 @@ nix.binaryCaches = [
 </code></pre>
 
 <p>This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding <a href="../../troubleshooting#why-am-i-building-ghc">troubleshooting section</a>.</p>
+<h2 id="niv">Niv<a class="headerlink" href="#niv" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/nmattia/niv">Niv</a> is a command line tool for keeping tack of Nix project dependencies.</p>
+<p>This guide assumes that the <code>sources.haskellNix</code> will be set to point
+a pinned copy of the haskell.nix github repo.  One easy way to do this
+is to use Niv.  If you prefer not to use Niv another option is described
+in the in the "Using haskell.nix without niv" section of this document.</p>
+<p>If you want to use Nix Flakes to pin your dependencies then you should
+consider following the <a href="../getting-started-flakes/">Getting started with flakes</a>
+document instead of this one.</p>
+<p>After installing niv you can initialize niv and pin the latest haskell.nix
+commit by running the following in the root directory of the project:</p>
+<pre><code>niv init
+niv add input-output-hk/haskell.nix -n haskellNix
+</code></pre>
+
+<p>Then when you want to update to the latest version of haskellNix use:</p>
+<pre><code>niv update haskellNix
+</code></pre>
+
 <h2 id="scaffolding">Scaffolding<a class="headerlink" href="#scaffolding" title="Permanent link">&para;</a></h2>
 <p>The following work with <code>stack.yaml</code> and <code>cabal.project</code> based
 projects.</p>
 <p>Add <code>default.nix</code>:</p>
-<pre><code class="nix">{ # Fetch the latest haskell.nix and import its default.nix
-  haskellNix ? import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz&quot;) {}
+<pre><code class="nix">let
+  # Read in the Niv sources
+  sources = import ./nix/sources.nix {};
+  # If ./nix/sources.nix file is not found run:
+  #   niv init
+  #   niv add input-output-hk/haskell.nix -n haskellNix
 
-# haskell.nix provides access to the nixpkgs pins which are used by our CI,
-# hence you will be more likely to get cache hits when using these.
-# But you can also just use your own, e.g. '&lt;nixpkgs&gt;'.
-, nixpkgsSrc ? haskellNix.sources.nixpkgs-2009
+  # Fetch the haskell.nix commit we have pinned with Niv
+  haskellNix = import sources.haskellNix {};
+  # If haskellNix is not found run:
+  #   niv add input-output-hk/haskell.nix -n haskellNix
 
-# haskell.nix provides some arguments to be passed to nixpkgs, including some
-# patches and also the haskell.nix functionality itself as an overlay.
-, nixpkgsArgs ? haskellNix.nixpkgsArgs
-
-# import nixpkgs with overlays
-, pkgs ? import nixpkgsSrc nixpkgsArgs
-}: pkgs.haskell-nix.project {
+  # Import nixpkgs and pass the haskell.nix provided nixpkgsArgs
+  pkgs = import
+    # haskell.nix provides access to the nixpkgs pins which are used by our CI,
+    # hence you will be more likely to get cache hits when using these.
+    # But you can also just use your own, e.g. '&lt;nixpkgs&gt;'.
+    haskellNix.sources.nixpkgs-2009
+    # These arguments passed to nixpkgs, include some patches and also
+    # the haskell.nix functionality itself as an overlay.
+    haskellNix.nixpkgsArgs;
+in pkgs.haskell-nix.project {
   # 'cleanGit' cleans a source directory based on the files known by git
   src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = &quot;haskell-nix-project&quot;;
@@ -328,25 +358,40 @@ To build an executable:</p>
 nix-build -A projectCross.mingwW64.hsPkgs.your-package-name.components.exes.your-exe-name
 </code></pre>
 
-<p>To open a shell for use with <code>cabal</code> run:</p>
-<pre><code class="shell">nix-shell -A shellFor
+<p>To open a shell for use with <code>cabal</code>, <code>hlint</code> and <code>haskell-language-server</code> add <code>shell.nix</code>:</p>
+<pre><code class="nix">(import ./default.nix).shellFor {
+  tools = {
+    cabal = &quot;3.2.0.0&quot;;
+    hlint = &quot;latest&quot;;
+    haskell-language-server = &quot;latest&quot;;
+  };
+}
+</code></pre>
+
+<p>Then run:</p>
+<pre><code class="shell">nix-shell
 cabal new-repl your-package-name:library:your-package-name
 cabal new-build your-package-name
 </code></pre>
 
 <p>To open a shell for use with <code>stack</code> see <a href="https://github.com/input-output-hk/haskell.nix/issues/689#issuecomment-643832619">the following issue</a>.</p>
-<h3 id="pinning-the-haskellnix-version">Pinning the <a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a> version<a class="headerlink" href="#pinning-the-haskellnix-version" title="Permanent link">&para;</a></h3>
-<p>For simplicity's sake we will use <code>fetchTarball</code> for the examples in
-this documentation. This will always get the latest version, and is
+<h2 id="using-haskellnix-without-niv">Using haskell.nix without Niv<a class="headerlink" href="#using-haskellnix-without-niv" title="Permanent link">&para;</a></h2>
+<p>If you would prefer not to use niv you can replace
+<code>sources = import ./nix/sources.nix {};</code> in the examples with:</p>
+<pre><code class="nix">let sources = {
+    haskellNix = builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz&quot;;
+  };
+</code></pre>
+
+<p>The <code>fetchTarball</code> call above will always get the latest version, and is
 similar to an auto-updating Nix channel.</p>
 <p>However, in your own project, you may wish to pin <a href="https://github.com/input-output-hk/haskell.nix">haskell.nix</a> (as
 you would pin Nixpkgs). This will make your builds reproducible, more
 predictable, and faster (because the fixed version is cached).</p>
 <p>Straightforward way of doing this is to change the branch name to a revision.</p>
-<pre><code class="nix">{ # Fetch a specific haskell.nix and import its default.nix
- haskellNix ? import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz&quot;) {}
-
-...
+<pre><code class="nix">let sources = {
+    haskellNix = import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz&quot;) {};
+  };
 </code></pre>
 
 <p>There are other possible schemes for pinning. See
