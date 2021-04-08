@@ -35,6 +35,33 @@ nix.binaryCaches = [
 
 This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../../troubleshooting#why-am-i-building-ghc).
 
+## Niv
+
+[Niv](https://github.com/nmattia/niv) is a command line tool for keeping tack of Nix project dependencies.
+
+This guide assumes that the `sources.haskellNix` will be set to point
+a pinned copy of the haskell.nix github repo.  One easy way to do this
+is to use Niv.  If you prefer not to use Niv another option is described
+in the in the "Using haskell.nix without niv" section of this document.
+
+If you want to use Nix Flakes to pin your dependencies then you should
+consider following the [Getting started with flakes](./getting-started-flakes.md)
+document instead of this one.
+
+After installing niv you can initialize niv and pin the latest haskell.nix
+commit by running the following in the root directory of the project:
+
+```
+niv init
+niv add input-output-hk/haskell.nix -n haskellNix
+```
+
+Then when you want to update to the latest version of haskellNix use:
+
+```
+niv update haskellNix
+```
+
 ## Scaffolding
 
 The following work with `stack.yaml` and `cabal.project` based
@@ -43,21 +70,28 @@ projects.
 Add `default.nix`:
 
 ```nix
-{ # Fetch the latest haskell.nix and import its default.nix
-  haskellNix ? import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}
+let
+  # Read in the Niv sources
+  sources = import ./nix/sources.nix {};
+  # If ./nix/sources.nix file is not found run:
+  #   niv init
+  #   niv add input-output-hk/haskell.nix -n haskellNix
 
-# haskell.nix provides access to the nixpkgs pins which are used by our CI,
-# hence you will be more likely to get cache hits when using these.
-# But you can also just use your own, e.g. '<nixpkgs>'.
-, nixpkgsSrc ? haskellNix.sources.nixpkgs-2009
+  # Fetch the haskell.nix commit we have pinned with Niv
+  haskellNix = import sources.haskellNix {};
+  # If haskellNix is not found run:
+  #   niv add input-output-hk/haskell.nix -n haskellNix
 
-# haskell.nix provides some arguments to be passed to nixpkgs, including some
-# patches and also the haskell.nix functionality itself as an overlay.
-, nixpkgsArgs ? haskellNix.nixpkgsArgs
-
-# import nixpkgs with overlays
-, pkgs ? import nixpkgsSrc nixpkgsArgs
-}: pkgs.haskell-nix.project {
+  # Import nixpkgs and pass the haskell.nix provided nixpkgsArgs
+  pkgs = import
+    # haskell.nix provides access to the nixpkgs pins which are used by our CI,
+    # hence you will be more likely to get cache hits when using these.
+    # But you can also just use your own, e.g. '<nixpkgs>'.
+    haskellNix.sources.nixpkgs-2009
+    # These arguments passed to nixpkgs, include some patches and also
+    # the haskell.nix functionality itself as an overlay.
+    haskellNix.nixpkgsArgs;
+in pkgs.haskell-nix.project {
   # 'cleanGit' cleans a source directory based on the files known by git
   src = pkgs.haskell-nix.haskellLib.cleanGit {
     name = "haskell-nix-project";
@@ -96,20 +130,40 @@ nix-build -A projectCross.ghcjs.hsPkgs.your-package-name.components.exes.your-ex
 nix-build -A projectCross.mingwW64.hsPkgs.your-package-name.components.exes.your-exe-name
 ```
 
-To open a shell for use with `cabal` run:
+To open a shell for use with `cabal`, `hlint` and `haskell-language-server` add `shell.nix`:
+
+```nix
+(import ./default.nix).shellFor {
+  tools = {
+    cabal = "3.2.0.0";
+    hlint = "latest";
+    haskell-language-server = "latest";
+  };
+}
+```
+
+Then run:
 
 ```shell
-nix-shell -A shellFor
+nix-shell
 cabal new-repl your-package-name:library:your-package-name
 cabal new-build your-package-name
 ```
 
 To open a shell for use with `stack` see [the following issue](https://github.com/input-output-hk/haskell.nix/issues/689#issuecomment-643832619).
 
-### Pinning the [haskell.nix][] version
+## Using haskell.nix without Niv
 
-For simplicity's sake we will use `fetchTarball` for the examples in
-this documentation. This will always get the latest version, and is
+If you would prefer not to use niv you can replace
+`sources = import ./nix/sources.nix {};` in the examples with:
+
+```nix
+let sources = {
+    haskellNix = builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz";
+  };
+```
+
+The `fetchTarball` call above will always get the latest version, and is
 similar to an auto-updating Nix channel.
 
 However, in your own project, you may wish to pin [haskell.nix][] (as
@@ -119,10 +173,9 @@ predictable, and faster (because the fixed version is cached).
 Straightforward way of doing this is to change the branch name to a revision.
 
 ```nix
-{ # Fetch a specific haskell.nix and import its default.nix
- haskellNix ? import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz") {}
-
-...
+let sources = {
+    haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz") {};
+  };
 ```
 
 There are other possible schemes for pinning. See
