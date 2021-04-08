@@ -62,6 +62,12 @@ in
     # Some you may need to get some other way.
     buildInputs = [ (import <nixpkgs> {}).git ];
 
+    # Sellect cross compilers to include.
+    crossPlatforms = ps: with ps; [
+      ghcjs      # Adds support for `js-unknown-ghcjs-cabal build` in the shell
+      # mingwW64 # Adds support for `x86_64-W64-mingw32-cabal build` in the shell
+    ];
+
     # Prevents cabal from choosing alternate plans, so that
     # *all* dependencies are provided by Nix.
     exactDeps = true;

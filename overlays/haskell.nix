@@ -586,6 +586,30 @@ final: prev: {
                 rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
+            # Add support for passing in `crossPlatforms` argument.
+            # crossPlatforms is an easy way to include the inputs for a basic
+            # cross platform shell in a native shell.  For instance
+            #   .shellFor { crossPlatforms = p: [ p.ghcjs ]; tools.cabal = {}; }
+            # adds support for compiling with ghcjs.  To build use the cabal wrapper:
+            #   js-unknown-ghcjs-cabal build all
+            shellFor = shellArgs:
+              let
+                args' = builtins.removeAttrs shellArgs [ "crossPlatforms" ];
+              in rawProject.hsPkgs.shellFor (args' // {
+                  # Add inputs from the cross compilation shells
+                  inputsFrom = args'.inputsFrom or []
+                    ++ builtins.map (project:
+                      project.shellFor (
+                        # These things should match native shell
+                        final.lib.filterAttrs (n: _: builtins.elem n [
+                          "packages" "components" "additional" "exactDeps" "packageSetupDeps"
+                        ]) args' // {
+                          # The native shell's hoogle will probably be faster to build.
+                          withHoogle = false;
+                      }))
+                      ((shellArgs.crossPlatforms or (_: [])) projectCross);
+                });
+
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.
             getPackage = packageName:
@@ -681,7 +705,7 @@ final: prev: {
                         (package.components.tests)
                   ) packageNames);
               };
-            inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages shellFor;
+            inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
           });
 
         cabalProject = args: let p = cabalProject' args;
