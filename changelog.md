@@ -1,6 +1,11 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Apr 8, 2021
+* Project arguments are now validated with the Nix module system.
+  If unexpected argments are passed to a project function this may now
+  result in an error.
+
 ## Feb 22, 2021
 * Add `.dwarf` to build any component with DWARF dubug info on linux
   (ghc >=8.10.2).

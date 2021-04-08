@@ -9,6 +9,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   zlib = prev.zlib.override { splitStaticOutput = false; };
 
   # and a few more packages that need their static libs explicitly enabled
+  bzip2 = prev.bzip2.overrideAttrs (_: { dontDisableStatic = true; });
   gmp = prev.gmp.override { withStatic = true; };
   ncurses = prev.ncurses.override { enableStatic = true; };
   libsodium = prev.libsodium.overrideAttrs (_: { dontDisableStatic = true; });

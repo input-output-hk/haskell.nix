@@ -19,6 +19,8 @@ let
   exampleCoverageReport = exampleProject.cardanoShellHaskellPackages.projectCoverageReport;
 
 in recurseIntoAttrs ({
+  # Does not work on ghcjs because it needs zlib.
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {
     name = "coverage-golden-test";
 

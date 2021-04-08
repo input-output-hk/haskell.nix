@@ -21,8 +21,6 @@ in
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
-, nix-tools     ? evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}     # When building cabal projects we use the nix-tools
-, cabal-install ? evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name} # and cabal-install compiled with matching ghc version
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
                      # `--enable-tests --enable-benchmarks` are included by default.
                      # If the tests and benchmarks are not needed and they
@@ -43,6 +41,16 @@ in
 }@args:
 
 let
+  # These defaults are hear rather than in modules/cabal-project.nix to make them
+  # lazy enough to avoid infinite recursion issues.
+  # Using null as the default also improves performance as they are not forced by the
+  # nix module system for `nix-tools-unchecked` and `cabal-install-unchecked`.
+  nix-tools = if args.nix-tools or null != null
+    then args.nix-tools
+    else evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
+  cabal-install = if args.cabal-install or null != null
+    then args.cabal-install
+    else evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
@@ -453,8 +461,6 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
-    mkdir -p $out
-
     # Using `cabal v2-freeze` will configure the project (since
     # it is not configured yet), taking the existing `cabal.project.freeze`
     # file into account.  Then it "writes out a freeze file which
@@ -486,6 +492,8 @@ let
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
             "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
         ${configureArgs} 2>&1 | tee -a cabal-configure.out); then
+
+    mkdir -p $out
 
     cp cabal.project.freeze $maybeFreeze
     # Not needed any more (we don't want it to wind up in the $out hash)
@@ -536,14 +544,15 @@ let
 
       # When cabal configure fails copy the output that we captured above and
       # use `failed-cabal-configure.nix` to make a suitable derviation with.
-      cp cabal-configure.out $out
-      cp ${./failed-cabal-configure.nix} $out/default.nix
+      mkdir -p $out${subDir'}
+      cp cabal-configure.out $out${subDir'}
+      cp ${./failed-cabal-configure.nix} $out${subDir'}/default.nix
 
       # These should only be used indirectly by `passthru.json` and `passthru.freeze`.
       # Those derivations will check for `cabal-configure.out` out first to see if
       # it is ok to use these files.
-      echo "Cabal configure failed see $out/cabal-configure.out for details" > $maybeJson
-      echo "Cabal configure failed see $out/cabal-configure.out for details" > $maybeFreeze
+      echo "Cabal configure failed see $out${subDir'}/cabal-configure.out for details" > $maybeJson
+      echo "Cabal configure failed see $out${subDir'}/cabal-configure.out for details" > $maybeFreeze
     fi
   '');
 in {

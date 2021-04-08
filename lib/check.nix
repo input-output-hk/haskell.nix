@@ -10,7 +10,7 @@ let
 in stdenv.mkDerivation ({
   name = (drv.name + "-check");
 
-  # Useing `srcOnly` (rather than getting the `src` via a `drv.passthru`)
+  # Using `srcOnly` (rather than getting the `src` via a `drv.passthru`)
   # should correctly apply the patches from `drv` (if any).
   src = drv.source or (srcOnly drv);
 

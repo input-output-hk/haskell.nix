@@ -122,7 +122,7 @@ in {
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
-                ++ always                    ./patches/ghc/respect-ar-path.patch
+                ++ until             "9.0"   ./patches/ghc/respect-ar-path.patch
                 ++ until             "8.10"  ./patches/ghc/MR2537-use-one-shot-kqueue-on-macos.patch
                 ++ final.lib.optional (version == "8.6.3") ./patches/ghc/T16057--ghci-doa-on-windows.patch
                 ++ final.lib.optional (version == "8.6.3") ./patches/ghc/ghc-8.6.3-reinstallable-lib-ghc.patch
@@ -133,7 +133,7 @@ in {
                 ++ final.lib.optional (version == "8.8.1") ./patches/ghc/ghc-8.8.1-reinstallable-lib-ghc.patch
                 ++ fromUntil "8.8.2" "8.9"                ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
-                ++ final.lib.optional (versionAtLeast "8.6.4" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "9.0" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 # backport of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3227
@@ -155,6 +155,8 @@ in {
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ fromUntil "8.10.3" "8.11"   ./patches/ghc/ghc-8.10.3-ubxt.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4") ./patches/ghc/Cabal-3886.patch
+
+                ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
@@ -427,6 +429,25 @@ in {
 
                 ghc-patches = ghc-patches "8.10.4";
             };
+            ghc901 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc901; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "9.0.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "1y9mi9bq76z04hmggavrn8jwi1gx92bm3zhx6z69ypq6wha068x5";
+                };
+
+                ghc-patches = ghc-patches "9.0.1";
+            };
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
@@ -564,6 +585,40 @@ in {
                 cd lib
                 lndir ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
             '' + installDeps targetPrefix);
+            ghc8104 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104;
+                in let ghcjs8104 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
+                ghcjsVersion =  "8.10.2";
+                ghc = buildGHC;
+                ghcVersion = "8.10.4";
+                compiler-nix-name = "ghc8104";
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.4" {
+                nativeBuildInputs = [ final.xorg.lndir ];
+                passthru = {
+                    inherit targetPrefix;
+                    version = "8.10.4";
+                    isHaskellNixCompiler = true;
+                    enableShared = false;
+                    inherit (ghcjs8104) configured-src bundled-ghcjs project;
+                    inherit buildGHC;
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                    ];
+                };
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
+                mkdir -p $out/bin
+                cd $out/bin
+                ln -s ${ghcjs8104}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${ghcjs8104}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
+                cd ..
+                mkdir -p lib/${targetPrefix}ghc-8.10.4
+                cd lib
+                lndir ${ghcjs8104}/lib ${targetPrefix}ghc-8.10.4
+            '' + installDeps targetPrefix);
         }))));
 
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
@@ -577,16 +632,19 @@ in {
         name = "cabal-install";
         version = "3.4.0.0";
         index-state = final.haskell-nix.internalHackageIndexState;
-        # When building cabal-install (only happens when checking materialization)
-        # disable checking of the tools used to avoid infinite recursion.
-        cabal-install = final.evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
-        nix-tools = final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args)).getComponent "exe:cabal";
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
+        # Until all the dependencies build with 9.0.1 we will have to avoid
+        # building & testing nix-tools with 9.0.1
+        compiler-nix-name =
+          if args.compiler-nix-name == "ghc901"
+            then "ghc8104"
+            else args.compiler-nix-name;
         project =
           final.haskell-nix.cabalProject ({
+            caller = "nix-tools-set";
             name = "nix-tools";
             src = final.haskell-nix.sources.nix-tools;
             # This is a handy way to use a local git clone of nix-tools when developing
@@ -596,10 +654,6 @@ in {
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
               index-state: ${final.haskell-nix.internalHackageIndexState}
             '';
-            # When building cabal-install (only happens when checking materialization)
-            # disable checking of the tools used to avoid infinite recursion.
-            cabal-install = final.evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
-            nix-tools = final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
             materialized = ../materialized + "/${compiler-nix-name}/nix-tools";
             modules = [{
               packages.transformers-compat.components.library.doExactConfig = true;
@@ -617,7 +671,7 @@ in {
                   "unix" "xhtml"
                 ];
             }];
-          } // args);
+          } // args // { inherit compiler-nix-name; });
         exes =
           let
             package = project.getPackage "nix-tools";

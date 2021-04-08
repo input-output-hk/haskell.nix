@@ -1,4 +1,17 @@
 {
+    "HTTP": {
+        "branch": "ghc-9.0",
+        "builtin": false,
+        "description": "Haskell HTTP package",
+        "homepage": "http://hackage.haskell.org/package/HTTP",
+        "owner": "phadej",
+        "repo": "HTTP",
+        "rev": "cf307c0a25e7517218a3bee3d9d800720ad64e3a",
+        "sha256": "1n3v99wjy9737ykb4kx55nl7518mjxrxw7h38w82ckphzs4mnjj5",
+        "type": "tarball",
+        "url": "https://github.com/phadej/HTTP/archive/cf307c0a25e7517218a3bee3d9d800720ad64e3a.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "cabal-32": {
         "branch": "3.2",
         "builtin": false,
@@ -10,6 +23,18 @@
         "sha256": "09m59w794zk4mxk1m3qkkmf5ydi0zhh89a7jk1wglrgxxadfndmh",
         "type": "tarball",
         "url": "https://github.com/haskell/cabal/archive/94aaa8e4720081f9c75497e2735b90f6a819b08e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "cabal-34": {
+        "branch": "3.4",
+        "description": "Official upstream development repository for Cabal and cabal-install",
+        "homepage": "https://haskell.org/cabal",
+        "owner": "haskell",
+        "repo": "cabal",
+        "rev": "f39af1b67a65dc1bb1fe70e4f02a3e6635f5ee26",
+        "sha256": "06c7q1y1ggbgczg7f4s5zds16n8bkfkdzg7mr5sw9m6gzbhgcby8",
+        "type": "tarball",
+        "url": "https://github.com/haskell/cabal/archive/f39af1b67a65dc1bb1fe70e4f02a3e6635f5ee26.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "cardano-shell": {

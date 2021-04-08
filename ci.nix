@@ -30,8 +30,9 @@
       ghc884 = true;
       ghc8104 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-      ghc884 = true;
+      ghc884 = false;
       ghc8104 = true;
+      ghc901 = true;
       ghc810420210212 = false;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
@@ -43,7 +44,7 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc865" "ghc884"])) {
+    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104"])) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" && (
          (nixpkgsName == "R2009" && __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"])
@@ -58,9 +59,7 @@
     # native so ifdLevel 1 includes compiler needed in ifdLevel2 eval)
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
-  isDisabled = d:
-    let meta = d.meta or {};
-    in meta.disabled or false;
+  isDisabled = d: d.meta.disabled or false;
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};

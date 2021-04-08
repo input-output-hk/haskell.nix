@@ -12,6 +12,9 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
+  # DWARF only works on linux with GHC 8.10.2 and newer
+  meta.disabled = __elem compiler-nix-name ["ghc865" "ghc884"]
+    || !stdenv.hostPlatform.isLinux || haskellLib.isCrossHost || stdenv.hostPlatform.isMusl;
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -34,9 +37,6 @@ in recurseIntoAttrs {
 
     meta = {
       platforms = platforms.all;
-      # DWARF only works on linux with GHC 8.10.2 and newer
-      disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884"
-        || !stdenv.hostPlatform.isLinux || haskellLib.isCrossHost || stdenv.hostPlatform.isMusl;
     };
 
     passthru = {

@@ -23,6 +23,14 @@ let self =
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
+, configureAllComponents ? component.configureAllComponents ||
+    # When set, configure all the components in the package
+    # (not just the one we are building).
+    # Enable for tests in packages that use cabal-doctest.
+    ( haskellLib.isTest componentId &&
+      lib.any (x: x.identifier.name or "" == "cabal-doctest") package.setup-depends
+    )
+, allComponent # Used when `configureAllComponents` is set to get a suitable configuration.
 
 , build-tools ? component.build-tools
 , pkgconfig ? component.pkgconfig
@@ -47,7 +55,7 @@ let self =
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 , quickjump ? component.doQuickjump # Generate an index for interactive documentation navigation
-, keepSource ? component.keepSource  # Build from `source` output in the store then delete `dist`
+, keepSource ? component.keepSource || configureAllComponents # Build from `source` output in the store then delete `dist`
 , setupHaddockFlags ? component.setupHaddockFlags
 
 # Profiling
@@ -77,6 +85,11 @@ let self =
 }@drvArgs:
 
 let
+  componentForSetup =
+    if configureAllComponents
+      then allComponent
+      else component;
+
   # Ignore attempts to include DWARF info when it is not possible
   enableDWARF = drvArgs.enableDWARF or false
     && stdenv.hostPlatform.isLinux
@@ -96,7 +109,7 @@ let
   # is the sub directory in that root path that contains the package.
   # `cleanSrc.subDir` is used in `prePatch` and `lib/cover.nix`.
   cleanSrc = haskellLib.rootAndSubDir (if canCleanSource
-    then haskellLib.cleanCabalComponent package component "${componentId.ctype}-${componentId.cname}" src
+    then haskellLib.cleanCabalComponent package componentForSetup "${componentId.ctype}-${componentId.cname}" src
     else
       # We can clean out the siblings though to at least avoid changes to other packages
       # from triggering a rebuild of this one.
@@ -118,8 +131,9 @@ let
   needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
 
   configFiles = makeConfigFiles {
+    component = componentForSetup;
     inherit (package) identifier;
-    inherit component fullName flags needsProfiling enableDWARF;
+    inherit fullName flags needsProfiling enableDWARF;
   };
 
   enableFeature = enable: feature:
@@ -129,8 +143,13 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
-      "${haskellLib.componentTarget componentId}"
-      "$(cat ${configFiles}/configure-flags)"
+    ] ++ (
+      # If configureAllComponents is set we should not specify the component
+      # and Setup will attempt to configure them all.
+      if configureAllComponents
+        then ["--enable-tests" "--enable-benchmarks"]
+        else ["${haskellLib.componentTarget componentId}"]
+    ) ++ [ "$(cat ${configFiles}/configure-flags)"
     ] ++ commonConfigureFlags);
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
@@ -240,7 +259,7 @@ let
         (lib.optionalString (cleanSrc.subDir != "") ''
             cd ${lib.removePrefix "/" cleanSrc.subDir}
           ''
-        ) + 
+        ) +
         (if cabalFile != null
           then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
           else
@@ -328,7 +347,7 @@ let
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source");
 
-    configurePhase =
+    prePatch =
       # emcc is very slow if it cannot cache stuff in $HOME
       (lib.optionalString (stdenv.hostPlatform.isGhcjs) ''
       export HOME=$(mktemp -d)
@@ -340,7 +359,9 @@ let
         cp -r . $source
         cd $source
         chmod -R +w .
-      '') + ''
+      '') + commonAttrs.prePatch;
+
+    configurePhase = ''
       runHook preConfigure
       echo Configure flags:
       printf "%q " ${finalConfigureFlags}
@@ -368,7 +389,11 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
-      $SETUP_HS copy ${lib.concatStringsSep " " setupInstallFlags}
+      $SETUP_HS copy ${lib.concatStringsSep " " (
+        setupInstallFlags
+        ++ lib.optional configureAllComponents
+              (haskellLib.componentTarget componentId)
+      )}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -455,8 +480,25 @@ let
       '')
       }
       runHook postInstall
-    '' + (lib.optionalString keepSource ''
-      rm -rf dist
+    '' + (
+      # Keep just the autogen files and package.conf.inplace package
+      # DB (probably empty unless this is a library component).
+      # We also have to remove any refernces to $out to avoid
+      # circular references.
+      lib.optionalString (configureAllComponents || keepSource) ''
+        mv dist dist-tmp-dir
+        mkdir -p dist/build
+        if [ -d dist-tmp-dir/build/${componentId.cname} ]; then
+          mv dist-tmp-dir/build/${componentId.cname}/autogen dist/build/
+        else
+          mv dist-tmp-dir/build/autogen dist/build/
+        fi
+        mv dist-tmp-dir/package.conf.inplace dist/
+        remove-references-to -t $out dist/build/autogen/*
+        rm -rf dist-tmp-dir
+      ''
+    ) + (lib.optionalString (keepSource && haskellLib.isLibrary componentId) ''
+        remove-references-to -t $out ${name}.conf
     '') + (lib.optionalString (haskellLib.isTest componentId) ''
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');

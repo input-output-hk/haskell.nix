@@ -16,6 +16,13 @@ let
   env = project.shellFor {};
 
 in recurseIntoAttrs ({
+  # Making this work for cross compilers will be difficult as setup-deps are
+  # built for the build platform and the shell will be for the host platform.
+  # We probably need a shell that provides both build and host ghc
+  # and corresponding package DBs and a way to use them.
+  # This problem affects musl as well as the build libraries are linked to glibc.
+  meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform
+    || compiler-nix-name == "ghc901";
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -38,12 +45,6 @@ in recurseIntoAttrs ({
 
     meta = {
       platforms = platforms.all;
-      # Making this work for cross compilers will be difficult as setup-deps are
-      # built for the build platform and the shell will be for the host platform.
-      # We probably need a shell that provides both build and host ghc
-      # and corresponding package DBs and a way to use them.
-      # This problem affects musl as well as the build libraries are linked to glibc.
-      disabled = stdenv.buildPlatform != stdenv.hostPlatform;
     };
 
     passthru = {
