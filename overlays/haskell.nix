@@ -583,6 +583,8 @@ final: prev: {
             projectCoverageReport = haskellLib.projectCoverageReport project (map (pkg: pkg.coverageReport) (final.lib.attrValues (haskellLib.selectProjectPackages hsPkgs)));
 
             # `projectCross` is like `pkgsCross`, but for haskell.nix projects.
+            # To get a cross platform version of the project use
+            # `projectCross.<system>` where system is a member of nixpkgs lib.systems.examples.
             # See https://nixos.wiki/wiki/Cross_Compiling
             projectCross = (final.lib.mapAttrs (_: pkgs:
                 rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule
