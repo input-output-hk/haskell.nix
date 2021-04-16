@@ -571,7 +571,7 @@ will be passed to it:</p>
 <tr>
 <td><code>projectCross</code></td>
 <td>Attrset</td>
-<td>Like <code>pkgs.pkgsCross.X</code> from nixpkgs <code>p.projectCross.X</code> returns the project results for cross compilation to X.  So <code>p.projectCross.ghcjs.hsPkgs</code> is the same as <code>hsPkgs</code> but compiled with ghcjs</td>
+<td>Like <code>pkgs.pkgsCross.&lt;system&gt;</code> from nixpkgs <code>p.projectCross.&lt;system&gt;</code> returns the project results for cross compilation (where system is a member of nixpkgs lib.systems.examples).  So <code>p.projectCross.ghcjs.hsPkgs</code> is the same as <code>hsPkgs</code> but compiled with ghcjs</td>
 </tr>
 </tbody>
 </table>
@@ -958,6 +958,11 @@ packages with <code>ghci</code> or <code>cabal v2-build</code> (but not Stack).<
 <td><code>inputsFrom</code></td>
 <td>List</td>
 <td>List of other shells to include in this one.  The <code>buildInputs</code> and <code>nativeBuildInputs</code> of each will be included using <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-mkShell">mkShell</a>.</td>
+</tr>
+<tr>
+<td><code>crossPlatforms</code></td>
+<td>Function</td>
+<td>Platform selection function for cross compilation targets to support eg. <code>ps: with ps; [ghcjs mingwW64]</code> (see nixpkgs lib.systems.examples for list of platform names).</td>
 </tr>
 <tr>
 <td><code>{ ... }</code></td>
