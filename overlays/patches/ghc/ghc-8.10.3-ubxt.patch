@@ -6062,7 +6062,7 @@ index dc8344d14d..b32b383510 100644
  -- condition (first parameter), or are dependencies of those
  -- modules. The second parameter is a condition to check before
 diff --git a/compiler/main/HscMain.hs b/compiler/main/HscMain.hs
-index 9bb6b4e391..e4dd13b9d7 100644
+index 9bb6b4e391..ce2b2f29b6 100644
 --- a/compiler/main/HscMain.hs
 +++ b/compiler/main/HscMain.hs
 @@ -123,8 +123,10 @@ import MkIface
@@ -6076,7 +6076,16 @@ index 9bb6b4e391..e4dd13b9d7 100644
  import qualified GHC.StgToCmm as StgToCmm ( codeGen )
  import StgSyn
  import StgFVs           ( annTopBindingsFreeVars )
-@@ -1432,7 +1434,7 @@ hscGenHardCode hsc_env cgguts location output_filename = do
+@@ -165,6 +167,8 @@ import Stream (Stream)
+ import Util
+ 
+ import Data.List        ( nub, isPrefixOf, partition )
++import Data.Either      ( partitionEithers )
++
+ import Control.Monad
+ import Data.IORef
+ import System.FilePath as FilePath
+@@ -1432,7 +1436,7 @@ hscGenHardCode hsc_env cgguts location output_filename = do
          -----------------  Convert to STG ------------------
          (stg_binds, (caf_ccs, caf_cc_stacks))
              <- {-# SCC "CoreToStg" #-}
@@ -6085,7 +6094,7 @@ index 9bb6b4e391..e4dd13b9d7 100644
  
          let cost_centre_info =
                (S.toList local_ccs ++ caf_ccs, caf_cc_stacks)
-@@ -1494,8 +1496,12 @@ hscInteractive hsc_env cgguts location = do
+@@ -1494,8 +1498,12 @@ hscInteractive hsc_env cgguts location = do
      -- Do saturation and convert to A-normal form
      (prepd_binds, _) <- {-# SCC "CorePrep" #-}
                     corePrepPgm hsc_env this_mod location core_binds data_tycons
@@ -6099,7 +6108,7 @@ index 9bb6b4e391..e4dd13b9d7 100644
      ------------------ Create f-x-dynamic C-side stuff -----
      (_istub_h_exists, istub_c_exists)
          <- outputForeignStubs dflags this_mod location foreign_stubs
-@@ -1572,21 +1578,20 @@ doCodeGen hsc_env this_mod data_tycons
+@@ -1572,21 +1580,20 @@ doCodeGen hsc_env this_mod data_tycons
  
  
  
@@ -6125,7 +6134,7 @@ index 9bb6b4e391..e4dd13b9d7 100644
  {- **********************************************************************
  %*                                                                      *
  \subsection{Compiling a do-statement}
-@@ -1722,9 +1727,13 @@ hscParsedDecls hsc_env decls = runInteractiveHsc hsc_env $ do
+@@ -1722,9 +1729,13 @@ hscParsedDecls hsc_env decls = runInteractiveHsc hsc_env $ do
      (prepd_binds, _) <- {-# SCC "CorePrep" #-}
        liftIO $ corePrepPgm hsc_env this_mod iNTERACTIVELoc core_binds data_tycons
  
@@ -6140,7 +6149,7 @@ index 9bb6b4e391..e4dd13b9d7 100644
  
      let src_span = srcLocSpan interactiveSrcLoc
      liftIO $ linkDecls hsc_env src_span cbc
-@@ -1887,9 +1896,20 @@ hscCompileCoreExpr' hsc_env srcspan ds_expr
+@@ -1887,9 +1898,38 @@ hscCompileCoreExpr' hsc_env srcspan ds_expr
             {- Lint if necessary -}
           ; lintInteractiveExpr "hscCompileExpr" hsc_env prepd_expr
  
@@ -6148,10 +6157,28 @@ index 9bb6b4e391..e4dd13b9d7 100644
 +         ; let bco_tmp_id = mkSysLocal (fsLit "BCO_toplevel")
 +                                       (mkPseudoUniqueE 0)
 +                                       (exprType prepd_expr)
-+         ; ([StgTopLifted (StgNonRec _ stg_expr)], _) <-
++         ; (binds, _) <-
 +             myCoreToStg hsc_env
 +                         (icInteractiveModule (hsc_IC hsc_env))
 +                         [NonRec bco_tmp_id prepd_expr]
++
++         ; let (_strings, lifted_binds) = partitionEithers $ do  -- list monad
++                bnd <- binds
++                case bnd of
++                  StgTopLifted (StgNonRec i expr) -> [Right (i, expr)]
++                  StgTopLifted (StgRec bnds)      -> map Right bnds
++                  StgTopStringLit b str           -> [Left (b, str)]
++
++         ; let stg_expr = case lifted_binds of
++                            [(_i, e)] -> e
++                            _        ->
++                              StgRhsClosure noExtFieldSilent
++                                            dontCareCCS
++                                            ReEntrant
++                                            []
++                                            (StgLet noExtFieldSilent
++                                               (StgRec lifted_binds)
++                                               (StgApp bco_tmp_id []))
 +
             {- Convert to BCOs -}
           ; bcos <- coreExprToBCOs hsc_env
