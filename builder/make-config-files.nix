@@ -81,7 +81,8 @@ let
     ${target-pkg} init $out/${packageCfgDir}
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
-      "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs;
+      "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs
+        ++ lib.optionals (stdenv.hostPlatform.isWindows) (map (p: "${lib.getBin p}/bin") component.libs);
       "extra-include-dirs" = map (p: "${lib.getDev p}/include") component.libs;
       "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
     })}
