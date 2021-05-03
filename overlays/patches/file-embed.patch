@@ -1,0 +1,52 @@
+diff --git a/Data/FileEmbed.hs b/Data/FileEmbed.hs
+index ca796c0..21c5835 100644
+--- a/Data/FileEmbed.hs
++++ b/Data/FileEmbed.hs
+@@ -51,7 +51,6 @@ import Language.Haskell.TH.Syntax
+     , runIO
+     , qLocation, loc_filename
+ #if MIN_VERSION_template_haskell(2,7,0)
+-    , Quasi(qAddDependentFile)
+ #endif
+     )
+ #if MIN_VERSION_template_haskell(2,16,0)
+@@ -83,7 +82,6 @@ import Data.Ord (comparing)
+ embedFile :: FilePath -> Q Exp
+ embedFile fp =
+ #if MIN_VERSION_template_haskell(2,7,0)
+-    qAddDependentFile fp >>
+ #endif
+   (runIO $ B.readFile fp) >>= bsToExp
+ 
+@@ -98,7 +96,6 @@ embedOneFileOf :: [FilePath] -> Q Exp
+ embedOneFileOf ps =
+   (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
+ #if MIN_VERSION_template_haskell(2,7,0)
+-    qAddDependentFile path
+ #endif
+     bsToExp content
+   where
+@@ -142,7 +139,6 @@ getDir = fileList
+ pairToExp :: FilePath -> (FilePath, B.ByteString) -> Q Exp
+ pairToExp _root (path, bs) = do
+ #if MIN_VERSION_template_haskell(2,7,0)
+-    qAddDependentFile $ _root ++ '/' : path
+ #endif
+     exp' <- bsToExp bs
+     return $! TupE
+@@ -187,7 +183,6 @@ stringToBs = B8.pack
+ embedStringFile :: FilePath -> Q Exp
+ embedStringFile fp =
+ #if MIN_VERSION_template_haskell(2,7,0)
+-    qAddDependentFile fp >>
+ #endif
+   (runIO $ P.readFile fp) >>= strToExp
+ 
+@@ -199,7 +194,6 @@ embedOneStringFileOf :: [FilePath] -> Q Exp
+ embedOneStringFileOf ps =
+   (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
+ #if MIN_VERSION_template_haskell(2,7,0)
+-    qAddDependentFile path
+ #endif
+     strToExp content
+   where

@@ -467,7 +467,7 @@ let
         # to symlink over dlls as needed.
         + ''
         echo "Symlink library dependencies..."
-        for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
+        for libdir in $(${stdenv.hostPlatform.config}-ghc-pkg field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
           if [ -d "$libdir" ]; then
             find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
           fi
