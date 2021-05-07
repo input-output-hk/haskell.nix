@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   modules = [
@@ -21,9 +21,9 @@ let
     inherit modules;
   };
 
-  packages = project.hsPkgs;
-
 in recurseIntoAttrs {
+  # This test seeems to be broken on 8.6 and 8.8 and ghcjs
+  meta.disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884" || stdenv.hostPlatform.isGhcjs;
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -31,7 +31,7 @@ in recurseIntoAttrs {
     name = "cabal-simple-prof-test";
 
     buildCommand = ''
-      exe="${packages.cabal-simple.components.exes.cabal-simple.exePath}"
+      exe="${(project.getComponent "cabal-simple:exe:cabal-simple").exePath}"
 
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
@@ -41,20 +41,18 @@ in recurseIntoAttrs {
       # Curiosity: cross compilers prodcing profiling with `+RTS -p -h` lead to the following cryptic message:
       #   cabal-simple: invalid heap profile option: -h*
       # Hence we pass `-hc`.
-      ${toString packages.cabal-simple.components.exes.cabal-simple.config.testWrapper} $exe +RTS -p -hc
+      ${toString (project.getComponent "cabal-simple:exe:cabal-simple").config.testWrapper} $exe +RTS -p -hc
 
       touch $out
     '';
 
     meta = {
       platforms = platforms.all;
-      # This test seeems to be broken on 8.6 and 8.8
-      disabled = compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884";
     };
 
     passthru = {
       # Used for debugging with nix repl
-      inherit project packages;
+      inherit project;
     };
   };
 }

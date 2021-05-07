@@ -1,7 +1,7 @@
 { pkgs, compiler-nix-name }:
 
 with pkgs;
-with stdenv.lib;
+with lib;
 
 let
   project = haskell-nix.cabalProject' {
@@ -15,16 +15,17 @@ let
     { reinstallableLibGhc = true; } ];
   };
 
-  packages = project.hsPkgs;
   meta = {
     platforms = platforms.unix;
     # Building reinstallable lib GHC is broken on 8.10, and we require lib ghc so this won't work with cross-compiling.
     # Moreover, even building the plan doesn't seem to work in these circumstances.
-    disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || compiler-nix-name == "ghc8102" || compiler-nix-name == "ghc8103";
+    disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"];
   };
 in 
 
 recurseIntoAttrs ({
+  meta.disabled = compiler-nix-name == "ghc901";
+
   ifdInputs = {
     plan-nix = addMetaAttrs meta project.plan-nix;
   };
@@ -32,7 +33,7 @@ recurseIntoAttrs ({
     name = "setup-deps-test";
 
     buildCommand = ''
-      exe="${packages.pkg.components.exes.pkg}/bin/pkg"
+      exe="${project.getComponent "pkg:exe:pkg"}/bin/pkg"
 
       printf "checking whether executable runs... " >& 2
       $exe
@@ -43,7 +44,7 @@ recurseIntoAttrs ({
     inherit meta;
     passthru = {
       # Attributes used for debugging with nix repl
-      inherit project packages;
+      inherit project;
     };
   };
 })

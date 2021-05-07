@@ -62,6 +62,12 @@ in {
     benchmarks = "bench";
   };
 
+  # For looking up the components attribute based on the cabal component type
+  prefixComponent =
+    lib.listToAttrs (
+      lib.mapAttrsToList (value: name: { inherit name value; })
+        componentPrefix);
+
   applyComponents = f: config:
     let
       comps = config.components;
@@ -314,14 +320,38 @@ in {
   rootAndSubDir = src: rec {
     subDir = src.origSubDir or "";
     root =
-      # Use `cleanSourceWith` to make sure the `filter` is still used
-      if src ? origSrc && src ? filter && subDir != ""
-        then haskellLib.cleanSourceWith {
-          name = src.name or "source" + "-root";
-          src = src.origSrc;
-          # Not passing src.origSubDir so that the result points `origSrc`
-          inherit (src) filter;
-        }
-        else src.origSrc or src;
+      if subDir == ""
+        then src # if there was no subdir use the original src
+        else
+          # Use `cleanSourceWith` to make sure the `filter` is still used
+          if src ? origSrc && src ? filter
+            then haskellLib.cleanSourceWith {
+              name = src.name or "source" + "-root";
+              src = src.origSrc;
+              # Not passing src.origSubDir so that the result points `origSrc`
+              inherit (src) filter;
+            }
+            else src.origSrc or src;  # If there is a subDir and origSrc (but no filter) use origSrc
   };
+
+  # Run evalModules passing the project function argument (m) as a module along with
+  # the the a projectType module (../modules/cabal-project.nix or ../modules/stack-project.nix).
+  # The resulting config is then passed to the project function's implementation.
+  evalProjectModule = projectType: m: f: f
+      (lib.evalModules {
+        modules = [m] ++ [
+          # Include ../modules/cabal-project.nix or ../modules/stack-project.nix
+          (import projectType)
+          # Pass the pkgs to the modules
+          ({ config, lib, ... }: {
+            _module.args = {
+              inherit pkgs;
+            };
+          })
+        ];
+      }).config;
+
+  # Converts from a `compoent.depends` value to a library derivation.
+  # In the case of sublibs the `depends` value should already be the derivation.
+  dependToLib = d: d.components.library or d;
 }

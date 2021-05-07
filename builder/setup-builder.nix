@@ -1,12 +1,13 @@
 { pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
 
-{ component, package, name, src, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
+let self =
+{ component, package, name, src, enableDWARF ? false, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
 , prePatch ? null, postPatch ? null
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , cleanSrc ? haskellLib.cleanCabalComponent package component "setup" src
-}:
+}@drvArgs:
 
 let
   cleanSrc' = haskellLib.rootAndSubDir cleanSrc;
@@ -17,7 +18,7 @@ let
 
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
-    inherit fullName flags component;
+    inherit fullName flags component enableDWARF;
   };
   hooks = haskellLib.optionalHooks {
     inherit
@@ -50,13 +51,14 @@ let
         srcSubDirPath = cleanSrc'.root + cleanSrc'.subDir;
         cleanSrc = cleanSrc';
         inherit configFiles;
+        dwarf = self (drvArgs // { enableDWARF = true; });
       };
 
       meta = {
         homepage = package.homepage or "";
         description = package.synopsis or "";
         license = haskellLib.cabalToNixpkgsLicense package.license;
-        platforms = if component.platforms == null then stdenv.lib.platforms.all else component.platforms;
+        platforms = if component.platforms == null then lib.platforms.all else component.platforms;
       };
 
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
@@ -94,4 +96,4 @@ let
     // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
     // hooks
   );
-in drv
+in drv; in self

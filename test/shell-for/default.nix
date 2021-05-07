@@ -1,6 +1,6 @@
-{ stdenv, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {
@@ -51,6 +51,9 @@ let
   };
 
 in recurseIntoAttrs {
+  # Does not work on ghcjs because it needs zlib.
+  # Does not work on windows because it needs mintty.
+  meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows;
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {
     name = "shell-for-test";
@@ -72,7 +75,6 @@ in recurseIntoAttrs {
 
     meta = {
       platforms = platforms.unix;
-      disabled = stdenv.hostPlatform.isMusl;
     };
 
     passthru = {

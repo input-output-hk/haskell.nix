@@ -4,7 +4,7 @@
 let
   eval = (import ../../. {}).pkgs;
   linux = (import ../../. { checkMaterialization = true; system = "x86_64-linux"; }).pkgs;
-  darwin = (import ../../. { checkMaterialization = true; system = "x86_64-darwin"; }).pkgs;
+  darwin = (import ../../. { checkMaterialization = true; system = "x86_64-darwin"; }).pkgs-unstable;
 in eval.linkFarm "check-${compiler-nix-name}" [
   # This set of derivations should be enough to ensure all the materialized files for a
   # given GHC version are checked.

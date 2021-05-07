@@ -1,6 +1,6 @@
-{ stdenv, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages, sources }:
+{ stdenv, lib, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages, sources }:
 
-with stdenv.lib;
+with lib;
 
 let
   # Using buildPackages.buildPackages here because buildPackages.git
@@ -19,6 +19,8 @@ let
   exampleCoverageReport = exampleProject.cardanoShellHaskellPackages.projectCoverageReport;
 
 in recurseIntoAttrs ({
+  # Does not work on ghcjs because it needs zlib.
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {
     name = "coverage-golden-test";
 

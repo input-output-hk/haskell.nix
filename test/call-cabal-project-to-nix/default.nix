@@ -1,13 +1,12 @@
-{ stdenv, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, mkCabalProjectPkgSet, callCabalProjectToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   # This test could use cabalProject', but it does so that it
   # tests using callCabalProjectToNix and importAndFilterProject
   callProjectResults = callCabalProjectToNix {
     inherit compiler-nix-name;
-    index-state = "2020-05-25T00:00:00Z";
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
   };

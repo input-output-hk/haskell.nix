@@ -1,6 +1,6 @@
-{ stdenv, writeScript, coreutils, gnutar, gzip, nix }:
+{ stdenv, lib, writeScript, coreutils, gnutar, gzip, nix }:
 
-with stdenv.lib;
+with lib;
 
 writeScript "check-path-supprot.sh" ''
   #!${stdenv.shell}

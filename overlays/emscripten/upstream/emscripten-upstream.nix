@@ -1,4 +1,4 @@
-{ emscriptenVersion, stdenv, fetchFromGitHub, cmake, python, gtest, ... }:
+{ emscriptenVersion, stdenv, lib, fetchFromGitHub, cmake, python, gtest, ... }:
 
 let
   gcc = if stdenv.cc.isGNU then stdenv.cc.cc else stdenv.cc.cc.gcc;
@@ -39,7 +39,7 @@ stdenv.mkDerivation rec {
     #"-DLLVM_CONFIG=${llvm}/bin/llvm-config"
     "-DLLVM_BUILD_TESTS=ON"
     "-DCLANG_INCLUDE_TESTS=OFF"
-  ] ++ (stdenv.lib.optional stdenv.isLinux
+  ] ++ (lib.optional stdenv.isLinux
     # necessary for clang to find crtend.o
     "-DGCC_INSTALL_PREFIX=${gcc}"
   );
@@ -50,11 +50,11 @@ stdenv.mkDerivation rec {
     inherit gcc;
   };
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     homepage = "http://github.com/llvm/llvm-project";
     description = "LLVM";
     platforms = platforms.all;
     maintainers = with maintainers; [  ];
-    license = stdenv.lib.licenses.ncsa;
+    license = lib.licenses.ncsa;
   };
 }

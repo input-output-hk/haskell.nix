@@ -17,11 +17,11 @@ final: prev:
   #  });
 
    mfpr = prev.mfpr.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ prev.stdenv.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+     configureFlags = (drv.configureFlags or []) ++ prev.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
 
    libmpc = prev.libmpc.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ prev.stdenv.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+     configureFlags = (drv.configureFlags or []) ++ prev.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
 
    binutils-unwrapped = prev.binutils-unwrapped.overrideAttrs (attrs: {
@@ -72,12 +72,18 @@ final: prev:
           # figuring out which libraries we need for the build (walking the
           # dependencies) and then placing them somewhere where wine+remote-iserv
           # will find them.
-          remote-iserv.postInstall = pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
-            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp pkgs.libsodium ]; in ''
+          remote-iserv.postInstall = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
+            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp pkgs.libsodium pkgs.windows.mcfgthreads pkgs.buildPackages.gcc.cc ]; in ''
             for p in ${lib.concatStringsSep " "extra-libs}; do
               find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
               find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
             done
+            (
+            cd $out/bin
+            for l in lib*.dll; do
+              ln -s "$l" "''${l#lib}"
+            done
+            )
           '');
 
           # Apply https://github.com/haskell/cabal/pull/6055
@@ -91,20 +97,21 @@ final: prev:
           #   else null)) ];
 
           # clock 0.7.2 needs to be patched to support cross compilation.
-          clock.patches              = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: (if version == "0.7.2" then ./patches/clock-0.7.2.patch else null)) ];
+          clock.patches              = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: (if version == "0.7.2" then ./patches/clock-0.7.2.patch else null)) ];
           # nix calls this package crypto
-          cryptonite-openssl.patches = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.7" then ./patches/cryptonite-openssl-0.7.patch else null) ];
+          cryptonite-openssl.patches = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.7" then ./patches/cryptonite-openssl-0.7.patch else null) ];
 
           # this patch seems to be rather flaky and highly dependent on
           # the network library. I think we might need to respin that in
           # a better way that doesn't just delete some code, but makes
           # the bounds checks stricter.
-          # http-client.patches        = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.5.14" then ./patches/http-client-0.5.14.patch else null) ];
+          # http-client.patches        = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if version == "0.5.14" then ./patches/http-client-0.5.14.patch else null) ];
 
-          conduit.patches            = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if builtins.compareVersions version "1.3.1.1" < 0 then ./patches/conduit-1.3.0.2.patch else null) ];
-          streaming-commons.patches  = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/streaming-commons-0.2.0.0.patch ];
-          x509-system.patches        = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/x509-system-1.6.6.patch ];
-          file-embed-lzma.patches    = pkgs.stdenv.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/file-embed-lzma-0.patch ];
+          conduit.patches            = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version, revision }: if builtins.compareVersions version "1.3.1.1" < 0 then ./patches/conduit-1.3.0.2.patch else null) ];
+          streaming-commons.patches  = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/streaming-commons-0.2.0.0.patch ];
+          x509-system.patches        = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/x509-system-1.6.6.patch ];
+          file-embed.patches         = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/file-embed.patch ];
+          file-embed-lzma.patches    = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/file-embed-lzma-0.patch ];
 
           # Set all of these to [], as these form the
           # dependency graph of the libiserv, iserv-proxy, and iserv-remote

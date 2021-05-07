@@ -1,10 +1,14 @@
-{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name } :
-  # A dependency is broken on windows, just run this on unix.
-  lib.addMetaAttrs { platforms = lib.platforms.unix; } ((haskell-nix.hackage-package {
+{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name, recurseIntoAttrs } : recurseIntoAttrs {
+  # The version of pandoc used in this test does not build with ghcjs or ghc 8.10
+  meta.disabled = stdenv.hostPlatform.isGhcjs
+      || builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "8.10" >= 0;
+  build = lib.addMetaAttrs {
+    # A dependency is broken on windows, just run this on unix.
+    platforms = lib.platforms.unix;
+  } ((haskell-nix.hackage-package {
     inherit compiler-nix-name;
     name         = "pandoc";
     version      = "2.9.2.1";
-    index-state  = "2020-12-17T00:00:00Z";
     # Function that returns a sha256 string by looking up the location
     # and tag in a nested attrset
     lookupSha256 = { location, tag, ... }:
@@ -14,4 +18,5 @@
     cabalProjectLocal = ''
       allow-newer: *:base
     '';
-  }).components.exes.pandoc)
+  }).components.exes.pandoc);
+}

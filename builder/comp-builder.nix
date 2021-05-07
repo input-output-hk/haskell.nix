@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -23,6 +23,14 @@ let self =
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , preHaddock ? component.preHaddock , postHaddock ? component.postHaddock
 , shellHook ? ""
+, configureAllComponents ? component.configureAllComponents ||
+    # When set, configure all the components in the package
+    # (not just the one we are building).
+    # Enable for tests in packages that use cabal-doctest.
+    ( haskellLib.isTest componentId &&
+      lib.any (x: x.identifier.name or "" == "cabal-doctest") package.setup-depends
+    )
+, allComponent # Used when `configureAllComponents` is set to get a suitable configuration.
 
 , build-tools ? component.build-tools
 , pkgconfig ? component.pkgconfig
@@ -41,12 +49,14 @@ let self =
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
 
+, ghcOptions ? component.ghcOptions
+
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 , quickjump ? component.doQuickjump # Generate an index for interactive documentation navigation
-, keepSource ? component.keepSource  # Build from `source` output in the store then delete `dist`
+, keepSource ? component.keepSource || configureAllComponents # Build from `source` output in the store then delete `dist`
 , setupHaddockFlags ? component.setupHaddockFlags
 
 # Profiling
@@ -76,6 +86,21 @@ let self =
 }@drvArgs:
 
 let
+  componentForSetup =
+    if configureAllComponents
+      then allComponent
+      else component;
+
+  # Ignore attempts to include DWARF info when it is not possible
+  enableDWARF = drvArgs.enableDWARF or false
+    && stdenv.hostPlatform.isLinux
+    && !haskellLib.isCrossHost
+    && !stdenv.hostPlatform.isMusl
+    && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
+
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+  setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
+
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
   # In order to support relative references to other packages we need to use
@@ -85,7 +110,7 @@ let
   # is the sub directory in that root path that contains the package.
   # `cleanSrc.subDir` is used in `prePatch` and `lib/cover.nix`.
   cleanSrc = haskellLib.rootAndSubDir (if canCleanSource
-    then haskellLib.cleanCabalComponent package component "${componentId.ctype}-${componentId.cname}" src
+    then haskellLib.cleanCabalComponent package componentForSetup "${componentId.ctype}-${componentId.cname}" src
     else
       # We can clean out the siblings though to at least avoid changes to other packages
       # from triggering a rebuild of this one.
@@ -107,8 +132,9 @@ let
   needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
 
   configFiles = makeConfigFiles {
+    component = componentForSetup;
     inherit (package) identifier;
-    inherit component fullName flags needsProfiling;
+    inherit fullName flags needsProfiling enableDWARF;
   };
 
   enableFeature = enable: feature:
@@ -118,17 +144,22 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
-      "${haskellLib.componentTarget componentId}"
-      "$(cat ${configFiles}/configure-flags)"
-    ] ++ commonConfigureFlags
-      ++ # We don't specify this in 'commonConfigureFlags', as these are also
-         # used by haddock-builder.nix. If we do specify these options in
-         # commonConfigureFlags, then the haddock-builder will fail, because it
-         # sets its own outputs which *don't* include $hie
-         lib.optionals writeHieFiles [
-           "--ghc-option=-fwrite-ide-info" "--ghc-option=-hiedir$hie"
-         ]
-  );
+    ] ++
+    # We don't specify this in 'commonConfigureFlags', as these are also
+    # used by haddock-builder.nix. If we do specify these options in
+    # commonConfigureFlags, then the haddock-builder will fail, because it
+    # sets its own outputs which *don't* include $hie
+    lib.optionals writeHieFiles [
+      "--ghc-option=-fwrite-ide-info" "--ghc-option=-hiedir$hie"
+    ] ++
+    (
+      # If configureAllComponents is set we should not specify the component
+      # and Setup will attempt to configure them all.
+      if configureAllComponents
+        then ["--enable-tests" "--enable-benchmarks"]
+        else ["${haskellLib.componentTarget componentId}"]
+    ) ++ [ "$(cat ${configFiles}/configure-flags)"
+    ] ++ commonConfigureFlags);
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
   pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;
@@ -185,13 +216,12 @@ let
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
       ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
-      ++ lib.optional enableDWARF "--ghc-option=-g"
+      ++ lib.optional enableDWARF "--ghc-option=-g3"
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
+      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${o}"'') ghcOptions
     );
-
-  setupGhcOptions = lib.optional (package.ghcOptions != null) '' --ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${package.ghcOptions}"'';
 
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
@@ -203,7 +233,7 @@ let
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
   shellWrappers = ghcForComponent {
     componentName = fullName;
-    inherit configFiles;
+    inherit configFiles enableDWARF;
   };
 
   # In order to let shell hooks make package-specific things like Hoogle databases
@@ -238,7 +268,7 @@ let
         (lib.optionalString (cleanSrc.subDir != "") ''
             cd ${lib.removePrefix "/" cleanSrc.subDir}
           ''
-        ) + 
+        ) +
         (if cabalFile != null
           then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
           else
@@ -267,7 +297,7 @@ let
 
   haddock = haddockBuilder {
     inherit componentId component package flags commonConfigureFlags
-      commonAttrs revision setupGhcOptions doHaddock
+      commonAttrs revision doHaddock
       doHoogle hyperlinkSource quickjump setupHaddockFlags
       needsProfiling configFiles preHaddock postHaddock pkgconfig;
 
@@ -288,10 +318,11 @@ let
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
-      inherit configFiles executableToolDepends exeName;
+      inherit configFiles executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
+      dwarf = self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`
@@ -305,7 +336,7 @@ let
       homepage = package.homepage or "";
       description = package.synopsis or "";
       license = haskellLib.cabalToNixpkgsLicense package.license;
-      platforms = if platforms == null then stdenv.lib.platforms.all else platforms;
+      platforms = if platforms == null then lib.platforms.all else platforms;
     };
 
     propagatedBuildInputs =
@@ -315,7 +346,7 @@ let
       ++ builtins.concatLists pkgconfig;
 
     buildInputs = component.libs
-      ++ map (d: d.components.library or d) component.depends;
+      ++ map haskellLib.dependToLib component.depends;
 
     nativeBuildInputs =
       [shellWrappers buildPackages.removeReferencesTo]
@@ -326,7 +357,11 @@ let
       ++ (lib.optional keepSource "source")
       ++ (lib.optional writeHieFiles "hie");
 
-    configurePhase =
+    prePatch =
+      # emcc is very slow if it cannot cache stuff in $HOME
+      (lib.optionalString (stdenv.hostPlatform.isGhcjs) ''
+      export HOME=$(mktemp -d)
+      '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
       '') +
@@ -334,7 +369,9 @@ let
         cp -r . $source
         cd $source
         chmod -R +w .
-      '') + ''
+      '') + commonAttrs.prePatch;
+
+    configurePhase = ''
       runHook preConfigure
       echo Configure flags:
       printf "%q " ${finalConfigureFlags}
@@ -346,7 +383,7 @@ let
     buildPhase = ''
       runHook preBuild
       # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " (setupBuildFlags ++ setupGhcOptions)}
+      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
       runHook postBuild
     '';
 
@@ -362,7 +399,11 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
-      $SETUP_HS copy ${lib.concatStringsSep " " setupInstallFlags}
+      $SETUP_HS copy ${lib.concatStringsSep " " (
+        setupInstallFlags
+        ++ lib.optional configureAllComponents
+              (haskellLib.componentTarget componentId)
+      )}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -381,7 +422,14 @@ let
                 echo "package-id $id" >> $out/envDep
               else
                 echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
-                exit 0
+                exit 1
+              fi
+              if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
+                echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
+                echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
+              else
+                echo 'ERROR: ${package.identifier.name} version could not be found with ${target-pkg-and-db}'
+                exit 1
               fi
             ''
             else
@@ -399,17 +447,10 @@ let
                 echo "--dependency=${package.identifier.name}:''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
               else
                 echo 'ERROR: ${package.identifier.name} id could not be found with ${target-pkg-and-db}'
-                exit 0
+                exit 1
               fi
               '')
         }
-        if ver=$(${target-pkg-and-db} field ${package.identifier.name} version --simple-output); then
-          echo "constraint: ${package.identifier.name} == $ver" >> $out/exactDep/cabal.config
-          echo "constraint: ${package.identifier.name} installed" >> $out/exactDep/cabal.config
-        else
-          echo 'ERROR: ${package.identifier.name} version could not be found with ${target-pkg-and-db}'
-          exit 0
-        fi
       ''}
       ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
         mkdir -p $out/bin
@@ -436,7 +477,7 @@ let
         # to symlink over dlls as needed.
         + ''
         echo "Symlink library dependencies..."
-        for libdir in $(x86_64-pc-mingw32-ghc-pkg --package-db=$packageConfDir field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
+        for libdir in $(${stdenv.hostPlatform.config}-ghc-pkg field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
           if [ -d "$libdir" ]; then
             find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
           fi
@@ -449,8 +490,25 @@ let
       '')
       }
       runHook postInstall
-    '' + (lib.optionalString keepSource ''
-      rm -rf dist
+    '' + (
+      # Keep just the autogen files and package.conf.inplace package
+      # DB (probably empty unless this is a library component).
+      # We also have to remove any refernces to $out to avoid
+      # circular references.
+      lib.optionalString (configureAllComponents || keepSource) ''
+        mv dist dist-tmp-dir
+        mkdir -p dist/build
+        if [ -d dist-tmp-dir/build/${componentId.cname} ]; then
+          mv dist-tmp-dir/build/${componentId.cname}/autogen dist/build/
+        else
+          mv dist-tmp-dir/build/autogen dist/build/
+        fi
+        mv dist-tmp-dir/package.conf.inplace dist/
+        remove-references-to -t $out dist/build/autogen/*
+        rm -rf dist-tmp-dir
+      ''
+    ) + (lib.optionalString (keepSource && haskellLib.isLibrary componentId) ''
+        remove-references-to -t $out ${name}.conf
     '') + (lib.optionalString (haskellLib.isTest componentId) ''
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
@@ -467,7 +525,7 @@ let
       preBuild postBuild
       preInstall postInstall;
   }
-  // lib.optionalAttrs (hardeningDisable != []) {
-    inherit hardeningDisable;
+  // lib.optionalAttrs (hardeningDisable != [] || stdenv.hostPlatform.isMusl) {
+    hardeningDisable = hardeningDisable ++ lib.optional stdenv.hostPlatform.isMusl "pie";
   });
 in drv; in self)
