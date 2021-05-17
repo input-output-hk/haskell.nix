@@ -611,11 +611,11 @@ index 2ea0b3d5e9..22f20c0991 100644
        Opt_SharedImplib,
        Opt_SimplPreInlining,
        Opt_VersionMacros
-+#if GHC_STAGE > 1
++
 +      , Opt_Write_Phase_Core
-+#endif
++
      ]
- 
+
      ++ [f | (ns,f) <- optLevelFlags, 0 `elem` ns]
 diff --git a/compiler/main/HscMain.hs b/compiler/main/HscMain.hs
 index 9bb6b4e391..71c18f5f21 100644
@@ -624,13 +624,13 @@ index 9bb6b4e391..71c18f5f21 100644
 @@ -180,6 +180,9 @@ import HieTypes         ( getAsts, hie_asts, hie_module )
  import HieBin           ( readHieFile, writeHieFile , hie_file_result)
  import HieDebug         ( diffFile, validateScopes )
- 
+
 +import ToIface          ( toIfaceBind )
 +import BinIface         ( putWithUserData )
 +
  #include "HsVersions.h"
- 
- 
+
+
 @@ -195,6 +198,7 @@ newHscEnv dflags = do
      us      <- mkSplitUniqSupply 'r'
      nc_var  <- newIORef (initNameCache us knownKeyNames)
