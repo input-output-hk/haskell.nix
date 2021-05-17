@@ -325,7 +325,7 @@ index 8d327e528d..9f409a17e6 100644
 +loadCoreBindings :: ModIface -> IfL (Maybe [Bind CoreBndr])
 +loadCoreBindings iface = do
 +  ncu    <- mkNameCacheUpdater
-+  mbinds <- liftIO (readIfaceFieldWith "ghc/phase/ModGuts" (getWithUserData ncu) iface)
++  mbinds <- liftIO (readIfaceFieldWith "ghc/phase/CgGuts" (getWithUserData ncu) iface)
 +  case mbinds of
 +    Nothing     -> return Nothing
 +    Just ibinds -> do
