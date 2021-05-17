@@ -112,6 +112,7 @@ final: prev:
           x509-system.patches        = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/x509-system-1.6.6.patch ];
           file-embed.patches         = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/file-embed.patch ];
           file-embed-lzma.patches    = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/file-embed-lzma-0.patch ];
+          th-utilities.patches       = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/th-utilities.patch ];
 
           # Set all of these to [], as these form the
           # dependency graph of the libiserv, iserv-proxy, and iserv-remote
