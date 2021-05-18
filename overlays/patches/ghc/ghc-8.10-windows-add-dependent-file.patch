@@ -1,23 +1,22 @@
-diff --git a/compiler/typecheck/TcSplice.hs b/compiler/typecheck/TcSplice.hs
-index 64d638aa0f..0ebc132a95 100644
---- a/compiler/typecheck/TcSplice.hs
-+++ b/compiler/typecheck/TcSplice.hs
-@@ -996,9 +996,14 @@ instance TH.Quasi TcM where
-   qRecover recover main = tryTcDiscardingErrs recover main
+diff --git a/utils/iserv-proxy/src/Main.hs b/utils/iserv-proxy/src/Main.hs
+index 5901ffe562..364a2affeb 100644
+--- a/utils/iserv-proxy/src/Main.hs
++++ b/utils/iserv-proxy/src/Main.hs
+@@ -141,8 +141,15 @@ hook = return
+ --
+ fwdTHMsg :: (Binary a) => Pipe -> THMessage a -> IO a
+ fwdTHMsg local msg = do
+-  writePipe local (putTHMessage msg)
+-  readPipe local get
++    writePipe local (putTHMessage (fixAddDep msg))
++    readPipe local get
++  where
++    fixAddDep (AddDependentFile fp) = AddDependentFile $ fixZ (map fixSlash fp)
++    fixAddDep m = m
++    fixZ ('Z':':':rest) = rest
++    fixZ fp = fp
++    fixSlash '\\' = '/'
++    fixSlash c = c
  
-   qAddDependentFile fp = do
--    ref <- fmap tcg_dependent_files getGblEnv
--    dep_files <- readTcRef ref
--    writeTcRef ref (fp:dep_files)
-+      ref <- fmap tcg_dependent_files getGblEnv
-+      dep_files <- readTcRef ref
-+      writeTcRef ref (fixZ (map fixSlash fp):dep_files)
-+    where
-+      fixZ ('Z':':':rest) = rest
-+      fixZ fp = fp
-+      fixSlash '\\' = '/'
-+      fixSlash c = c
- 
-   qAddTempFile suffix = do
-     dflags <- getDynFlags
-
+ -- | Fowarard a @Message@ call and handle @THMessages@.
+ fwdTHCall :: (Binary a) => Bool -> Pipe -> Pipe -> Message a -> IO a
