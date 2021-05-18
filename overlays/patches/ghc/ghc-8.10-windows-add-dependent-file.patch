@@ -1,0 +1,23 @@
+diff --git a/compiler/typecheck/TcSplice.hs b/compiler/typecheck/TcSplice.hs
+index 64d638aa0f..0ebc132a95 100644
+--- a/compiler/typecheck/TcSplice.hs
++++ b/compiler/typecheck/TcSplice.hs
+@@ -996,9 +996,14 @@ instance TH.Quasi TcM where
+   qRecover recover main = tryTcDiscardingErrs recover main
+ 
+   qAddDependentFile fp = do
+-    ref <- fmap tcg_dependent_files getGblEnv
+-    dep_files <- readTcRef ref
+-    writeTcRef ref (fp:dep_files)
++      ref <- fmap tcg_dependent_files getGblEnv
++      dep_files <- readTcRef ref
++      writeTcRef ref (fixZ (map fixSlash fp):dep_files)
++    where
++      fixZ ('Z':':':rest) = rest
++      fixZ fp = fp
++      fixSlash '\\' = '/'
++      fixSlash c = c
+ 
+   qAddTempFile suffix = do
+     dflags <- getDynFlags
+
