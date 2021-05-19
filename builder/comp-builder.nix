@@ -488,13 +488,15 @@ let
       lib.optionalString (configureAllComponents || keepSource) ''
         mv dist dist-tmp-dir
         mkdir -p dist/build
-        if [ -d dist-tmp-dir/build/${componentId.cname} ]; then
+        if [ -d dist-tmp-dir/build/${componentId.cname}/autogen ]; then
           mv dist-tmp-dir/build/${componentId.cname}/autogen dist/build/
-        else
+        elif [ -d dist-tmp-dir/build/autogen ]; then
           mv dist-tmp-dir/build/autogen dist/build/
         fi
         mv dist-tmp-dir/package.conf.inplace dist/
-        remove-references-to -t $out dist/build/autogen/*
+        if [ -d dist/build/autogen ]; then
+          remove-references-to -t $out dist/build/autogen/*
+        fi
         rm -rf dist-tmp-dir
       ''
     ) + (lib.optionalString (keepSource && haskellLib.isLibrary componentId) ''
