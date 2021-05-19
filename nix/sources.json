@@ -156,16 +156,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "old-ghc-nix": {
-        "branch": "master",
+        "branch": "master2",
         "builtin": false,
         "description": "Old and New GHC",
         "homepage": null,
         "owner": "angerman",
         "repo": "old-ghc-nix",
-        "rev": "131ce9ae27d7b7afdd1d3ce8c3a74483e60b91bb",
-        "sha256": "0n62qr7hrqmy6h80736ji47ln759sk845g43f9cprpmcs9m4wl9i",
+        "rev": "b25d046f8d8d96cfec081c51730e0d32340d0348",
+        "sha256": "03848k2v22ld2l1vlf9pwl0j90wr4dxczxck167ni2gy0kigkiaj",
         "type": "tarball",
-        "url": "https://github.com/angerman/old-ghc-nix/archive/131ce9ae27d7b7afdd1d3ce8c3a74483e60b91bb.tar.gz",
+        "url": "https://github.com/angerman/old-ghc-nix/archive/b25d046f8d8d96cfec081c51730e0d32340d0348.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
