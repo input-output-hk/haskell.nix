@@ -696,10 +696,10 @@ in {
           final.buildPackages.buildPackages.gitMinimal
           final.buildPackages.buildPackages.nix-prefetch-git ];
     in
-      final.symlinkJoin {
+      final.evalPackages.symlinkJoin {
         name = "nix-tools";
         paths = exes;
-        buildInputs = [ final.makeWrapper ];
+        buildInputs = [ final.evalPackages.makeWrapper ];
         meta.platforms = final.lib.platforms.all;
         # We wrap the -to-nix executables with the executables from `tools` (e.g. nix-prefetch-git)
         # so that consumers of `nix-tools` won't have to provide those tools.
