@@ -162,10 +162,10 @@
         "homepage": null,
         "owner": "angerman",
         "repo": "old-ghc-nix",
-        "rev": "b25d046f8d8d96cfec081c51730e0d32340d0348",
-        "sha256": "03848k2v22ld2l1vlf9pwl0j90wr4dxczxck167ni2gy0kigkiaj",
+        "rev": "f089a6f090cdb35fcf95f865fc6a31ba6b3ac4eb",
+        "sha256": "0fy32hz1i2ryp1aps39gjzm9122q2fc9bd045x8v34wn0ihsg40h",
         "type": "tarball",
-        "url": "https://github.com/angerman/old-ghc-nix/archive/b25d046f8d8d96cfec081c51730e0d32340d0348.tar.gz",
+        "url": "https://github.com/angerman/old-ghc-nix/archive/f089a6f090cdb35fcf95f865fc6a31ba6b3ac4eb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
