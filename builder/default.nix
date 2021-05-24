@@ -28,7 +28,7 @@ let
     inherit lib ghc haskellLib;
     inherit (buildPackages) stdenv;
     inherit (pkgs.evalPackages) runCommand makeWrapper;
-    inherit (buildPackages.xorg) lndir;
+    inherit (pkgs.evalPackages.xorg) lndir;
   };
 
   # Builds a derivation which contains a ghc package-db of
