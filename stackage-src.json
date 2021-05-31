@@ -1,9 +1,9 @@
 {
   "url": "https://github.com/input-output-hk/stackage.nix",
-  "rev": "0f290dd7b5c5ae9eb04640977d02b58463383d98",
-  "date": "2021-05-29T01:02:15+00:00",
-  "path": "/nix/store/7wfkm9aa7zxsy0wizsp2ax5hsyi86s3a-stackage.nix-0f290dd",
-  "sha256": "0yvc47ayksn35vina2sdvzh435cpva60kw2qj85p639knpfpil6f",
+  "rev": "03001602dce0af57f7a7ee44047e3028e1e54b27",
+  "date": "2021-05-31T01:02:26+00:00",
+  "path": "/nix/store/8g0xgb2kdknbv1sqp5fb7zkg1ykgjfp4-stackage.nix-0300160",
+  "sha256": "07ar27dh5s90lvy9r7lpr96dv798a5bd8lm12jp5yzdv6018mfjs",
   "fetchSubmodules": false,
   "deepClone": false,
   "leaveDotGit": false
