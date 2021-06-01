@@ -757,8 +757,8 @@ in {
     # there should be no difference in the behaviour of these tools.
     # (stack projects on macOS may see a significant change in the
     # closure size of their build dependencies due to dynamic linking).
-    internal-cabal-install = final.haskell-nix.cabal-install.ghc884;
-    internal-nix-tools = final.haskell-nix.nix-tools.ghc884;
+    internal-cabal-install = final.haskell-nix.cabal-install.ghc8104;
+    internal-nix-tools = final.haskell-nix.nix-tools.ghc8104;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
