@@ -25,7 +25,7 @@
     # Update supported-ghc-versions.md to reflect any changes made here.
     {
       ghc865 = true;
-      ghc884 = false; # Just included because the native version is needed at eval time
+      ghc8104 = false; # Just included because the native version is needed at eval time
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc884 = true;
       ghc8104 = true;
@@ -52,10 +52,10 @@
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux"
-      && !(nixpkgsName == "R2003" && compiler-nix-name == "ghc884")) {
+      && !(nixpkgsName == "R2003" && compiler-nix-name == "ghc8104")) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
-    # We also skip these for the R2003 was build of ghc884 (we only need the
+    # We also skip these for the R2003 was build of ghc8104 (we only need the
     # native so ifdLevel 1 includes compiler needed in ifdLevel2 eval)
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
