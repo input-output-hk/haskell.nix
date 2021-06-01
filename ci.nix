@@ -27,9 +27,11 @@
       ghc865 = true;
       ghc8104 = false; # Just included because the native version is needed at eval time
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
+      ghc865 = false;
       ghc884 = true;
       ghc8104 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
+      ghc865 = false;
       ghc884 = false;
       ghc8104 = true;
       ghc901 = true;
