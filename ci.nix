@@ -11,6 +11,7 @@
   nixpkgsVersions = {
     "R2003" = "nixpkgs-2003";
     "R2009" = "nixpkgs-2009";
+    "R2105" = "nixpkgs-2105";
     "unstable" = "nixpkgs-unstable";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
