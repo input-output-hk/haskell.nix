@@ -30,6 +30,7 @@
       ghc8104 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
+      ghc884 = false; # Native version is used to boot 9.0.1
       ghc8104 = true;
       ghc901 = true;
       ghc810420210212 = false;
@@ -43,7 +44,7 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc865" "ghc8104"])) {
+    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8104"])) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" &&
          nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104"])) {
