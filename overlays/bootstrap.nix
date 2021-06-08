@@ -44,7 +44,7 @@ let
     latestVer = {
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
-      "8.10" = "8.10.4";
+      "8.10" = "8.10.5";
     };
     traceWarnOld = v: x: __trace
       "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x;
@@ -153,7 +153,8 @@ in {
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
 
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
-                ++ fromUntil "8.10.3" "8.11"   ./patches/ghc/ghc-8.10.3-ubxt.patch
+                ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
+                ++ fromUntil "8.10.5" "8.11"   ./patches/ghc/ghc-8.10.5-ubxt.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4") ./patches/ghc/Cabal-3886.patch
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
@@ -434,6 +435,26 @@ in {
 
                 ghc-patches = ghc-patches "8.10.4";
             };
+            ghc8105 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105; };
+
+                bootPkgs = bootPkgs // {
+                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "8.10.5";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "0vq7wch0wfvy2b5dbi308lq5225vf691n95m19c9igagdvql22gi";
+                };
+
+                ghc-patches = ghc-patches "8.10.5";
+            };
             ghc901 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc901; };
 
@@ -590,18 +611,18 @@ in {
                 cd lib
                 lndir ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
             '' + installDeps targetPrefix);
-            ghc8104 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104;
+            ghc8105 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105;
                 in let ghcjs8104 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
                 ghcjsVersion =  "8.10.2";
                 ghc = buildGHC;
-                ghcVersion = "8.10.4";
-                compiler-nix-name = "ghc8104";
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.4" {
+                ghcVersion = "8.10.5";
+                compiler-nix-name = "ghc8105";
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.5" {
                 nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
                     inherit targetPrefix;
-                    version = "8.10.4";
+                    version = "8.10.5";
                     isHaskellNixCompiler = true;
                     enableShared = false;
                     inherit (ghcjs8104) configured-src bundled-ghcjs project;
@@ -620,9 +641,9 @@ in {
                 ln -s ${ghcjs8104}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
-                mkdir -p lib/${targetPrefix}ghc-8.10.4
+                mkdir -p lib/${targetPrefix}ghc-8.10.5
                 cd lib
-                lndir ${ghcjs8104}/lib ${targetPrefix}ghc-8.10.4
+                lndir ${ghcjs8104}/lib ${targetPrefix}ghc-8.10.5
             '' + installDeps targetPrefix);
         }))));
 
