@@ -613,7 +613,7 @@ in {
                 lndir ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
             '' + installDeps targetPrefix);
             ghc8105 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105;
-                in let ghcjs8104 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                in let ghcjs8105 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
                 ghcjsVersion =  "8.10.2";
                 ghc = buildGHC;
@@ -626,7 +626,7 @@ in {
                     version = "8.10.5";
                     isHaskellNixCompiler = true;
                     enableShared = false;
-                    inherit (ghcjs8104) configured-src bundled-ghcjs project;
+                    inherit (ghcjs8105) configured-src bundled-ghcjs project;
                     inherit buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
@@ -638,13 +638,13 @@ in {
             } (''
                 mkdir -p $out/bin
                 cd $out/bin
-                ln -s ${ghcjs8104}/bin/ghcjs ${targetPrefix}ghc
-                ln -s ${ghcjs8104}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${ghcjs8105}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${ghcjs8105}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
                 mkdir -p lib/${targetPrefix}ghc-8.10.5
                 cd lib
-                lndir ${ghcjs8104}/lib ${targetPrefix}ghc-8.10.5
+                lndir ${ghcjs8105}/lib ${targetPrefix}ghc-8.10.5
             '' + installDeps targetPrefix);
         }))));
 
@@ -667,7 +667,7 @@ in {
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
           if args.compiler-nix-name == "ghc901"
-            then "ghc8104"
+            then "ghc8105"
             else args.compiler-nix-name;
         project =
           final.haskell-nix.cabalProject ({
@@ -756,7 +756,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
             then compiler-nix-name
-            else "ghc8104";
+            else "ghc8105";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
     nix-tools = final.lib.mapAttrs (compiler-nix-name: _:
@@ -768,7 +768,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
             then compiler-nix-name
-            else "ghc8104";
+            else "ghc8105";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
 
@@ -781,8 +781,8 @@ in {
     # there should be no difference in the behaviour of these tools.
     # (stack projects on macOS may see a significant change in the
     # closure size of their build dependencies due to dynamic linking).
-    internal-cabal-install = final.haskell-nix.cabal-install.ghc8104;
-    internal-nix-tools = final.haskell-nix.nix-tools.ghc8104;
+    internal-cabal-install = final.haskell-nix.cabal-install.ghc8105;
+    internal-nix-tools = final.haskell-nix.nix-tools.ghc8105;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
