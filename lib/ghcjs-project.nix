@@ -115,6 +115,8 @@ let
         cp ${../overlays/patches/config.sub} ghc/libraries/base/config.sub
         cp ${../overlays/patches/config.sub} ghc/libraries/unix/config.sub
 
+        sed -i 's/_AC_PROG_CC_C99/AC_PROG_CC_C99/' ghc/aclocal.m4
+
         patchShebangs .
         sed -i 's/gcc /cc /g' utils/makePackages.sh
         ./utils/makePackages.sh copy
