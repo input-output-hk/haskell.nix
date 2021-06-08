@@ -162,7 +162,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.6.5") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
-                ++ fromUntil "9.0.1"  "9.0.2" ./patches/ghc/AC_PROG_CC_99.patch
+                ++ fromUntil "9.0.1"  "9.0.2"  ./patches/ghc/AC_PROG_CC_99.patch
+                ++ fromUntil "8.10.5" "9.0.2"  ./patches/ghc/ghc-8.10.5-add-rts-exports.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
