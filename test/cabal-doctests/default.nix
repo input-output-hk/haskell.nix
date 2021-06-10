@@ -1,7 +1,7 @@
 # Test a package set
-{ stdenv, util, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, gmp6, zlib, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages }:
 
-with stdenv.lib;
+with lib;
 
 let
   project =
