@@ -287,7 +287,7 @@
           "Bitmap"
           "GHC/Platform/Regs"
           "GHC/Platform/ARM"
-          "GHC/Platform/ARM64"
+          "GHC/Platform/AArch64"
           "GHC/Platform/NoRegs"
           "GHC/Platform/PPC"
           "GHC/Platform/S390X"
