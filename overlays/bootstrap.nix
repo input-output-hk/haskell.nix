@@ -513,7 +513,7 @@ in {
                     })
           ({
             ghc865 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc865;
-                in let ghcjs865 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
                 ghcjsVersion =  "8.6.0.0.10";
                 ghc = buildGHC;
@@ -524,8 +524,8 @@ in {
                     version = "8.6.5";
                     isHaskellNixCompiler = true;
                     enableShared = false;
-                    inherit (ghcjs865) configured-src bundled-ghcjs project;
-                    inherit buildGHC;
+                    inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
@@ -536,16 +536,16 @@ in {
             } (''
                 mkdir -p $out/bin
                 cd $out/bin
-                ln -s ${ghcjs865}/bin/ghcjs ${targetPrefix}ghc
-                ln -s ${ghcjs865}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${booted-ghcjs}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${booted-ghcjs}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
                 mkdir -p lib/${targetPrefix}ghc-8.6.5
                 cd lib
-                lndir ${ghcjs865}/lib ${targetPrefix}ghc-8.6.5
+                lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.6.5
             '' + installDeps targetPrefix);
             ghc883 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc883;
-                in let ghcjs883 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
                 ghcjsVersion =  "8.8.0.0.1";
                 ghc = buildGHC;
@@ -558,8 +558,8 @@ in {
                     version = "8.8.3";
                     isHaskellNixCompiler = true;
                     enableShared = false;
-                    inherit (ghcjs883) configured-src bundled-ghcjs project;
-                    inherit buildGHC;
+                    inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
@@ -570,16 +570,16 @@ in {
             } (''
                 mkdir -p $out/bin
                 cd $out/bin
-                ln -s ${ghcjs883}/bin/ghcjs ${targetPrefix}ghc
-                ln -s ${ghcjs883}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${booted-ghcjs}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${booted-ghcjs}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
                 mkdir -p lib/${targetPrefix}ghc-8.8.3
                 cd lib
-                lndir ${ghcjs883}/lib ${targetPrefix}ghc-8.8.3
+                lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.8.3
             '' + installDeps targetPrefix);
             ghc884 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc884;
-                in let ghcjs884 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
                 ghcjsVersion =  "8.8.0.0.1";
                 ghc = buildGHC;
@@ -592,8 +592,8 @@ in {
                     version = "8.8.4";
                     isHaskellNixCompiler = true;
                     enableShared = false;
-                    inherit (ghcjs884) configured-src bundled-ghcjs project;
-                    inherit buildGHC;
+                    inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
@@ -604,16 +604,16 @@ in {
             } (''
                 mkdir -p $out/bin
                 cd $out/bin
-                ln -s ${ghcjs884}/bin/ghcjs ${targetPrefix}ghc
-                ln -s ${ghcjs884}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${booted-ghcjs}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${booted-ghcjs}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
                 mkdir -p lib/${targetPrefix}ghc-8.8.4
                 cd lib
-                lndir ${ghcjs884}/lib ${targetPrefix}ghc-8.8.4
+                lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.8.4
             '' + installDeps targetPrefix);
             ghc8105 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105;
-                in let ghcjs8105 = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
                 ghcjsVersion =  "8.10.2";
                 ghc = buildGHC;
@@ -626,8 +626,8 @@ in {
                     version = "8.10.5";
                     isHaskellNixCompiler = true;
                     enableShared = false;
-                    inherit (ghcjs8105) configured-src bundled-ghcjs project;
-                    inherit buildGHC;
+                    inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    inherit booted-ghcjs buildGHC;
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
@@ -638,13 +638,13 @@ in {
             } (''
                 mkdir -p $out/bin
                 cd $out/bin
-                ln -s ${ghcjs8105}/bin/ghcjs ${targetPrefix}ghc
-                ln -s ${ghcjs8105}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${booted-ghcjs}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${booted-ghcjs}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
                 ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
                 cd ..
                 mkdir -p lib/${targetPrefix}ghc-8.10.5
                 cd lib
-                lndir ${ghcjs8105}/lib ${targetPrefix}ghc-8.10.5
+                lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.5
             '' + installDeps targetPrefix);
         }))));
 
