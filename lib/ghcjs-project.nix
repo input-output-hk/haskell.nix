@@ -111,10 +111,11 @@ let
         rm -rf utils/pkg-cache/ghc
         cp -r ${ghc.generated} utils/pkg-cache/ghc
 
-        cp ${../overlays/patches/config.sub} ghc/libraries/integer-gmp/config.sub
-        cp ${../overlays/patches/config.sub} ghc/libraries/base/config.sub
-        cp ${../overlays/patches/config.sub} ghc/libraries/unix/config.sub
-        chmod +w ghc/libraries/integer-gmp/config.sub ghc/libraries/base/config.sub ghc/libraries/unix/config.sub
+        for a in integer-gmp base unix; do
+          cp ${../overlays/patches/config.sub} ghc/libraries/$a/config.sub
+          cp ${../overlays/patches/config.guess} ghc/libraries/$a/config.guess
+          chmod +w ghc/libraries/$a/config.*
+        done
 
         sed -i 's/_AC_PROG_CC_C99/AC_PROG_CC_C99/' ghc/aclocal.m4
 
