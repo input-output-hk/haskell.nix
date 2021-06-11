@@ -203,8 +203,8 @@ let
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposBuild = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData ;
-      sourceReposEval = builtins.map (fetchRepo pkgs.fetchgit) sourceRepoData;
+      sourceReposEval = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData ;
+      sourceReposBuild = builtins.map (fetchRepo pkgs.fetchgit) sourceRepoData;
     in {
       sourceRepos = sourceReposBuild;
       makeFixedProjectFile = ''
