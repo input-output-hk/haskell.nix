@@ -48,5 +48,6 @@ in recurseIntoAttrs ({
     '';
 
     meta.platforms = platforms.all;
+    meta.disabled = compiler-nix-name != "ghc865";
   };
 })
