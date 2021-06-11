@@ -16,5 +16,7 @@ in eval.linkFarm "check-${compiler-nix-name}" [
   { name = "musl";                 path = linux.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "windows";              path = linux.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "arm";                  path = linux.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "linux-ghcjs";          path = linux.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "darwin-ghcjs";         path = darwin.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
 ]
 
