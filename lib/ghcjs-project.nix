@@ -123,6 +123,9 @@ let
         sed -i 's/gcc /cc /g' utils/makePackages.sh
         ./utils/makePackages.sh copy
 
+        for a in integer-gmp base unix; do
+          cp ${../overlays/patches/config.sub} lib/boot/pkg/$a/config.sub
+        done
         '';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
