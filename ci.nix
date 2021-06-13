@@ -9,7 +9,6 @@
   inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   sources = import ./nix/sources.nix {};
   nixpkgsVersions = {
-    "R2003" = "nixpkgs-2003";
     "R2009" = "nixpkgs-2009";
     "R2105" = "nixpkgs-2105";
     "unstable" = "nixpkgs-unstable";
@@ -49,16 +48,12 @@
     in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104"])) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" && (
-         (nixpkgsName == "R2009" && __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"])
-      || (nixpkgsName == "R2003" && __elem compiler-nix-name ["ghc865"]))) {
+         (nixpkgsName == "R2009" && __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"]))) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux"
-      && !(nixpkgsName == "R2003" && compiler-nix-name == "ghc8104")) {
+  } // lib.optionalAttrs (system == "x86_64-linux") {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
-    # We also skip these for the R2003 was build of ghc8104 (we only need the
-    # native so ifdLevel 1 includes compiler needed in ifdLevel2 eval)
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
   isDisabled = d: d.meta.disabled or false;
