@@ -166,7 +166,7 @@ in {
                 ++ fromUntil "9.0.1"  "9.0.2"  ./patches/ghc/AC_PROG_CC_99.patch
                 ++ fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-add-rts-exports.patch
                 ++ final.lib.optionals final.hostPlatform.isDarwin
-                  (fromUntil "8.10.4" "8.10.6" ./patches/ghc/ghc-8.10.5-darwin-allocateExec.patch)
+                  (fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-darwin-allocateExec.patch)
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
