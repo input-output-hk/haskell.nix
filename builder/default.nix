@@ -26,7 +26,8 @@ let
   # component builder and for nix-shells.
   ghcForComponent = import ./ghc-for-component-wrapper.nix {
     inherit lib ghc haskellLib;
-    inherit (buildPackages.buildPackages) stdenv runCommand makeWrapper;
+    inherit (buildPackages) stdenv;
+    inherit (buildPackages.buildPackages) runCommand makeWrapper;
     inherit (buildPackages.buildPackages.xorg) lndir;
   };
 
