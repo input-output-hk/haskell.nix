@@ -9,7 +9,6 @@
   inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   sources = import ./nix/sources.nix {};
   nixpkgsVersions = {
-    "R2003" = "nixpkgs-2003";
     "R2009" = "nixpkgs-2009";
     "unstable" = "nixpkgs-unstable";
   };
@@ -24,15 +23,15 @@
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
     {
-      ghc865 = true;
-      ghc8104 = false; # Just included because the native version is needed at eval time
+      ghc865 = false;
+      ghc8105 = false; # Just included because the native version is needed at eval time
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc865 = false;
-      ghc884 = true;
-      ghc8104 = true;
+      ghc8105 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
-      ghc8104 = true;
+      ghc884 = false; # Native version is used to boot 9.0.1
+      ghc8105 = true;
       ghc901 = true;
       ghc810420210212 = false;
     });
@@ -45,19 +44,15 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104"])) {
+    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8105"])) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (system == "x86_64-linux" && (
-         (nixpkgsName == "R2009" && __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"])
-      || (nixpkgsName == "R2003" && __elem compiler-nix-name ["ghc865"]))) {
+  } // lib.optionalAttrs (system == "x86_64-linux" &&
+         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8105"])) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux"
-      && !(nixpkgsName == "R2003" && compiler-nix-name == "ghc8104")) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && compiler-nix-name == "ghc8105") {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
-    # We also skip these for the R2003 was build of ghc8104 (we only need the
-    # native so ifdLevel 1 includes compiler needed in ifdLevel2 eval)
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   };
   isDisabled = d: d.meta.disabled or false;

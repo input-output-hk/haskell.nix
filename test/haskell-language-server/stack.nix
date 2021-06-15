@@ -5,12 +5,12 @@ let
     src = evalPackages.fetchgit {
       url = "https://github.com/haskell/haskell-language-server.git";
       fetchSubmodules = true;
-      rev = "0.9.0";
-      sha256 = "18g0d7zac9xwywmp57dcrjnvms70f2mawviswskix78cv0iv4sk5";
+      rev = "1.1.0";
+      sha256 = "sha256-5bIr7Zsvn1B8bjjiHPLQQS8+qW3ZiEwqBnFUG+fAcU8=";
     };
     projectFileName = "stack-${buildPackages.haskell-nix.compiler.${
-      if compiler-nix-name == "ghc8104"
-        then "ghc8103"
+      if compiler-nix-name == "ghc8105"
+        then "ghc8104"
         else compiler-nix-name
     }.version}.yaml";
     sha256map = {

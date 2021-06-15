@@ -192,7 +192,7 @@ let
     index-state = callTest ./index-state { inherit compiler-nix-name; };
     lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
     # fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
-    shell-for = callTest ./shell-for {};
+    shell-for = callTest ./shell-for { inherit compiler-nix-name; };
     cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
     coverage = callTest ./coverage { inherit compiler-nix-name; };
     coverage-golden = callTest ./coverage-golden { inherit compiler-nix-name;};
