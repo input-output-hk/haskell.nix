@@ -64,8 +64,10 @@ let
       libiserv     = "libraries/libiserv";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
-      remote-iserv = "utils/remote-iserv";
       iserv-proxy  = "utils/iserv-proxy";
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
+      # Not sure why, but this is missing from older ghcjs versions
+      remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
       ghc-bignum   = "libraries/ghc-bignum";
     };
@@ -75,9 +77,11 @@ let
   ghc-extra-projects-type =
     if final.stdenv.hostPlatform.isWindows
       then "windows"
-      else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
-        then "cross"
-        else "default";
+      else if final.stdenv.hostPlatform.isGhcjs
+        then "ghcjs"
+        else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
+          then "cross"
+          else "default";
 
 # Given the ghc-extra-pkgs, we'll create a cabal.project
 # that contains all of them.  And then we call cabalProject
