@@ -77,9 +77,11 @@ let
   ghc-extra-projects-type =
     if final.stdenv.hostPlatform.isWindows
       then "windows"
-      else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
-        then "cross"
-        else "default";
+      else if final.stdenv.hostPlatform.isGhcjs
+        then "ghcjs"
+        else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
+          then "cross"
+          else "default";
 
 # Given the ghc-extra-pkgs, we'll create a cabal.project
 # that contains all of them.  And then we call cabalProject
