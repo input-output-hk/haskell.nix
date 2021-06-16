@@ -55,7 +55,7 @@ let
        ++ pkgs.lib.optional isGhcjs88 pkgs.buildPackages.procps;
       passthru = {
         inherit all-ghcjs bundled-ghcjs project;
-        inherit (project) configured-src;
+        configured-src = project.configured-src + "/ghc";
         # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
         isHaskellNixCompiler = true;
       } // ghcjs.components.exes;

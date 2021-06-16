@@ -9,7 +9,7 @@ let
   inherit (buildPackages.buildPackages) jq git;
 
   hpc-coveralls-exes = (buildPackages.haskell-nix.project' {
-    compiler-nix-name = "ghc865"; # TODO use `inherit compiler-nix-name;` once it is working with 8.8 and 8.10
+    inherit compiler-nix-name;
     src = sources.hpc-coveralls;
   }).hsPkgs.hpc-coveralls.components.exes;
   
@@ -48,5 +48,6 @@ in recurseIntoAttrs ({
     '';
 
     meta.platforms = platforms.all;
+    meta.disabled = compiler-nix-name != "ghc865";
   };
 })

@@ -19,9 +19,6 @@ in { haskell-nix = prev.haskell-nix // {
       '';
       modules = [
         { reinstallableLibGhc = true; }
-        (lib.optionalAttrs (version == "3.4.0.0") {
-          packages.HTTP.src = final.haskell-nix.sources.HTTP;
-        })
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
         (lib.optionalAttrs (version == "3.2.0.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
@@ -35,6 +32,17 @@ in { haskell-nix = prev.haskell-nix // {
           ];
         })
       ];
+    };
+
+    haskell-language-server = {
+      cabalProject = ''
+        packages: .
+        source-repository-package
+          type: git
+          location: https://github.com/hsyl20/ghc-api-compat
+          tag: 8fee87eac97a538dbe81ff1ab18cff10f2f9fa15
+          --sha256: sha256-byehvdxQxhNk5ZQUXeFHjAZpAze4Ct9261ro4c5acZk=
+      '';
     };
 
     hpack = {

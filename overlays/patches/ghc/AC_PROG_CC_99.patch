@@ -1,0 +1,13 @@
+diff --git a/aclocal.m4 b/aclocal.m4
+index 259db63dbff84c91934100a0cb8ff19a0562e90f..99f77d910cfc2421acf3a7d9ac123d79d6daa2ff 100644
+--- a/aclocal.m4
++++ b/aclocal.m4
+@@ -659,7 +659,7 @@ AC_DEFUN([FP_SET_CFLAGS_C99],
+     CPPFLAGS="$$3"
+     unset ac_cv_prog_cc_c99
+     dnl perform detection
+-    _AC_PROG_CC_C99
++    AC_PROG_CC_C99
+     fp_cc_c99="$ac_cv_prog_cc_c99"
+     case "x$ac_cv_prog_cc_c99" in
+       x)   ;; # noop

@@ -55,6 +55,10 @@ in runCommand "${componentName}-${ghc.name}-env" {
     # Replace the package database with the one from target package config.
     ln -s ${configFiles}/${packageCfgDir} $out/${packageCfgDir}
 
+    # now the tricky bit. For GHCJS (to make plugins work), we need a special
+    # file called ghc_libdir. That points to the build ghc's lib.
+    echo "${ghc.buildGHC or ghc}/lib/${(ghc.buildGHC or ghc).name}" > "${libDir}/ghc_libdir"
+
     # Wrap compiler executables with correct env variables.
     # The NIX_ variables are used by the patched Paths_ghc module.
 

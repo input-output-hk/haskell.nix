@@ -111,14 +111,21 @@ let
         rm -rf utils/pkg-cache/ghc
         cp -r ${ghc.generated} utils/pkg-cache/ghc
 
-        cp ${../overlays/patches/config.sub} ghc/libraries/integer-gmp/config.sub
-        cp ${../overlays/patches/config.sub} ghc/libraries/base/config.sub
-        cp ${../overlays/patches/config.sub} ghc/libraries/unix/config.sub
+        for a in integer-gmp base unix; do
+          cp ${../overlays/patches/config.sub} ghc/libraries/$a/config.sub
+          cp ${../overlays/patches/config.guess} ghc/libraries/$a/config.guess
+          chmod +w ghc/libraries/$a/config.*
+        done
+
+        sed -i 's/_AC_PROG_CC_C99/AC_PROG_CC_C99/' ghc/aclocal.m4
 
         patchShebangs .
         sed -i 's/gcc /cc /g' utils/makePackages.sh
         ./utils/makePackages.sh copy
 
+        for a in integer-gmp base unix; do
+          cp ${../overlays/patches/config.sub} lib/boot/pkg/$a/config.sub
+        done
         '';
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
@@ -128,9 +135,9 @@ let
                 ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"])) args) // {
         src = configured-src;
         index-state = "2021-03-20T00:00:00Z";
-        compiler-nix-name = if isGhcjs810 then "ghc8104" else if isGhcjs88 then "ghc884" else "ghc865";
+        compiler-nix-name = if isGhcjs810 then "ghc8105" else if isGhcjs88 then "ghc884" else "ghc865";
         configureArgs = pkgs.lib.optionalString (isGhcjs88 && !isGhcjs810) "--constraint='Cabal >=3.0.2.0 && <3.1'";
-        materialized = ../materialized + (if isGhcjs810 then "/ghcjs8104" else if isGhcjs88 then "/ghcjs884" else "/ghcjs865");
+        materialized = ../materialized + (if isGhcjs810 then "/ghcjs8105" else if isGhcjs88 then "/ghcjs884" else "/ghcjs865");
         modules = [
             {
                 # we need ghc-boot in here for ghcjs.
