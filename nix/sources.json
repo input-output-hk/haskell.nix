@@ -1,17 +1,4 @@
 {
-    "HTTP": {
-        "branch": "ghc-9.0",
-        "builtin": false,
-        "description": "Haskell HTTP package",
-        "homepage": "http://hackage.haskell.org/package/HTTP",
-        "owner": "phadej",
-        "repo": "HTTP",
-        "rev": "cf307c0a25e7517218a3bee3d9d800720ad64e3a",
-        "sha256": "1n3v99wjy9737ykb4kx55nl7518mjxrxw7h38w82ckphzs4mnjj5",
-        "type": "tarball",
-        "url": "https://github.com/phadej/HTTP/archive/cf307c0a25e7517218a3bee3d9d800720ad64e3a.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "cabal-32": {
         "branch": "3.2",
         "builtin": false,
