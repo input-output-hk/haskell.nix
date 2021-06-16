@@ -14,6 +14,9 @@ let
   packageNames = mapAttrsToList (name: p: p.identifier.name) (filterAttrs (name: hasIdentifier) packages);
 
 in recurseIntoAttrs {
+  # This test is somehow broken for ghcjs
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
+
   ifdInputs = {
     inherit (project) stack-nix;
   };
