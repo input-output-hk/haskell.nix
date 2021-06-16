@@ -48,6 +48,7 @@ let
     };
     traceWarnOld = v: x: __trace
       "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x;
+    errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVer.${up}}";
 in {
   haskell-nix = prev.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
@@ -515,6 +516,21 @@ in {
                         isHaskellNixBootCompiler = true;
                     })
           ({
+            # Better error messages when an unsupported version of ghcjs is used
+            ghc844 = errorOldGhcjs "8.4.4" "8.6";
+            ghc861 = errorOldGhcjs "8.6.1" "8.6";
+            ghc862 = errorOldGhcjs "8.6.2" "8.6";
+            ghc863 = errorOldGhcjs "8.6.3" "8.6";
+            ghc864 = errorOldGhcjs "8.6.4" "8.6";
+            ghc881 = errorOldGhcjs "8.8.1" "8.8";
+            ghc882 = errorOldGhcjs "8.8.2" "8.8";
+            ghc883 = errorOldGhcjs "8.8.3" "8.8";
+            ghc8101 = errorOldGhcjs "8.10.1" "8.10";
+            ghc8102 = errorOldGhcjs "8.10.2" "8.10";
+            ghc8103 = errorOldGhcjs "8.10.3" "8.10";
+            ghc8104 = errorOldGhcjs "8.10.4" "8.10";
+            ghc810420210212 = throw "ghcjs for ghc810420210212 is not supported by haskell.nix";
+            ghc901 = throw "ghcjs 9.0.1 is not yet supported by haskell.nix";
             ghc865 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc865;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs-src.json;
@@ -546,40 +562,6 @@ in {
                 mkdir -p lib/${targetPrefix}ghc-8.6.5
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.6.5
-            '' + installDeps targetPrefix);
-            ghc883 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc883;
-                in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
-                ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
-                ghcjsVersion =  "8.8.0.0.1";
-                ghc = buildGHC;
-                ghcVersion = "8.8.3";
-                compiler-nix-name = "ghc883";
-            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.8.3" {
-                nativeBuildInputs = [ final.xorg.lndir ];
-                passthru = {
-                    inherit targetPrefix;
-                    version = "8.8.3";
-                    isHaskellNixCompiler = true;
-                    enableShared = false;
-                    inherit (booted-ghcjs) configured-src bundled-ghcjs project;
-                    inherit booted-ghcjs buildGHC;
-                    extraConfigureFlags = [
-                        "--ghcjs"
-                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
-                    ];
-                };
-                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
-            } (''
-                mkdir -p $out/bin
-                cd $out/bin
-                ln -s ${booted-ghcjs}/bin/ghcjs ${targetPrefix}ghc
-                ln -s ${booted-ghcjs}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
-                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
-                cd ..
-                mkdir -p lib/${targetPrefix}ghc-8.8.3
-                cd lib
-                lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.8.3
             '' + installDeps targetPrefix);
             ghc884 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc884;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
