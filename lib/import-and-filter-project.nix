@@ -52,9 +52,7 @@ in project // {
                     packageSrc = haskellLib.appendSubDir {
                       src = srcRoot;
                       inherit subDir;
-                      includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
-                                              # component builder so that relative paths can be used to
-                                              # reference project directories not in the package subDir.
+                      includeSiblings = false;
                     };
                   };
             in oldPkg // {
