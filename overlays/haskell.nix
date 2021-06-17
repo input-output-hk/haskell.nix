@@ -543,6 +543,9 @@ final: prev: {
           final.lib.fix (project':
             let project = project' // { recurseForDerivations = false; };
             in rawProject // rec {
+              # It is often handy to be able to get nix pkgs from the project.
+              pkgs = final;
+              # Haskell packages
               hsPkgs = final.lib.mapAttrs (packageName: package':
                 if package' == null
                   then null
@@ -648,6 +651,9 @@ final: prev: {
                   inputsFrom = args'.inputsFrom or [] ++ crossShells;
                 });
 
+            # Default shell
+            shell = shellFor rawProject.args.shell;
+
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.
             getPackage = packageName:
@@ -697,51 +703,64 @@ final: prev: {
             # `checks` and `apps` output attributes.
             flake = {
                 packages ? haskellLib.selectProjectPackages
+              , crossPlatforms ? p: []
               }:
-              let packageNames = builtins.attrNames (packages project.hsPkgs);
+              let packageNames = project: builtins.attrNames (packages project.hsPkgs);
+                  packagesForProject = prefix: project: 
+                    final.lib.concatMap (packageName:
+                      let package = project.hsPkgs.${packageName};
+                      in final.lib.optional (package.components ? library)
+                            { name = "${prefix}${packageName}:lib:${packageName}"; value = package.components.library; }
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${prefix}${packageName}:lib:${n}"; value = v; })
+                          (package.components.sublibs)
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${prefix}${packageName}:exe:${n}"; value = v; })
+                          (package.components.exes)
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${prefix}${packageName}:test:${n}"; value = v; })
+                          (package.components.tests)
+                    ) (packageNames project);
+                  checksForProject = prefix: project: 
+                    final.lib.concatMap (packageName:
+                      let package = project.hsPkgs.${packageName};
+                      in final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = v; })
+                        (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
+                    ) (packageNames project);
+                  appsForProject =  prefix: project:
+                    final.lib.concatMap (packageName:
+                      let package = project.hsPkgs.${packageName};
+                      in final.lib.mapAttrsToList (n: v:
+                            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+                          (package.components.exes)
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+                          (package.components.tests)
+                    ) (packageNames project);
+                attrsForAllProjects = f: builtins.listToAttrs (
+                    f "" project
+                  ++ final.lib.concatMap (project:
+                       f (project.pkgs.stdenv.hostPlatform.config + ":") project)
+                     (crossPlatforms project.projectCross)
+                  );
               in {
                 # Used by:
                 #   `nix build .#pkg-name:lib:pkg-name`
                 #   `nix build .#pkg-name:lib:sublib-name`
                 #   `nix build .#pkg-name:exe:exe-name`
                 #   `nix build .#pkg-name:test:test-name`
-                packages = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.optional (package.components ? library)
-                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:lib:${n}"; value = v; })
-                        (package.components.sublibs)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = v; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = v; })
-                        (package.components.tests)
-                  ) packageNames);
+                packages = attrsForAllProjects packagesForProject;
                 # Used by:
                 #   `nix check .#pkg-name:test:test-name`
-                checks = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                        { name = "${packageName}:test:${n}"; value = v; })
-                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
-                  ) packageNames);
+                checks = attrsForAllProjects checksForProject;
                 # Used by:
                 #   `nix run .#pkg-name:exe:exe-name`
                 #   `nix run .#pkg-name:test:test-name`
-                apps = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.tests)
-                  ) packageNames);
+                apps = attrsForAllProjects appsForProject;
+                # Used by:
+                #   `nix develop`
+                devShell = project.shell;
               };
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
           });

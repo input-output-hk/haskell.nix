@@ -2,6 +2,7 @@
 with lib;
 with types;
 {
+  _file = "haskell.nix/modules/stack-project.nix";
   options = {
     # Used by callStackToNix
     name = mkOption {
@@ -107,6 +108,13 @@ with types;
       type = nullOr package;
       default = null;
       description = "Deprecated in favour of `compiler-nix-name`";
+    };
+
+    # Default shell arguments
+    shell = mkOption {
+      # TODO make this a submodule
+      type = unspecified;
+      default = {};
     };
   };
 }
