@@ -2,6 +2,7 @@
 with lib;
 with types;
 {
+  _file = "haskell.nix/modules/stack-project.nix";
   options = {
     # Used by callStackToNix
     name = mkOption {
@@ -107,6 +108,18 @@ with types;
       type = nullOr package;
       default = null;
       description = "Deprecated in favour of `compiler-nix-name`";
+    };
+
+    # Default shell arguments
+    shell = mkOption {
+      # TODO make this a submodule
+      type = unspecified;
+      default = {};
+      description = ''
+        Arguments to use for the default shell `p.shell` (these are passed to p.shellFor).
+        For instance to include `cabal` and `ghcjs` support use
+          shell = { tools.cabal = {}; crossPlatforms = p: [ p.ghcjs ]; }
+      '';
     };
   };
 }

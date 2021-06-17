@@ -4,9 +4,8 @@
   inputs = {
     # Note: keep this in sync with sources.json!
     nixpkgs.url = github:NixOS/nixpkgs/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693;
-    nixpkgs-2003.url = github:NixOS/nixpkgs/7f73e46625f508a793700f5110b86f1a53341d6e;
     nixpkgs-2009.url = github:NixOS/nixpkgs/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693;
-    nixpkgs-unstable.url = github:NixOS/nixpkgs/410bbd828cdc6156aecd5bc91772ad3a6b1099c7;
+    nixpkgs-unstable.url = github:NixOS/nixpkgs/d8eb97e3801bde96491535f40483d550b57605b9;
   };
 
   outputs = { self, nixpkgs, ... }:
@@ -14,14 +13,10 @@
 
     internal = rec {
       config = import ./config.nix;
-      # We can't import ./nix/sources.nix directly, because that uses nixpkgs to fetch by default,
-      # and importing nixpkgs without specifying localSystem doesn't work on flakes.
-      sources = let
-        sourcesInfo =
-          builtins.fromJSON (builtins.readFile ./nix/sources.json);
-          fetch = sourceInfo:
-          builtins.fetchTarball { inherit (sourceInfo) url sha256; };
-      in builtins.mapAttrs (_: fetch) sourcesInfo;
+      # Use a shim for pkgs that does not depend on `builtins.currentSystem`.
+      sources = import ./nix/sources.nix {
+        pkgs = { fetchzip = builtins.fetchTarball; };
+      };
 
       nixpkgsArgs = {
         inherit config;
