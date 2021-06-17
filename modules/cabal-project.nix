@@ -143,6 +143,11 @@ in {
       # TODO make this a submodule
       type = unspecified;
       default = {};
+      description = ''
+        Arguments to use for the default shell `p.shell` (these are passed to p.shellFor).
+        For instance to include `cabal` and `ghcjs` support use
+          shell = { tools.cabal = {}; crossPlatforms = p: [ p.ghcjs ]; }
+      '';
     };
   };
 }
