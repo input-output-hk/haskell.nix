@@ -323,6 +323,8 @@
         
             <li><a class="toctree-l4" href="#packagesallcomponenttestwrapper">packages..allComponent.testWrapper</a></li>
         
+            <li><a class="toctree-l4" href="#packagesallcomponentwritehiefiles">packages..allComponent.writeHieFiles</a></li>
+        
             <li><a class="toctree-l4" href="#packagesbuildable">packages..buildable</a></li>
         
             <li><a class="toctree-l4" href="#packagescabal-generator">packages..cabal-generator</a></li>
@@ -445,6 +447,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarkstestwrapper">packages..components.benchmarks..testWrapper</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentsbenchmarkswritehiefiles">packages..components.benchmarks..writeHieFiles</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentsexes">packages..components.exes</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsexesasmsources">packages..components.exes..asmSources</a></li>
@@ -562,6 +566,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsexestestflags">packages..components.exes..testFlags</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsexestestwrapper">packages..components.exes..testWrapper</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsexeswritehiefiles">packages..components.exes..writeHieFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibs">packages..components.foreignlibs</a></li>
         
@@ -681,6 +687,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibstestwrapper">packages..components.foreignlibs..testWrapper</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentsforeignlibswritehiefiles">packages..components.foreignlibs..writeHieFiles</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentslibrary">packages..components.library</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentslibraryasmsources">packages..components.library.asmSources</a></li>
@@ -798,6 +806,8 @@
             <li><a class="toctree-l4" href="#packagescomponentslibrarytestflags">packages..components.library.testFlags</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentslibrarytestwrapper">packages..components.library.testWrapper</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentslibrarywritehiefiles">packages..components.library.writeHieFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetup">packages..components.setup</a></li>
         
@@ -917,6 +927,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentssetuptestwrapper">packages..components.setup.testWrapper</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentssetupwritehiefiles">packages..components.setup.writeHieFiles</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentssublibs">packages..components.sublibs</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssublibsasmsources">packages..components.sublibs..asmSources</a></li>
@@ -1035,6 +1047,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentssublibstestwrapper">packages..components.sublibs..testWrapper</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentssublibswritehiefiles">packages..components.sublibs..writeHieFiles</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentstests">packages..components.tests</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentstestsasmsources">packages..components.tests..asmSources</a></li>
@@ -1152,6 +1166,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsteststestflags">packages..components.tests..testFlags</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsteststestwrapper">packages..components.tests..testWrapper</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentstestswritehiefiles">packages..components.tests..writeHieFiles</a></li>
         
             <li><a class="toctree-l4" href="#packagesconfigureallcomponents">packages..configureAllComponents</a></li>
         
@@ -1293,6 +1309,8 @@
         
             <li><a class="toctree-l4" href="#packagestestwrapper">packages..testWrapper</a></li>
         
+            <li><a class="toctree-l4" href="#packageswritehiefiles">packages..writeHieFiles</a></li>
+        
             <li><a class="toctree-l4" href="#postbuild">postBuild</a></li>
         
             <li><a class="toctree-l4" href="#postcheck">postCheck</a></li>
@@ -1334,6 +1352,8 @@
             <li><a class="toctree-l4" href="#testflags">testFlags</a></li>
         
             <li><a class="toctree-l4" href="#testwrapper">testWrapper</a></li>
+        
+            <li><a class="toctree-l4" href="#writehiefiles">writeHieFiles</a></li>
         
         </ul>
     
@@ -1925,6 +1945,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagesallcomponentwritehiefiles">packages.<name>.allComponent.writeHieFiles<a class="headerlink" href="#packagesallcomponentwritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagesbuildable">packages.<name>.buildable<a class="headerlink" href="#packagesbuildable" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: boolean</p>
@@ -2231,6 +2256,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagescomponentsbenchmarkswritehiefiles">packages.<name>.components.benchmarks.<name>.writeHieFiles<a class="headerlink" href="#packagescomponentsbenchmarkswritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexes">packages.<name>.components.exes<a class="headerlink" href="#packagescomponentsexes" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: attribute set of submodules</p>
@@ -2527,6 +2557,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagescomponentsexeswritehiefiles">packages.<name>.components.exes.<name>.writeHieFiles<a class="headerlink" href="#packagescomponentsexeswritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibs">packages.<name>.components.foreignlibs<a class="headerlink" href="#packagescomponentsforeignlibs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: attribute set of submodules</p>
@@ -2823,6 +2858,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagescomponentsforeignlibswritehiefiles">packages.<name>.components.foreignlibs.<name>.writeHieFiles<a class="headerlink" href="#packagescomponentsforeignlibswritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrary">packages.<name>.components.library<a class="headerlink" href="#packagescomponentslibrary" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or submodule</p>
@@ -3119,6 +3159,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagescomponentslibrarywritehiefiles">packages.<name>.components.library.writeHieFiles<a class="headerlink" href="#packagescomponentslibrarywritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetup">packages.<name>.components.setup<a class="headerlink" href="#packagescomponentssetup" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or submodule</p>
@@ -3415,6 +3460,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagescomponentssetupwritehiefiles">packages.<name>.components.setup.writeHieFiles<a class="headerlink" href="#packagescomponentssetupwritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibs">packages.<name>.components.sublibs<a class="headerlink" href="#packagescomponentssublibs" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: attribute set of submodules</p>
@@ -3711,6 +3761,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagescomponentssublibswritehiefiles">packages.<name>.components.sublibs.<name>.writeHieFiles<a class="headerlink" href="#packagescomponentssublibswritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentstests">packages.<name>.components.tests<a class="headerlink" href="#packagescomponentstests" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: attribute set of submodules</p>
@@ -4007,6 +4062,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packagescomponentstestswritehiefiles">packages.<name>.components.tests.<name>.writeHieFiles<a class="headerlink" href="#packagescomponentstestswritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagesconfigureallcomponents">packages.<name>.configureAllComponents<a class="headerlink" href="#packagesconfigureallcomponents" title="Permanent link">&para;</a></h2>
 <p>If set all the components in the package are configured (useful for cabal-doctest).</p>
 <p><strong>Type</strong>: boolean</p>
@@ -4358,6 +4418,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="packageswritehiefiles">packages.<name>.writeHieFiles<a class="headerlink" href="#packageswritehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="postbuild">postBuild<a class="headerlink" href="#postbuild" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or string</p>
@@ -4464,6 +4529,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Default</strong>: []</p>
 <p><strong>Example</strong>:</p>
 <p>"echo"</p>
+<h2 id="writehiefiles">writeHieFiles<a class="headerlink" href="#writehiefiles" title="Permanent link">&para;</a></h2>
+<p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
               
             </div>
           </div>
