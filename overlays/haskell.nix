@@ -531,7 +531,7 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
-                  inherit projectModule;
+                  inherit projectModule args;
                 };
             in project);
 
@@ -793,7 +793,7 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.stackProject';
-                  inherit projectModule;
+                  inherit projectModule args;
                 };
             in project);
 
@@ -809,9 +809,17 @@ final: prev: {
         # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
         # If neither `stack.yaml` nor `cabal.project` exist `cabalProject` is
         # used (as it will use a default `cabal.project`).
-        project' = { src, projectFileName ? null, ... }@args':
+        project' = projectModule:
           let
-            args = { caller = "project'"; } // final.lib.filterAttrs (n: _: n != "projectFileName") args';
+            projectModule' = if builtins.isList projectModule then projectModule else [projectModule];
+            inherit ((final.lib.evalModules {
+              modules = [
+                (import ../modules/project-common.nix)
+                (import ../modules/stack-project.nix)
+                (import ../modules/cabal-project.nix)
+                (import ../modules/project.nix)
+              ] ++ projectModule';
+            }).config) src projectFileName;
             dir = __readDir (src.origSrcSubDir or src);
             exists = fileName: builtins.elem (dir.${fileName} or "") ["regular" "symlink"];
             stackYamlExists    = exists "stack.yaml";
@@ -829,15 +837,19 @@ final: prev: {
                         else "cabal.project";  # the cabal.project file is optional
           in
             if final.lib.hasSuffix ".yaml" selectedFileName
-              then stackProject' (args // { stackYaml            = selectedFileName; })
-              else cabalProject' (args // { cabalProjectFileName = selectedFileName; });
+              then stackProject' ([
+                    (import ../modules/project.nix)
+                    { caller = "project'"; stackYaml = selectedFileName; }
+                  ] ++ projectModule'
+                )
+              else cabalProject' ([
+                    (import ../modules/project.nix)
+                    { caller = "project'"; cabalProjectFileName = selectedFileName; }
+                  ] ++ projectModule');
 
         # This is the same as the `cabalPackage` and `stackPackage` wrappers
         # for `cabalPackage` and `stackPackage`.
-        project = args':
-          let
-            args = { caller = "project"; } // args';
-            p = project' args;
+        project = args: let p = project' args;
           in p.hsPkgs // p;
 
         # Like `cabalProject'`, but for building the GHCJS compiler.

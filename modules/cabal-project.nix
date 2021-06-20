@@ -11,14 +11,6 @@ in {
   _file = "haskell.nix/modules/cabal-project.nix";
   options = {
     # Used by callCabalProjectToNix
-    name = mkOption {
-      type = nullOr str;
-      default = config.src.name or null;
-      description = "Optional name for better error messages";
-    };
-    src = mkOption {
-      type = either path package;
-    };
     compiler-nix-name = mkOption {
       type = str;
       description = "The name of the ghc compiler to use eg. \"ghc884\"";
@@ -136,18 +128,6 @@ in {
     extra-hackages = mkOption {
       type = nullOr (listOf unspecified);
       default = [];
-    };
-
-    # Default shell arguments
-    shell = mkOption {
-      # TODO make this a submodule
-      type = unspecified;
-      default = {};
-      description = ''
-        Arguments to use for the default shell `p.shell` (these are passed to p.shellFor).
-        For instance to include `cabal` and `ghcjs` support use
-          shell = { tools.cabal = {}; crossPlatforms = p: [ p.ghcjs ]; }
-      '';
     };
   };
 }
