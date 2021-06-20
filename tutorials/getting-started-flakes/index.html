@@ -290,24 +290,26 @@ projects.</p>
             final.haskell-nix.project' {
               src = ./.;
               compiler-nix-name = &quot;ghc8104&quot;;
+              # This is used by `nix develop .` to open a shell for use with
+              # `cabal`, `hlint` and `haskell-language-server`
+              shell.tools = {
+                cabal = {};
+                hlint = {};
+                haskell-language-server = {};
+              };
+              # This adds `js-unknown-ghcjs-cabal` to the shell.
+              shell.crossPlatform = p: [p.ghcjs];
             };
         })
       ];
       pkgs = import nixpkgs { inherit system overlays; };
-      flake = pkgs.helloProject.flake {};
+      flake = pkgs.helloProject.flake {
+        # This adds support for `nix build .#js-unknown-ghcjs-cabal:hello:exe:hello`
+        crossPlatforms = p: [p.ghcjs];
+      };
     in flake // {
       # Built by `nix build .`
       defaultPackage = flake.packages.&quot;hello:exe:hello&quot;;
-
-      # This is used by `nix develop .` to open a shell for use with
-      # `cabal`, `hlint` and `haskell-language-server`
-      devShell = pkgs.helloProject.shellFor {
-        tools = {
-          cabal = &quot;latest&quot;;
-          hlint = &quot;latest&quot;;
-          haskell-language-server = &quot;latest&quot;;
-        };
-      };
     });
 }
 </code></pre>
