@@ -838,26 +838,12 @@ final: prev: {
           in
             if final.lib.hasSuffix ".yaml" selectedFileName
               then stackProject' ([
-                {
-                  options = {
-                    projectFileName = final.lib.mkOption {
-                      type = final.lib.types.nullOr final.lib.types.string;
-                      default = null;
-                    };
-                  };
-                }
+                    (import ../modules/project.nix)
                     { caller = "project'"; stackYaml = selectedFileName; }
                   ] ++ projectModule'
                 )
               else cabalProject' ([
-                {
-                  options = {
-                    projectFileName = final.lib.mkOption {
-                      type = final.lib.types.nullOr final.lib.types.string;
-                      default = null;
-                    };
-                  };
-                }
+                    (import ../modules/project.nix)
                     { caller = "project'"; cabalProjectFileName = selectedFileName; }
                   ] ++ projectModule');
 
