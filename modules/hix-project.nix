@@ -6,30 +6,37 @@
     haskellNix = lib.mkOption {
       type = lib.types.unspecified;
       default = null;
+      description = "Imported haskell.nix itself (this will be set by `hix`)";
     };
     nixpkgsPin = lib.mkOption {
       type = lib.types.str;
       default = "nixpkgs-unstable";
+      description = "The name of a haskell.nix nixpkgs pin to use (e.g. nixpkgs-unstable or nixpkgs-2009)";
     };
     nixpkgs = lib.mkOption {
-      type = lib.types.unspecified;
+      type = lib.types.nullOr lib.types.path;
       default = null;
+      description = "Path to the nixpkgs files to use (uses nixpkgsPin by default)";
     };
     nixpkgsArgs = lib.mkOption {
       type = lib.types.unspecified;
       default = null;
+      description = "Path to the nixpkgs files to use (this will be set by `hix`)";
     };
     overlays = lib.mkOption {
       type = lib.types.unspecified;
       default = [];
+      description = "Extra overlays to use (in addition to those haskell.nix includes)";
     };
     pkgs = lib.mkOption {
       type = lib.types.unspecified;
       default = null;
+      description = "The pkgs (this will be set by `hix`)";
     };
     project = lib.mkOption {
       type = lib.types.unspecified;
       default = null;
+      description = "The project (this will be set by `hix`)";
     };
   };
 
