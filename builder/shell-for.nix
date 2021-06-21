@@ -67,7 +67,7 @@ let
 
   # Given a list of `depends`, removes those which are selected components
   removeSelectedInputs =
-    lib.filter (input: !(selectedComponentsBitmap."${((haskellLib.dependToLib input).name or null)}"));
+    lib.filter (input: !(selectedComponentsBitmap."${((haskellLib.dependToLib input).name or null)}" or false));
 
   # The configs of all the selected components
   selectedConfigs = map (c: c.config) selectedComponents
