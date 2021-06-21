@@ -25,7 +25,49 @@ let
 
   selectedPackages = packages hsPkgs;
   additionalPackages = additional hsPkgs;
-  selectedComponents = components hsPkgs;
+  directlySelectedComponents = components hsPkgs;
+
+  # Given `directlySelectedComponents = [ a b ]`, we construct a shell that includes all of their dependencies
+  #
+  # But we want to exclude `a` if it is a transitive dependecy of `b`
+  # because:
+  # - cabal will end up ignoring that built version;
+  # - The user has indicated that's what they're working on, so they probably don't want to have to build
+  #   it first (and it will change often).
+  # Generally we never want to include any of `directlySelectedComponents` as dependencies.
+  #
+  # We do this by defining a set of `selectedComponents`, where `x` is in `selectedComponents` if and only if:
+  #   - `x` is in `directlySelectedComponents`
+  #   - `x` is a transitive dependency of something in `directlySelectedComponents`
+  #     and `x` transitively depends on something in `directlySelectedComponents`
+  # We use the dependencies of `selectedComponents` filtering out members of `selectedComponents`
+  #
+  # Furthermore, if `a` depends on `b`, `a` will include the library component of `b` in its `buildInputs`
+  # (to make `propagatedBuildInputs` of `pkgconfig-depends` work). So we also need to filter those
+  # (the pkgconfig depends of `b` will still be included in the
+  # system shell's `buildInputs` via `b`'s own `buildInputs`).
+
+
+  # all packages that are indirectly depended on by `directlySelectedComponents`
+  # including `directlySelectedComponents`
+  transitiveDependenciesComponents =
+    builtins.listToAttrs
+      (builtins.map (x: lib.nameValuePair (x.name) x)
+        (haskellLib.flatLibDepends {depends = directlySelectedComponents;}));
+
+  selectedComponentsBitmap =
+    lib.mapAttrs
+      (_: x: (builtins.any
+        (dep: selectedComponentsBitmap."${(haskellLib.dependToLib dep).name}") x.config.depends))
+      transitiveDependenciesComponents
+    // builtins.listToAttrs (map (x: lib.nameValuePair x.name true) directlySelectedComponents); # base case
+
+  selectedComponents =
+    lib.filter (x: selectedComponentsBitmap."${x.name}") (lib.attrValues transitiveDependenciesComponents);
+
+  # Given a list of `depends`, removes those which are selected components
+  removeSelectedInputs =
+    lib.filter (input: !(selectedComponentsBitmap."${((haskellLib.dependToLib input).name or null)}" or false));
 
   # The configs of all the selected components
   selectedConfigs = map (c: c.config) selectedComponents
@@ -35,29 +77,7 @@ let
     then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
     else "ghc-shell-for-packages";
 
-  # Given a `packages = [ a b ]` we construct a shell with the dependencies of `a` and `b`.
-  #
-  # But if `a` depends on `b`, we don't want to include `b`, because
-  # - cabal will end up ignoring that built version;
-  # - The user has indicated that's what they're working on, so they probably don't want to have to build
-  #   it first (and it will change often).
-  # Generally we never want to include any of (the components of) the selected packages as dependencies.
-  #
-  # Furthermore, if `a` depends on `b`, `a` will include the library component of `b` in its `buildInputs`
-  # (to make `propagatedBuildInputs` of `pkgconfig-depends` work). So we also need to filter those
-  # (the pkgconfig depends of `b` will still be included in the
-  # system shell's `buildInputs` via `b`'s own `buildInputs`).
-  # We have to do this slightly differently because we will be looking at the actual components rather
-  # than the packages.
-
-  # Given a list of `depends`, removes those which are components of packages which were selected as part of the shell.
-  removeSelectedInputs =
-    # All the components of the selected packages: we shouldn't add any of these as dependencies
-    let selectedPackageComponents = map (x: x.name) selectedComponents;
-    in lib.filter (input:
-      !(builtins.elem ((haskellLib.dependToLib input).name or null) selectedPackageComponents));
-
-  # We need to remove any dependencies which are selected packages (see above).
+  # We need to remove any dependencies which would bring in selected components (see above).
   packageInputs = removeSelectedInputs (lib.concatMap (cfg: cfg.depends) selectedConfigs)
     ++ additionalPackages;
 
