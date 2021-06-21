@@ -2,16 +2,9 @@
 with lib;
 with types;
 {
+  _file = "haskell.nix/modules/stack-project.nix";
   options = {
     # Used by callStackToNix
-    name = mkOption {
-      type = nullOr str;
-      default = config.src.name or null;
-      description = "Optional name for better error messages";
-    };
-    src = mkOption {
-      type = either path package;
-    };
     stackYaml = mkOption {
       type = str;
       default = "stack.yaml";
