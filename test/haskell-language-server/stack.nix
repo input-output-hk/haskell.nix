@@ -1,21 +1,18 @@
-{ lib, testSrc, haskell-nix, evalPackages, buildPackages, compiler-nix-name, recurseIntoAttrs }:
+{ stdenv, lib, testSrc, haskell-nix, evalPackages, buildPackages, compiler-nix-name, recurseIntoAttrs }:
 let
   project = buildPackages.haskell-nix.project' {
     inherit compiler-nix-name;
     src = evalPackages.fetchgit {
       url = "https://github.com/haskell/haskell-language-server.git";
       fetchSubmodules = true;
-      rev = "0.9.0";
-      sha256 = "18g0d7zac9xwywmp57dcrjnvms70f2mawviswskix78cv0iv4sk5";
+      rev = "1.2.0";
+      sha256 = "sha256-vNpb/Fjb9sKkt/1r29c82P/NeAXpxQbVKnM/EDWY6z4=";
     };
-    projectFileName = "stack-${buildPackages.haskell-nix.compiler.${
-      if compiler-nix-name == "ghc8104"
-        then "ghc8103"
-        else compiler-nix-name
-    }.version}.yaml";
+    projectFileName = "stack-${buildPackages.haskell-nix.compiler.${compiler-nix-name}.version}.yaml";
     sha256map = {
       "https://github.com/alanz/ghc-exactprint.git"."6748e24da18a6cea985d20cc3e1e7920cb743795" = "18r41290xnlizgdwkvz16s7v8k2znc7h215sb1snw6ga8lbv60rb";
       "https://github.com/bubba/brittany.git"."c59655f10d5ad295c2481537fc8abf0a297d9d1c" = "1rkk09f8750qykrmkqfqbh44dbx1p8aq1caznxxlw8zqfvx39cxl";
+      "https://github.com/hsyl20/ghc-api-compat.git"."8fee87eac97a538dbe81ff1ab18cff10f2f9fa15" = "sha256-byehvdxQxhNk5ZQUXeFHjAZpAze4Ct9261ro4c5acZk=";
     };
   };
 in recurseIntoAttrs {

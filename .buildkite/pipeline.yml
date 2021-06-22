@@ -1,6 +1,6 @@
 steps:
-  - label: 'Run tests with ghc8104'
-    command: "./test/tests.sh ghc8104"
+  - label: 'Run tests with ghc8105'
+    command: "./test/tests.sh ghc8105"
     agents:
       system: x86_64-linux
 
@@ -14,9 +14,9 @@ steps:
     agents:
       system: x86_64-linux
 
-  - label: 'Check closure size with ghc8104'
+  - label: 'Check closure size with ghc8105'
     command:
-      - nix-build build.nix -A maintainer-scripts.check-closure-size --argstr compiler-nix-name ghc8104 -o check-closure-size.sh
+      - nix-build build.nix -A maintainer-scripts.check-closure-size --argstr compiler-nix-name ghc8105 -o check-closure-size.sh
       - echo "+++ Closure size (MB)"
       - ./check-closure-size.sh
     agents:
@@ -36,5 +36,5 @@ steps:
 
   - label: 'Make sure non store paths like can be used as src'
     command:
-      - nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc884 -o check-path-support.sh
+      - nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc8105 -o check-path-support.sh
       - ./check-path-support.sh

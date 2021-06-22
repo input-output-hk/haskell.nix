@@ -47,6 +47,7 @@ let self =
                # ghc's internal linker seems to be broken on x86.
                && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
+, writeHieFiles ? component.writeHieFiles
 
 , ghcOptions ? component.ghcOptions
 
@@ -143,7 +144,15 @@ let
 
   finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
-    ] ++ (
+    ] ++
+    # We don't specify this in 'commonConfigureFlags', as these are also
+    # used by haddock-builder.nix. If we do specify these options in
+    # commonConfigureFlags, then the haddock-builder will fail, because it
+    # sets its own outputs which *don't* include $hie
+    lib.optionals writeHieFiles [
+      "--ghc-option=-fwrite-ide-info" "--ghc-option=-hiedir$hie"
+    ] ++
+    (
       # If configureAllComponents is set we should not specify the component
       # and Setup will attempt to configure them all.
       if configureAllComponents
@@ -345,7 +354,8 @@ let
 
     outputs = ["out" ]
       ++ (lib.optional enableSeparateDataOutput "data")
-      ++ (lib.optional keepSource "source");
+      ++ (lib.optional keepSource "source")
+      ++ (lib.optional writeHieFiles "hie");
 
     prePatch =
       # emcc is very slow if it cannot cache stuff in $HOME

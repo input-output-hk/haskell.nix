@@ -254,7 +254,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2021-02-25T00:00:00Z";
+        internalHackageIndexState = "2021-06-10T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -531,7 +531,7 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
-                  inherit projectModule;
+                  inherit projectModule args;
                 };
             in project);
 
@@ -543,6 +543,9 @@ final: prev: {
           final.lib.fix (project':
             let project = project' // { recurseForDerivations = false; };
             in rawProject // rec {
+              # It is often handy to be able to get nix pkgs from the project.
+              pkgs = final;
+              # Haskell packages
               hsPkgs = final.lib.mapAttrs (packageName: package':
                 if package' == null
                   then null
@@ -648,6 +651,9 @@ final: prev: {
                   inputsFrom = args'.inputsFrom or [] ++ crossShells;
                 });
 
+            # Default shell
+            shell = shellFor rawProject.args.shell;
+
             # Like `.hsPkgs.${packageName}` but when compined with `getComponent` any
             # cabal configure errors are defered until the components derivation builds.
             getPackage = packageName:
@@ -697,51 +703,64 @@ final: prev: {
             # `checks` and `apps` output attributes.
             flake = {
                 packages ? haskellLib.selectProjectPackages
+              , crossPlatforms ? p: []
               }:
-              let packageNames = builtins.attrNames (packages project.hsPkgs);
+              let packageNames = project: builtins.attrNames (packages project.hsPkgs);
+                  packagesForProject = prefix: project: 
+                    final.lib.concatMap (packageName:
+                      let package = project.hsPkgs.${packageName};
+                      in final.lib.optional (package.components ? library)
+                            { name = "${prefix}${packageName}:lib:${packageName}"; value = package.components.library; }
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${prefix}${packageName}:lib:${n}"; value = v; })
+                          (package.components.sublibs)
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${prefix}${packageName}:exe:${n}"; value = v; })
+                          (package.components.exes)
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${prefix}${packageName}:test:${n}"; value = v; })
+                          (package.components.tests)
+                    ) (packageNames project);
+                  checksForProject = prefix: project: 
+                    final.lib.concatMap (packageName:
+                      let package = project.hsPkgs.${packageName};
+                      in final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = v; })
+                        (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
+                    ) (packageNames project);
+                  appsForProject =  prefix: project:
+                    final.lib.concatMap (packageName:
+                      let package = project.hsPkgs.${packageName};
+                      in final.lib.mapAttrsToList (n: v:
+                            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+                          (package.components.exes)
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+                          (package.components.tests)
+                    ) (packageNames project);
+                attrsForAllProjects = f: builtins.listToAttrs (
+                    f "" project
+                  ++ final.lib.concatMap (project:
+                       f (project.pkgs.stdenv.hostPlatform.config + ":") project)
+                     (crossPlatforms project.projectCross)
+                  );
               in {
                 # Used by:
                 #   `nix build .#pkg-name:lib:pkg-name`
                 #   `nix build .#pkg-name:lib:sublib-name`
                 #   `nix build .#pkg-name:exe:exe-name`
                 #   `nix build .#pkg-name:test:test-name`
-                packages = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.optional (package.components ? library)
-                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:lib:${n}"; value = v; })
-                        (package.components.sublibs)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = v; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = v; })
-                        (package.components.tests)
-                  ) packageNames);
+                packages = attrsForAllProjects packagesForProject;
                 # Used by:
                 #   `nix check .#pkg-name:test:test-name`
-                checks = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                        { name = "${packageName}:test:${n}"; value = v; })
-                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
-                  ) packageNames);
+                checks = attrsForAllProjects checksForProject;
                 # Used by:
                 #   `nix run .#pkg-name:exe:exe-name`
                 #   `nix run .#pkg-name:test:test-name`
-                apps = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.tests)
-                  ) packageNames);
+                apps = attrsForAllProjects appsForProject;
+                # Used by:
+                #   `nix develop`
+                devShell = project.shell;
               };
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
           });
@@ -774,7 +793,7 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.stackProject';
-                  inherit projectModule;
+                  inherit projectModule args;
                 };
             in project);
 
@@ -790,9 +809,17 @@ final: prev: {
         # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
         # If neither `stack.yaml` nor `cabal.project` exist `cabalProject` is
         # used (as it will use a default `cabal.project`).
-        project' = { src, projectFileName ? null, ... }@args':
+        project' = projectModule:
           let
-            args = { caller = "project'"; } // final.lib.filterAttrs (n: _: n != "projectFileName") args';
+            projectModule' = if builtins.isList projectModule then projectModule else [projectModule];
+            inherit ((final.lib.evalModules {
+              modules = [
+                (import ../modules/project-common.nix)
+                (import ../modules/stack-project.nix)
+                (import ../modules/cabal-project.nix)
+                (import ../modules/project.nix)
+              ] ++ projectModule';
+            }).config) src projectFileName;
             dir = __readDir (src.origSrcSubDir or src);
             exists = fileName: builtins.elem (dir.${fileName} or "") ["regular" "symlink"];
             stackYamlExists    = exists "stack.yaml";
@@ -810,15 +837,19 @@ final: prev: {
                         else "cabal.project";  # the cabal.project file is optional
           in
             if final.lib.hasSuffix ".yaml" selectedFileName
-              then stackProject' (args // { stackYaml            = selectedFileName; })
-              else cabalProject' (args // { cabalProjectFileName = selectedFileName; });
+              then stackProject' ([
+                    (import ../modules/project.nix)
+                    { caller = "project'"; stackYaml = selectedFileName; }
+                  ] ++ projectModule'
+                )
+              else cabalProject' ([
+                    (import ../modules/project.nix)
+                    { caller = "project'"; cabalProjectFileName = selectedFileName; }
+                  ] ++ projectModule');
 
         # This is the same as the `cabalPackage` and `stackPackage` wrappers
         # for `cabalPackage` and `stackPackage`.
-        project = args':
-          let
-            args = { caller = "project"; } // args';
-            p = project' args;
+        project = args: let p = project' args;
           in p.hsPkgs // p;
 
         # Like `cabalProject'`, but for building the GHCJS compiler.

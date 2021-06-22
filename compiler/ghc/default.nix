@@ -350,5 +350,13 @@ stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
+} // lib.optionalAttrs (ghc-version == "8.10.5" && stdenv.buildPlatform.isDarwin) {
+  # ghc install on macOS wants to run `xattr -r -c`
+  # The macOS version fails because it wants python 2.
+  # The nix version of xattr does not support those args.
+  # Luckily setting the path to something that does not exist will skip the step.
+  preBuild = ''
+    export XATTR=$(mktemp -d)/nothing
+  '';
 });
 in self
