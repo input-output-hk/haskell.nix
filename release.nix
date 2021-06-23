@@ -15,8 +15,8 @@ let
     # added here will also included without aggregation, making it easier
     # to find a failing test.  Keep in mind though that adding too many
     # of these will slow down eval times.
-    linux = allJobs.R2009.ghc8105.linux.native or {};
-    darwin = allJobs.R2009.ghc8105.darwin.native or {};
+    linux = allJobs.R2105.ghc8105.linux.native or {};
+    darwin = allJobs.R2105.ghc8105.darwin.native or {};
   };
   names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
     (builtins.attrNames x);

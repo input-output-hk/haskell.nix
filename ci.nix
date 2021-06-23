@@ -10,6 +10,7 @@
   sources = import ./nix/sources.nix {};
   nixpkgsVersions = {
     "R2009" = "nixpkgs-2009";
+    "R2105" = "nixpkgs-2105";
     "unstable" = "nixpkgs-unstable";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
@@ -22,10 +23,10 @@
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
-    {
+    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
       ghc865 = false;
-      ghc8105 = false; # Just included because the native version is needed at eval time
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
+      ghc8105 = false;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
       ghc865 = false;
       ghc8105 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
