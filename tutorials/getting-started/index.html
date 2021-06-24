@@ -390,7 +390,7 @@ you would pin Nixpkgs). This will make your builds reproducible, more
 predictable, and faster (because the fixed version is cached).</p>
 <p>Straightforward way of doing this is to change the branch name to a revision.</p>
 <pre><code class="nix">let sources = {
-    haskellNix = import (builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz&quot;) {};
+    haskellNix = builtins.fetchTarball &quot;https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz&quot;;
   };
 </code></pre>
 
