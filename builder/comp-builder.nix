@@ -61,7 +61,7 @@ let self =
 
 # Profiling
 , enableLibraryProfiling ? component.enableLibraryProfiling
-, enableExecutableProfiling ? component.enableExecutableProfiling
+, enableProfiling ? component.enableProfiling
 , profilingDetail ? component.profilingDetail
 
 # Coverage
@@ -129,7 +129,7 @@ let
 
   fullName = "${nameOnly}-${package.identifier.version}";
 
-  needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
+  needsProfiling = enableProfiling || enableLibraryProfiling;
 
   configFiles = makeConfigFiles {
     component = componentForSetup;
@@ -193,7 +193,7 @@ let
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")
       (enableFeature enableLibraryProfiling "library-profiling")
-      (enableFeature enableExecutableProfiling "executable-profiling")
+      (enableFeature enableProfiling "profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
       (enableFeature doCoverage "coverage")
@@ -207,7 +207,7 @@ let
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
-      ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
+      ++ lib.optional (enableLibraryProfiling || enableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals haskellLib.isCrossHost (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])

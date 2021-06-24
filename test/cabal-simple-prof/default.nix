@@ -9,7 +9,7 @@ let
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
       packages.cabal-simple.doHaddock = false;
-      packages.cabal-simple.enableExecutableProfiling = true;
+      packages.cabal-simple.enableProfiling = true;
       enableLibraryProfiling = true;
       # executableProfiling = false;
     }
