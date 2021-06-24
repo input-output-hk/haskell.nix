@@ -7,9 +7,13 @@
     nixpkgs-2009.url = github:NixOS/nixpkgs/46d1c3f28ca991601a53e9a14fdd53fcd3dd8416;
     nixpkgs-2105.url = github:NixOS/nixpkgs/3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8;
     nixpkgs-unstable.url = github:NixOS/nixpkgs/0747387223edf1aa5beaedf48983471315d95e16;
+    hackage.url = github:input-output-hk/hackage.nix;
+    hackage.flake = false;
+    stackage.url = github:input-output-hk/stackage.nix;
+    stackage.flake = false;
   };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, hackage, stackage, ... }:
   {
 
     internal = rec {
@@ -17,6 +21,8 @@
       # Use a shim for pkgs that does not depend on `builtins.currentSystem`.
       sources = import ./nix/sources.nix {
         pkgs = { fetchzip = builtins.fetchTarball; };
+      } // {
+        inherit hackage stackage;
       };
 
       nixpkgsArgs = {
