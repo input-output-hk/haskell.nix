@@ -3,9 +3,10 @@
 
   inputs = {
     # Note: keep this in sync with sources.json!
-    nixpkgs.url = github:NixOS/nixpkgs/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693;
-    nixpkgs-2009.url = github:NixOS/nixpkgs/f02bf8ffb9a5ec5e8f6f66f1e5544fd2aa1a0693;
-    nixpkgs-unstable.url = github:NixOS/nixpkgs/d8eb97e3801bde96491535f40483d550b57605b9;
+    nixpkgs.url = github:NixOS/nixpkgs/3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8;
+    nixpkgs-2009.url = github:NixOS/nixpkgs/46d1c3f28ca991601a53e9a14fdd53fcd3dd8416;
+    nixpkgs-2105.url = github:NixOS/nixpkgs/3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8;
+    nixpkgs-unstable.url = github:NixOS/nixpkgs/0747387223edf1aa5beaedf48983471315d95e16;
   };
 
   outputs = { self, nixpkgs, ... }:
