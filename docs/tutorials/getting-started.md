@@ -174,7 +174,7 @@ Straightforward way of doing this is to change the branch name to a revision.
 
 ```nix
 let sources = {
-    haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz") {};
+    haskellNix = builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz";
   };
 ```
 
