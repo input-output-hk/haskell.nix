@@ -36,13 +36,6 @@ This can be tricky to get setup properly. If you're still having trouble getting
 
 ## Installing Hix
 
-
-Until [this](https://github.com/input-output-hk/haskell.nix/pull/1053) is merged use:
-```
-nix-env -iA hix -f https://github.com/input-output-hk/haskell.nix/tarball/hkm/hix
-```
-
-TODO once merged replace the above with:
 ```
 nix-env -iA hix -f https://github.com/input-output-hk/haskell.nix/tarball/master
 ```
