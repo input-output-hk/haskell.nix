@@ -55,19 +55,20 @@ let
       (builtins.map (x: lib.nameValuePair (x.name) x)
         (haskellLib.flatLibDepends {depends = directlySelectedComponents;}));
 
+  isSelectedComponent =
+    comp: selectedComponentsBitmap."${((haskellLib.dependToLib comp).name or null)}" or false;
   selectedComponentsBitmap =
     lib.mapAttrs
-      (_: x: (builtins.any
-        (dep: selectedComponentsBitmap."${(haskellLib.dependToLib dep).name}") x.config.depends))
+      (_: x: (builtins.any isSelectedComponent x.config.depends))
       transitiveDependenciesComponents
     // builtins.listToAttrs (map (x: lib.nameValuePair x.name true) directlySelectedComponents); # base case
 
   selectedComponents =
-    lib.filter (x: selectedComponentsBitmap."${x.name}") (lib.attrValues transitiveDependenciesComponents);
+    lib.filter isSelectedComponent  (lib.attrValues transitiveDependenciesComponents);
 
   # Given a list of `depends`, removes those which are selected components
   removeSelectedInputs =
-    lib.filter (input: !(selectedComponentsBitmap."${((haskellLib.dependToLib input).name or null)}" or false));
+    lib.filter (input: !(isSelectedComponent input));
 
   # The configs of all the selected components
   selectedConfigs = map (c: c.config) selectedComponents
