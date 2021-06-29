@@ -18,7 +18,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
 
   # See https://github.com/input-output-hk/haskell.nix/issues/948
   postgresql = (prev.postgresql.overrideAttrs (old: { dontDisableStatic = true; }))
-    .override { enableSystemd = false; };
+    .override { enableSystemd = false; gssSupport = false; };
   openssl = prev.openssl.override { static = true; };
 
   # Fails on cross compile
