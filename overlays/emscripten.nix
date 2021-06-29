@@ -2,6 +2,8 @@ final: prev: let
   # GHCJS currently requires an old version of emscripten. Overriding to build the older version doesn't
   # work straightforwardly on 20.09 anymore, so we use an ugly hack and pull emscripten from 20.03.
   # In future, we'll just fix GHCJS to work with the newer emscripten.
+
+  # Not sure what to do here - akrmn
   pkgs-2003 = import final.haskell-nix.sources.nixpkgs-2003 {
     system = final.stdenv.system;
     overlays = [(final: prev: with final; {

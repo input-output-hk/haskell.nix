@@ -26,4 +26,5 @@
   nixpkgsArgs = { inherit config overlays system; };
   pkgs = import sources.nixpkgs nixpkgsArgs;
   pkgs-unstable = import sources.nixpkgs-unstable nixpkgsArgs;
+  hix = import ./hix/default.nix;
 }
