@@ -9,12 +9,14 @@
   # in the selected packages.  If only as subset of the components will be
   # worked on in the shell then we can pass a different `components` function
   # to select those.
-, components ? ps: lib.concatMap haskellLib.getAllComponents (packages hsPkgs)
+, components ? ps: lib.concatMap haskellLib.getAllComponents (packages ps)
   # Additional packages to be added unconditionally
 , additional ? _: []
 , withHoogle ? true
 , exactDeps ? false
 , tools ? {}
+, packageSetupDeps ? true
+, enableDWARF ? false
 , ... } @ args:
 
 let
@@ -23,50 +25,66 @@ let
 
   selectedPackages = packages hsPkgs;
   additionalPackages = additional hsPkgs;
-  selectedComponents = components hsPkgs;
+  directlySelectedComponents = components hsPkgs;
 
-  # The configs of all the selected components
-  selectedConfigs = map (c: c.config) selectedComponents ++ map (p: p.setup.config) selectedPackages;
-
-  name = if lib.length selectedPackages == 1
-    then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
-    else "ghc-shell-for-packages";
-
-  # Given a `packages = [ a b ]` we construct a shell with the dependencies of `a` and `b`.
+  # Given `directlySelectedComponents = [ a b ]`, we construct a shell that includes all of their dependencies
   #
-  # But if `a` depends on `b`, we don't want to include `b`, because
+  # But we want to exclude `a` if it is a transitive dependecy of `b`
+  # because:
   # - cabal will end up ignoring that built version;
   # - The user has indicated that's what they're working on, so they probably don't want to have to build
   #   it first (and it will change often).
-  # Generally we never want to include any of (the components of) the selected packages as dependencies.
+  # Generally we never want to include any of `directlySelectedComponents` as dependencies.
+  #
+  # We do this by defining a set of `selectedComponents`, where `x` is in `selectedComponents` if and only if:
+  #   - `x` is in `directlySelectedComponents`
+  #   - `x` is a transitive dependency of something in `directlySelectedComponents`
+  #     and `x` transitively depends on something in `directlySelectedComponents`
+  # We use the dependencies of `selectedComponents` filtering out members of `selectedComponents`
   #
   # Furthermore, if `a` depends on `b`, `a` will include the library component of `b` in its `buildInputs`
   # (to make `propagatedBuildInputs` of `pkgconfig-depends` work). So we also need to filter those
   # (the pkgconfig depends of `b` will still be included in the
   # system shell's `buildInputs` via `b`'s own `buildInputs`).
-  # We have to do this slightly differently because we will be looking at the actual components rather
-  # than the packages.
 
-  # Given a list of packages, removes those which were selected as part of the shell.
-  # We do this on the basis of their identifiers being the same, not direct equality (why?).
-  removeSelectedPackages =
-    # All the identifiers of the selected packages
-    let selectedPackageIds = map (p: p.identifier) selectedPackages;
-    in lib.filter (input: !(builtins.elem (input.identifier or null) selectedPackageIds));
 
-  # Given a list of derivations, removes those which are components of packages which were selected as part of the shell.
+  # all packages that are indirectly depended on by `directlySelectedComponents`
+  # including `directlySelectedComponents`
+  transitiveDependenciesComponents =
+    builtins.listToAttrs
+      (builtins.map (x: lib.nameValuePair (x.name) x)
+        (haskellLib.flatLibDepends {depends = directlySelectedComponents;}));
+
+  isSelectedComponent =
+    comp: selectedComponentsBitmap."${((haskellLib.dependToLib comp).name or null)}" or false;
+  selectedComponentsBitmap =
+    lib.mapAttrs
+      (_: x: (builtins.any isSelectedComponent x.config.depends))
+      transitiveDependenciesComponents
+    // builtins.listToAttrs (map (x: lib.nameValuePair x.name true) directlySelectedComponents); # base case
+
+  selectedComponents =
+    lib.filter isSelectedComponent  (lib.attrValues transitiveDependenciesComponents);
+
+  # Given a list of `depends`, removes those which are selected components
   removeSelectedInputs =
-    # All the components of the selected packages: we shouldn't add any of these as dependencies
-    let selectedPackageComponents = lib.concatMap haskellLib.getAllComponents selectedPackages;
-    in lib.filter (input: !(builtins.elem input selectedPackageComponents));
+    lib.filter (input: !(isSelectedComponent input));
 
-  # We need to remove any dependencies which are selected packages (see above).
-  # `depends` contains packages so we use 'removeSelectedPackages`.
-  packageInputs = removeSelectedPackages (lib.concatMap (cfg: cfg.depends) selectedConfigs) ++ additionalPackages;
+  # The configs of all the selected components
+  selectedConfigs = map (c: c.config) selectedComponents
+    ++ lib.optionals packageSetupDeps (map (p: p.setup.config) selectedPackages);
+
+  name = if lib.length selectedPackages == 1
+    then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
+    else "ghc-shell-for-packages";
+
+  # We need to remove any dependencies which would bring in selected components (see above).
+  packageInputs = removeSelectedInputs (lib.concatMap (cfg: cfg.depends) selectedConfigs)
+    ++ additionalPackages;
 
   # Add the system libraries and build tools of the selected haskell packages to the shell.
   # We need to remove any inputs which are selected components (see above).
-  # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends`  contain component
+  # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends` contain component
   # derivations, not packages, so we use `removeSelectedInputs`).
   systemInputs = removeSelectedInputs (lib.concatMap
     (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents);
@@ -91,6 +109,7 @@ let
     postInstall = lib.optionalString withHoogle' ''
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
+    inherit enableDWARF;
   };
 
   hoogleIndex = let
@@ -111,7 +130,7 @@ let
     }
   ));
 
-  mkDrvArgs = builtins.removeAttrs args ["packages" "additional" "withHoogle" "tools"];
+  mkDrvArgs = builtins.removeAttrs args ["packages" "components" "additional" "withHoogle" "tools"];
 in
   mkShell (mkDrvArgs // {
     name = mkDrvArgs.name or name;
@@ -124,10 +143,12 @@ in
       ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
+      # Includes `--with-compiler` in case the `cabal.project` file has `with-compiler:` in it.
       ++ lib.optional (ghcEnv.targetPrefix != "") (
             buildPackages.writeShellScriptBin "${ghcEnv.targetPrefix}cabal" ''
               exec cabal \
                 --with-ghc=${ghcEnv.targetPrefix}ghc \
+                --with-compiler=${ghcEnv.targetPrefix}ghc \
                 --with-ghc-pkg=${ghcEnv.targetPrefix}ghc-pkg \
                 --with-hsc2hs=${ghcEnv.targetPrefix}hsc2hs \
                 ${lib.optionalString (ghcEnv.targetPrefix == "js-unknown-ghcjs-") ''

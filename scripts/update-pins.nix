@@ -1,6 +1,6 @@
-{ stdenv, writeScript, coreutils, glibc, git, openssh }@args:
+{ stdenv, lib, writeScript, coreutils, glibc, git, openssh }@args:
 
-with stdenv.lib;
+with lib;
 
 let
   repo = "git@github.com:input-output-hk/haskell.nix.git";

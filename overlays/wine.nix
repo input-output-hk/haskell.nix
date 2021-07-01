@@ -10,6 +10,7 @@ final: prev:
             src = prev.fetchurl {
             url = "https://dl.winehq.org/wine/source/3.x/wine-3.21.tar.xz";
             sha256 = "1h70wb7kysbzv36i3fblyiihvalwhy6sj4s2a8nf21nz2mhc0k58"; };
+            patches = [];
             });
         };
 }

@@ -1,4 +1,4 @@
-{ emscriptenVersion, stdenv, fetchFromGitHub, emscriptenfastcomp, python, nodejs, closurecompiler
+{ emscriptenVersion, stdenv, lib, fetchFromGitHub, emscriptenfastcomp, python, nodejs, closurecompiler
 , jre, binaryen, enableWasm ? true ,  cmake, emscriptenBackend ? emscriptenfastcomp
 }:
 
@@ -45,7 +45,7 @@ stdenv.mkDerivation {
     echo "SPIDERMONKEY_ENGINE = []" >> $out/${appdir}/config
     echo "EMCC_FAST_COMPILER = 0" >> $out/${appdir}/config
   ''
-  + stdenv.lib.optionalString enableWasm ''
+  + lib.optionalString enableWasm ''
     echo "BINARYEN_ROOT = '${binaryenVersioned}'" >> $out/share/emscripten/config
   ''
   +
@@ -61,7 +61,7 @@ stdenv.mkDerivation {
     echo "--------------- /running test -----------------"
   '';
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     homepage = "https://github.com/emscripten-core/emscripten";
     description = "An LLVM-to-JavaScript Compiler";
     platforms = platforms.all;

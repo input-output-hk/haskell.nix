@@ -1,6 +1,6 @@
-{ mkCabalProjectPkgSet, stdenv, testSrc }:
+{ mkCabalProjectPkgSet, stdenv, lib, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   pkgSet = mkCabalProjectPkgSet {
@@ -35,12 +35,7 @@ in
     buildCommand = let
       inherit (packages.test-haddock.components) library;
       noDocLibrary = packages.stm.components.library;
-    in if (stdenv.hostPlatform != stdenv.buildPlatform)
-      then ''
-        echo "Skipping haddock tests when cross compiling" >& 2
-        touch $out
-      ''
-      else ''
+    in ''
       ########################################################################
       # test haddock
 
@@ -82,6 +77,8 @@ in
       touch $out
     '';
 
-    meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl;
+    meta = {
+      platforms = platforms.all;
+      disabled = stdenv.hostPlatform != stdenv.buildPlatform || stdenv.hostPlatform.isMusl;
+    };
 } // { inherit packages pkgSet; }

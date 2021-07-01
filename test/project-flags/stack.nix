@@ -1,6 +1,6 @@
-{ stdenv, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = stackProject' {

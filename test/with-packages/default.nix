@@ -1,6 +1,6 @@
-{ stdenv, util, mkPkgSet, recurseIntoAttrs, testSrc }:
+{ stdenv, lib, numactl, util, mkPkgSet, recurseIntoAttrs, testSrc }:
 
-with stdenv.lib;
+with lib;
 with util;
 
 let
@@ -33,6 +33,7 @@ let
 
   pkgId = p: "${p.identifier.name}-${p.identifier.version}";
   showDepends = component: concatMapStringsSep " " pkgId (component.depends or []);
+  extraFlags = if stdenv.isLinux then "-L${numactl}/lib" else "";
 
 in recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
@@ -47,7 +48,9 @@ in recurseIntoAttrs {
     decLibraryDepends = showDepends (pkgSet true).config.packages.test-with-packages.components.library;
     libraryDepends = showDepends (pkgSet false).config.packages.test-with-packages.components.library;
 
-    buildCommand = ''
+    src = ./.;
+
+    buildPhase = ''
       ########################################################################
       # test with-packages
 
@@ -71,19 +74,29 @@ in recurseIntoAttrs {
         printf "runghc tests are not working yet for windows or ghcjs. skipping. " >& 2
       ''
       else ''
-        printf "checking that non doExactConfig liarary.env has the dependencies... " >& 2
-        ${library.env}/bin/${library.env.targetPrefix}runghc ${./Point.hs}
-        echo >& 2
+        echo "checking that non doExactConfig library.env has the dependencies... "
+        echo "with runghc"
+        ${library.env}/bin/${library.env.targetPrefix}runghc ./Point.hs
+        echo "with ghc"
+        ${library.env}/bin/${library.env.targetPrefix}ghc ${toString extraFlags} Point.hs 1> /dev/null
+        ./Point
 
-        printf "checking that doExactConfig library.env has the dependencies... " >& 2
-        ${decLibrary.env}/bin/${decLibrary.env.targetPrefix}runghc ${./Point.hs}
-        echo >& 2
+        echo "checking that doExactConfig library.env has the dependencies... "
+        echo "with runghc"
+        ${decLibrary.env}/bin/${decLibrary.env.targetPrefix}runghc ./Point.hs
+        echo "with ghc"
+        ${decLibrary.env}/bin/${decLibrary.env.targetPrefix}ghc ${extraFlags} Point.hs 1> /dev/null
+        ./Point
       '') + ''
       touch $out
     '';
 
-    meta.platforms = platforms.all;
-    meta.disabled = stdenv.hostPlatform.isMusl;
+    dontInstall = true;
+
+    meta = {
+      platforms = platforms.all;
+      disabled = stdenv.hostPlatform.isMusl;
+    };
 
     passthru = {
       # Used for debugging with nix repl

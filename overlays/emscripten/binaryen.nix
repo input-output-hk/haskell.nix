@@ -1,4 +1,4 @@
-{ stdenv, cmake, python3, fetchFromGitHub, emscriptenRev ? null, substituteAll }:
+{ stdenv, lib, cmake, python3, fetchFromGitHub, emscriptenRev ? null, substituteAll }:
 
 let
   defaultVersion = "93";
@@ -29,14 +29,14 @@ stdenv.mkDerivation rec {
     inherit rev;
   };
 
-  patches = stdenv.lib.optional (emscriptenRev != null) (substituteAll {
+  patches = lib.optional (emscriptenRev != null) (substituteAll {
     src = ./0001-Get-rid-of-git-dependency.patch;
     emscriptenv = "1.39.1";
   });
 
   nativeBuildInputs = [ cmake python3 ];
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     homepage = "https://github.com/WebAssembly/binaryen";
     description = "Compiler infrastructure and toolchain library for WebAssembly, in C++";
     platforms = platforms.all;

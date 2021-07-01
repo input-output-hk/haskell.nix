@@ -1,9 +1,9 @@
-{ stdenv, writeScript, coreutils, gawk, nix
+{ stdenv, lib, writeScript, coreutils, gawk, nix
 , nix-tools
 , limitMB ? 525
 }:
 
-with stdenv.lib;
+with lib;
 
 writeScript "check-closure-size.sh" ''
   #!${stdenv.shell}

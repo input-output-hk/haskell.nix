@@ -1,4 +1,4 @@
-{ stdenv, writeScript, coreutils, glibc, git, openssh
+{ stdenv, lib, writeScript, coreutils, glibc, git, openssh
 , nix-tools, cabal-install, nix-prefetch-git
 , gawk, bash, curl, findutils }@args:
 

@@ -1,12 +1,14 @@
-{ stdenv, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   env = snapshots."lts-14.13".ghcWithHoogle
     (ps: with ps; [ conduit conduit-extra resourcet ]);
 
 in recurseIntoAttrs {
+  # Does not work on ghcjs because it needs zlib.
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";

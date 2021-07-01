@@ -40,4 +40,4 @@ test-suite tests
   build-depends:       base
                      , pkgb
                      , process
-  build-tools:         pkga
+  build-tool-depends:  pkga:pkga-exe

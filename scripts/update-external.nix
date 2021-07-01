@@ -1,10 +1,10 @@
-{ stdenv, writeScript, glibc, coreutils, git, openssh
+{ stdenv, lib, writeScript, glibc, coreutils, git, openssh
 , nix-tools, cabal-install, nix-prefetch-git
 , bash, curl, findutils, gawk }:
 
 { name, script }:
 
-with stdenv.lib;
+with lib;
 
 let
   repoHTTPS = "https://github.com/input-output-hk/${name}.nix";

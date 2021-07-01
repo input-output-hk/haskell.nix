@@ -1,6 +1,6 @@
-{ stdenv, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, mkCabalProjectPkgSet, cabalProject', haskellLib, util, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = cabalProject' {
@@ -11,6 +11,10 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
+  # When using ghcjs on darwin this test fails with
+  # ReferenceError: h$hs_clock_darwin_gettime is not defined
+  # https://github.com/input-output-hk/haskell.nix/issues/925
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   ifdInputs = {
     inherit (project) plan-nix;
   };

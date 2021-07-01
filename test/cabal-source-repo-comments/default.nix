@@ -1,11 +1,10 @@
-{ stdenv, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = cabalProject' {
     inherit compiler-nix-name;
-    index-state = "2020-05-25T00:00:00Z";
     src = testSrc "cabal-source-repo-comments";
   };
   packages = project.hsPkgs;

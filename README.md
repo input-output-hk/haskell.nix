@@ -24,7 +24,7 @@ consult the corresponding [troubleshooting section](https://input-output-hk.gith
 The troubleshooting documentation also contains some help for other common issues.
 Please give it a read before asking on IRC or opening an issue.
 
-If you're still stuck, join the [#haskell.nix](https://www.irccloud.com/invite?channel=%23haskell.nix&hostname=irc.freenode.net&port=6697&ssl=1) channel on [irc.freenode.net](https://freenode.net/), or open an issue.
+If you're still stuck, join the [#haskell.nix](https://www.irccloud.com/invite?channel=%23haskell.nix&hostname=irc.libera.chat&port=6697&ssl=1) channel on [irc.libera.chat](https://libera.chat/), or open an issue.
 
 ## Related repos
 

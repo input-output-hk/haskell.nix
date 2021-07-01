@@ -1,6 +1,6 @@
-{ indexStateHashesPath, nix-tools, coreutils, nix, writeShellScriptBin, stdenv, curl }:
+{ indexStateHashesPath, nix-tools, coreutils, nix, writeShellScriptBin, stdenv, lib, curl }:
 with builtins;
-with stdenv.lib;
+with lib;
 writeShellScriptBin "update-index-state-hashes" ''
    export PATH="${makeBinPath [ coreutils nix-tools nix curl ]}"
 

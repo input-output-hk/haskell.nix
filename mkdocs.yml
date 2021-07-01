@@ -17,6 +17,7 @@ permalink: true
 markdown_extensions:
   - admonition
   - footnotes
+  - tables
   - toc:
       permalink: true
 
@@ -28,6 +29,7 @@ pages:
   - 'Architecture': architecture.md
   - 'Tutorials':
     - 'Getting Started': tutorials/getting-started.md
+    - 'Getting started with Flakes': tutorials/getting-started-flakes.md
     - 'Creating a development environment': tutorials/development.md
     - 'Sourcing files only part of git repository using cleanGit': tutorials/clean-git.md
     - 'Handling git repositories in projects': tutorials/source-repository-hashes.md

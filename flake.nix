@@ -1,27 +1,38 @@
 {
   description = "Alternative Haskell Infrastructure for Nixpkgs";
 
-  outputs = { self }: let
-    config = import ./config.nix;
-    # We can't import ./nix/sources.nix directly, because that uses nixpkgs to fetch by default,
-    # and importing nixpkgs without specifying localSystem doesn't work on flakes.
-    sources = let
-      sourcesInfo =
-        builtins.fromJSON (builtins.readFile ./nix/sources.json);
-      fetch = sourceInfo:
-        builtins.fetchTarball { inherit (sourceInfo) url sha256; };
-    in builtins.mapAttrs (_: fetch) sourcesInfo;
+  inputs = {
+    # Note: keep this in sync with sources.json!
+    nixpkgs.url = github:NixOS/nixpkgs/3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8;
+    nixpkgs-2009.url = github:NixOS/nixpkgs/46d1c3f28ca991601a53e9a14fdd53fcd3dd8416;
+    nixpkgs-2105.url = github:NixOS/nixpkgs/3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8;
+    nixpkgs-unstable.url = github:NixOS/nixpkgs/0747387223edf1aa5beaedf48983471315d95e16;
+  };
 
-    nixpkgsArgs = {
-      inherit (self) config;
-      overlays = [ self.overlay ];
+  outputs = { self, nixpkgs, ... }:
+  {
+
+    internal = rec {
+      config = import ./config.nix;
+      # Use a shim for pkgs that does not depend on `builtins.currentSystem`.
+      sources = import ./nix/sources.nix {
+        pkgs = { fetchzip = builtins.fetchTarball; };
+      };
+
+      nixpkgsArgs = {
+        inherit config;
+        overlays = [ self.overlay ];
+      };
+
+      overlaysOverrideable = import ./overlays;
     };
-  in {
+
     # Using the eval-on-build version here as the plan is that
     # `builtins.currentSystem` will not be supported in flakes.
     # https://github.com/NixOS/rfcs/pull/49/files#diff-a5a138ca225433534de8d260f225fe31R429
     overlay = self.overlays.combined-eval-on-build;
-    overlays = import ./overlays { sourcesOverride = self.sources; };
+    overlays = self.internal.overlaysOverrideable { sourcesOverride = self.internal.sources; };
+
     legacyPackages = let
       genAttrs = lst: f:
         builtins.listToAttrs (map (name: {
@@ -29,7 +40,7 @@
           value = f name;
         }) lst);
     in genAttrs [ "x86_64-linux" "x86_64-darwin" ] (system:
-      import self.sources.nixpkgs
-      (self.nixpkgsArgs // { localSystem = { inherit system; }; }));
+      import nixpkgs
+      (self.internal.nixpkgsArgs // { localSystem = { inherit system; }; }));
   };
 }

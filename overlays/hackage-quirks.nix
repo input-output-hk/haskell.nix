@@ -15,7 +15,7 @@ in { haskell-nix = prev.haskell-nix // {
     cabal-install = {
       cabalProject = ''
         packages: .
-        allow-newer: cabal-install:base
+        allow-newer: cabal-install:base, *:base, *:template-haskell
       '';
       modules = [
         { reinstallableLibGhc = true; }
@@ -23,7 +23,26 @@ in { haskell-nix = prev.haskell-nix // {
         (lib.optionalAttrs (version == "3.2.0.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
         })
+        (lib.optionalAttrs (builtins.compareVersions version "3.0.0.0" >= 0
+            && builtins.compareVersions version "3.5" < 0) {
+          # Include patches needed for ghcjs
+          packages.Cabal.patches = [
+            ./patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff
+            ./patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff
+          ];
+        })
       ];
+    };
+
+    haskell-language-server = {
+      cabalProject = ''
+        packages: .
+        source-repository-package
+          type: git
+          location: https://github.com/hsyl20/ghc-api-compat
+          tag: 8fee87eac97a538dbe81ff1ab18cff10f2f9fa15
+          --sha256: sha256-byehvdxQxhNk5ZQUXeFHjAZpAze4Ct9261ro4c5acZk=
+      '';
     };
 
     hpack = {
@@ -47,17 +66,24 @@ in { haskell-nix = prev.haskell-nix // {
         { "https://github.com/jgm/pandoc-citeproc"."0.17"
             = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
           ."${location}"."${tag}";
-      modules = [
-        # Windows characters confuse cross compilation
-        # See https://github.com/snoyberg/file-embed/pull/33
-        (lib.optionalAttrs (version == "2.9.2.1") {
-          packages.file-embed.src = final.evalPackages.fetchgit {
-            url = "https://github.com/hamishmack/file-embed.git";
-            rev = "12b33b8b710517308954c1facff3dc679c2dc5e3";
-            sha256 = "0jcpja4s4cylmg9rddyakb1p1fb4l41ffwmy0njpb1dxc5z3v618";
-          };
-        })
-      ];
+    };
+
+    # See https://github.com/input-output-hk/haskell.nix/issues/948
+    postgrest = {
+      cabalProject = ''
+        packages: .
+        package postgresql-libpq
+          flags: +use-pkg-config
+      '';
+      modules = [(
+       {pkgs, ...}: final.lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+         # The order of -lssl and -lcrypto is important here
+         packages.postgrest.configureFlags = [
+           "--ghc-option=-optl=-lssl"
+           "--ghc-option=-optl=-lcrypto"
+           "--ghc-option=-optl=-L${pkgs.openssl.out}/lib"
+         ];
+      })];
     };
 
   }."${name}" or {};

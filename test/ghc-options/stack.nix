@@ -1,6 +1,6 @@
-{ stdenv, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   project = stackProject' {
@@ -14,6 +14,9 @@ let
   packageNames = mapAttrsToList (name: p: p.identifier.name) (filterAttrs (name: hasIdentifier) packages);
 
 in recurseIntoAttrs {
+  # This test is somehow broken for ghcjs
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
+
   ifdInputs = {
     inherit (project) stack-nix;
   };

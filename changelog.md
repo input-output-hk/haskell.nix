@@ -1,6 +1,39 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Apr 8, 2021
+* Project arguments are now validated with the Nix module system.
+  If unexpected argments are passed to a project function this may now
+  result in an error.
+
+## Feb 22, 2021
+* Add `.dwarf` to build any component with DWARF dubug info on linux
+  (ghc >=8.10.2).
+* Pass `enableDWARF` to `shellFor` for to get a shell where all the
+  components are the `.dwarf` ones.
+
+## Feb 18, 2021
+* `ghcOptions` has been moved from package and is now a list of strings.
+    old: packages.x.package.ghcOptions = "someGHCoption";
+    new: packages.x.ghcOptions = ["someGHCoption"];
+  To specify ghcOptions for all packages:
+    ghcOptions = ["someGHCoption"];
+  For a single component:
+    packages.x.compoents.library.ghcOptions = ["someGHCoption"];
+
+## Feb 8, 2021
+* Removed older versions of haskell-language-server from custom-tools
+  (0.8.0 is in hackage so we can still get that version).
+
+## Jan 14, 2021
+* Added support for cross package refs (with a project).  Relative
+  directory references between packages within a project should now
+  work.
+* Added `includeSiblings` to `cleanSourceWith`.  When `true` it
+  prevents the `subDir` arg from causing filtering of other directories.
+* Added `keepGitDir` to `cleanGit` to allow `.git` directory to be kept
+  (useful for components that use the `githash` package).
+
 ## Nov 26, 2020
 * Renamed `otherShells` arg for `shellFor` to `inputsFrom
 

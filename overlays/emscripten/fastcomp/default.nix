@@ -1,4 +1,4 @@
-{ newScope, stdenv, binutils, wrapCCWith, symlinkJoin }:
+{ newScope, stdenv, lib, binutils, wrapCCWith, symlinkJoin }:
 let
   callPackage = newScope (self // {inherit stdenv;});
 
@@ -15,7 +15,7 @@ let
       '';
     };
     emscriptenfastcomp = symlinkJoin {
-      name = "emscriptenfastcomp-${stdenv.lib.getVersion self.emscriptenfastcomp-unwrapped}";
+      name = "emscriptenfastcomp-${lib.getVersion self.emscriptenfastcomp-unwrapped}";
       paths = [ self.emscriptenfastcomp-wrapped self.emscriptenfastcomp-unwrapped ];
       preferLocalBuild = false;
       allowSubstitutes = true;

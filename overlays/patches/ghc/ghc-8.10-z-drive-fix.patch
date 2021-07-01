@@ -1,0 +1,14 @@
+diff --git a/libraries/libiserv/src/Remote/Slave.hs b/libraries/libiserv/src/Remote/Slave.hs
+index 577161f35f..3a4dbbf842 100644
+--- a/libraries/libiserv/src/Remote/Slave.hs
++++ b/libraries/libiserv/src/Remote/Slave.hs
+@@ -128,6 +128,8 @@ hook verbose base_path pipe m = case m of
+   -- system libraries.
+   Msg (LoadDLL path@('C':':':_)) -> do
+     return m
++  Msg (LoadDLL path@('Z':':':_)) -> do
++    return m
+   Msg (LoadDLL path) | isAbsolute path -> do
+     when verbose $ trace ("Need DLL: " ++ (base_path <//> path))
+     handleLoad pipe path (base_path <//> path)
+

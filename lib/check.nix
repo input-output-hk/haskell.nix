@@ -10,7 +10,7 @@ let
 in stdenv.mkDerivation ({
   name = (drv.name + "-check");
 
-  # Useing `srcOnly` (rather than getting the `src` via a `drv.passthru`)
+  # Using `srcOnly` (rather than getting the `src` via a `drv.passthru`)
   # should correctly apply the patches from `drv` (if any).
   src = drv.source or (srcOnly drv);
 
@@ -28,6 +28,12 @@ in stdenv.mkDerivation ({
   # component and we want it to quietly succeed.
   buildPhase = ''
     mkdir $out
+    ${
+      # Change to the source sub directory if there is one.
+      lib.optionalString (drv.srcSubDir or "" != "") ''
+        cd ${lib.removePrefix "/" drv.srcSubDir}
+      ''
+    }
 
     runHook preCheck
 

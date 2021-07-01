@@ -1,6 +1,6 @@
-{ stdenv, writeScript, coreutils, time, gnutar, gzip, hydra-migration, jq }:
+{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, hydra-migration, jq }:
 
-with stdenv.lib;
+with lib;
 
 writeScript "check-hydra.sh" ''
   #!${stdenv.shell}

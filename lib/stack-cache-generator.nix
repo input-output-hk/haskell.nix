@@ -13,6 +13,13 @@
   if sha256map != null
     then { location, tag, ...}: sha256map."${location}"."${tag}"
     else _: null
+, branchMap    ? null
+                     # A way to specify in which branch a git commit can
+                     # be found
+, lookupBranch ?
+  if branchMap != null
+    then { location, tag, ...}: branchMap."${location}"."${tag}" or null
+    else _: null
 , resolverSha256 ? null
 , nix-tools ? pkgs.haskell-nix.internal-nix-tools # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
 , ...
@@ -32,8 +39,18 @@ let
         then haskellLib.cleanSourceWith {
           inherit src;
           filter = path: type:
-               pkgs.lib.hasSuffix ("/" + stackYaml) path
-            || (resolver != null && pkgs.lib.hasSuffix ("/" + resolver) path);
+            let
+              origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
+              origSubDir = if src ? _isLibCleanSourceWithEx then src.origSubDir else "";
+              relPath = pkgs.lib.removePrefix (toString origSrc + origSubDir + "/") path;
+
+              # checks if path1 is a parent directory for path2
+              isParent = path1: path2: pkgs.lib.hasPrefix "${path1}/" path2;
+
+            in
+              (relPath == stackYaml)
+              || (resolver != null && (relPath == resolver || isParent relPath resolver))
+            ;
         }
         else src;
 
@@ -74,15 +91,19 @@ concatMap (dep:
                   location = dep.url;
                   tag = dep.rev;
                 };
+            branch = lookupBranch {
+              location = dep.url;
+              tag = dep.rev;
+            };
             pkgsrc =
               if !is-private && sha256 != null
                 then pkgs.fetchgit {
                   inherit (dep) url rev;
                   inherit sha256;
                 }
-                else builtins.fetchGit {
+                else builtins.fetchGit ({
                   inherit (dep) url rev;
-                };
+                } // pkgs.lib.optionalAttrs (branch != null) { ref = branch; });
         in map (subdir: {
                 name = cabalName "${pkgsrc}/${subdir}";
                 inherit (dep) url rev;

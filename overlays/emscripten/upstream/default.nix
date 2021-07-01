@@ -1,4 +1,4 @@
-{ newScope, stdenv, binutils, wrapCCWith, symlinkJoin }:
+{ newScope, stdenv, lib, binutils, wrapCCWith, symlinkJoin }:
 let
   callPackage = newScope (self // {inherit stdenv;});
 
@@ -15,7 +15,7 @@ let
       '';
     };
     emscriptenupstream = symlinkJoin {
-      name = "emscriptenupstream-${stdenv.lib.getVersion self.emscriptenupstream-unwrapped}";
+      name = "emscriptenupstream-${lib.getVersion self.emscriptenupstream-unwrapped}";
       paths = [ self.emscriptenupstream-wrapped self.emscriptenupstream-unwrapped ];
       preferLocalBuild = false;
       allowSubstitutes = true;

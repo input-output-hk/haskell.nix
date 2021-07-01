@@ -1,6 +1,6 @@
-{ stdenv, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
 
-with stdenv.lib;
+with lib;
 
 let
   projectArgs = {
@@ -24,6 +24,8 @@ let
   exeExt = stdenv.hostPlatform.extensions.executable;
 
 in recurseIntoAttrs ({
+  # Does not work on ghcjs because it needs zlib.
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {
     name = "coverage-test";
 

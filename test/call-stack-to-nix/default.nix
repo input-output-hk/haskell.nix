@@ -1,6 +1,6 @@
-{ stdenv, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, lib, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc }:
 
-with stdenv.lib;
+with lib;
 
 let
   callProjectResults = callStackToNix {

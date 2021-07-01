@@ -7,14 +7,17 @@
 # database.
 
 { lib, stdenv, ghc, runCommand, lndir, makeWrapper, haskellLib
-}:
+}@defaults:
 
 { componentName  # Full derivation name of the component
 , configFiles    # The component's "config" derivation
 , postInstall ? ""
+, enableDWARF
 }:
 
 let
+  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+
   inherit (configFiles) targetPrefix ghcCommand ghcCommandCaps packageCfgDir;
   libDir         = "$out/${configFiles.libDir}";
   docDir         = "$out/share/doc/ghc/html";
@@ -51,6 +54,10 @@ in runCommand "${componentName}-${ghc.name}-env" {
     fi
     # Replace the package database with the one from target package config.
     ln -s ${configFiles}/${packageCfgDir} $out/${packageCfgDir}
+
+    # now the tricky bit. For GHCJS (to make plugins work), we need a special
+    # file called ghc_libdir. That points to the build ghc's lib.
+    echo "${ghc.buildGHC or ghc}/lib/${(ghc.buildGHC or ghc).name}" > "${libDir}/ghc_libdir"
 
     # Wrap compiler executables with correct env variables.
     # The NIX_ variables are used by the patched Paths_ghc module.

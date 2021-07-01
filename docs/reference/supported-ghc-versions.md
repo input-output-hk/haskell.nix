@@ -1,30 +1,28 @@
 # Supported GHC Versions
 
-The following versions of GHC built on the CI servers and should be included
-in the binary cache (for the default haskell.nix `nixpkgs`).
 
-* 8.6.5 `compiler-nix-name = "ghc865";`
-* 8.8.3 `compiler-nix-name = "ghc883";`
-* 8.8.4 `compiler-nix-name = "ghc884";`
-* 8.10.1 `compiler-nix-name = "ghc8101";`
-* 8.10.2 `compiler-nix-name = "ghc8102";`
+The following GHC versions are defined in `haskell.nix` (i.e. there is a derivation for them even if it isn't necessarily cached):
+- 8.4.4
+- 8.6.{1,2,3,4,5}
+- 8.8.{1,2,3,4}
+- 8.10.{1,2,3,4}
 
-Full test suite is run against 8.6.5, 8.8.4 and 8.10.2.
+The following table shows the nixpkgs/GHC versions which are built by CI, and which of those are tested.
+If you use a combination of nixpkgs version and GHC version which is in this table, you should get cache hits from our cache.
+The "nixpkgs versions" refer to the versions that `haskell.nix` provides; if you use your own version of nixpkgs you will likely not get cache hit.
 
-See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)
-for the list of tested GHC versions.
+| Nixpkgs version  | GHC version | Tested? |
+|------------------|-------------|---------|
+| 20.03            | 8.6.5       | Y       |
+| 20.09            | 8.6.5       | Y       |
+| 20.09            | 8.8.4       | Y       |
+| 20.09            | 8.10.4      | Y       |
+| nixpkgs-unstable | 8.6.5       | Y       |
+| nixpkgs-unstable | 8.8.4       | Y       |
+| nixpkgs-unstable | 8.10.4      | Y       |
 
-The following GHC versions are not included in CI and will not be cached:
+See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix) for the source of truth about what is built and tested.
 
-* 8.4.4 `compiler-nix-name = "ghc844";`
-* 8.6.1 `compiler-nix-name = "ghc861";`
-* 8.6.2 `compiler-nix-name = "ghc862";`
-* 8.6.3 `compiler-nix-name = "ghc863";`
-* 8.6.4 `compiler-nix-name = "ghc864";`
-* 8.8.1 `compiler-nix-name = "ghc881";`
-* 8.8.2 `compiler-nix-name = "ghc882";`
-
-See [overlays/bootstrap.nix](https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix)
-for a list of all the valid `compiler-nix-names`.
+See [overlays/bootstrap.nix](https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix) for a list of all the valid `compiler-nix-names`.
 
 See also: [Instructions on adding new GHC versions](../dev/adding-new-ghc.md).

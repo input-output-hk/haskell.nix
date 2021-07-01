@@ -1,0 +1,63 @@
+From 96f8e2a47c5e53ae5fb86739aecd27c502e7f121 Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Tue, 23 Feb 2021 18:30:48 +0000
+Subject: [PATCH] rts: Make markLiveObject thread-safe
+
+markLiveObject is called by GC worker threads and therefore must be
+thread-safe. This was a rather egregious oversight which the testsuite
+missed.
+
+
+(cherry picked from commit fe28a062e47bd914a6879f2d01ff268983c075ad)
+---
+ rts/CheckUnload.c     | 10 ++++++++--
+ rts/LinkerInternals.h |  2 +-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/rts/CheckUnload.c b/rts/CheckUnload.c
+index 8f834d13fa..345a17cfec 100644
+--- a/rts/CheckUnload.c
++++ b/rts/CheckUnload.c
+@@ -381,11 +381,16 @@ static ObjectCode *findOC(OCSectionIndices *s_indices, const void *addr) {
+ 
+ static bool markObjectLive(void *data STG_UNUSED, StgWord key, const void *value STG_UNUSED) {
+     ObjectCode *oc = (ObjectCode*)key;
+-    if (oc->mark == object_code_mark_bit) {
++
++    // N.B. we may be called by the parallel GC and therefore this must be
++    // thread-safe. To avoid taking the linker_mutex in the fast path
++    // (when the object is already marked) we do an atomic exchange here and
++    // only take the lock in the case that the object is unmarked.
++    if (xchg(&oc->mark, object_code_mark_bit) == object_code_mark_bit) {
+         return true; // for hash table iteration
+     }
+ 
+-    oc->mark = object_code_mark_bit;
++    ACQUIRE_LOCK(&linker_mutex);
+     // Remove from 'old_objects' list
+     if (oc->prev != NULL) {
+         // TODO(osa): Maybe 'prev' should be a pointer to the referencing
+@@ -405,6 +410,7 @@ static bool markObjectLive(void *data STG_UNUSED, StgWord key, const void *value
+         objects->prev = oc;
+     }
+     objects = oc;
++    RELEASE_LOCK(&linker_mutex);
+ 
+     // Mark its dependencies
+     iterHashTable(oc->dependencies, NULL, markObjectLive);
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index 44fe337802..444849fbac 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -262,7 +262,7 @@ struct _ObjectCode {
+     struct _ObjectCode *next_loaded_object;
+ 
+     // Mark bit
+-    uint8_t mark;
++    StgWord mark;
+ 
+     // Set of dependencies (ObjectCode*) of the object file. Traverse
+     // dependencies using `iterHashTable`.
+-- 
+GitLab
+
