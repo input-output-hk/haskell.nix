@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs, bashInteractive }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -349,7 +349,7 @@ let
       ++ map haskellLib.dependToLib component.depends;
 
     nativeBuildInputs =
-      [shellWrappers buildPackages.removeReferencesTo]
+      [shellWrappers buildPackages.removeReferencesTo bashInteractive]
       ++ executableToolDepends;
 
     outputs = ["out" ]
@@ -408,8 +408,8 @@ let
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
-        if [ ! -e "$out/package.conf.d/${name}.conf" ]; then
-          echo 'ERROR: $out/package.conf.d/${name}.conf was not created'
+        if ! compgen -G "$out/package.conf.d/${name}-*.conf" > /dev/null; then
+          echo "ERROR: $out/package.conf.d/${name}-*.conf was not created"
           exit 1
         fi
 
