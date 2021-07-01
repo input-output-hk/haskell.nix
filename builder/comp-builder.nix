@@ -408,7 +408,9 @@ let
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
         ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
-        if ! compgen -G "$out/package.conf.d/${name}-*.conf" > /dev/null; then
+        if compgen -G "$out/package.conf.d/${name}-*.conf" > /dev/null; then
+            echo $out/package.conf.d/${name}-*.conf " is present"
+        else
           echo "ERROR: $out/package.conf.d/${name}-*.conf was not created"
           exit 1
         fi
