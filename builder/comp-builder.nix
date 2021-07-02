@@ -515,6 +515,7 @@ let
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
 
+    doInstallCheck = true;
     installCheckPhase = lib.optionalString (haskellLib.isLibrary componentId) ''
       if compgen -G "$out/package.conf.d/${name}-*.conf" > /dev/null; then
           echo $out/package.conf.d/${name}-*.conf " is present"
