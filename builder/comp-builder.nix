@@ -349,7 +349,7 @@ let
       ++ map haskellLib.dependToLib component.depends;
 
     nativeBuildInputs =
-      [shellWrappers buildPackages.removeReferencesTo bashInteractive]
+      [shellWrappers buildPackages.removeReferencesTo]
       ++ executableToolDepends;
 
     outputs = ["out" ]
@@ -517,7 +517,7 @@ let
 
     doInstallCheck = true;
     installCheckPhase = lib.optionalString (haskellLib.isLibrary componentId) ''
-      if compgen -G "$out/package.conf.d/${name}-*.conf" > /dev/null; then
+      if test -n "$(shopt -s nullglob; echo $out/package.conf.d/${name}-*.conf)"; then
           echo $out/package.conf.d/${name}-*.conf " is present"
       else
         echo "ERROR: $out/package.conf.d/${name}-*.conf was not created"
