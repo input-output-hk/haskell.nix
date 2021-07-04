@@ -1,0 +1,20 @@
+diff --git a/docs/users_guide/conf.py b/docs/users_guide/conf.py
+index 0732c5ccd4..47db25b84a 100644
+--- a/docs/users_guide/conf.py
++++ b/docs/users_guide/conf.py
+@@ -77,13 +77,13 @@ htmlhelp_basename = 'GHCUsersGuide'
+ latex_elements = {
+     'inputenc': '',
+     'utf8extra': '',
+-    'preamble': '''
++    'preamble': r'''
+ \usepackage{fontspec}
+ \usepackage{makeidx}
+ \setsansfont{DejaVu Sans}
+ \setromanfont{DejaVu Serif}
+ \setmonofont{DejaVu Sans Mono}
+-\setlength{\\tymin}{45pt}
++\setlength{\tymin}{45pt}
+ ''',
+ }
+ 
