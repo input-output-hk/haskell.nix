@@ -1,6 +1,6 @@
 { src
 , userDefaults ? {}
-, nxipkgs ? null
+, nixpkgs ? null
 , nixpkgsPin ? null
 , pkgs ? null
 , checkMaterialization ? null
