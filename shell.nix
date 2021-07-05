@@ -1,12 +1,9 @@
+{ ghc-name ? "ghc8104" }:
 let
   inherit (import ./default.nix {}) sources nixpkgsArgs;
   pkgs = import sources.nixpkgs nixpkgsArgs;
-in pkgs.stdenv.mkDerivation rec {
-  name = "env";
-  env = pkgs.buildEnv { name = name; paths = buildInputs; };
+in (pkgs.mkShell rec {
   buildInputs = [
-    pkgs.cabal-install
-    pkgs.haskell-nix.ghc
-    pkgs.haskell-nix.nix-tools
+    pkgs.haskell-nix.compiler.${ghc-name}
   ];
-}
+})
