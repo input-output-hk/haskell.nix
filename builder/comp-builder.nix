@@ -515,6 +515,16 @@ let
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
 
+    doInstallCheck = true;
+    installCheckPhase = lib.optionalString (haskellLib.isLibrary componentId) ''
+      if test -n "$(shopt -s nullglob; echo $out/package.conf.d/${name}-*.conf)"; then
+          echo $out/package.conf.d/${name}-*.conf " is present"
+      else
+        echo "ERROR: $out/package.conf.d/${name}-*.conf was not created"
+        exit 1
+      fi
+    '';
+
     shellHook = ''
       export PATH="${shellWrappers}/bin:$PATH"
       ${shellHookApplied}
