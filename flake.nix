@@ -27,10 +27,7 @@
       overlaysOverrideable = import ./overlays;
     };
 
-    # Using the eval-on-build version here as the plan is that
-    # `builtins.currentSystem` will not be supported in flakes.
-    # https://github.com/NixOS/rfcs/pull/49/files#diff-a5a138ca225433534de8d260f225fe31R429
-    overlay = self.overlays.combined-eval-on-build;
+    overlay = self.overlays.combined;
     overlays = self.internal.overlaysOverrideable { sourcesOverride = self.internal.sources; };
 
     legacyPackages = let

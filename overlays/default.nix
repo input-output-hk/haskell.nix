@@ -19,8 +19,7 @@ let
     nix-prefetch-git-minimal = import ./nix-prefetch-git-minimal.nix;
     gobject-introspection = import ./gobject-introspection.nix;
     hix = import ./hix.nix;
-    eval-on-current = import ./eval-on-current.nix;
-    eval-on-build = import ./eval-on-build.nix;
+    eval-packages = import ./eval-packages.nix;
     ghcjs = import ./ghcjs.nix;
   };
 
@@ -54,11 +53,9 @@ let
     ghcjs
     gobject-introspection
     hix
+    eval-packages
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
-  combined = builtins.foldl' composeExtensions (_: _: { })
-    (ordered ++ [overlays.eval-on-current]);
-  combined-eval-on-build = builtins.foldl' composeExtensions (_: _: { })
-    (ordered ++ [overlays.eval-on-build]);
-in overlays // { inherit combined combined-eval-on-build; }
+  combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
+in overlays // { inherit combined; }
