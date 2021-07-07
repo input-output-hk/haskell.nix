@@ -33,7 +33,13 @@ in project // {
               srcRepoPrefix = projectSubDir'' + ".source-repository-packages/";
 
               packageInfo =
-                if !hasPrefix (toString projectNix) (toString oldPkg.src.content)
+                if oldPkg.src ? url
+                  then {
+                    # The source is from a source repository
+                    isProject = false;
+                    packageSrc = pkgs.lib.lists.elemAt sourceRepos (toInt oldPkg.src.url);
+                  }
+                else if !hasPrefix (toString projectNix) (toString oldPkg.src.content)
                   then {
                     # Source location does not match project prefix
                     isProject = false;

@@ -65,7 +65,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "."; })];
+      sourceRepo = testRepoData // { subdirs = ["."]; };
     };
   };
 
@@ -80,7 +80,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "dir"; })];
+      sourceRepo = testRepoData // { subdirs = ["dir"]; };
     };
   };
 
@@ -95,7 +95,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
+      sourceRepo = testRepoData // { subdirs = ["dir1" "dir2"]; };
     };
   };
 
@@ -112,7 +112,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
+      sourceRepo = testRepoData // { subdirs = ["dir1" "dir2"]; };
     };
   };
 }
