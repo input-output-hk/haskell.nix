@@ -234,7 +234,7 @@ let
         ( pkgs.lib.strings.concatMapStrings (f: ''
               echo "source-repository-package" >> ./cabal.project
               echo "  type: git" >> ./cabal.project
-              echo "  location: ${f.location}" >> ./cabal.project
+              echo "  location: file://${f.location}" >> ./cabal.project
               echo "  subdir: ${builtins.concatStringsSep " " f.subdirs}" >> ./cabal.project
               echo "  tag: ${f.tag}" >> ./cabal.project
             '') sourceReposEval
@@ -242,9 +242,9 @@ let
       replaceLocations = pkgs.lib.strings.concatStrings (
             pkgs.lib.lists.zipListsWith (n: f: ''
               (cd $out${subDir'}
-              substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace ${f.location} ${builtins.toString n}
+              substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace file://${f.location} ${builtins.toString n}
               for a in .plan.nix/*.nix; do
-                substituteInPlace $a --replace ${f.location} ${builtins.toString n}
+                substituteInPlace $a --replace file://${f.location} ${builtins.toString n}
               done)
             '')
               (pkgs.lib.lists.range 0 ((builtins.length sourceReposEval) - 1))
