@@ -94,6 +94,7 @@ with pkgs;
      # if it's not we have more severe
      # issues anyway.
      gcc_s_seh-1 = null;
+     gcc_s = null;
      ssl32 = null; eay32 = [ openssl ];
      iphlpapi = null; # IP Help API
      msvcrt = null; # this is the libc
