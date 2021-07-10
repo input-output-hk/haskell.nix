@@ -206,17 +206,15 @@ value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
       }
     _ -> Nothing
 
-  extras = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
-                                                        , pkg ^. key "style" . _String
-                                                        , pkg ^. key "pkg-src" . key "type" . _String
-                                                        , pkg ^. key "pkg-src" . _Object) of
-    (_, "local", "local", _) -> Just $ Package
+  extras = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "style" . _String
+                                                        , pkg ^. key "pkg-src" . key "type" . _String) of
+    ("local", "local") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
       , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Just . LocalPath . Text.unpack $ pkg ^. key "pkg-src" . key "path" . _String
       }
-    (_, "local", "source-repo", _) -> Just $ Package
+    (_, "source-repo") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
       , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
