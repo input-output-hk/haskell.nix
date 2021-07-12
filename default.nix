@@ -1,9 +1,10 @@
 { checkMaterialization ? false  # Allows us to easily switch on materialization checking
+, configOverride ? {}
 , system ? builtins.currentSystem
 , sourcesOverride ? {}
 , ... }@args: rec {
   sources  = (import ./nix/sources.nix) // sourcesOverride;
-  config   = import ./config.nix;
+  config   = (import ./config.nix) // configOverride;
   overlays = [ allOverlays.combined ] ++ (
     if checkMaterialization == true
       then [(
