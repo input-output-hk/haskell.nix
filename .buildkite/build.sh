@@ -17,7 +17,7 @@ cabal new-configure
 
 echo
 echo "+++ Run stable version of plan-to-nix"
-nix build '(let haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}; in (import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs).haskell-nix.nix-tools.ghc883)' -o nt
+nix build '(let haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/hkm/use-source-repo.tar.gz") {}; in (import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs).haskell-nix.nix-tools.ghc8105)' -o nt
 ./nt/bin/plan-to-nix --output .buildkite/nix1 --plan-json dist-newstyle/cache/plan.json
 
 # Replace currently broken plan-to-nix output

@@ -180,6 +180,10 @@ value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
  where
   packages = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
                                               , pkg ^. key "style" . _String) of
+    -- source-repo packages will be included in `extras`.  We do not need them
+    -- in `packages` as well (this could lead to attribute not found errors looking
+    -- for them in hackage).
+    (_, _) | pkg ^. key "pkg-src" . key "type" . _String == "source-repo" -> Nothing
     (_, "global") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
