@@ -243,7 +243,7 @@ let
             pkgs.lib.lists.zipListsWith (n: f: ''
               (cd $out${subDir'}
               substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace file://${f.location} ${builtins.toString n}
-              for a in .plan.nix/*.nix; do
+              for a in $(grep -rl file://${f.location} .plan.nix/*.nix); do
                 substituteInPlace $a --replace file://${f.location} ${builtins.toString n}
               done)
             '')
