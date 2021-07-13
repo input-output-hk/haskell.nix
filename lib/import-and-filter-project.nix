@@ -30,7 +30,9 @@ in project // {
               packageInfo =
                 if oldPkg.src ? url
                   then {
-                    # The source is from a source repository
+                    # The source is from a source-repository-package in a cabal.project file
+                    # and lib/call-cabal-project-to-nix.nix should have replaced the url with
+                    # an index into the sourceRepos list.
                     isProject = false;
                     packageSrc = pkgs.lib.lists.elemAt sourceRepos (toInt oldPkg.src.url);
                   }

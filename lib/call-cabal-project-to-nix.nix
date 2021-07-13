@@ -185,6 +185,8 @@ let
                 (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
                  drv);
         in {
+          # Download the source-repository-package commit and add it to a minimal git
+          # repository that `cabal` will be able to access from a non fixed output derivation.
           location = pkgs.evalPackages.runCommand "source-repository-package" {
               nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.git ];
             } ''
@@ -230,6 +232,7 @@ let
         # The newline here is important in case cabal.project does not have one at the end
         echo >> ./cabal.project
       '' +
+        # Add replacement `source-repository-package` blocks pointing to the minimal git repos
         ( pkgs.lib.strings.concatMapStrings (f: ''
               echo "source-repository-package" >> ./cabal.project
               echo "  type: git" >> ./cabal.project
@@ -238,6 +241,10 @@ let
               echo "  tag: ${f.tag}" >> ./cabal.project
             '') sourceReposEval
         ));
+      # This will be used to replace refernces to the minimal git repos with just the index
+      # of the repo.  The index will be used in lib/import-and-filter-project.nix to
+      # lookup the correct repository in `sourceReposBuild`.  This avoids having
+      # `/nix/store` paths in the `plan-nix` output so that it can  be materialized safely.
       replaceLocations = pkgs.lib.strings.concatStrings (
             pkgs.lib.lists.zipListsWith (n: f: ''
               (cd $out${subDir'}
