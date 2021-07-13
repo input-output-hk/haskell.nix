@@ -229,7 +229,6 @@ let
         chmod +w -R ./cabal.project
         # The newline here is important in case cabal.project does not have one at the end
         echo >> ./cabal.project
-        mkdir -p ./.source-repository-packages
       '' +
         ( pkgs.lib.strings.concatMapStrings (f: ''
               echo "source-repository-package" >> ./cabal.project
@@ -550,10 +549,6 @@ let
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly
     # without affecting the nix).
-    if [ -d $out${subDir'}/.source-repository-packages ]; then
-      chmod +w -R $out${subDir'}/.source-repository-packages
-      rm -rf $out${subDir'}/.source-repository-packages
-    fi
     find $out \( -type f -or -type l \) ! -name '*.nix' -delete
     # Remove empty dirs
     find $out -type d -empty -delete
