@@ -198,7 +198,7 @@ in {
   cleanGit = import ./clean-git.nix {
     inherit lib cleanSourceWith;
     git = gitMinimal;
-    inherit (pkgs.evalPackages) runCommand;
+    inherit (pkgs) runCommand;
   };
 
   # Some times it is handy to temporarily use a relative path between git

@@ -27,31 +27,28 @@ in project // {
           else {...}@args: with pkgs.lib.strings;
             let
               oldPkg = import value args;
-              # When the package src is in the project dir, this is the subDir it is in.
-              subDir = removePrefix "/" (removePrefix (toString projectNix)
-                                                      (toString oldPkg.src.content));
-              srcRepoPrefix = projectSubDir'' + ".source-repository-packages/";
-
               packageInfo =
-                if !hasPrefix (toString projectNix) (toString oldPkg.src.content)
+                if oldPkg.src ? url
+                  then {
+                    # The source is from a source-repository-package in a cabal.project file
+                    # and lib/call-cabal-project-to-nix.nix should have replaced the url with
+                    # an index into the sourceRepos list.
+                    isProject = false;
+                    packageSrc = pkgs.lib.lists.elemAt sourceRepos (toInt oldPkg.src.url);
+                  }
+                else if !hasPrefix (toString projectNix) (toString oldPkg.src.content)
                   then {
                     # Source location does not match project prefix
                     isProject = false;
                     packageSrc = toString oldPkg.src.content;
-                  }
-                else if hasPrefix srcRepoPrefix subDir
-                  then {
-                    # The source is from a source repository
-                    isProject = false;
-                    packageSrc = pkgs.lib.lists.elemAt sourceRepos (
-                      toInt (removePrefix srcRepoPrefix subDir));
                   }
                 else {
                     # Source does match project prefix and it is not from a source repository
                     isProject = true;
                     packageSrc = haskellLib.appendSubDir {
                       src = srcRoot;
-                      inherit subDir;
+                      subDir = removePrefix "/" (removePrefix (toString projectNix)
+                                                              (toString oldPkg.src.content));
                       includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
                                               # component builder so that relative paths can be used to
                                               # reference project directories not in the package subDir.

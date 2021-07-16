@@ -1,6 +1,14 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Jul 15, 2021
+* `source-repository-package` references in `cabal.project` files are now
+  left as a `source-repository-package` when calculating the the `plan-nix` for
+  `cabalProject` based functions.
+  This makes haskell.nix match the behaviour of `cabal` better.
+  Materialized files for projects that use `source-repository-package`
+  references will need to be updated.
+
 ## Apr 8, 2021
 * Project arguments are now validated with the Nix module system.
   If unexpected argments are passed to a project function this may now
