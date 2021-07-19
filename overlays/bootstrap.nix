@@ -365,8 +365,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                  # Not using 8.6 due to #1092
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
@@ -385,8 +385,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
-                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                  # Not using 8.6 due to #1092
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
@@ -405,8 +405,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8103; };
 
                 bootPkgs = bootPkgs // {
-                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                  # Not using 8.6 due to #1092
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
@@ -425,8 +425,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104; };
 
                 bootPkgs = bootPkgs // {
-                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                  # Not using 8.6 due to #1092
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
@@ -445,8 +445,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105; };
 
                 bootPkgs = bootPkgs // {
-                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                  # Not using 8.6 due to #1092
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
@@ -485,8 +485,8 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
 
                 bootPkgs = bootPkgs // {
-                  # Not using 8.8 due to https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+                  # Not using 8.6 due to #1092
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
                 };
                 inherit sphinx installDeps;
 
