@@ -43,5 +43,23 @@
           "alex" = { flags = { "small_base" = lib.mkOverride 900 true; }; };
           };
         })
+    ({ lib, ... }:
+      {
+        packages = {
+          "containers".components.library.planned = lib.mkOverride 900 true;
+          "ghc-prim".components.library.planned = lib.mkOverride 900 true;
+          "integer-gmp".components.library.planned = lib.mkOverride 900 true;
+          "array".components.library.planned = lib.mkOverride 900 true;
+          "bytestring".components.library.planned = lib.mkOverride 900 true;
+          "unix".components.library.planned = lib.mkOverride 900 true;
+          "alex".components.exes."alex".planned = lib.mkOverride 900 true;
+          "base".components.library.planned = lib.mkOverride 900 true;
+          "rts".components.library.planned = lib.mkOverride 900 true;
+          "time".components.library.planned = lib.mkOverride 900 true;
+          "deepseq".components.library.planned = lib.mkOverride 900 true;
+          "filepath".components.library.planned = lib.mkOverride 900 true;
+          "directory".components.library.planned = lib.mkOverride 900 true;
+          };
+        })
     ];
   }

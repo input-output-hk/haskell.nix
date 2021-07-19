@@ -41,7 +41,7 @@
         "random".revision = (((hackage."random")."1.2.0").revisions).default;
         "optparse-applicative".revision = (((hackage."optparse-applicative")."0.16.1.0").revisions).default;
         "optparse-applicative".flags.process = true;
-        "network".revision = (((hackage."network")."3.1.2.1").revisions).default;
+        "network".revision = (((hackage."network")."3.1.2.2").revisions).default;
         "network".flags.devel = false;
         "splitmix".revision = (((hackage."splitmix")."0.1.0.3").revisions).default;
         "splitmix".flags.optimised-mixer = false;
@@ -140,7 +140,7 @@
         "hashable".flags.integer-gmp = true;
         "attoparsec".revision = (((hackage."attoparsec")."0.14.1").revisions).default;
         "attoparsec".flags.developer = false;
-        "colour".revision = (((hackage."colour")."2.3.5").revisions).default;
+        "colour".revision = (((hackage."colour")."2.3.6").revisions).default;
         "transformers-base".revision = (((hackage."transformers-base")."0.4.5.2").revisions).default;
         "transformers-base".flags.orphaninstances = true;
         "strict".revision = (((hackage."strict")."0.4.0.1").revisions).default;
@@ -193,5 +193,90 @@
   modules = [
     ({ lib, ... }:
       { packages = { "pkga" = { flags = {}; }; "pkgb" = { flags = {}; }; }; })
+    ({ lib, ... }:
+      {
+        packages = {
+          "streaming-commons".components.library.planned = lib.mkOverride 900 true;
+          "bytestring".components.library.planned = lib.mkOverride 900 true;
+          "ansi-wl-pprint".components.library.planned = lib.mkOverride 900 true;
+          "reflection".components.library.planned = lib.mkOverride 900 true;
+          "integer-logarithms".components.library.planned = lib.mkOverride 900 true;
+          "pkga".components.exes."pkga-exe".planned = lib.mkOverride 900 true;
+          "these".components.library.planned = lib.mkOverride 900 true;
+          "pkgb".components.tests."tests".planned = lib.mkOverride 900 true;
+          "semigroupoids".components.library.planned = lib.mkOverride 900 true;
+          "free".components.library.planned = lib.mkOverride 900 true;
+          "void".components.library.planned = lib.mkOverride 900 true;
+          "exceptions".components.library.planned = lib.mkOverride 900 true;
+          "integer-gmp".components.library.planned = lib.mkOverride 900 true;
+          "conduit-extra".components.library.planned = lib.mkOverride 900 true;
+          "array".components.library.planned = lib.mkOverride 900 true;
+          "th-abstraction".components.library.planned = lib.mkOverride 900 true;
+          "base-orphans".components.library.planned = lib.mkOverride 900 true;
+          "ghc-boot-th".components.library.planned = lib.mkOverride 900 true;
+          "pkgb".components.library.planned = lib.mkOverride 900 true;
+          "resourcet".components.library.planned = lib.mkOverride 900 true;
+          "pretty".components.library.planned = lib.mkOverride 900 true;
+          "kan-extensions".components.library.planned = lib.mkOverride 900 true;
+          "filepath".components.library.planned = lib.mkOverride 900 true;
+          "process".components.library.planned = lib.mkOverride 900 true;
+          "strict".components.library.planned = lib.mkOverride 900 true;
+          "adjunctions".components.library.planned = lib.mkOverride 900 true;
+          "invariant".components.library.planned = lib.mkOverride 900 true;
+          "distributive".components.library.planned = lib.mkOverride 900 true;
+          "rts".components.library.planned = lib.mkOverride 900 true;
+          "pkga".components.library.planned = lib.mkOverride 900 true;
+          "zlib".components.library.planned = lib.mkOverride 900 true;
+          "mtl".components.library.planned = lib.mkOverride 900 true;
+          "stm".components.library.planned = lib.mkOverride 900 true;
+          "indexed-traversable-instances".components.library.planned = lib.mkOverride 900 true;
+          "pkgb".components.exes."pkgb".planned = lib.mkOverride 900 true;
+          "unix".components.library.planned = lib.mkOverride 900 true;
+          "split".components.library.planned = lib.mkOverride 900 true;
+          "binary".components.library.planned = lib.mkOverride 900 true;
+          "bifunctors".components.library.planned = lib.mkOverride 900 true;
+          "ghc-prim".components.library.planned = lib.mkOverride 900 true;
+          "ansi-terminal".components.library.planned = lib.mkOverride 900 true;
+          "tagged".components.library.planned = lib.mkOverride 900 true;
+          "lens".components.library.planned = lib.mkOverride 900 true;
+          "containers".components.library.planned = lib.mkOverride 900 true;
+          "unliftio-core".components.library.planned = lib.mkOverride 900 true;
+          "profunctors".components.library.planned = lib.mkOverride 900 true;
+          "primitive".components.library.planned = lib.mkOverride 900 true;
+          "call-stack".components.library.planned = lib.mkOverride 900 true;
+          "vector".components.library.planned = lib.mkOverride 900 true;
+          "mono-traversable".components.library.planned = lib.mkOverride 900 true;
+          "transformers-compat".components.library.planned = lib.mkOverride 900 true;
+          "template-haskell".components.library.planned = lib.mkOverride 900 true;
+          "directory".components.library.planned = lib.mkOverride 900 true;
+          "network".components.library.planned = lib.mkOverride 900 true;
+          "conduit".components.library.planned = lib.mkOverride 900 true;
+          "splitmix".components.library.planned = lib.mkOverride 900 true;
+          "async".components.library.planned = lib.mkOverride 900 true;
+          "semigroups".components.library.planned = lib.mkOverride 900 true;
+          "random".components.library.planned = lib.mkOverride 900 true;
+          "deepseq".components.library.planned = lib.mkOverride 900 true;
+          "parallel".components.library.planned = lib.mkOverride 900 true;
+          "optparse-applicative".components.library.planned = lib.mkOverride 900 true;
+          "scientific".components.library.planned = lib.mkOverride 900 true;
+          "vector-algorithms".components.library.planned = lib.mkOverride 900 true;
+          "colour".components.library.planned = lib.mkOverride 900 true;
+          "transformers-base".components.library.planned = lib.mkOverride 900 true;
+          "hashable".components.library.planned = lib.mkOverride 900 true;
+          "attoparsec".components.library.planned = lib.mkOverride 900 true;
+          "transformers".components.library.planned = lib.mkOverride 900 true;
+          "base".components.library.planned = lib.mkOverride 900 true;
+          "assoc".components.library.planned = lib.mkOverride 900 true;
+          "unordered-containers".components.library.planned = lib.mkOverride 900 true;
+          "indexed-traversable".components.library.planned = lib.mkOverride 900 true;
+          "time".components.library.planned = lib.mkOverride 900 true;
+          "comonad".components.library.planned = lib.mkOverride 900 true;
+          "text".components.library.planned = lib.mkOverride 900 true;
+          "typed-process".components.library.planned = lib.mkOverride 900 true;
+          "StateVar".components.library.planned = lib.mkOverride 900 true;
+          "contravariant".components.library.planned = lib.mkOverride 900 true;
+          "hsc2hs".components.exes."hsc2hs".planned = lib.mkOverride 900 true;
+          };
+        })
     ];
   }

@@ -52,7 +52,8 @@ in {
           tys;
     in libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc:
+    (if c.config.planned then [c] else []) ++ acc) [];
 
   componentPrefix = {
     sublibs = "lib";

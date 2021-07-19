@@ -22,13 +22,6 @@
       description = "";
       buildType = "Simple";
       isLocal = true;
-      detailLevel = "FullDetails";
-      licenseFiles = [];
-      dataDir = ".";
-      dataFiles = [];
-      extraSrcFiles = [];
-      extraTmpFiles = [];
-      extraDocFiles = [];
       };
     components = {
       "library" = {
@@ -41,8 +34,6 @@
           (hsPkgs."resourcet" or (errorHandler.buildDepError "resourcet"))
           ];
         buildable = true;
-        modules = [ "ConduitExample" "PkgB" ];
-        hsSourceDirs = [ "src" ];
         };
       exes = {
         "pkgb" = {
@@ -53,8 +44,6 @@
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
             ];
           buildable = true;
-          hsSourceDirs = [ "app" ];
-          mainPath = [ "Main.hs" ];
           };
         };
       tests = {
@@ -68,8 +57,6 @@
             (hsPkgs.buildPackages.pkga.components.exes.pkga-exe or (pkgs.buildPackages.pkga-exe or (errorHandler.buildToolDepError "pkga:pkga-exe")))
             ];
           buildable = true;
-          hsSourceDirs = [ "app" ];
-          mainPath = [ "tests.hs" ];
           };
         };
       };

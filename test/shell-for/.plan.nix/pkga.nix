@@ -22,13 +22,6 @@
       description = "";
       buildType = "Simple";
       isLocal = true;
-      detailLevel = "FullDetails";
-      licenseFiles = [];
-      dataDir = ".";
-      dataFiles = [];
-      extraSrcFiles = [];
-      extraTmpFiles = [];
-      extraDocFiles = [];
       };
     components = {
       "library" = {
@@ -38,14 +31,11 @@
           (hsPkgs."text" or (errorHandler.buildDepError "text"))
           ];
         buildable = true;
-        modules = [ "PkgA" ];
         };
       exes = {
         "pkga-exe" = {
           depends = [ (hsPkgs."base" or (errorHandler.buildDepError "base")) ];
           buildable = true;
-          hsSourceDirs = [ "." ];
-          mainPath = [ "MainA.hs" ];
           };
         };
       };
