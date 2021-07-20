@@ -84,10 +84,10 @@
         "homepage": null,
         "owner": "input-output-hk",
         "repo": "nix-tools",
-        "rev": "a1a6b3965ee6ebb67883473b398a4f1954f18b9c",
-        "sha256": "03pms466pwkxgm74jl0a16a2ni8dyg0h0wlcknza7ycc6zxn5fl6",
+        "rev": "0f0200a4d5c1735b28a41737a4801b7c169dd9ec",
+        "sha256": "1dkrccm35m75b96dc6k9w4fbni5blkdsnpvnbys6jcjlpzsjbxw2",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/nix-tools/archive/a1a6b3965ee6ebb67883473b398a4f1954f18b9c.tar.gz",
+        "url": "https://github.com/input-output-hk/nix-tools/archive/0f0200a4d5c1735b28a41737a4801b7c169dd9ec.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
