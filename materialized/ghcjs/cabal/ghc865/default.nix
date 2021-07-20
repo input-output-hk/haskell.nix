@@ -142,6 +142,7 @@
           "async".components.library.planned = lib.mkOverride 900 true;
           "network".components.library.planned = lib.mkOverride 900 true;
           "pretty".components.library.planned = lib.mkOverride 900 true;
+          "cabal-install".components.exes."cabal".planned = lib.mkOverride 900 true;
           "template-haskell".components.library.planned = lib.mkOverride 900 true;
           "integer-gmp".components.library.planned = lib.mkOverride 900 true;
           "array".components.library.planned = lib.mkOverride 900 true;
@@ -163,8 +164,8 @@
           "lukko".components.library.planned = lib.mkOverride 900 true;
           "parsec".components.library.planned = lib.mkOverride 900 true;
           "ghc-boot-th".components.library.planned = lib.mkOverride 900 true;
-          "cabal-install".components.library.planned = lib.mkOverride 900 true;
           "directory".components.library.planned = lib.mkOverride 900 true;
+          "cabal-install".components.setup.planned = lib.mkOverride 900 true;
           "hackage-security".components.library.planned = lib.mkOverride 900 true;
           };
         })

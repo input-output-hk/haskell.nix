@@ -419,13 +419,16 @@
           "haddock-library-ghcjs".components.library.planned = lib.mkOverride 900 true;
           "zip-archive".components.library.planned = lib.mkOverride 900 true;
           "haddock-library".components.library.planned = lib.mkOverride 900 true;
+          "semigroupoids".components.setup.planned = lib.mkOverride 900 true;
           "containers".components.library.planned = lib.mkOverride 900 true;
           "lens".components.library.planned = lib.mkOverride 900 true;
+          "lens".components.setup.planned = lib.mkOverride 900 true;
           "semigroupoids".components.library.planned = lib.mkOverride 900 true;
           "wl-pprint-text".components.library.planned = lib.mkOverride 900 true;
           "bifunctors".components.library.planned = lib.mkOverride 900 true;
           "streaming-commons".components.library.planned = lib.mkOverride 900 true;
           "old-time".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.tests."test".planned = lib.mkOverride 900 true;
           "ghc-boot".components.library.planned = lib.mkOverride 900 true;
           "binary".components.library.planned = lib.mkOverride 900 true;
           "wai".components.library.planned = lib.mkOverride 900 true;
@@ -444,6 +447,7 @@
           "haddock-library-ghcjs".components.tests."fixtures".planned = lib.mkOverride 900 true;
           "mime-types".components.library.planned = lib.mkOverride 900 true;
           "http2".components.library.planned = lib.mkOverride 900 true;
+          "happy".components.exes."happy".planned = lib.mkOverride 900 true;
           "appar".components.library.planned = lib.mkOverride 900 true;
           "hspec-discover".components.exes."hspec-discover".planned = lib.mkOverride 900 true;
           "indexed-traversable".components.library.planned = lib.mkOverride 900 true;
@@ -462,6 +466,7 @@
           "ghci-ghcjs".components.library.planned = lib.mkOverride 900 true;
           "base64-bytestring".components.library.planned = lib.mkOverride 900 true;
           "regex-base".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."private-ghcjs-unlit".planned = lib.mkOverride 900 true;
           "adjunctions".components.library.planned = lib.mkOverride 900 true;
           "executable-path".components.library.planned = lib.mkOverride 900 true;
           "byteable".components.library.planned = lib.mkOverride 900 true;
@@ -480,6 +485,7 @@
           "invariant".components.library.planned = lib.mkOverride 900 true;
           "system-fileio".components.library.planned = lib.mkOverride 900 true;
           "bytestring-builder".components.library.planned = lib.mkOverride 900 true;
+          "entropy".components.setup.planned = lib.mkOverride 900 true;
           "parallel".components.library.planned = lib.mkOverride 900 true;
           "uuid-types".components.library.planned = lib.mkOverride 900 true;
           "QuickCheck".components.library.planned = lib.mkOverride 900 true;
@@ -497,6 +503,7 @@
           "hpc".components.library.planned = lib.mkOverride 900 true;
           "entropy".components.library.planned = lib.mkOverride 900 true;
           "scientific".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."private-ghcjs-ghcjs-pkg".planned = lib.mkOverride 900 true;
           "th-reify-many".components.library.planned = lib.mkOverride 900 true;
           "wai-logger".components.library.planned = lib.mkOverride 900 true;
           "async".components.library.planned = lib.mkOverride 900 true;
@@ -510,6 +517,7 @@
           "dlist".components.library.planned = lib.mkOverride 900 true;
           "pretty".components.library.planned = lib.mkOverride 900 true;
           "lifted-base".components.library.planned = lib.mkOverride 900 true;
+          "wai-logger".components.setup.planned = lib.mkOverride 900 true;
           "wai-app-static".components.library.planned = lib.mkOverride 900 true;
           "HUnit".components.library.planned = lib.mkOverride 900 true;
           "tree-diff".components.library.planned = lib.mkOverride 900 true;
@@ -517,6 +525,7 @@
           "vector".components.library.planned = lib.mkOverride 900 true;
           "template-haskell".components.library.planned = lib.mkOverride 900 true;
           "http-date".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."ghcjs-boot".planned = lib.mkOverride 900 true;
           "mono-traversable".components.library.planned = lib.mkOverride 900 true;
           "integer-gmp".components.library.planned = lib.mkOverride 900 true;
           "psqueues".components.library.planned = lib.mkOverride 900 true;
@@ -530,6 +539,7 @@
           "th-lift-instances".components.library.planned = lib.mkOverride 900 true;
           "simple-sendfile".components.library.planned = lib.mkOverride 900 true;
           "safe".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."private-ghcjs-haddock".planned = lib.mkOverride 900 true;
           "ansi-terminal".components.library.planned = lib.mkOverride 900 true;
           "wai-websockets".components.library.planned = lib.mkOverride 900 true;
           "parsers".components.library.planned = lib.mkOverride 900 true;
@@ -551,12 +561,14 @@
           "tar".components.library.planned = lib.mkOverride 900 true;
           "ansi-wl-pprint".components.library.planned = lib.mkOverride 900 true;
           "reflection".components.library.planned = lib.mkOverride 900 true;
+          "ghc-paths".components.setup.planned = lib.mkOverride 900 true;
           "test-framework".components.library.planned = lib.mkOverride 900 true;
           "bytestring".components.library.planned = lib.mkOverride 900 true;
           "shelly".components.library.planned = lib.mkOverride 900 true;
           "wai-websockets".components.exes."wai-websockets-example".planned = lib.mkOverride 900 true;
           "ghc-paths".components.library.planned = lib.mkOverride 900 true;
           "contravariant".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."private-ghcjs-ghcjs".planned = lib.mkOverride 900 true;
           "case-insensitive".components.library.planned = lib.mkOverride 900 true;
           "sop-core".components.library.planned = lib.mkOverride 900 true;
           "vault".components.library.planned = lib.mkOverride 900 true;
@@ -566,6 +578,7 @@
           "text".components.library.planned = lib.mkOverride 900 true;
           "blaze-markup".components.library.planned = lib.mkOverride 900 true;
           "base".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.setup.planned = lib.mkOverride 900 true;
           "rts".components.library.planned = lib.mkOverride 900 true;
           "unordered-containers".components.library.planned = lib.mkOverride 900 true;
           "regex-posix".components.library.planned = lib.mkOverride 900 true;
@@ -580,12 +593,12 @@
           "wai-app-static".components.exes."warp".planned = lib.mkOverride 900 true;
           "data-default-instances-containers".components.library.planned = lib.mkOverride 900 true;
           "wai-extra".components.library.planned = lib.mkOverride 900 true;
+          "happy".components.setup.planned = lib.mkOverride 900 true;
           "base16-bytestring".components.library.planned = lib.mkOverride 900 true;
           "transformers-base".components.library.planned = lib.mkOverride 900 true;
           "distributive".components.library.planned = lib.mkOverride 900 true;
           "quickcheck-io".components.library.planned = lib.mkOverride 900 true;
           "vector-algorithms".components.library.planned = lib.mkOverride 900 true;
-          "happy".components.library.planned = lib.mkOverride 900 true;
           "th-orphans".components.library.planned = lib.mkOverride 900 true;
           "deepseq".components.library.planned = lib.mkOverride 900 true;
           "filepath".components.library.planned = lib.mkOverride 900 true;
@@ -594,7 +607,10 @@
           "temporary".components.library.planned = lib.mkOverride 900 true;
           "hspec-core".components.library.planned = lib.mkOverride 900 true;
           "stringsearch".components.library.planned = lib.mkOverride 900 true;
+          "system-filepath".components.setup.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."private-ghcjs-hsc2hs".planned = lib.mkOverride 900 true;
           "splitmix".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."private-ghcjs-run".planned = lib.mkOverride 900 true;
           "websockets".components.library.planned = lib.mkOverride 900 true;
           "aeson".components.library.planned = lib.mkOverride 900 true;
           "th-lift".components.library.planned = lib.mkOverride 900 true;
@@ -607,6 +623,7 @@
           "cabal-doctest".components.library.planned = lib.mkOverride 900 true;
           "resourcet".components.library.planned = lib.mkOverride 900 true;
           "profunctors".components.library.planned = lib.mkOverride 900 true;
+          "ghcjs".components.exes."private-ghcjs-ghcjs-dumparchive".planned = lib.mkOverride 900 true;
           "base-orphans".components.library.planned = lib.mkOverride 900 true;
           "directory".components.library.planned = lib.mkOverride 900 true;
           "th-abstraction".components.library.planned = lib.mkOverride 900 true;

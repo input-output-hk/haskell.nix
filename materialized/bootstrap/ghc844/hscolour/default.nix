@@ -34,6 +34,7 @@
         packages = {
           "containers".components.library.planned = lib.mkOverride 900 true;
           "ghc-prim".components.library.planned = lib.mkOverride 900 true;
+          "hscolour".components.exes."HsColour".planned = lib.mkOverride 900 true;
           "hscolour".components.library.planned = lib.mkOverride 900 true;
           "integer-gmp".components.library.planned = lib.mkOverride 900 true;
           "array".components.library.planned = lib.mkOverride 900 true;
