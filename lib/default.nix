@@ -52,8 +52,7 @@ in {
           tys;
     in libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc:
-    (if c.config.planned then [c] else []) ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
 
   componentPrefix = {
     sublibs = "lib";
@@ -74,8 +73,8 @@ in {
       comps = config.components;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
-      buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true);
-      libComp = if comps.library == null || !(comps.library.buildable or true)
+      buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true && comp.planned);
+      libComp = if comps.library == null || !(comps.library.buildable or true && comps.library.planned)
         then {}
         else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "setup" ]));
       subComps = lib.mapAttrs
