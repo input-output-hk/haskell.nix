@@ -14,6 +14,7 @@ module Plan2Nix.Plan
 
 import           Data.Text                                ( Text )
 import           Data.HashMap.Strict                      ( HashMap )
+import           Data.HashSet                             ( HashSet )
 
 type Version = Text
 type Revision = Text -- Can be: rNUM, cabal file sha256, or "default"
@@ -29,6 +30,7 @@ data Location
 data Plan = Plan
   { packages :: HashMap Text (Maybe Package)
   , extras :: HashMap Text (Maybe Package)
+  , components :: HashSet Text
   , compilerVersion :: Text
   , compilerPackages :: HashMap Text (Maybe Version)
   } deriving (Show)

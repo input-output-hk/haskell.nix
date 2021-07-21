@@ -89,7 +89,9 @@ stack2nix args (Stack resolver compiler pkgs pkgFlags ghcOpts) =
        , "resolver"  $= fromString (quoted resolver)
        , "modules" $= mkList [
            mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
-         , mkNonRecSet [ "packages" $= mkNonRecSet ghcOptions ] ]
+         , mkNonRecSet [ "packages" $= mkNonRecSet ghcOptions ]
+         -- Mark all packages as planned (stack projects do not have planned/unplanned components).
+         , mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "planned" $= ("lib" @. "mkOverride" @@ mkInt 900 @@ mkBool True) ] ]
        ] ++ [
          "compiler" $= fromString (quoted c) | (Just c) <- [compiler]
        ]

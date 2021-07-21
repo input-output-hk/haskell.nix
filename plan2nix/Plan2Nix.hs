@@ -10,9 +10,12 @@ import           Data.Aeson
 import           Data.Char                                ( isDigit )
 import           Data.HashMap.Strict                      ( HashMap )
 import qualified Data.HashMap.Strict           as Map
+import           Data.HashSet                             ( HashSet )
+import qualified Data.HashSet                  as Set
 import           Data.Maybe                               ( mapMaybe
                                                           , isJust
                                                           , fromMaybe
+                                                          , maybeToList
                                                           )
 import           Data.List.NonEmpty                       ( NonEmpty (..) )
 import qualified Data.Text                     as Text
@@ -76,7 +79,7 @@ writeDoc file doc =
      hClose handle
 
 plan2nix :: Args -> Plan -> IO NExpr
-plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = do
+plan2nix args (Plan { packages, extras, components, compilerVersion, compilerPackages }) = do
   -- TODO: this is an aweful hack and expects plan-to-nix to be
   -- called from the toplevel project directory.
   cwd <- getCurrentDirectory
@@ -108,6 +111,9 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
   let flags = concatMap (\case
           (name, Just (Package _v _r f _)) -> flags2nix name f
           _ -> []) $ Map.toList extras
+      -- Set the `planned` option for all components in the plan.
+      planned = map (\name -> name <> ".planned" $=
+        ("lib" @. "mkOverride" @@ mkInt 900 @@ mkBool True)) $ Set.toList components
 
   return $ mkNonRecSet [
     "pkgs" $= ("hackage" ==> mkNonRecSet (
@@ -121,6 +127,7 @@ plan2nix args (Plan { packages, extras, compilerVersion, compilerPackages }) = d
     , "extras" $= ("hackage" ==> mkNonRecSet [ "packages" $= extrasNix ])
     , "modules" $= mkList [
         mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
+      , mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet planned ]
       ]
     ]
  where
@@ -176,7 +183,7 @@ flags2nix pkgName pkgFlags =
   ]
 
 value2plan :: Value -> Plan
-value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
+value2plan plan = Plan { packages, components, extras, compilerVersion, compilerPackages }
  where
   packages = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
                                               , pkg ^. key "style" . _String) of
@@ -239,7 +246,39 @@ value2plan plan = Plan { packages, extras, compilerVersion, compilerPackages }
       $ mapMaybe (\pkg -> (,) (pkg ^. key "pkg-name" . _String) <$> f pkg)
       $ Vector.toList (plan ^. key "install-plan" . _Array)
 
+  -- Set of components that are included in the plan.
+  components :: HashSet Text
+  components =
+    Set.fromList
+      $ concatMap (\pkg ->
+          let pkgName = pkg ^. key "pkg-name" . _String
+              nixComponentAttr = Text.pack . componentNameToHaskellNixAttr pkgName . Text.unpack
+          in
+            map ((quoted pkgName <> ".components.") <>) $
+              case (pkg ^. key "type" . _String, Map.keys (pkg ^. key "components" . _Object)) of
+                ("pre-existing", _) -> [ "library" ]
+                (_, []) -> [ nixComponentAttr $ pkg ^. key "component-name" . _String ]
+                (_, c)  -> map nixComponentAttr c)
+      $ Vector.toList (plan ^. key "install-plan" . _Array)
 
+  -- Convert a cabal style component name to the haskell.nix attribute path.
+  componentNameToHaskellNixAttr :: Text -> String -> String
+  componentNameToHaskellNixAttr pkgName n =
+    case span (/=':') n of
+      ("setup", "") -> "setup"
+      ("lib", "")   -> "library"
+      (prefix, ':':rest) -> componentPrefixToHaskellNix prefix <> "." <> quoted rest
+      _ -> error ("unknown component name format " <> show n <> " for package " <> show pkgName)
+
+  componentPrefixToHaskellNix :: String -> String
+  componentPrefixToHaskellNix "lib"   = "sublibs"
+  componentPrefixToHaskellNix "flib"  = "foreignlibs"
+  componentPrefixToHaskellNix "exe"   = "exes"
+  componentPrefixToHaskellNix "test"  = "tests"
+  componentPrefixToHaskellNix "bench" = "benchmarks"
+  componentPrefixToHaskellNix x = error ("unknown component prefix " <> x)
+
+defaultNixContents :: String
 defaultNixContents = unlines $
   [ "{ haskellNixSrc ? builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz"
   , ", haskellNix ? import haskellNixSrc {}"
