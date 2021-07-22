@@ -261,10 +261,15 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
               nixComponentAttr = Text.pack . componentNameToHaskellNixAttr pkgName . Text.unpack
           in
             map ((quoted pkgName <> ".components.") <>) $
-              case (pkg ^. key "type" . _String, Map.keys (pkg ^. key "components" . _Object)) of
-                ("pre-existing", _) -> [ "library" ]
-                (_, []) -> [ nixComponentAttr $ pkg ^. key "component-name" . _String ]
-                (_, c)  -> map nixComponentAttr c)
+              if pkg ^. key "type" . _String == "pre-existing"
+                then [ "library" ]
+                else
+                  -- If a `components` attribute exists then the keys of that are the component names.
+                  -- If it does not exist then look for `component-name` instead.
+                  maybe
+                    [nixComponentAttr $ pkg ^. key "component-name" . _String]
+                    (map nixComponentAttr . Map.keys)
+                    (pkg ^? key "components" . _Object))
       $ Vector.toList (plan ^. key "install-plan" . _Array)
 
   -- Convert a cabal style component name to the haskell.nix attribute path.
