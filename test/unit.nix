@@ -6,7 +6,7 @@ let
        benchmarks = { };
        exes = { };
        foreignlibs = { };
-       library = "library";
+       library = { planned = true; };
        sublibs = { };
        tests = { };
     };
@@ -15,12 +15,12 @@ let
 
   componentsConfig = {
     components = {
-       benchmarks = { bbb = "bbb"; };
-       exes = { eee = "eee"; };
-       foreignlibs = { fff = "fff"; };
-       library = "library";
+       benchmarks = { bbb = { planned = true; }; };
+       exes = { eee = { planned = true; }; };
+       foreignlibs = { fff = { planned = true; }; };
+       library = { planned = true; };
        sublibs = { };
-       tests = { ttt = "ttt"; };
+       tests = { ttt = { planned = true; }; };
     };
     package.identifier.name = "nnn";
   };
