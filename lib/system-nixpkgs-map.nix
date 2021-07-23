@@ -88,6 +88,7 @@ with pkgs;
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
      shell32 = null; shfolder = null; shlwapi = null; user32 = null;
+     ole32 = null; rpcrt4 = null;
      winmm = null; userenv = null;
      kernel32 = null; ws2_32 = null;
      # this should be bundled with gcc.
