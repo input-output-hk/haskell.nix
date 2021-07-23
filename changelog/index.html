@@ -197,6 +197,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#jul-23-2021">Jul 23, 2021</a></li>
+    
+
     <li class="toctree-l2"><a href="#apr-8-2021">Apr 8, 2021</a></li>
     
 
@@ -324,6 +327,20 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="jul-23-2021">Jul 23, 2021<a class="headerlink" href="#jul-23-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>source-repository-package</code> references in <code>cabal.project</code> files are now
+  left as a <code>source-repository-package</code> when calculating the the <code>plan-nix</code> for
+  <code>cabalProject</code> based functions.
+  This makes haskell.nix match the behaviour of <code>cabal</code> better.
+  Materialized files for projects that use <code>source-repository-package</code>
+  references will need to be updated.</li>
+<li>Only planned components are included in a haskell.nix cabal project.
+  If cabal solver does not include the component in the <code>plan.json</code> file it
+  will not be present in <code>hsPkgs.pkg.components</code>.</li>
+<li>When the same package occurs more than once in a plan.json file
+  the latest version is picked by haskell.nix.</li>
+</ul>
 <h2 id="apr-8-2021">Apr 8, 2021<a class="headerlink" href="#apr-8-2021" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Project arguments are now validated with the Nix module system.

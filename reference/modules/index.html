@@ -283,6 +283,8 @@
         
             <li><a class="toctree-l4" href="#packagesallcomponentpkgconfig">packages..allComponent.pkgconfig</a></li>
         
+            <li><a class="toctree-l4" href="#packagesallcomponentplanned">packages..allComponent.planned</a></li>
+        
             <li><a class="toctree-l4" href="#packagesallcomponentplatforms">packages..allComponent.platforms</a></li>
         
             <li><a class="toctree-l4" href="#packagesallcomponentpostbuild">packages..allComponent.postBuild</a></li>
@@ -407,6 +409,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarkspkgconfig">packages..components.benchmarks..pkgconfig</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentsbenchmarksplanned">packages..components.benchmarks..planned</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarksplatforms">packages..components.benchmarks..platforms</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsbenchmarkspostbuild">packages..components.benchmarks..postBuild</a></li>
@@ -526,6 +530,8 @@
             <li><a class="toctree-l4" href="#packagescomponentsexesmodules">packages..components.exes..modules</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsexespkgconfig">packages..components.exes..pkgconfig</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentsexesplanned">packages..components.exes..planned</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsexesplatforms">packages..components.exes..platforms</a></li>
         
@@ -647,6 +653,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibspkgconfig">packages..components.foreignlibs..pkgconfig</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentsforeignlibsplanned">packages..components.foreignlibs..planned</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibsplatforms">packages..components.foreignlibs..platforms</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentsforeignlibspostbuild">packages..components.foreignlibs..postBuild</a></li>
@@ -766,6 +774,8 @@
             <li><a class="toctree-l4" href="#packagescomponentslibrarymodules">packages..components.library.modules</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentslibrarypkgconfig">packages..components.library.pkgconfig</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentslibraryplanned">packages..components.library.planned</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentslibraryplatforms">packages..components.library.platforms</a></li>
         
@@ -887,6 +897,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentssetuppkgconfig">packages..components.setup.pkgconfig</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentssetupplanned">packages..components.setup.planned</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentssetupplatforms">packages..components.setup.platforms</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssetuppostbuild">packages..components.setup.postBuild</a></li>
@@ -1007,6 +1019,8 @@
         
             <li><a class="toctree-l4" href="#packagescomponentssublibspkgconfig">packages..components.sublibs..pkgconfig</a></li>
         
+            <li><a class="toctree-l4" href="#packagescomponentssublibsplanned">packages..components.sublibs..planned</a></li>
+        
             <li><a class="toctree-l4" href="#packagescomponentssublibsplatforms">packages..components.sublibs..platforms</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentssublibspostbuild">packages..components.sublibs..postBuild</a></li>
@@ -1126,6 +1140,8 @@
             <li><a class="toctree-l4" href="#packagescomponentstestsmodules">packages..components.tests..modules</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentstestspkgconfig">packages..components.tests..pkgconfig</a></li>
+        
+            <li><a class="toctree-l4" href="#packagescomponentstestsplanned">packages..components.tests..planned</a></li>
         
             <li><a class="toctree-l4" href="#packagescomponentstestsplatforms">packages..components.tests..platforms</a></li>
         
@@ -1263,6 +1279,8 @@
         
             <li><a class="toctree-l4" href="#packagespatches">packages..patches</a></li>
         
+            <li><a class="toctree-l4" href="#packagesplanned">packages..planned</a></li>
+        
             <li><a class="toctree-l4" href="#packagespostbuild">packages..postBuild</a></li>
         
             <li><a class="toctree-l4" href="#packagespostcheck">packages..postCheck</a></li>
@@ -1310,6 +1328,8 @@
             <li><a class="toctree-l4" href="#packagestestwrapper">packages..testWrapper</a></li>
         
             <li><a class="toctree-l4" href="#packageswritehiefiles">packages..writeHieFiles</a></li>
+        
+            <li><a class="toctree-l4" href="#planned">planned</a></li>
         
             <li><a class="toctree-l4" href="#postbuild">postBuild</a></li>
         
@@ -1844,6 +1864,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagesallcomponentplanned">packages.<name>.allComponent.planned<a class="headerlink" href="#packagesallcomponentplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentplatforms">packages.<name>.allComponent.platforms<a class="headerlink" href="#packagesallcomponentplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or list of unspecifieds</p>
@@ -2155,6 +2180,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentsbenchmarksplanned">packages.<name>.components.benchmarks.<name>.planned<a class="headerlink" href="#packagescomponentsbenchmarksplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksplatforms">packages.<name>.components.benchmarks.<name>.platforms<a class="headerlink" href="#packagescomponentsbenchmarksplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or list of unspecifieds</p>
@@ -2455,6 +2485,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentsexesplanned">packages.<name>.components.exes.<name>.planned<a class="headerlink" href="#packagescomponentsexesplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesplatforms">packages.<name>.components.exes.<name>.platforms<a class="headerlink" href="#packagescomponentsexesplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
@@ -2757,6 +2792,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentsforeignlibsplanned">packages.<name>.components.foreignlibs.<name>.planned<a class="headerlink" href="#packagescomponentsforeignlibsplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsplatforms">packages.<name>.components.foreignlibs.<name>.platforms<a class="headerlink" href="#packagescomponentsforeignlibsplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or list of unspecifieds</p>
@@ -3057,6 +3097,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentslibraryplanned">packages.<name>.components.library.planned<a class="headerlink" href="#packagescomponentslibraryplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryplatforms">packages.<name>.components.library.platforms<a class="headerlink" href="#packagescomponentslibraryplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
@@ -3359,6 +3404,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentssetupplanned">packages.<name>.components.setup.planned<a class="headerlink" href="#packagescomponentssetupplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupplatforms">packages.<name>.components.setup.platforms<a class="headerlink" href="#packagescomponentssetupplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or list of unspecifieds</p>
@@ -3660,6 +3710,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagescomponentssublibsplanned">packages.<name>.components.sublibs.<name>.planned<a class="headerlink" href="#packagescomponentssublibsplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsplatforms">packages.<name>.components.sublibs.<name>.platforms<a class="headerlink" href="#packagescomponentssublibsplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or list of unspecifieds</p>
@@ -3960,6 +4015,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: list of list of packagess</p>
 <p><strong>Default</strong>: []</p>
+<p><strong>No Example</strong></p>
+<h2 id="packagescomponentstestsplanned">packages.<name>.components.tests.<name>.planned<a class="headerlink" href="#packagescomponentstestsplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsplatforms">packages.<name>.components.tests.<name>.platforms<a class="headerlink" href="#packagescomponentstestsplatforms" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
@@ -4302,6 +4362,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p><strong>Type</strong>: list of unspecified or paths</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
+<h2 id="packagesplanned">packages.<name>.planned<a class="headerlink" href="#packagesplanned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
 <h2 id="packagespostbuild">packages.<name>.postBuild<a class="headerlink" href="#packagespostbuild" title="Permanent link">&para;</a></h2>
 <p>This option has no description.</p>
 <p><strong>Type</strong>: null or string</p>
@@ -4420,6 +4485,11 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <p>"echo"</p>
 <h2 id="packageswritehiefiles">packages.<name>.writeHieFiles<a class="headerlink" href="#packageswritehiefiles" title="Permanent link">&para;</a></h2>
 <p>Write component <code>.hie</code> files in the store in a <code>hie</code> output</p>
+<p><strong>Type</strong>: boolean</p>
+<p><strong>Default</strong>: false</p>
+<p><strong>No Example</strong></p>
+<h2 id="planned">planned<a class="headerlink" href="#planned" title="Permanent link">&para;</a></h2>
+<p>Set to true by <code>plan-to-nix</code> for any component that was included in the <code>plan.json</code> file.</p>
 <p><strong>Type</strong>: boolean</p>
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
