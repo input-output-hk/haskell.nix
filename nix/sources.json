@@ -78,16 +78,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-tools": {
-        "branch": "hkm/no-components-fix",
+        "branch": "master",
         "builtin": false,
         "description": "Translate Cabals Generic Package Description to a Nix expression",
         "homepage": null,
         "owner": "input-output-hk",
         "repo": "nix-tools",
-        "rev": "2218de1f7a76c9a93753edf32de2e1a77151e7c1",
+        "rev": "c8c5e6a6fbb12a73598d1a434984a36e880ce3cf",
         "sha256": "1g1g2kd6cgv9pn5s9xn0x4f1gh450qbkg561x6lcdxzncd19sfyn",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/nix-tools/archive/2218de1f7a76c9a93753edf32de2e1a77151e7c1.tar.gz",
+        "url": "https://github.com/input-output-hk/nix-tools/archive/c8c5e6a6fbb12a73598d1a434984a36e880ce3cf.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
