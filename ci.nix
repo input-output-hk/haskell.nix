@@ -32,6 +32,7 @@
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
+      ghc8104 = false;
       ghc8105 = true;
       ghc901 = true;
       ghc810420210212 = false;
