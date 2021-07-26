@@ -74,17 +74,14 @@ let
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
   # will be trated like a field and returned here
   # (used in call-cabal-project-to-nix.nix to create a fixed-output derivation)
-  extractRepoData = cabalProjectFileName: lookupSha256: repo:
-    builtins.map (subdir:
-      {
-        url = repo.location;
-        ref = repo.tag;
-        sha256 = repo."--sha256" or (lookupSha256 repo);
-        inherit subdir;
-      })
-      (if repo ? subdir
-        then pkgs.lib.filter (x: x != "") (pkgs.lib.splitString " " repo.subdir)
-        else ["."]);
+  extractRepoData = cabalProjectFileName: lookupSha256: repo: {
+    url = repo.location;
+    ref = repo.tag;
+    sha256 = repo."--sha256" or (lookupSha256 repo);
+    subdirs = if repo ? subdir
+      then pkgs.lib.filter (x: x != "") (pkgs.lib.splitString " " repo.subdir)
+      else ["."];
+  };
 
   # Parse a source-repository-package and return data of `type: git` repositories
   parseBlock = cabalProjectFileName: lookupSha256: block:

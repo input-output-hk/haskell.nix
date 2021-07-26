@@ -6,7 +6,7 @@ let
        benchmarks = { };
        exes = { };
        foreignlibs = { };
-       library = "library";
+       library = { planned = true; };
        sublibs = { };
        tests = { };
     };
@@ -15,12 +15,12 @@ let
 
   componentsConfig = {
     components = {
-       benchmarks = { bbb = "bbb"; };
-       exes = { eee = "eee"; };
-       foreignlibs = { fff = "fff"; };
-       library = "library";
+       benchmarks = { bbb = { planned = true; }; };
+       exes = { eee = { planned = true; }; };
+       foreignlibs = { fff = { planned = true; }; };
+       library = { planned = true; };
        sublibs = { };
-       tests = { ttt = "ttt"; };
+       tests = { ttt = { planned = true; }; };
     };
     package.identifier.name = "nnn";
   };
@@ -65,7 +65,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "."; })];
+      sourceRepo = testRepoData // { subdirs = ["."]; };
     };
   };
 
@@ -80,7 +80,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "dir"; })];
+      sourceRepo = testRepoData // { subdirs = ["dir"]; };
     };
   };
 
@@ -95,7 +95,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
+      sourceRepo = testRepoData // { subdirs = ["dir1" "dir2"]; };
     };
   };
 
@@ -112,7 +112,7 @@ lib.runTests {
     '');
     expected = __toJSON {
       otherText = "-- end of block\n";
-      sourceRepo = [(testRepoData // { subdir = "dir1"; }) (testRepoData // { subdir = "dir2"; })];
+      sourceRepo = testRepoData // { subdirs = ["dir1" "dir2"]; };
     };
   };
 }

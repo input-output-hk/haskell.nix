@@ -184,12 +184,29 @@ let
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
                 (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
                  drv);
-        in fetched + (if repoData.subdir == "." then "" else "/" + repoData.subdir);
+        in {
+          # Download the source-repository-package commit and add it to a minimal git
+          # repository that `cabal` will be able to access from a non fixed output derivation.
+          location = pkgs.evalPackages.runCommand "source-repository-package" {
+              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.git ];
+            } ''
+            mkdir $out
+            rsync -a --prune-empty-dirs "${fetched}/" "$out/"
+            cd $out
+            chmod -R +w .
+            git init -b minimal
+            git add .
+            GIT_COMMITTER_NAME='No One' GIT_COMMITTER_EMAIL= git commit -m "Minimal Repo For Haskell.Nix" --author 'No One <>'
+          '';
+          inherit (repoData) subdirs;
+          inherit fetched;
+          tag = "minimal";
+        };
 
       blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
-      sourceRepoData = pkgs.lib.lists.concatMap (x: x.sourceRepo) repoBlocks;
+      sourceRepoData = pkgs.lib.lists.map (x: x.sourceRepo) repoBlocks;
       otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
@@ -203,35 +220,47 @@ let
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposEval = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData ;
-      sourceReposBuild = builtins.map (fetchRepo pkgs.fetchgit) sourceRepoData;
+      sourceReposEval = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData;
+      sourceReposBuild = builtins.map (x: (fetchRepo pkgs.fetchgit x).fetched) sourceRepoData;
     in {
       sourceRepos = sourceReposBuild;
       makeFixedProjectFile = ''
         cp -f ${otherText} ./cabal.project
+      '' +
+        pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
         chmod +w -R ./cabal.project
         # The newline here is important in case cabal.project does not have one at the end
-        printf "\npackages:" >> ./cabal.project
-        mkdir -p ./.source-repository-packages
+        echo >> ./cabal.project
       '' +
-        ( pkgs.lib.strings.concatStrings (
+        # Add replacement `source-repository-package` blocks pointing to the minimal git repos
+        ( pkgs.lib.strings.concatMapStrings (f: ''
+              echo "source-repository-package" >> ./cabal.project
+              echo "  type: git" >> ./cabal.project
+              echo "  location: file://${f.location}" >> ./cabal.project
+              echo "  subdir: ${builtins.concatStringsSep " " f.subdirs}" >> ./cabal.project
+              echo "  tag: ${f.tag}" >> ./cabal.project
+            '') sourceReposEval
+        ));
+      # This will be used to replace refernces to the minimal git repos with just the index
+      # of the repo.  The index will be used in lib/import-and-filter-project.nix to
+      # lookup the correct repository in `sourceReposBuild`.  This avoids having
+      # `/nix/store` paths in the `plan-nix` output so that it can  be materialized safely.
+      replaceLocations = pkgs.lib.strings.concatStrings (
             pkgs.lib.lists.zipListsWith (n: f: ''
-              mkdir -p ./.source-repository-packages/${builtins.toString n}
-              rsync -a --prune-empty-dirs \
-                --include '*/' --include '*.cabal' --include 'package.yaml' \
-                --exclude '*' \
-                 "${f}/" "./.source-repository-packages/${builtins.toString n}/"
-              echo "  ./.source-repository-packages/${builtins.toString n}" >> ./cabal.project
+              (cd $out${subDir'}
+              substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace file://${f.location} ${builtins.toString n}
+              for a in $(grep -rl file://${f.location} .plan.nix/*.nix); do
+                substituteInPlace $a --replace file://${f.location} ${builtins.toString n}
+              done)
             '')
               (pkgs.lib.lists.range 0 ((builtins.length sourceReposEval) - 1))
               sourceReposEval
-          )
-        );
+          );
     };
 
   fixedProject =
     if rawCabalProject == null
-      then { sourceRepos = []; makeFixedProjectFile = ""; }
+      then { sourceRepos = []; makeFixedProjectFile = ""; replaceLocations = ""; }
       else replaceSoureRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
@@ -388,7 +417,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (pkgs.evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync pkgs.evalPackages.git ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
@@ -519,16 +548,15 @@ let
     # proper relative paths.
     (cd $out${subDir'} && plan-to-nix --full --plan-json $tmp${subDir'}/dist-newstyle/cache/plan.json -o .)
 
+    # Replace the /nix/store paths to minimal git repos with indexes (that will work with materialization).
+    ${fixedProject.replaceLocations}
+
     # Make the plan.json file available in case we need to debug plan-to-nix
     cp $tmp${subDir'}/dist-newstyle/cache/plan.json $maybeJson
 
     # Remove the non nix files ".project" ".cabal" "package.yaml" files
     # as they should not be in the output hash (they may change slightly
     # without affecting the nix).
-    if [ -d $out${subDir'}/.source-repository-packages ]; then
-      chmod +w -R $out${subDir'}/.source-repository-packages
-      rm -rf $out${subDir'}/.source-repository-packages
-    fi
     find $out \( -type f -or -type l \) ! -name '*.nix' -delete
     # Remove empty dirs
     find $out -type d -empty -delete

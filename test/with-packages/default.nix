@@ -11,7 +11,7 @@ let
     #   plan-to-nix -o .
     pkg-def = pkgs.pkgs;
     pkg-def-extras = [ pkgs.extras ];
-    modules = [
+    modules = pkgs.modules ++ [
       # overrides to fix the build
       {
         packages.transformers-compat.components.library.doExactConfig = true;
