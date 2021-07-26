@@ -14,13 +14,7 @@
         }
       )]
       else []
-  ) ++ [(
-    final: prev: {
-        haskell-nix = prev.haskell-nix // {
-        inherit overlays;
-      };
-    }
-  )];
+  );
   allOverlays = import ./overlays args;
   nixpkgsArgs = { inherit config overlays system; };
   pkgs = import sources.nixpkgs nixpkgsArgs;
