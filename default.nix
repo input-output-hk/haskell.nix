@@ -18,7 +18,6 @@
     final: prev: {
         haskell-nix = prev.haskell-nix // {
         inherit overlays;
-        sources = prev.haskell-nix.sources // sourcesOverride;
       };
     }
   )];

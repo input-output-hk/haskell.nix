@@ -30,7 +30,7 @@ final: prev: {
             specJSON = stackageSourceJSON;
             override = "stackage";
           };
-        } // (import ../nix/sources.nix) // sourcesOverride;
+        } // (import ../nix/sources.nix { pkgs = final; }) // sourcesOverride;
 
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
@@ -706,7 +706,7 @@ final: prev: {
               , crossPlatforms ? p: []
               }:
               let packageNames = project: builtins.attrNames (packages project.hsPkgs);
-                  packagesForProject = prefix: project: 
+                  packagesForProject = prefix: project:
                     final.lib.concatMap (packageName:
                       let package = project.hsPkgs.${packageName};
                       in final.lib.optional (package.components ? library)
@@ -721,7 +721,7 @@ final: prev: {
                             { name = "${prefix}${packageName}:test:${n}"; value = v; })
                           (package.components.tests)
                     ) (packageNames project);
-                  checksForProject = prefix: project: 
+                  checksForProject = prefix: project:
                     final.lib.concatMap (packageName:
                       let package = project.hsPkgs.${packageName};
                       in final.lib.mapAttrsToList (n: v:
