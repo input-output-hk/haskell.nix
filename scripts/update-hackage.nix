@@ -1,5 +1,5 @@
 { stdenv, lib, writeScript, coreutils, glibc, git, openssh
-, nix-tools, cabal-install, nix-prefetch-git
+, nix-tools, cabal-install, nixFlakes
 , gawk, bash, curl, findutils
 , update-index-state-hashes }@args:
 
