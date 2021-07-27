@@ -82,7 +82,7 @@ with pkgs;
   icui18n = [ icu ];
   icudata = [ icu ];
   vulkan = [ vulkan-loader ];
-  sodium = [ libsodium ];
+  sodium = [ (pkgs.libsodium-vrf or pkgs.libsodium) ];
   gfortran = [ gfortran.cc.lib ];
 }
 # -- windows

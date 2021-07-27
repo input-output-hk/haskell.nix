@@ -136,7 +136,7 @@ pkgs:
     "sctp"                               = [ pkgs."lksctp-tools" ]; # This is linux-specific, we should create a common attribute if we ever add sctp support for other systems.
     "sdl2"                               = [ pkgs."SDL2" ];
     "sndfile"                            = [ pkgs."libsndfile" ];
-    "sodium"                             = [ pkgs."libsodium" ];
+    "sodium"                             = [ (pkgs.libsodium-vrf or pkgs.libsodium) ];
     "sqlite3"                            = [ pkgs."sqlite" ];
     "ssh2"                               = [ pkgs."libssh2" ];
     "statgrab"                           = [ pkgs."libstatgrab" ];
