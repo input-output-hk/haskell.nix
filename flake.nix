@@ -5,6 +5,7 @@
     nixpkgs = { url = "github:NixOS/nixpkgs/nixpkgs-20.09-darwin"; };
     nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
     nixpkgs-2009 = { url = "github:NixOS/nixpkgs/nixpkgs-20.09-darwin"; };
+    nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-utils = { url = "github:numtide/flake-utils"; };
     hackage = {
