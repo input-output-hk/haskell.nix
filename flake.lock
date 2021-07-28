@@ -212,15 +212,16 @@
     "old-ghc-nix": {
       "flake": false,
       "locked": {
-        "lastModified": 1612495504,
-        "narHash": "sha256-MVFOatKs3nxZcoO8QtDUqRxLD4nSjAMQNL7iDE/Gwlg=",
+        "lastModified": 1621819714,
+        "narHash": "sha256-EJCnYQSWk7FRLwS0lZgTWIiQ6pcvDX1VuD6LGD4Uwzs=",
         "owner": "angerman",
         "repo": "old-ghc-nix",
-        "rev": "131ce9ae27d7b7afdd1d3ce8c3a74483e60b91bb",
+        "rev": "f089a6f090cdb35fcf95f865fc6a31ba6b3ac4eb",
         "type": "github"
       },
       "original": {
         "owner": "angerman",
+        "ref": "master2",
         "repo": "old-ghc-nix",
         "type": "github"
       }
