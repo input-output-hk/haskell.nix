@@ -8,10 +8,9 @@ let
     };
   pkgs = args.pkgs or import nixpkgsSrc {};
   flake-compat =
-    pkgs.fetchgit {
-      url = "https://github.com/hamishmack/flake-compat";
-      rev = "90c3753102f9e619234b5d23f5db3b63f7bf8544";
-      sha256 = "sha256-MM7nIIdFkA8hwG/vFqHZJ2+PP2CYgJifyPV3ET9TXyg=";
+    pkgs.fetchzip {
+      url = "https://github.com/hamishmack/flake-compat/archive/ce16b21b8a5588aa8b532353d3ceea89a38b8e77.tar.gz";
+      sha256 = "sha256:054nsfqh3wy6v6bjamw0k91xl8v1rc5x2laic8mphrkrhzvyz5hi";
     };
   self = import flake-compat { src = ./.; inherit pkgs; };
 in self.defaultNix.internal.compat
