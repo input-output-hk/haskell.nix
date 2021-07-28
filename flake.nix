@@ -55,10 +55,7 @@
   outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, ... }@inputs:
     let compiler = "ghc884";
     in {
-      # Using the eval-on-build version here as the plan is that
-      # `builtins.currentSystem` will not be supported in flakes.
-      # https://github.com/NixOS/rfcs/pull/49/files#diff-a5a138ca225433534de8d260f225fe31R429
-      overlay = self.overlays.combined-eval-on-build;
+      overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
       internal = rec {
         config = import ./config.nix;
@@ -66,7 +63,7 @@
           inherit config;
           overlays = [ self.overlay ];
         };
-
+      
         sources = inputs;
 
         overlaysOverrideable = import ./overlays;
@@ -87,18 +84,12 @@
                   })
                 ]
               else
-                [ ]) ++ [
-                  (final: prev: {
-                    haskell-nix = prev.haskell-nix // {
-                      inherit overlays;
-                      sources = prev.haskell-nix.sources // sourcesOverride;
-                    };
-                  })
-                ];
+                [ ]);
             pkgs = import nixpkgs
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable
               (nixpkgsArgs // { localSystem = { inherit system; }; });
+            hix = import ./hix/default.nix { inherit pkgs; };
           };
       };
 

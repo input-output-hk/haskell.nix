@@ -37,5 +37,20 @@
           "happy" = { flags = { "small_base" = lib.mkOverride 900 true; }; };
           };
         })
+    ({ lib, ... }:
+      {
+        packages = {
+          "containers".components.library.planned = lib.mkOverride 900 true;
+          "ghc-prim".components.library.planned = lib.mkOverride 900 true;
+          "happy".components.exes."happy".planned = lib.mkOverride 900 true;
+          "transformers".components.library.planned = lib.mkOverride 900 true;
+          "integer-gmp".components.library.planned = lib.mkOverride 900 true;
+          "array".components.library.planned = lib.mkOverride 900 true;
+          "base".components.library.planned = lib.mkOverride 900 true;
+          "rts".components.library.planned = lib.mkOverride 900 true;
+          "mtl".components.library.planned = lib.mkOverride 900 true;
+          "deepseq".components.library.planned = lib.mkOverride 900 true;
+          };
+        })
     ];
   }

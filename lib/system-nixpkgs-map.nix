@@ -88,12 +88,14 @@ with pkgs;
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
      shell32 = null; shfolder = null; shlwapi = null; user32 = null;
+     ole32 = null; rpcrt4 = null;
      winmm = null; userenv = null;
      kernel32 = null; ws2_32 = null;
      # this should be bundled with gcc.
      # if it's not we have more severe
      # issues anyway.
      gcc_s_seh-1 = null;
+     gcc_s = null;
      ssl32 = null; eay32 = [ openssl ];
      iphlpapi = null; # IP Help API
      msvcrt = null; # this is the libc
