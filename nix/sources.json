@@ -92,7 +92,7 @@
     },
     "nixpkgs": {
         "branch": "nixpkgs-21.05-darwin",
-        "builtin": false,
+        "builtin": true,
         "description": "Nix Packages collection",
         "homepage": null,
         "owner": "NixOS",

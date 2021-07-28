@@ -14,21 +14,15 @@
 
     internal = rec {
       config = import ./config.nix;
-      # Use a shim for pkgs that does not depend on `builtins.currentSystem`.
-      sources = import ./nix/sources.nix {
-        pkgs = { fetchzip = builtins.fetchTarball; };
-      };
 
       nixpkgsArgs = {
         inherit config;
         overlays = [ self.overlay ];
       };
-
-      overlaysOverrideable = import ./overlays;
     };
 
     overlay = self.overlays.combined;
-    overlays = self.internal.overlaysOverrideable { sourcesOverride = self.internal.sources; };
+    overlays = import ./overlays {};
 
     legacyPackages = let
       genAttrs = lst: f:
