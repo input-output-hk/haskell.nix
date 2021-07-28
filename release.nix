@@ -11,8 +11,8 @@ let
         then __trace (prefix + n) v
         else traceNames (prefix + n + ".") v
       else v);
-  inherit (import ./ci-lib.nix) stripAttrsForHydra filterDerivations;
-  genericPkgs = import (import ./nix/sources.nix).nixpkgs {};
+  inherit (import ./ci-lib.nix { pkgs = genericPkgs; }) stripAttrsForHydra filterDerivations;
+  genericPkgs = (import ./. {}).pkgs;
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);

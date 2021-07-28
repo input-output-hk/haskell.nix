@@ -5,9 +5,10 @@
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false
-, pkgs }:
+, pkgs ? (import ./. {}).pkgs }:
  let
-   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
+  inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
+  inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
     "R2009" = "nixpkgs-2009";
     "R2105" = "nixpkgs-2105";
