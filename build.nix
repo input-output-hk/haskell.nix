@@ -43,7 +43,7 @@ in rec {
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
-        openssh gawk bash curl findutils;
+        openssh nixFlakes gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
       cabal-install = haskell.internal-cabal-install;
