@@ -78,16 +78,16 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nix-tools": {
-        "branch": "rvl/stack2nix-fix-cache-errors",
+        "branch": "master",
         "builtin": false,
         "description": "Translate Cabals Generic Package Description to a Nix expression",
         "homepage": null,
         "owner": "input-output-hk",
         "repo": "nix-tools",
-        "rev": "28a201ab7080dc47510fb85b6fdc7b9138f041ef",
-        "sha256": "13pjhhr5gh69pxfksjf6bwgibhf1gcy81mww0rbcsqba4azypwhp",
+        "rev": "15d2e4b61cb63ff351f3c490c12c4d89eafd31a1",
+        "sha256": "15p38dhbhk2c0bq8g9jr0gy01livigz0ca34c2mrwipbd4mipqgm",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/nix-tools/archive/28a201ab7080dc47510fb85b6fdc7b9138f041ef.tar.gz",
+        "url": "https://github.com/input-output-hk/nix-tools/archive/15d2e4b61cb63ff351f3c490c12c4d89eafd31a1.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
