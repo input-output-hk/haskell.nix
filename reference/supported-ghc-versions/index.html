@@ -243,63 +243,111 @@
             <div class="section">
               
                 <h1 id="supported-ghc-versions">Supported GHC Versions<a class="headerlink" href="#supported-ghc-versions" title="Permanent link">&para;</a></h1>
-<p>The following GHC versions are defined in <code>haskell.nix</code> (i.e. there is a derivation for them even if it isn't necessarily cached):
+<p>The following GHC versions are defined in <code>haskell.nix</code> (there is a derivation
+for each, though not all are cached or tested by CI):
 - 8.4.4
 - 8.6.{1,2,3,4,5}
 - 8.8.{1,2,3,4}
-- 8.10.{1,2,3,4}</p>
-<p>The following table shows the nixpkgs/GHC versions which are built by CI, and which of those are tested.
-If you use a combination of nixpkgs version and GHC version which is in this table, you should get cache hits from our cache.
-The "nixpkgs versions" refer to the versions that <code>haskell.nix</code> provides; if you use your own version of nixpkgs you will likely not get cache hit.</p>
+- 8.10.{1,2,3,4,5}
+- 9.0.1</p>
+<p>The following table shows the Nixpkgs/GHC versions which are built/cached, and
+which of those are further tested.  If you use a combination of Nixpkgs version
+and GHC version which is in this table, you should hit our cache, saving
+considering time by not building GHC and a few additional tools.</p>
+<p>Note that if you try to use <code>haskell.nix</code> as an overlay over Nixpkgs from a
+standard Nixpkgs channel you will likely get a cache miss.  To hit our cache you
+really should use an instance of Nixpkgs provided by <code>haskell.nix</code> itself.</p>
 <table>
 <thead>
 <tr>
 <th>Nixpkgs version</th>
+<th>Nixpkgs pinning</th>
 <th>GHC version</th>
-<th>Tested?</th>
+<th><code>compiler-nix-name</code></th>
+<th>Tested in CI?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>20.03</td>
+<td>20.09</td>
+<td><code>nixpkgs-2009</code></td>
 <td>8.6.5</td>
-<td>Y</td>
+<td><code>ghc865</code></td>
+<td>No</td>
 </tr>
 <tr>
 <td>20.09</td>
-<td>8.6.5</td>
-<td>Y</td>
+<td><code>nixpkgs-2009</code></td>
+<td>8.10.5</td>
+<td><code>ghc8105</code></td>
+<td>No</td>
 </tr>
 <tr>
-<td>20.09</td>
+<td>21.05</td>
+<td><code>nixpkgs-2105</code></td>
+<td>8.6.5</td>
+<td><code>ghc865</code></td>
+<td>No</td>
+</tr>
+<tr>
+<td>21.05</td>
+<td><code>nixpkgs-2105</code></td>
+<td>8.10.5</td>
+<td><code>ghc8105</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>unstable</td>
+<td><code>nixpkgs-unstable</code></td>
+<td>8.6.5</td>
+<td><code>ghc865</code></td>
+<td>No</td>
+</tr>
+<tr>
+<td>unstable</td>
+<td><code>nixpkgs-unstable</code></td>
 <td>8.8.4</td>
-<td>Y</td>
+<td><code>ghc884</code></td>
+<td>No</td>
 </tr>
 <tr>
-<td>20.09</td>
+<td>unstable</td>
+<td><code>nixpkgs-unstable</code></td>
 <td>8.10.4</td>
-<td>Y</td>
+<td><code>ghc8104</code></td>
+<td>No</td>
 </tr>
 <tr>
-<td>nixpkgs-unstable</td>
-<td>8.6.5</td>
-<td>Y</td>
+<td>unstable</td>
+<td><code>nixpkgs-unstable</code></td>
+<td>8.10.5</td>
+<td><code>ghc8105</code></td>
+<td>Yes</td>
 </tr>
 <tr>
-<td>nixpkgs-unstable</td>
-<td>8.8.4</td>
-<td>Y</td>
-</tr>
-<tr>
-<td>nixpkgs-unstable</td>
-<td>8.10.4</td>
-<td>Y</td>
+<td>unstable</td>
+<td><code>nixpkgs-unstable</code></td>
+<td>9.0.1</td>
+<td><code>ghc901</code></td>
+<td>Yes</td>
 </tr>
 </tbody>
 </table>
-<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix">ci.nix</a> for the source of truth about what is built and tested.</p>
-<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix">overlays/bootstrap.nix</a> for a list of all the valid <code>compiler-nix-names</code>.</p>
-<p>See also: <a href="../../dev/adding-new-ghc/">Instructions on adding new GHC versions</a>.</p>
+<p>See <a href="https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix">ci.nix</a>
+for the source of truth about what is built and tested (in the off chance this
+document is out-of-sync with your checkout).</p>
+<p>See the <a href="../../tutorials/getting-started/">getting started guide</a> for
+instructions on how to set up Nix to take advantage of our cache when building.
+This guide also covers where to use the Nixpkgs pinning and <code>compiler-nix-name</code>
+settings from the table above.  For further information, see the <a href="../../dev/nixpkgs-pin/">instructions
+for how to pin Nixpkgs</a>.</p>
+<p>See
+<a href="https://github.com/input-output-hk/haskell.nix/blob/master/overlays/bootstrap.nix">overlays/bootstrap.nix</a>
+for a full list of all the valid <code>compiler-nix-name</code>s beyond what's
+cached/tested in CI.  You're free to use these, but be ready for longer build
+times.</p>
+<p>Lastly, see <a href="../../dev/adding-new-ghc/">instructions on adding new GHC versions</a>
+in the event that what's in <code>haskell.nix</code> doesn't suit your needs.</p>
               
             </div>
           </div>
