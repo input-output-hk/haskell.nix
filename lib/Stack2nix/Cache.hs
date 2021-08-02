@@ -4,6 +4,7 @@ module Stack2nix.Cache
   , cacheHits
   ) where
 
+import Control.DeepSeq ((<$!!>))
 import Control.Exception (catch, SomeException(..))
 
 readCache :: FilePath
@@ -14,14 +15,13 @@ readCache :: FilePath
                  , String -- pkgname
                  , String -- nixexpr-path
                  )]
-readCache f = fmap (toTuple . words) . lines <$> readFile f
+readCache f = fmap (toTuple . words) . lines <$!!> readFile f
   where toTuple [ url, rev, subdir, sha256, pkgname, exprPath ]
           = ( url, rev, subdir, sha256, pkgname, exprPath )
 
 appendCache :: FilePath -> String -> String -> String -> String -> String -> String -> IO ()
 appendCache f url rev subdir sha256 pkgname exprPath = do
-  appendFile f $ unwords [ url, rev, subdir, sha256, pkgname, exprPath ]
-  appendFile f "\n"
+  appendFile f $! unwords [ url, rev, subdir, sha256, pkgname, exprPath ] ++ "\n"
 
 cacheHits :: FilePath -> String -> String -> String -> IO [ (String, String) ]
 cacheHits f url rev subdir
