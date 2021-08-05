@@ -40,7 +40,7 @@ in { haskell-nix = prev.haskell-nix // {
       #   * ghc-api-compat
       cabalProject = ''
         packages: .
-        constraints: dependent-sum-template >= 0.1.0.0, dependent-sum >= 0.7.1.0
+        constraints: lsp-types < 1.3.0.0
         source-repository-package
           type: git
           location: https://github.com/hsyl20/ghc-api-compat
