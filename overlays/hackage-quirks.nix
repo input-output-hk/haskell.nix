@@ -35,8 +35,12 @@ in { haskell-nix = prev.haskell-nix // {
     };
 
     haskell-language-server = {
+      # Fixes for:
+      #   * lsp-types https://github.com/haskell/lsp/issues/349
+      #   * ghc-api-compat
       cabalProject = ''
         packages: .
+        constraints: dependent-sum-template >= 0.1.0.0, dependent-sum >= 0.7.1.0
         source-repository-package
           type: git
           location: https://github.com/hsyl20/ghc-api-compat
