@@ -197,6 +197,9 @@
     <a class="current" href="./">ChangeLog</a>
     <ul class="subnav">
             
+    <li class="toctree-l2"><a href="#aug-6-2021">Aug 6, 2021</a></li>
+    
+
     <li class="toctree-l2"><a href="#jul-23-2021">Jul 23, 2021</a></li>
     
 
@@ -327,6 +330,13 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="aug-6-2021">Aug 6, 2021<a class="headerlink" href="#aug-6-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Included dependencies of haskell.nix that were tracked in <code>nix/sources.json</code>
+  as flake inputs (<code>flake.lock</code> replaces <code>nix/sources.json</code>).</li>
+<li>Uses <code>flake-compat</code> to continue to provide a compatible interface for non
+  flake projects.</li>
+</ul>
 <h2 id="jul-23-2021">Jul 23, 2021<a class="headerlink" href="#jul-23-2021" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>source-repository-package</code> references in <code>cabal.project</code> files are now
