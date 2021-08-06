@@ -20,7 +20,7 @@ let
       { _module.args.pkgs = {}; }
     ];
   }).config) name;
-  sources = import ../nix/sources.nix {};
+  inherit (import ./.. {}) sources;
   lib = import (sources.nixpkgs-unstable + "/lib");
   commandArgs' =
     builtins.listToAttrs (

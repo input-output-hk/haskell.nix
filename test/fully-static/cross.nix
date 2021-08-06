@@ -1,5 +1,5 @@
 { pkgs ? import nixpkgs { }
-, nixpkgs ? import (../../nix/sources.nix).nixpkgs
+, nixpkgs ? (import ../.. { }).sources.nixpkgs
 }:
 
 let
