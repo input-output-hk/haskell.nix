@@ -1,6 +1,12 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Aug 6, 2021
+* Included dependencies of haskell.nix that were tracked in `nix/sources.json`
+  as flake inputs (`flake.lock` replaces `nix/sources.json`).
+* Uses `flake-compat` to continue to provide a compatible interface for non
+  flake projects.
+
 ## Jul 23, 2021
 * `source-repository-package` references in `cabal.project` files are now
   left as a `source-repository-package` when calculating the the `plan-nix` for
