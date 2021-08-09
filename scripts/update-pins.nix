@@ -15,7 +15,7 @@ in
 
     source ${./git.env}
 
-    git add *.json
+    git add flake.lock
     check_staged
     echo "Committing changes..."
     git commit --message "Update Hackage and Stackage"
