@@ -4,10 +4,11 @@
 , ifdLevel ? 3
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
-, checkMaterialization ? false }:
+, checkMaterialization ? false
+, pkgs ? (import ./. {}).pkgs }:
  let
-  inherit (import ./ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
-  sources = import ./nix/sources.nix {};
+  inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
+  inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
     "R2009" = "nixpkgs-2009";
     "R2105" = "nixpkgs-2105";
@@ -32,6 +33,7 @@
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
+      ghc8104 = false;
       ghc8105 = true;
       ghc901 = true;
       ghc810420210212 = false;

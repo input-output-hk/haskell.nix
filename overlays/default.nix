@@ -1,4 +1,4 @@
-args:
+{ sources, ...}@args:
 
 let
   overlays = {

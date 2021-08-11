@@ -1,8 +1,8 @@
-let
+{
   # Generic nixpkgs, use *only* for lib functions that are stable across versions
-  pkgs = import (import ./nix/sources.nix).nixpkgs {};
-  lib = pkgs.lib;
-in rec {
+  pkgs ? (import ./. {}).pkgs,
+  lib ? pkgs.lib
+}: rec {
   inherit (import ./dimension.nix) dimension;
 
   # A filter for removing packages that aren't supported on the current platform

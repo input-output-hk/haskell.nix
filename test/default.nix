@@ -1,4 +1,4 @@
-{ haskellNix ? import ../default.nix { inherit checkMaterialization; }
+{ haskellNix ? import ../default.nix { }
 , pkgs ? import nixpkgs nixpkgsArgs
 , nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
@@ -10,7 +10,7 @@
 with pkgs;
 
 let
-  inherit (import ../ci-lib.nix) dimension platformFilterGeneric filterAttrsOnlyRecursive;
+  inherit (import ../ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   isDisabled = d: d.meta.disabled or false;
 
   # Set recurseForDerivations for both children and grand-children values in
