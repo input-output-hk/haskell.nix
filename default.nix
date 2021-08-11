@@ -2,7 +2,7 @@
 , system ? builtins.currentSystem
 , sourcesOverride ? {}
 , ... }@args: rec {
-  sources  = (import ./nix/sources.nix { inherit pkgs; }) // sourcesOverride;
+  sources  = (import ./nix/sources.nix { inherit system pkgs; }) // sourcesOverride;
   config   = import ./config.nix;
   overlays = [ allOverlays.combined ] ++ (
     if checkMaterialization == true
