@@ -4,14 +4,14 @@ Date: Fri, 23 Jul 2021 11:24:42 -0400
 Subject: [PATCH 1/4] attempt to speed solving when test is enable projectwide
 
 ---
- .../src/Distribution/Solver/Modular/Preference.hs   |  6 ++++--
- .../src/Distribution/Client/ProjectPlanning.hs      | 13 ++++---------
+ .../Distribution/Solver/Modular/Preference.hs   |  6 ++++--
+ .../Distribution/Client/ProjectPlanning.hs      | 13 ++++---------
  2 files changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs b/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
+diff --git a/Distribution/Solver/Modular/Preference.hs b/Distribution/Solver/Modular/Preference.hs
 index d25ef846356..4275563006e 100644
---- a/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
-+++ b/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
+--- a/Distribution/Solver/Modular/Preference.hs
++++ b/Distribution/Solver/Modular/Preference.hs
 @@ -127,11 +127,13 @@ preferPackagePreferences pcs =
  
  -- | Traversal that tries to establish package stanza enable\/disable
@@ -28,10 +28,10 @@ index d25ef846356..4275563006e 100644
            -- move True case first to try enabling the stanza
            let ts' = W.mapWeightsWithKey (\k w -> weight k : w) ts
                weight k = if k then 0 else 1
-diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning.hs b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
 index 077c6422be4..18a4bf43a0d 100644
---- a/cabal-install/src/Distribution/Client/ProjectPlanning.hs
-+++ b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
 @@ -1024,14 +1024,9 @@ planPackages verbosity comp platform solver SolverSettings{..}
              | (pc, src) <- solverSettingConstraints ]
  
@@ -50,29 +50,19 @@ index 077c6422be4..18a4bf43a0d 100644
            ]
  
        . addConstraints
-@@ -2592,7 +2587,7 @@ nubComponentTargets =
-                             -> [(ComponentTarget, NonEmpty a)]
-     wholeComponentOverrides ts =
-       case [ ta | ta@(ComponentTarget _ WholeComponent, _) <- ts ] of
--        ((t, x):_) -> 
-+        ((t, x):_) ->
-                 let
-                     -- Delete tuple (t, x) from original list to avoid duplicates.
-                     -- Use 'deleteBy', to avoid additional Class constraint on 'nubComponentTargets'.
-
 From 624b8dc2069964de7c99cb7c9fa8c8674db797de Mon Sep 17 00:00:00 2001
 From: Gershom Bazerman <gershom@arista.com>
 Date: Tue, 3 Aug 2021 17:35:12 -0400
 Subject: [PATCH 2/4] fix bug in preferences
 
 ---
- cabal-install/src/Distribution/Client/ProjectPlanning.hs | 7 ++++++-
+ cabal-install/Distribution/Client/ProjectPlanning.hs | 7 ++++++-
  1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning.hs b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
 index 18a4bf43a0d..42fe5be8f3d 100644
---- a/cabal-install/src/Distribution/Client/ProjectPlanning.hs
-+++ b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
 @@ -1026,7 +1026,12 @@ planPackages verbosity comp platform solver SolverSettings{..}
        . addPreferences
            -- enable stanza preference unilaterally, even when the user asked to enable as well, to help hint the solver.
@@ -94,13 +84,13 @@ Date: Mon, 9 Aug 2021 18:17:49 -0400
 Subject: [PATCH 3/4] fix bug
 
 ---
- cabal-install/src/Distribution/Client/ProjectPlanning.hs | 2 +-
+ cabal-install/Distribution/Client/ProjectPlanning.hs | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning.hs b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
 index 42fe5be8f3d..3aefe9242f8 100644
---- a/cabal-install/src/Distribution/Client/ProjectPlanning.hs
-+++ b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
 @@ -1025,7 +1025,7 @@ planPackages verbosity comp platform solver SolverSettings{..}
  
        . addPreferences
@@ -117,14 +107,14 @@ Date: Wed, 11 Aug 2021 13:57:57 -0400
 Subject: [PATCH 4/4] touchup comments
 
 ---
- .../src/Distribution/Solver/Modular/Preference.hs        | 9 +++++++--
- cabal-install/src/Distribution/Client/ProjectPlanning.hs | 3 ++-
+ .../Distribution/Solver/Modular/Preference.hs        | 9 +++++++--
+ cabal-install/Distribution/Client/ProjectPlanning.hs | 3 ++-
  2 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs b/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
+diff --git a/Distribution/Solver/Modular/Preference.hs b/Distribution/Solver/Modular/Preference.hs
 index 4275563006e..ed5adfbf8b2 100644
---- a/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
-+++ b/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
+--- a/Distribution/Solver/Modular/Preference.hs
++++ b/Distribution/Solver/Modular/Preference.hs
 @@ -127,8 +127,13 @@ preferPackagePreferences pcs =
  
  -- | Traversal that tries to establish package stanza enable\/disable
@@ -141,10 +131,10 @@ index 4275563006e..ed5adfbf8b2 100644
  preferPackageStanzaPreferences :: (PN -> PackagePreferences) -> Tree d c -> Tree d c
  preferPackageStanzaPreferences pcs = trav go
    where
-diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning.hs b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
 index 3aefe9242f8..fc6d9a17383 100644
---- a/cabal-install/src/Distribution/Client/ProjectPlanning.hs
-+++ b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
 @@ -1024,7 +1024,8 @@ planPackages verbosity comp platform solver SolverSettings{..}
              | (pc, src) <- solverSettingConstraints ]
  

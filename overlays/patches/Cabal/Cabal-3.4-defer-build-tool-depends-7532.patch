@@ -7,10 +7,10 @@ Subject: [PATCH] defer build-tools-depends choices as well as setup choices
  .../Distribution/Solver/Modular/Preference.hs | 19 ++++++++++---------
  1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs b/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
+diff --git a/Distribution/Solver/Modular/Preference.hs b/Distribution/Solver/Modular/Preference.hs
 index ed5adfbf8b..fac5d71119 100644
---- a/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
-+++ b/cabal-install-solver/src/Distribution/Solver/Modular/Preference.hs
+--- a/Distribution/Solver/Modular/Preference.hs
++++ b/Distribution/Solver/Modular/Preference.hs
 @@ -2,7 +2,7 @@
  -- | Reordering or pruning the tree in order to prefer or make certain choices.
  module Distribution.Solver.Modular.Preference
