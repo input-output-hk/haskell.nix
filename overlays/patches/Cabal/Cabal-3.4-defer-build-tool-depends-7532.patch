@@ -5,10 +5,11 @@ Subject: [PATCH] defer build-tools-depends choices as well as setup choices
 
 ---
  .../Distribution/Solver/Modular/Preference.hs | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ .../Distribution/Solver/Modular/Solver.hs     |  2 +-
+ 2 files changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/Distribution/Solver/Modular/Preference.hs b/Distribution/Solver/Modular/Preference.hs
-index ed5adfbf8b..fac5d71119 100644
+index ed5adfbf8b2..35a43d4cf3b 100644
 --- a/Distribution/Solver/Modular/Preference.hs
 +++ b/Distribution/Solver/Modular/Preference.hs
 @@ -2,7 +2,7 @@
@@ -29,7 +30,7 @@ index ed5adfbf8b..fac5d71119 100644
 -deferSetupChoices :: Tree d c -> Tree d c
 -deferSetupChoices = trav go
 +-- | Deal with setup and build-tool-depends dependencies after regular dependencies,
-+-- so we will link setup/exe dependencies against package dependenc ies when possible
++-- so we will link setup/exe dependencies against package dependencies when possible
 +deferSetupExeChoices :: Tree d c -> Tree d c
 +deferSetupExeChoices = trav go
    where
@@ -47,3 +48,16 @@ index ed5adfbf8b..fac5d71119 100644
  
  -- | Transformation that tries to avoid making weak flag choices early.
  -- Weak flags are trivial flags (not influencing dependencies) or such
+diff --git a/Distribution/Solver/Modular/Solver.hs b/Distribution/Solver/Modular/Solver.hs
+index 83c597cd9e6..fe4b6160e39 100644
+--- a/Distribution/Solver/Modular/Solver.hs
++++ b/Distribution/Solver/Modular/Solver.hs
+@@ -117,7 +117,7 @@ solve sc cinfo idx pkgConfigDB userPrefs userConstraints userGoals =
+           sortGoals = case goalOrder sc of
+                         Nothing -> goalChoiceHeuristics .
+                                    heuristicsTree .
+-                                   P.deferSetupChoices .
++                                   P.deferSetupExeChoices .
+                                    P.deferWeakFlagChoices .
+                                    P.preferBaseGoalChoice
+                         Just order -> P.firstGoal .
