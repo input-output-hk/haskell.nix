@@ -26,4 +26,17 @@
   packages.hscolour.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
   packages.cpphs.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
   packages.polyparse.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
+  packages.Cabal.patches =
+    let
+      fromUntil = from: until: patch: { version, revision }:
+        if   builtins.compareVersions version from  >= 0
+          && builtins.compareVersions version until <  0
+          then patch
+          else null;
+    in [
+      fromUntil "3.2.0.0" "3.5" ./patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff
+      fromUntil "3.2.0.0" "3.5" ./patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff
+      fromUntil "3.4.0.0" "3.5" ./patches/Cabal/Cabal-3.4-defer-build-tool-depends-7532.patch
+      fromUntil "3.4.0.0" "3.5" ./patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch
+    ];
 }
