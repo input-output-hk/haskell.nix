@@ -1,0 +1,147 @@
+From fa47bff82b0f0f0bda7ca7e01b15e5740b63f775 Mon Sep 17 00:00:00 2001
+From: Gershom Bazerman <gershom@arista.com>
+Date: Fri, 23 Jul 2021 11:24:42 -0400
+Subject: [PATCH 1/4] attempt to speed solving when test is enable projectwide
+
+---
+ .../Distribution/Solver/Modular/Preference.hs   |  6 ++++--
+ .../Distribution/Client/ProjectPlanning.hs      | 13 ++++---------
+ 2 files changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/Distribution/Solver/Modular/Preference.hs b/Distribution/Solver/Modular/Preference.hs
+index d25ef846356..4275563006e 100644
+--- a/Distribution/Solver/Modular/Preference.hs
++++ b/Distribution/Solver/Modular/Preference.hs
+@@ -127,11 +127,13 @@ preferPackagePreferences pcs =
+ 
+ -- | Traversal that tries to establish package stanza enable\/disable
+ -- preferences. Works by reordering the branches of stanza choices.
++-- Note that this works on packages lower in the path as well as at the top level,
++-- as lower choices need to remain compatible with top level choices.
+ preferPackageStanzaPreferences :: (PN -> PackagePreferences) -> Tree d c -> Tree d c
+ preferPackageStanzaPreferences pcs = trav go
+   where
+-    go (SChoiceF qsn@(SN (Q pp pn) s) rdm gr _tr ts)
+-      | primaryPP pp && enableStanzaPref pn s =
++    go (SChoiceF qsn@(SN (Q _pp pn) s) rdm gr _tr ts)
++      | enableStanzaPref pn s =
+           -- move True case first to try enabling the stanza
+           let ts' = W.mapWeightsWithKey (\k w -> weight k : w) ts
+               weight k = if k then 0 else 1
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
+index 077c6422be4..18a4bf43a0d 100644
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
+@@ -1024,14 +1024,9 @@ planPackages verbosity comp platform solver SolverSettings{..}
+             | (pc, src) <- solverSettingConstraints ]
+ 
+       . addPreferences
+-          -- enable stanza preference where the user did not specify
+-          [ PackageStanzasPreference pkgname stanzas
+-          | pkg <- localPackages
+-          , let pkgname = pkgSpecifierTarget pkg
+-                stanzaM = Map.findWithDefault Map.empty pkgname pkgStanzasEnable
+-                stanzas = [ stanza | stanza <- [minBound..maxBound]
+-                          , Map.lookup stanza stanzaM == Nothing ]
+-          , not (null stanzas)
++          -- enable stanza preference unilaterally, even when the user asked to enable as well, to help hint the solver.
++          [ PackageStanzasPreference pkgname [minBound..maxBound]
++          | pkgname <- map pkgSpecifierTarget localPackages
+           ]
+ 
+       . addConstraints
+From 624b8dc2069964de7c99cb7c9fa8c8674db797de Mon Sep 17 00:00:00 2001
+From: Gershom Bazerman <gershom@arista.com>
+Date: Tue, 3 Aug 2021 17:35:12 -0400
+Subject: [PATCH 2/4] fix bug in preferences
+
+---
+ cabal-install/Distribution/Client/ProjectPlanning.hs | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
+index 18a4bf43a0d..42fe5be8f3d 100644
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
+@@ -1026,7 +1026,12 @@ planPackages verbosity comp platform solver SolverSettings{..}
+       . addPreferences
+           -- enable stanza preference unilaterally, even when the user asked to enable as well, to help hint the solver.
+           [ PackageStanzasPreference pkgname [minBound..maxBound]
+-          | pkgname <- map pkgSpecifierTarget localPackages
++          | pkg <- localPackages
++          , let pkgname = pkgSpecifierTarget pkg
++                stanzaM = Map.findWithDefault Map.empty pkgname pkgStanzasEnable
++                stanzas = [ stanza | stanza <- [minBound..maxBound]
++                          , Map.lookup stanza stanzaM /= Just False ]
++          , not (null stanzas)
+           ]
+ 
+       . addConstraints
+
+From a5d04451d3d45bcfc8f679340f1dfd1e0e2993ed Mon Sep 17 00:00:00 2001
+From: Gershom Bazerman <gershom@arista.com>
+Date: Mon, 9 Aug 2021 18:17:49 -0400
+Subject: [PATCH 3/4] fix bug
+
+---
+ cabal-install/Distribution/Client/ProjectPlanning.hs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
+index 42fe5be8f3d..3aefe9242f8 100644
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
+@@ -1025,7 +1025,7 @@ planPackages verbosity comp platform solver SolverSettings{..}
+ 
+       . addPreferences
+           -- enable stanza preference unilaterally, even when the user asked to enable as well, to help hint the solver.
+-          [ PackageStanzasPreference pkgname [minBound..maxBound]
++          [ PackageStanzasPreference pkgname stanzas
+           | pkg <- localPackages
+           , let pkgname = pkgSpecifierTarget pkg
+                 stanzaM = Map.findWithDefault Map.empty pkgname pkgStanzasEnable
+
+From fdf3f7f0a633de79b4c8f1298eaf433cdf558250 Mon Sep 17 00:00:00 2001
+From: Gershom Bazerman <gershom@arista.com>
+Date: Wed, 11 Aug 2021 13:57:57 -0400
+Subject: [PATCH 4/4] touchup comments
+
+---
+ .../Distribution/Solver/Modular/Preference.hs        | 9 +++++++--
+ cabal-install/Distribution/Client/ProjectPlanning.hs | 3 ++-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/Distribution/Solver/Modular/Preference.hs b/Distribution/Solver/Modular/Preference.hs
+index 4275563006e..ed5adfbf8b2 100644
+--- a/Distribution/Solver/Modular/Preference.hs
++++ b/Distribution/Solver/Modular/Preference.hs
+@@ -127,8 +127,13 @@ preferPackagePreferences pcs =
+ 
+ -- | Traversal that tries to establish package stanza enable\/disable
+ -- preferences. Works by reordering the branches of stanza choices.
+--- Note that this works on packages lower in the path as well as at the top level,
+--- as lower choices need to remain compatible with top level choices.
++-- Note that this works on packages lower in the path as well as at the top level.
++-- This is because stanza preferences apply to local packages only
++-- and for local packages, a single version is fixed, which means
++-- (for now) that all stanza preferences must be uniform at all levels.
++-- Further, even when we can have multiple versions of the same package,
++-- the build plan will be more efficient if we can attempt to keep
++-- stanza preferences aligned at all levels.
+ preferPackageStanzaPreferences :: (PN -> PackagePreferences) -> Tree d c -> Tree d c
+ preferPackageStanzaPreferences pcs = trav go
+   where
+diff --git a/Distribution/Client/ProjectPlanning.hs b/Distribution/Client/ProjectPlanning.hs
+index 3aefe9242f8..fc6d9a17383 100644
+--- a/Distribution/Client/ProjectPlanning.hs
++++ b/Distribution/Client/ProjectPlanning.hs
+@@ -1024,7 +1024,8 @@ planPackages verbosity comp platform solver SolverSettings{..}
+             | (pc, src) <- solverSettingConstraints ]
+ 
+       . addPreferences
+-          -- enable stanza preference unilaterally, even when the user asked to enable as well, to help hint the solver.
++          -- enable stanza preference unilaterally, regardless if the user asked
++          -- accordingly or expressed no preference, to help hint the solver
+           [ PackageStanzasPreference pkgname stanzas
+           | pkg <- localPackages
+           , let pkgname = pkgSpecifierTarget pkg
