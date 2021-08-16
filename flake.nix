@@ -73,8 +73,11 @@
             false # Allows us to easily switch on materialization checking
           , system, sourcesOverride ? { }, ... }@args: rec {
             sources = inputs // sourcesOverride;
-            allOverlays = import ./overlays args;
-            inherit config nixpkgsArgs;
+            allOverlays = import ./overlays (args // { inherit sources; });
+            inherit config;
+            # We are overriding 'overlays' and 'nixpkgsArgs' from the
+            # flake outputs so that we can incorporate the args passed
+            # to the compat layer (e.g. sourcesOverride).
             overlays = [ allOverlays.combined ]
               ++ (if checkMaterialization == true then
                 [
@@ -86,6 +89,9 @@
                 ]
               else
                 [ ]);
+            nixpkgsArgs = {
+              inherit config overlays;
+            };
             pkgs = import nixpkgs
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable

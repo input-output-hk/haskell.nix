@@ -13,5 +13,5 @@ let
       sha256 = "sha256:054nsfqh3wy6v6bjamw0k91xl8v1rc5x2laic8mphrkrhzvyz5hi";
     };
   self = import flake-compat { src = ./.; inherit pkgs; };
-in self.defaultNix.internal.compat
-({ system = args.pkgs.system or builtins.currentSystem; } // args) // self.defaultNix
+in self.defaultNix // (self.defaultNix.internal.compat
+({ system = args.pkgs.system or builtins.currentSystem; } // args))
