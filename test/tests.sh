@@ -39,9 +39,10 @@ else
 fi
 
 printf "*** Checking that a nix-shell works for runghc...\n" >& 2
+# This has to use ghc865 for now
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
-    --argstr compiler-nix-name $GHC \
+    --argstr compiler-nix-name ghc865 \
     -A with-packages.test-shell \
     --run 'runghc with-packages/Point.hs'
 echo >& 2
