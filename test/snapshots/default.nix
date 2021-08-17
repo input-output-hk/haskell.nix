@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc }:
+{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
 
 with lib;
 
@@ -8,7 +8,7 @@ let
 
 in recurseIntoAttrs {
   # Does not work on ghcjs because it needs zlib.
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc865";
   inherit env;
   run = stdenv.mkDerivation {
     name = "shell-for-test";

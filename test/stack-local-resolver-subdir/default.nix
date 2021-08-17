@@ -1,4 +1,4 @@
-{ project', recurseIntoAttrs, testSrc }:
+{ project', recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 let
   project = project' {
@@ -7,6 +7,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
+  meta.disabled = compiler-nix-name != "ghc865";
   ifdInputs = {
     inherit (project) stack-nix;
   };

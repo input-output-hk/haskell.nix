@@ -1,4 +1,4 @@
-{ stdenv, lib, pkgs, mkStackPkgSet, haskellLib, testSrc }:
+{ stdenv, lib, pkgs, mkStackPkgSet, haskellLib, testSrc, compiler-nix-name }:
 
 with lib;
 
@@ -14,6 +14,7 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in pkgs.recurseIntoAttrs {
+  meta.disabled = compiler-nix-name != "ghc865";
   stack-simple-exe = (haskellLib.check packages.stack-simple.components.exes.stack-simple-exe) // {
       # Attributes used for debugging with nix repl
       inherit pkgSet packages;
