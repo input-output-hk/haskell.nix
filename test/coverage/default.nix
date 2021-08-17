@@ -117,7 +117,7 @@ in recurseIntoAttrs ({
         fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0/pkgb-0.1.0.0.tix"
         dirExists "$project_basedir/tix/pkgb-0.1.0.0/tests${exeExt}"
         fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0/tests${exeExt}/tests${exeExt}.tix"
-      '') [ stackProj ])}
+      '') (optional (compiler-nix-name == "ghc865") stackProj))}
 
       touch $out
     '';

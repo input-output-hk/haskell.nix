@@ -1,4 +1,4 @@
-{ stdenv, lib, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, lib, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
 with lib;
 
@@ -14,6 +14,7 @@ let
   packages = pkgSet.config.hsPkgs;
 
 in recurseIntoAttrs {
+  meta.disabled = compiler-nix-name != "ghc865";
   ifdInputs = {
     stack-nix = callProjectResults.projectNix;
   };

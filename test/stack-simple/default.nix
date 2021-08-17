@@ -1,4 +1,4 @@
-{ stdenv, lib, pkgs, mkStackPkgSet, haskellLib, testSrc }:
+{ stdenv, lib, pkgs, mkStackPkgSet, haskellLib, testSrc, compiler-nix-name }:
 
 with lib;
 

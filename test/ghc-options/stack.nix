@@ -1,4 +1,4 @@
-{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
 with lib;
 
@@ -15,7 +15,7 @@ let
 
 in recurseIntoAttrs {
   # This test is somehow broken for ghcjs
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc865";
 
   ifdInputs = {
     inherit (project) stack-nix;

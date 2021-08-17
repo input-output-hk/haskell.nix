@@ -88,7 +88,7 @@ in recurseIntoAttrs ({
         dirExistsEmpty "$pkga_basedir/mix/pkga-0.1.0.0"
         dirExistsEmpty "$pkga_basedir/tix/pkga-0.1.0.0"
         dirExistsEmpty "$project_basedir/tix/all"
-      '') [ stackProj ])}
+      '') (optional (compiler-nix-name == "ghc865") stackProj))}
 
       touch $out
     '';
