@@ -6,23 +6,25 @@ let
        benchmarks = { };
        exes = { };
        foreignlibs = { };
-       library = { planned = true; };
+       library = { buildable = true; planned = true; };
        sublibs = { };
        tests = { };
     };
     package.identifier.name = "empty";
+    package.buildable = true;
   };
 
   componentsConfig = {
     components = {
-       benchmarks = { bbb = { planned = true; }; };
-       exes = { eee = { planned = true; }; };
-       foreignlibs = { fff = { planned = true; }; };
-       library = { planned = true; };
+       benchmarks = { bbb = { buildable = true; planned = true; }; };
+       exes = { eee = { buildable = true; planned = true; }; };
+       foreignlibs = { fff = { buildable = true; planned = true; }; };
+       library = { buildable = true; planned = true; };
        sublibs = { };
-       tests = { ttt = { planned = true; }; };
+       tests = { ttt = { buildable = true; planned = true; }; };
     };
     package.identifier.name = "nnn";
+    package.buildable = true;
   };
 
   testRepoData = {
