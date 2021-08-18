@@ -74,7 +74,7 @@ in {
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
       buildableAttrs = lib.filterAttrs (n: comp: config.package.buildable or true && comp.buildable or true && comp.planned);
-      libComp = if comps.library == null || !(comps.library.buildable or true && comps.library.planned)
+      libComp = if comps.library == null || !(config.package.buildable or true && comps.library.buildable or true && comps.library.planned)
         then {}
         else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "setup" ]));
       subComps = lib.mapAttrs
