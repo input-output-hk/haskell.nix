@@ -18,11 +18,6 @@ final: prev:
             "mtl" "parsec" "process" "text" "time" "transformers"
             "unix" "xhtml" "terminfo"
           ];
-        # Include patches for custom setups
-        packages.Cabal.patches = [
-          ./patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff
-          ./patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff
-        ];
         testWrapper = [((final.writeScriptBin "node-wrapper" ''
           set -euo pipefail
           exe=$1

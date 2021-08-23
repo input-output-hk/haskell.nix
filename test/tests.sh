@@ -39,25 +39,28 @@ else
 fi
 
 printf "*** Checking that a nix-shell works for runghc...\n" >& 2
+# This has to use ghc865 for now
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
-    --argstr compiler-nix-name $GHC \
+    --argstr compiler-nix-name ghc865 \
     -A with-packages.test-shell \
     --run 'runghc with-packages/Point.hs'
 echo >& 2
 
 printf "*** Checking that a nix-shell works for cabal...\n" >& 2
+# This has to use ghc865 for now
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
-    --argstr compiler-nix-name $GHC \
+    --argstr compiler-nix-name ghc865 \
     -A with-packages.test-shell \
     --run 'echo CABAL_CONFIG=$CABAL_CONFIG && type -p ghc && cd with-packages && cabal new-build'
 echo >& 2
 
 printf "*** Checking that a nix-shell works for cabal (doExactConfig component)...\n" >& 2
+# This has to use ghc865 for now
 nix-shell $NIX_BUILD_ARGS \
     --pure ./default.nix \
-    --argstr compiler-nix-name $GHC \
+    --argstr compiler-nix-name ghc865 \
     -A with-packages.test-shell-dec \
     --run 'echo CABAL_CONFIG=$CABAL_CONFIG && echo GHC_ENVIRONMENT=$GHC_ENVIRONMENT && cd with-packages && cabal new-build'
 echo >& 2

@@ -3,7 +3,14 @@
 # package sets out of this repo. Ideally, this file is only used for
 # fixing things that are broken due to the Nix infrastructure.
 
-{ pkgs, ... }: {
+{ pkgs, ... }:
+let
+  fromUntil = from: until: patch: { version, revision }:
+    if   builtins.compareVersions version from  >= 0
+      && builtins.compareVersions version until <  0
+      then patch
+      else null;
+in {
   # terminfo doesn't list libtinfo in its cabal file. We could ignore
   # this if we used the terminfo shipped with GHC, but this package is
   # reinstallable so we'd rather have it defined in the plan.
@@ -26,4 +33,19 @@
   packages.hscolour.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
   packages.cpphs.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
   packages.polyparse.package.license = pkgs.lib.mkForce "LGPL-2.1-only";
+
+  # These two patches are needed by GHCJS
+  packages.Cabal.patches = [
+    (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff)
+    (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff)
+  ];
+
+  # These two patches are:
+  #   https://github.com/haskell/cabal/pull/7490
+  #   https://github.com/haskell/cabal/pull/7532
+  # back poerted to cabal 3.4
+  packages.cabal-install.patches = [
+    (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-defer-build-tool-depends-7532.patch)
+    (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch)
+  ];
 }
