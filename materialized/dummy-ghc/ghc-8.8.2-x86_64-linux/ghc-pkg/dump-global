@@ -814,6 +814,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-prim-0.5.3
+include-dirs:
 depends:              rts
 haddock-interfaces:
 haddock-html:
@@ -842,6 +843,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghci-8.8.2
+include-dirs:
 depends:
     array-0.5.4.0 base-4.13.0.0 binary-0.8.7.0 bytestring-0.10.10.0
     containers-0.6.2.1 deepseq-1.4.4.0 filepath-1.4.2.1 ghc-boot-8.8.2
@@ -1523,8 +1525,8 @@ license:         BSD-3-Clause
 maintainer:      glasgow-haskell-users@haskell.org
 exposed:         True
 library-dirs:
-hs-libraries:    HSrts Cffi
-extra-libraries: m rt dl pthread
+hs-libraries:    HSrts
+extra-libraries: m rt dl ffi numa pthread
 include-dirs:
 includes:        Stg.h
 ld-options:

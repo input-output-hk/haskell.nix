@@ -1,6 +1,25 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Aug 6, 2021
+* Included dependencies of haskell.nix that were tracked in `nix/sources.json`
+  as flake inputs (`flake.lock` replaces `nix/sources.json`).
+* Uses `flake-compat` to continue to provide a compatible interface for non
+  flake projects.
+
+## Jul 23, 2021
+* `source-repository-package` references in `cabal.project` files are now
+  left as a `source-repository-package` when calculating the the `plan-nix` for
+  `cabalProject` based functions.
+  This makes haskell.nix match the behaviour of `cabal` better.
+  Materialized files for projects that use `source-repository-package`
+  references will need to be updated.
+* Only planned components are included in a haskell.nix cabal project.
+  If cabal solver does not include the component in the `plan.json` file it
+  will not be present in `hsPkgs.pkg.components`.
+* When the same package occurs more than once in a plan.json file
+  the latest version is picked by haskell.nix.
+
 ## Apr 8, 2021
 * Project arguments are now validated with the Nix module system.
   If unexpected argments are passed to a project function this may now

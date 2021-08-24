@@ -1,5 +1,4 @@
-{ sourcesOverride ? {}
-,  ... }:
+{ sources,  ... }:
 # The haskell.nix infrastructure
 #
 # for hygienic reasons we'll use haskell-nix as a prefix.
@@ -12,25 +11,10 @@ final: prev: {
         # overlays.
         defaultModules = [];
 
-        # Niv based source pins.  See https://github.com/nmattia/niv#niv
-        # for details on how to update this using the niv tool
-        # or edit nix/sources.json manually if you prefer.
-        sources = {
-          # Hackage and stackage still updated by scripts
-          # that predate our use of niv.  We have moved them
-          # here though so that you can still use the
-          # sourcesOverride arg or `niv add` to replace them.
-          hackage = fetchExternal {
-            name     = "hackage-exprs-source";
-            specJSON = hackageSourceJSON;
-            override = "hackage";
-          };
-          stackage = fetchExternal {
-            name     = "stackage-snapshot-source";
-            specJSON = stackageSourceJSON;
-            override = "stackage";
-          };
-        } // (import ../nix/sources.nix) // sourcesOverride;
+        # Nix Flake based source pins.
+        # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
+        # Or `nix-shell -p nixUnstable --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
+        sources = sources;
 
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
@@ -706,7 +690,7 @@ final: prev: {
               , crossPlatforms ? p: []
               }:
               let packageNames = project: builtins.attrNames (packages project.hsPkgs);
-                  packagesForProject = prefix: project: 
+                  packagesForProject = prefix: project:
                     final.lib.concatMap (packageName:
                       let package = project.hsPkgs.${packageName};
                       in final.lib.optional (package.components ? library)
@@ -721,7 +705,7 @@ final: prev: {
                             { name = "${prefix}${packageName}:test:${n}"; value = v; })
                           (package.components.tests)
                     ) (packageNames project);
-                  checksForProject = prefix: project: 
+                  checksForProject = prefix: project:
                     final.lib.concatMap (packageName:
                       let package = project.hsPkgs.${packageName};
                       in final.lib.mapAttrsToList (n: v:

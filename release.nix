@@ -5,8 +5,14 @@
 , checkMaterialization ? false }:
 
 let
-  inherit (import ./ci-lib.nix) stripAttrsForHydra filterDerivations;
-  genericPkgs = import (import ./nix/sources.nix).nixpkgs {};
+  traceNames = prefix: builtins.mapAttrs (n: v:
+    if builtins.isAttrs v
+      then if v ? type && v.type == "derivation"
+        then __trace (prefix + n) v
+        else traceNames (prefix + n + ".") v
+      else v);
+  inherit (import ./ci-lib.nix { pkgs = genericPkgs; }) stripAttrsForHydra filterDerivations;
+  genericPkgs = (import ./. {}).pkgs;
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
@@ -39,13 +45,12 @@ let
          ) (names ghcJobs)
         ) (names nixpkgsJobs)
       ) (names allJobs));
-in latestJobs // requiredJobs // {
+in traceNames "job " (latestJobs // requiredJobs // {
     required = genericPkgs.releaseTools.aggregate {
       name = "haskell.nix-required";
       meta.description = "All jobs required to pass CI";
       # Using the names here requires https://github.com/NixOS/hydra/issues/715
       constituents = builtins.attrNames requiredJobs;
     };
- }
-
+ })
 

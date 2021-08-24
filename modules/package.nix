@@ -215,6 +215,11 @@ in {
         type = bool;
         default = false;
       };
+
+      buildable = mkOption {
+        type = bool;
+        default = true;
+      };
     };
 
     components = {

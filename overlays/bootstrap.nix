@@ -421,7 +421,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.3";
             });
-            ghc8104 = final.callPackage ../compiler/ghc {
+            ghc8104 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104; };
 
                 bootPkgs = bootPkgs // {
@@ -440,7 +440,7 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.4";
-            };
+            });
             ghc8105 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105; };
 

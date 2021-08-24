@@ -23,20 +23,16 @@ in { haskell-nix = prev.haskell-nix // {
         (lib.optionalAttrs (version == "3.2.0.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
         })
-        (lib.optionalAttrs (builtins.compareVersions version "3.0.0.0" >= 0
-            && builtins.compareVersions version "3.5" < 0) {
-          # Include patches needed for ghcjs
-          packages.Cabal.patches = [
-            ./patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff
-            ./patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff
-          ];
-        })
       ];
     };
 
     haskell-language-server = {
+      # Fixes for:
+      #   * lsp-types https://github.com/haskell/lsp/issues/349
+      #   * ghc-api-compat
       cabalProject = ''
         packages: .
+        constraints: lsp-types < 1.3.0.0
         source-repository-package
           type: git
           location: https://github.com/hsyl20/ghc-api-compat

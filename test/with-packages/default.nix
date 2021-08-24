@@ -1,4 +1,4 @@
-{ stdenv, lib, numactl, util, mkPkgSet, recurseIntoAttrs, testSrc }:
+{ stdenv, lib, numactl, util, mkPkgSet, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with lib;
 with util;
@@ -11,7 +11,7 @@ let
     #   plan-to-nix -o .
     pkg-def = pkgs.pkgs;
     pkg-def-extras = [ pkgs.extras ];
-    modules = [
+    modules = pkgs.modules ++ [
       # overrides to fix the build
       {
         packages.transformers-compat.components.library.doExactConfig = true;
@@ -36,6 +36,7 @@ let
   extraFlags = if stdenv.isLinux then "-L${numactl}/lib" else "";
 
 in recurseIntoAttrs {
+  meta.disabled = compiler-nix-name != "ghc865";
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
   test-shell = addCabalInstall library;
