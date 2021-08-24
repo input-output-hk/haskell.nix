@@ -27,7 +27,7 @@ let
     else ghc;
 
 in runCommand "${componentName}-${ghc.name}-env" {
-  preferLocalBuild = true;
+  preferLocalBuild = false;
   passthru = {
     inherit (ghc) version meta;
     inherit targetPrefix;
