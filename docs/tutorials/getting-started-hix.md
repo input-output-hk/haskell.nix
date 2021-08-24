@@ -81,16 +81,16 @@ The configuration arguments for `Hix` can be (from highest precedence to lowest)
 
 * Placed in `~/.config/hix/hix.conf`
 
-For example to build with GHC 8.10.5:
+For example to build with GHC 8.10.6:
 
 ```
-hix-shell --argstr compiler-nix-name ghc8105 --run 'cabal build'
+hix-shell --argstr compiler-nix-name ghc8106 --run 'cabal build'
 ```
 
 or add a `nix/hix.nix` or `~/.config/hix/hix.conf` file:
 
 ```nix
-{ compiler-nix-name = "ghc8105"; }
+{ compiler-nix-name = "ghc8106"; }
 ```
 
 Here are just a few of the other configuration arguments you could use
