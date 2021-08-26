@@ -550,7 +550,6 @@ in {
             ghc8102 = errorOldGhcjs "8.10.2" "8.10";
             ghc8103 = errorOldGhcjs "8.10.3" "8.10";
             ghc8104 = errorOldGhcjs "8.10.4" "8.10";
-            ghc8106 = throw "ghcjs 8.10.6 is not yet supported by haskell.nix";
             ghc810420210212 = throw "ghcjs for ghc810420210212 is not supported by haskell.nix";
             ghc901 = throw "ghcjs 9.0.1 is not yet supported by haskell.nix";
             ghc865 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc865;
@@ -652,6 +651,40 @@ in {
                 mkdir -p lib/${targetPrefix}ghc-8.10.5
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.5
+            '' + installDeps targetPrefix);
+            ghc8106 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8106;
+                in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
+                ghcjsVersion =  "8.10.2";
+                ghc = buildGHC;
+                ghcVersion = "8.10.6";
+                compiler-nix-name = "ghc8106";
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.6" {
+                nativeBuildInputs = [ final.xorg.lndir ];
+                passthru = {
+                    inherit targetPrefix;
+                    version = "8.10.6";
+                    isHaskellNixCompiler = true;
+                    enableShared = false;
+                    inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    inherit booted-ghcjs buildGHC;
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                    ];
+                };
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
+                mkdir -p $out/bin
+                cd $out/bin
+                ln -s ${booted-ghcjs}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${booted-ghcjs}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
+                cd ..
+                mkdir -p lib/${targetPrefix}ghc-8.10.6
+                cd lib
+                lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.6
             '' + installDeps targetPrefix);
         }))));
 
