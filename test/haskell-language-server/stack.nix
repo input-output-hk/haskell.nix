@@ -5,8 +5,8 @@ let
     src = evalPackages.fetchgit {
       url = "https://github.com/haskell/haskell-language-server.git";
       fetchSubmodules = true;
-      rev = "1.2.0";
-      sha256 = "sha256-vNpb/Fjb9sKkt/1r29c82P/NeAXpxQbVKnM/EDWY6z4=";
+      rev = "32cd57df639d67ac0cf29882839e00532fd30c84";
+      sha256 = "sha256-tMKVUn0/vk4z4pKz1pMK5lDA630/dDBieQsJ21mGJFQ=";
     };
     projectFileName = "stack-${buildPackages.haskell-nix.compiler.${compiler-nix-name}.version}.yaml";
     sha256map = {
