@@ -34,7 +34,7 @@ let
     '';
     # For each architecture, what GHC version we should use for bootstrapping.
     buildBootstrapper =
-        if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
+        if final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64
         then {
             compilerNixName = "ghc882";
         }
