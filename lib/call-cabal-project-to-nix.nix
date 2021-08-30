@@ -195,7 +195,7 @@ let
             cd $out
             chmod -R +w .
             git init -b minimal
-            git add .
+            git add --force .
             GIT_COMMITTER_NAME='No One' GIT_COMMITTER_EMAIL= git commit -m "Minimal Repo For Haskell.Nix" --author 'No One <>'
           '';
           inherit (repoData) subdirs;

@@ -1,4 +1,4 @@
-{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc }:
+{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
 
 with lib;
 
@@ -9,6 +9,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
+  meta.disabled = compiler-nix-name != "ghc865";
   ifdInputs = {
     inherit (project) stack-nix;
   };

@@ -73,8 +73,12 @@ in {
       comps = config.components;
       applyLibrary = cname: f { cname = config.package.identifier.name; ctype = "lib"; };
       applySubComp = ctype: cname: f { inherit cname; ctype = componentPrefix.${ctype} or (throw "Missing component mapping for ${ctype}."); };
-      buildableAttrs = lib.filterAttrs (n: comp: comp.buildable or true && comp.planned);
-      libComp = if comps.library == null || !(comps.library.buildable or true && comps.library.planned)
+      isBuildable = comp:
+        config.package.buildable # Set manually in a module (allows whole packages to be disabled)
+        && comp.buildable        # Set based on `buildable` in `.cabal` files
+        && comp.planned;         # Set if the component was in the `plan.json`
+      buildableAttrs = lib.filterAttrs (n: isBuildable);
+      libComp = if comps.library == null || !(isBuildable comps.library)
         then {}
         else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "setup" ]));
       subComps = lib.mapAttrs
