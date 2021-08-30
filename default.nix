@@ -13,11 +13,16 @@ let
       sha256 = "sha256:054nsfqh3wy6v6bjamw0k91xl8v1rc5x2laic8mphrkrhzvyz5hi";
     };
   self = import flake-compat {
-    # This is a workaround for https://github.com/edolstra/flake-compat/issues/25:
-    # If we're in pure-eval mode (signified by lack of builtins.currentSystem), then we
-    # bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
-    # repo
-    src = if builtins ? currentSystem then ./. else { outPath = ./.; };
+    # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
+    # repo.
+    # This is done for 3 reasons:
+    # * To workaround https://github.com/edolstra/flake-compat/issues/25
+    # * Make `updateMaterilized` scripts work (if filtering is done by `flake-compat`
+    #   the `updateMaterilized` scripts will try to update the copy in the store).
+    # * Allow more granular filtering done by the tests (the use of `cleanGit` and `cleanSourceWith`
+    #   in `test/default.nix`).  If `flake-compat` copies the whole git repo, any change to the
+    #   repo causes a change of input for all tests.
+    src = { outPath = ./.; };
     inherit pkgs;
   };
 in self.defaultNix // (self.defaultNix.internal.compat
