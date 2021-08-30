@@ -9,7 +9,7 @@ final: prev: { haskell-nix = prev.haskell-nix // { hix = {
     , ...}@commandArgs:
     let
       inherit (final) lib;
-      hixDefaults = { compiler-nix-name = lib.mkDefault "ghc8106"; };
+      hixDefaults = { compiler-nix-name = lib.mkDefault "ghc8107"; };
       inherit ((lib.evalModules {
         modules = [
           (import ../modules/project-common.nix)

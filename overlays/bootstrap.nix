@@ -50,7 +50,7 @@ let
     latestVer = {
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
-      "8.10" = "8.10.6";
+      "8.10" = "8.10.7";
     };
     traceWarnOld = v: x: __trace
       "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x;
@@ -166,7 +166,7 @@ in {
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ++ final.lib.optionals final.targetPlatform.isWindows
-                  (fromUntil "8.10.4" "8.10.7" ./patches/ghc/ghc-8.10-z-drive-fix.patch)
+                  (fromUntil "8.10.4" "8.10.8" ./patches/ghc/ghc-8.10-z-drive-fix.patch)
                 ++ final.lib.optional (versionAtLeast "8.6.5") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
@@ -462,7 +462,7 @@ in {
 
                 ghc-patches = ghc-patches "8.10.5";
             });
-            ghc8106 = final.callPackage ../compiler/ghc {
+            ghc8106 = final.callPackage ../compiler/ghc (traceWarnOld "8.10" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8106; };
 
                 bootPkgs = bootPkgs // {
@@ -480,6 +480,25 @@ in {
                 };
 
                 ghc-patches = ghc-patches "8.10.6";
+            });
+            ghc8107 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8107; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = ghcForBuilding810;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "8.10.7";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "179ws2q0dinl1a39wm9j37xzwm84zfz3c5543vz8v479khigdvp3";
+                };
+
+                ghc-patches = ghc-patches "8.10.7";
             };
             ghc901 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc901; };
@@ -687,6 +706,40 @@ in {
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.6
             '' + installDeps targetPrefix);
+            ghc8107 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8107;
+                in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
+                ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
+                ghcjsVersion =  "8.10.5"; # Must match the version in the ghcjs.cabal file
+                ghc = buildGHC;
+                ghcVersion = "8.10.7";
+                compiler-nix-name = "ghc8107";
+            }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.7" {
+                nativeBuildInputs = [ final.xorg.lndir ];
+                passthru = {
+                    inherit targetPrefix;
+                    version = "8.10.7";
+                    isHaskellNixCompiler = true;
+                    enableShared = false;
+                    inherit (booted-ghcjs) configured-src bundled-ghcjs project;
+                    inherit booted-ghcjs buildGHC;
+                    extraConfigureFlags = [
+                        "--ghcjs"
+                        "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
+                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                    ];
+                };
+                # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
+            } (''
+                mkdir -p $out/bin
+                cd $out/bin
+                ln -s ${booted-ghcjs}/bin/ghcjs ${targetPrefix}ghc
+                ln -s ${booted-ghcjs}/bin/ghcjs-pkg ${targetPrefix}ghc-pkg
+                ln -s ${buildGHC}/bin/hsc2hs ${targetPrefix}hsc2hs
+                cd ..
+                mkdir -p lib/${targetPrefix}ghc-8.10.7
+                cd lib
+                lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.7
+            '' + installDeps targetPrefix);
         }))));
 
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
@@ -708,7 +761,7 @@ in {
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
           if args.compiler-nix-name == "ghc901"
-            then "ghc8106"
+            then "ghc8107"
             else args.compiler-nix-name;
         project =
           final.haskell-nix.cabalProject ({
@@ -822,8 +875,8 @@ in {
     # there should be no difference in the behaviour of these tools.
     # (stack projects on macOS may see a significant change in the
     # closure size of their build dependencies due to dynamic linking).
-    internal-cabal-install = final.haskell-nix.cabal-install.ghc8106;
-    internal-nix-tools = final.haskell-nix.nix-tools.ghc8106;
+    internal-cabal-install = final.haskell-nix.cabal-install.ghc8107;
+    internal-nix-tools = final.haskell-nix.nix-tools.ghc8107;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
