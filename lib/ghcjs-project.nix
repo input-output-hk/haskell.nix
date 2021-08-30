@@ -23,7 +23,7 @@
 { src
 , compiler-nix-name
 , ghc ? pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}
-, ghcjsVersion
+, ghcjsVersion # Version in the ghcjs.cabal file (that we will replace)
 , ghcVersion ? ghc.version
 , happy ? pkgs.haskell-nix.tool compiler-nix-name "happy" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;

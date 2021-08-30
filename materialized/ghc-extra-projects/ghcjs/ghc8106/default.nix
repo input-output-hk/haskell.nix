@@ -24,8 +24,8 @@
         "ghc-heap".revision = (((hackage."ghc-heap")."8.10.5").revisions).default;
         };
       compiler = {
-        version = "8.10.5";
-        nix-name = "ghc8105";
+        version = "8.10.6";
+        nix-name = "ghc8106";
         packages = {
           "ghc-prim" = "0.6.1";
           "array" = "0.5.4.0";
