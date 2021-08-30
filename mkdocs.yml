@@ -39,7 +39,7 @@ pages:
     - 'Cross-compiling your project': tutorials/cross-compilation.md
     - 'Generating coverage information': tutorials/coverage.md
   - 'Reference':
-    - 'Suported GHC versions': reference/supported-ghc-versions.md
+    - 'Supported GHC versions': reference/supported-ghc-versions.md
     - 'Command-line tools': reference/commands.md
     - 'Haskell.nix Library': reference/library.md
     - 'Module options': reference/modules.md
