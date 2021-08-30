@@ -28,11 +28,11 @@ in { haskell-nix = prev.haskell-nix // {
 
     haskell-language-server = {
       # Fixes for:
-      #   * lsp-types https://github.com/haskell/lsp/issues/349
+      #   * hlint https://github.com/ndmitchell/hlint/issues/1287
       #   * ghc-api-compat
       cabalProject = ''
         packages: .
-        constraints: lsp-types < 1.3.0.0
+        constraints: extra < 1.7.10
         source-repository-package
           type: git
           location: https://github.com/hsyl20/ghc-api-compat
