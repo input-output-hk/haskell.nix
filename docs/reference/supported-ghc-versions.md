@@ -20,13 +20,14 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 | Nixpkgs version  | Nixpkgs pinning    | GHC version | `compiler-nix-name`   | Tested in CI? |
 |------------------|--------------------|-------------|-----------------------|---------------|
 | 20.09            | `nixpkgs-2009`     | 8.6.5       | `ghc865`              | No            |
-| 20.09            | `nixpkgs-2009`     | 8.10.5      | `ghc8105`             | No            |
+| 20.09            | `nixpkgs-2009`     | 8.10.6      | `ghc8106`             | No            |
 | 21.05            | `nixpkgs-2105`     | 8.6.5       | `ghc865`              | No            |
-| 21.05            | `nixpkgs-2105`     | 8.10.5      | `ghc8105`             | Yes           |
+| 21.05            | `nixpkgs-2105`     | 8.10.6      | `ghc8106`             | Yes           |
 | unstable         | `nixpkgs-unstable` | 8.6.5       | `ghc865`              | No            |
 | unstable         | `nixpkgs-unstable` | 8.8.4       | `ghc884`              | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.4      | `ghc8104`             | No            |
-| unstable         | `nixpkgs-unstable` | 8.10.5      | `ghc8105`             | Yes           |
+| unstable         | `nixpkgs-unstable` | 8.10.5      | `ghc8105`             | No            |
+| unstable         | `nixpkgs-unstable` | 8.10.6      | `ghc8106`             | Yes           |
 | unstable         | `nixpkgs-unstable` | 9.0.1       | `ghc901`              | Yes           |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)

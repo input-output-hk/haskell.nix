@@ -23,7 +23,7 @@
 { src
 , compiler-nix-name
 , ghc ? pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}
-, ghcjsVersion
+, ghcjsVersion # Version in the ghcjs.cabal file (that we will replace)
 , ghcVersion ? ghc.version
 , happy ? pkgs.haskell-nix.tool compiler-nix-name "happy" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
@@ -135,9 +135,9 @@ let
                 ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"])) args) // {
         src = configured-src;
         index-state = "2021-03-20T00:00:00Z";
-        compiler-nix-name = if isGhcjs810 then "ghc8105" else if isGhcjs88 then "ghc884" else "ghc865";
+        inherit compiler-nix-name;
         configureArgs = pkgs.lib.optionalString (isGhcjs88 && !isGhcjs810) "--constraint='Cabal >=3.0.2.0 && <3.1'";
-        materialized = ../materialized + (if isGhcjs810 then "/ghcjs8105" else if isGhcjs88 then "/ghcjs884" else "/ghcjs865");
+        materialized = ../materialized + "/ghcjs/${compiler-nix-name}";
         modules = [
             {
                 # we need ghc-boot in here for ghcjs.
