@@ -15,8 +15,9 @@ in eval.linkFarm "check-${compiler-nix-name}" (builtins.concatMap (system:
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
   { name = "${system}-musl";          path = pkgs.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${system}-windows";       path = pkgs.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+] ++ eval.lib.optionals (__elem compiler-nix-name ["gch884" "ghc8105" "ghc8106" "ghc8107"]) [
   { name = "${system}-arm";           path = pkgs.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-] ++ eval.lib.optionals (compiler-nix-name == "ghc865" || compiler-nix-name == "ghc884" || compiler-nix-name == "ghc8105" || compiler-nix-name == "ghc8106") [
+] ++ eval.lib.optionals (__elem compiler-nix-name ["ghc865" "gch884" "ghc8105" "ghc8106" "ghc8107"]) [
   { name = "${system}-ghcjs";         path = pkgs.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
 ]) systems)
 
