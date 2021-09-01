@@ -137,6 +137,12 @@ let
         index-state = "2021-03-20T00:00:00Z";
         inherit compiler-nix-name;
         configureArgs = pkgs.lib.optionalString (isGhcjs88 && !isGhcjs810) "--constraint='Cabal >=3.0.2.0 && <3.1'";
+        # If a package is in both build-depends and build-tool-depends multiple versions may
+        # be in the `plan.json` file.  Haskell.nix will pick the newer one, but when nbuilding
+        # ghcjs 8.6 we need to use the older happy version.
+        pkg-def-extras = pkgs.lib.optional (!isGhcjs88) (hackage: {
+          packages.happy.revision = hackage.happy."1.19.9".revisions.default;
+        });
         materialized = ../materialized + "/ghcjs/${compiler-nix-name}";
         modules = [
             {

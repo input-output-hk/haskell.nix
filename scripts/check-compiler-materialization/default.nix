@@ -26,7 +26,7 @@ in eval.linkFarm "check-${compiler-nix-name}" (builtins.concatMap (system:
   { name = "${system}-windows";       path = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
 ] ++ eval.lib.optionals (__elem compiler-nix-name ["ghc884" "ghc8105" "ghc8106" "ghc8107"]) [
   { name = "${system}-arm";           path = pkgs.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-] ++ eval.lib.optionals (__elem compiler-nix-name ["ghc8105" "ghc8106" "ghc8107"]) [
+] ++ eval.lib.optionals (__elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107"]) [
   { name = "${system}-ghcjs";         path = pkgs.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
 ]) systems)
 
