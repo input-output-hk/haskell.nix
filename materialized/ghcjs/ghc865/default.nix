@@ -126,8 +126,7 @@
         "vector-algorithms".flags.bench = true;
         "vector-algorithms".flags.boundschecks = true;
         "vector-algorithms".flags.properties = true;
-        "happy".revision = (((hackage."happy")."1.19.9").revisions).default;
-        "happy".flags.small_base = true;
+        "happy".revision = (((hackage."happy")."1.20.0").revisions).default;
         "base".revision = (((hackage."base")."4.12.0.0").revisions).default;
         "blaze-markup".revision = (((hackage."blaze-markup")."0.8.2.8").revisions).default;
         "network-uri".revision = (((hackage."network-uri")."2.6.4.1").revisions).default;

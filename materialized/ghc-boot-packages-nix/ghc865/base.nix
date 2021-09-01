@@ -10,7 +10,7 @@
   {
     flags = { integer-simple = false; integer-gmp = false; };
     package = {
-      specVersion = "2.1";
+      specVersion = "3.0";
       identifier = { name = "base"; version = "4.12.0.0"; };
       license = "BSD-3-Clause";
       copyright = "";
