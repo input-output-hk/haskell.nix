@@ -60,6 +60,7 @@
         ghc-boot = ./.plan.nix/ghc-boot.nix;
         ghc = ./.plan.nix/ghc.nix;
         libiserv = ./.plan.nix/libiserv.nix;
+        Win32 = ./.plan.nix/Win32.nix;
         hpc = ./.plan.nix/hpc.nix;
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
         };
@@ -86,6 +87,7 @@
               };
             };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
+          "Win32" = { flags = {}; };
           "hpc" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
           };
