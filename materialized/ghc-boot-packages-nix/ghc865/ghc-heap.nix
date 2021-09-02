@@ -10,7 +10,7 @@
   {
     flags = {};
     package = {
-      specVersion = "2.1";
+      specVersion = "3.0";
       identifier = { name = "ghc-heap"; version = "8.6.5"; };
       license = "BSD-3-Clause";
       copyright = "";

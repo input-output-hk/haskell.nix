@@ -6,7 +6,6 @@
         "ghc-prim".revision = (((hackage."ghc-prim")."0.5.3").revisions).default;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
         "integer-gmp".revision = (((hackage."integer-gmp")."1.0.2.0").revisions).default;
-        "Win32".revision = (((hackage."Win32")."2.6.2.0").revisions).default;
         "template-haskell".revision = (((hackage."template-haskell")."2.15.0.0").revisions).default;
         "network".revision = (((hackage."network")."2.8.0.1").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
@@ -57,6 +56,7 @@
         ghc-boot = ./.plan.nix/ghc-boot.nix;
         ghc = ./.plan.nix/ghc.nix;
         libiserv = ./.plan.nix/libiserv.nix;
+        Win32 = ./.plan.nix/Win32.nix;
         hpc = ./.plan.nix/hpc.nix;
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
         };
@@ -84,6 +84,7 @@
               };
             };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
+          "Win32" = { flags = {}; };
           "hpc" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
           };

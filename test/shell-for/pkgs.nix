@@ -48,7 +48,7 @@
         "distributive".revision = (((hackage."distributive")."0.6.2.1").revisions).default;
         "distributive".flags.tagged = true;
         "distributive".flags.semigroups = true;
-        "transformers-base".revision = (((hackage."transformers-base")."0.4.5.2").revisions).default;
+        "transformers-base".revision = (((hackage."transformers-base")."0.4.6").revisions).default;
         "transformers-base".flags.orphaninstances = true;
         "vector-algorithms".revision = (((hackage."vector-algorithms")."0.8.0.4").revisions).default;
         "vector-algorithms".flags.unsafechecks = false;
@@ -65,8 +65,8 @@
         "unordered-containers".revision = (((hackage."unordered-containers")."0.2.14.0").revisions).default;
         "unordered-containers".flags.debug = false;
         "unix".revision = (((hackage."unix")."2.7.2.2").revisions).default;
-        "typed-process".revision = (((hackage."typed-process")."0.2.6.0").revisions).default;
-        "contravariant".revision = (((hackage."contravariant")."1.5.3").revisions).default;
+        "typed-process".revision = (((hackage."typed-process")."0.2.6.1").revisions).default;
+        "contravariant".revision = (((hackage."contravariant")."1.5.5").revisions).default;
         "contravariant".flags.tagged = true;
         "contravariant".flags.semigroups = true;
         "contravariant".flags.statevar = true;
@@ -99,10 +99,10 @@
         "tagged".revision = (((hackage."tagged")."0.8.6.1").revisions).default;
         "tagged".flags.deepseq = true;
         "tagged".flags.transformers = true;
-        "base-orphans".revision = (((hackage."base-orphans")."0.8.4").revisions).default;
-        "primitive".revision = (((hackage."primitive")."0.7.1.0").revisions).default;
+        "base-orphans".revision = (((hackage."base-orphans")."0.8.5").revisions).default;
+        "primitive".revision = (((hackage."primitive")."0.7.2.0").revisions).default;
         "directory".revision = (((hackage."directory")."1.3.6.0").revisions).default;
-        "transformers-compat".revision = (((hackage."transformers-compat")."0.6.6").revisions).default;
+        "transformers-compat".revision = (((hackage."transformers-compat")."0.7").revisions).default;
         "transformers-compat".flags.two = false;
         "transformers-compat".flags.five = false;
         "transformers-compat".flags.four = false;
@@ -111,9 +111,9 @@
         "transformers-compat".flags.three = false;
         "transformers-compat".flags.mtl = true;
         "profunctors".revision = (((hackage."profunctors")."5.6.2").revisions).default;
-        "th-abstraction".revision = (((hackage."th-abstraction")."0.4.2.0").revisions).default;
-        "resourcet".revision = (((hackage."resourcet")."1.2.4.2").revisions).default;
-        "semigroups".revision = (((hackage."semigroups")."0.19.1").revisions).default;
+        "th-abstraction".revision = (((hackage."th-abstraction")."0.4.3.0").revisions).default;
+        "resourcet".revision = (((hackage."resourcet")."1.2.4.3").revisions).default;
+        "semigroups".revision = (((hackage."semigroups")."0.19.2").revisions).default;
         "semigroups".flags.bytestring = true;
         "semigroups".flags.deepseq = true;
         "semigroups".flags.binary = true;
@@ -125,12 +125,12 @@
         "semigroups".flags.hashable = true;
         "semigroups".flags.unordered-containers = true;
         "semigroups".flags.text = true;
-        "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.10.6").revisions).default;
+        "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.10.7").revisions).default;
         "splitmix".revision = (((hackage."splitmix")."0.1.0.3").revisions).default;
         "splitmix".flags.optimised-mixer = false;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
         "deepseq".revision = (((hackage."deepseq")."1.4.4.0").revisions).default;
-        "kan-extensions".revision = (((hackage."kan-extensions")."5.2.2").revisions).default;
+        "kan-extensions".revision = (((hackage."kan-extensions")."5.2.3").revisions).default;
         "strict".revision = (((hackage."strict")."0.4.0.1").revisions).default;
         "strict".flags.assoc = true;
         "attoparsec".revision = (((hackage."attoparsec")."0.14.1").revisions).default;
@@ -138,7 +138,7 @@
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;
         "colour".revision = (((hackage."colour")."2.3.6").revisions).default;
         "invariant".revision = (((hackage."invariant")."0.5.4").revisions).default;
-        "hashable".revision = (((hackage."hashable")."1.3.2.0").revisions).default;
+        "hashable".revision = (((hackage."hashable")."1.3.3.0").revisions).default;
         "hashable".flags.integer-gmp = true;
         "hashable".flags.random-initial-seed = false;
         "adjunctions".revision = (((hackage."adjunctions")."4.4").revisions).default;
@@ -154,12 +154,12 @@
         "zlib".flags.pkg-config = false;
         "indexed-traversable-instances".revision = (((hackage."indexed-traversable-instances")."0.1").revisions).default;
         "split".revision = (((hackage."split")."0.2.3.4").revisions).default;
-        "StateVar".revision = (((hackage."StateVar")."1.2.1").revisions).default;
+        "StateVar".revision = (((hackage."StateVar")."1.2.2").revisions).default;
         "stm".revision = (((hackage."stm")."2.5.0.1").revisions).default;
         };
       compiler = {
-        version = "8.10.6";
-        nix-name = "ghc8106";
+        version = "8.10.7";
+        nix-name = "ghc8107";
         packages = {
           "binary" = "0.8.8.0";
           "ghc-prim" = "0.6.1";
@@ -178,7 +178,7 @@
           "bytestring" = "0.10.12.0";
           "containers" = "0.6.5.1";
           "directory" = "1.3.6.0";
-          "ghc-boot-th" = "8.10.6";
+          "ghc-boot-th" = "8.10.7";
           "filepath" = "1.4.2.1";
           "deepseq" = "1.4.4.0";
           "transformers" = "0.5.6.2";

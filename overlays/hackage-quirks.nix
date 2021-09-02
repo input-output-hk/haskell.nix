@@ -28,11 +28,9 @@ in { haskell-nix = prev.haskell-nix // {
 
     haskell-language-server = {
       # Fixes for:
-      #   * hlint https://github.com/ndmitchell/hlint/issues/1287
       #   * ghc-api-compat
       cabalProject = ''
         packages: .
-        constraints: extra < 1.7.10
         source-repository-package
           type: git
           location: https://github.com/hsyl20/ghc-api-compat
