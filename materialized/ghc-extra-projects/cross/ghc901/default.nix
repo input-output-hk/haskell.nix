@@ -60,6 +60,7 @@
         ghc-boot = ./.plan.nix/ghc-boot.nix;
         ghc = ./.plan.nix/ghc.nix;
         libiserv = ./.plan.nix/libiserv.nix;
+        Win32 = ./.plan.nix/Win32.nix;
         hpc = ./.plan.nix/hpc.nix;
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
         };
@@ -86,8 +87,46 @@
               };
             };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
+          "Win32" = { flags = {}; };
           "hpc" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
+          };
+        })
+    ({ lib, ... }:
+      {
+        packages = {
+          "libiserv".components.library.planned = lib.mkOverride 900 true;
+          "ghc".components.library.planned = lib.mkOverride 900 true;
+          "containers".components.library.planned = lib.mkOverride 900 true;
+          "ghc-boot".components.library.planned = lib.mkOverride 900 true;
+          "binary".components.library.planned = lib.mkOverride 900 true;
+          "ghc-prim".components.library.planned = lib.mkOverride 900 true;
+          "stm".components.library.planned = lib.mkOverride 900 true;
+          "iserv".components.exes."iserv".planned = lib.mkOverride 900 true;
+          "iserv-proxy".components.exes."iserv-proxy".planned = lib.mkOverride 900 true;
+          "ghc-heap".components.library.planned = lib.mkOverride 900 true;
+          "ghci".components.library.planned = lib.mkOverride 900 true;
+          "terminfo".components.library.planned = lib.mkOverride 900 true;
+          "transformers".components.library.planned = lib.mkOverride 900 true;
+          "process".components.library.planned = lib.mkOverride 900 true;
+          "hpc".components.library.planned = lib.mkOverride 900 true;
+          "network".components.library.planned = lib.mkOverride 900 true;
+          "pretty".components.library.planned = lib.mkOverride 900 true;
+          "template-haskell".components.library.planned = lib.mkOverride 900 true;
+          "array".components.library.planned = lib.mkOverride 900 true;
+          "exceptions".components.library.planned = lib.mkOverride 900 true;
+          "bytestring".components.library.planned = lib.mkOverride 900 true;
+          "remote-iserv".components.exes."remote-iserv".planned = lib.mkOverride 900 true;
+          "unix".components.library.planned = lib.mkOverride 900 true;
+          "base".components.library.planned = lib.mkOverride 900 true;
+          "rts".components.library.planned = lib.mkOverride 900 true;
+          "mtl".components.library.planned = lib.mkOverride 900 true;
+          "time".components.library.planned = lib.mkOverride 900 true;
+          "deepseq".components.library.planned = lib.mkOverride 900 true;
+          "ghc-bignum".components.library.planned = lib.mkOverride 900 true;
+          "filepath".components.library.planned = lib.mkOverride 900 true;
+          "ghc-boot-th".components.library.planned = lib.mkOverride 900 true;
+          "directory".components.library.planned = lib.mkOverride 900 true;
           };
         })
     ];
