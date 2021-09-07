@@ -34,7 +34,11 @@ let
     '';
     # For each architecture, what GHC version we should use for bootstrapping.
     buildBootstrapper =
-        if final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64
+        if final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin
+        then {
+            compilerNixName = "ghc8107";
+        }
+        else if final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64
         then {
             compilerNixName = "ghc882";
         }
@@ -44,8 +48,10 @@ let
     # AArch64 needs 8.8, but we prefer 8.6.5 for other 8.10 builds because of
     # * https://gitlab.haskell.org/ghc/ghc/-/issues/18143
     ghcForBuilding810
-      = if (final.buildPlatform.isAarch64 || final.targetPlatform.isAarch64)
-        then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
+      = if (final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin)
+          then final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler.ghc8107
+        else if (final.buildPlatform.isAarch64 || final.targetPlatform.isAarch64)
+          then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
         else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
     latestVer = {
       "8.6" = "8.6.5";
