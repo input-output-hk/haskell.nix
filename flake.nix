@@ -44,7 +44,7 @@
       flake = false;
     };
     old-ghc-nix = {
-      url = "github:angerman/old-ghc-nix/master2";
+      url = "github:angerman/old-ghc-nix/master";
       flake = false;
     };
     HTTP = {
