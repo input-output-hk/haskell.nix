@@ -172,7 +172,7 @@ let
     builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
       "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
 
-  replaceSoureRepos = projectFile:
+  replaceSourceRepos = projectFile:
     let
       fetchRepo = fetchgit: repoData:
         let
@@ -261,7 +261,7 @@ let
   fixedProject =
     if rawCabalProject == null
       then { sourceRepos = []; makeFixedProjectFile = ""; replaceLocations = ""; }
-      else replaceSoureRepos rawCabalProject;
+      else replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
   # * For hydra to assemble a list of jobs from `components.tests` it must
