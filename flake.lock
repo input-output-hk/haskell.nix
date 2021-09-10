@@ -101,11 +101,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1630631488,
-        "narHash": "sha256-lT5XsHnh/MelZmKSMFZ8oP/eGY5vFv+BGSibkhHV5OQ=",
+        "lastModified": 1631236282,
+        "narHash": "sha256-KrWDNNjlSCnNm8g99tR5JECo4tVSgSlfA6lWvFcIemw=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "c4a3c64af0a33052ba93128fbdc40a2ee1335979",
+        "rev": "e9bc53c89ec437e8740dcdb05fe446246af97c04",
         "type": "github"
       },
       "original": {
@@ -146,22 +146,6 @@
         "type": "github"
       }
     },
-    "nixpkgs": {
-      "locked": {
-        "lastModified": 1624291665,
-        "narHash": "sha256-kNkaoa3dai9WOi7fsPklCCWZ8hRAkXx0ZUhpYKShyUk=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-20.09-darwin",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-2003": {
       "locked": {
         "lastModified": 1620055814,
@@ -196,11 +180,11 @@
     },
     "nixpkgs-2105": {
       "locked": {
-        "lastModified": 1624291665,
-        "narHash": "sha256-kNkaoa3dai9WOi7fsPklCCWZ8hRAkXx0ZUhpYKShyUk=",
+        "lastModified": 1630481079,
+        "narHash": "sha256-leWXLchbAbqOlLT6tju631G40SzQWPqaAXQG3zH1Imw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8",
+        "rev": "110a2c9ebbf5d4a94486854f18a37a938cfacbbb",
         "type": "github"
       },
       "original": {
@@ -229,16 +213,16 @@
     "old-ghc-nix": {
       "flake": false,
       "locked": {
-        "lastModified": 1621819714,
-        "narHash": "sha256-EJCnYQSWk7FRLwS0lZgTWIiQ6pcvDX1VuD6LGD4Uwzs=",
+        "lastModified": 1631092763,
+        "narHash": "sha256-sIKgO+z7tj4lw3u6oBZxqIhDrzSkvpHtv0Kki+lh9Fg=",
         "owner": "angerman",
         "repo": "old-ghc-nix",
-        "rev": "f089a6f090cdb35fcf95f865fc6a31ba6b3ac4eb",
+        "rev": "af48a7a7353e418119b6dfe3cd1463a657f342b8",
         "type": "github"
       },
       "original": {
         "owner": "angerman",
-        "ref": "master2",
+        "ref": "master",
         "repo": "old-ghc-nix",
         "type": "github"
       }
@@ -254,7 +238,9 @@
         "hackage": "hackage",
         "hpc-coveralls": "hpc-coveralls",
         "nix-tools": "nix-tools",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": [
+          "nixpkgs-2105"
+        ],
         "nixpkgs-2003": "nixpkgs-2003",
         "nixpkgs-2009": "nixpkgs-2009",
         "nixpkgs-2105": "nixpkgs-2105",
@@ -266,11 +252,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1630545275,
-        "narHash": "sha256-LrU8BvcrE6QJK9EcUPsX5x3v5qZLoluvmW7phXi7TIg=",
+        "lastModified": 1631236410,
+        "narHash": "sha256-WHrLGYc7guDTCkeIJP8NpVWdzYx320gmqn+pFm0VCF8=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "8d07cc6c73717ba19304e6b9231a88504d0846b4",
+        "rev": "eeab4ba5d2cb344b6024f38a1e3e5fe34a838b4b",
         "type": "github"
       },
       "original": {

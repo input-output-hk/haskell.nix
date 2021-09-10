@@ -2,7 +2,7 @@
   description = "Alternative Haskell Infrastructure for Nixpkgs";
 
   inputs = {
-    nixpkgs = { url = "github:NixOS/nixpkgs/nixpkgs-20.09-darwin"; };
+    nixpkgs.follows = "nixpkgs-2105";
     nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
     nixpkgs-2009 = { url = "github:NixOS/nixpkgs/nixpkgs-20.09-darwin"; };
     nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
@@ -44,7 +44,7 @@
       flake = false;
     };
     old-ghc-nix = {
-      url = "github:angerman/old-ghc-nix/master2";
+      url = "github:angerman/old-ghc-nix/master";
       flake = false;
     };
     HTTP = {
@@ -64,7 +64,7 @@
           inherit config;
           overlays = [ self.overlay ];
         };
-      
+
         sources = inputs;
 
         overlaysOverrideable = import ./overlays;

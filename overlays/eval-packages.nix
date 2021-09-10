@@ -6,9 +6,9 @@ haskellNixOverlay: final: prev: {
   # derivations that use `evalPackages` (these should be eval time only derviations
   # used to build nix inputs for IFD, the generated nix should match and so derivations
   # that depend on the IFD should match).
-  evalPackages = (import final.path {
+  evalPackages = import final.path {
     # If we are building a flake there will be no currentSystem attribute
-    system = builtins.currentSystem or final.system;
+    system = builtins.currentSystem or final.buildPackages.system;
     overlays = [ haskellNixOverlay ];
-  }).buildPackages;
+  };
 }
