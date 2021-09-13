@@ -458,9 +458,13 @@ let
     # repo yet. We fail early and provide a useful error
     # message to prevent headaches (#290).
     if [ -z "$(ls -A ${maybeCleanedSource})" ]; then
-      echo "cleaned source is empty. Did you forget to 'git add -A'?"; exit 1;
+      echo "cleaned source is empty. Did you forget to 'git add -A'?"
+      ${pkgs.lib.optionalString (__length fixedProject.sourceRepos == 0) ''
+        exit 1
+      ''}
+    else
+      cp -r ${maybeCleanedSource}/* .
     fi
-    cp -r ${maybeCleanedSource}/* .
     chmod +w -R .
     # Decide what to do for each `package.yaml` file.
     for hpackFile in $(find . -name package.yaml); do (
