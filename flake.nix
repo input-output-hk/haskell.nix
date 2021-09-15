@@ -55,11 +55,12 @@
 
   outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, ... }@inputs:
     let compiler = "ghc884";
+      config = import ./config.nix;
     in {
+      inherit config;
       overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
       internal = rec {
-        config = import ./config.nix;
         nixpkgsArgs = {
           inherit config;
           overlays = [ self.overlay ];
