@@ -384,7 +384,7 @@ made in <code>nix/hix.nix</code> will be ignored).</p>
             };
         })
       ];
-      pkgs = import nixpkgs { inherit system overlays; };
+      pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
       flake = pkgs.helloProject.flake {
         # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
         crossPlatforms = p: [p.ghcjs];
