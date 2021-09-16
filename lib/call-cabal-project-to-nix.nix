@@ -172,7 +172,7 @@ let
     builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
       "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
 
-  replaceSoureRepos = projectFile:
+  replaceSourceRepos = projectFile:
     let
       fetchRepo = fetchgit: repoData:
         let
@@ -261,7 +261,7 @@ let
   fixedProject =
     if rawCabalProject == null
       then { sourceRepos = []; makeFixedProjectFile = ""; replaceLocations = ""; }
-      else replaceSoureRepos rawCabalProject;
+      else replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
   # * For hydra to assemble a list of jobs from `components.tests` it must
@@ -458,9 +458,13 @@ let
     # repo yet. We fail early and provide a useful error
     # message to prevent headaches (#290).
     if [ -z "$(ls -A ${maybeCleanedSource})" ]; then
-      echo "cleaned source is empty. Did you forget to 'git add -A'?"; exit 1;
+      echo "cleaned source is empty. Did you forget to 'git add -A'?"
+      ${pkgs.lib.optionalString (__length fixedProject.sourceRepos == 0) ''
+        exit 1
+      ''}
+    else
+      cp -r ${maybeCleanedSource}/* .
     fi
-    cp -r ${maybeCleanedSource}/* .
     chmod +w -R .
     # Decide what to do for each `package.yaml` file.
     for hpackFile in $(find . -name package.yaml); do (

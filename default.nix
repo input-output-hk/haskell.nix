@@ -1,10 +1,10 @@
 {...}@args:
 
 let
-  nixpkgsSrc = 
+  nixpkgsSrc =
     builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/3c6f3f84af60a8ed5b8a79cf3026b7630fcdefb8.tar.gz";
-      sha256 = "sha256:0jf9l6j60sa8cms7r4a02kr9j9884pwv1prf79b2ysnxmnhimnch";
+      url = "https://github.com/NixOS/nixpkgs/archive/110a2c9ebbf5d4a94486854f18a37a938cfacbbb.tar.gz";
+      sha256 = "sha256-leWXLchbAbqOlLT6tju631G40SzQWPqaAXQG3zH1Imw=";
     };
   pkgs = args.pkgs or (import nixpkgsSrc {});
   flake-compat =

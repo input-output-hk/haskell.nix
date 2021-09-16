@@ -42,6 +42,6 @@
 
   # Default values for other project options (things that do not have defaults for non hix projects)
   config = {
-    compiler-nix-name = lib.mkDefault "ghc8106";
+    compiler-nix-name = lib.mkDefault "ghc8107";
   };
 }

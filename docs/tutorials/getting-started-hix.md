@@ -81,16 +81,16 @@ The configuration arguments for `Hix` can be (from highest precedence to lowest)
 
 * Placed in `~/.config/hix/hix.conf`
 
-For example to build with GHC 8.10.6:
+For example to build with GHC 8.10.7:
 
 ```
-hix-shell --argstr compiler-nix-name ghc8106 --run 'cabal build'
+hix-shell --argstr compiler-nix-name ghc8107 --run 'cabal build'
 ```
 
 or add a `nix/hix.nix` or `~/.config/hix/hix.conf` file:
 
 ```nix
-{ compiler-nix-name = "ghc8106"; }
+{ compiler-nix-name = "ghc8107"; }
 ```
 
 Here are just a few of the other configuration arguments you could use
@@ -188,7 +188,7 @@ Example `flake.nix` file:
             };
         })
       ];
-      pkgs = import nixpkgs { inherit system overlays; };
+      pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
       flake = pkgs.helloProject.flake {
         # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
         crossPlatforms = p: [p.ghcjs];
