@@ -46,6 +46,7 @@ pkgs:
     "gobject-2.0"                        = [ pkgs."glib" ];
     "gmodule-2.0"                        = [ pkgs."glib" ];
     "gobject-introspection-1.0"          = [ pkgs."gobject-introspection" ];
+    "graphene-gobject-1.0"               = [ pkgs."graphene" ];
     "gstreamer-audio-0.10"               = [ pkgs."gst-plugins-base" ];
     "gstreamer-audio-1.0"                = [ pkgs."gst-plugins-base" ];
     "gstreamer-base-0.10"                = [ pkgs."gst-plugins-base" ];
@@ -81,7 +82,9 @@ pkgs:
     "ldap"                               = [ pkgs."openldap" ];
     "libavutil"                          = [ pkgs."ffmpeg" ];
     "libcrypto"                          = [ pkgs."openssl".dev ];
+    "libfreenect"                        = [ pkgs."freenect" ];
     "libgsasl"                           = [ pkgs."gsasl" ];
+    "liboath"                            = [ pkgs."liboauth" ];
     "libpcre"                            = [ pkgs."pcre" ];
     "libqrencode"                        = [ pkgs."qrencode" ];
     "libR"                               = [ pkgs."R" ];
