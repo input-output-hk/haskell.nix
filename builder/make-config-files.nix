@@ -84,7 +84,8 @@ let
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs
         ++ lib.optionals (stdenv.hostPlatform.isWindows) (map (p: "${lib.getBin p}/bin") component.libs);
       "extra-include-dirs" = map (p: "${lib.getDev p}/include") component.libs;
-      "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
+      "extra-framework-dirs" = lib.optionals (stdenv.hostPlatform.isDarwin)
+        (map (p: "${p}/Library/Frameworks") component.frameworks);
     })}
 
     ghc=${ghc}

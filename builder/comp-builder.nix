@@ -340,7 +340,8 @@ let
     };
 
     propagatedBuildInputs =
-         frameworks # Frameworks will be needed at link time
+      # Frameworks will be needed at link time
+      lib.optionals stdenv.hostPlatform.isDarwin frameworks
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
       ++ builtins.concatLists pkgconfig;
