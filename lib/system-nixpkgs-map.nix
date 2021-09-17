@@ -35,6 +35,7 @@ with pkgs;
   util = [ utillinux ];
   magic = [ file ];
   pq = [ postgresql ];
+  libpq = [ postgresql ];
   iconv = [ libiconv ];
   lapack = [ liblapack ];
   boost_atomic = [ boost ];
@@ -84,6 +85,17 @@ with pkgs;
   vulkan = [ vulkan-loader ];
   sodium = [ libsodium ];
   gfortran = [ gfortran.cc.lib ];
+  png = [ libpng ];
+  jpeg = [ libjpeg ];
+  m = []; # Included with ghc
+  freenect_sync = [ freenect ];
+  FLAC = [ flac ];
+  mp3lame = [ lame ];
+  tag_c = [ taglib ];
+  jwt = [ libjwt ];
+  GeoIP = [ geoip ];
+  pulse-simple = [ libpulseaudio ];
+  oath = [ liboauth ];
 }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
