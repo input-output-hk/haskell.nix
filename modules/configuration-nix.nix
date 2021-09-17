@@ -48,4 +48,8 @@ in {
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-defer-build-tool-depends-7532.patch)
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch)
   ];
+
+  packages.discount.components.library.libs = pkgs.lib.mkForce [ pkgs.discount ];
+
+  packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [ pkgs.llvm ];
 }
