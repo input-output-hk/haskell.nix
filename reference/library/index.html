@@ -573,6 +573,11 @@ will be passed to it:</p>
 <td>Attrset</td>
 <td>Like <code>pkgs.pkgsCross.&lt;system&gt;</code> from nixpkgs <code>p.projectCross.&lt;system&gt;</code> returns the project results for cross compilation (where system is a member of nixpkgs lib.systems.examples).  So <code>p.projectCross.ghcjs.hsPkgs</code> is the same as <code>hsPkgs</code> but compiled with ghcjs</td>
 </tr>
+<tr>
+<td><code>appendModule</code></td>
+<td>Function</td>
+<td>Re-eval the project with an extra module (or module list).</td>
+</tr>
 </tbody>
 </table>
 <h2 id="project-cabalproject-and-stackproject">project, cabalProject and stackProject<a class="headerlink" href="#project-cabalproject-and-stackproject" title="Permanent link">&para;</a></h2>
