@@ -226,7 +226,13 @@ let
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) build-tools) ++
+      else [c]) (build-tools
+        # Detect if hspec-discover or tasty-discover are needed to build the component
+        ++ lib.optional (haskellLib.isTest componentId &&
+          lib.any (x: __elem (x.identifier.name or "") ["hspec" "hspec-discover"]) component.depends) hsPkgs.buildPackages.hspec-discover
+        ++ lib.optional (haskellLib.isTest componentId &&
+          lib.any (x: x.identifier.name or "" == "tasty-discover") component.depends) hsPkgs.buildPackages.tasty-discover
+    )) ++
     lib.optional (pkgconfig != []) buildPackages.pkgconfig;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
