@@ -3,7 +3,7 @@
 # package sets out of this repo. Ideally, this file is only used for
 # fixing things that are broken due to the Nix infrastructure.
 
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 let
   fromUntil = from: until: patch: { version, revision }:
     if   builtins.compareVersions version from  >= 0
@@ -52,4 +52,24 @@ in {
   packages.discount.components.library.libs = pkgs.lib.mkForce [ pkgs.discount ];
 
   packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [ pkgs.llvm ];
+
+  packages.BNFC.components.tests.doctests.build-tools = [
+    config.hsPkgs.buildPackages.alex
+    config.hsPkgs.buildPackages.happy
+  ];
+
+  packages.Sit.components.library.build-tools = [
+    # These may not be in `config.hsPkgs.buildPackages` are not even included
+    # as dependencies of the Sit package at all.
+    (pkgs.buildPackages.haskell-nix.tool config.compiler.nix-name "alex" {})
+    (pkgs.buildPackages.haskell-nix.tool config.compiler.nix-name "happy" {})
+  ];
+
+  packages.bindings-GLFW.components.library.libs = [
+    pkgs.xorg.libXext
+  ];
+
+  packages.GLFW-b.components.library.libs = [
+    pkgs.xorg.libXi
+  ];
 }
