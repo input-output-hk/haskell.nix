@@ -232,6 +232,10 @@ let
           lib.any (x: __elem (x.identifier.name or "") ["hspec" "hspec-discover"]) component.depends) hsPkgs.buildPackages.hspec-discover
         ++ lib.optional (haskellLib.isTest componentId &&
           lib.any (x: x.identifier.name or "" == "tasty-discover") component.depends) hsPkgs.buildPackages.tasty-discover
+        ++ lib.optional (haskellLib.isTest componentId &&
+          lib.any (x: x.identifier.name or "" == "doctest-discover") component.depends) hsPkgs.buildPackages.doctest-discover
+        ++ lib.optional (haskellLib.isTest componentId &&
+          lib.any (x: x.identifier.name or "" == "HTF") component.depends) hsPkgs.buildPackages.HTF
     )) ++
     lib.optional (pkgconfig != []) buildPackages.pkgconfig;
 

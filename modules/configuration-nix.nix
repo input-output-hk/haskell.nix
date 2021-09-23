@@ -72,4 +72,8 @@ in {
   packages.GLFW-b.components.library.libs = [
     pkgs.xorg.libXi
   ];
+
+  packages.closed.components.tests.readme.build-tools = [
+    config.hsPkgs.buildPackages.markdown-unlit
+  ];
 }
