@@ -30,7 +30,7 @@ let
           url = resolver;
           sha256 = resolverSha256;
         }
-      else if resolver != null && __pathExists (srcDir + "/${resolver}")
+      else if resolver != null && !pkgs.lib.isStorePath srcDir && __pathExists (srcDir + "/${resolver}")
         then pkgs.copyPathToStore (srcDir + "/${resolver}")
       else null;
 
