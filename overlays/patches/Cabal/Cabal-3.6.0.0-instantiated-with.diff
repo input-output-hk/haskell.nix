@@ -1,0 +1,38 @@
+diff --git a/src/Distribution/Client/ProjectPlanOutput.hs b/src/Distribution/Client/ProjectPlanOutput.hs
+index c9243c310e0..2271f566e77 100644
+--- a/src/Distribution/Client/ProjectPlanOutput.hs
++++ b/src/Distribution/Client/ProjectPlanOutput.hs
+@@ -33,6 +33,7 @@ import qualified Distribution.Solver.Types.ComponentDeps as ComponentDeps
+ 
+ import           Distribution.Package
+ import           Distribution.System
++import           Distribution.ModuleName (ModuleName)
+ import           Distribution.InstalledPackageInfo (InstalledPackageInfo)
+ import qualified Distribution.PackageDescription as PD
+ import           Distribution.Compiler (CompilerFlavor(GHC, GHCJS))
+@@ -53,6 +54,7 @@ import           Distribution.Simple.Utils
+ import           Distribution.Types.Version
+                    ( mkVersion )
+ import           Distribution.Verbosity
++import qualified Text.PrettyPrint                as Disp
+ 
+ import Prelude ()
+ import Distribution.Client.Compat.Prelude
+@@ -146,6 +148,7 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig =
+                                      | (fn,v) <- PD.unFlagAssignment (elabFlagAssignment elab) ]
+         , "style"      J..= J.String (style2str (elabLocalToProject elab) (elabBuildStyle elab))
+         , "pkg-src"    J..= packageLocationToJ (elabPkgSourceLocation elab)
++        , "instantiated-with" J..= (instantiatedWithToJ . Map.toList . elabInstantiatedWith) elab
+         ] ++
+         [ "pkg-cabal-sha256" J..= J.String (showHashValue hash)
+         | Just hash <- [ fmap hashValue (elabPkgDescriptionOverride elab) ] ] ++
+@@ -268,6 +271,9 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig =
+                then dist_dir </> "build" </> prettyShow s </> ("lib" ++ prettyShow s) <.> dllExtension plat
+                else InstallDirs.bindir (elabInstallDirs elab) </> ("lib" ++ prettyShow s) <.> dllExtension plat
+ 
++      instantiatedWithToJ :: [(ModuleName, Module)] -> [J.Value]
++      instantiatedWithToJ l = map (\(name, m) -> J.String $ Disp.render $ pretty name <> Disp.text "=" <> pretty m) l
++
+     comp2str :: ComponentDeps.Component -> String
+     comp2str = prettyShow
+ 

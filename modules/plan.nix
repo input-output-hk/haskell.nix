@@ -55,6 +55,10 @@ let
             type = bool;
             default = true;
          };
+         instantiatedWith = mkOption {
+            type = listOfFilteringNulls str;
+            default = (def.instantiatedWith or []);
+         };
          configureFlags = mkOption {
             type = listOfFilteringNulls str;
             default = (def.configureFlags or []);

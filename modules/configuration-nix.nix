@@ -53,6 +53,7 @@ in {
   packages.cabal-install.patches = [
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-defer-build-tool-depends-7532.patch)
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch)
+    (fromUntil "3.6.0.0" "3.9.0.0" ../overlays/patches/Cabal/Cabal-3.6.0.0-instantiated-with.diff)
   ];
 
   # Avoid dependency on genprimopcode and deriveConstants (cabal does not put these in the plan,

@@ -34,6 +34,7 @@ data Plan = Plan
   , components :: HashSet Text
   , compilerVersion :: Text
   , compilerPackages :: HashMap Text (Maybe Version)
+  , instantiatedWith :: HashMap Text [Text]
   } deriving (Show)
 
 

@@ -2,8 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
-module Cabal2Nix (cabal2nix, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName, CabalDetailLevel(..)) where
+module Cabal2Nix (cabal2nix, cabal2nixInstWith, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName, CabalDetailLevel(..)) where
 
 import Distribution.PackageDescription.Parsec (parseGenericPackageDescription, runParseResult)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
@@ -14,7 +16,7 @@ import Distribution.Utils.Path (getSymbolicPath)
 import Data.Char (toUpper)
 import System.FilePath
 import Data.ByteString (ByteString)
-import Data.Maybe (catMaybes, maybeToList)
+import Data.Maybe (catMaybes, maybeToList, listToMaybe)
 import Data.Foldable (toList)
 import Distribution.Package
          ( packageName, packageVersion )
@@ -36,15 +38,22 @@ import Distribution.ModuleName (ModuleName)
 import qualified Distribution.ModuleName as ModuleName
 
 import Data.String (fromString, IsString)
+import qualified Data.HashMap.Strict as Map
+import           Data.HashMap.Strict                      ( HashMap )
 
--- import Distribution.Types.GenericPackageDescription
--- import Distribution.Types.PackageDescription
---import Distribution.Types.Condition
+import Data.Maybe (mapMaybe, isJust)
+import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty as NE (NonEmpty(..))
+import Distribution.Types.PackageId
+import Distribution.Types.UnqualComponentName
+import Nix.Atoms
 import Nix.Expr
+import Nix.Expr.Types.Annotated
 import Data.Fix(Fix(..))
 import Data.Text (Text)
-
+import qualified Data.Text as Text
 import Cabal2Nix.Util (quoted, selectOr)
+
 
 data Src
   = Path FilePath
@@ -96,16 +105,25 @@ data CabalDetailLevel = MinimalDetails | FullDetails deriving (Show, Eq)
 
 cabal2nix :: Bool -> CabalDetailLevel -> Maybe Src -> CabalFile -> IO NExpr
 cabal2nix isLocal fileDetails src = \case
-  (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing
+  (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing Map.empty
     <$> readGenericPackageDescription normal path
-  (InMemory gen _ body) -> gpd2nix isLocal fileDetails src (genExtra <$> gen)
+  (InMemory gen _ body) -> gpd2nix isLocal fileDetails src (genExtra <$> gen) Map.empty
     <$> case runParseResult (parseGenericPackageDescription body) of
         (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
         (_, Right desc) -> pure desc
 
-gpd2nix :: Bool -> CabalDetailLevel -> Maybe Src -> Maybe NExpr -> GenericPackageDescription -> NExpr
-gpd2nix isLocal fileDetails src extra gpd =
-  mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd
+cabal2nixInstWith :: Bool -> CabalDetailLevel -> Maybe Src -> HashMap Text [Text] -> CabalFile -> IO NExpr
+cabal2nixInstWith isLocal fileDetails src instantiatedWith = \case
+  (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing instantiatedWith
+    <$> readGenericPackageDescription normal path
+  (InMemory gen _ body) -> gpd2nix isLocal fileDetails src (genExtra <$> gen) instantiatedWith
+    <$> case runParseResult (parseGenericPackageDescription body) of
+        (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
+        (_, Right desc) -> pure desc
+
+gpd2nix :: Bool -> CabalDetailLevel -> Maybe Src -> Maybe NExpr -> HashMap Text [Text] -> GenericPackageDescription -> NExpr
+gpd2nix isLocal fileDetails src extra instantiatedWith gpd =
+  mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd instantiatedWith
     $//? (srcToNix (package $ packageDescription gpd) <$> src)
     $//? extra
   where args :: Params NExpr
@@ -292,23 +310,24 @@ data BuildToolDependency = BuildToolDependency PackageName UnqualComponentName d
 mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
-toNixGenericPackageDescription :: Bool -> CabalDetailLevel -> GenericPackageDescription -> NExpr
-toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
+toNixGenericPackageDescription :: Bool -> CabalDetailLevel -> GenericPackageDescription -> HashMap Text [Text] -> NExpr
+toNixGenericPackageDescription isLocal detailLevel gpd instantiatedWith = mkNonRecSet
                           [ "flags"         $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
                           , "package"       $= toNixPackageDescription isLocal detailLevel (packageDescription gpd)
                           , "components"    $= components ]
     where _packageName :: IsString a => a
           _packageName = fromString . show . pretty . pkgName . package . packageDescription $ gpd
-          component :: IsComponent comp => UnqualComponentName -> CondTree ConfVar [Dependency] comp -> Binding NExpr
-          component unQualName comp
+          component :: IsComponent comp => UnqualComponentName -> CondTree ConfVar [Dependency] comp -> [Text] -> Binding NExpr
+          component unQualName comp instWith
             = quoted name $=
                 mkNonRecSet (
-                  [ "depends"      $= toNix deps | Just deps <- [shakeTree . fmap ( (>>= depends) . targetBuildDepends . getBuildInfo) $ comp ] ] ++
+                  [ "depends"      $= toNix (patchDeps name instWith deps) | Just deps <- [shakeTree . fmap ( (>>= depends) . targetBuildDepends . getBuildInfo) $ comp ] ] ++
                   [ "libs"         $= toNix deps | Just deps <- [shakeTree . fmap (  fmap mkSysDep . extraLibs . getBuildInfo) $ comp ] ] ++
                   [ "frameworks"   $= toNix deps | Just deps <- [shakeTree . fmap ( fmap mkSysDep . frameworks . getBuildInfo) $ comp ] ] ++
                   [ "pkgconfig"    $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
                   [ "build-tools"  $= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ] ++
                   [ "buildable"    $= boolTreeToNix (and <$> b) | Just b <- [shakeTree . fmap ((:[]) . buildable . getBuildInfo) $ comp ] ] ++
+                  [ "instantiatedWith" $= toNix (map Text.unpack instWith) | not . null $ instWith ] ++
                   if detailLevel == MinimalDetails
                     then []
                     else
@@ -330,13 +349,49 @@ toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
                            map toBuildToolDep (buildToolDepends bi)
                         <> map (\led -> maybe (guess led) toBuildToolDep $ desugarBuildTool pkg led) (buildTools bi)
                     guess (LegacyExeDependency n _) = BuildToolDependency (mkPackageName n) (mkUnqualComponentName n)
+          patchDeps componentName instWith CondNode{condTreeData, condTreeConstraints, condTreeComponents} =
+            let
+              preparedSublibs = concatMap (\(k,vs) -> map (\v -> (fst $ Text.span (/=':') v, k)) vs) sublibsInstWith
+              lookupNewNameForComponent :: Text -> Maybe Text
+              lookupNewNameForComponent c =
+                fmap snd $ listToMaybe $ filter (\(k,_) -> Text.isSuffixOf c k) $ preparedSublibs
+              newNamesConfirmed = flip mapMaybe condTreeData $ \(HaskellLibDependency packageName name) ->
+                case name of
+                  (LSubLibName (unUnqualComponentName -> n)) -> lookupNewNameForComponent (Text.pack n)
+                  LMainLibName -> Nothing
+              newNamesConfirmedWithOld = map (\s -> (fst $ Text.span (/='+') s, s)) newNamesConfirmed
+              updTreeData = flip map condTreeData $ \(HaskellLibDependency packageName name) ->
+                let
+                  newName =
+                    case name of
+                      (LSubLibName (unUnqualComponentName -> n)) -> LSubLibName $ mkUnqualComponentName $
+                        case lookup (Text.pack n) newNamesConfirmedWithOld of
+                          Just newN -> "\"" ++ Text.unpack newN ++ "\""
+                          Nothing -> n
+                      LMainLibName -> LMainLibName
+                in HaskellLibDependency packageName newName
+              updTreeCons = condTreeConstraints
+              subLibsNames = map (Text.pack . unUnqualComponentName . fst) $ condSubLibraries gpd
+              subLibsNamesDeps = flip concatMap instWith $ \instLine -> filter (\subLibName -> Text.isSuffixOf subLibName $ fst $ Text.span (/=':') instLine) subLibsNames
+              newDeps = if isJust (Text.find (=='+') componentName)
+                then (flip map ((fst $ Text.span (/='+') componentName):subLibsNamesDeps) $ \cn ->
+                  HaskellLibDependency (mkPackageName _packageName) (LSubLibName (mkUnqualComponentName $ Text.unpack cn)))
+                else []
+            in CondNode{condTreeData = updTreeData ++ newDeps, condTreeConstraints = updTreeCons, condTreeComponents}
           components = mkNonRecSet $
-            [ component "library" lib | Just lib <- [condLibrary gpd] ] ++
-            (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condSubLibraries gpd ]) ++
-            (bindTo "foreignlibs" . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condForeignLibs  gpd ]) ++
-            (bindTo "exes"        . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condExecutables  gpd ]) ++
-            (bindTo "tests"       . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condTestSuites   gpd ]) ++
-            (bindTo "benchmarks"  . mkNonRecSet <$> filter (not . null) [ uncurry component <$> condBenchmarks   gpd ])
+            [ component "library" lib [] | Just lib <- [condLibrary gpd] ] ++
+            (bindTo "sublibs"     . mkNonRecSet <$> (filter (not . null) [ uncurry3 component <$> subLibsToCreate ])) ++
+            (bindTo "foreignlibs" . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condForeignLibs  gpd) ]) ++
+            (bindTo "exes"        . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condExecutables  gpd) ]) ++
+            (bindTo "tests"       . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condTestSuites   gpd) ]) ++
+            (bindTo "benchmarks"  . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condBenchmarks   gpd) ])
+          extendTuple = map (\(k, v) -> (k,v,[]))
+          subLibsToCreate = extendTuple (condSubLibraries gpd) ++ subLibsInstComps
+          subLibsInstComps = flip mapMaybe sublibsInstWith $ \(k, v) ->
+            let origPackageName = mkUnqualComponentName $ Text.unpack $ fst $ Text.span (/='+') k
+                packageName = mkUnqualComponentName $ Text.unpack k
+            in (\t -> (packageName, t, v)) <$> lookup origPackageName (condSubLibraries gpd)
+          sublibsInstWith = map (\(k, v) -> (last (Text.split (=='-') k), v)) $ Map.toList $ Map.filter (not . null) instantiatedWith
 
 -- WARNING: these use functions bound at he top level in the GPD expression, they won't work outside it
 
@@ -476,3 +531,6 @@ boolTreeToNix (CondNode True _c bs) =
 
 instance ToNixBinding PackageFlag where
   toNixBinding (MkPackageFlag name _desc def _manual) = (fromString . show . pretty $ name) $= mkBool def
+
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (a, b, c) = f a b c

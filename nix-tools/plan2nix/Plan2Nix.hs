@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, NamedFieldPuns, RecordWildCards, TupleSections #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, NamedFieldPuns, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Plan2Nix
   ( doPlan2Nix
@@ -80,7 +80,7 @@ writeDoc file doc =
      hClose handle
 
 plan2nix :: Args -> Plan -> IO NExpr
-plan2nix args Plan { packages, extras, components, compilerVersion, compilerPackages } = do
+plan2nix args Plan { packages, extras, components, compilerVersion, compilerPackages, instantiatedWith } = do
   -- TODO: this is an aweful hack and expects plan-to-nix to be
   -- called from the toplevel project directory.
   cwd <- getCurrentDirectory
@@ -93,14 +93,14 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
                nixFile = argOutputDir args </> nix
                src = Just . C2N.Path $ relPath </> ".." </> shortRelativePath cwd folder
            in do createDirectoryIfMissing True (takeDirectory nixFile)
-                 writeDoc nixFile . prettyNix =<< cabal2nix True (argDetailLevel args) src cabalFile
+                 writeDoc nixFile . prettyNix =<< cabal2nixInstWith True (argDetailLevel args) src instantiatedWith cabalFile
                  return $ fromString pkg $= mkPath False nix
     (_name, Just (Package v flags (Just (DVCS (Git url rev) subdirs)) False)) ->
       fmap concat . forM subdirs $ \subdir ->
       do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
          case cacheHits of
            [] -> do
-             fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
+             fetch (\dir -> cabalFromPath url rev subdir (dir </> subdir) instantiatedWith)
                (Source url rev UnknownHash) >>= \case
                (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
                _ -> return []
@@ -151,8 +151,9 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
           -> String    -- Revision
           -> FilePath  -- Subdir
           -> FilePath  -- Local Directory
+          -> HashMap Text [Text]
           -> MaybeT IO (String -> IO [Binding NExpr])
-  cabalFromPath url rev subdir path = do
+  cabalFromPath url rev subdir path instantiatedWith = do
           d <- liftIO $ doesDirectoryExist path
           unless d $ fail ("not a directory: " ++ path)
           cabalFiles <- liftIO $ findCabalFiles path
@@ -165,7 +166,7 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
                           else Just subdir
                 src = Just $ C2N.Git url rev (Just sha256) subdir'
             createDirectoryIfMissing True (takeDirectory nixFile)
-            writeDoc nixFile . prettyNix =<< cabal2nix True (argDetailLevel args) src cabalFile
+            writeDoc nixFile . prettyNix =<< cabal2nixInstWith True (argDetailLevel args) src instantiatedWith cabalFile
             liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
   flagBindings pkg packageFlags = Map.foldrWithKey
@@ -186,7 +187,7 @@ flags2nix pkgName pkgFlags =
   ]
 
 value2plan :: Value -> Plan
-value2plan plan = Plan { packages, components, extras, compilerVersion, compilerPackages }
+value2plan plan = Plan { packages, components, extras, compilerVersion, compilerPackages, instantiatedWith }
  where
   packages = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
                                               , pkg ^. key "style" . _String) of
@@ -222,6 +223,11 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
       , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256") -- likely this is always false
       }
     _ -> Nothing
+
+  instantiatedWith :: HashMap Text [Text]
+  instantiatedWith = Map.fromListWith ((<>))
+    $ map (\pkg -> (pkg ^. key "id" . _String, map (\v -> v ^. _String) $ Vector.toList $ pkg ^. key "instantiated-with" . _Array))
+    $ Vector.toList (plan ^. key "install-plan" . _Array)
 
   extras = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "style" . _String
                                                         , pkg ^. key "pkg-src" . key "type" . _String) of
@@ -265,6 +271,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
       $ concatMap (\pkg ->
           let pkgName = pkg ^. key "pkg-name" . _String
               nixComponentAttr = Text.pack . componentNameToHaskellNixAttr pkgName . Text.unpack
+              instantiedIdentifier = snd $ Text.span (/='+') $ pkg ^. key "id" . _String
           in
             map ((quoted pkgName <> ".components.") <>) $
               if pkg ^. key "type" . _String == "pre-existing"
@@ -273,7 +280,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
                   -- If a `components` attribute exists then the keys of that are the component names.
                   -- If it does not exist then look for `component-name` instead.
                   maybe
-                    [nixComponentAttr $ pkg ^. key "component-name" . _String]
+                    [nixComponentAttr $ (pkg ^. key "component-name" . _String <> instantiedIdentifier)]
                     (map (nixComponentAttr . Key.toText) . KeyMap.keys)
                     (pkg ^? key "components" . _Object))
       $ Vector.toList (plan ^. key "install-plan" . _Array)

@@ -145,7 +145,12 @@ let
 
   disableFeature = disable: enableFeature (!disable);
 
-  finalConfigureFlags = lib.concatStringsSep " " (
+  patchInstLine = instLine:
+    if lib.strings.hasInfix "inplace" instLine then
+      "$(read packageId < <(read sedline < <(echo ${instLine} | sed -n -e 's/.*=\\(.*\\)-inplace-\\(.*\\):.*/\\1-\\\\\\\\([^\"]*\\\\\\\\)-\\2/p') ; sed -n -e \"s/.*\$\{sedline\}/\\1/p\" ${configFiles}/configure-flags | head -1) ; echo ${instLine} | sed -n -e \"s/\\(.*\\)-inplace-\\(.*\\)/\\1-\$\{packageId\}-\\2/p\")"
+    else instLine;
+
+  finalConfigureFlags' = lib.concatStringsSep " " (
     [ "--prefix=$out"
     ] ++
     # We don't specify this in 'commonConfigureFlags', as these are also
@@ -161,8 +166,12 @@ let
       if configureAllComponents
         then ["--enable-tests" "--enable-benchmarks"]
         else ["${haskellLib.componentTarget componentId}"]
-    ) ++ [ "$(cat ${configFiles}/configure-flags)"
-    ] ++ commonConfigureFlags);
+    ) ++ [ "$(sed 's/--dependency=\\(.*\\)+\\(.*\\)/--dependency=\\1/' ${configFiles}/configure-flags)"
+    ] ++ commonConfigureFlags ++
+    (map (arg: "--instantiate-with=" + patchInstLine arg) component.instantiatedWith)
+    );
+
+  finalConfigureFlags = builtins.trace componentId (builtins.trace component.instantiatedWith (if name == "backpack-handle-0.1.0.0" then (builtins.trace finalConfigureFlags' finalConfigureFlags') else finalConfigureFlags'));
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
   pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;
