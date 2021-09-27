@@ -26,6 +26,13 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
+    haskell-language-server = {
+      cabalProject = ''
+        packages: .
+        constraints: ghcide <1.4.2.1 || >1.4.2.1
+      '';
+    };
+
     hpack = {
       modules = [ { reinstallableLibGhc = true; } ];
     };
