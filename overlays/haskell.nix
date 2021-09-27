@@ -577,6 +577,15 @@ final: prev: {
                 rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
+            # re-eval this project with an extra module (or module list).
+            appendModule = extraProjectModule: rawProject.projectFunction final.haskell-nix
+              ((if builtins.isList rawProject.projectModule
+                then rawProject.projectModule
+                else [rawProject.projectModule])
+              ++ (if builtins.isList extraProjectModule
+                then extraProjectModule
+                else [extraProjectModule]));
+
             # Add support for passing in `crossPlatforms` argument.
             # crossPlatforms is an easy way to include the inputs for a basic
             # cross platform shell in a native shell.
