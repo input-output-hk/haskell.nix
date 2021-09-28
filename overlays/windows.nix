@@ -15,11 +15,11 @@ final: prev:
   #   #  '';
   #   postFixup = "";
   #  });
-
+} // prev.lib.optionalAttrs (prev ? mfpr) {
    mfpr = prev.mfpr.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ prev.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
-
+} // {
    libmpc = prev.libmpc.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ prev.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
    });
