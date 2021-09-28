@@ -9,8 +9,8 @@ let
   pkgs = args.pkgs or (import nixpkgsSrc {});
   flake-compat =
     pkgs.fetchzip {
-      url = "https://github.com/hamishmack/flake-compat/archive/ce16b21b8a5588aa8b532353d3ceea89a38b8e77.tar.gz";
-      sha256 = "sha256:054nsfqh3wy6v6bjamw0k91xl8v1rc5x2laic8mphrkrhzvyz5hi";
+      url = "https://github.com/edolstra/flake-compat/archive/5523c47f13259b981c49b26e28499724a5125fd8.tar.gz";
+      sha256 = "sha256-7IySNHriQjzOZ88DDk6VDPf1GoUaOrOeUdukY62o52o=";
     };
   self = import flake-compat {
     # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
