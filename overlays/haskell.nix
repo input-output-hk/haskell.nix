@@ -721,7 +721,7 @@ final: prev: {
                     final.lib.concatMap (packageName:
                       let package = project.hsPkgs.${packageName};
                       in final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = v; })
+                          { name = "${prefix}${packageName}:test:${n}"; value = v; })
                         (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
                     ) (packageNames project);
                   appsForProject =  prefix: project:
