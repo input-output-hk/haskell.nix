@@ -499,10 +499,13 @@ final: prev: {
                 else mkCabalProjectPkgSet
                 { inherit compiler-nix-name plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
-                  modules = (args.modules or [])
-                          ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
-                              { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
-                          ++ [ { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; } ];
+                  modules = [ { _module.args.buildModules = final.lib.mkForce (if final.stdenv.hostPlatform != final.stdenv.buildPlatform
+                      then (final.buildPackages.haskell-nix.cabalProject' projectModule).pkg-set
+                      else pkg-set); } ]
+                    ++ (args.modules or [])
+                    ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
+                        { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
+                    ++ [ { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; } ];
                   extra-hackages = args.extra-hackages or [];
                 };
 
@@ -771,7 +774,10 @@ final: prev: {
             in let pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
-                  modules = final.lib.singleton (mkCacheModule cache)
+                  modules = [ { _module.args.buildModules = final.lib.mkForce (if final.stdenv.hostPlatform != final.stdenv.buildPlatform
+                      then (final.buildPackages.haskell-nix.stackProject' projectModule).pkg-set
+                      else pkg-set); }
+                      (mkCacheModule cache) ]
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
                     ++ final.lib.optional (args.compiler-nix-name != null)
