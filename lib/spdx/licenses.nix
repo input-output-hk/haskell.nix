@@ -7,12 +7,11 @@ with builtins; let
     );
   dropFour = s: substring 0 (stringLength s - 4) s;
   toSpdx = lic: with lic;
-            { spdxId = licenseId
-            ; shortName = licenseId
-            ; fullName = name
-            ; url = dropFour detailsUrl + "html"
-            ; free = isOsiApproved
-            ;
+            { spdxId    = licenseId;
+              shortName = licenseId;
+              fullName  = name;
+              url       = dropFour detailsUrl + "html";
+              free      = isOsiApproved;
             };
   toNamedValue = lic: { name = lic.spdxId; value = lic; };
 in
