@@ -502,9 +502,7 @@ final: prev: {
                 else mkCabalProjectPkgSet
                 { inherit compiler-nix-name plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
-                  modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
-                      then buildProject.pkg-set
-                      else pkg-set); } ]
+                  modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; } ]
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
                         { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
@@ -782,8 +780,6 @@ final: prev: {
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
-                      then buildProject.pkg-set
-                      else pkg-set); }
                       (mkCacheModule cache) ]
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
