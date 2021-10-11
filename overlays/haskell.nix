@@ -781,7 +781,7 @@ final: prev: {
               pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
-                  modules = [ { _module.args.buildModules = final.lib.mkForce (if final.stdenv.hostPlatform != final.stdenv.buildPlatform
+                  modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       then buildProject.pkg-set
                       else pkg-set); }
                       (mkCacheModule cache) ]
