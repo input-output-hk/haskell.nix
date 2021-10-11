@@ -488,6 +488,9 @@ final: prev: {
               plan-pkgs = importAndFilterProject {
                 inherit (callProjectResults) projectNix sourceRepos src;
               };
+              buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
+                then final.buildPackages.haskell-nix.cabalProject' projectModule
+                else project;
               pkg-set = if plan-pkgs ? configurationError
                 then {
                   inherit (plan-pkgs) configurationError;
@@ -500,7 +503,7 @@ final: prev: {
                 { inherit compiler-nix-name plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = [ { _module.args.buildModules = final.lib.mkForce (if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                      then (final.buildPackages.haskell-nix.cabalProject' projectModule).pkg-set
+                      then buildProject.pkg-set
                       else pkg-set); } ]
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
@@ -518,7 +521,7 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
-                  inherit projectModule args;
+                  inherit projectModule buildProject args;
                 };
             in project);
 
@@ -771,11 +774,15 @@ final: prev: {
                   // final.lib.optionalAttrs (args.cache == null) { inherit cache; });
                 generatedCache = genStackCache args;
                 cache = if args.cache != null then args.cache else generatedCache;
-            in let pkg-set = mkStackPkgSet
+            in let
+              buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
+                then final.buildPackages.haskell-nix.stackProject' projectModule
+                else project;
+              pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
                   pkg-def-extras = (args.pkg-def-extras or []);
                   modules = [ { _module.args.buildModules = final.lib.mkForce (if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                      then (final.buildPackages.haskell-nix.stackProject' projectModule).pkg-set
+                      then buildProject.pkg-set
                       else pkg-set); }
                       (mkCacheModule cache) ]
                     ++ (args.modules or [])
@@ -792,7 +799,7 @@ final: prev: {
                   tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.stackProject';
-                  inherit projectModule args;
+                  inherit projectModule buildProject args;
                 };
             in project);
 
