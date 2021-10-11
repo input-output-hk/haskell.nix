@@ -11,7 +11,7 @@ with builtins; let
               shortName = licenseId;
               fullName  = name;
               url       = dropFour detailsUrl + "html";
-              free      = isFsfLibre || isOsiApproved;
+              free      = isOsiApproved || lic.isFsfLibre or false;
             };
   toNamedValue = lic: { name = lic.spdxId; value = lic; };
 in
