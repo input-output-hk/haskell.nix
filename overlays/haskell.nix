@@ -502,7 +502,7 @@ final: prev: {
                 else mkCabalProjectPkgSet
                 { inherit compiler-nix-name plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
-                  modules = [ { _module.args.buildModules = final.lib.mkForce (if final.stdenv.hostPlatform != final.stdenv.buildPlatform
+                  modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       then buildProject.pkg-set
                       else pkg-set); } ]
                     ++ (args.modules or [])
