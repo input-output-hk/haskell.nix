@@ -11,15 +11,15 @@
     flags = {};
     package = {
       specVersion = "1.10";
-      identifier = { name = "Win32"; version = "2.6.1.0"; };
+      identifier = { name = "Win32"; version = "2.6.2.1"; };
       license = "BSD-3-Clause";
-      copyright = "Alastair Reid, 1999-2003; shelarcy, 2012-2013; Tamar Christina, 2016-2017";
+      copyright = "Alastair Reid, 1999-2003; shelarcy, 2012-2013; Tamar Christina, 2016-2018";
       maintainer = "Haskell Libraries <libraries@haskell.org>";
       author = "Alastair Reid, shelarcy, Tamar Christina";
       homepage = "https://github.com/haskell/win32";
       url = "";
-      synopsis = "A binding to part of the Win32 library";
-      description = "A binding to part of the Win32 library.";
+      synopsis = "A binding to Windows Win32 API.";
+      description = "This library contains direct bindings to the Windows Win32 APIs for Haskell.";
       buildType = "Simple";
       isLocal = true;
       detailLevel = "FullDetails";

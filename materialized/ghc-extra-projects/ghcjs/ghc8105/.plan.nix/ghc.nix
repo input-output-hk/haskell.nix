@@ -20,7 +20,7 @@
       };
     package = {
       specVersion = "1.10";
-      identifier = { name = "ghc"; version = "8.10.5"; };
+      identifier = { name = "ghc"; version = "8.10.7"; };
       license = "BSD-3-Clause";
       copyright = "";
       maintainer = "glasgow-haskell-users@haskell.org";
