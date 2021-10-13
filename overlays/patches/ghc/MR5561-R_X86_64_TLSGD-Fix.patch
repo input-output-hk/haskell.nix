@@ -1,0 +1,265 @@
+    Support R_X86_64_TLSGD relocation on FreeBSD
+    
+    The FreeBSD C <ctype.h> header supports per-thread locales by exporting a
+    static inline function that references the `_ThreadRuneLocale` thread-local
+    variable.  This means that object files that use e.g. isdigit(3) end up with
+    TLSGD(19) relocations, and would not load into ghci or the language server.
+    
+    Here we add support for this type of relocation, for now just on FreeBSD, and
+    only for external references to thread-specifics defined in already loaded
+    dynamic modules (primarily libc.so).  This is sufficient to resolve the
+    <ctype.h> issues.
+    
+    Runtime linking of ".o" files which *define* new thread-specific variables
+    would be noticeably more difficult, as this would likely require new rtld APIs.
+
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index f326a840b5..5b49037a27 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -159,7 +159,7 @@ typedef struct {
+     } jumpIsland;
+ #elif defined(x86_64_HOST_ARCH)
+     uint64_t    addr;
+-    uint8_t     jumpIsland[6];
++    uint8_t     jumpIsland[8];
+ #elif defined(arm_HOST_ARCH)
+     uint8_t     jumpIsland[16];
+ #endif
+@@ -340,6 +340,10 @@ int ghciInsertSymbolTable(
+  * dependent to the owner of the symbol. */
+ SymbolAddr* lookupDependentSymbol (SymbolName* lbl, ObjectCode *dependent);
+ 
++/* Perform TLSGD symbol lookup returning the address of the resulting GOT entry,
++ * which in this case holds the module id and the symbol offset. */
++StgInt64 lookupTlsgdSymbol(const char *, unsigned long, ObjectCode *);
++
+ extern /*Str*/HashTable *symhash;
+ 
+ pathchar*
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index fdfe87a4e5..5add15846c 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1518,6 +1518,12 @@ do_Elf_Rela_relocations ( ObjectCode* oc, char* ehdrC,
+             /* Yes, so we can get the address directly from the ELF symbol
+                table. */
+             symbol = sym.st_name==0 ? "(noname)" : strtab+sym.st_name;
++            if (ELF_R_TYPE(info) == COMPAT_R_X86_64_TLSGD) {
++               /* No support for TLSGD locals, requires new RTLD API */
++               errorBelch("%s: unhandled ELF TLSGD relocation for symbol `%s'",
++                          oc->fileName, symbol);
++               return 0;
++            }
+             /* See Note [Many ELF Sections] */
+             Elf_Word secno = sym.st_shndx;
+ #if defined(SHN_XINDEX)
+@@ -1527,11 +1533,20 @@ do_Elf_Rela_relocations ( ObjectCode* oc, char* ehdrC,
+ #endif
+             S = (Elf_Addr)oc->sections[secno].start
+                 + stab[ELF_R_SYM(info)].st_value;
+-         } else {
++         } else if (ELF_R_TYPE(info) != COMPAT_R_X86_64_TLSGD) {
+             /* No, so look up the name in our global table. */
+             symbol = strtab + sym.st_name;
+             S_tmp = lookupDependentSymbol( symbol, oc );
+             S = (Elf_Addr)S_tmp;
++         } else {
++            symbol = strtab + sym.st_name;
++#if defined(x86_64_HOST_ARCH) && defined(freebsd_HOST_OS)
++            S = lookupTlsgdSymbol(symbol, ELF_R_SYM(info), oc);
++#else
++            errorBelch("%s: unhandled ELF TLSGD relocation for symbol `%s'",
++                       oc->fileName, symbol);
++            return 0;
++#endif
+          }
+          if (!S) {
+            errorBelch("%s: unknown symbol `%s'", oc->fileName, symbol);
+@@ -1751,6 +1766,19 @@ do_Elf_Rela_relocations ( ObjectCode* oc, char* ehdrC,
+           memcpy((void*)P, &payload, sizeof(payload));
+           break;
+       }
++      case COMPAT_R_X86_64_TLSGD:
++      {
++          StgInt64 off = S + A - P;
++          if (off != (Elf64_Sword)off) {
++              barf(
++                  "COMPAT_R_X86_64_TLSGD relocation out of range: "
++                  "%s = %" PRIx64 " in %s.",
++                  symbol, off, oc->fileName);
++          }
++          Elf64_Sword payload = off;
++          memcpy((void*)P, &payload, sizeof(payload));
++          break;
++      }
+ #if defined(dragonfly_HOST_OS)
+       case COMPAT_R_X86_64_GOTTPOFF:
+       {
+diff --git a/rts/linker/SymbolExtras.c b/rts/linker/SymbolExtras.c
+index 9d4eb89400..bacb73def1 100644
+--- a/rts/linker/SymbolExtras.c
++++ b/rts/linker/SymbolExtras.c
+@@ -182,9 +182,10 @@ SymbolExtra* makeSymbolExtra( ObjectCode const* oc,
+ #if defined(x86_64_HOST_ARCH)
+     // jmp *-14(%rip)
+     // 0xFF 25 is opcode + ModRM of near absolute indirect jump
+-    static uint8_t jmp[] = { 0xFF, 0x25, 0xF2, 0xFF, 0xFF, 0xFF };
++    // Two bytes trailing padding, needed for TLSGD GOT entries
++    static uint8_t jmp[] = { 0xFF, 0x25, 0xF2, 0xFF, 0xFF, 0xFF, 0x00, 0x00 };
+     extra->addr = target;
+-    memcpy(extra->jumpIsland, jmp, 6);
++    memcpy(extra->jumpIsland, jmp, 8);
+ #endif /* x86_64_HOST_ARCH */
+ 
+     return extra;
+diff --git a/rts/linker/elf_tlsgd.c b/rts/linker/elf_tlsgd.c
+new file mode 100644
+index 0000000000..9e9d6a820f
+--- /dev/null
++++ b/rts/linker/elf_tlsgd.c
+@@ -0,0 +1,132 @@
++#include "Rts.h"
++
++#if defined(x86_64_HOST_ARCH) && defined(freebsd_HOST_OS)
++
++#include "linker/Elf.h"
++#include "linker/SymbolExtras.h"
++#include <link.h>
++#include <string.h>
++
++/*
++ * Though for now we only get here for X86_64, also handle some other CPUs.
++ */
++#if defined(__mips__) || defined(__powerpc__) || defined(__powerpc64__)
++#define OFFSUB 0x8000
++#elif defined(__riscv__)
++#define OFFSUB 0x800
++#else
++#define OFFSUB 0x0
++#endif
++
++static unsigned long
++elfhash(const unsigned char *name)
++{
++    unsigned long h = 0, g;
++
++    while (*name)
++    {
++        h = (h << 4) + *name++;
++        if ((g = h & 0xf0000000) != 0)
++            h ^= g >> 24;
++        h &= ~g;
++    }
++    return h;
++}
++
++typedef struct tls_sym {
++    ObjectCode   *tls_sym_object;
++    const char   *tls_sym_name;
++    unsigned long tls_sym_indx;
++    unsigned long tls_sym_hash;
++    StgInt64      tls_sym_reloc;
++} tls_sym;
++
++typedef struct dl_phdr_info dlpi;
++
++static int
++find_tls_sym(dlpi *info, size_t sz __attribute__((unused)), void *data)
++{
++    tls_sym *wanted = (tls_sym *)data;
++    const Elf_Addr base = info->dlpi_addr;
++    const Elf_Dyn *dyn = NULL;
++    const Elf_Sym *dynsym = NULL;
++    const Elf_Word *dynhash = 0;
++    const char *dynstr = NULL;
++
++    for (size_t i = 0; i < info->dlpi_phnum; i++) {
++        const Elf_Phdr *phdr = &info->dlpi_phdr[i];
++
++        if (phdr->p_type == PT_DYNAMIC) {
++            dyn = (const Elf_Dyn *)(base + phdr->p_vaddr);
++            break;
++        }
++    }
++    if (dyn == NULL)
++        return 0;
++
++    for (size_t i = 0; dyn[i].d_tag != DT_NULL; ++i)
++        switch (dyn[i].d_tag) {
++        case DT_SYMTAB:
++            dynsym = (const Elf_Sym *)(base + dyn[i].d_un.d_val);
++            break;
++        case DT_STRTAB:
++            dynstr = (const char *)(base + dyn[i].d_un.d_val);
++            break;
++        case DT_HASH:
++            dynhash = (const Elf_Word *)(base + dyn[i].d_un.d_val);
++            break;
++        default:
++            break;
++        }
++
++    if (dynsym == NULL || dynstr == NULL || dynhash == NULL)
++        return 0;
++
++    unsigned long nbucket = (unsigned long)dynhash[0];
++    // unsigned long nchain = (unsigned long)dynhash[1];
++    const Elf_Word *bucket = &dynhash[2];
++    const Elf_Word *chain = &dynhash[2+nbucket];
++    unsigned long h = wanted->tls_sym_hash % nbucket;
++
++    for (unsigned long i = bucket[h]; i != STN_UNDEF; i = chain[i]) {
++        const Elf_Sym *sym = dynsym+i;
++        const char *symname = dynstr + sym->st_name;
++
++        /* Ignore undefined or non-TLS symbols */
++        if (sym->st_value == 0 || ELF_ST_TYPE(sym->st_info) != STT_TLS)
++            continue;
++
++        if (strcmp(symname, wanted->tls_sym_name) == 0) {
++            unsigned long target = sym->st_value - OFFSUB;
++            /* Store the module id as GOT[0] in a new GOT entry */
++            SymbolExtra *extra =
++                makeSymbolExtra(wanted->tls_sym_object,
++                                wanted->tls_sym_indx,
++                                info->dlpi_tls_modid);
++            /* Copy the target address to GOT[1] (a.k.a. jumpIsland) */
++            memcpy(extra->jumpIsland, &target, sizeof(target));
++            wanted->tls_sym_reloc = (StgInt64) extra;
++            /* Signal success, no more modules will be tried */
++            return 1;
++        }
++    }
++    /* Try the next module if any */
++    return 0;
++}
++
++StgInt64
++lookupTlsgdSymbol(const char *symbol, unsigned long symnum, ObjectCode *oc)
++{
++    tls_sym t;
++
++    t.tls_sym_object = oc;
++    t.tls_sym_name = symbol;
++    t.tls_sym_indx = symnum;
++    t.tls_sym_hash = elfhash((unsigned char *)symbol);
++    t.tls_sym_reloc = 0;
++
++    dl_iterate_phdr(find_tls_sym, &t);
++
++    return t.tls_sym_reloc;
++}
++#endif
+diff --git a/rts/rts.cabal.in b/rts/rts.cabal.in
+index cebf6795f3..543b081ed6 100644
+--- a/rts/rts.cabal.in
++++ b/rts/rts.cabal.in
+@@ -475,6 +475,7 @@ library
+                linker/elf_plt_arm.c
+                linker/elf_reloc.c
+                linker/elf_reloc_aarch64.c
++               linker/elf_tlsgd.c
+                linker/elf_util.c
+                sm/BlockAlloc.c
+                sm/CNF.c
