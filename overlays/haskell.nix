@@ -147,10 +147,18 @@ final: prev: {
                     else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
+                package.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version;
+                plan.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
+                withMsg = final.lib.assertMsg;
             in
               # Check that the GHC version of the selected compiler matches the one of the plan
-              assert (final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version
-                   == final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version);
+              assert (withMsg
+                (package.compiler-nix-name.version
+                  == plan.compiler-nix-name.version)
+                ''
+                The compiler versions for the package and the plan don't match.
+                       Make sure you didn't forget to update plan-sha256.''
+              );
               mkPkgSet {
                 inherit pkg-def;
                 pkg-def-extras = [ plan-pkgs.extras
