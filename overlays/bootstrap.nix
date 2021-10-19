@@ -647,7 +647,7 @@ in {
             ghc8105 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
-                ghcjsVersion = "8.10.5"; # Must match the version in the ghcjs.cabal file
+                ghcjsVersion = "8.10.7"; # Must match the version in the ghcjs.cabal file
                 ghc = buildGHC;
                 ghcVersion = "8.10.5";
                 compiler-nix-name = "ghc8105";
@@ -681,7 +681,7 @@ in {
             ghc8106 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8106;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
-                ghcjsVersion =  "8.10.5"; # Must match the version in the ghcjs.cabal file
+                ghcjsVersion =  "8.10.7"; # Must match the version in the ghcjs.cabal file
                 ghc = buildGHC;
                 ghcVersion = "8.10.6";
                 compiler-nix-name = "ghc8106";
@@ -715,7 +715,7 @@ in {
             ghc8107 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8107;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
-                ghcjsVersion =  "8.10.5"; # Must match the version in the ghcjs.cabal file
+                ghcjsVersion =  "8.10.7"; # Must match the version in the ghcjs.cabal file
                 ghc = buildGHC;
                 ghcVersion = "8.10.7";
                 compiler-nix-name = "ghc8107";

@@ -11,7 +11,7 @@
     flags = {};
     package = {
       specVersion = "1.10";
-      identifier = { name = "remote-iserv"; version = "8.10.5"; };
+      identifier = { name = "remote-iserv"; version = "8.10.7"; };
       license = "BSD-3-Clause";
       copyright = "XXX";
       maintainer = "Moritz Angermann <moritz.angermann@gmail.com>";

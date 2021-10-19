@@ -13,6 +13,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   gmp = prev.gmp.override { withStatic = true; };
   ncurses = prev.ncurses.override { enableStatic = true; };
   libsodium = prev.libsodium.overrideAttrs (_: { dontDisableStatic = true; });
+  zstd = prev.zstd.override { static = true; };
 
   numactl = prev.numactl.overrideAttrs (_: { configureFlags = "--enable-static"; });
 

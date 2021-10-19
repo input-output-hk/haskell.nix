@@ -1,8 +1,8 @@
 name:               Cabal
 version:            3.2.1.0
 visibility:         public
-id:                 Cabal-3.2.1.0-GSVyLU3cQ8tKwzfuwUDlfr
-key:                Cabal-3.2.1.0-GSVyLU3cQ8tKwzfuwUDlfr
+id:                 Cabal-3.2.1.0-8AHEhNcKzJWIICO1qmdIN4
+key:                Cabal-3.2.1.0-8AHEhNcKzJWIICO1qmdIN4
 license:            BSD3
 copyright:          2003-2020, Cabal Development Team (see AUTHORS file)
 maintainer:         cabal-devel@haskell.org
@@ -168,32 +168,32 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSCabal-3.2.1.0-GSVyLU3cQ8tKwzfuwUDlfr
+hs-libraries:       HSCabal-3.2.1.0-8AHEhNcKzJWIICO1qmdIN4
 depends:
-    array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    binary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    containers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
-    directory-1.3.6.0-IURimx7M7G0LSPnZx1wSb5
-    filepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
-    mtl-2.2.2-6TFu2kE2YF0CSjLp2sfNLF
-    parsec-3.1.14.0-AzqyUTEIMaqFkOmajztCUR
-    pretty-1.1.3.6-9lqLKxQeXaLK4WOowU4eiJ
-    process-1.6.9.0-Gq6bKphN4uKBrICCRSLwr9
-    text-1.2.4.1-Lh4iEEPXxMPIWWUZh62rWk
-    time-1.9.3-IS1lXJyiqGtLjhT67j4q98
-    transformers-0.5.6.2-2YbNz8yUdrtBk4v757abmk
-    unix-2.7.2.2-9o2WCX8FbWCDL2b8iGQpdU
+    array-0.5.4.0-BY9BworFlmHJapi9znoqNH
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    binary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    containers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
+    directory-1.3.6.0-7XxNVUbKE5xYZT9KfdX7u
+    filepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
+    mtl-2.2.2-IGSoKUSGylEE6TI31vkuMe
+    parsec-3.1.14.0-6yQXJMb8Ctw1yBCF2mpcHm
+    pretty-1.1.3.6-GAhFbJ44WwF1NMuTt9nXuU
+    process-1.6.13.2-LmvFltiEPhb3gFto6Wa77Y
+    text-1.2.4.1-Hktns1tWh1j2vlgIoSVYTC
+    time-1.9.3-3RdsewIylHjEX08tJ1SRQd
+    transformers-0.5.6.2-FuVVxe7sxd9Djwd0OcZNKG
+    unix-2.7.2.2-CPwwkHI8laL43G3eCXgloP
 haddock-interfaces:
 haddock-html:
 ---
 name:               array
 version:            0.5.4.0
 visibility:         public
-id:                 array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-key:                array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
+id:                 array-0.5.4.0-BY9BworFlmHJapi9znoqNH
+key:                array-0.5.4.0-BY9BworFlmHJapi9znoqNH
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Mutable and immutable arrays
@@ -214,16 +214,16 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSarray-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-depends:            base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+hs-libraries:       HSarray-0.5.4.0-BY9BworFlmHJapi9znoqNH
+depends:            base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
 haddock-interfaces:
 haddock-html:
 ---
 name:               base
-version:            4.14.2.0
+version:            4.14.3.0
 visibility:         public
-id:                 base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-key:                base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+id:                 base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+key:                base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Basic libraries
@@ -300,7 +300,7 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSbase-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+hs-libraries:       HSbase-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
 include-dirs:
 includes:           HsBase.h
 depends:
@@ -312,8 +312,8 @@ haddock-html:
 name:               binary
 version:            0.8.8.0
 visibility:         public
-id:                 binary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
-key:                binary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
+id:                 binary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
+key:                binary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
 license:            BSD3
 maintainer:         Lennart Kolmodin, Don Stewart <dons00@gmail.com>
 author:             Lennart Kolmodin <kolmodin@gmail.com>
@@ -341,20 +341,20 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSbinary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
+hs-libraries:       HSbinary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
 depends:
-    array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    containers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
+    array-0.5.4.0-BY9BworFlmHJapi9znoqNH
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    containers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
 haddock-interfaces:
 haddock-html:
 ---
 name:               bytestring
 version:            0.10.12.0
 visibility:         public
-id:                 bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-key:                bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
+id:                 bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+key:                bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
 license:            BSD3
 copyright:
     Copyright (c) Don Stewart          2005-2009,
@@ -417,22 +417,22 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSbytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
+hs-libraries:       HSbytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
 include-dirs:
 includes:           fpstring.h
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe
     integer-gmp-1.0.3.0-63uAhGZ1DDrBtoXgnrDqDZ
 haddock-interfaces:
 haddock-html:
 ---
 name:               containers
-version:            0.6.4.1
+version:            0.6.5.1
 visibility:         public
-id:                 containers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
-key:                containers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
+id:                 containers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
+key:                containers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Assorted concrete container types
@@ -470,19 +470,19 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HScontainers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
+hs-libraries:       HScontainers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
 depends:
-    array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
+    array-0.5.4.0-BY9BworFlmHJapi9znoqNH
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
 haddock-interfaces:
 haddock-html:
 ---
 name:               deepseq
 version:            1.4.4.0
 visibility:         public
-id:                 deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
-key:                deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
+id:                 deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
+key:                deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Deep evaluation of data structures
@@ -506,18 +506,18 @@ hidden-modules:     Control.DeepSeq.BackDoor
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSdeepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
+hs-libraries:       HSdeepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
 depends:
-    array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+    array-0.5.4.0-BY9BworFlmHJapi9znoqNH
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
 haddock-interfaces:
 haddock-html:
 ---
 name:               directory
 version:            1.3.6.0
 visibility:         public
-id:                 directory-1.3.6.0-IURimx7M7G0LSPnZx1wSb5
-key:                directory-1.3.6.0-IURimx7M7G0LSPnZx1wSb5
+id:                 directory-1.3.6.0-7XxNVUbKE5xYZT9KfdX7u
+key:                directory-1.3.6.0-7XxNVUbKE5xYZT9KfdX7u
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Platform-agnostic library for filesystem operations
@@ -537,21 +537,21 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSdirectory-1.3.6.0-IURimx7M7G0LSPnZx1wSb5
+hs-libraries:       HSdirectory-1.3.6.0-7XxNVUbKE5xYZT9KfdX7u
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    filepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
-    ghcjs-prim-0.1.1.0-8LbHnSvm5y1JkGZ10VtO8b
-    time-1.9.3-IS1lXJyiqGtLjhT67j4q98
-    unix-2.7.2.2-9o2WCX8FbWCDL2b8iGQpdU
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    filepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
+    ghcjs-prim-0.1.1.0-HZUIQ7BTQrzF5jVh07mbue
+    time-1.9.3-3RdsewIylHjEX08tJ1SRQd
+    unix-2.7.2.2-CPwwkHI8laL43G3eCXgloP
 haddock-interfaces:
 haddock-html:
 ---
 name:               filepath
 version:            1.4.2.1
 visibility:         public
-id:                 filepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
-key:                filepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
+id:                 filepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
+key:                filepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
 license:            BSD3
 copyright:          Neil Mitchell 2005-2018
 maintainer:         Neil Mitchell <ndmitchell@gmail.com>
@@ -572,16 +572,16 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSfilepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
-depends:            base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+hs-libraries:       HSfilepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
+depends:            base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
 haddock-interfaces:
 haddock-html:
 ---
 name:               ghc
-version:            8.10.5
+version:            8.10.7
 visibility:         public
-id:                 ghc-8.10.5-LeyCwf4jIapC7zZc80DbyI
-key:                ghc-8.10.5-LeyCwf4jIapC7zZc80DbyI
+id:                 ghc-8.10.7-EdMAEt7aPQrBguiVr9FDQL
+key:                ghc-8.10.7-EdMAEt7aPQrBguiVr9FDQL
 license:            BSD3
 maintainer:         glasgow-haskell-users@haskell.org
 author:             The GHC Team
@@ -597,22 +597,22 @@ description:
 category:           Development
 exposed-modules:
     Plugins,
-    Serialized from ghc-boot-8.10.5-HnEZbDFznW07XxG3LHUoZ2:GHC.Serialized
+    Serialized from ghc-boot-8.10.7-Ed9K6rsfjLpFuzl7cQBpht:GHC.Serialized
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghc-8.10.5-LeyCwf4jIapC7zZc80DbyI
+hs-libraries:       HSghc-8.10.7-EdMAEt7aPQrBguiVr9FDQL
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    ghc-boot-8.10.5-HnEZbDFznW07XxG3LHUoZ2
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    ghc-boot-8.10.7-Ed9K6rsfjLpFuzl7cQBpht
 haddock-interfaces:
 haddock-html:
 ---
 name:               ghc-boot
-version:            8.10.5
+version:            8.10.7
 visibility:         public
-id:                 ghc-boot-8.10.5-HnEZbDFznW07XxG3LHUoZ2
-key:                ghc-boot-8.10.5-HnEZbDFznW07XxG3LHUoZ2
+id:                 ghc-boot-8.10.7-Ed9K6rsfjLpFuzl7cQBpht
+key:                ghc-boot-8.10.7-Ed9K6rsfjLpFuzl7cQBpht
 license:            BSD3
 maintainer:         ghc-devs@haskell.org
 synopsis:           Shared functionality between GHC and its boot libraries
@@ -636,23 +636,23 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghc-boot-8.10.5-HnEZbDFznW07XxG3LHUoZ2
+hs-libraries:       HSghc-boot-8.10.7-Ed9K6rsfjLpFuzl7cQBpht
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    binary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    containers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
-    directory-1.3.6.0-IURimx7M7G0LSPnZx1wSb5
-    filepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
-    ghc-boot-th-8.10.5-11Ar2HZ7xYAAOs6hWMSt43
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    binary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    containers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
+    directory-1.3.6.0-7XxNVUbKE5xYZT9KfdX7u
+    filepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
+    ghc-boot-th-8.10.7-FQtGTtjFMOPJdcMgIgVdDb
 haddock-interfaces:
 haddock-html:
 ---
 name:               ghc-boot-th
-version:            8.10.5
+version:            8.10.7
 visibility:         public
-id:                 ghc-boot-th-8.10.5-11Ar2HZ7xYAAOs6hWMSt43
-key:                ghc-boot-th-8.10.5-11Ar2HZ7xYAAOs6hWMSt43
+id:                 ghc-boot-th-8.10.7-FQtGTtjFMOPJdcMgIgVdDb
+key:                ghc-boot-th-8.10.7-FQtGTtjFMOPJdcMgIgVdDb
 license:            BSD3
 maintainer:         ghc-devs@haskell.org
 synopsis:
@@ -671,16 +671,16 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghc-boot-th-8.10.5-11Ar2HZ7xYAAOs6hWMSt43
-depends:            base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+hs-libraries:       HSghc-boot-th-8.10.7-FQtGTtjFMOPJdcMgIgVdDb
+depends:            base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
 haddock-interfaces:
 haddock-html:
 ---
 name:               ghc-compact
 version:            0.1.0.0
 visibility:         public
-id:                 ghc-compact-0.1.0.0-H9e5byiC7oZCNl8ZF6gbnQ
-key:                ghc-compact-0.1.0.0-H9e5byiC7oZCNl8ZF6gbnQ
+id:                 ghc-compact-0.1.0.0-2to1xmgRhuEECwy6tX57P7
+key:                ghc-compact-0.1.0.0-2to1xmgRhuEECwy6tX57P7
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           In memory storage of deeply evaluated data structure
@@ -701,19 +701,19 @@ exposed-modules:    GHC.Compact GHC.Compact.Serialized
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghc-compact-0.1.0.0-H9e5byiC7oZCNl8ZF6gbnQ
+hs-libraries:       HSghc-compact-0.1.0.0-2to1xmgRhuEECwy6tX57P7
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe
 haddock-interfaces:
 haddock-html:
 ---
 name:               ghc-heap
-version:            8.10.5
+version:            8.10.7
 visibility:         public
-id:                 ghc-heap-8.10.5-9T0DYqFBM62Gfip0ykLilk
-key:                ghc-heap-8.10.5-9T0DYqFBM62Gfip0ykLilk
+id:                 ghc-heap-8.10.7-KKBS23xVpyT5D6lVmGtLBI
+key:                ghc-heap-8.10.7-KKBS23xVpyT5D6lVmGtLBI
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Functions for walking GHC's heap
@@ -730,9 +730,9 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghc-heap-8.10.5-9T0DYqFBM62Gfip0ykLilk
+hs-libraries:       HSghc-heap-8.10.7-KKBS23xVpyT5D6lVmGtLBI
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe rts
 haddock-interfaces:
 haddock-html:
@@ -761,10 +761,10 @@ haddock-interfaces:
 haddock-html:
 ---
 name:               ghci
-version:            8.10.5
+version:            8.10.7
 visibility:         public
-id:                 ghci-8.10.5-5ete37Pk3xOBmkEi4lFW0i
-key:                ghci-8.10.5-5ete37Pk3xOBmkEi4lFW0i
+id:                 ghci-8.10.7-587zkId3hcPGv0qmHnEk4E
+key:                ghci-8.10.7-587zkId3hcPGv0qmHnEk4E
 license:            BSD3
 maintainer:         ghc-devs@haskell.org
 synopsis:           The library supporting GHC's interactive interpreter
@@ -782,29 +782,29 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghci-8.10.5-5ete37Pk3xOBmkEi4lFW0i
+hs-libraries:       HSghci-8.10.7-587zkId3hcPGv0qmHnEk4E
 depends:
-    array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    binary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    containers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
-    filepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
-    ghc-boot-8.10.5-HnEZbDFznW07XxG3LHUoZ2
-    ghc-boot-th-8.10.5-11Ar2HZ7xYAAOs6hWMSt43
-    ghc-heap-8.10.5-9T0DYqFBM62Gfip0ykLilk rts
-    template-haskell-2.16.0.0-TIbdlCp5fa1xzGGTdzQXu
-    transformers-0.5.6.2-2YbNz8yUdrtBk4v757abmk
-    unix-2.7.2.2-9o2WCX8FbWCDL2b8iGQpdU
+    array-0.5.4.0-BY9BworFlmHJapi9znoqNH
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    binary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    containers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
+    filepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
+    ghc-boot-8.10.7-Ed9K6rsfjLpFuzl7cQBpht
+    ghc-boot-th-8.10.7-FQtGTtjFMOPJdcMgIgVdDb
+    ghc-heap-8.10.7-KKBS23xVpyT5D6lVmGtLBI rts
+    template-haskell-2.16.0.0-ILUM7zMBAmY2f0T80iaLZe
+    transformers-0.5.6.2-FuVVxe7sxd9Djwd0OcZNKG
+    unix-2.7.2.2-CPwwkHI8laL43G3eCXgloP
 haddock-interfaces:
 haddock-html:
 ---
 name:               ghcjs-prim
 version:            0.1.1.0
 visibility:         public
-id:                 ghcjs-prim-0.1.1.0-8LbHnSvm5y1JkGZ10VtO8b
-key:                ghcjs-prim-0.1.1.0-8LbHnSvm5y1JkGZ10VtO8b
+id:                 ghcjs-prim-0.1.1.0-HZUIQ7BTQrzF5jVh07mbue
+key:                ghcjs-prim-0.1.1.0-HZUIQ7BTQrzF5jVh07mbue
 license:            MIT
 maintainer:         stegeman@gmail.com
 author:             Luite Stegeman
@@ -815,9 +815,9 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghcjs-prim-0.1.1.0-8LbHnSvm5y1JkGZ10VtO8b
+hs-libraries:       HSghcjs-prim-0.1.1.0-HZUIQ7BTQrzF5jVh07mbue
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe
 haddock-interfaces:
 haddock-html:
@@ -825,8 +825,8 @@ haddock-html:
 name:               ghcjs-th
 version:            0.1.0.0
 visibility:         public
-id:                 ghcjs-th-0.1.0.0-FfndHSEYvZqBcCK3pYPyrq
-key:                ghcjs-th-0.1.0.0-FfndHSEYvZqBcCK3pYPyrq
+id:                 ghcjs-th-0.1.0.0-JdGbYrK1CstBZz9Zn9tGjt
+key:                ghcjs-th-0.1.0.0-JdGbYrK1CstBZz9Zn9tGjt
 license:            MIT
 maintainer:         stegeman@gmail.com
 author:             Luite Stegeman
@@ -836,15 +836,15 @@ exposed-modules:    GHCJS.Prim.TH.Eval GHCJS.Prim.TH.Types
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSghcjs-th-0.1.0.0-FfndHSEYvZqBcCK3pYPyrq
+hs-libraries:       HSghcjs-th-0.1.0.0-JdGbYrK1CstBZz9Zn9tGjt
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    binary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    containers-0.6.4.1-83tuYusVdAy8hq9V1iVA0W
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    binary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    containers-0.6.5.1-Jb3F8jbyqRBHMHVa9Whe7M
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe
-    ghci-8.10.5-5ete37Pk3xOBmkEi4lFW0i
-    template-haskell-2.16.0.0-TIbdlCp5fa1xzGGTdzQXu
+    ghci-8.10.7-587zkId3hcPGv0qmHnEk4E
+    template-haskell-2.16.0.0-ILUM7zMBAmY2f0T80iaLZe
 haddock-interfaces:
 haddock-html:
 ---
@@ -882,8 +882,8 @@ haddock-html:
 name:               mtl
 version:            2.2.2
 visibility:         public
-id:                 mtl-2.2.2-6TFu2kE2YF0CSjLp2sfNLF
-key:                mtl-2.2.2-6TFu2kE2YF0CSjLp2sfNLF
+id:                 mtl-2.2.2-IGSoKUSGylEE6TI31vkuMe
+key:                mtl-2.2.2-IGSoKUSGylEE6TI31vkuMe
 license:            BSD3
 maintainer:         Edward Kmett <ekmett@gmail.com>
 author:             Andy Gill
@@ -911,18 +911,18 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSmtl-2.2.2-6TFu2kE2YF0CSjLp2sfNLF
+hs-libraries:       HSmtl-2.2.2-IGSoKUSGylEE6TI31vkuMe
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    transformers-0.5.6.2-2YbNz8yUdrtBk4v757abmk
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    transformers-0.5.6.2-FuVVxe7sxd9Djwd0OcZNKG
 haddock-interfaces:
 haddock-html:
 ---
 name:               parsec
 version:            3.1.14.0
 visibility:         public
-id:                 parsec-3.1.14.0-AzqyUTEIMaqFkOmajztCUR
-key:                parsec-3.1.14.0-AzqyUTEIMaqFkOmajztCUR
+id:                 parsec-3.1.14.0-6yQXJMb8Ctw1yBCF2mpcHm
+key:                parsec-3.1.14.0-6yQXJMb8Ctw1yBCF2mpcHm
 license:            BSD3
 maintainer:         Herbert Valerio Riedel <hvr@gnu.org>
 author:
@@ -961,20 +961,20 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSparsec-3.1.14.0-AzqyUTEIMaqFkOmajztCUR
+hs-libraries:       HSparsec-3.1.14.0-6yQXJMb8Ctw1yBCF2mpcHm
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    mtl-2.2.2-6TFu2kE2YF0CSjLp2sfNLF
-    text-1.2.4.1-Lh4iEEPXxMPIWWUZh62rWk
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    mtl-2.2.2-IGSoKUSGylEE6TI31vkuMe
+    text-1.2.4.1-Hktns1tWh1j2vlgIoSVYTC
 haddock-interfaces:
 haddock-html:
 ---
 name:               pretty
 version:            1.1.3.6
 visibility:         public
-id:                 pretty-1.1.3.6-9lqLKxQeXaLK4WOowU4eiJ
-key:                pretty-1.1.3.6-9lqLKxQeXaLK4WOowU4eiJ
+id:                 pretty-1.1.3.6-GAhFbJ44WwF1NMuTt9nXuU
+key:                pretty-1.1.3.6-GAhFbJ44WwF1NMuTt9nXuU
 license:            BSD3
 maintainer:         David Terei <code@davidterei.com>
 stability:          Stable
@@ -997,19 +997,19 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSpretty-1.1.3.6-9lqLKxQeXaLK4WOowU4eiJ
+hs-libraries:       HSpretty-1.1.3.6-GAhFbJ44WwF1NMuTt9nXuU
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe
 haddock-interfaces:
 haddock-html:
 ---
 name:               process
-version:            1.6.9.0
+version:            1.6.13.2
 visibility:         public
-id:                 process-1.6.9.0-Gq6bKphN4uKBrICCRSLwr9
-key:                process-1.6.9.0-Gq6bKphN4uKBrICCRSLwr9
+id:                 process-1.6.13.2-LmvFltiEPhb3gFto6Wa77Y
+key:                process-1.6.13.2-LmvFltiEPhb3gFto6Wa77Y
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Process libraries
@@ -1027,24 +1027,24 @@ hidden-modules:     System.Process.Common System.Process.Posix
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSprocess-1.6.9.0-Gq6bKphN4uKBrICCRSLwr9
+hs-libraries:       HSprocess-1.6.13.2-LmvFltiEPhb3gFto6Wa77Y
 include-dirs:
 includes:           runProcess.h
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
-    directory-1.3.6.0-IURimx7M7G0LSPnZx1wSb5
-    filepath-1.4.2.1-JF0UokVtNb0Do6vb3mlJq4
-    ghcjs-prim-0.1.1.0-8LbHnSvm5y1JkGZ10VtO8b
-    unix-2.7.2.2-9o2WCX8FbWCDL2b8iGQpdU
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
+    directory-1.3.6.0-7XxNVUbKE5xYZT9KfdX7u
+    filepath-1.4.2.1-59K9q30pCxYEXHuiiIsQvI
+    ghcjs-prim-0.1.1.0-HZUIQ7BTQrzF5jVh07mbue
+    unix-2.7.2.2-CPwwkHI8laL43G3eCXgloP
 haddock-interfaces:
 haddock-html:
 ---
 name:               template-haskell
 version:            2.16.0.0
 visibility:         public
-id:                 template-haskell-2.16.0.0-TIbdlCp5fa1xzGGTdzQXu
-key:                template-haskell-2.16.0.0-TIbdlCp5fa1xzGGTdzQXu
+id:                 template-haskell-2.16.0.0-ILUM7zMBAmY2f0T80iaLZe
+key:                template-haskell-2.16.0.0-ILUM7zMBAmY2f0T80iaLZe
 license:            BSD3
 maintainer:         libraries@haskell.org
 synopsis:           Support library for Template Haskell
@@ -1064,20 +1064,20 @@ hidden-modules:     Language.Haskell.TH.Lib.Map
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HStemplate-haskell-2.16.0.0-TIbdlCp5fa1xzGGTdzQXu
+hs-libraries:       HStemplate-haskell-2.16.0.0-ILUM7zMBAmY2f0T80iaLZe
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    ghc-boot-th-8.10.5-11Ar2HZ7xYAAOs6hWMSt43
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    ghc-boot-th-8.10.7-FQtGTtjFMOPJdcMgIgVdDb
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe
-    pretty-1.1.3.6-9lqLKxQeXaLK4WOowU4eiJ
+    pretty-1.1.3.6-GAhFbJ44WwF1NMuTt9nXuU
 haddock-interfaces:
 haddock-html:
 ---
 name:               text
 version:            1.2.4.1
 visibility:         public
-id:                 text-1.2.4.1-Lh4iEEPXxMPIWWUZh62rWk
-key:                text-1.2.4.1-Lh4iEEPXxMPIWWUZh62rWk
+id:                 text-1.2.4.1-Hktns1tWh1j2vlgIoSVYTC
+key:                text-1.2.4.1-Hktns1tWh1j2vlgIoSVYTC
 license:            BSD2
 copyright:          2009-2011 Bryan O'Sullivan, 2008-2009 Tom Harper
 maintainer:
@@ -1147,24 +1147,24 @@ hidden-modules:     Data.Text.Show
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HStext-1.2.4.1-Lh4iEEPXxMPIWWUZh62rWk
+hs-libraries:       HStext-1.2.4.1-Hktns1tWh1j2vlgIoSVYTC
 depends:
-    array-0.5.4.0-EKT9McCrYA6Fa5Bo58qpZi
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    binary-0.8.8.0-KiGIGeAQx9Q3YzaCHTPsrN
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
+    array-0.5.4.0-BY9BworFlmHJapi9znoqNH
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    binary-0.8.8.0-8geveWiewY98oMa1Q4NvzB
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
     ghc-prim-0.6.1-7Cgvu6TLhQr9ma5lroclUe
     integer-gmp-1.0.3.0-63uAhGZ1DDrBtoXgnrDqDZ
-    template-haskell-2.16.0.0-TIbdlCp5fa1xzGGTdzQXu
+    template-haskell-2.16.0.0-ILUM7zMBAmY2f0T80iaLZe
 haddock-interfaces:
 haddock-html:
 ---
 name:               time
 version:            1.9.3
 visibility:         public
-id:                 time-1.9.3-IS1lXJyiqGtLjhT67j4q98
-key:                time-1.9.3-IS1lXJyiqGtLjhT67j4q98
+id:                 time-1.9.3-3RdsewIylHjEX08tJ1SRQd
+key:                time-1.9.3-3RdsewIylHjEX08tJ1SRQd
 license:            BSD3
 maintainer:         <ashley@semantic.org>
 author:             Ashley Yakeley
@@ -1204,19 +1204,19 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HStime-1.9.3-IS1lXJyiqGtLjhT67j4q98
+hs-libraries:       HStime-1.9.3-3RdsewIylHjEX08tJ1SRQd
 include-dirs:
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    deepseq-1.4.4.0-FR29o7eKQCHFrX0LBtLh8Q
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    deepseq-1.4.4.0-1l24lJnqQnGEBnHHreMAq3
 haddock-interfaces:
 haddock-html:
 ---
 name:               transformers
 version:            0.5.6.2
 visibility:         public
-id:                 transformers-0.5.6.2-2YbNz8yUdrtBk4v757abmk
-key:                transformers-0.5.6.2-2YbNz8yUdrtBk4v757abmk
+id:                 transformers-0.5.6.2-FuVVxe7sxd9Djwd0OcZNKG
+key:                transformers-0.5.6.2-FuVVxe7sxd9Djwd0OcZNKG
 license:            BSD3
 maintainer:         Ross Paterson <R.Paterson@city.ac.uk>
 author:             Andy Gill, Ross Paterson
@@ -1258,16 +1258,16 @@ exposed-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HStransformers-0.5.6.2-2YbNz8yUdrtBk4v757abmk
-depends:            base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
+hs-libraries:       HStransformers-0.5.6.2-FuVVxe7sxd9Djwd0OcZNKG
+depends:            base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
 haddock-interfaces:
 haddock-html:
 ---
 name:               unix
 version:            2.7.2.2
 visibility:         public
-id:                 unix-2.7.2.2-9o2WCX8FbWCDL2b8iGQpdU
-key:                unix-2.7.2.2-9o2WCX8FbWCDL2b8iGQpdU
+id:                 unix-2.7.2.2-CPwwkHI8laL43G3eCXgloP
+key:                unix-2.7.2.2-CPwwkHI8laL43G3eCXgloP
 license:            BSD3
 maintainer:         libraries@haskell.org
 homepage:           https://github.com/haskell/unix
@@ -1305,13 +1305,13 @@ hidden-modules:
 import-dirs:
 library-dirs:
 data-dir:
-hs-libraries:       HSunix-2.7.2.2-9o2WCX8FbWCDL2b8iGQpdU
+hs-libraries:       HSunix-2.7.2.2-CPwwkHI8laL43G3eCXgloP
 include-dirs:
 includes:           HsUnix.h execvpe.h
 depends:
-    base-4.14.2.0-LeI1YYhgSSc3Caky0XtWV5
-    bytestring-0.10.12.0-7z7C5hfhraY1I0Cme1GPuP
-    time-1.9.3-IS1lXJyiqGtLjhT67j4q98
+    base-4.14.3.0-D0KSEBqJsPj2jV088Mzd5k
+    bytestring-0.10.12.0-A1EizoKtfkUxRIgN0VmIs
+    time-1.9.3-3RdsewIylHjEX08tJ1SRQd
 haddock-interfaces:
 haddock-html:
 ---
