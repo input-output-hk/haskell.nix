@@ -348,6 +348,7 @@ in {
               # to make it easy to depends on build packages in, eg., shell definition:
               inherit (project) buildProject;
             };
+            inherit (project) hsPkgs;
           })
         ];
       }).config;
