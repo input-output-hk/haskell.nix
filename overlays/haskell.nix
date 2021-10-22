@@ -732,7 +732,7 @@ final: prev: {
                             { name = "${prefix}${packageName}:test:${n}"; value = v; })
                           (package.components.tests)
                         ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:benchmarks:${n}"; value = v; })
+                            { name = "${prefix}${packageName}:bench:${n}"; value = v; })
                           (package.components.benchmarks)
                     ) (packageNames project);
                   checksForProject = prefix: project:
