@@ -308,10 +308,7 @@ final: prev: {
                 assert isNull sha256;
                 builtins.fetchGit
                   ({ inherit url rev; } //
-                    (if ref != null
-                    then { inherit ref; }
-                    # Don't fail if rev not in default branch:
-                    else { allRefs = true; })
+                      final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                   )
               else
                 # Non-private repos must have sha256 set.
@@ -405,10 +402,7 @@ final: prev: {
                         then
                           builtins.fetchGit
                             ({ inherit url rev; } //
-                              (if ref != null
-                              then { inherit ref; }
-                              # don't fail if rev not in default branch:
-                              else { allRefs = true; })
+                              final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                             )
                         else
                           final.evalPackages.fetchgit { inherit url rev sha256; };
