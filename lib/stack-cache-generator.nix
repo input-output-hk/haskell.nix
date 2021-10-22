@@ -103,11 +103,7 @@ concatMap (dep:
                 }
                 else builtins.fetchGit ({
                   inherit (dep) url rev;
-                } // (if branch != null
-                  then { ref = branch; }
-                  # Don't fail if rev not in default branch:
-                  else { allRefs = true; })
-                );
+                } // pkgs.lib.optionalAttrs (branch != null) { ref = branch; });
         in map (subdir: {
                 name = cabalName "${pkgsrc}/${subdir}";
                 inherit (dep) url rev;
