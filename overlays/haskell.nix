@@ -725,6 +725,9 @@ final: prev: {
                         ++ final.lib.mapAttrsToList (n: v:
                             { name = "${prefix}${packageName}:test:${n}"; value = v; })
                           (package.components.tests)
+                        ++ final.lib.mapAttrsToList (n: v:
+                            { name = "${prefix}${packageName}:bench:${n}"; value = v; })
+                          (package.components.benchmarks)
                     ) (packageNames project);
                   checksForProject = prefix: project:
                     final.lib.concatMap (packageName:

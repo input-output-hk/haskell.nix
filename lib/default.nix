@@ -334,20 +334,25 @@ in {
   # Run evalModules passing the project function argument (m) as a module along with
   # the the a projectType module (../modules/cabal-project.nix or ../modules/stack-project.nix).
   # The resulting config is then passed to the project function's implementation.
-  evalProjectModule = projectType: m: f: f
+  evalProjectModule = projectType: m: f:
+    let project = f
       (lib.evalModules {
         modules = (if builtins.isList m then m else [m]) ++ [
           # Include ../modules/cabal-project.nix or ../modules/stack-project.nix
           (import ../modules/project-common.nix)
           (import projectType)
-          # Pass the pkgs to the modules
+          # Pass the pkgs and the buildProject to the modules
           ({ config, lib, ... }: {
             _module.args = {
               inherit pkgs;
+              # to make it easy to depends on build packages in, eg., shell definition:
+              inherit (project) buildProject;
             };
+            inherit (project) hsPkgs;
           })
         ];
       }).config;
+    in project;
 
   # Converts from a `compoent.depends` value to a library derivation.
   # In the case of sublibs the `depends` value should already be the derivation.

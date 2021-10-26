@@ -24,5 +24,8 @@ with lib.types;
           shell = { tools.cabal = {}; crossPlatforms = p: [ p.ghcjs ]; }
       '';
     };
+    hsPkgs = lib.mkOption {
+      type = lib.types.unspecified;
+    };
   };
 }
