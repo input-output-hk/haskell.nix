@@ -13,6 +13,7 @@
   # Additional packages to be added unconditionally
 , additional ? _: []
 , withHoogle ? true
+, withHaddock ? withHoogle
 , exactDeps ? false
 , tools ? {}
 , packageSetupDeps ? true
@@ -102,6 +103,7 @@ let
     fullName = args.name or name;
     identifier.name = name;
     inherit component;
+    chooseDrv = p: if withHaddock && p ? haddock then p.haddock else p;
   };
   ghcEnv = ghcForComponent {
     inherit configFiles;
