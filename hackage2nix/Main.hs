@@ -118,7 +118,7 @@ revBindingJson
   -> Version
   -> BS.ByteString
   -> Integer
-  -> GPDWriter (Text, Value)
+  -> GPDWriter (Key, Value)
 revBindingJson pname vnum cabalFile revNum = do
   let qualifiedName = mconcat $ intersperse
         "-"
