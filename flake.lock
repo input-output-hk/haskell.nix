@@ -133,11 +133,11 @@
     "nix-tools": {
       "flake": false,
       "locked": {
-        "lastModified": 1627889534,
-        "narHash": "sha256-9eEbK2nrRp6rYGQoBv6LO9IA/ANZpofwAkxMuGBD45Y=",
+        "lastModified": 1636018067,
+        "narHash": "sha256-ng306fkuwr6V/malWtt3979iAC4yMVDDH2ViwYB6sQE=",
         "owner": "input-output-hk",
         "repo": "nix-tools",
-        "rev": "15d2e4b61cb63ff351f3c490c12c4d89eafd31a1",
+        "rev": "ed5bd7215292deba55d6ab7a4e8c21f8b1564dda",
         "type": "github"
       },
       "original": {

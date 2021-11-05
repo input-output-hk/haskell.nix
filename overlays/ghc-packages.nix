@@ -72,6 +72,8 @@ let
       remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
       ghc-bignum   = "libraries/ghc-bignum";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.2.1" >= 0) {
+      deepseq      = "libraries/deepseq";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on
@@ -191,7 +193,7 @@ in rec {
       materialized = ../materialized/ghc-extra-projects
                        + "/${ghc-extra-projects-type}/${ghcName}";
       compiler-nix-name = ghcName;
-      configureArgs = "--disable-tests --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
+      configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
 

@@ -1,0 +1,23 @@
+Warning: The package list for 'hackage.haskell.org-at-2021-11-03T000000Z' is
+18936 days old.
+Run 'cabal update' to get the latest list of available packages.
+Warning: Requested index-state 2021-11-03T00:00:00Z is newer than
+'hackage.haskell.org-at-2021-11-03T000000Z'! Falling back to older state
+(2021-11-02T23:13:33Z).
+Resolving dependencies...
+cabal: Could not resolve dependencies:
+[__0] trying: ghc-9.2.1 (user goal)
+[__1] trying: template-haskell-2.18.0.0/installed-2.18.0.0 (dependency of ghc)
+[__2] next goal: pretty (dependency of template-haskell)
+[__2] rejecting: pretty-1.1.3.6/installed-1.1.3.6 (package is broken, missing
+dependency deepseq-1.4.6.0)
+[__2] rejecting: pretty-1.1.3.6, pretty-1.1.3.5, pretty-1.1.3.4,
+pretty-1.1.3.3, pretty-1.1.3.2, pretty-1.1.3.1, pretty-1.1.2.1,
+pretty-1.1.2.0, pretty-1.1.1.3, pretty-1.1.1.2, pretty-1.1.1.1,
+pretty-1.1.1.0, pretty-1.1.0.0, pretty-1.0.1.2, pretty-1.0.1.1,
+pretty-1.0.1.0, pretty-1.0.0.0 (conflict: template-haskell =>
+pretty==1.1.3.6/installed-1.1.3.6)
+[__2] fail (backjumping, conflict set: pretty, template-haskell)
+After searching the rest of the dependency tree exhaustively, these were the
+goals I've had most trouble fulfilling: template-haskell, pretty, ghc
+
