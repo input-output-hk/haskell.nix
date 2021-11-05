@@ -48,7 +48,7 @@
         "megaparsec".flags.dev = false;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
         "base64-bytestring".revision = (((hackage."base64-bytestring")."1.2.1.0").revisions).default;
-        "cereal".revision = (((hackage."cereal")."0.5.8.1").revisions).default;
+        "cereal".revision = (((hackage."cereal")."0.5.8.2").revisions).default;
         "cereal".flags.bytestring-builder = false;
         "cookie".revision = (((hackage."cookie")."0.4.5").revisions).default;
         "utf8-string".revision = (((hackage."utf8-string")."1.0.2").revisions).default;
@@ -76,7 +76,7 @@
         "vector".flags.boundschecks = true;
         "network".revision = (((hackage."network")."3.1.2.5").revisions).default;
         "network".flags.devel = false;
-        "hsc2hs".revision = (((hackage."hsc2hs")."0.68.7").revisions).default;
+        "hsc2hs".revision = (((hackage."hsc2hs")."0.68.8").revisions).default;
         "hsc2hs".flags.in-ghc-tree = false;
         "asn1-parse".revision = (((hackage."asn1-parse")."0.9.5").revisions).default;
         "cryptonite".revision = (((hackage."cryptonite")."0.29").revisions).default;
@@ -254,7 +254,7 @@
         "haskell-lexer".revision = (((hackage."haskell-lexer")."1.1").revisions).default;
         "x509-store".revision = (((hackage."x509-store")."1.6.7").revisions).default;
         "indexed-traversable-instances".revision = (((hackage."indexed-traversable-instances")."0.1.1").revisions).default;
-        "iproute".revision = (((hackage."iproute")."1.7.11").revisions).default;
+        "iproute".revision = (((hackage."iproute")."1.7.12").revisions).default;
         "relude".revision = (((hackage."relude")."1.0.0.1").revisions).default;
         "ansi-wl-pprint".revision = (((hackage."ansi-wl-pprint")."0.6.9").revisions).default;
         "ansi-wl-pprint".flags.example = false;

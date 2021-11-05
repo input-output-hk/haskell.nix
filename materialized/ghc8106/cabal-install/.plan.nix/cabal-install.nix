@@ -17,7 +17,7 @@
       };
     package = {
       specVersion = "1.10";
-      identifier = { name = "cabal-install"; version = "3.4.0.0"; };
+      identifier = { name = "cabal-install"; version = "3.6.2.0"; };
       license = "BSD-3-Clause";
       copyright = "2003-2020, Cabal Development Team";
       maintainer = "Cabal Development Team <cabal-devel@haskell.org>";
@@ -32,79 +32,7 @@
       licenseFiles = [ "LICENSE" ];
       dataDir = ".";
       dataFiles = [];
-      extraSrcFiles = [
-        "README.md"
-        "bash-completion/cabal"
-        "changelog"
-        "tests/IntegrationTests2/build/keep-going/cabal.project"
-        "tests/IntegrationTests2/build/keep-going/p/P.hs"
-        "tests/IntegrationTests2/build/keep-going/p/p.cabal"
-        "tests/IntegrationTests2/build/keep-going/q/Q.hs"
-        "tests/IntegrationTests2/build/keep-going/q/q.cabal"
-        "tests/IntegrationTests2/build/local-tarball/cabal.project"
-        "tests/IntegrationTests2/build/local-tarball/q/Q.hs"
-        "tests/IntegrationTests2/build/local-tarball/q/q.cabal"
-        "tests/IntegrationTests2/build/setup-custom1/A.hs"
-        "tests/IntegrationTests2/build/setup-custom1/Setup.hs"
-        "tests/IntegrationTests2/build/setup-custom1/a.cabal"
-        "tests/IntegrationTests2/build/setup-custom2/A.hs"
-        "tests/IntegrationTests2/build/setup-custom2/Setup.hs"
-        "tests/IntegrationTests2/build/setup-custom2/a.cabal"
-        "tests/IntegrationTests2/build/setup-simple/A.hs"
-        "tests/IntegrationTests2/build/setup-simple/Setup.hs"
-        "tests/IntegrationTests2/build/setup-simple/a.cabal"
-        "tests/IntegrationTests2/exception/bad-config/cabal.project"
-        "tests/IntegrationTests2/exception/build/Main.hs"
-        "tests/IntegrationTests2/exception/build/a.cabal"
-        "tests/IntegrationTests2/exception/configure/a.cabal"
-        "tests/IntegrationTests2/exception/no-pkg/empty.in"
-        "tests/IntegrationTests2/exception/no-pkg2/cabal.project"
-        "tests/IntegrationTests2/regression/3324/cabal.project"
-        "tests/IntegrationTests2/regression/3324/p/P.hs"
-        "tests/IntegrationTests2/regression/3324/p/p.cabal"
-        "tests/IntegrationTests2/regression/3324/q/Q.hs"
-        "tests/IntegrationTests2/regression/3324/q/q.cabal"
-        "tests/IntegrationTests2/targets/all-disabled/cabal.project"
-        "tests/IntegrationTests2/targets/all-disabled/p.cabal"
-        "tests/IntegrationTests2/targets/benchmarks-disabled/cabal.project"
-        "tests/IntegrationTests2/targets/benchmarks-disabled/p.cabal"
-        "tests/IntegrationTests2/targets/benchmarks-disabled/q/q.cabal"
-        "tests/IntegrationTests2/targets/complex/cabal.project"
-        "tests/IntegrationTests2/targets/complex/q/Q.hs"
-        "tests/IntegrationTests2/targets/complex/q/q.cabal"
-        "tests/IntegrationTests2/targets/empty-pkg/cabal.project"
-        "tests/IntegrationTests2/targets/empty-pkg/p.cabal"
-        "tests/IntegrationTests2/targets/empty/cabal.project"
-        "tests/IntegrationTests2/targets/empty/foo.hs"
-        "tests/IntegrationTests2/targets/exes-disabled/cabal.project"
-        "tests/IntegrationTests2/targets/exes-disabled/p/p.cabal"
-        "tests/IntegrationTests2/targets/exes-disabled/q/q.cabal"
-        "tests/IntegrationTests2/targets/lib-only/p.cabal"
-        "tests/IntegrationTests2/targets/libs-disabled/cabal.project"
-        "tests/IntegrationTests2/targets/libs-disabled/p/p.cabal"
-        "tests/IntegrationTests2/targets/libs-disabled/q/q.cabal"
-        "tests/IntegrationTests2/targets/multiple-exes/cabal.project"
-        "tests/IntegrationTests2/targets/multiple-exes/p.cabal"
-        "tests/IntegrationTests2/targets/multiple-libs/cabal.project"
-        "tests/IntegrationTests2/targets/multiple-libs/p/p.cabal"
-        "tests/IntegrationTests2/targets/multiple-libs/q/q.cabal"
-        "tests/IntegrationTests2/targets/multiple-tests/cabal.project"
-        "tests/IntegrationTests2/targets/multiple-tests/p.cabal"
-        "tests/IntegrationTests2/targets/simple/P.hs"
-        "tests/IntegrationTests2/targets/simple/app/Main.hs"
-        "tests/IntegrationTests2/targets/simple/cabal.project"
-        "tests/IntegrationTests2/targets/simple/p.cabal"
-        "tests/IntegrationTests2/targets/simple/q/Q.hs"
-        "tests/IntegrationTests2/targets/simple/q/QQ.hs"
-        "tests/IntegrationTests2/targets/simple/q/q.cabal"
-        "tests/IntegrationTests2/targets/test-only/p.cabal"
-        "tests/IntegrationTests2/targets/tests-disabled/cabal.project"
-        "tests/IntegrationTests2/targets/tests-disabled/p.cabal"
-        "tests/IntegrationTests2/targets/tests-disabled/q/q.cabal"
-        "tests/IntegrationTests2/targets/variety/cabal.project"
-        "tests/IntegrationTests2/targets/variety/p.cabal"
-        "tests/IntegrationTests2/build/local-tarball/p-0.1.tar.gz"
-        ];
+      extraSrcFiles = [ "README.md" "bash-completion/cabal" "changelog" ];
       extraTmpFiles = [];
       extraDocFiles = [];
       };
@@ -204,7 +132,6 @@
             "Distribution/Client/Dependency"
             "Distribution/Client/Dependency/Types"
             "Distribution/Client/DistDirLayout"
-            "Distribution/Client/Exec"
             "Distribution/Client/Fetch"
             "Distribution/Client/FetchUtils"
             "Distribution/Client/FileMonitor"
@@ -286,15 +213,14 @@
             "Distribution/Client/Types/SourcePackageDb"
             "Distribution/Client/Types/SourceRepo"
             "Distribution/Client/Types/WriteGhcEnvironmentFilesPolicy"
-            "Distribution/Client/Update"
             "Distribution/Client/Upload"
             "Distribution/Client/Utils"
-            "Distribution/Client/Utils/Assertion"
             "Distribution/Client/Utils/Json"
             "Distribution/Client/Utils/Parsec"
             "Distribution/Client/VCS"
             "Distribution/Client/Win32SelfUpgrade"
             "Distribution/Client/World"
+            "Distribution/Client/Utils/Assertion"
             "Distribution/Solver/Compat/Prelude"
             "Distribution/Solver/Modular"
             "Distribution/Solver/Modular/Assignment"
@@ -345,7 +271,12 @@
             "Distribution/Solver/Types/Variable"
             "Paths_cabal_install"
             ];
-          hsSourceDirs = [ "main" "." ];
+          hsSourceDirs = [
+            "main"
+            "src"
+            "cabal-install-solver/src-assertion"
+            "cabal-install-solver/src"
+            ];
           mainPath = (((((((([
             "Main.hs"
             ] ++ (pkgs.lib).optionals (compiler.isGhc && (compiler.version).ge "8.0") (([

@@ -133,7 +133,7 @@ let
   '';
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional enableTerminfo [ ncurses ]
+  libDeps = platform: lib.optional enableTerminfo [ ncurses ncurses.dev ]
     ++ [targetLibffi]
     ++ lib.optional (!enableIntegerSimple) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv

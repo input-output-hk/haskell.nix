@@ -39,7 +39,7 @@
         "regex-base".revision = (((hackage."regex-base")."0.94.0.1").revisions).default;
         "network".revision = (((hackage."network")."3.1.2.5").revisions).default;
         "network".flags.devel = false;
-        "hsc2hs".revision = (((hackage."hsc2hs")."0.68.7").revisions).default;
+        "hsc2hs".revision = (((hackage."hsc2hs")."0.68.8").revisions).default;
         "hsc2hs".flags.in-ghc-tree = false;
         "echo".revision = (((hackage."echo")."0.1.4").revisions).default;
         "echo".flags.example = false;

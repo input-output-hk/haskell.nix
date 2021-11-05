@@ -56,7 +56,7 @@ let
     ghcForBuilding92
       = if (final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin)
           then final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler.ghc8107
-        else final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+        else final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
     latestVer = {
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
