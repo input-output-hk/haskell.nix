@@ -53,10 +53,6 @@ let
         else if (final.buildPlatform.isAarch64 || final.targetPlatform.isAarch64)
           then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
         else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
-    ghcForBuilding92
-      = if (final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin)
-          then final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler.ghc8107
-        else final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
     latestVer = {
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
@@ -534,7 +530,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc921; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding92;
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx installDeps;
 
