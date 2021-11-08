@@ -37,7 +37,8 @@
       ghc8105 = false;
       ghc8106 = false;
       ghc8107 = true;
-      ghc901 = true;
+      ghc901 = false;
+      ghc921 = true;
       ghc810420210212 = false;
     });
   systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
@@ -52,7 +53,7 @@
     in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" &&
-         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
+         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107" "ghc921"])) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && compiler-nix-name == "ghc8107") {
