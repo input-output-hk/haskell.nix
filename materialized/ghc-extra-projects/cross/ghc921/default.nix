@@ -81,7 +81,7 @@
           "remote-iserv" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
           "ghci" = {
-            flags = { "internal-interpreter" = lib.mkOverride 900 false; };
+            flags = { "internal-interpreter" = lib.mkOverride 900 true; };
             };
           "ghc-boot" = { flags = {}; };
           "iserv" = { flags = {}; };

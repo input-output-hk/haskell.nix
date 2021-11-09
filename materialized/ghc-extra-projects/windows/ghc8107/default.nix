@@ -14,11 +14,12 @@
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;
         "rts".revision = (((hackage."rts")."1.0.1").revisions).default;
         "template-haskell".revision = (((hackage."template-haskell")."2.16.0.0").revisions).default;
+        "bytestring".revision = (((hackage."bytestring")."0.10.12.0").revisions).default;
         "deepseq".revision = (((hackage."deepseq")."1.4.4.0").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
         "integer-gmp".revision = (((hackage."integer-gmp")."1.0.3.0").revisions).default;
         "ghc-heap".revision = (((hackage."ghc-heap")."8.10.7").revisions).default;
-        "binary".revision = (((hackage."binary")."0.8.9.0").revisions).default;
+        "binary".revision = (((hackage."binary")."0.8.8.0").revisions).default;
         "containers".revision = (((hackage."containers")."0.6.5.1").revisions).default;
         };
       compiler = {
@@ -33,10 +34,12 @@
           "transformers" = "0.5.6.2";
           "rts" = "1.0.1";
           "template-haskell" = "2.16.0.0";
+          "bytestring" = "0.10.12.0";
           "deepseq" = "1.4.4.0";
           "filepath" = "1.4.2.1";
           "integer-gmp" = "1.0.3.0";
           "ghc-heap" = "8.10.7";
+          "binary" = "0.8.8.0";
           "containers" = "0.6.5.1";
           };
         };
@@ -44,7 +47,6 @@
   extras = hackage:
     {
       packages = {
-        bytestring = ./.plan.nix/bytestring.nix;
         remote-iserv = ./.plan.nix/remote-iserv.nix;
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
         ghci = ./.plan.nix/ghci.nix;
@@ -60,9 +62,6 @@
     ({ lib, ... }:
       {
         packages = {
-          "bytestring" = {
-            flags = { "integer-simple" = lib.mkOverride 900 false; };
-            };
           "remote-iserv" = { flags = {}; };
           "iserv-proxy" = { flags = {}; };
           "ghci" = { flags = { "ghci" = lib.mkOverride 900 true; }; };
