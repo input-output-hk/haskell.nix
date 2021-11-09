@@ -180,6 +180,7 @@ in rec {
         constraints: network < 3.0,
                      ghc +ghci,
                      ghci +ghci,
+                     ghci +internal-interpreter,
                      libiserv +network
         EOF
       '';
