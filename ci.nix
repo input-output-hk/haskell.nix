@@ -41,11 +41,7 @@
       ghc921 = true;
       ghc810420210212 = false;
     });
-  systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
-    # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
-    linux = "x86_64-linux";
-    darwin = "x86_64-darwin";
-  };
+  systems = nixpkgs: nixpkgs.lib.genAttrs supportedSystems (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
