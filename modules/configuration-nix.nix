@@ -48,4 +48,6 @@ in {
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-defer-build-tool-depends-7532.patch)
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch)
   ];
+  # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
+  packages.mintty.components.library.build-tools = pkgs.lib.mkForce [];
 }
