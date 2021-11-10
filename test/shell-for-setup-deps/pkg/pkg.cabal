@@ -15,7 +15,7 @@ category:            Testing
 custom-setup
   setup-depends:       conduit
                      , conduit-extra
-                     , async >1.4
+                     , async >=2.0.0.0
 
 library
   exposed-modules:     Pkg
