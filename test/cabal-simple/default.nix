@@ -16,6 +16,10 @@ let
     inherit compiler-nix-name;
     src = testSrc "cabal-simple";
     inherit modules;
+    cabalProject = ''
+      packages: .
+      allow-newer: aeson:*
+    '';
   };
 
   packages = project.hsPkgs;
@@ -26,7 +30,7 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = project.shellFor { tools = { cabal = "3.4.0.0"; }; withHoogle = compiler-nix-name != "ghc901"; };
+  test-shell = project.shellFor { tools = { cabal = "3.6.2.0"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc921"]; };
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
