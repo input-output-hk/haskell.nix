@@ -41,12 +41,16 @@
       ghc921 = true;
       ghc810420210212 = false;
     });
-  systems = nixpkgs: nixpkgs.lib.genAttrs supportedSystems (v: v);
+  systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
+    nixpkgs.lib.filter (v: v != "aarch64-darwin" || (
+      # aarch64-darwin requires ghc 8.10.7 and does not work on older nixpkgs
+         !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106"]
+      && !__elem nixpkgsName ["R2009" "R2105"])) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
+    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"]) && system != "aarch64-darwin") {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" &&
          nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
@@ -64,7 +68,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       # We need this for generic nixpkgs stuff at the right version
       genericPkgs = import pinnedNixpkgsSrc {};
   in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compiler-nix-name: {nixpkgsArgs, runTests}:
-    dimension "System" (systems genericPkgs) (systemName: system:
+    dimension "System" (systems nixpkgsName genericPkgs compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
           platformFilter = platformFilterGeneric pkgs system;
