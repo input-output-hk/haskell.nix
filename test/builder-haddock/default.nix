@@ -1,4 +1,4 @@
-{ mkCabalProjectPkgSet, stdenv, lib, testSrc }:
+{ mkCabalProjectPkgSet, stdenv, lib, testSrc, compiler-nix-name }:
 
 with lib;
 
@@ -79,6 +79,6 @@ in
 
     meta = {
       platforms = platforms.all;
-      disabled = stdenv.hostPlatform != stdenv.buildPlatform || stdenv.hostPlatform.isMusl;
+      disabled = stdenv.hostPlatform != stdenv.buildPlatform || stdenv.hostPlatform.isMusl || compiler-nix-name != "ghc865";
     };
 } // { inherit packages pkgSet; }

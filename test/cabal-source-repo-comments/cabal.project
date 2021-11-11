@@ -1,7 +1,7 @@
 packages:
   ./
 
-allow-newer: aeson:base
+allow-newer: aeson:base, aeson:ghc-prim, aeson:template-haskell
 
 source-repository-package
   -- Test

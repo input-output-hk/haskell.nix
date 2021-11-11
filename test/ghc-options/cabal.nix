@@ -24,7 +24,7 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
   run = stdenv.mkDerivation {
-    name = "call-cabal-project-to-nix-test";
+    name = "ghc-options-cabal-test";
 
     buildCommand = ''
       printf "checking whether executable runs... " >& 2

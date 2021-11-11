@@ -166,7 +166,7 @@ let
     cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
     cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
     with-packages = callTest ./with-packages { inherit util compiler-nix-name; };
-    builder-haddock = callTest ./builder-haddock {};
+    builder-haddock = callTest ./builder-haddock { inherit compiler-nix-name; };
     stack-simple = callTest ./stack-simple { inherit compiler-nix-name; };
     stack-local-resolver = callTest ./stack-local-resolver { inherit compiler-nix-name; };
     stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir { inherit compiler-nix-name; };
