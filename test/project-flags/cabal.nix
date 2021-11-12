@@ -14,7 +14,7 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
   run = stdenv.mkDerivation {
-    name = "call-cabal-project-to-nix-test";
+    name = "project-flags-cabal-test";
 
     buildCommand = ''
       exe="${packages.test-project-flags.components.exes.test-project-flags-exe.exePath}"

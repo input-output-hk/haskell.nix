@@ -129,9 +129,9 @@ in {
                 ++ until             "8.10"  ./patches/ghc/ghc-add-keepCAFs-to-rts.patch                         # https://gitlab.haskell.org/ghc/ghc/merge_requests/950  -- open
                 ++ until             "8.10"  ./patches/ghc/lowercase-8.6.patch                                   # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- merged; ghc-8.8.1
                 ++ always                    ./patches/ghc/dll-loader-8.4.2.patch                                # https://gitlab.haskell.org/ghc/ghc/merge_requests/949  -- open
-                ++ always                    ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
+                ++ until             "9.2"   ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
                 ++ until             "8.10"  ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
-                ++ from      "8.8"           ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
+                ++ fromUntil "8.8"   "9.2"   ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
@@ -148,7 +148,7 @@ in {
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "9.0" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
-                ++ final.lib.optional (versionAtLeast "8.10.1" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.10.1" && versionLessThan "9.2" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 # backport of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3227
                 # the first one is a prerequisite.
                 # both are trimmed to only include the make build system part and not the
@@ -161,7 +161,7 @@ in {
                 ++ fromUntil "8.10.2" "8.10.3" ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 # See https://github.com/input-output-hk/haskell.nix/issues/1027
-                ++ final.lib.optional (versionAtLeast "8.10.3" && final.targetPlatform.isAarch64) ./patches/ghc/3434.patch
+                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/3434.patch
 
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
                 ++ from      "8.10.1"          ./patches/ghc/ghc-mprotect-nonzero-len.patch
@@ -169,7 +169,7 @@ in {
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
                 ++ fromUntil "8.10.5" "8.11"   ./patches/ghc/ghc-8.10.5-ubxt.patch
-                ++ final.lib.optional (versionAtLeast "8.6.4") ./patches/ghc/Cabal-3886.patch
+                ++ fromUntil "8.6.4"  "9.2"    ./patches/ghc/Cabal-3886.patch
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ++ final.lib.optionals final.targetPlatform.isWindows
@@ -182,6 +182,7 @@ in {
                 ++ final.lib.optionals final.hostPlatform.isDarwin
                   (fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-darwin-allocateExec.patch)
                 ++ until              "8.10.6" ./patches/ghc/Sphinx_Unicode_Error.patch
+                ++ from      "9.2.1"           ./patches/ghc/ghc-9.2.1-xattr-fix.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc {
@@ -496,8 +497,8 @@ in {
                 };
                 inherit sphinx installDeps;
 
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.7";
@@ -525,6 +526,26 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.0.1";
+            };
+            ghc921 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc921; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.2.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-9EQBL5ehNtmUD3fN/wP9pI+UdeLtD+yWbE01xN9V90Y=";
+                };
+
+                ghc-patches = ghc-patches "9.2.1";
             };
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
@@ -758,7 +779,7 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.hackage-package ({
         name = "cabal-install";
-        version = "3.4.0.0";
+        version = "3.6.2.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args)).getComponent "exe:cabal";
@@ -767,7 +788,7 @@ in {
         # Until all the dependencies build with 9.0.1 we will have to avoid
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
-          if args.compiler-nix-name == "ghc901"
+          if args.compiler-nix-name == "ghc901" || args.compiler-nix-name == "ghc921"
             then "ghc8107"
             else args.compiler-nix-name;
         project =
@@ -857,7 +878,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
             then compiler-nix-name
-            else "ghc8105";
+            else "ghc8107";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
     nix-tools = final.lib.mapAttrs (compiler-nix-name: _:
@@ -869,7 +890,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
             then compiler-nix-name
-            else "ghc8105";
+            else "ghc8107";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
 

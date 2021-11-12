@@ -13,7 +13,9 @@ let
     }];
   };
 
-  env = project.shellFor {};
+  env = project.shellFor {
+    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc921"];
+  };
 
 in recurseIntoAttrs ({
   # Making this work for cross compilers will be difficult as setup-deps are

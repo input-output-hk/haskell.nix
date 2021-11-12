@@ -72,6 +72,9 @@ let
       remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
       ghc-bignum   = "libraries/ghc-bignum";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.2.1" >= 0) {
+      deepseq      = "libraries/deepseq";
+      pretty       = "libraries/pretty";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on
@@ -156,7 +159,7 @@ in rec {
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
-        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" ])) (ghc-extra-pkgs ghc.version));
+        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq" ])) (ghc-extra-pkgs ghc.version));
     in final.stdenv.mkDerivation {
       name = "ghc-extra-pkgs-cabal-project-${ghcName}";
       phases = [ "buildPhase" ];
@@ -172,10 +175,12 @@ in rec {
         '') package-locs)}
         cat >$out/cabal.project <<EOF
         packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
-        -- need this for libiserve as it doesn't build against 3.0 yet.
+        allow-newer: iserv-proxy:bytestring, network:bytestring
+        -- need this for libiserv as it doesn't build against 3.0 yet.
         constraints: network < 3.0,
                      ghc +ghci,
                      ghci +ghci,
+                     ghci +internal-interpreter,
                      libiserv +network
         EOF
       '';
@@ -191,7 +196,7 @@ in rec {
       materialized = ../materialized/ghc-extra-projects
                        + "/${ghc-extra-projects-type}/${ghcName}";
       compiler-nix-name = ghcName;
-      configureArgs = "--disable-tests --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
+      configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
     })
     ghc-extra-pkgs-cabal-projects;
 

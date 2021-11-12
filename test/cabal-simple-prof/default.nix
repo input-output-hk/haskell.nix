@@ -19,6 +19,10 @@ let
     inherit compiler-nix-name;
     src = testSrc "cabal-simple-prof";
     inherit modules;
+    cabalProject = ''
+      packages: .
+      allow-newer: aeson:*
+    '';
   };
 
 in recurseIntoAttrs {

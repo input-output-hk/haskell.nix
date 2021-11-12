@@ -1,0 +1,30 @@
+From ec451cac39de919621c783fec809c26fb9f0d1c8 Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Sat, 29 May 2021 12:19:31 -0400
+Subject: [PATCH] Don't depend unconditionally on xattr in darwin_install
+
+Previously the Darwin installation logic would attempt to call xattr
+unconditionally. This would break on older Darwin releases where this
+utility did not exist.
+---
+ ghc.mk | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/ghc.mk b/ghc.mk
+index fbb2befc971a..37213c4f6a3a 100644
+--- a/ghc.mk
++++ b/ghc.mk
+@@ -825,10 +825,12 @@ endif # Windows_Host
+ # time.  This should help us with code signing issues by removing extended
+ # attribuets from all files.
+ ifeq "$(Darwin_Host)" "YES"
++XATTR ?= /usr/bin/xattr
++
+ install : install_darwin
+ .PHONY: install_darwin
+ install_darwin:
+-	xattr -c -r .
++	if [ -e "${XATTR}" ]; then "${XATTR}" -c -r .; fi
+ endif # Darwin_Host
+ 
+ ifneq "$(BINDIST)" "YES"

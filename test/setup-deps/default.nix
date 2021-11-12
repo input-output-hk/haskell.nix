@@ -24,7 +24,7 @@ let
 in 
 
 recurseIntoAttrs ({
-  meta.disabled = compiler-nix-name == "ghc901";
+  meta.disabled = __elem compiler-nix-name ["ghc901" "ghc921"];
 
   ifdInputs = {
     plan-nix = addMetaAttrs meta project.plan-nix;

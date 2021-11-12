@@ -38,6 +38,8 @@ in {
   packages.Cabal.patches = [
     (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff)
     (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff)
+    (fromUntil "3.6.0.0" "3.7" ../overlays/patches/Cabal/Cabal-3.6.0.0-drop-pkg-db-check.diff)
+    (fromUntil "3.6.0.0" "3.7" ../overlays/patches/Cabal/Cabal-3.6.0.0-no-final-checks.diff)
   ];
 
   # These two patches are:
@@ -48,4 +50,6 @@ in {
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-defer-build-tool-depends-7532.patch)
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch)
   ];
+  # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
+  packages.mintty.components.library.build-tools = pkgs.lib.mkForce [];
 }

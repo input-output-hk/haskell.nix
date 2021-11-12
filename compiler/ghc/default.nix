@@ -133,7 +133,7 @@ let
   '';
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional enableTerminfo [ ncurses ]
+  libDeps = platform: lib.optional enableTerminfo [ ncurses ncurses.dev ]
     ++ [targetLibffi]
     ++ lib.optional (!enableIntegerSimple) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
@@ -268,9 +268,7 @@ stdenv.mkDerivation (rec {
 
     # Save generated files for needed when building ghcjs
     mkdir -p $generated/includes/dist-derivedconstants/header
-    cp includes/dist-derivedconstants/header/GHCConstantsHaskellExports.hs \
-       includes/dist-derivedconstants/header/GHCConstantsHaskellType.hs \
-       includes/dist-derivedconstants/header/GHCConstantsHaskellWrappers.hs \
+    cp includes/dist-derivedconstants/header/GHCConstantsHaskell*.hs \
        $generated/includes/dist-derivedconstants/header
     if [[ -f includes/ghcplatform.h ]]; then
       cp includes/ghcplatform.h $generated/includes
@@ -350,7 +348,7 @@ stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-} // lib.optionalAttrs (__elem ghc-version ["8.10.5" "8.10.6" "8.10.7"] && stdenv.buildPlatform.isDarwin) {
+} // lib.optionalAttrs (__elem ghc-version ["8.10.5" "8.10.6" "8.10.7" "9.2.1"] && stdenv.buildPlatform.isDarwin) {
   # ghc install on macOS wants to run `xattr -r -c`
   # The macOS version fails because it wants python 2.
   # The nix version of xattr does not support those args.

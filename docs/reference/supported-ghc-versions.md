@@ -7,6 +7,7 @@ for each, though not all are cached or tested by CI):
 - 8.8.{1,2,3,4}
 - 8.10.{1,2,3,4,5}
 - 9.0.1
+- 9.2.1
 
 The following table shows the Nixpkgs/GHC versions which are built/cached, and
 which of those are further tested.  If you use a combination of Nixpkgs version
@@ -27,9 +28,10 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 | unstable         | `nixpkgs-unstable` | 8.8.4       | `ghc884`              | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.4      | `ghc8104`             | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.5      | `ghc8105`             | No            |
-| unstable         | `nixpkgs-unstable` | 8.10.6      | `ghc8106`             | No           |
+| unstable         | `nixpkgs-unstable` | 8.10.6      | `ghc8106`             | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.7      | `ghc8107`             | Yes           |
-| unstable         | `nixpkgs-unstable` | 9.0.1       | `ghc901`              | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.0.1       | `ghc901`              | No            |
+| unstable         | `nixpkgs-unstable` | 9.2.1       | `ghc921`              | Yes           |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)
 for the source of truth about what is built and tested (in the off chance this

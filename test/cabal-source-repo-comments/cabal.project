@@ -1,6 +1,8 @@
 packages:
   ./
 
+allow-newer: aeson:base, aeson:ghc-prim, aeson:template-haskell
+
 source-repository-package
   -- Test
   type: git

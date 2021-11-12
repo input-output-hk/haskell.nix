@@ -9,6 +9,10 @@ let
     inherit compiler-nix-name;
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
+    cabalProject = ''
+      packages: .
+      allow-newer: aeson:*
+    '';
   };
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = importAndFilterProject {
