@@ -164,6 +164,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.3" && final.targetPlatform.isAarch64) ./patches/ghc/3434.patch
 
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
+                ++ from      "8.10.1"          ./patches/ghc/ghc-mprotect-nonzero-len.patch
 
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
