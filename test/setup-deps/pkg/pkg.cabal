@@ -17,6 +17,7 @@ custom-setup
                      , conduit-extra
                      , Cabal
                      , ghc
+                     , async >=2.0.0.0
 
 library
   exposed-modules:     Pkg

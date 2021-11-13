@@ -7,6 +7,10 @@ let
   project = cabalProject' {
     inherit compiler-nix-name;
     src = testSrc "cabal-simple-debug";
+    cabalProject = ''
+      packages: .
+      allow-newer: aeson:*
+    '';
   };
 
   packages = project.hsPkgs;

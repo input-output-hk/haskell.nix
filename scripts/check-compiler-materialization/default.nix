@@ -23,11 +23,11 @@ in eval.linkFarm "check-${compiler-nix-name}" (builtins.concatMap (system:
 ] ++ eval.lib.optionals (system == "x86_64-linux") ([
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
   { name = "${system}-musl";          path = pkgs.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-] ++ eval.lib.optionals (!__elem compiler-nix-name ["ghc901"]) [
+] ++ eval.lib.optionals (!__elem compiler-nix-name ["ghc901" "ghc921"]) [
   { name = "${system}-windows";       path = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
 ] ++ eval.lib.optionals (__elem compiler-nix-name ["ghc884" "ghc8105" "ghc8106" "ghc8107"]) [
   { name = "${system}-arm";           path = pkgs.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-]) ++ eval.lib.optionals (__elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107"]) [
+]) ++ eval.lib.optionals (__elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107"] && system != "aarch64-darwin") [
   { name = "${system}-ghcjs";         path = pkgs.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
 ]) systems)
 

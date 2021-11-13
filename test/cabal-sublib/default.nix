@@ -17,6 +17,10 @@ let
     inherit compiler-nix-name;
     src = testSrc "cabal-sublib";
     inherit modules;
+    cabalProject = ''
+      packages: .
+      allow-newer: aeson:*
+    '';
   };
 
   packages = project.hsPkgs;
