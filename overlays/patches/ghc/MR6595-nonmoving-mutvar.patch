@@ -1,0 +1,521 @@
+From 51698e1b0c762caa284a3daa2ab131f9464b1008 Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Mon, 20 Sep 2021 22:51:01 -0400
+Subject: [PATCH 1/4] nonmoving: Fix and factor out mark_trec_chunk
+
+We need to ensure that the TRecChunk itself is marked, in addition to
+the TRecs it contains.
+
+(cherry picked from commit 8d6de5416406be7b1c90f8e0c9a80f5bea1befff)
+---
+ rts/sm/NonMovingMark.c | 39 +++++++++++++++++----------------------
+ 1 file changed, 17 insertions(+), 22 deletions(-)
+
+diff --git a/rts/sm/NonMovingMark.c b/rts/sm/NonMovingMark.c
+index 16085cb27a..c1e41219f8 100644
+--- a/rts/sm/NonMovingMark.c
++++ b/rts/sm/NonMovingMark.c
+@@ -790,8 +790,8 @@ void markQueuePushThunkSrt (MarkQueue *q, const StgInfoTable *info)
+ }
+ 
+ void markQueuePushArray (MarkQueue *q,
+-                            const StgMutArrPtrs *array,
+-                            StgWord start_index)
++                         const StgMutArrPtrs *array,
++                         StgWord start_index)
+ {
+     push_array(q, array, start_index);
+ }
+@@ -940,20 +940,26 @@ markQueueLength (MarkQueue *q)
+  * barrier. Consequently it's quite important that we deeply mark
+  * any outstanding transactions.
+  */
++static void
++mark_trec_chunk (MarkQueue *queue, StgTRecChunk *chunk)
++{
++    markQueuePushClosure_(queue, (StgClosure *) chunk);
++    for (StgWord i=0; i < chunk->next_entry_idx; i++) {
++        TRecEntry *ent = &chunk->entries[i];
++        markQueuePushClosure_(queue, (StgClosure *) ent->tvar);
++        markQueuePushClosure_(queue, ent->expected_value);
++        markQueuePushClosure_(queue, ent->new_value);
++    }
++}
++
+ static void
+ mark_trec_header (MarkQueue *queue, StgTRecHeader *trec)
+ {
+     while (trec != NO_TREC) {
+         StgTRecChunk *chunk = trec->current_chunk;
+         markQueuePushClosure_(queue, (StgClosure *) trec);
+-        markQueuePushClosure_(queue, (StgClosure *) chunk);
+         while (chunk != END_STM_CHUNK_LIST) {
+-            for (StgWord i=0; i < chunk->next_entry_idx; i++) {
+-                TRecEntry *ent = &chunk->entries[i];
+-                markQueuePushClosure_(queue, (StgClosure *) ent->tvar);
+-                markQueuePushClosure_(queue, ent->expected_value);
+-                markQueuePushClosure_(queue, ent->new_value);
+-            }
++            mark_trec_chunk(queue, chunk);
+             chunk = chunk->prev_chunk;
+         }
+         trec = trec->enclosing_trec;
+@@ -1552,7 +1558,6 @@ mark_closure (MarkQueue *queue, const StgClosure *p0, StgClosure **origin)
+     case MUT_ARR_PTRS_DIRTY:
+     case MUT_ARR_PTRS_FROZEN_CLEAN:
+     case MUT_ARR_PTRS_FROZEN_DIRTY:
+-        // TODO: Check this against Scav.c
+         markQueuePushArray(queue, (StgMutArrPtrs *) p, 0);
+         break;
+ 
+@@ -1602,19 +1607,9 @@ mark_closure (MarkQueue *queue, const StgClosure *p0, StgClosure **origin)
+         break;
+     }
+ 
+-    case TREC_CHUNK: {
+-        // TODO: Should we abort here? This should have already been marked
+-        // when we dirtied the TSO
+-        StgTRecChunk *tc = ((StgTRecChunk *) p);
+-        PUSH_FIELD(tc, prev_chunk);
+-        TRecEntry *end = &tc->entries[tc->next_entry_idx];
+-        for (TRecEntry *e = &tc->entries[0]; e < end; e++) {
+-            markQueuePushClosure_(queue, (StgClosure *) e->tvar);
+-            markQueuePushClosure_(queue, (StgClosure *) e->expected_value);
+-            markQueuePushClosure_(queue, (StgClosure *) e->new_value);
+-        }
++    case TREC_CHUNK:
++        // N.B. chunk contents are deeply marked by mark_trec_header
+         break;
+-    }
+ 
+     case WHITEHOLE:
+         while (*(StgInfoTable* volatile*) &p->header.info == &stg_WHITEHOLE_info);
+-- 
+2.33.1
+
+
+From 8c3bf8af42a3891e28a8edde20f31655cc2a4654 Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Thu, 23 Sep 2021 14:47:55 -0400
+Subject: [PATCH 2/4] rts/nonmoving: Rename mark_* to trace_*
+
+These functions really do no marking; they merely trace pointers.
+
+(cherry picked from commit aa520ba158d9f73a3e59af4fbce3b9d294254965)
+---
+ rts/sm/NonMovingMark.c | 84 +++++++++++++++++++++---------------------
+ 1 file changed, 42 insertions(+), 42 deletions(-)
+
+diff --git a/rts/sm/NonMovingMark.c b/rts/sm/NonMovingMark.c
+index c1e41219f8..ee9b3d89eb 100644
+--- a/rts/sm/NonMovingMark.c
++++ b/rts/sm/NonMovingMark.c
+@@ -29,12 +29,12 @@
+ 
+ static bool check_in_nonmoving_heap(StgClosure *p);
+ static void mark_closure (MarkQueue *queue, const StgClosure *p, StgClosure **origin);
+-static void mark_tso (MarkQueue *queue, StgTSO *tso);
+-static void mark_stack (MarkQueue *queue, StgStack *stack);
+-static void mark_PAP_payload (MarkQueue *queue,
+-                              StgClosure *fun,
+-                              StgClosure **payload,
+-                              StgWord size);
++static void trace_tso (MarkQueue *queue, StgTSO *tso);
++static void trace_stack (MarkQueue *queue, StgStack *stack);
++static void trace_PAP_payload (MarkQueue *queue,
++                               StgClosure *fun,
++                               StgClosure **payload,
++                               StgWord size);
+ 
+ // How many Array# entries to add to the mark queue at once?
+ #define MARK_ARRAY_CHUNK_LENGTH 128
+@@ -629,7 +629,7 @@ void updateRemembSetPushThunkEager(Capability *cap,
+         if (check_in_nonmoving_heap(ap->fun)) {
+             push_closure(queue, ap->fun, NULL);
+         }
+-        mark_PAP_payload(queue, ap->fun, ap->payload, ap->n_args);
++        trace_PAP_payload(queue, ap->fun, ap->payload, ap->n_args);
+         break;
+     }
+     case THUNK_SELECTOR:
+@@ -715,7 +715,7 @@ void updateRemembSetPushTSO(Capability *cap, StgTSO *tso)
+ {
+     if (needs_upd_rem_set_mark((StgClosure *) tso)) {
+         debugTrace(DEBUG_nonmoving_gc, "upd_rem_set: TSO %p", tso);
+-        mark_tso(&cap->upd_rem_set.queue, tso);
++        trace_tso(&cap->upd_rem_set.queue, tso);
+         finish_upd_rem_set_mark((StgClosure *) tso);
+     }
+ }
+@@ -730,7 +730,7 @@ void updateRemembSetPushStack(Capability *cap, StgStack *stack)
+               != nonmovingMarkEpoch) {
+             // We have claimed the right to mark the stack.
+             debugTrace(DEBUG_nonmoving_gc, "upd_rem_set: STACK %p", stack->sp);
+-            mark_stack(&cap->upd_rem_set.queue, stack);
++            trace_stack(&cap->upd_rem_set.queue, stack);
+             finish_upd_rem_set_mark((StgClosure *) stack);
+             return;
+         } else {
+@@ -941,7 +941,7 @@ markQueueLength (MarkQueue *q)
+  * any outstanding transactions.
+  */
+ static void
+-mark_trec_chunk (MarkQueue *queue, StgTRecChunk *chunk)
++trace_trec_chunk (MarkQueue *queue, StgTRecChunk *chunk)
+ {
+     markQueuePushClosure_(queue, (StgClosure *) chunk);
+     for (StgWord i=0; i < chunk->next_entry_idx; i++) {
+@@ -953,13 +953,13 @@ mark_trec_chunk (MarkQueue *queue, StgTRecChunk *chunk)
+ }
+ 
+ static void
+-mark_trec_header (MarkQueue *queue, StgTRecHeader *trec)
++trace_trec_header (MarkQueue *queue, StgTRecHeader *trec)
+ {
+     while (trec != NO_TREC) {
+         StgTRecChunk *chunk = trec->current_chunk;
+         markQueuePushClosure_(queue, (StgClosure *) trec);
+         while (chunk != END_STM_CHUNK_LIST) {
+-            mark_trec_chunk(queue, chunk);
++            trace_trec_chunk(queue, chunk);
+             chunk = chunk->prev_chunk;
+         }
+         trec = trec->enclosing_trec;
+@@ -967,7 +967,7 @@ mark_trec_header (MarkQueue *queue, StgTRecHeader *trec)
+ }
+ 
+ static void
+-mark_tso (MarkQueue *queue, StgTSO *tso)
++trace_tso (MarkQueue *queue, StgTSO *tso)
+ {
+     // TODO: Clear dirty if contains only old gen objects
+ 
+@@ -977,7 +977,7 @@ mark_tso (MarkQueue *queue, StgTSO *tso)
+ 
+     markQueuePushClosure_(queue, (StgClosure *) tso->blocked_exceptions);
+     markQueuePushClosure_(queue, (StgClosure *) tso->bq);
+-    mark_trec_header(queue, tso->trec);
++    trace_trec_header(queue, tso->trec);
+     markQueuePushClosure_(queue, (StgClosure *) tso->stackobj);
+     markQueuePushClosure_(queue, (StgClosure *) tso->_link);
+     if (   tso->why_blocked == BlockedOnMVar
+@@ -999,16 +999,16 @@ do_push_closure (StgClosure **p, void *user)
+ }
+ 
+ static void
+-mark_large_bitmap (MarkQueue *queue,
+-                   StgClosure **p,
+-                   StgLargeBitmap *large_bitmap,
+-                   StgWord size)
++trace_large_bitmap (MarkQueue *queue,
++                    StgClosure **p,
++                    StgLargeBitmap *large_bitmap,
++                    StgWord size)
+ {
+     walk_large_bitmap(do_push_closure, p, large_bitmap, size, queue);
+ }
+ 
+ static void
+-mark_small_bitmap (MarkQueue *queue, StgClosure **p, StgWord size, StgWord bitmap)
++trace_small_bitmap (MarkQueue *queue, StgClosure **p, StgWord size, StgWord bitmap)
+ {
+     while (size > 0) {
+         if ((bitmap & 1) == 0) {
+@@ -1022,10 +1022,10 @@ mark_small_bitmap (MarkQueue *queue, StgClosure **p, StgWord size, StgWord bitma
+ }
+ 
+ static GNUC_ATTR_HOT
+-void mark_PAP_payload (MarkQueue *queue,
+-                       StgClosure *fun,
+-                       StgClosure **payload,
+-                       StgWord size)
++void trace_PAP_payload (MarkQueue *queue,
++                        StgClosure *fun,
++                        StgClosure **payload,
++                        StgWord size)
+ {
+     const StgFunInfoTable *fun_info = get_fun_itbl(UNTAG_CONST_CLOSURE(fun));
+     ASSERT(fun_info->i.type != PAP);
+@@ -1037,20 +1037,20 @@ void mark_PAP_payload (MarkQueue *queue,
+         bitmap = BITMAP_BITS(fun_info->f.b.bitmap);
+         goto small_bitmap;
+     case ARG_GEN_BIG:
+-        mark_large_bitmap(queue, payload, GET_FUN_LARGE_BITMAP(fun_info), size);
++        trace_large_bitmap(queue, payload, GET_FUN_LARGE_BITMAP(fun_info), size);
+         break;
+     case ARG_BCO:
+-        mark_large_bitmap(queue, payload, BCO_BITMAP(fun), size);
++        trace_large_bitmap(queue, payload, BCO_BITMAP(fun), size);
+         break;
+     default:
+         bitmap = BITMAP_BITS(stg_arg_bitmaps[fun_info->f.fun_type]);
+     small_bitmap:
+-        mark_small_bitmap(queue, (StgClosure **) p, size, bitmap);
++        trace_small_bitmap(queue, (StgClosure **) p, size, bitmap);
+         break;
+     }
+ }
+ 
+-/* Helper for mark_stack; returns next stack frame. */
++/* Helper for trace_stack; returns next stack frame. */
+ static StgPtr
+ mark_arg_block (MarkQueue *queue, const StgFunInfoTable *fun_info, StgClosure **args)
+ {
+@@ -1064,14 +1064,14 @@ mark_arg_block (MarkQueue *queue, const StgFunInfoTable *fun_info, StgClosure **
+         goto small_bitmap;
+     case ARG_GEN_BIG:
+         size = GET_FUN_LARGE_BITMAP(fun_info)->size;
+-        mark_large_bitmap(queue, (StgClosure**)p, GET_FUN_LARGE_BITMAP(fun_info), size);
++        trace_large_bitmap(queue, (StgClosure**)p, GET_FUN_LARGE_BITMAP(fun_info), size);
+         p += size;
+         break;
+     default:
+         bitmap = BITMAP_BITS(stg_arg_bitmaps[fun_info->f.fun_type]);
+         size = BITMAP_SIZE(stg_arg_bitmaps[fun_info->f.fun_type]);
+     small_bitmap:
+-        mark_small_bitmap(queue, (StgClosure**)p, size, bitmap);
++        trace_small_bitmap(queue, (StgClosure**)p, size, bitmap);
+         p += size;
+         break;
+     }
+@@ -1079,7 +1079,7 @@ mark_arg_block (MarkQueue *queue, const StgFunInfoTable *fun_info, StgClosure **
+ }
+ 
+ static GNUC_ATTR_HOT void
+-mark_stack_ (MarkQueue *queue, StgPtr sp, StgPtr spBottom)
++trace_stack_ (MarkQueue *queue, StgPtr sp, StgPtr spBottom)
+ {
+     ASSERT(sp <= spBottom);
+ 
+@@ -1109,7 +1109,7 @@ mark_stack_ (MarkQueue *queue, StgPtr sp, StgPtr spBottom)
+             // NOTE: the payload starts immediately after the info-ptr, we
+             // don't have an StgHeader in the same sense as a heap closure.
+             sp++;
+-            mark_small_bitmap(queue, (StgClosure **) sp, size, bitmap);
++            trace_small_bitmap(queue, (StgClosure **) sp, size, bitmap);
+             sp += size;
+         }
+         follow_srt:
+@@ -1124,7 +1124,7 @@ mark_stack_ (MarkQueue *queue, StgPtr sp, StgPtr spBottom)
+             StgBCO *bco = (StgBCO *)*sp;
+             sp++;
+             StgWord size = BCO_BITMAP_SIZE(bco);
+-            mark_large_bitmap(queue, (StgClosure **) sp, BCO_BITMAP(bco), size);
++            trace_large_bitmap(queue, (StgClosure **) sp, BCO_BITMAP(bco), size);
+             sp += size;
+             continue;
+         }
+@@ -1136,7 +1136,7 @@ mark_stack_ (MarkQueue *queue, StgPtr sp, StgPtr spBottom)
+ 
+             size = GET_LARGE_BITMAP(&info->i)->size;
+             sp++;
+-            mark_large_bitmap(queue, (StgClosure **) sp, GET_LARGE_BITMAP(&info->i), size);
++            trace_large_bitmap(queue, (StgClosure **) sp, GET_LARGE_BITMAP(&info->i), size);
+             sp += size;
+             // and don't forget to follow the SRT
+             goto follow_srt;
+@@ -1154,17 +1154,17 @@ mark_stack_ (MarkQueue *queue, StgPtr sp, StgPtr spBottom)
+         }
+ 
+         default:
+-            barf("mark_stack: weird activation record found on stack: %d", (int)(info->i.type));
++            barf("trace_stack: weird activation record found on stack: %d", (int)(info->i.type));
+         }
+     }
+ }
+ 
+ static GNUC_ATTR_HOT void
+-mark_stack (MarkQueue *queue, StgStack *stack)
++trace_stack (MarkQueue *queue, StgStack *stack)
+ {
+     // TODO: Clear dirty if contains only old gen objects
+ 
+-    mark_stack_(queue, stack->sp, stack->stack + stack->stack_size);
++    trace_stack_(queue, stack->sp, stack->stack + stack->stack_size);
+ }
+ 
+ /* See Note [Static objects under the nonmoving collector].
+@@ -1532,21 +1532,21 @@ mark_closure (MarkQueue *queue, const StgClosure *p0, StgClosure **origin)
+     case AP_STACK: {
+         StgAP_STACK *ap = (StgAP_STACK *)p;
+         PUSH_FIELD(ap, fun);
+-        mark_stack_(queue, (StgPtr) ap->payload, (StgPtr) ap->payload + ap->size);
++        trace_stack_(queue, (StgPtr) ap->payload, (StgPtr) ap->payload + ap->size);
+         break;
+     }
+ 
+     case PAP: {
+         StgPAP *pap = (StgPAP *) p;
+         PUSH_FIELD(pap, fun);
+-        mark_PAP_payload(queue, pap->fun, pap->payload, pap->n_args);
++        trace_PAP_payload(queue, pap->fun, pap->payload, pap->n_args);
+         break;
+     }
+ 
+     case AP: {
+         StgAP *ap = (StgAP *) p;
+         PUSH_FIELD(ap, fun);
+-        mark_PAP_payload(queue, ap->fun, ap->payload, ap->n_args);
++        trace_PAP_payload(queue, ap->fun, ap->payload, ap->n_args);
+         break;
+     }
+ 
+@@ -1574,7 +1574,7 @@ mark_closure (MarkQueue *queue, const StgClosure *p0, StgClosure **origin)
+     }
+ 
+     case TSO:
+-        mark_tso(queue, (StgTSO *) p);
++        trace_tso(queue, (StgTSO *) p);
+         break;
+ 
+     case STACK: {
+@@ -1587,7 +1587,7 @@ mark_closure (MarkQueue *queue, const StgClosure *p0, StgClosure **origin)
+         if (cas_word8(&stack->marking, marking, nonmovingMarkEpoch)
+               != nonmovingMarkEpoch) {
+             // We have claimed the right to mark the stack.
+-            mark_stack(queue, stack);
++            trace_stack(queue, stack);
+         } else {
+             // A mutator has already started marking the stack; we just let it
+             // do its thing and move on. There's no reason to wait; we know that
+@@ -1608,7 +1608,7 @@ mark_closure (MarkQueue *queue, const StgClosure *p0, StgClosure **origin)
+     }
+ 
+     case TREC_CHUNK:
+-        // N.B. chunk contents are deeply marked by mark_trec_header
++        // N.B. chunk contents are deeply marked by trace_trec_header
+         break;
+ 
+     case WHITEHOLE:
+-- 
+2.33.1
+
+
+From 452b4f555a69a51e7d28f2c45c217c083cc3ec25 Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Fri, 24 Sep 2021 08:40:40 -0400
+Subject: [PATCH 3/4] rts/primops: Fix write barrier in
+ stg_atomicModifyMutVarzuzh
+
+Previously the call to dirty_MUT_VAR in stg_atomicModifyMutVarzuzh was
+missing its final argument.
+
+Fixes #20414.
+
+(cherry picked from commit 2c02ea8dc33fe008675b1c0629c0ffb0e8ca4482)
+---
+ rts/PrimOps.cmm | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/rts/PrimOps.cmm b/rts/PrimOps.cmm
+index 1bf5b4adae..e97187fe29 100644
+--- a/rts/PrimOps.cmm
++++ b/rts/PrimOps.cmm
+@@ -625,7 +625,7 @@ stg_casMutVarzh ( gcptr mv, gcptr old, gcptr new )
+         return (1,h);
+     } else {
+         if (GET_INFO(mv) == stg_MUT_VAR_CLEAN_info) {
+-            ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr", old);
++            ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr", old "ptr");
+         }
+         return (0,new);
+     }
+@@ -638,7 +638,7 @@ stg_casMutVarzh ( gcptr mv, gcptr old, gcptr new )
+     } else {
+         StgMutVar_var(mv) = new;
+         if (GET_INFO(mv) == stg_MUT_VAR_CLEAN_info) {
+-            ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr", old);
++            ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr", old "ptr");
+         }
+         return (0,new);
+     }
+@@ -710,7 +710,7 @@ stg_atomicModifyMutVar2zh ( gcptr mv, gcptr f )
+ #endif
+ 
+     if (GET_INFO(mv) == stg_MUT_VAR_CLEAN_info) {
+-        ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr", h);
++        ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr", h "ptr");
+     }
+ 
+     return (x,z);
+@@ -762,7 +762,7 @@ stg_atomicModifyMutVarzuzh ( gcptr mv, gcptr f )
+ #endif
+ 
+     if (GET_INFO(mv) == stg_MUT_VAR_CLEAN_info) {
+-        ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr");
++        ccall dirty_MUT_VAR(BaseReg "ptr", mv "ptr", x "ptr");
+     }
+ 
+     return (x,z);
+-- 
+2.33.1
+
+
+From a3db355edd2fe7e44e66624bab22551e901128d6 Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Fri, 24 Sep 2021 16:46:56 -0400
+Subject: [PATCH 4/4] rts/nonmoving: Enable selector optimisation by default
+
+(cherry picked from commit 2e0c13ab50b28d3e2ad5bfeed2b6651096921c9d)
+---
+ includes/rts/Flags.h   | 2 --
+ rts/RtsFlags.c         | 5 -----
+ rts/sm/NonMovingMark.c | 6 +-----
+ 3 files changed, 1 insertion(+), 12 deletions(-)
+
+diff --git a/includes/rts/Flags.h b/includes/rts/Flags.h
+index 37f1253501..76a3c512d2 100644
+--- a/includes/rts/Flags.h
++++ b/includes/rts/Flags.h
+@@ -53,8 +53,6 @@ typedef struct _GC_FLAGS {
+     double  pcFreeHeap;
+ 
+     bool         useNonmoving; // default = false
+-    bool         nonmovingSelectorOpt; // Do selector optimization in the
+-                                       // non-moving heap, default = false
+     uint32_t     generations;
+     bool squeezeUpdFrames;
+ 
+diff --git a/rts/RtsFlags.c b/rts/RtsFlags.c
+index 4361de8641..e56640f714 100644
+--- a/rts/RtsFlags.c
++++ b/rts/RtsFlags.c
+@@ -157,7 +157,6 @@ void initRtsFlagsDefaults(void)
+     RtsFlags.GcFlags.pcFreeHeap         = 3;    /* 3% */
+     RtsFlags.GcFlags.oldGenFactor       = 2;
+     RtsFlags.GcFlags.useNonmoving       = false;
+-    RtsFlags.GcFlags.nonmovingSelectorOpt = false;
+     RtsFlags.GcFlags.generations        = 2;
+     RtsFlags.GcFlags.squeezeUpdFrames   = true;
+     RtsFlags.GcFlags.compact            = false;
+@@ -1587,10 +1586,6 @@ error = true;
+                     OPTION_SAFE;
+                     RtsFlags.GcFlags.useNonmoving = true;
+                     unchecked_arg_start++;
+-                    if (rts_argv[arg][3] == 's') {
+-                        RtsFlags.GcFlags.nonmovingSelectorOpt = true;
+-                        unchecked_arg_start++;
+-                    }
+                     break;
+ 
+                 case 'c': /* Debugging tool: show current cost centre on
+diff --git a/rts/sm/NonMovingMark.c b/rts/sm/NonMovingMark.c
+index ee9b3d89eb..7ef4d0c0e5 100644
+--- a/rts/sm/NonMovingMark.c
++++ b/rts/sm/NonMovingMark.c
+@@ -1522,11 +1522,7 @@ mark_closure (MarkQueue *queue, const StgClosure *p0, StgClosure **origin)
+     }
+ 
+     case THUNK_SELECTOR:
+-        if (RtsFlags.GcFlags.nonmovingSelectorOpt) {
+-            nonmoving_eval_thunk_selector(queue, (StgSelector*)p, origin);
+-        } else {
+-            PUSH_FIELD((StgSelector *) p, selectee);
+-        }
++        nonmoving_eval_thunk_selector(queue, (StgSelector*)p, origin);
+         break;
+ 
+     case AP_STACK: {
+-- 
+2.33.1
+
