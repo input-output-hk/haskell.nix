@@ -75,7 +75,9 @@ let
 
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
-            nodejs
+            # pin nodejs to the 12 series for now, as strings can only be half the length in node 14+
+            # see https://github.com/nodejs/node/issues/33960, this can break large TH splices for now.            
+            nodejs-12_x
             makeWrapper
             xorg.lndir
             gmp
