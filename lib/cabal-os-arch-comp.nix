@@ -43,7 +43,7 @@
     isPPC64  = false;
     isSparc  = false;
     isArm    = false;
-    isAArch64= false;
+    isAarch64= false;
     isMips   = false;
     isSH     = false;
     isIA64   = false;
