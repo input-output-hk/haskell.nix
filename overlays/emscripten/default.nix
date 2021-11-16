@@ -31,7 +31,7 @@ stdenv.mkDerivation {
     # fixes cmake support
     sed -i -e "s/print \('emcc (Emscript.*\)/sys.stderr.write(\1); sys.stderr.flush()/g" $out/${appdir}/emcc.py
     mkdir $out/bin
-    ln -s $out/${appdir}/{em++,em-config,emar,emar.py,embuilder.py,emcc,emcc.py,emcmake,emconfigure,emlink.py,emmake,emranlib,emranlib.py,emrun,emscons} $out/bin
+    ln -s $out/${appdir}/{em++,em-config,emar,emar.py,embuilder.py,emcc,emcc.py,emcmake,emconfigure,emconfigure.py,emlink.py,emmake,emmake.py,emranlib,emranlib.py,emrun,emscons} $out/bin
 
     echo "EMSCRIPTEN_ROOT = '$out/${appdir}'" > $out/${appdir}/config
     echo "LLVM_ROOT = '${emscriptenBackend}/bin'" >> $out/${appdir}/config
