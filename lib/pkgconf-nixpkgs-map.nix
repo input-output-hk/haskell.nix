@@ -96,6 +96,7 @@ pkgs:
     "libxml-2.0"                         = [ pkgs."libxml2" ];
     "libzip"                             = [ pkgs."libzip" ];
     "libzmq"                             = [ pkgs."zeromq" ];
+    "libzstd"                            = [ pkgs."zstd" ];
     "m"                                  = []; # in stdenv
     "magic"                              = [ pkgs."file" ];
     "MagickWand"                         = [ pkgs."imagemagick" ];
