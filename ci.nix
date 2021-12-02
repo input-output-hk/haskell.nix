@@ -12,6 +12,7 @@
   nixpkgsVersions = {
     "R2009" = "nixpkgs-2009";
     "R2105" = "nixpkgs-2105";
+    "R2111" = "nixpkgs-2111";
     "unstable" = "nixpkgs-unstable";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
@@ -28,6 +29,9 @@
       ghc865 = false;
       ghc8107 = false;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
+      ghc865 = false;
+      ghc8107 = true;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
       ghc865 = false;
       ghc8107 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
