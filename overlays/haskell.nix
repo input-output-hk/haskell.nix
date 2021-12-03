@@ -151,9 +151,11 @@ final: prev: {
                     else compiler-nix-name';
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name-with-js-prefix} or {};
-                package.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version;
+                compilerVersion = final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version;
+                package.compiler-nix-name.version = compilerVersion;
                 plan.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
                 withMsg = final.lib.assertMsg;
+                isPatchedGHCJS = final.stdenv.hostPlatform.isGhcjs && builtins.compareVersions compilerVersion "8.10.0.0" >= 0;
             in
               # Check that the GHC version of the selected compiler matches the one of the plan
               assert (withMsg
@@ -175,7 +177,8 @@ final: prev: {
                 # the plan.
                 modules = [ { doExactConfig = true; } patchesModule ]
                        ++ modules
-                       ++ plan-pkgs.modules or [];
+                       ++ (plan-pkgs.modules or [])
+                       ++ final.lib.optional isPatchedGHCJS  { packages.reflex.flags.fast-weak = true; };
                 inherit extra-hackages;
             };
 
