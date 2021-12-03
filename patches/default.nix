@@ -8,4 +8,5 @@
   ghc863 = import ./ghc863;
   ghc864 = import ./ghc864;
   ghc865 = import ./ghc865;
+  js-ghc8107 = import ./js-ghc8107;
 }

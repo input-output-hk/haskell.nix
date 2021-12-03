@@ -1,0 +1,13 @@
+diff --git a/src-bin/Boot.hs b/src-bin/Boot.hs
+index 2e35a26..1f4ff98 100755
+--- a/src-bin/Boot.hs
++++ b/src-bin/Boot.hs
+@@ -721,6 +721,8 @@ cabalConfigureFlags = do
+            , "--prefix",        T.pack (locs ^. blGhcjsTopDir)
+            , "--configure-option", "--host=js-unknown-ghcjs"
+            , "--ghcjs-options=-fwrite-ide-info"
++           , "--ghcjs-options=-O2"
++           , "--ghcjs-options=-fexpose-all-unfoldings"
+            , "--enable-debug-info"
+            , "--disable-library-stripping"
+            , "--disable-executable-stripping"

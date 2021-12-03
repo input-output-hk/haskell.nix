@@ -795,6 +795,7 @@ in {
                 ghc = buildGHC;
                 ghcVersion = "8.10.5";
                 compiler-nix-name = "ghc8105";
+                overrideBootPackages = final.callPackage ../compiler/ghcjs/ghcjs810-patched-boot-packages {};
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.5" {
                 nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
@@ -829,6 +830,7 @@ in {
                 ghc = buildGHC;
                 ghcVersion = "8.10.6";
                 compiler-nix-name = "ghc8106";
+                overrideBootPackages = final.callPackage ../compiler/ghcjs/ghcjs810-patched-boot-packages {};
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.6" {
                 nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {
@@ -863,6 +865,7 @@ in {
                 ghc = buildGHC;
                 ghcVersion = "8.10.7";
                 compiler-nix-name = "ghc8107";
+                overrideBootPackages = final.callPackage ../compiler/ghcjs/ghcjs810-patched-boot-packages {};
             }; in let targetPrefix = "js-unknown-ghcjs-"; in final.runCommand "${targetPrefix}ghc-8.10.7" {
                 nativeBuildInputs = [ final.xorg.lndir ];
                 passthru = {

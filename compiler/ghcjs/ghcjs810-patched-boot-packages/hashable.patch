@@ -1,0 +1,99 @@
+diff --git a/hashable.cabal b/hashable.cabal
+index 4197060..8c339b1 100755
+--- a/hashable.cabal
++++ b/hashable.cabal
+@@ -88,6 +88,8 @@ library
+     build-depends: ghc-bignum ==1.0.* || ==1.2.*
+ 
+   else
++    if impl(ghcjs)
++      build-depends:   ghcjs-base
+     if flag(integer-gmp)
+       build-depends: integer-gmp >=0.4 && <1.1
+ 
+diff --git a/src/Data/Hashable/Class.hs b/src/Data/Hashable/Class.hs
+index c7dd8c5..0e3bbe7 100755
+--- a/src/Data/Hashable/Class.hs
++++ b/src/Data/Hashable/Class.hs
+@@ -5,6 +5,10 @@
+ 
+ {-# LANGUAGE Trustworthy #-}
+ 
++#ifdef __GHCJS__
++{-# LANGUAGE JavaScriptFFI, UnboxedTuples, GHCForeignImportPrim #-}
++#endif
++
+ #if __GLASGOW_HASKELL__ >= 801
+ {-# LANGUAGE PolyKinds #-} -- For TypeRep instances
+ #endif
+@@ -72,7 +76,9 @@ import Data.Int (Int8, Int16, Int32, Int64)
+ import Data.List (foldl')
+ import Data.Ratio (Ratio, denominator, numerator)
+ import qualified Data.Text as T
++#ifndef __GHCJS__
+ import qualified Data.Text.Array as TA
++#endif
+ import qualified Data.Text.Internal as T
+ import qualified Data.Text.Lazy as TL
+ import Data.Version (Version(..))
+@@ -152,7 +158,11 @@ import GHC.Exts (Int (..), sizeofByteArray#)
+ #  define MIN_VERSION_integer_gmp_1_0_0
+ # endif
+ 
++#ifndef __GHCJS__
+ import GHC.Exts (Int(..))
++#else
++import GHC.Exts (Int(..), Int#)
++#endif
+ import GHC.Integer.GMP.Internals (Integer(..))
+ # if defined(MIN_VERSION_integer_gmp_1_0_0)
+ import GHC.Exts (sizeofByteArray#)
+@@ -195,6 +205,10 @@ import Data.Kind (Type)
+ import Data.Hashable.Imports
+ import Data.Hashable.LowLevel
+ 
++#ifdef __GHCJS__
++import Data.JSString (JSString)
++#endif
++
+ #include "MachDeps.h"
+ 
+ infixl 0 `hashWithSalt`
+@@ -676,17 +690,18 @@ instance Hashable BSI.ShortByteString where
+ #endif
+ 
+ instance Hashable T.Text where
++#ifndef __GHCJS__
+     hashWithSalt salt (T.Text arr off len) =
+         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
+         (hashWithSalt salt len)
++#else
++    hashWithSalt salt (T.Text txt) =
++        let (# ba, len #) = js_textFromJSString txt
++        in hashByteArrayWithSalt ba (0 `shiftL` 1) (I# len `shiftL` 1) salt
++#endif
+ 
+ instance Hashable TL.Text where
+-    hashWithSalt salt = finalise . TL.foldlChunks step (SP salt 0)
+-      where
+-        finalise (SP s l) = hashWithSalt s l
+-        step (SP s l) (T.Text arr off len) = SP
+-            (hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) s)
+-            (l + len)
++    hashWithSalt = TL.foldlChunks hashWithSalt
+ 
+ -- | Compute the hash of a ThreadId.
+ hashThreadId :: ThreadId -> Int
+@@ -880,6 +895,12 @@ instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWit
+ #endif
+ #endif
+ 
++#ifdef __GHCJS__
++foreign import javascript unsafe
++  "h$textFromString"
++  js_textFromJSString :: JSString -> (# ByteArray#, Int# #)
++#endif
++
+ -- instances for @Data.Functor.{Product,Sum,Compose}@, present
+ -- in base-4.9 and onward.
+ #if MIN_VERSION_base(4,9,0)

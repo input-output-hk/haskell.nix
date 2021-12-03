@@ -145,8 +145,12 @@ final: prev: {
                   if compiler-nix-name != null
                     then compiler-nix-name
                     else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
+                compiler-nix-name-with-js-prefix = 
+                  if final.stdenv.hostPlatform.isGhcjs
+                    then "js-" + compiler-nix-name'
+                    else compiler-nix-name';
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
-                patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
+                patchesModule = ghcHackagePatches.${compiler-nix-name-with-js-prefix} or {};
                 package.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version;
                 plan.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
                 withMsg = final.lib.assertMsg;

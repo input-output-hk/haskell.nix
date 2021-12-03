@@ -7,6 +7,7 @@
   then "ghc884"
   else "ghc865"
 , ghc ? pkgs.buildPackages.ghc
+, overrideBootPackages ? [] # adds if not present, overrides if present.
 }:
 let
     isGhcjs88 = builtins.compareVersions ghcjsVersion "8.8.0.0" >= 0;
@@ -14,8 +15,14 @@ let
 
     project = pkgs.buildPackages.haskell-nix.ghcjsProject {
         src = ghcjsSrc;
-        inherit ghcjsVersion compiler-nix-name;
+        inherit ghcjsVersion compiler-nix-name overrideBootPackages;
         index-state = "2020-04-25T00:00:00Z";
+        patches = if isGhcjs810 
+          then [
+            ./patches/810/fast-weak.patch 
+            ./patches/810/boot-optimization-flags.patch
+            ] 
+          else [];
 #        plan-sha256 = "1wy2lr08maxyi7r8jiwf2gj6pdayk5vxxwh42bj4s2gg4035z0yc";
 #        materialized = ../../materialized/ghcjs;
     };

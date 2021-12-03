@@ -1,6 +1,6 @@
 final: prev:
 {
-  haskell-nix = prev.haskell-nix // ({
+  haskell-nix = prev.haskell-nix // {
     defaultModules = prev.haskell-nix.defaultModules ++ final.lib.optional final.stdenv.hostPlatform.isGhcjs (
       ({ pkgs, buildModules, config, lib, ... }: {
         # Allow Cabal to be reinstalled so that custom setups will use a Cabal
@@ -17,7 +17,8 @@ final: prev:
             "hpc"
             "mtl" "parsec" "process" "text" "time" "transformers"
             "unix" "xhtml" "terminfo"
-          ];
+          ] ++ lib.optionals (builtins.compareVersions config.compiler.version "8.10.0.0" >= 0) 
+            (map ({name, ...}: name) (import ../compiler/ghcjs/ghcjs810-patched-boot-packages { inherit pkgs; }));
         testWrapper = [((final.writeScriptBin "node-wrapper" ''
           set -euo pipefail
           exe=$1
@@ -55,5 +56,5 @@ final: prev:
           });
       })
     );
-  });
+  };
 }
