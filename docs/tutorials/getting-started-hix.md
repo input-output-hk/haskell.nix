@@ -98,7 +98,7 @@ in the files or on the command line (they are all optional):
 
 ```nix
 { name = "hello";                    # for better error messages and derivation names
-  nixpkgsPin = "nixpkgs-unstable";   # or nixpkgs-2009 or nixpkgs-2003
+  nixpkgsPin = "nixpkgs-unstable";   # or nixpkgs-2111 or nixpkgs-2105
   nixpkgs = <nixpkgs>;               # use this instead of nixpkgsPin
   subDir = "some/sub/dir";           # sub dir containing the haskell project
   projectFileName = "stack.yaml";    # use this project file
