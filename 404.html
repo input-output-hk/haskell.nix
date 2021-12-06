@@ -7,19 +7,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   
+  
   <link rel="shortcut icon" href="/img/favicon.ico">
   <title>Alternative Haskell Infrastructure for Nixpkgs</title>
-  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
-  <link rel="stylesheet" href="/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="/css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
   
   <script src="/js/jquery-2.1.1.min.js" defer></script>
   <script src="/js/modernizr-2.8.3.min.js" defer></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
-  
 </head>
 
 <body class="wy-body-for-nav" role="document">
@@ -28,171 +28,99 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
       <div class="wy-side-nav-search">
-        <a href="/." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
+        <a href="/index.html" class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="//search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	<ul class="current">
-	  
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="/.">Introduction</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="/motivation/">Motivation</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="/architecture/">Architecture</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Tutorials</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="/tutorials/getting-started/">Getting Started</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/getting-started-flakes/">Getting started with Flakes</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/development/">Creating a development environment</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/source-repository-hashes/">Handling git repositories in projects</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/materialization/">Materialization: Speeding up Nix evaluation</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/cross-compilation/">Cross-compiling your project</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/tutorials/coverage/">Generating coverage information</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Reference</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="/reference/supported-ghc-versions/">Supported GHC versions</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/reference/commands/">Command-line tools</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/reference/library/">Haskell.nix Library</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/reference/modules/">Module options</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="/troubleshooting/">Troubleshooting</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Templates / Abstraction</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="/iohk-nix/">IOHKs nix library</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Dev Notes</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="/dev/dev-architecture/">Architecture</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/installing-nix-tools/">Installing nix-tools</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/manually-generating-nix-expressions/">Manually generating Nix expressions</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/maintainer-scripts/">Maintainer Scripts</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/nixpkgs-pin/">Nixpkgs Pin</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/tests/">Test Suite</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/adding-new-ghc/">Adding a new GHC version</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="/dev/coverage/">Coverage</a>
-                </li>
-    </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="/changelog/">ChangeLog</a>
-	    </li>
-          
-        </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/index.html">Introduction</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/motivation.html">Motivation</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/architecture.html">Architecture</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Tutorials</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/getting-started.html">Getting Started</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/getting-started-flakes.html">Getting started with Flakes</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/development.html">Creating a development environment</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/clean-git.html">Sourcing files only part of git repository using cleanGit</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/source-repository-hashes.html">Handling git repositories in projects</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/pkg-map.html">Mapping non-Haskell dependencies to Nixpkgs</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/hackage-stackage.html">Bumping Hackage and Stackage snapshots</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/materialization.html">Materialization: Speeding up Nix evaluation</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/cross-compilation.html">Cross-compiling your project</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/tutorials/coverage.html">Generating coverage information</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Reference</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/reference/supported-ghc-versions.html">Supported GHC versions</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/reference/commands.html">Command-line tools</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/reference/library.html">Haskell.nix Library</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/reference/modules.html">Module options</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/troubleshooting.html">Troubleshooting</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Templates / Abstraction</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/iohk-nix.html">IOHKs nix library</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Dev Notes</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/dev-architecture.html">Architecture</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/installing-nix-tools.html">Installing nix-tools</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/manually-generating-nix-expressions.html">Manually generating Nix expressions</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/maintainer-scripts.html">Maintainer Scripts</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/nixpkgs-pin.html">Nixpkgs Pin</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/removing-with-package-wrapper.html">Removing withPackage wrapper</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/tests.html">Test Suite</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/adding-new-ghc.html">Adding a new GHC version</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="/dev/coverage.html">Coverage</a>
+                    </li>
+                </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="/changelog.html">ChangeLog</a>
+                    </li>
+                </ul>
       </div>
-      &nbsp;
+    </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -200,7 +128,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="/.">Alternative Haskell Infrastructure for Nixpkgs</a>
+        <a href="/index.html">Alternative Haskell Infrastructure for Nixpkgs</a>
       </nav>
 
       
@@ -208,15 +136,17 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="/.">Docs</a> &raquo;</li>
+    <li><a href="/index.html">Docs</a> &raquo;</li>
     
     
     <li class="wy-breadcrumbs-aside">
       
     </li>
   </ul>
+  
   <hr/>
 </div>
+
           <div role="main">
             <div class="section">
               
@@ -238,7 +168,7 @@
     
   </div>
 
-  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
       
         </div>
@@ -248,18 +178,26 @@
 
   </div>
 
-  <div class="rst-versions" role="note" style="cursor: pointer">
-    <span class="rst-current-version" data-toggle="rst-current-version">
-      
-          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
-      
-      
-      
-    </span>
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/input-output-hk/haskell.nix/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+    
+  </span>
 </div>
     <script>var base_url = '/';</script>
+    <script src="/js/theme_extra.js" defer></script>
     <script src="/js/theme.js" defer></script>
       <script src="/search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
 
 </body>
 </html>

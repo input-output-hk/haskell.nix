@@ -5,11 +5,11 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="None">
+  
   
   
   <link rel="shortcut icon" href="img/favicon.ico">
-  <title>Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>IOHKs nix library - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
   <link rel="stylesheet" href="css/theme.css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Introduction";
-    var mkdocs_page_input_path = "index.md";
+    var mkdocs_page_name = "IOHKs nix library";
+    var mkdocs_page_input_path = "iohk-nix.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -46,12 +46,8 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-                <ul class="current">
-                    <li class="toctree-l1 current"><a class="reference internal current" href="index.html">Introduction</a>
-    <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#features">Features</a>
-    </li>
-    </ul>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a>
                     </li>
                 </ul>
                 <ul>
@@ -101,8 +97,12 @@
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Templates / Abstraction</span></p>
-                <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="iohk-nix.html">IOHKs nix library</a>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="iohk-nix.html">IOHKs nix library</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#iohk-nix">iohk-nix</a>
+    </li>
+    </ul>
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Dev Notes</span></p>
@@ -150,11 +150,15 @@
     <li><a href="index.html">Docs</a> &raquo;</li>
     
       
+        
+          <li>Templates / Abstraction &raquo;</li>
+        
+      
     
-    <li>Introduction</li>
+    <li>IOHKs nix library</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/index.md"
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/iohk-nix.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -166,24 +170,108 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="haskellnix">haskell.nix<a class="headerlink" href="#haskellnix" title="Permanent link">&para;</a></h1>
-<p><code>haskell.nix</code> is an alternative Haskell infrastructure for Nix<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>.</p>
-<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Drop-in support for Cabal projects</li>
-<li>Drop-in support for Stack projects</li>
-<li>Build any package of specific version in Stackage or Hackage</li>
-<li>Overridable configuration</li>
-<li>Cross compile Haskell packages</li>
-</ul>
-<div class="footnote">
-<hr />
-<ol>
-<li id="fn:1">
-<p>See <a href="https://haskell4nix.readthedocs.io/">Nixpkgs current Users' Guide to Haskell Infrastructure</a> for comparison.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
-</li>
-</ol>
-</div>
+                <h1 id="iohks-nix-tooling">IOHK's nix tooling<a class="headerlink" href="#iohks-nix-tooling" title="Permanent link">&para;</a></h1>
+<h2 id="iohk-nix"><a href="https://github.com/input-output-hk/iohk-nix">iohk-nix</a><a class="headerlink" href="#iohk-nix" title="Permanent link">&para;</a></h2>
+<p>iohk-nix is IOHK's shared nix library.  It provides some templates to
+make working with haskell.nix trivial but is non-essential to use
+haskell.nix infrastructure.</p>
+<p>lib.nix</p>
+<pre><code class="language-nix">let
+  # iohk-nix can be overridden for debugging purposes by setting
+  # NIX_PATH=iohk_nix=/path/to/iohk-nix
+  iohkNix = import (
+    let try = builtins.tryEval &lt;iohk_nix&gt;;
+    in if try.success
+    then builtins.trace &quot;using host &lt;iohk_nix&gt;&quot; try.value
+    else
+      let
+        spec = builtins.fromJSON (builtins.readFile ./iohk-nix.json);
+      in builtins.fetchTarball {
+        url = &quot;${spec.url}/archive/${spec.rev}.tar.gz&quot;;
+        inherit (spec) sha256;
+      }) {};
+
+  pkgs = iohkNix.pkgs;
+  lib = pkgs.lib;
+in lib // { inherit iohkNix pkgs; inherit (iohkNix) nix-tools; }
+</code></pre>
+<p>iohk-nix.json</p>
+<pre><code class="language-json">{
+  &quot;url&quot;: &quot;https://github.com/input-output-hk/iohk-nix&quot;,
+  &quot;rev&quot;: &quot;c92f0119ef5814b0ed1f445c2fdcf8894e326294&quot;,
+  &quot;sha256&quot;: &quot;05r90x6x3yp1nb66rkc4n0i8q15c634rrdsr2zvb118s3sdcmmrm&quot;,
+  &quot;fetchSubmodules&quot;: false
+}
+</code></pre>
+<p>nix/pkgs.nix</p>
+<pre><code>{ pkgs ? import &lt;nixpkgs&gt; {}
+, iohk-extras ? {}
+, iohk-module ? {}
+, haskell
+, hackage
+, stackage
+, ...
+}:
+let
+  # our packages
+  stack-pkgs = import ./.stack-pkgs.nix;
+
+  # Build the packageset with module support.
+  # We can essentially override anything in the modules
+  # section.
+  #
+  #  packages.cbors.patches = [ ./one.patch ];
+  #  packages.cbors.flags.optimize-gmp = false;
+  #
+  compiler = (stack-pkgs.extras hackage).compiler.nix-name;
+  pkgSet = haskell.mkNewPkgSet {
+    inherit pkgs;
+    pkg-def = stackage.${stack-pkgs.resolver};
+    # These extras allow extension or restriction of the set of
+    # packages we are interested in. By using the stack-pkgs.extras
+    # we restrict our package set to the ones provided in stack.yaml.
+    pkg-def-extras = [
+      stack-pkgs.extras
+      iohk-extras.${compiler}
+    ];
+    # package customizations
+    modules = [
+      # This module will ensure that we get the necessary
+      # patches ontop of GHC packages that for which the
+      # ones that GHC ships are not identical to the ones
+      # we find on hackage. These patches will make sure
+      # they are identical by augmenting the packages on
+      # hackage to match those that ship with ghc.
+      haskell.ghcHackagePatches.${compiler}
+
+      # the iohk-module will supply us with the necessary
+      # cross compilation plumbing to make Template Haskell
+      # work when cross compiling.  For now we need to
+      # list the packages that require template haskell
+      # explicity here.
+      iohk-module
+    ];
+  };
+in
+  pkgSet.config.hsPkgs // { _config = pkgSet.config; }
+</code></pre>
+<p>default.nix</p>
+<pre><code>let
+  localLib = import ./lib.nix;
+in
+# This file needs to export a function that takes
+# the arguments it is passed and forwards them to
+# the default-nix template from iohk-nix. This is
+# important so that the release.nix file can properly
+# parameterize this file when targetting different
+# hosts.
+{ ... }@args:
+# We will instantiate the defaul-nix template with the
+# nix/pkgs.nix file...
+localLib.nix-tools.default-nix ./nix/pkgs.nix args
+# ... and add a few custom packages as well.
+// { }
+</code></pre>
               
             </div>
           </div>
@@ -191,8 +279,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="motivation.html" class="btn btn-neutral float-right" title="Motivation">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="dev/dev-architecture.html" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
       
+      
+        <a href="troubleshooting.html" class="btn btn-neutral" title="Troubleshooting"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -222,8 +312,10 @@
         </span>
     
     
+      <span><a href="troubleshooting.html" style="color: #fcfcfc">&laquo; Previous</a></span>
     
-      <span><a href="motivation.html" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+      <span><a href="dev/dev-architecture.html" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
@@ -239,7 +331,3 @@
 
 </body>
 </html>
-
-<!--
-MkDocs version : 1.2.1
--->
