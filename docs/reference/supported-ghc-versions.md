@@ -21,7 +21,7 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 | Nixpkgs version  | Nixpkgs pinning    | GHC version | `compiler-nix-name`   | Tested in CI? |
 |------------------|--------------------|-------------|-----------------------|---------------|
 | 21.05            | `nixpkgs-2105`     | 8.6.5       | `ghc865`              | No            |
-| 21.05            | `nixpkgs-2105`     | 8.10.7      | `ghc8107`             | Yes           |
+| 21.05            | `nixpkgs-2105`     | 8.10.7      | `ghc8107`             | No            |
 | 21.11            | `nixpkgs-2105`     | 8.6.5       | `ghc865`              | No            |
 | 21.11            | `nixpkgs-2105`     | 8.10.7      | `ghc8107`             | Yes           |
 | unstable         | `nixpkgs-unstable` | 8.6.5       | `ghc865`              | No            |
