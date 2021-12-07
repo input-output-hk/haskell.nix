@@ -622,7 +622,7 @@ in {
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
                         "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
-                        "--with-ar=${final.buildPackages.emscripten}/bin/emar"
+                        "--with-ar=${final.buildPackages.binutils-unwrapped}/bin/ar"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -657,7 +657,7 @@ in {
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
                         "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
-                        "--with-ar=${final.buildPackages.emscripten}/bin/emar"
+                        "--with-ar=${final.buildPackages.binutils-unwrapped}/bin/ar"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -692,7 +692,7 @@ in {
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
                         "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
-                        "--with-ar=${final.buildPackages.emscripten}/bin/emar"
+                        "--with-ar=${final.buildPackages.binutils-unwrapped}/bin/ar"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -727,7 +727,7 @@ in {
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
                         "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
-                        "--with-ar=${final.buildPackages.emscripten}/bin/emar"
+                        "--with-ar=${final.buildPackages.binutils-unwrapped}/bin/ar"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -762,7 +762,7 @@ in {
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
                         "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
-                        "--with-ar=${final.buildPackages.emscripten}/bin/emar"
+                        "--with-ar=${final.buildPackages.binutils-unwrapped}/bin/ar"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
