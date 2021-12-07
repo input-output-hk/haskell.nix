@@ -101,11 +101,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1638753152,
-        "narHash": "sha256-fJAPbHKYu+4z1C2QGonu9YzvYYaICIhmkCGGjH/2u/o=",
+        "lastModified": 1638842221,
+        "narHash": "sha256-xy9Pk/SiYSfwU6Qolu+AWzXlSktKL/v6kJvng4gosrA=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "1b1f7fbf1c6cb3af20fc610add845c85e3abb54f",
+        "rev": "0d5a13378159f6574e9b3e28b65fc0f2dd4a91e4",
         "type": "github"
       },
       "original": {
@@ -239,7 +239,7 @@
         "hpc-coveralls": "hpc-coveralls",
         "nix-tools": "nix-tools",
         "nixpkgs": [
-          "nixpkgs-2105"
+          "nixpkgs-2111"
         ],
         "nixpkgs-2003": "nixpkgs-2003",
         "nixpkgs-2105": "nixpkgs-2105",
