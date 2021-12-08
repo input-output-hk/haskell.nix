@@ -10,8 +10,8 @@
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
-    "R2009" = "nixpkgs-2009";
     "R2105" = "nixpkgs-2105";
+    "R2111" = "nixpkgs-2111";
     "unstable" = "nixpkgs-unstable";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
@@ -24,10 +24,10 @@
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
+    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
       ghc865 = false;
-      ghc8107 = false;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
+      ghc8107 = true;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
       ghc865 = false;
       ghc8107 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
@@ -45,7 +45,7 @@
     nixpkgs.lib.filter (v: v != "aarch64-darwin" || (
       # aarch64-darwin requires ghc 8.10.7 and does not work on older nixpkgs
          !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901"]
-      && !__elem nixpkgsName ["R2009" "R2105"])) supportedSystems) (v: v);
+      && !__elem nixpkgsName ["R2105"])) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
