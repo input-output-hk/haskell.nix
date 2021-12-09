@@ -30,10 +30,7 @@ let
       sha256 = revisionSha256;
     };
 
-  defaultSetupSrc = builtins.toFile "Setup.hs" ''
-    import Distribution.Simple
-    main = defaultMain
-  '';
+  defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
   # Get the Cabal lib used to build `cabal-install`.
   # To avoid infinite recursion we have to leave this out for packages
