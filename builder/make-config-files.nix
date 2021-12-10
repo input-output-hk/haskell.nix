@@ -1,6 +1,6 @@
 { stdenv, lib, haskellLib, ghc, nonReinstallablePkgs, runCommand, writeText, writeScript }@defaults:
 
-{ identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv }:
+{ identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv, nonReinstallablePkgs ? defaults.nonReinstallablePkgs }:
 
 let
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
