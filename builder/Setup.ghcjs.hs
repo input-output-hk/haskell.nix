@@ -22,6 +22,11 @@ import Distribution.Simple.Utils (createDirectoryIfMissingVerbose)
 import Distribution.Types.HookedBuildInfo
 import Data.List (isPrefixOf, isSuffixOf, intercalate)
 import System.Environment (getArgs, getProgName)
+import Distribution.Simple.LocalBuildInfo (Component (..), withAllComponentsInBuildOrder, componentBuildDir)
+import Distribution.Types.TestSuite (TestSuite(..))
+import Distribution.Types.TestSuiteInterface (TestSuiteInterface(..) )
+import Distribution.Simple.Test.LibV09 (stubName)
+import Distribution.Types.UnqualComponentName (unUnqualComponentName)
 
 
 emarProgram :: Program
@@ -68,34 +73,40 @@ linkEMCCTHLib desc lbi = linkCLib ("th-support.js") desc lbi
 
 linkCLib :: String -> PackageDescription -> LocalBuildInfo -> IO ()
 linkCLib libname desc lbi = do
-    let extraLibs = [ "-l" <> l | l <- concatMap IPI.extraLibraries (topologicalOrder $ installedPkgs lbi)
-                                , l /= "m"
-                                , l /= "dl" ]
-        libDirs = [ "-L" <> path | path <- concatMap IPI.libraryDirs (topologicalOrder $ installedPkgs lbi) ]
+    withAllComponentsInBuildOrder desc lbi $ \comp clbi -> do
+        let extraLibs = [ "-l" <> l | l <- concatMap IPI.extraLibraries (topologicalOrder $ installedPkgs lbi)
+                                    , l /= "m"
+                                    , l /= "dl" ]
+            libDirs = [ "-L" <> path | path <- concatMap IPI.libraryDirs (topologicalOrder $ installedPkgs lbi) ]
 
-    let verbosity = verbose
-    libs <- filterM doesFileExist $
-            concatMap (\x -> [ libDir </> "libEMCC" <> (unPackageName . pkgName . sourcePackageId $ x) <> ".js_a"
-                            | libDir <- libraryDirs x ])
-                    (topologicalOrder $ installedPkgs lbi)
-    exff <- filterM doesFileExist $
-            concatMap (\x -> [ libDir </> "libEMCC" <> (unPackageName . pkgName . sourcePackageId $ x) <> ".exported.js_a"
-                            | libDir <- libraryDirs x ])
-                    (topologicalOrder $ installedPkgs lbi)
-    exfns <- concat <$> forM exff (fmap words . readFile)
-
-    unless (null libs) $ do
-        createDirectoryIfMissingVerbose verbosity True ((buildDir lbi) </> "emcc")
-        runDbProgram verbosity gccProgram (withPrograms lbi) $
-            [ "-o", (buildDir lbi) </> libname
-            , "-s", "WASM=0"
-            , "-s", "ALLOW_TABLE_GROWTH" -- we need this for addFunction/removeFunction
-            -- addFunction, removeFunction are for dynamic functions.
-            -- getTempRet0/setTempRet0 are for 64bit legalization.
-            , "-s", "EXPORTED_RUNTIME_METHODS=['printErr','addFunction','removeFunction','getTempRet0','setTempRet0']"
-            --
-            , "-s", "EXPORTED_FUNCTIONS=['" <> intercalate "', '" exfns <> "']"
-            ] ++ libs ++ libDirs ++ extraLibs
+        let verbosity = verbose
+        libs <- filterM doesFileExist $
+                concatMap (\x -> [ libDir </> "libEMCC" <> (unPackageName . pkgName . sourcePackageId $ x) <> ".js_a"
+                                | libDir <- libraryDirs x ])
+                        (topologicalOrder $ installedPkgs lbi)
+        exff <- filterM doesFileExist $
+                concatMap (\x -> [ libDir </> "libEMCC" <> (unPackageName . pkgName . sourcePackageId $ x) <> ".exported.js_a"
+                                | libDir <- libraryDirs x ])
+                        (topologicalOrder $ installedPkgs lbi)
+        exfns <- concat <$> forM exff (fmap words . readFile)
+        unless (null libs) $ do
+            let dst = if libname == "emcc" </> "lib.js" then buildDir lbi
+                      -- who designed this shit in cabal?
+                      else case comp of
+                          (CTest test@(TestSuite { testInterface = TestSuiteLibV09 _ _ })) -> buildDir lbi </> stubName test </> stubName test ++ "-tmp"
+                          (CTest test@(TestSuite { testInterface = TestSuiteExeV10 _ _ })) -> buildDir lbi </> unUnqualComponentName (testName test) </> unUnqualComponentName (testName test) ++ "-tmp"
+                          _ -> componentBuildDir lbi clbi
+            createDirectoryIfMissingVerbose verbosity True (takeDirectory dst)
+            runDbProgram verbosity gccProgram (withPrograms lbi) $
+                [ "-o", dst </> libname
+                , "-s", "WASM=0"
+                , "-s", "ALLOW_TABLE_GROWTH" -- we need this for addFunction/removeFunction
+                -- addFunction, removeFunction are for dynamic functions.
+                -- getTempRet0/setTempRet0 are for 64bit legalization.
+                , "-s", "EXPORTED_RUNTIME_METHODS=['printErr','addFunction','removeFunction','getTempRet0','setTempRet0']"
+                --
+                , "-s", "EXPORTED_FUNCTIONS=['" <> intercalate "', '" exfns <> "']"
+                ] ++ libs ++ libDirs ++ extraLibs
 
 
 postBuildHook :: Args -> BuildFlags -> PackageDescription -> LocalBuildInfo -> IO ()
