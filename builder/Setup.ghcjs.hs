@@ -96,9 +96,10 @@ linkCLib libname desc lbi = do
                           (CTest test@(TestSuite { testInterface = TestSuiteLibV09 _ _ })) -> buildDir lbi </> stubName test </> stubName test ++ "-tmp"
                           (CTest test@(TestSuite { testInterface = TestSuiteExeV10 _ _ })) -> buildDir lbi </> unUnqualComponentName (testName test) </> unUnqualComponentName (testName test) ++ "-tmp"
                           _ -> componentBuildDir lbi clbi
-            createDirectoryIfMissingVerbose verbosity True (takeDirectory dst)
+                dst' = dst </> libname
+            createDirectoryIfMissingVerbose verbosity True (takeDirectory dst')
             runDbProgram verbosity gccProgram (withPrograms lbi) $
-                [ "-o", dst </> libname
+                [ "-o", dst'
                 , "-s", "WASM=0"
                 , "-s", "ALLOW_TABLE_GROWTH" -- we need this for addFunction/removeFunction
                 -- addFunction, removeFunction are for dynamic functions.
