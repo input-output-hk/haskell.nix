@@ -8,7 +8,7 @@ import Distribution.Types.InstalledPackageInfo hiding (includeDirs)
 import qualified Distribution.Types.InstalledPackageInfo as IPI
 import Distribution.Types.PackageName
 import System.FilePath
-import Control.Monad (filterM, forM_, forM)
+import Control.Monad (filterM, forM_, forM, unless)
 import System.Directory (doesFileExist)
 import Distribution.Types.Library (libBuildInfo)
 import Distribution.Types.BuildInfo (cSources, jsSources, includeDirs, emptyBuildInfo)
@@ -84,17 +84,18 @@ linkCLib libname desc lbi = do
                     (topologicalOrder $ installedPkgs lbi)
     exfns <- concat <$> forM exff (fmap words . readFile)
 
-    createDirectoryIfMissingVerbose verbosity True ((buildDir lbi) </> "emcc")
-    runDbProgram verbosity gccProgram (withPrograms lbi) $
-        [ "-o", (buildDir lbi) </> libname
-        , "-s", "WASM=0"
-        , "-s", "ALLOW_TABLE_GROWTH" -- we need this for addFunction/removeFunction
-        -- addFunction, removeFunction are for dynamic functions.
-        -- getTempRet0/setTempRet0 are for 64bit legalization.
-        , "-s", "EXPORTED_RUNTIME_METHODS=['printErr','addFunction','removeFunction','getTempRet0','setTempRet0']"
-        --
-        , "-s", "EXPORTED_FUNCTIONS=['" <> intercalate "', '" exfns <> "']"
-        ] ++ libs ++ libDirs ++ extraLibs
+    unless (null libs) $ do
+        createDirectoryIfMissingVerbose verbosity True ((buildDir lbi) </> "emcc")
+        runDbProgram verbosity gccProgram (withPrograms lbi) $
+            [ "-o", (buildDir lbi) </> libname
+            , "-s", "WASM=0"
+            , "-s", "ALLOW_TABLE_GROWTH" -- we need this for addFunction/removeFunction
+            -- addFunction, removeFunction are for dynamic functions.
+            -- getTempRet0/setTempRet0 are for 64bit legalization.
+            , "-s", "EXPORTED_RUNTIME_METHODS=['printErr','addFunction','removeFunction','getTempRet0','setTempRet0']"
+            --
+            , "-s", "EXPORTED_FUNCTIONS=['" <> intercalate "', '" exfns <> "']"
+            ] ++ libs ++ libDirs ++ extraLibs
 
 
 postBuildHook :: Args -> BuildFlags -> PackageDescription -> LocalBuildInfo -> IO ()
