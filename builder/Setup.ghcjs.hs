@@ -57,13 +57,13 @@ buildEMCCLib desc lbi = do
                     runDbProgram verbosity gccProgram (withPrograms lbi) $
                         ["-c", src, "-o", dst] ++ ["-I" <> incDir | incDir <- (includeDirs . libBuildInfo $ lib) ++ depIncludeDirs]
 
-                -- and now construct a canonical `.js_a` file.
-                let dstLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
-                runDbProgram verbosity emarProgram (withPrograms lbi) $
-                    [ "-r",  dstLib ] ++ [ (buildDir lbi) </> "emcc" </> (src -<.> "o") | src <- cSources . libBuildInfo $ lib ]
+                -- and now construct a canonical `.js_a` file, *if* we have any cSources we turned into objects.
+                unless (null . cSources . libBuildInfo $ lib) $ do
+                    let dstLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
+                    runDbProgram verbosity emarProgram (withPrograms lbi) $
+                        [ "-r",  dstLib ] ++ [ (buildDir lbi) </> "emcc" </> (src -<.> "o") | src <- cSources . libBuildInfo $ lib ]
 
                 let expLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported.js_a"
-
                 writeFile expLib (unwords names)
 
         -- if there's no lib, this is a fairly pointless exercise
@@ -189,55 +189,54 @@ emccBuildHook desc lbi hooks flags = do
 --
 emccCopyHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> CopyFlags -> IO ()
 emccCopyHook desc lbi hooks flags = do
-    let lbi' = lbi { localPkgDescr = updatePackageDescription (localPkgDescr lbi) }
-        desc' = updatePackageDescription desc
-    doesFileExist emccLib >>= \x -> print $ emccLib <> " " <> (if x then "exists" else "doesn't exist!")
-    doesFileExist emccLib >>= \case
-        True ->  copyHook simpleUserHooks desc' lbi' hooks flags
-        False -> copyHook simpleUserHooks desc  lbi  hooks flags
+    emccLibs <- filterM (\l -> doesFileExist (buildDir lbi </> "lib" <> l <> ".js_a"))
+                        [ "EMCC" <> (unPackageName . pkgName . package $ desc)
+                        , "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
+    print $ "EMCC extra lib files: " ++ intercalate ", " emccLibs
+    let lbi' = lbi { localPkgDescr = updatePackageDescription emccLibs (localPkgDescr lbi) }
+        desc' = updatePackageDescription emccLibs desc
+    copyHook simpleUserHooks desc' lbi' hooks flags
   where
     emccLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
     -- don't inject it for libraries, only for exe, test, bench.
-    extraLibs = ["EMCC" <> (unPackageName . pkgName . package $ desc), "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
-    updateLibrary :: Library -> Library
-    updateLibrary lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
-    updatePackageDescription :: PackageDescription -> PackageDescription
-    updatePackageDescription desc = desc { library = updateLibrary <$> library desc }
+    updateLibrary :: [String] -> Library -> Library
+    updateLibrary extraLibs lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
+    updatePackageDescription :: [String] -> PackageDescription -> PackageDescription
+    updatePackageDescription extraLibs desc = desc { library = updateLibrary extraLibs <$> library desc }
 
 emccRegHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> RegisterFlags -> IO ()
 emccRegHook desc lbi hooks flags = do
-    let lbi' = lbi { localPkgDescr = updatePackageDescription (localPkgDescr lbi) }
-        desc' = updatePackageDescription desc
-    doesFileExist emccLib >>= \x -> print $ emccLib <> " " <> (if x then "exists" else "doesn't exist!")
-    doesFileExist emccLib >>= \case
-        True ->  regHook simpleUserHooks desc' lbi' hooks flags
-        False -> regHook simpleUserHooks desc  lbi  hooks flags
+    emccLibs <- filterM (\l -> doesFileExist (buildDir lbi </> "lib" <> l <> ".js_a"))
+                        [ "EMCC" <> (unPackageName . pkgName . package $ desc)
+                        , "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
+    print $ "EMCC extra lib files: " ++ intercalate ", " emccLibs
+    let lbi' = lbi { localPkgDescr = updatePackageDescription emccLibs (localPkgDescr lbi) }
+        desc' = updatePackageDescription emccLibs desc
+    regHook simpleUserHooks desc' lbi' hooks flags
   where
     emccLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
     -- don't inject it for libraries, only for exe, test, bench.
-    extraLibs = ["EMCC" <> (unPackageName . pkgName . package $ desc), "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
-    updateLibrary :: Library -> Library
-    updateLibrary lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
-    updatePackageDescription :: PackageDescription -> PackageDescription
-    updatePackageDescription desc = desc { library = updateLibrary <$> library desc }
+    updateLibrary :: [String] -> Library -> Library
+    updateLibrary extraLibs lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
+    updatePackageDescription :: [String] -> PackageDescription -> PackageDescription
+    updatePackageDescription extraLibs desc = desc { library = updateLibrary extraLibs <$> library desc }
 
 emccUnregHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> RegisterFlags -> IO ()
 emccUnregHook desc lbi hooks flags = do
-    let lbi' = lbi { localPkgDescr = updatePackageDescription (localPkgDescr lbi) }
-        desc' = updatePackageDescription desc
-    doesFileExist emccLib >>= \x -> print $ emccLib <> " " <> (if x then "exists" else "doesn't exist!")
-    doesFileExist emccLib >>= \case
-        True ->  regHook simpleUserHooks desc' lbi' hooks flags
-        False -> regHook simpleUserHooks desc  lbi  hooks flags
+    emccLibs <- filterM (\l -> doesFileExist (buildDir lbi </> "lib" <> l <> ".js_a"))
+                        [ "EMCC" <> (unPackageName . pkgName . package $ desc)
+                        , "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
+    print $ "EMCC extra lib files: " ++ intercalate ", " emccLibs
+    let lbi' = lbi { localPkgDescr = updatePackageDescription emccLibs (localPkgDescr lbi) }
+        desc' = updatePackageDescription emccLibs desc
+    unregHook simpleUserHooks desc' lbi' hooks flags
   where
     emccLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
     -- don't inject it for libraries, only for exe, test, bench.
-    extraLibs = ["EMCC" <> (unPackageName . pkgName . package $ desc), "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
-    updateLibrary :: Library -> Library
-    updateLibrary lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
-    updatePackageDescription :: PackageDescription -> PackageDescription
-    updatePackageDescription desc = desc { library = updateLibrary <$> library desc }
-
+    updateLibrary :: [String] -> Library -> Library
+    updateLibrary extraLibs lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
+    updatePackageDescription :: [String] -> PackageDescription -> PackageDescription
+    updatePackageDescription extraLibs desc = desc { library = updateLibrary extraLibs <$> library desc }
 --
 -- Main
 --
