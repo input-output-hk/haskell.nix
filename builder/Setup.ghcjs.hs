@@ -11,7 +11,7 @@ import System.FilePath
 import Control.Monad (filterM, forM_, forM, unless)
 import System.Directory (doesFileExist)
 import Distribution.Types.Library (libBuildInfo, Library(..))
-import Distribution.Types.BuildInfo (cSources, jsSources, includeDirs, emptyBuildInfo, options)
+import Distribution.Types.BuildInfo (cSources, jsSources, includeDirs, emptyBuildInfo, options, extraBundledLibs)
 import Distribution.Simple.BuildTarget (readBuildTargets, BuildTarget(..), readUserBuildTargets)
 import Distribution.Verbosity (silent, verbose)
 import Distribution.Types.ComponentName
@@ -43,24 +43,28 @@ buildEMCCLib desc lbi = do
     --
     case library desc of
         Just lib -> do
-            let depIncludeDirs = concatMap IPI.includeDirs (topologicalOrder $ installedPkgs lbi)
-            -- alright, let's compile all .c files into .o files with emcc, which is the `gcc` program.
-            forM_ (cSources . libBuildInfo $ lib) $ \src -> do
-                let dst = (buildDir lbi) </> "emcc" </> (src -<.> "o")
-                createDirectoryIfMissingVerbose verbosity True (takeDirectory dst)
-                runDbProgram verbosity gccProgram (withPrograms lbi) $
-                    ["-c", src, "-o", dst] ++ ["-I" <> incDir | incDir <- (includeDirs . libBuildInfo $ lib) ++ depIncludeDirs]
-
-            -- and now construct a canonical `.js_a` file.
-            let dstLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
-            runDbProgram verbosity emarProgram (withPrograms lbi) $
-                [ "-r",  dstLib ] ++ [ (buildDir lbi) </> "emcc" </> (src -<.> "o") | src <- cSources . libBuildInfo $ lib ]
-
-            let expLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported.js_a"
+            -- Let's see if we are going to export anything. If not there is likely no point in compiling anything
+            -- from the C code.
             names <- forM (jsSources . libBuildInfo $ lib) $ \src -> do
                 unwords . concatMap (drop 2 . words) . filter (isPrefixOf "// EMCC:EXPORTED_FUNCTIONS") . lines <$> readFile src
 
-            writeFile expLib (unwords names)
+            unless (null names) $ do
+                let depIncludeDirs = concatMap IPI.includeDirs (topologicalOrder $ installedPkgs lbi)
+                -- alright, let's compile all .c files into .o files with emcc, which is the `gcc` program.
+                forM_ (cSources . libBuildInfo $ lib) $ \src -> do
+                    let dst = (buildDir lbi) </> "emcc" </> (src -<.> "o")
+                    createDirectoryIfMissingVerbose verbosity True (takeDirectory dst)
+                    runDbProgram verbosity gccProgram (withPrograms lbi) $
+                        ["-c", src, "-o", dst] ++ ["-I" <> incDir | incDir <- (includeDirs . libBuildInfo $ lib) ++ depIncludeDirs]
+
+                -- and now construct a canonical `.js_a` file.
+                let dstLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
+                runDbProgram verbosity emarProgram (withPrograms lbi) $
+                    [ "-r",  dstLib ] ++ [ (buildDir lbi) </> "emcc" </> (src -<.> "o") | src <- cSources . libBuildInfo $ lib ]
+
+                let expLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported.js_a"
+
+                writeFile expLib (unwords names)
 
         -- if there's no lib, this is a fairly pointless exercise
         Nothing -> return ()
@@ -142,18 +146,20 @@ postConfHook args flags desc lbi = do
         -- defer to default postConf. XXX we should do this for the above cases in linkEMCCLib as well!
         _ -> postConf simpleUserHooks args flags desc lbi
 
+--
+-- Injecting emcc/lib.js as needed.
+--
 -- We inject jsSources: dist/build/emcc/lib.js, the amalgamated emcc library,
 -- into Executables, Tests and Benchmarks.
 emccBuildHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> BuildFlags -> IO ()
 emccBuildHook desc lbi hooks flags = do
-    let lbi' = lbi { localPkgDescr = (localPkgDescr lbi) { library = updateLibrary <$> library (localPkgDescr lbi)
-                                                         , executables = updateExe <$> executables (localPkgDescr lbi)
-                                                         , testSuites = updateTest <$> testSuites (localPkgDescr lbi)
-                                                         , benchmarks = updateBench <$> benchmarks (localPkgDescr lbi) } }
-
+    let lbi' = lbi { localPkgDescr = updatePackageDescription (localPkgDescr lbi) }
+        -- for some reason tests/benchmarks seem to rely on the description, whereas libraries and executables depend on the local build info...
+        desc' = updatePackageDescription desc
+    doesFileExist jsLib >>= \x -> print $ jsLib <> " " <> (if x then "exists" else "doesn't exist!")
     doesFileExist jsLib >>= \case
-        True -> buildHook simpleUserHooks desc lbi' hooks flags
-        False -> buildHook simpleUserHooks desc lbi hooks flags
+        True ->  buildHook simpleUserHooks desc' lbi' hooks flags
+        False -> buildHook simpleUserHooks desc  lbi  hooks flags
 
   where
     jsLib = "dist/build" </> "emcc" </> "lib.js"
@@ -167,7 +173,74 @@ emccBuildHook desc lbi hooks flags = do
     updateTest test@TestSuite{ testBuildInfo = bi } = test { testBuildInfo = bi { options = options bi <> extraOpts } }
     updateBench :: Benchmark -> Benchmark
     updateBench bench@Benchmark{ benchmarkBuildInfo = bi } = bench { benchmarkBuildInfo = bi { options = options bi <> extraOpts } }
+    updatePackageDescription :: PackageDescription -> PackageDescription
+    updatePackageDescription desc = desc
+        { library = updateLibrary <$> library desc
+        , executables = updateExe <$> executables desc
+        , testSuites = updateTest <$> testSuites desc
+        , benchmarks = updateBench <$> benchmarks desc
+        }
 
+--
+-- Injecting EMCC<name> extra libraries as needed
+-- this one we only need alongside library components; as it's shipped and installed
+-- into the package databse. This is not necesary for executables/test/benchmarks, that
+-- are not installed into the package database
+--
+emccCopyHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> CopyFlags -> IO ()
+emccCopyHook desc lbi hooks flags = do
+    let lbi' = lbi { localPkgDescr = updatePackageDescription (localPkgDescr lbi) }
+        desc' = updatePackageDescription desc
+    doesFileExist emccLib >>= \x -> print $ emccLib <> " " <> (if x then "exists" else "doesn't exist!")
+    doesFileExist emccLib >>= \case
+        True ->  copyHook simpleUserHooks desc' lbi' hooks flags
+        False -> copyHook simpleUserHooks desc  lbi  hooks flags
+  where
+    emccLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
+    -- don't inject it for libraries, only for exe, test, bench.
+    extraLibs = ["EMCC" <> (unPackageName . pkgName . package $ desc), "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
+    updateLibrary :: Library -> Library
+    updateLibrary lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
+    updatePackageDescription :: PackageDescription -> PackageDescription
+    updatePackageDescription desc = desc { library = updateLibrary <$> library desc }
+
+emccRegHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> RegisterFlags -> IO ()
+emccRegHook desc lbi hooks flags = do
+    let lbi' = lbi { localPkgDescr = updatePackageDescription (localPkgDescr lbi) }
+        desc' = updatePackageDescription desc
+    doesFileExist emccLib >>= \x -> print $ emccLib <> " " <> (if x then "exists" else "doesn't exist!")
+    doesFileExist emccLib >>= \case
+        True ->  regHook simpleUserHooks desc' lbi' hooks flags
+        False -> regHook simpleUserHooks desc  lbi  hooks flags
+  where
+    emccLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
+    -- don't inject it for libraries, only for exe, test, bench.
+    extraLibs = ["EMCC" <> (unPackageName . pkgName . package $ desc), "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
+    updateLibrary :: Library -> Library
+    updateLibrary lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
+    updatePackageDescription :: PackageDescription -> PackageDescription
+    updatePackageDescription desc = desc { library = updateLibrary <$> library desc }
+
+emccUnregHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> RegisterFlags -> IO ()
+emccUnregHook desc lbi hooks flags = do
+    let lbi' = lbi { localPkgDescr = updatePackageDescription (localPkgDescr lbi) }
+        desc' = updatePackageDescription desc
+    doesFileExist emccLib >>= \x -> print $ emccLib <> " " <> (if x then "exists" else "doesn't exist!")
+    doesFileExist emccLib >>= \case
+        True ->  regHook simpleUserHooks desc' lbi' hooks flags
+        False -> regHook simpleUserHooks desc  lbi  hooks flags
+  where
+    emccLib = (buildDir lbi) </> "libEMCC" <> (unPackageName . pkgName . package $ desc) <> ".js_a"
+    -- don't inject it for libraries, only for exe, test, bench.
+    extraLibs = ["EMCC" <> (unPackageName . pkgName . package $ desc), "EMCC" <> (unPackageName . pkgName . package $ desc) <> ".exported" ]
+    updateLibrary :: Library -> Library
+    updateLibrary lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { extraBundledLibs = extraBundledLibs bi <> extraLibs } }
+    updatePackageDescription :: PackageDescription -> PackageDescription
+    updatePackageDescription desc = desc { library = updateLibrary <$> library desc }
+
+--
+-- Main
+--
 main :: IO ()
 main = do
     args <- getArgs
@@ -182,8 +255,11 @@ main = do
 
     emccHooks :: UserHooks
     emccHooks = simpleUserHooks
-        { postConf = postConfHook
+        { postConf  = postConfHook
         , buildHook = emccBuildHook
         , postBuild = postBuildHook
+        , copyHook  = emccCopyHook
+        , regHook   = emccRegHook
+        , unregHook = emccUnregHook
         , hookedPrograms = [emarProgram]
         }
