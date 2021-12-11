@@ -10,7 +10,7 @@ import Distribution.Types.PackageName
 import System.FilePath
 import Control.Monad (filterM, forM_, forM, unless)
 import System.Directory (doesFileExist)
-import Distribution.Types.Library (libBuildInfo)
+import Distribution.Types.Library (libBuildInfo, Library(..))
 import Distribution.Types.BuildInfo (cSources, jsSources, includeDirs, emptyBuildInfo, options)
 import Distribution.Simple.BuildTarget (readBuildTargets, BuildTarget(..), readUserBuildTargets)
 import Distribution.Verbosity (silent, verbose)
@@ -26,7 +26,9 @@ import Distribution.Simple.LocalBuildInfo (Component (..), withAllComponentsInBu
 import Distribution.Types.TestSuite (TestSuite(..))
 import Distribution.Types.TestSuiteInterface (TestSuiteInterface(..) )
 import Distribution.Simple.Test.LibV09 (stubName)
-import Distribution.Types.Executable (exeName)
+import Distribution.Types.Executable (exeName, Executable(..))
+import Distribution.Types.Benchmark (Benchmark(..))
+import Distribution.Types.TestSuite (TestSuite(..))
 import Distribution.Types.UnqualComponentName (unUnqualComponentName, mkUnqualComponentName)
 
 
@@ -140,21 +142,31 @@ postConfHook args flags desc lbi = do
         -- defer to default postConf. XXX we should do this for the above cases in linkEMCCLib as well!
         _ -> postConf simpleUserHooks args flags desc lbi
 
--- we somehow need to inject the freshly build "emcc/lib.js" into each component.
--- I'm not sure w ecan abuse preBuildHooks for this.
-preBuildHook :: Args -> BuildFlags -> IO HookedBuildInfo
-preBuildHook args flags = do
+-- We inject jsSources: dist/build/emcc/lib.js, the amalgamated emcc library,
+-- into Executables, Tests and Benchmarks.
+emccBuildHook :: PackageDescription -> LocalBuildInfo -> UserHooks -> BuildFlags -> IO ()
+emccBuildHook desc lbi hooks flags = do
+    let lbi' = lbi { localPkgDescr = (localPkgDescr lbi) { library = updateLibrary <$> library (localPkgDescr lbi)
+                                                         , executables = updateExe <$> executables (localPkgDescr lbi)
+                                                         , testSuites = updateTest <$> testSuites (localPkgDescr lbi)
+                                                         , benchmarks = updateBench <$> benchmarks (localPkgDescr lbi) } }
 
     doesFileExist jsLib >>= \case
-        True -> pure (Just bi, [(mkUnqualComponentName compName, bi)])
-        False -> pure emptyHookedBuildInfo
+        True -> buildHook simpleUserHooks desc lbi' hooks flags
+        False -> buildHook simpleUserHooks desc lbi hooks flags
+
   where
-    -- this is such a terrible hack. We assume that buildArgs provides [lib|exe|...]:[comp name]
-    -- to inject the appropriate dist/build/emcc/lib.js into the ghc-options, to have them linked.
-    compName =  drop 1 . snd . break (==':') . head . buildArgs $ flags
     jsLib = "dist/build" </> "emcc" </> "lib.js"
-    bi = emptyBuildInfo { jsSources = [jsLib]
-                        , options = PerCompilerFlavor [jsLib] [] }
+    extraOpts = PerCompilerFlavor [jsLib] []
+    -- don't inject it for libraries, only for exe, test, bench.
+    updateLibrary :: Library -> Library
+    updateLibrary = id -- lib@Library{ libBuildInfo = bi } = lib { libBuildInfo = bi { options = options bi <> extraOpts } }
+    updateExe :: Executable -> Executable
+    updateExe exe@Executable{ buildInfo = bi } = exe { buildInfo = bi { options = options bi <> extraOpts } }
+    updateTest :: TestSuite -> TestSuite
+    updateTest test@TestSuite{ testBuildInfo = bi } = test { testBuildInfo = bi { options = options bi <> extraOpts } }
+    updateBench :: Benchmark -> Benchmark
+    updateBench bench@Benchmark{ benchmarkBuildInfo = bi } = bench { benchmarkBuildInfo = bi { options = options bi <> extraOpts } }
 
 main :: IO ()
 main = do
@@ -171,7 +183,7 @@ main = do
     emccHooks :: UserHooks
     emccHooks = simpleUserHooks
         { postConf = postConfHook
-        , preBuild = preBuildHook
+        , buildHook = emccBuildHook
         , postBuild = postBuildHook
         , hookedPrograms = [emarProgram]
         }
