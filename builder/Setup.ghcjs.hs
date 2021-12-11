@@ -11,8 +11,8 @@ import System.FilePath
 import Control.Monad (filterM, forM_, forM, unless)
 import System.Directory (doesFileExist)
 import Distribution.Types.Library (libBuildInfo)
-import Distribution.Types.BuildInfo (cSources, jsSources, includeDirs, emptyBuildInfo)
-import Distribution.Simple.BuildTarget (readBuildTargets, BuildTarget(..))
+import Distribution.Types.BuildInfo (cSources, jsSources, includeDirs, emptyBuildInfo, options)
+import Distribution.Simple.BuildTarget (readBuildTargets, BuildTarget(..), readUserBuildTargets)
 import Distribution.Verbosity (silent, verbose)
 import Distribution.Types.ComponentName
 import Distribution.Simple.Program.Types (programPath)
@@ -26,7 +26,8 @@ import Distribution.Simple.LocalBuildInfo (Component (..), withAllComponentsInBu
 import Distribution.Types.TestSuite (TestSuite(..))
 import Distribution.Types.TestSuiteInterface (TestSuiteInterface(..) )
 import Distribution.Simple.Test.LibV09 (stubName)
-import Distribution.Types.UnqualComponentName (unUnqualComponentName)
+import Distribution.Types.Executable (exeName)
+import Distribution.Types.UnqualComponentName (unUnqualComponentName, mkUnqualComponentName)
 
 
 emarProgram :: Program
@@ -95,6 +96,7 @@ linkCLib libname desc lbi = do
                       else case comp of
                           (CTest test@(TestSuite { testInterface = TestSuiteLibV09 _ _ })) -> buildDir lbi </> stubName test </> stubName test ++ "-tmp"
                           (CTest test@(TestSuite { testInterface = TestSuiteExeV10 _ _ })) -> buildDir lbi </> unUnqualComponentName (testName test) </> unUnqualComponentName (testName test) ++ "-tmp"
+                          (CExe exe) -> buildDir lbi </> unUnqualComponentName (exeName exe) </> unUnqualComponentName (exeName exe) ++ "-tmp"
                           _ -> componentBuildDir lbi clbi
                 dst' = dst </> libname
             createDirectoryIfMissingVerbose verbosity True (takeDirectory dst')
@@ -108,7 +110,6 @@ linkCLib libname desc lbi = do
                 --
                 , "-s", "EXPORTED_FUNCTIONS=['" <> intercalate "', '" exfns <> "']"
                 ] ++ libs ++ libDirs ++ extraLibs
-
 
 postBuildHook :: Args -> BuildFlags -> PackageDescription -> LocalBuildInfo -> IO ()
 postBuildHook args flags desc lbi = do
@@ -131,19 +132,29 @@ postConfHook args flags desc lbi = do
             linkEMCCTHLib desc lbi
             -- only link the final lib if we want to produce an output.
             readBuildTargets silent desc (configArgs flags) >>= \case
-                [BuildTargetComponent (CLibName _)] -> print "OK. Lib"
+                [BuildTargetComponent (CLibName _)] -> print "OK. Lib" >> postConf simpleUserHooks args flags desc lbi
                 [BuildTargetComponent (CExeName _)] -> print "OK. Exe (Link)" >> linkEMCCLib desc lbi
                 [BuildTargetComponent (CTestName _)] -> print "OK. Test (Link)" >> linkEMCCLib desc lbi
                 [BuildTargetComponent (CBenchName _)] -> print "OK. Bench (Link)" >> linkEMCCLib desc lbi
                 _ -> print "EEk!"
-        _ -> return ()
+        -- defer to default postConf. XXX we should do this for the above cases in linkEMCCLib as well!
+        _ -> postConf simpleUserHooks args flags desc lbi
 
 -- we somehow need to inject the freshly build "emcc/lib.js" into each component.
 -- I'm not sure w ecan abuse preBuildHooks for this.
 preBuildHook :: Args -> BuildFlags -> IO HookedBuildInfo
 preBuildHook args flags = do
-    print flags
-    pure (Just (emptyBuildInfo { jsSources = ["dist/build" </> "emcc" </> "lib.js"] }), [])
+
+    doesFileExist jsLib >>= \case
+        True -> pure (Just bi, [(mkUnqualComponentName compName, bi)])
+        False -> pure emptyHookedBuildInfo
+  where
+    -- this is such a terrible hack. We assume that buildArgs provides [lib|exe|...]:[comp name]
+    -- to inject the appropriate dist/build/emcc/lib.js into the ghc-options, to have them linked.
+    compName =  drop 1 . snd . break (==':') . head . buildArgs $ flags
+    jsLib = "dist/build" </> "emcc" </> "lib.js"
+    bi = emptyBuildInfo { jsSources = [jsLib]
+                        , options = PerCompilerFlavor [jsLib] [] }
 
 main :: IO ()
 main = do
@@ -160,7 +171,7 @@ main = do
     emccHooks :: UserHooks
     emccHooks = simpleUserHooks
         { postConf = postConfHook
-        --    , preBuild = preBuildHook
+        , preBuild = preBuildHook
         , postBuild = postBuildHook
         , hookedPrograms = [emarProgram]
         }
