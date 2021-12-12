@@ -95,8 +95,16 @@ linkCLib libname desc lbi = do
                 concatMap (\x -> [ libDir </> "libEMCC" <> (unPackageName . pkgName . sourcePackageId $ x) <> ".exported.js_a"
                                 | libDir <- libraryDirs x ])
                         (topologicalOrder $ installedPkgs lbi)
+        print exff
         exfns <- concat <$> forM exff (fmap words . readFile)
-        unless (null libs) $ do
+        unless (null libs && null exfns) $ do
+            libs <- case libs of
+                [] -> do writeFile (buildDir lbi </> "emcc_linking_dummy.c") ""
+                         runDbProgram verbosity gccProgram (withPrograms lbi) $
+                            ["-c", buildDir lbi </> "emcc_linking_dummy.c", "-o", buildDir lbi </> "dummy.o"]
+                         return [(buildDir lbi </> "emcc_linking_dummy.o")]
+                _ -> return libs
+
             let dst = if libname == "emcc" </> "lib.js" then buildDir lbi
                       -- who designed this shit in cabal?
                       else case comp of
