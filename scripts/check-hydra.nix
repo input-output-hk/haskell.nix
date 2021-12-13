@@ -1,4 +1,4 @@
-{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, hydra-migration, jq, gitMinimal }:
+{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, hydra-unstable, jq, gitMinimal }:
 
 with lib;
 
@@ -7,7 +7,7 @@ writeScript "check-hydra.sh" ''
 
   set -euo pipefail
 
-  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra-migration jq gitMinimal ]}"
+  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra-unstable jq gitMinimal ]}"
 
   echo '~~~ Evaluating release.nix with --arg ifdLevel '$1
   command time --format '%e' -o eval-time.txt \
