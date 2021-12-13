@@ -21,8 +21,8 @@ let
     # added here will also included without aggregation, making it easier
     # to find a failing test.  Keep in mind though that adding too many
     # of these will slow down eval times.
-    x86_64-linux = allJobs.R2105.ghc8107.x86_64-linux.native or {};
-    x86_64-darwin = allJobs.R2105.ghc8107.x86_64-darwin.native or {};
+    x86_64-linux = allJobs.R2111.ghc8107.x86_64-linux.native or {};
+    x86_64-darwin = allJobs.R2111.ghc8107.x86_64-darwin.native or {};
   };
   names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
     (builtins.attrNames x);

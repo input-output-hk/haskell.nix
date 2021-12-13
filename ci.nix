@@ -26,7 +26,7 @@
     # Update supported-ghc-versions.md to reflect any changes made here.
     nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
       ghc865 = false;
-      ghc8107 = true;
+      ghc8107 = false;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
       ghc865 = false;
       ghc8107 = true;
