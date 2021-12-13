@@ -101,7 +101,7 @@ linkCLib libname desc lbi = do
             libs <- case libs of
                 [] -> do writeFile (buildDir lbi </> "emcc_linking_dummy.c") ""
                          runDbProgram verbosity gccProgram (withPrograms lbi) $
-                            ["-c", buildDir lbi </> "emcc_linking_dummy.c", "-o", buildDir lbi </> "dummy.o"]
+                            ["-c", buildDir lbi </> "emcc_linking_dummy.c", "-o", buildDir lbi </> "emcc_linking_dummy.o"]
                          return [(buildDir lbi </> "emcc_linking_dummy.o")]
                 _ -> return libs
 
