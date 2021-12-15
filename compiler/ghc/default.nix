@@ -195,18 +195,21 @@ stdenv.mkDerivation (rec {
 
      # these two are required
      substituteInPlace mk/config.mk  --replace "$TOP" "$PWD" \
-                                     --replace "$PREFIX" "$out"
+                                     --replace "$PREFIX" "$out" \
+                                     --replace "${configured-src.doc}" "$doc"
 
      substituteInPlace mk/install.mk --replace "$TOP" "$PWD" \
-                                     --replace "$PREFIX" "$out"
+                                     --replace "$PREFIX" "$out" \
+                                     --replace "${configured-src.doc}" "$doc"
 
      # these two only for convencience.
-     substituteInPlace config.log    --replace "$TOP" "$PWD"\
-                                     --replace "$PREFIX" "$out"
-     substituteInPlace config.status --replace "$TOP" "$PWD"\
-                                     --replace "$PREFIX" "$out")
+     substituteInPlace config.log    --replace "$TOP" "$PWD" \
+                                     --replace "$PREFIX" "$out" \
+                                     --replace "${configured-src.doc}" "$doc"
 
-
+     substituteInPlace config.status --replace "$TOP" "$PWD" \
+                                     --replace "$PREFIX" "$out" \
+                                     --replace "${configured-src.doc}" "$doc")
   '';
 
   enableParallelBuilding = true;
