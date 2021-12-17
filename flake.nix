@@ -106,7 +106,7 @@
       # supported by haskell.nix, e.g. with remote builders, in order to check this flake.
       # If you want to run the tests for just your platform, run `./test/tests.sh` or
       # `nix-build -A checks.$PLATFORM`
-    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system: {
+    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: {
       legacyPackages = (self.internal.compat { inherit system; }).pkgs;
 
       # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
