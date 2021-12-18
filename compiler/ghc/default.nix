@@ -334,6 +334,11 @@ stdenv.mkDerivation (rec {
       enableDWARF = stdenv.targetPlatform.isLinux
         && builtins.compareVersions ghc-version "8.10.2" >= 0;
     });
+
+    # The same GHC, but without the large (1TB) address space reservation
+    smallAddressSpace = lib.makeOverridable self (args // {
+      disableLargeAddressSpace = true;
+    });
   } // extra-passthru;
 
   meta = {
