@@ -178,7 +178,7 @@ let
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
       # BINTOOLS
-      (if stdenv.hostPlatform.isLinux
+      (if stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isAndroid # might be better check to see if cc is clang/llvm?
         # use gold as the linker on linux to improve link times
         then [
           "--with-ld=${stdenv.cc.bintools.targetPrefix}ld.gold"
