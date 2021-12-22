@@ -6,6 +6,7 @@
     nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
     nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
     nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
+    nixpkgs-2111-patched = { url = "github:angerman/nixpkgs/patch-1"; };    
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-utils = { url = "github:numtide/flake-utils"; };
     hackage = {
@@ -53,7 +54,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111-patched, flake-utils, ... }@inputs:
     let compiler = "ghc884";
       config = import ./config.nix;
     in {
@@ -99,6 +100,9 @@
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-2105 = import nixpkgs-2105 
               (nixpkgsArgs // { localSystem = { inherit system; }; });            
+            pkgs-2111-patched = import nixpkgs-2111-patched 
+              (nixpkgsArgs // { localSystem = { inherit system; }; });            
+
             hix = import ./hix/default.nix { inherit pkgs; };
           };
       };
@@ -112,6 +116,7 @@
       legacyPackages = (self.internal.compat { inherit system; }).pkgs;
       legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
       legacyPackages2105 = (self.internal.compat { inherit system; }).pkgs-2105;
+      legacyPackages2111Patched = (self.internal.compat { inherit system; }).pkgs-2111-patched;
 
       # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
       # (and maybe other tests) import projects that use builtins.currentSystem
