@@ -53,7 +53,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, flake-utils, ... }@inputs:
     let compiler = "ghc884";
       config = import ./config.nix;
     in {
@@ -97,6 +97,8 @@
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable
               (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2105 = import nixpkgs-2105 
+              (nixpkgsArgs // { localSystem = { inherit system; }; });            
             hix = import ./hix/default.nix { inherit pkgs; };
           };
       };
@@ -108,6 +110,8 @@
       # `nix-build -A checks.$PLATFORM`
     } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: {
       legacyPackages = (self.internal.compat { inherit system; }).pkgs;
+      legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
+      legacyPackages2105 = (self.internal.compat { inherit system; }).pkgs-2105;
 
       # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
       # (and maybe other tests) import projects that use builtins.currentSystem
