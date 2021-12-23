@@ -11,7 +11,7 @@ index ecb318d5a8..8e70db33fc 100644
 +// These global variables have been moved into the RTS.  It allows them to be
 +// shared with plugins even if two different instances of the GHC library are
 +// loaded at the same time (#19940)
-+#if !MIN_VERSION_GLASGOW_HASKELL(8,10,0,0)
++#if !MIN_VERSION_GLASGOW_HASKELL(8,10,0,0) || GHC_STAGE < 2
  static HsInt GenSymCounter = 0;
  static HsInt GenSymInc = 1;
 +#endif
@@ -22,12 +22,14 @@ diff --git a/includes/rts/Globals.h b/includes/rts/Globals.h
 index ff36572c56..12db025423 100644
 --- a/includes/rts/Globals.h
 +++ b/includes/rts/Globals.h
-@@ -34,3 +34,5 @@ mkStoreAccessorPrototype(LibHSghcInitLinkerDone)
+@@ -34,3 +34,7 @@ mkStoreAccessorPrototype(LibHSghcInitLinkerDone)
  mkStoreAccessorPrototype(LibHSghcGlobalDynFlags)
  mkStoreAccessorPrototype(LibHSghcStaticOptions)
  mkStoreAccessorPrototype(LibHSghcStaticOptionsReady)
++#if GHC_STAGE >= 2
 +extern HsInt GenSymCounter;
 +extern HsInt GenSymInc;
++#endif
 diff --git a/rts/Globals.c b/rts/Globals.c
 index c9980d9a3a..56522937ef 100644
 --- a/rts/Globals.c
