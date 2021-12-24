@@ -97,6 +97,7 @@ let
     endif
     DYNAMIC_GHC_PROGRAMS = ${if enableShared then "YES" else "NO"}
     INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
+    EXTRA_HADDOCK_OPTS += --quickjump --hyperlinked-source
   '' + lib.optionalString (targetPlatform != hostPlatform) ''
     CrossCompilePrefix = ${targetPrefix}
   '' + lib.optionalString isCrossTarget ''
