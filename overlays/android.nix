@@ -1,3 +1,3 @@
-final: prev: prev.lib.optionalAttrs (prev.stdenv.hostPlatform.isAndroid || prev.stdenv.targetPlatform.isAndroid) ({
+final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
   libiconv = prev.libiconv.override { enableStatic = true; };
 })
