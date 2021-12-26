@@ -33,9 +33,6 @@ stdenv.mkDerivation (rec {
 
     buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
-    propagatedBuildInputs = [ targetPackages.stdenv.cc ]
-        ++ lib.optional useLLVM llvmPackages.llvm;
-
     depsTargetTarget = map lib.getDev (libDeps targetPlatform);
     depsTargetTargetPropagated = map (lib.getOutput "out") (libDeps targetPlatform);
 
@@ -65,6 +62,9 @@ stdenv.mkDerivation (rec {
 
         echo -n "${buildMK}" > mk/build.mk
         sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
+    '' + lib.optionalString useLLVM ''
+        export LLC="${llvmPackages.llvm}/bin/llc"
+        export OPT="${llvmPackages.llvm}/bin/opt"
     '' + lib.optionalString (!stdenv.isDarwin) ''
         export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${version}"
     '' + lib.optionalString stdenv.isDarwin ''
