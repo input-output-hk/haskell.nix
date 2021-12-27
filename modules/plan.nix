@@ -158,9 +158,9 @@ let
       default = (def.enableSeparateDataOutput or false);
     };
 
-    enableExecutableProfiling = mkOption {
+    enableProfiling = mkOption {
       type = bool;
-      default = (def.enableExecutableProfiling or false);
+      default = (def.enableProfiling or false);
     };
 
     profilingDetail = mkOption {
