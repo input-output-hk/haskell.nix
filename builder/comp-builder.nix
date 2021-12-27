@@ -76,8 +76,6 @@ let self =
 # Debug
 , enableDebugRTS ? false
 , enableDWARF ? false
-# This will only work with a custom TSan way enabled custom compiler
-, enableTSanRTS ? false
 
 # This will only work with a custom TSan way enabled custom compiler
 , enableTSanRTS ? false
