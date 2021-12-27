@@ -119,9 +119,12 @@ stdenv.mkDerivation (rec {
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
     ];
 
-    outputs = [ "out" ];
+    outputs = [ "out" "doc" ];
     phases = [ "unpackPhase" "patchPhase" ]
             ++ lib.optional (ghc-patches != []) "autoreconfPhase"
             ++ [ "configurePhase" "installPhase" ];
-    installPhase = "cp -r . $out";
+    installPhase = ''
+        cp -r . $out
+        mkdir $doc
+    '';
 })
