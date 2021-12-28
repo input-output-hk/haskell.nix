@@ -194,6 +194,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-2111-patched": {
+      "locked": {
+        "lastModified": 1640660711,
+        "narHash": "sha256-PvoSbCctstLzG2fBELMGxPaWYnJIzXikpK0EpVMgZNA=",
+        "owner": "angerman",
+        "repo": "nixpkgs",
+        "rev": "c90f5f79200b48acd0a81eadfe5a3844f4afc92e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "angerman",
+        "ref": "patch-1",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-unstable": {
       "locked": {
         "lastModified": 1639239143,
@@ -244,6 +260,7 @@
         "nixpkgs-2003": "nixpkgs-2003",
         "nixpkgs-2105": "nixpkgs-2105",
         "nixpkgs-2111": "nixpkgs-2111",
+        "nixpkgs-2111-patched": "nixpkgs-2111-patched",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "old-ghc-nix": "old-ghc-nix",
         "stackage": "stackage"
