@@ -1,0 +1,35 @@
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index edb9385..db6e67e 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -1025,6 +1025,14 @@
+ #define RTS_LINKER_SYMBOLS
+ #endif
+ 
++#if !defined(DYNAMIC)
++#define RTS_STACK_PROTECTOR_SYMBOLS \
++      SymI_NeedsProto(__stack_chk_fail) \
++      SymI_HasProto_redirect(__stack_chk_fail_local, __stack_chk_fail, true)
++#else
++#define RTS_STACK_PROTECTOR_SYMBOLS
++#endif
++
+ /* entirely bogus claims about types of these symbols */
+ #define SymI_NeedsProto(vvv)  extern void vvv(void);
+ #define SymI_NeedsDataProto(vvv)  extern StgWord vvv[];
+@@ -1054,6 +1062,7 @@ RTS_OPENBSD_ONLY_SYMBOLS
+ RTS_LIBGCC_SYMBOLS
+ RTS_LIBFFI_SYMBOLS
+ RTS_LINKER_SYMBOLS
++RTS_STACK_PROTECTOR_SYMBOLS
+ #undef SymI_NeedsProto
+ #undef SymI_NeedsDataProto
+ #undef SymI_HasProto
+@@ -1107,6 +1116,7 @@ RtsSymbolVal rtsSyms[] = {
+       RTS_LIBGCC_SYMBOLS
+       RTS_LIBFFI_SYMBOLS
+       RTS_LINKER_SYMBOLS
++      RTS_STACK_PROTECTOR_SYMBOLS
+       SymI_HasDataProto(nonmoving_write_barrier_enabled)
+ #if defined(darwin_HOST_OS) && defined(i386_HOST_ARCH)
+       // dyld stub code contains references to this,
