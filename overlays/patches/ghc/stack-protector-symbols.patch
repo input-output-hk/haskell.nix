@@ -1,5 +1,5 @@
 diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
-index edb9385..fb43eec 100644
+index edb9385..f5ce43a 100644
 --- a/rts/RtsSymbols.c
 +++ b/rts/RtsSymbols.c
 @@ -1025,6 +1025,17 @@
@@ -38,12 +38,14 @@ index edb9385..fb43eec 100644
        SymI_HasDataProto(nonmoving_write_barrier_enabled)
  #if defined(darwin_HOST_OS) && defined(i386_HOST_ARCH)
        // dyld stub code contains references to this,
-@@ -1114,6 +1129,8 @@ RtsSymbolVal rtsSyms[] = {
+@@ -1114,6 +1129,10 @@ RtsSymbolVal rtsSyms[] = {
        // lazy pointers as nonlazy.
        { "dyld_stub_binding_helper", (void*)0xDEADBEEF, false },
  #endif
 +      { "__loader_add_thread_local_dtor", (void*)(&RTS_DYNAMIC), false },
 +      { "__loader_remove_thread_local_dtor", (void*)(&RTS_DYNAMIC), false },
++      { "__rela_iplt_start", (void*)(&RTS_DYNAMIC), false },
++      { "__rela_iplt_end", (void*)(&RTS_DYNAMIC), false },
        { "_DYNAMIC", (void*)(&RTS_DYNAMIC), false },
        { 0, 0, false } /* sentinel */
  };
