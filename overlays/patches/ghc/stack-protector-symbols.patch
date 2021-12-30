@@ -47,3 +47,47 @@ index edb9385..fb43eec 100644
        { "_DYNAMIC", (void*)(&RTS_DYNAMIC), false },
        { 0, 0, false } /* sentinel */
  };
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index fdfe87a..24b15c3 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -925,7 +925,9 @@ ocGetNames_ELF ( ObjectCode* oc )
+                            || ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
+                                                                   )
+                           /* and not an undefined symbol */
+-                          && shndx != SHN_UNDEF
++                          && (shndx != SHN_UNDEF
++                             /* unless it's weak */
++                             || (shndx == SHN_UNDEF && ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK))
+                           /* and not in a "special section" */
+                           && (shndx < SHN_LORESERVE
+ #if defined(SHN_XINDEX)
+@@ -948,10 +950,15 @@ ocGetNames_ELF ( ObjectCode* oc )
+                                       stab[j].st_size, stab[j].st_value, nm);
+                    }
+                    */
+-                   symbol->addr = (SymbolAddr*)(
+-                           (intptr_t) oc->sections[secno].start +
+-                           (intptr_t) symbol->elf_sym->st_value);
+-                   ASSERT(symbol->addr != 0x0);
++
++                   if(ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK && shndx == SHN_UNDEF) {
++                        symbol->addr = NULL;
++                   } else {
++                        symbol->addr = (SymbolAddr*)(
++                                (intptr_t) oc->sections[secno].start +
++                                (intptr_t) symbol->elf_sym->st_value);
++                        ASSERT(symbol->addr != 0x0);
++                   }
+                    if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_LOCAL) {
+                        isLocal = true;
+                        isWeak = false;
+@@ -967,7 +974,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+ 
+                /* And the decision is ... */
+ 
+-               if (symbol->addr != NULL) {
++               if (symbol->addr != NULL || (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK && shndx == SHN_UNDEF)) {
+                    ASSERT(nm != NULL);
+                    /* Acquire! */
+                    if (!isLocal) {
