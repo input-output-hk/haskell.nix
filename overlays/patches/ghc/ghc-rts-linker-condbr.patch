@@ -34,7 +34,7 @@ index 0e11585..9d93369 100644
 +            // ...        imm19               ]  0  [  cond  ]
 +            assert(isInt64(19+2, addend));
 +            *(inst_t *)P = (*(inst_t *)P & 0xff00001f)
-+                         | ((uint32_t)(addend << (5-2)) & 0x00ffffe0)
++                         | ((uint32_t)(addend << (5-2)) & 0x00ffffe0);
 +            break;
 +        }
          case COMPAT_R_AARCH64_JUMP26:   /* relocate b ... */
