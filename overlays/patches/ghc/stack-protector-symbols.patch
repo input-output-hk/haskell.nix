@@ -9,7 +9,7 @@ index edb9385..8a94975 100644
 +#if !defined(DYNAMIC)
 +#define RTS_STACK_PROTECTOR_SYMBOLS \
 +      SymI_NeedsProto(__stack_chk_fail) \
-+      SymI_NeedsProto(pthread_atfork) \
++      SymI_HasProto(pthread_atfork) \
 +      SymI_HasProto_redirect(__stack_chk_fail_local, __stack_chk_fail, true)
 +#define RTS_LIBC_SYMBOLS \
 +      SymI_NeedsProto(abort)
