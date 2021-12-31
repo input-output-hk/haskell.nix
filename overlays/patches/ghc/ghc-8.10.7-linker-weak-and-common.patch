@@ -23,7 +23,7 @@ index fdfe87a..8dc74fb 100644
 +    if(NULL != oc->common_mem) {
 +        stgFree(oc->common_mem);
 +    }
-+    oc->commom_mem = NULL;
++    oc->common_mem = NULL;
  }
  
  /*
@@ -139,7 +139,7 @@ index fdfe87a..8dc74fb 100644
 +                    }
 +                    oc->symbols[curSymbol++].name = nm;
 +                    oc->symbols[curSymbol].addr = symbol->addr;
-+                }
++  
                 }
             }
        }
