@@ -88,6 +88,8 @@ let
 
   targetGmp = targetPackages.gmp or gmp;
 
+  targetIconv = targetPackages.libiconv or libiconv;
+
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = lib.optionalString
     (targetPlatform != hostPlatform)
@@ -167,7 +169,7 @@ let
     targetCC
     enableIntegerSimple targetGmp
     enableDWARF elfutils
-    ncurses targetLibffi libiconv
+    ncurses targetLibffi libiconv targetIconv
     disableLargeAddressSpace
     buildMK
     ;

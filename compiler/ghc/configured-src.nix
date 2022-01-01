@@ -10,7 +10,7 @@
 , targetCC
 , enableIntegerSimple, targetGmp
 , enableDWARF, elfutils
-, ncurses, targetLibffi, libiconv
+, ncurses, targetLibffi, libiconv, targetIconv
 , disableLargeAddressSpace
 , buildMK
 }:
@@ -105,6 +105,8 @@ stdenv.mkDerivation (rec {
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
     ] ++ lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
         "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
+    ] ++ lib.optional (targetPlatform != hostPlatform) [
+        "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--enable-bootstrap-with-devel-snapshot"
     ] ++ lib.optionals (disableLargeAddressSpace) [
