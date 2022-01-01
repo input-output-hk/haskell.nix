@@ -7,7 +7,7 @@ index 10b0764..7d473f8 100644
     if (!pinfo) /* new entry */
     {
 -      pinfo = stgMallocBytes(sizeof (*pinfo), "ghciInsertToSymbolTable");
-+      pinfo = stgCallocBytes(sizeof (*pinfo), "ghciInsertToSymbolTable");
++      pinfo = stgCallocBytes(1, sizeof (*pinfo), "ghciInsertToSymbolTable");
        pinfo->value = data;
        pinfo->owner = owner;
        pinfo->weak = weak;
@@ -16,7 +16,7 @@ index 10b0764..7d473f8 100644
  
     IF_DEBUG(linker, debugBelch("mkOc: start\n"));
 -   oc = stgMallocBytes(sizeof(ObjectCode), "mkOc(oc)");
-+   oc = stgCallocBytes(sizeof(ObjectCode), "mkOc(oc)");
++   oc = stgCallocBytes(1, sizeof(ObjectCode), "mkOc(oc)");
  
     oc->info = NULL;
  
@@ -25,13 +25,13 @@ index 10b0764..7d473f8 100644
      // that the actual sections end up aligned again.
     misalignment = machoGetMisalignment(f);
 -   image = stgMallocBytes(fileSize + misalignment, "loadObj(image)");
-+   image = stgCallocBytes(fileSize + misalignment, "loadObj(image)");
++   image = stgCallocBytes(1, fileSize + misalignment, "loadObj(image)");
     image += misalignment;
  
  # else /* !defined(darwin_HOST_OS) */
  
 -   image = stgMallocBytes(fileSize, "loadObj(image)");
-+   image = stgCallocBytes(fileSize, "loadObj(image)");
++   image = stgCallocBytes(1, fileSize, "loadObj(image)");
  
  #endif
  
