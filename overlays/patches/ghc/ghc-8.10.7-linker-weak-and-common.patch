@@ -13,21 +13,26 @@ index f326a84..a846bf5 100644
      // Garbage collection fields
      //
 diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
-index fdfe87a..8dc74fb 100644
+index fdfe87a..c3f9110 100644
 --- a/rts/linker/Elf.c
 +++ b/rts/linker/Elf.c
-@@ -325,6 +325,10 @@ ocDeinit_ELF(ObjectCode * oc)
+@@ -325,6 +325,15 @@ ocDeinit_ELF(ObjectCode * oc)
          stgFree(oc->info);
          oc->info = NULL;
      }
 +    if(NULL != oc->common_mem) {
++#if RTS_LINKER_USE_MMAP
++        munmap(oc->common_mem, oc->common_size);
++#else
 +        stgFree(oc->common_mem);
++#endif
 +    }
 +    oc->common_mem = NULL;
++    oc->common_size = 0;
  }
  
  /*
-@@ -861,14 +865,17 @@ ocGetNames_ELF ( ObjectCode* oc )
+@@ -861,14 +870,17 @@ ocGetNames_ELF ( ObjectCode* oc )
             for (size_t j = 0; j < symTab->n_symbols; j++) {
                 ElfSymbol *symbol = &symTab->symbols[j];
                 if (SHN_COMMON == symTab->symbols[j].elf_sym->st_shndx) {
@@ -49,7 +54,7 @@ index fdfe87a..8dc74fb 100644
              barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
            }
        }
-@@ -909,9 +916,10 @@ ocGetNames_ELF ( ObjectCode* oc )
+@@ -909,9 +921,10 @@ ocGetNames_ELF ( ObjectCode* oc )
                 if (shndx == SHN_COMMON) {
                     isLocal = false;
                     ASSERT(common_used < common_size);
@@ -63,7 +68,7 @@ index fdfe87a..8dc74fb 100644
                     ASSERT(common_used <= common_size);
  
                     IF_DEBUG(linker,
-@@ -925,7 +933,9 @@ ocGetNames_ELF ( ObjectCode* oc )
+@@ -925,7 +938,9 @@ ocGetNames_ELF ( ObjectCode* oc )
                             || ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
                                                                    )
                            /* and not an undefined symbol */
@@ -74,7 +79,7 @@ index fdfe87a..8dc74fb 100644
                            /* and not in a "special section" */
                            && (shndx < SHN_LORESERVE
  #if defined(SHN_XINDEX)
-@@ -963,33 +973,20 @@ ocGetNames_ELF ( ObjectCode* oc )
+@@ -963,33 +978,20 @@ ocGetNames_ELF ( ObjectCode* oc )
                         isWeak = ELF_ST_BIND(symbol->elf_sym->st_info)
                                  == STB_WEAK;
                     }
@@ -118,10 +123,11 @@ index fdfe87a..8dc74fb 100644
                     /*
                     debugBelch(
                        "skipping   bind = %d,  type = %d,  secno = %d   `%s'\n",
-@@ -999,6 +996,24 @@ ocGetNames_ELF ( ObjectCode* oc )
+@@ -999,7 +1001,24 @@ ocGetNames_ELF ( ObjectCode* oc )
                        nm
                     );
                     */
+-               }
 +                    continue;
 +                }
 +
@@ -139,7 +145,7 @@ index fdfe87a..8dc74fb 100644
 +                    }
 +                    oc->symbols[curSymbol++].name = nm;
 +                    oc->symbols[curSymbol].addr = symbol->addr;
-+  
-                }
++                }
             }
        }
+    }
