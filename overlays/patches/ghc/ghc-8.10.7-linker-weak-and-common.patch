@@ -1,3 +1,41 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 10b0764..7d473f8 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -273,7 +273,7 @@ int ghciInsertSymbolTable(
+    RtsSymbolInfo *pinfo = lookupStrHashTable(table, key);
+    if (!pinfo) /* new entry */
+    {
+-      pinfo = stgMallocBytes(sizeof (*pinfo), "ghciInsertToSymbolTable");
++      pinfo = stgCallocBytes(sizeof (*pinfo), "ghciInsertToSymbolTable");
+       pinfo->value = data;
+       pinfo->owner = owner;
+       pinfo->weak = weak;
+@@ -1329,7 +1329,7 @@ mkOc( pathchar *path, char *image, int imageSize,
+    ObjectCode* oc;
+ 
+    IF_DEBUG(linker, debugBelch("mkOc: start\n"));
+-   oc = stgMallocBytes(sizeof(ObjectCode), "mkOc(oc)");
++   oc = stgCallocBytes(sizeof(ObjectCode), "mkOc(oc)");
+ 
+    oc->info = NULL;
+ 
+@@ -1496,12 +1496,12 @@ preloadObjectFile (pathchar *path)
+     // reading the file, and then we misalign image on purpose so
+     // that the actual sections end up aligned again.
+    misalignment = machoGetMisalignment(f);
+-   image = stgMallocBytes(fileSize + misalignment, "loadObj(image)");
++   image = stgCallocBytes(fileSize + misalignment, "loadObj(image)");
+    image += misalignment;
+ 
+ # else /* !defined(darwin_HOST_OS) */
+ 
+-   image = stgMallocBytes(fileSize, "loadObj(image)");
++   image = stgCallocBytes(fileSize, "loadObj(image)");
+ 
+ #endif
+ 
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
 index f326a84..a846bf5 100644
 --- a/rts/LinkerInternals.h
 +++ b/rts/LinkerInternals.h
