@@ -24,6 +24,10 @@
       url = "github:haskell/cabal/3.4";
       flake = false;
     };
+    cabal-36 = {
+      url = "github:haskell/cabal/3.6";
+      flake = false;
+    };
     cardano-shell = {
       url = "github:input-output-hk/cardano-shell";
       flake = false;
