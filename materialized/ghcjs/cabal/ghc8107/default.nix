@@ -35,7 +35,7 @@
         "base64-bytestring".revision = (((hackage."base64-bytestring")."1.2.1.0").revisions).default;
         "process".revision = (((hackage."process")."1.6.13.2").revisions).default;
         "resolv".revision = (((hackage."resolv")."0.1.2.0").revisions).default;
-        "base16-bytestring".revision = (((hackage."base16-bytestring")."0.1.1.7").revisions).default;
+        "base16-bytestring".revision = (((hackage."base16-bytestring")."1.0.2.0").revisions).default;
         "regex-base".revision = (((hackage."regex-base")."0.94.0.1").revisions).default;
         "network".revision = (((hackage."network")."3.1.2.5").revisions).default;
         "network".flags.devel = false;
@@ -43,7 +43,7 @@
         "hsc2hs".flags.in-ghc-tree = false;
         "echo".revision = (((hackage."echo")."0.1.4").revisions).default;
         "echo".flags.example = false;
-        "Cabal".revision = (((hackage."Cabal")."3.4.1.0").revisions).default;
+        "Cabal".revision = (((hackage."Cabal")."3.6.2.0").revisions).default;
         "Cabal".flags.bundled-binary-generic = false;
         "directory".revision = (((hackage."directory")."1.3.6.0").revisions).default;
         "mtl".revision = (((hackage."mtl")."2.2.2").revisions).default;

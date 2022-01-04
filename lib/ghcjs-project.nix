@@ -39,7 +39,7 @@
   if (builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0)
   then pkgs.haskell-nix.tool compiler-nix-name "cabal" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
-    version = "3.4.0.0";
+    version = "3.6.2.0";
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
   }
   else pkgs.haskell-nix.tool compiler-nix-name "cabal" {
