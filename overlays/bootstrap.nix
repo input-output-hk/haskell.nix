@@ -531,6 +531,25 @@ in {
 
                 ghc-patches = ghc-patches "9.0.1";
             };
+            ghc902 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc902; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "9.0.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "15wii8can2r3dcl6jjmd50h2jvn7rlmn05zb74d2scj6cfwl43hl";
+                };
+
+                ghc-patches = ghc-patches "9.0.2";
+            };
             ghc921 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc921; };
 
