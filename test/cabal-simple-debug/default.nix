@@ -17,7 +17,8 @@ let
 
 in recurseIntoAttrs {
   # DWARF only works on linux with GHC 8.10.2 and newer
-  meta.disabled = __elem compiler-nix-name ["ghc865" "ghc884"]
+  # GHC 9.2.1 disabled because of https://github.com/input-output-hk/haskell.nix/issues/1332
+  meta.disabled = __elem compiler-nix-name ["ghc865" "ghc884" "ghc921"]
     || !stdenv.hostPlatform.isLinux || haskellLib.isCrossHost || stdenv.hostPlatform.isMusl;
   ifdInputs = {
     inherit (project) plan-nix;

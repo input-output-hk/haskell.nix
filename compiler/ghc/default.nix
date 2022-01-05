@@ -234,9 +234,6 @@ stdenv.mkDerivation (rec {
 
   buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
-  propagatedBuildInputs = [ targetPackages.stdenv.cc ]
-    ++ lib.optional useLLVM llvmPackages.llvm;
-
   depsTargetTarget = map lib.getDev (libDeps targetPlatform);
   depsTargetTargetPropagated = map (lib.getOutput "out") (libDeps targetPlatform);
 
