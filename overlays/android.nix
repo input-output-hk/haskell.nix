@@ -1,10 +1,11 @@
 final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
   # we really only want the static one.
+  bionic = prev.bionic.override { enableStatic = true; };
   libiconv = (prev.libiconv.override { enableStatic = true; enableShared = false; }).overrideAttrs(_: {
     hardeningDisable = [ "fortify" "stackprotector" "format" ];
     # For some reason building libiconv with nixpgks android setup produces
     # LANGINFO_CODESET to be found, which is not compatible with android sdk 23;
-    # so we'll patch up iconv to not include that.    
+    # so we'll patch up iconv to not include that.
     postConfigure = ''
       echo "#undef HAVE_LANGINFO_CODESET" >> libcharset/config.h
       echo "#undef HAVE_LANGINFO_CODESET" >> lib/config.h
