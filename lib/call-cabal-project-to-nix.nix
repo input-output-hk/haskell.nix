@@ -64,6 +64,7 @@ in
                             # would result in the "foo" subdirectory of
                             # any plutus-apps input being used for a
                             # package.
+, extraSources ? null
 , ...
 }@args:
 
@@ -243,6 +244,41 @@ let
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
         cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
 
+      extraSourceRepo =
+        let
+          src =
+            pkgs.evalPackages.runCommand "extra-source-repository-package" {
+              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.git ];
+            } ''
+              mkdir $out
+              cd $out
+              git init -b minimal
+              ${
+                builtins.concatStringsSep "\n" (
+                  pkgs.lib.lists.zipListsWith
+                    (n: dep: "rsync -a --prune-empty-dirs ${dep.src}/ dep${builtins.toString n}/")
+                    (pkgs.lib.lists.range 0 ((builtins.length extraSources) - 1))
+                    extraSources
+                )
+              }
+              git add --force .
+              GIT_COMMITTER_NAME='No One' GIT_COMMITTER_EMAIL= git commit -m "Minimal Repo For Haskell.Nix" --author 'No One <>'
+            '';
+        in {
+          fetched = src;
+          location = src;
+          tag = "minimal";
+          subdirs =
+            builtins.concatLists (
+              pkgs.lib.lists.zipListsWith
+                (n: dep:
+                  builtins.map (d: "dep${builtins.toString n}/" + d) dep.subdirs
+                )
+                (pkgs.lib.lists.range 0 ((builtins.length extraSources) - 1))
+                extraSources
+            );
+        };
+
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
       #   Here we want to use pkgs.evalPackages.fetchgit, so one can calculate
@@ -252,8 +288,10 @@ let
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposEval = builtins.map (fetchPackageRepo pkgs.evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos;
-      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
+      sourceReposEval = builtins.map (fetchPackageRepo pkgs.evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos
+        ++ pkgs.lib.optional (extraSources != null) extraSourceRepo;
+      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos
+        ++ pkgs.lib.optional (extraSources != null) extraSourceRepo.fetched;
     in {
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;

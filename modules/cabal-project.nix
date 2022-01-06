@@ -120,6 +120,20 @@ in {
     source-repo-override = mkOption {
       type = attrsOf (functionTo attrs);
       default = {};
+    extraSources = mkOption {
+      type = nullOr (listOf unspecified);
+      default = null;
+      description = ''
+        Alternative to `source-repository-package` in `cabal.project`:
+        ```nix
+        [
+          {
+            src = somesrc;
+            subdirs = [ "a" "b" "." ];
+          }
+        ]
+        ```
+      '';
     };
 
     # Used by mkCabalProjectPkgSet
