@@ -115,6 +115,21 @@ in {
       type = nullOr (listOf unspecified);
       default = [];
     };
+    extraSources = mkOption {
+      type = nullOr (listOf unspecified);
+      default = null;
+      description = ''
+        Alternative to `source-repository-package` in `cabal.project`:
+        ```nix
+        [
+          {
+            src = somesrc;
+            subdirs = [ "a" "b" "." ];
+          }
+        ]
+        ```
+      '';
+    };
 
     # Used by mkCabalProjectPkgSet
     pkg-def-extras = mkOption {
