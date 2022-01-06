@@ -39,7 +39,7 @@
   if (builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0)
   then pkgs.haskell-nix.tool compiler-nix-name "cabal" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
-    version = "3.4.0.0";
+    version = "3.6.2.0";
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
   }
   else pkgs.haskell-nix.tool compiler-nix-name "cabal" {
@@ -76,7 +76,7 @@ let
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
             # pin nodejs to the 12 series for now, as strings can only be half the length in node 14+
-            # see https://github.com/nodejs/node/issues/33960, this can break large TH splices for now.            
+            # see https://github.com/nodejs/node/issues/33960, this can break large TH splices for now.
             nodejs-12_x
             makeWrapper
             xorg.lndir
@@ -85,7 +85,7 @@ let
         ]
         ++ [ ghc cabal-install emsdk ];
     # Configured the GHCJS source
-    configured-src = pkgs.runCommand "configured-ghcjs-src" {
+    configured-src = pkgs.runCommandCC "configured-ghcjs-src" {
         buildInputs = configureInputs;
         inherit src;
         } ''
@@ -132,7 +132,7 @@ let
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (
-        (pkgs.lib.filterAttrs 
+        (pkgs.lib.filterAttrs
             (n: _: !(builtins.any (x: x == n)
                 ["src" "ghcjsVersion" "ghcVersion" "happy" "alex" "cabal-install"])) args) // {
         src = configured-src;
@@ -187,4 +187,3 @@ in ghcjsProject // {
     };
     inherit configureInputs bootInputs configured-src emscriptenupstream emscripten emsdk;
 }
-

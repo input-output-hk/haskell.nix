@@ -21,5 +21,5 @@ in pkgs.recurseIntoAttrs {
   };
   stack-simple-test = packages.stack-simple.checks.stack-simple-test;
   stack-simple-checks = packages.stack-simple.checks;
-  stack-simple-shell = packages.shellFor { tools = { cabal = "3.4.0.0"; }; };
+  stack-simple-shell = packages.shellFor { tools = { cabal = "3.6.2.0"; }; };
 }
