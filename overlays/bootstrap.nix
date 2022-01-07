@@ -510,8 +510,8 @@ in {
                 };
                 inherit sphinx installDeps;
 
-                buildLlvmPackages = final.buildPackages.llvmPackages_13;
-                llvmPackages = final.llvmPackages_13;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
                     version = "8.10.7";
