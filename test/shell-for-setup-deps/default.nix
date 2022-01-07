@@ -14,7 +14,7 @@ let
   };
 
   env = project.shellFor {
-    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc921"];
+    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921"];
   };
 
 in recurseIntoAttrs ({
@@ -24,7 +24,7 @@ in recurseIntoAttrs ({
   # and corresponding package DBs and a way to use them.
   # This problem affects musl as well as the build libraries are linked to glibc.
   meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform
-    || compiler-nix-name == "ghc901";
+    || compiler-nix-name == "ghc901" || compiler-nix-name == "ghc902";
   ifdInputs = {
     inherit (project) plan-nix;
   };
