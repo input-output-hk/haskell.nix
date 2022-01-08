@@ -1,0 +1,67 @@
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index edb9385..2acd634 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -32,6 +32,9 @@
+ #include <elf.h> /* _DYNAMIC */
+ #endif
+ 
++#include <sys/auxv.h>
++#include <stdio.h>
++
+ /* -----------------------------------------------------------------------------
+  * Symbols to be inserted into the RTS symbol table.
+  */
+@@ -1025,6 +1028,23 @@
+ #define RTS_LINKER_SYMBOLS
+ #endif
+ 
++#if !defined(DYNAMIC)
++#define RTS_STACK_PROTECTOR_SYMBOLS \
++      SymI_NeedsProto(__stack_chk_fail) \
++      SymI_HasProto(pthread_atfork) \
++      SymI_HasProto_redirect(__stack_chk_fail_local, __stack_chk_fail, true)
++#define RTS_LIBC_SYMBOLS \
++      SymI_NeedsProto(abort) \
++      SymI_HasProto(getauxval) \
++      SymI_HasProto(printf) \
++      SymI_HasProto(fprintf) \
++      SymI_HasProto(sprintf) \
++      SymI_HasProto(snprintf)
++#else
++#define RTS_STACK_PROTECTOR_SYMBOLS
++#define RTS_LIBC_SYMBOLS
++#endif
++
+ /* entirely bogus claims about types of these symbols */
+ #define SymI_NeedsProto(vvv)  extern void vvv(void);
+ #define SymI_NeedsDataProto(vvv)  extern StgWord vvv[];
+@@ -1054,6 +1074,8 @@ RTS_OPENBSD_ONLY_SYMBOLS
+ RTS_LIBGCC_SYMBOLS
+ RTS_LIBFFI_SYMBOLS
+ RTS_LINKER_SYMBOLS
++RTS_STACK_PROTECTOR_SYMBOLS
++RTS_LIBC_SYMBOLS
+ #undef SymI_NeedsProto
+ #undef SymI_NeedsDataProto
+ #undef SymI_HasProto
+@@ -1107,6 +1129,8 @@ RtsSymbolVal rtsSyms[] = {
+       RTS_LIBGCC_SYMBOLS
+       RTS_LIBFFI_SYMBOLS
+       RTS_LINKER_SYMBOLS
++      RTS_STACK_PROTECTOR_SYMBOLS
++      RTS_LIBC_SYMBOLS
+       SymI_HasDataProto(nonmoving_write_barrier_enabled)
+ #if defined(darwin_HOST_OS) && defined(i386_HOST_ARCH)
+       // dyld stub code contains references to this,
+@@ -1114,6 +1138,10 @@ RtsSymbolVal rtsSyms[] = {
+       // lazy pointers as nonlazy.
+       { "dyld_stub_binding_helper", (void*)0xDEADBEEF, false },
+ #endif
++      { "__loader_add_thread_local_dtor", (void*)(&RTS_DYNAMIC), false },
++      { "__loader_remove_thread_local_dtor", (void*)(&RTS_DYNAMIC), false },
++      { "__rela_iplt_start", (void*)(&RTS_DYNAMIC), false },
++      { "__rela_iplt_end", (void*)(&RTS_DYNAMIC), false },
+       { "_DYNAMIC", (void*)(&RTS_DYNAMIC), false },
+       { 0, 0, false } /* sentinel */
+ };

@@ -251,10 +251,10 @@ in {
   # In most cases we do not want to treat musl as a cross compiler.
   # For instance when building ghc we want to include ghci.
   isCrossHost = stdenv.hostPlatform != stdenv.buildPlatform
-    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl && stdenv.buildPlatform.isx86 && stdenv.hostPlatform.isx86);
+    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl && stdenv.buildPlatform.linuxArch == stdenv.hostPlatform.linuxArch);
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
-    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.isx86 && stdenv.targetPlatform.isx86);
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch);
   # Native musl build-host-target combo
   isNativeMusl = stdenv.hostPlatform.isMusl
     && stdenv.buildPlatform == stdenv.hostPlatform

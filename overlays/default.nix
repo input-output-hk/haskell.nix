@@ -14,6 +14,7 @@ let
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
     musl = import ./musl.nix;
+    android = import ./android.nix;
     tools = import ./tools.nix;
     emscripten = import ./emscripten.nix;
     nix-prefetch-git-minimal = import ./nix-prefetch-git-minimal.nix;
@@ -47,6 +48,7 @@ let
     windows
     armv6l-linux
     musl
+    android
     tools
     emscripten
     nix-prefetch-git-minimal

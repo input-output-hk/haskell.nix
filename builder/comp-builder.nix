@@ -82,6 +82,7 @@ let self =
 
 # LLVM
 , useLLVM ? ghc.useLLVM
+, smallAddressSpace ? false
 
 }@drvArgs:
 
@@ -98,7 +99,8 @@ let
     && !stdenv.hostPlatform.isMusl
     && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
 
-  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
+  ghc = if enableDWARF then defaults.ghc.dwarf else
+        if smallAddressSpace then defaults.ghc.smallAddressSpace else defaults.ghc;
   setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
 
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
@@ -176,7 +178,7 @@ let
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
       # BINTOOLS
-      (if stdenv.hostPlatform.isLinux
+      (if stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isAndroid # might be better check to see if cc is clang/llvm?
         # use gold as the linker on linux to improve link times
         then [
           "--with-ld=${stdenv.cc.bintools.targetPrefix}ld.gold"

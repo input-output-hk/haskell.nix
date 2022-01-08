@@ -44,6 +44,9 @@ let self =
 , # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
   enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
 
+, # Wheter to build in NUMA support
+  enableNUMA ? true
+
 , # What flavour to build. An empty string indicates no
   # specific flavour and falls back to ghc default values.
   ghcFlavour ? lib.optionalString haskell-nix.haskellLib.isCrossTarget (
@@ -85,6 +88,8 @@ let
 
   targetGmp = targetPackages.gmp or gmp;
 
+  targetIconv = targetPackages.libiconv or libiconv;
+
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = lib.optionalString
     (targetPlatform != hostPlatform)
@@ -121,13 +126,16 @@ let
   ''
   # musl doesn't have a system-linker. Only on x86, and on x86 we need it, as
   # our elf linker for x86_64 is broken.
-  + lib.optionalString (targetPlatform.isMusl && !targetPlatform.isx86) ''
+  + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86)) ''
     compiler_CONFIGURE_OPTS += --flags=-dynamic-system-linker
   ''
   # While split sections are now enabled by default in ghc 8.8 for windows,
   # the seem to lead to `too many sections` errors when building base for
   # profiling.
-  + lib.optionalString targetPlatform.isWindows ''
+  #
+  # It appears that loading split sections through iserv on qemu-aarch64, is
+  # particularly slow. Let's disable them for now.
+  + lib.optionalString (targetPlatform.isWindows || targetPlatform.isAndroid) ''
     SplitSections = NO
   '' + lib.optionalString (!enableLibraryProfiling) ''
     BUILD_PROF_LIBS = NO
@@ -138,7 +146,7 @@ let
     ++ [targetLibffi]
     ++ lib.optional (!enableIntegerSimple) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
-    ++ lib.optional (platform.isLinux && !platform.isAarch32) numactl;
+    ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl;
 
   toolsForTarget =
     if hostPlatform == buildPlatform then
@@ -161,7 +169,7 @@ let
     targetCC
     enableIntegerSimple targetGmp
     enableDWARF elfutils
-    ncurses targetLibffi libiconv
+    ncurses targetLibffi libiconv targetIconv
     disableLargeAddressSpace
     buildMK
     ;
@@ -330,6 +338,11 @@ stdenv.mkDerivation (rec {
     dwarf = lib.makeOverridable self (args // {
       enableDWARF = stdenv.targetPlatform.isLinux
         && builtins.compareVersions ghc-version "8.10.2" >= 0;
+    });
+
+    # The same GHC, but without the large (1TB) address space reservation
+    smallAddressSpace = lib.makeOverridable self (args // {
+      disableLargeAddressSpace = true;
     });
   } // extra-passthru;
 
