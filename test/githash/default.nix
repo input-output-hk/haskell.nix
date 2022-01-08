@@ -44,7 +44,7 @@ let
 in recurseIntoAttrs {
   # githash runs git from TH code and this needs a cross compiled git exe
   # to work correctly.  Cross compiling git is currently brocken.
-  meta.disabled = compiler-nix-name == "ghc901" || haskellLib.isCrossHost;
+  meta.disabled = __elem compiler-nix-name ["ghc901" "ghc902"] || haskellLib.isCrossHost;
 
   ifdInputs = {
     inherit (project) plan-nix;

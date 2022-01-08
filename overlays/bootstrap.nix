@@ -53,6 +53,10 @@ let
         else if (final.buildPlatform.isAarch64 || final.targetPlatform.isAarch64)
           then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
         else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
+    ghcForBuilding90
+      = if (final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin)
+          then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107
+          else final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
     latestVer = {
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
@@ -148,7 +152,7 @@ in {
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "9.0" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
-                ++ final.lib.optional (versionAtLeast "8.10.1" && versionLessThan "9.2" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
+                ++ final.lib.optional (versionAtLeast "8.10.1" && versionLessThan "9.0.2" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 # backport of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3227
                 # the first one is a prerequisite.
                 # both are trimmed to only include the make build system part and not the
@@ -182,7 +186,7 @@ in {
                 ++ final.lib.optionals final.hostPlatform.isDarwin
                   (fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-darwin-allocateExec.patch)
                 ++ until              "8.10.6" ./patches/ghc/Sphinx_Unicode_Error.patch
-                ++ from      "9.2.1"           ./patches/ghc/ghc-9.2.1-xattr-fix.patch
+                ++ from      "9.0.2"           ./patches/ghc/ghc-9.2.1-xattr-fix.patch      # Problem was backported to 9.0.2
                 ++ fromUntil "8.10"   "9.2.2"  ./patches/ghc/MR6654-nonmoving-maxmem.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6654
                 ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6617-nonmoving-mvar.patch    # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6617
                 ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6595-nonmoving-mutvar.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6595
@@ -516,7 +520,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc901; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                  ghc = ghcForBuilding90;
                 };
                 inherit sphinx installDeps;
 
@@ -530,6 +534,25 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.0.1";
+            };
+            ghc902 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc902; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = ghcForBuilding90;
+                };
+                inherit sphinx installDeps;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_9;
+                llvmPackages = final.llvmPackages_9;
+
+                src-spec = rec {
+                    version = "9.0.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "15wii8can2r3dcl6jjmd50h2jvn7rlmn05zb74d2scj6cfwl43hl";
+                };
+
+                ghc-patches = ghc-patches "9.0.2";
             };
             ghc921 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc921; };
@@ -792,7 +815,7 @@ in {
         # Until all the dependencies build with 9.0.1 we will have to avoid
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
-          if args.compiler-nix-name == "ghc901" || args.compiler-nix-name == "ghc921"
+          if args.compiler-nix-name == "ghc901" || args.compiler-nix-name == "ghc902" || args.compiler-nix-name == "ghc921"
             then "ghc8107"
             else args.compiler-nix-name;
         project =
