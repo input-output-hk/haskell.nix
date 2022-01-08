@@ -52,4 +52,8 @@ in {
   ];
   # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
   packages.mintty.components.library.build-tools = pkgs.lib.mkForce [];
+
+  packages.ghc-lib-parser.patches = [
+    (fromUntil "8.10.0.0" "9.1" ../overlays/patches/ghc-lib-parser-8.10-global-unique-counters-in-rts.patch)
+  ];
 }

@@ -30,10 +30,7 @@ let
       sha256 = revisionSha256;
     };
 
-  defaultSetupSrc = builtins.toFile "Setup.hs" ''
-    import Distribution.Simple
-    main = defaultMain
-  '';
+  defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
   # Get the Cabal lib used to build `cabal-install`.
   # To avoid infinite recursion we have to leave this out for packages
@@ -51,7 +48,22 @@ let
     )
     buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
 
-  defaultSetup = setup-builder {
+  # This logic is needed so that we don't get duplicate packages if we
+  # add a custom Cabal package to the dependencies.  That way custom
+  # setups won't complain about e.g. binary from the Cabal dependencies
+  # and binary from the global package-db.
+  nonReinstallablePkgs = if (
+    stdenv.hostPlatform.isGhcjs || (
+        builtins.elem compiler-nix-name["ghc865" "ghc884"]
+      &&
+        !builtins.elem package.identifier.name
+          ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
+           "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
+           "containers" "binary" "mtl" "text" "process" "parsec"]
+      )
+    ) then [] else null;
+
+  defaultSetup = setup-builder ({
     name = "${ghc.targetPrefix}default-Setup";
     component = {
       depends = config.setup-depends ++ cabalLibDepends;
@@ -87,7 +99,7 @@ let
       cat ${defaultSetupSrc} > $out/Setup.hs
     '';
     inherit defaultSetupSrc;
-  };
+  } // (if nonReinstallablePkgs == null then {} else { inherit nonReinstallablePkgs; }));
 
   # buildPackages.runCommand "default-Setup" { nativeBuildInputs = [(ghc.passthru.buildGHC or ghc)]; } ''
   #   cat ${defaultSetupSrc} > Setup.hs
