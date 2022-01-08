@@ -8,6 +8,8 @@ in
 { nixpkgs ? haskellNix.sources.nixpkgs-2111
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
+, nixpkgsForHydra ? haskellNix.sources.nixpkgs-2105
+, pkgsForHydra ? import nixpkgsForHydra nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 }:
@@ -57,7 +59,7 @@ in rec {
     # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
     # (We could pull in darcs from a known good haskell.nix for hydra to
     # use)
-    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
+    check-hydra = pkgsForHydra.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       # Includes cabal-install since this is commonly used.
       nix-tools = pkgs.linkFarm "common-tools" [
@@ -72,7 +74,7 @@ in rec {
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs (
-      (pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isWindows {
+      (pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
         inherit (maintainer-scripts) check-hydra;
       })
     // (pkgs.lib.optionalAttrs (ifdLevel > 2) {
