@@ -1,4 +1,4 @@
-{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
+{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }@defaults:
 
 let self =
 { component, package, name, src, enableDWARF ? false, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
@@ -7,6 +7,7 @@ let self =
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , cleanSrc ? haskellLib.cleanCabalComponent package component "setup" src
+, nonReinstallablePkgs ? defaults.nonReinstallablePkgs
 }@drvArgs:
 
 let
@@ -18,7 +19,7 @@ let
 
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
-    inherit fullName flags component enableDWARF;
+    inherit fullName flags component enableDWARF nonReinstallablePkgs;
   };
   hooks = haskellLib.optionalHooks {
     inherit

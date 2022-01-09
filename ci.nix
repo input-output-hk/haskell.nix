@@ -38,6 +38,7 @@
       ghc8106 = false;
       ghc8107 = true;
       ghc901 = false;
+      ghc902 = true;
       ghc921 = true;
       ghc810420210212 = false;
     });

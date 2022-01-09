@@ -1,0 +1,14 @@
+diff --git a/libraries/base/base.cabal b/libraries/base/base.cabal
+index d0ffe1b..d5b8552 100644
+--- a/libraries/base/base.cabal
++++ b/libraries/base/base.cabal
+@@ -410,6 +410,9 @@ Library
+     if os(freebsd)
+         cc-options: -DLIBICONV_PLUG
+ 
++    if os(android)
++        extra-libraries: iconv
++
+     -- We need to set the unit id to base (without a version number)
+     -- as it's magic.
+     ghc-options: -this-unit-id base

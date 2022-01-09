@@ -165,8 +165,6 @@ in
       echo "${"Shell for " + toString (builtins.map (p : p.identifier.name) selectedPackages)}"
       echo $nativeBuildInputs $buildInputs > $out
     '';
-    LANG = "en_US.UTF-8";
-    LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
 
     # This helps tools like `ghcide` (that use the ghc api) to find
     # the correct global package DB.
