@@ -27,4 +27,6 @@ final: prev:
       })
     );
   });
+  # Add config.sub and config.guess files that know about ghcjs
+  gnu-config = ./gnu-config;
 }
