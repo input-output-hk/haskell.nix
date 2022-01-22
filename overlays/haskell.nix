@@ -497,7 +497,7 @@ final: prev: {
                 };
           in cabalProject' (
             (final.haskell-nix.hackageQuirks { inherit name; version = version'; }) //
-              builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
+              builtins.removeAttrs args [ "version" "revision" ] // { src = args.src or src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the

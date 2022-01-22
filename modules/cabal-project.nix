@@ -120,6 +120,7 @@ in {
     source-repo-override = mkOption {
       type = attrsOf (functionTo attrs);
       default = {};
+    };
     extraSources = mkOption {
       type = nullOr (listOf unspecified);
       default = null;
