@@ -37,6 +37,24 @@ in
     then { location, tag, ...}: sha256map."${location}"."${tag}"
     else _: null
 , extra-hackage-tarballs ? []
+, source-repo-override ? {} # Cabal seems to behave incoherently when
+                            # two source-repository-package entries
+                            # provide the same packages, making it
+                            # impossible to override cabal.project
+                            # with e.g. a cabal.project.local. In CI,
+                            # we want to be able to test against the
+                            # latest versions of various dependencies.
+                            #
+                            # This argument is a map from url to
+                            # a function taking the existing repoData
+                            # and returning the new repoData in its
+                            # place. E.g.
+                            #
+                            # { "https://github.com/input-output-hk/plutus-apps" = orig: orig // { subdirs = (orig.subdirs or [ "." ]) ++ [ "foo" ]; }; }
+                            #
+                            # would result in the "foo" subdirectory of
+                            # any plutus-apps input being used for a
+                            # package.
 , ...
 }@args:
 
@@ -206,7 +224,8 @@ let
       blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
-      sourceRepoData = pkgs.lib.lists.map (x: x.sourceRepo) repoBlocks;
+      overrideSourceRepo = sourceRepo: (source-repo-override.${sourceRepo.url} or (pkgs.lib.id)) sourceRepo;
+      sourceRepoData = pkgs.lib.lists.map (x: overrideSourceRepo x.sourceRepo) repoBlocks;
       otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.otherText) repoBlocks)));
