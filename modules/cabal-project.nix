@@ -115,6 +115,10 @@ in {
       type = nullOr (listOf unspecified);
       default = [];
     };
+    source-repo-override = mkOption {
+      type = attrsOf (functionTo attrs);
+      default = {};
+    };
 
     # Used by mkCabalProjectPkgSet
     pkg-def-extras = mkOption {
