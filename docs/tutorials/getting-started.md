@@ -37,7 +37,7 @@ This can be tricky to get setup properly. If you're still having trouble getting
 
 ## Niv
 
-[Niv](https://github.com/nmattia/niv) is a command line tool for keeping tack of Nix project dependencies.
+[Niv](https://github.com/nmattia/niv) is a command line tool for keeping track of Nix project dependencies.
 
 This guide assumes that the `sources.haskellNix` will be set to point
 a pinned copy of the haskell.nix github repo.  One easy way to do this
