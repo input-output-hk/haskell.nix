@@ -44,7 +44,7 @@
       flake = false;
     };
     nix-tools = {
-      url = "github:input-output-hk/nix-tools";
+      url = "github:input-output-hk/nix-tools/hkm/hackage-path-fix";
       flake = false;
     };
     old-ghc-nix = {
