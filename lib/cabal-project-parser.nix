@@ -74,7 +74,7 @@ let
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
   # will be trated like a field and returned here
   # (used in call-cabal-project-to-nix.nix to create a fixed-output derivation)
-  extractSourceRepoPackageData = cabalProjectFileName: lookupSha256: repo: {
+  extractRepoData = cabalProjectFileName: lookupSha256: repo: {
     url = repo.location;
     ref = repo.tag;
     sha256 = repo."--sha256" or (lookupSha256 repo);
@@ -95,78 +95,10 @@ let
           otherText = "\nsource-repository-package\n" + block;
         }
         else {
-          sourceRepo = extractSourceRepoPackageData cabalProjectFileName lookupSha256 attrs;
+          sourceRepo = extractRepoData cabalProjectFileName lookupSha256 attrs;
           otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
         };
 
-  parseSourceRepositoryPackages = cabalProjectFileName: lookupSha256: source-repo-override: projectFile:
-    let
-      blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
-      initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
-      overrideSourceRepo = sourceRepo: (source-repo-override.${sourceRepo.url} or (pkgs.lib.id)) sourceRepo;
-    in {
-      sourceRepos = pkgs.lib.lists.map (block: overrideSourceRepo block.sourceRepo) repoBlocks;
-      otherText = pkgs.lib.strings.concatStringsSep "\n" (
-        initialText
-        ++ (builtins.map (x: x.otherText) repoBlocks));
-    };
-
-  # Parse a repository
-  parseRepositoryBlock = cabalProjectFileName: lookupSha256: cabal-install: nix-tools: block:
-    let
-      lines = pkgs.lib.splitString "\n" block;
-      x = span (pkgs.lib.strings.hasPrefix " ") (__tail lines);
-      attrs = parseBlockLines x.fst;
-    in rec {
-      name = __head lines;
-      repo = attrs;
-      home =
-        pkgs.evalPackages.runCommandLocal name { nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ]; } ''
-            mkdir -p $out/.cabal
-            cat <<EOF > $out/.cabal/config
-            repository ${name}
-              url: ${attrs.url}
-              ${pkgs.lib.optionalString (attrs ? secure) "secure: ${attrs.secure}"}
-              ${pkgs.lib.optionalString (attrs ? root-keys) "root-keys: ${attrs.root-keys}"}
-              ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
-            EOF
-
-            export SSL_CERT_FILE=${pkgs.evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
-            mkdir -p $out/.cabal/packages/${name}
-            HOME=$out cabal new-update ${name}
-        '';
-      hackage = import ((x: __trace (toString x) x) (
-        pkgs.evalPackages.runCommandLocal name { nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ]; } ''
-            mkdir -p $out
-            hackage-to-nix $out ${home}/.cabal/packages/${name}/01-index.tar ${attrs.url}
-        ''));
-      tarball = {
-        inherit name;
-        index = home + "/.cabal/packages/${name}/01-index.tar.gz";
-      };
-      otherText = ''
-        repository ${name}
-          url: file:${home + "/.cabal/packages/${name}"}
-          secure: True
-          root-keys:
-          key-threshold: 0
-        '' + pkgs.lib.strings.concatStringsSep "\n" x.snd;
-    };
-
-  parseRepositories = cabalProjectFileName: lookupSha256: cabal-install: nix-tools: projectFile:
-    let
-      blocks = pkgs.lib.splitString "\nrepository " ("\n" + projectFile);
-      initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName lookupSha256 cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
-    in {
-      extra-hackages = pkgs.lib.lists.map (block: block.hackage) repoBlocks;
-      tarballs = pkgs.lib.lists.map (block: block.tarball) repoBlocks;
-      otherText = pkgs.lib.strings.concatStringsSep "\n" (
-        initialText
-        ++ (builtins.map (x: x.otherText) repoBlocks));
-    };
-
 in {
-  inherit parseIndexState parseSourceRepositoryPackages parseRepositories;
+  inherit parseIndexState parseBlockLines parseBlock;
 }

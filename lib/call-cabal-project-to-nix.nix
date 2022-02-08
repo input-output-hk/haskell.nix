@@ -192,7 +192,7 @@ let
 
   replaceSourceRepos = projectFile:
     let
-      fetchPackageRepo = fetchgit: repoData:
+      fetchRepo = fetchgit: repoData:
         let
           fetched =
             if repoData.sha256 != null
@@ -221,13 +221,14 @@ let
           tag = "minimal";
         };
 
-      # Parse the `source-repository-package` blocks
-      sourceRepoPackageResult = pkgs.haskell-nix.haskellLib.parseSourceRepositoryPackages
-        cabalProjectFileName lookupSha256 source-repo-override projectFile;
-
-      # Parse the `repository` blocks
-      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        cabalProjectFileName lookupSha256 cabal-install nix-tools sourceRepoPackageResult.otherText;
+      blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
+      initialText = pkgs.lib.lists.take 1 blocks;
+      repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
+      overrideSourceRepo = sourceRepo: (source-repo-override.${sourceRepo.url} or (pkgs.lib.id)) sourceRepo;
+      sourceRepoData = pkgs.lib.lists.map (x: overrideSourceRepo x.sourceRepo) repoBlocks;
+      otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
+        initialText
+        ++ (builtins.map (x: x.otherText) repoBlocks)));
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
@@ -238,13 +239,12 @@ let
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposEval = builtins.map (fetchPackageRepo pkgs.evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos;
-      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
+      sourceReposEval = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData;
+      sourceReposBuild = builtins.map (x: (fetchRepo pkgs.fetchgit x).fetched) sourceRepoData;
     in {
       sourceRepos = sourceReposBuild;
-      inherit (repoResult) tarballs extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${pkgs.evalPackages.writeText "cabal.project" repoResult.otherText} ./cabal.project
+        cp -f ${otherText} ./cabal.project
       '' +
         pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
         chmod +w -R ./cabal.project
@@ -279,7 +279,7 @@ let
 
   fixedProject =
     if rawCabalProject == null
-      then { sourceRepos = []; tarballs = []; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
+      then { sourceRepos = []; makeFixedProjectFile = ""; replaceLocations = ""; }
       else replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
@@ -524,11 +524,7 @@ let
       # some packages that will be excluded by `index-state-found`
       # which is used by cabal (cached-index-state >= index-state-found).
       dotCabal {
-        inherit cabal-install nix-tools;
-        extra-hackage-tarballs =
-          if __length extra-hackage-tarballs != 0
-            then extra-hackage-tarballs
-            else fixedProject.tarballs;
+        inherit cabal-install nix-tools extra-hackage-tarballs;
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
@@ -614,5 +610,5 @@ in {
   projectNix = plan-nix;
   index-state = index-state-found;
   inherit src;
-  inherit (fixedProject) sourceRepos extra-hackages;
+  inherit (fixedProject) sourceRepos;
 }
