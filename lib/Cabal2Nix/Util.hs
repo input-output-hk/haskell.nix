@@ -25,7 +25,7 @@ quoted :: (IsString a, Semigroup a) => a -> a
 quoted str = "\"" <> str <> "\""
 
 selectOr :: NExpr -> NAttrPath NExpr -> NExpr -> NExpr
-selectOr obj path alt = Fix (NSelect obj path (Just $ alt))
+selectOr obj path alt = Fix (NSelect (Just $ alt) obj path)
 
 mkThrow :: NExpr -> NExpr
 mkThrow msg = (mkSym "builtins" @. "throw") @@ msg
@@ -33,5 +33,5 @@ mkThrow msg = (mkSym "builtins" @. "throw") @@ msg
 sha256 :: String -> String
 sha256 = unpack . Base16.encode . hash . pack
 
-bindPath :: NonEmpty Text -> NExpr -> Binding NExpr
+bindPath :: NonEmpty VarName -> NExpr -> Binding NExpr
 bindPath ks e = NamedVar (fmap StaticKey ks) e nullPos

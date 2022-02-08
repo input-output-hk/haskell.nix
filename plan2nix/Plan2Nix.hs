@@ -134,16 +134,18 @@ plan2nix args (Plan { packages, extras, components, compilerVersion, compilerPac
     ]
  where
   quotedPackages = mapKeys quoted packages
+  bind :: Text -> Maybe Package -> [Binding NExpr]
   bind pkg (Just (Package { packageVersion, packageRevision, packageFlags })) =
-    let verExpr      = mkSym "hackage" @. pkg @. quoted packageVersion
-        revExpr      = verExpr @. "revisions" @. maybe "default" quoted packageRevision
+    let verExpr      = (mkSym "hackage" @. pkg) @. quoted packageVersion
+        revExpr      = (verExpr @. "revisions") @. maybe "default" quoted packageRevision
         flagBindings = Map.foldrWithKey
-          (\fname val acc -> bindPath (pkg :| ["flags", fname]) (mkBool val) : acc)
+          (\fname val acc -> bindPath (VarName pkg :| ["flags", fname]) (mkBool val) : acc)
           []
           packageFlags
     in  revBinding pkg revExpr : flagBindings
   bind pkg Nothing = [revBinding pkg mkNull]
-  revBinding pkg revExpr = bindPath (pkg :| ["revision"]) revExpr
+  revBinding :: Text -> NExpr -> Binding NExpr
+  revBinding pkg revExpr = bindPath (VarName pkg :| ["revision"]) revExpr
   bind' pkg ver = pkg $= maybe mkNull mkStr ver
   mapKeys f = Map.fromList . fmap (\(k, v) -> (f k, v)) . Map.toList
 
@@ -173,13 +175,13 @@ plan2nix args (Plan { packages, extras, components, compilerVersion, compilerPac
             return $ fromString pkg $= mkPath False nix
 
 -- | Converts the project flags for a package flags into @{ packageName = { flags = { flagA = BOOL; flagB = BOOL; }; }; }@
-flags2nix :: Text -> HashMap Text Bool -> [Binding NExpr]
+flags2nix :: Text -> HashMap VarName Bool -> [Binding NExpr]
 flags2nix pkgName pkgFlags =
   [ quoted pkgName $= mkNonRecSet
     -- `mkOverride 900` is used here so that the default values will be replaced (they are 1000).
     -- Values without a priority are treated as 100 and will replace these ones.
     [ "flags" $= mkNonRecSet [ quoted flag $= ("lib" @. "mkOverride" @@ mkInt 900 @@ mkBool val)
-                             | (flag, val) <- Map.toList pkgFlags
+                             | (VarName flag, val) <- Map.toList pkgFlags
                              ]
     ]
   ]
@@ -196,13 +198,13 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
     (_, "global") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Nothing
       }
     (_, "inplace") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Nothing
       }
     -- Until we figure out how to force Cabal to reconfigure just about any package
@@ -224,13 +226,13 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
     ("local", "local") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Just . LocalPath . Text.unpack $ pkg ^. key "pkg-src" . key "path" . _String
       }
     (_, "source-repo") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Just . flip DVCS [ Text.unpack $ fromMaybe "." $ pkg ^? key "pkg-src" . key "source-repo" . key "subdir" . _String ] $
           Git ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "location" . _String )
               ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "tag" . _String )

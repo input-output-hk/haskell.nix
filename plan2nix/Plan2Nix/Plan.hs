@@ -15,6 +15,7 @@ module Plan2Nix.Plan
 import           Data.Text                                ( Text )
 import           Data.HashMap.Strict                      ( HashMap )
 import           Data.HashSet                             ( HashSet )
+import           Nix.Expr
 
 type Version = Text
 type Revision = Text -- Can be: rNUM, cabal file sha256, or "default"
@@ -44,6 +45,6 @@ data PkgSrc
 data Package = Package
   { packageVersion :: Version
   , packageRevision :: Maybe Revision
-  , packageFlags :: HashMap Text Bool
+  , packageFlags :: HashMap VarName Bool
   , packageSrc :: Maybe PkgSrc
   } deriving (Show)

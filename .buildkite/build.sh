@@ -1,7 +1,7 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -I "nixpkgs=channel:nixos-20.03" --pure -i bash -p nix cabal-install ghc git nix-prefetch-git cacert
+#! nix-shell -I "nixpkgs=channel:nixos-21.11" --pure -i bash -p nixUnstable cabal-install ghc git nix-prefetch-git cacert
 
-export NIX_PATH="nixpkgs=channel:nixos-20.03"
+export NIX_PATH="nixpkgs=channel:nixos-21.11"
 index_state="2020-01-10T00:00:00Z"
 expected_hash="0z2jc4fibfxz88pfgjq3wk5j3v7sn34xkwb8h60hbwfwhhy63vx6"
 
@@ -17,7 +17,7 @@ cabal new-configure
 
 echo
 echo "+++ Run stable version of plan-to-nix"
-nix build '(let haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}; in (import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs).haskell-nix.nix-tools.ghc8105)' -o nt
+nix build --impure --expr '(let haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}; in (import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs).haskell-nix.nix-tools.ghc8107)' -o nt
 ./nt/bin/plan-to-nix --output .buildkite/nix1 --plan-json dist-newstyle/cache/plan.json
 
 # Replace currently broken plan-to-nix output

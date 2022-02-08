@@ -9,6 +9,7 @@ import Distribution.PackageDescription.Parsec (readGenericPackageDescription, pa
 import Distribution.Verbosity (normal)
 import Distribution.Pretty (pretty)
 import Distribution.Utils.ShortText (fromShortText)
+import Distribution.Utils.Path (getSymbolicPath)
 import Data.Char (toUpper)
 import System.FilePath
 import Data.ByteString (ByteString)
@@ -177,7 +178,7 @@ class ToNixBinding a where
   toNixBinding :: a -> Binding NExpr
 
 applyMkDefault :: NExpr -> NExpr
-applyMkDefault expr = mkSym pkgs @. "lib" @. "mkDefault" @@ expr
+applyMkDefault expr = (mkSym pkgs @. "lib") @. "mkDefault" @@ expr
 
 instance ToNixExpr PackageIdentifier where
   toNix ident = mkNonRecSet [ "name"    $= mkStr (fromString (show (pretty (pkgName ident))))
@@ -208,7 +209,7 @@ toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
       then []
       else
         [ "detailLevel"   $= mkStr (fromString (show detailLevel))
-        , "licenseFiles"  $= toNix (licenseFiles pd)
+        , "licenseFiles"  $= toNix (map getSymbolicPath (licenseFiles pd))
         , "dataDir"       $= mkStr (fromString (dataDir pd))
         , "dataFiles"     $= toNix (dataFiles pd)
         , "extraSrcFiles" $= toNix (extraSrcFiles pd)
@@ -287,7 +288,7 @@ toNixGenericPackageDescription isLocal detailLevel gpd = mkNonRecSet
                       [ "cSources"     $= toNix src  | Just src  <- [shakeTree . fmap (cSources     . getBuildInfo) $ comp ] ] ++
                       [ "cxxSources"   $= toNix src  | Just src  <- [shakeTree . fmap (cxxSources   . getBuildInfo) $ comp ] ] ++
                       [ "jsSources"    $= toNix src  | Just src  <- [shakeTree . fmap (jsSources    . getBuildInfo) $ comp ] ] ++
-                      [ "hsSourceDirs" $= toNix dir  | Just dir  <- [shakeTree . fmap (hsSourceDirs . getBuildInfo) $ comp ] ] ++
+                      [ "hsSourceDirs" $= toNix (fmap getSymbolicPath <$> dir) | Just dir  <- [shakeTree . fmap (hsSourceDirs . getBuildInfo) $ comp ] ] ++
                       [ "includeDirs"  $= toNix dir  | Just dir  <- [shakeTree . fmap (includeDirs  . getBuildInfo) $ comp] ] ++
                       [ "includes"     $= toNix dir  | Just dir  <- [shakeTree . fmap (includes     . getBuildInfo) $ comp] ] ++
                       [ "mainPath"     $= toNix p | Just p <- [shakeTree . fmap (maybeToList . getMainPath) $ comp] ])
@@ -402,11 +403,11 @@ instance ToNixExpr CompilerFlavor where
 
 instance ToNixExpr (VersionRangeF VersionRange) where
   toNix (OrLaterVersionF    ver) | ver == version0 = mkBool True
-  toNix (ThisVersionF       ver) = mkSym "compiler" @. "version" @. "eq" @@ mkStr (fromString (show (pretty ver)))
-  toNix (LaterVersionF      ver) = mkSym "compiler" @. "version" @. "gt" @@ mkStr (fromString (show (pretty ver)))
-  toNix (OrLaterVersionF    ver) = mkSym "compiler" @. "version" @. "ge" @@ mkStr (fromString (show (pretty ver)))
-  toNix (EarlierVersionF    ver) = mkSym "compiler" @. "version" @. "lt" @@ mkStr (fromString (show (pretty ver)))
-  toNix (OrEarlierVersionF  ver) = mkSym "compiler" @. "version" @. "le" @@ mkStr (fromString (show (pretty ver)))
+  toNix (ThisVersionF       ver) = (mkSym "compiler" @. "version") @. "eq" @@ mkStr (fromString (show (pretty ver)))
+  toNix (LaterVersionF      ver) = (mkSym "compiler" @. "version") @. "gt" @@ mkStr (fromString (show (pretty ver)))
+  toNix (OrLaterVersionF    ver) = (mkSym "compiler" @. "version") @. "ge" @@ mkStr (fromString (show (pretty ver)))
+  toNix (EarlierVersionF    ver) = (mkSym "compiler" @. "version") @. "lt" @@ mkStr (fromString (show (pretty ver)))
+  toNix (OrEarlierVersionF  ver) = (mkSym "compiler" @. "version") @. "le" @@ mkStr (fromString (show (pretty ver)))
   toNix (MajorBoundVersionF ver) = toNix (IntersectVersionRangesF (orLaterVersion ver) (earlierVersion (majorUpperBound ver)))
   toNix (IntersectVersionRangesF v1 v2) = toNix (projectVersionRange v1) $&& toNix (projectVersionRange v2)
   toNix x = error $ "ToNixExpr VersionRange for `" ++ show x ++ "` not implemented!"
@@ -420,8 +421,8 @@ instance ToNixExpr a => ToNixExpr (Condition a) where
 
 instance (Foldable t, ToNixExpr (t a), ToNixExpr v, ToNixExpr c) => ToNixExpr (CondBranch v c (t a)) where
   toNix (CondBranch c t Nothing) = case toNix t of
-    (Fix (NList [e])) -> mkSym pkgs @. "lib" @. "optional" @@ toNix c @@ e
-    e -> mkSym pkgs @. "lib" @. "optionals" @@ toNix c @@ e
+    (Fix (NList [e])) -> (mkSym pkgs @. "lib") @. "optional" @@ toNix c @@ e
+    e -> (mkSym pkgs @. "lib") @. "optionals" @@ toNix c @@ e
   toNix (CondBranch _c t (Just f)) | toNix t == toNix f = toNix t
   toNix (CondBranch c  t (Just f)) = mkIf (toNix c) (toNix t) (toNix f)
 

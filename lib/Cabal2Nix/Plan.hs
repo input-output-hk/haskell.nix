@@ -26,7 +26,7 @@ data Plan = Plan
 data Package = Package
   { packageVersion :: Version
   , packageRevision :: Maybe Revision
-  , packageFlags :: HashMap Text Bool
+  , packageFlags :: HashMap VarName Bool
   }
 
 plan2nix :: Plan -> NExpr
@@ -42,15 +42,17 @@ plan2nix (Plan { packages, compilerVersion, compilerPackages }) =
       ]
  where
   quotedPackages = mapKeys quoted packages
+  bind :: Text -> Maybe Package -> [Binding NExpr]
   bind pkg (Just (Package { packageVersion, packageRevision, packageFlags })) =
-    let verExpr      = mkSym "hackage" @. pkg @. quoted packageVersion
-        revExpr      = verExpr @. "revisions" @. maybe "default" quoted packageRevision
+    let verExpr      = (mkSym "hackage" @. pkg) @. quoted packageVersion
+        revExpr      = (verExpr @. "revisions") @. maybe "default" quoted packageRevision
         flagBindings = Map.foldrWithKey
-          (\fname val acc -> bindPath (pkg :| ["flags", fname]) (mkBool val) : acc)
+          (\fname val acc -> bindPath (VarName pkg :| ["flags", fname]) (mkBool val) : acc)
           []
           packageFlags
     in  revBinding pkg revExpr : flagBindings
   bind pkg Nothing = [revBinding pkg mkNull]
-  revBinding pkg revExpr = bindPath (pkg :| ["revision"]) revExpr
+  revBinding :: Text -> NExpr -> Binding NExpr
+  revBinding pkg revExpr = bindPath (VarName pkg :| ["revision"]) revExpr
   bind' pkg ver = pkg $= maybe mkNull mkStr ver
   mapKeys f = Map.fromList . fmap (\(k, v) -> (f k, v)) . Map.toList

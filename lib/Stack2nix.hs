@@ -107,11 +107,11 @@ stack2nix args (Stack resolver compiler pkgs pkgFlags ghcOpts) =
 extraDeps2nix :: [Dependency] -> [(T.Text, Binding NExpr)]
 extraDeps2nix pkgs =
   let extraDeps = [(pkgId, info) | PkgIndex pkgId info <- pkgs]
-  in [ (toText pkg, quoted (toText pkg) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. "default"))
+  in [ (toText pkg, quoted (toText pkg) $= ((((mkSym "hackage" @. toText pkg) @. quoted (toText ver)) @. "revisions") @. "default"))
      | (PackageIdentifier pkg ver, Nothing) <- extraDeps ]
-  ++ [ (toText pkg, quoted (toText pkg) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. quoted (T.pack sha)))
+  ++ [ (toText pkg, quoted (toText pkg) $= ((((mkSym "hackage" @. toText pkg) @. quoted (toText ver)) @. "revisions") @. quoted (T.pack sha)))
      | (PackageIdentifier pkg ver, (Just (Left sha))) <- extraDeps ]
-  ++ [ (toText pkg, quoted (toText pkg) $= (mkSym "hackage" @. toText pkg @. quoted (toText ver) @. "revisions" @. toText revNo))
+  ++ [ (toText pkg, quoted (toText pkg) $= ((((mkSym "hackage" @. toText pkg) @. quoted (toText ver)) @. "revisions") @. toText revNo))
      | (PackageIdentifier pkg ver, (Just (Right revNo))) <- extraDeps ]
   where parsePackageIdentifier :: String -> Maybe PackageIdentifier
         parsePackageIdentifier = simpleParse

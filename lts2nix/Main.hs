@@ -76,7 +76,7 @@ lts2plan compilerPackagesMap lts = Plan { packages, compilerVersion, compilerPac
         , packageRevision = case rev of
             Just (Left sha) -> Just $ Text.pack sha
             _               -> Nothing
-        , packageFlags = Map.lookupDefault Map.empty name flags
+        , packageFlags = Map.mapKeys VarName $ Map.lookupDefault Map.empty name flags
         })
 
     packages = packages' `Map.union` compilerPackages'
