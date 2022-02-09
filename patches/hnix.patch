@@ -1,0 +1,13 @@
+diff --git a/src/Nix/Reduce.hs b/src/Nix/Reduce.hs
+index 6eb3cdac..2a9ffd2a 100644
+--- a/src/Nix/Reduce.hs
++++ b/src/Nix/Reduce.hs
+@@ -22,7 +22,7 @@ module Nix.Reduce
+
+ import           Nix.Prelude
+ import           Control.Monad.Catch            ( MonadCatch(catch) )
+-#if !MIN_VERSION_base(4,13,0)
++#if !MIN_VERSION_base(4,12,0)
+ import           Prelude                 hiding ( fail )
+ import           Control.Monad.Fail
+ #endif
