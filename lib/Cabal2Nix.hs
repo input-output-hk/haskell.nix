@@ -15,6 +15,13 @@ import System.FilePath
 import Data.ByteString (ByteString)
 import Data.Maybe (catMaybes, maybeToList)
 import Data.Foldable (toList)
+import Distribution.Package
+         ( packageName, packageVersion )
+import Distribution.Pretty (prettyShow)
+import qualified System.FilePath.Posix as FilePath.Posix
+         ( combine, joinPath, splitDirectories )
+import Network.URI
+         ( URI(uriAuthority, uriPath), URIAuth(..), parseURI )
 
 import Distribution.Types.CondTree
 import Distribution.Types.Library
@@ -224,7 +231,7 @@ srcToNix _ (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
 srcToNix pi' (PrivateHackage url)
   = mkNonRecSet $
     [ "src" $= applyMkDefault (mkSym pkgs @. "fetchurl" @@ mkNonRecSet
-      [ "url" $= mkStr (fromString $ mkPrivateHackageUrl url pi')
+      [ "url" $= mkStr (fromString . show $ mkPrivateHackageUrl url pi')
       , "sha256" $= (mkSym "config" @. "sha256")
       ])
     ]
@@ -248,11 +255,40 @@ srcToNix _ (Git url rev mbSha256 mbPath)
       $= mkStr (fromString $ "sourceRoot+=/" <> root <> "; echo source root reset to $sourceRoot")
     | Just root <- [mbPath] ]
 
-mkPrivateHackageUrl :: String -> PackageIdentifier -> String
-mkPrivateHackageUrl hackageUrl pi' =
-  hackageUrl <> "/package/" <> pkgNameVersion <> "/" <> pkgNameVersion <> ".tar.gz"
-  where
-    pkgNameVersion = unPackageName (pkgName pi') <> "-" <> show (pretty (pkgVersion pi'))
+-- This logic is hard coded in `cabal-install` see:
+-- * Distribution.Client.HttpUtils.isOldHackageURI
+isOldHackageURI :: URI -> Bool
+isOldHackageURI uri
+    = case uriAuthority uri of
+        Just (URIAuth {uriRegName = "hackage.haskell.org"}) ->
+            FilePath.Posix.splitDirectories (uriPath uri)
+            == ["/","packages","archive"]
+        _ -> False
+
+-- This logic is hard coded in `cabal-install` see:
+-- * Distribution.Client.FetchUtils.packageURI
+packageURI :: URI -> PackageId -> URI
+packageURI remoteRepoURI pkgid | isOldHackageURI remoteRepoURI =
+  remoteRepoURI {
+    uriPath = FilePath.Posix.joinPath
+      [uriPath remoteRepoURI
+      ,prettyShow (packageName    pkgid)
+      ,prettyShow (packageVersion pkgid)
+      ,prettyShow pkgid <.> "tar.gz"]
+  }
+packageURI remoteRepoURI pkgid =
+  remoteRepoURI {
+    uriPath = FilePath.Posix.joinPath
+      [uriPath remoteRepoURI
+      ,"package"
+      ,prettyShow pkgid <.> "tar.gz"]
+  }
+
+mkPrivateHackageUrl :: String -> PackageIdentifier -> URI
+mkPrivateHackageUrl hackageUrl = maybe
+  (error $ "Unable to parse hackage URI " <> hackageUrl)
+  packageURI
+  (parseURI hackageUrl)
 
 newtype SysDependency = SysDependency { unSysDependency :: String } deriving (Show, Eq, Ord)
 data SetupDependency = SetupDependency PackageName LibraryName deriving (Show, Eq, Ord)
