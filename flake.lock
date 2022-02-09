@@ -150,16 +150,15 @@
     "nix-tools": {
       "flake": false,
       "locked": {
-        "lastModified": 1644295260,
+        "lastModified": 1644395812,
         "narHash": "sha256-BVFk/BEsTLq5MMZvdy3ZYHKfaS3dHrsKh4+tb5t5b58=",
         "owner": "input-output-hk",
         "repo": "nix-tools",
-        "rev": "0e77a6304dd13e735d831bb7bba0ef79acbe04c9",
+        "rev": "d847c63b99bbec78bf83be2a61dc9f09b8a9ccc1",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "hkm/hackage-path-fix",
         "repo": "nix-tools",
         "type": "github"
       }
