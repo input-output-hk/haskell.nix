@@ -56,4 +56,9 @@ in {
   packages.ghc-lib-parser.patches = [
     (fromUntil "8.10.0.0" "9.1" ../overlays/patches/ghc-lib-parser-8.10-global-unique-counters-in-rts.patch)
   ];
+
+  # See https://github.com/haskell-nix/hnix/pull/1053
+  packages.hnix.patches = [
+    (fromUntil "0.16.0" "0.16.0.1" ../patches/hnix.patch)
+  ];
 }
