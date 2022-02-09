@@ -150,11 +150,11 @@
     "nix-tools": {
       "flake": false,
       "locked": {
-        "lastModified": 1636018067,
-        "narHash": "sha256-ng306fkuwr6V/malWtt3979iAC4yMVDDH2ViwYB6sQE=",
+        "lastModified": 1644395812,
+        "narHash": "sha256-BVFk/BEsTLq5MMZvdy3ZYHKfaS3dHrsKh4+tb5t5b58=",
         "owner": "input-output-hk",
         "repo": "nix-tools",
-        "rev": "ed5bd7215292deba55d6ab7a4e8c21f8b1564dda",
+        "rev": "d847c63b99bbec78bf83be2a61dc9f09b8a9ccc1",
         "type": "github"
       },
       "original": {
