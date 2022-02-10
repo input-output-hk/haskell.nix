@@ -1,0 +1,249 @@
+diff --git a/utils/hpc/HpcCombine.hs b/utils/hpc/HpcCombine.hs
+index db6ae9c948..c52a6262b3 100644
+--- a/utils/hpc/HpcCombine.hs
++++ b/utils/hpc/HpcCombine.hs
+@@ -18,7 +18,9 @@ import qualified Data.Map as Map
+ sum_options :: FlagOptSeq
+ sum_options
+         = excludeOpt
++        . excludesFromOpt
+         . includeOpt
++        . includesFromOpt
+         . outputOpt
+         . unionModuleOpt
+         . verbosityOpt
+diff --git a/utils/hpc/HpcDraft.hs b/utils/hpc/HpcDraft.hs
+index 975dbf4f65..c542dadae8 100644
+--- a/utils/hpc/HpcDraft.hs
++++ b/utils/hpc/HpcDraft.hs
+@@ -15,9 +15,13 @@ import Data.Tree
+ draft_options :: FlagOptSeq
+ draft_options
+         = excludeOpt
++        . excludesFromOpt
+         . includeOpt
++        . includesFromOpt
+         . srcDirOpt
++        . srcDirsFromOpt
+         . hpcDirOpt
++        . hpcDirsFromOpt
+         . resetHpcDirsOpt
+         . outputOpt
+         . verbosityOpt
+diff --git a/utils/hpc/HpcFlags.hs b/utils/hpc/HpcFlags.hs
+index 2d78375003..f19ff5f108 100644
+--- a/utils/hpc/HpcFlags.hs
++++ b/utils/hpc/HpcFlags.hs
+@@ -13,9 +13,13 @@ import System.FilePath
+ data Flags = Flags
+   { outputFile          :: String
+   , includeMods         :: Set.Set String
++  , includeModsFrom     :: Maybe String
+   , excludeMods         :: Set.Set String
++  , excludeModsFrom     :: Maybe String
+   , hpcDirs             :: [String]
++  , hpcDirsFrom         :: Maybe String
+   , srcDirs             :: [String]
++  , srcDirsFrom         :: Maybe String
+   , destDir             :: String
+ 
+   , perModule           :: Bool
+@@ -36,9 +40,13 @@ default_flags :: Flags
+ default_flags = Flags
+   { outputFile          = "-"
+   , includeMods         = Set.empty
++  , includeModsFrom     = Nothing
+   , excludeMods         = Set.empty
++  , excludeModsFrom     = Nothing
+   , hpcDirs             = [".hpc"]
++  , hpcDirsFrom         = Nothing
+   , srcDirs             = []
++  , srcDirsFrom         = Nothing
+   , destDir             = "."
+ 
+   , perModule           = False
+@@ -76,32 +84,69 @@ default_final_flags flags = flags
+               else srcDirs flags
+   }
+ 
+-type FlagOptSeq = [OptDescr (Flags -> Flags)] -> [OptDescr (Flags -> Flags)]
++type FlagOptSeq = [OptDescr (Flags -> IO Flags)] -> [OptDescr (Flags -> IO Flags)]
+ 
+ noArg :: String -> String -> (Flags -> Flags) -> FlagOptSeq
+-noArg flag detail fn = (:) $ Option [] [flag] (NoArg $ fn) detail
++noArg flag detail fn = noArgIO flag detail (pure . fn)
++
++noArgIO :: String -> String -> (Flags -> IO Flags) -> FlagOptSeq
++noArgIO flag detail fn = (:) $ Option [] [flag] (NoArg fn) detail
+ 
+ anArg :: String -> String -> String -> (String -> Flags -> Flags) -> FlagOptSeq
+-anArg flag detail argtype fn = (:) $ Option [] [flag] (ReqArg fn argtype) detail
++anArg flag detail argtype fn = anArgIO flag detail argtype (\s xs -> pure $ fn s xs)
++
++anArgIO :: String -> String -> String -> (String -> Flags -> IO Flags) -> FlagOptSeq
++anArgIO flag detail argtype fn = (:) $ Option [] [flag] (ReqArg fn argtype) detail
++
++optArg :: String -> String -> String -> (String -> Flags -> Flags) -> FlagOptSeq
++optArg flag detail argtype fn = optArgIO flag detail argtype (\s xs -> pure $ fn s xs)
++
++optArgIO :: String -> String -> String -> (String -> Flags -> IO Flags) -> FlagOptSeq
++optArgIO flag detail argtype fn = (:) $ Option [] [flag] (OptArg (maybe pure fn) argtype) detail
+ 
+ infoArg :: String -> FlagOptSeq
+-infoArg info = (:) $ Option [] [] (NoArg $ id) info
++infoArg info = (:) $ Option [] [] (NoArg $ pure) info
+ 
+-excludeOpt, includeOpt, hpcDirOpt, resetHpcDirsOpt, srcDirOpt,
+-    destDirOpt, outputOpt, verbosityOpt,
++excludeOpt, excludesFromOpt, includeOpt, includesFromOpt, hpcDirOpt, hpcDirsFromOpt, resetHpcDirsOpt,
++    srcDirOpt, srcDirsFromOpt, destDirOpt, outputOpt, verbosityOpt,
+     perModuleOpt, decListOpt, xmlOutputOpt, funTotalsOpt,
+     altHighlightOpt, combineFunOpt, combineFunOptInfo, mapFunOpt,
+     mapFunOptInfo, unionModuleOpt :: FlagOptSeq
+ excludeOpt      = anArg "exclude"    "exclude MODULE and/or PACKAGE" "[PACKAGE:][MODULE]"
+                 $ \ a f -> f { excludeMods = a `Set.insert` excludeMods f }
++excludesFromOpt = optArgIO "excludes-from"    "a file with a list of MODULE and/or PACKAGE names to exclude" "FILE"
++                  (\ a f -> do
++                    content <- readFile a
++                    pure $ f
++                      { excludeMods = excludeMods f `Set.union` Set.fromList (lines content)
++                      , excludeModsFrom = Just a
++                      }
++                  )
+ 
+ includeOpt      = anArg "include"    "include MODULE and/or PACKAGE" "[PACKAGE:][MODULE]"
+                 $ \ a f -> f { includeMods = a `Set.insert` includeMods f }
+ 
++includesFromOpt = optArgIO "includes-from"    "a file with a list of MODULE and/or PACKAGE names to include" "FILE"
++                  (\ a f -> do
++                    content <- readFile a
++                    pure $ f
++                      { includeMods = includeMods f `Set.union` Set.fromList (lines content)
++                      , includeModsFrom = Just a
++                      }
++                  )
+ hpcDirOpt       = anArg "hpcdir"     "append sub-directory that contains .mix files" "DIR"
+                    (\ a f -> f { hpcDirs = hpcDirs f ++ [a] })
+                 .  infoArg "default .hpc [rarely used]"
+ 
++hpcDirsFromOpt   = optArgIO "hpcdirs-from" "read from a file and append sub-directories that contain .mix files" "FILE"
++                   (\ a f -> do
++                     content <- readFile a
++                     pure $ f
++                       { hpcDirs = hpcDirs f ++ lines content
++                       , hpcDirsFrom = Just a
++                       }
++                   )
++
+ resetHpcDirsOpt = noArg "reset-hpcdirs" "empty the list of hpcdir's"
+                    (\ f -> f { hpcDirs = [] })
+                 .  infoArg "[rarely used]"
+@@ -110,6 +155,16 @@ srcDirOpt       = anArg "srcdir"     "path to source directory of .hs files" "DI
+                   (\ a f -> f { srcDirs = srcDirs f ++ [a] })
+                 . infoArg "multi-use of srcdir possible"
+ 
++
++srcDirsFromOpt   = optArgIO "srcdirs-from" "read paths to source directories of .hs files from a file" "FILE"
++                   (\ a f -> do
++                     content <- readFile a
++                     pure $ f
++                       { srcDirs = srcDirs f ++ lines content
++                       , srcDirsFrom = Just a
++                       }
++                   )
++
+ destDirOpt      = anArg "destdir"   "path to write output to" "DIR"
+                 $ \ a f -> f { destDir = a }
+ 
+diff --git a/utils/hpc/HpcMarkup.hs b/utils/hpc/HpcMarkup.hs
+index 1d5efcf6d6..7ed952aeaa 100644
+--- a/utils/hpc/HpcMarkup.hs
++++ b/utils/hpc/HpcMarkup.hs
+@@ -25,9 +25,13 @@ import qualified Data.Set as Set
+ markup_options :: FlagOptSeq
+ markup_options
+         = excludeOpt
++        . excludesFromOpt
+         . includeOpt
++        . includesFromOpt
+         . srcDirOpt
++        . srcDirsFromOpt
+         . hpcDirOpt
++        . hpcDirsFromOpt
+         . resetHpcDirsOpt
+         . funTotalsOpt
+         . altHighlightOpt
+diff --git a/utils/hpc/HpcOverlay.hs b/utils/hpc/HpcOverlay.hs
+index c4f8e96bf4..0248fc2a8a 100644
+--- a/utils/hpc/HpcOverlay.hs
++++ b/utils/hpc/HpcOverlay.hs
+@@ -12,7 +12,9 @@ import Data.Tree
+ overlay_options :: FlagOptSeq
+ overlay_options
+         = srcDirOpt
++        . srcDirsFromOpt
+         . hpcDirOpt
++        . hpcDirsFromOpt
+         . resetHpcDirsOpt
+         . outputOpt
+         . verbosityOpt
+diff --git a/utils/hpc/HpcReport.hs b/utils/hpc/HpcReport.hs
+index 4c975be425..c81ea6a966 100644
+--- a/utils/hpc/HpcReport.hs
++++ b/utils/hpc/HpcReport.hs
+@@ -269,9 +269,13 @@ report_options
+         = perModuleOpt
+         . decListOpt
+         . excludeOpt
++        . excludesFromOpt
+         . includeOpt
++        . includesFromOpt
+         . srcDirOpt
++        . srcDirsFromOpt
+         . hpcDirOpt
++        . hpcDirsFromOpt
+         . resetHpcDirsOpt
+         . xmlOutputOpt
+         . verbosityOpt
+diff --git a/utils/hpc/HpcShowTix.hs b/utils/hpc/HpcShowTix.hs
+index f0c628e422..f80db19114 100644
+--- a/utils/hpc/HpcShowTix.hs
++++ b/utils/hpc/HpcShowTix.hs
+@@ -10,9 +10,13 @@ import qualified Data.Set as Set
+ showtix_options :: FlagOptSeq
+ showtix_options
+         = excludeOpt
++        . excludesFromOpt
+         . includeOpt
++        . includesFromOpt
+         . srcDirOpt
++        . srcDirsFromOpt
+         . hpcDirOpt
++        . hpcDirsFromOpt
+         . resetHpcDirsOpt
+         . outputOpt
+         . verbosityOpt
+diff --git a/utils/hpc/Main.hs b/utils/hpc/Main.hs
+index 3f1813f243..64f88341eb 100644
+--- a/utils/hpc/Main.hs
++++ b/utils/hpc/Main.hs
+@@ -1,6 +1,7 @@
+ -- (c) 2007 Andy Gill
+ 
+ -- Main driver for Hpc
++import Control.Monad
+ import Data.Version
+ import System.Environment
+ import System.Exit
+@@ -65,9 +66,8 @@ dispatch (txt:args0) = do
+                            command_usage plugin
+                            exitFailure
+                 (o,ns,_) -> do
+-                         let flags = final_flags plugin
+-                                   $ foldr (.) id o
+-                                   $ init_flags plugin
++                         intermediate_flags <- foldr (<=<) pure o $ init_flags plugin
++                         let flags = final_flags plugin intermediate_flags
+                          implementation plugin flags ns
+ 
+ main :: IO ()

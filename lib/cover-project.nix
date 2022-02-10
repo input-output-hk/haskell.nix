@@ -8,8 +8,6 @@ project:
 coverageReports:
 
 let
-  toBashArray = arr: "(" + (lib.concatStringsSep " " arr) + ")";
-
   # Create table rows for a project coverage index page that look something like:
   #
   # | Package          |
@@ -49,12 +47,16 @@ let
 
   libs = lib.remove null (map (r: r.library) coverageReports);
 
+  writeArr = name: arr: pkgs.writeText name (lib.concatStringsSep "\n" arr);
+
   mixDirs =
     map
       (l: "${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}")
       libs;
+  mixDirsFile = writeArr "mixdirs" mixDirs;
 
   srcDirs = map (l: l.srcSubDirPath) libs;
+  srcDirsFile = writeArr "srcdirs" srcDirs;
 
 in pkgs.runCommand "project-coverage-report"
   ({ nativeBuildInputs = [ (ghc.buildGHC or ghc) pkgs.buildPackages.zip ];
@@ -65,25 +67,14 @@ in pkgs.runCommand "project-coverage-report"
   })
   ''
     function markup() {
-      local -n srcDs=$1
-      local -n mixDs=$2
-      local -n includedModules=$3
-      local destDir=$4
-      local tixFile=$5
+      local modulesFile=$1
+      local destDir=$2
+      local tixFile=$3
 
       local hpcMarkupCmd=("hpc" "markup" "--destdir=$destDir")
-      for srcDir in "''${srcDs[@]}"; do
-        hpcMarkupCmd+=("--srcdir=$srcDir")
-      done
-
-      for mixDir in "''${mixDs[@]}"; do
-        hpcMarkupCmd+=("--hpcdir=$mixDir")
-      done
-
-      for module in "''${includedModules[@]}"; do
-        hpcMarkupCmd+=("--include=$module")
-      done
-
+      hpcMarkupCmd+=("--srcdirs-from=${srcDirsFile}")
+      hpcMarkupCmd+=("--hpcdirs-from=${mixDirsFile}")
+      hpcMarkupCmd+=("--includes-from=$modulesFile")
       hpcMarkupCmd+=("$tixFile")
 
       echo "''${hpcMarkupCmd[@]}"
@@ -91,15 +82,15 @@ in pkgs.runCommand "project-coverage-report"
     }
 
     function findModules() {
+      local modulesFile=$1
       local searchDir=$2
-      local pattern=$3
 
       pushd $searchDir
-      mapfile -d $'\0' $1 < <(find ./ -type f \
-        -wholename "$pattern" -not -name "Paths*" \
+      find ./ -type f \
+        -wholename "*.mix" -not -name "Paths*" \
         -exec basename {} \; \
         | sed "s/\.mix$//" \
-        | tr "\n" "\0")
+        >> "$modulesFile"
       popd
     }
 
@@ -137,14 +128,13 @@ in pkgs.runCommand "project-coverage-report"
       echo "report coverage-per-package $out/share/hpc/vanilla/html/index.html" >> $out/nix-support/hydra-build-products
 
       local markupOutDir="$out/share/hpc/vanilla/html/all"
-      local srcDirs=${toBashArray srcDirs}
-      local mixDirs=${toBashArray mixDirs}
-      local allMixModules=()
 
       mkdir $markupOutDir
-      findModules allMixModules "$out/share/hpc/vanilla/mix/" "*.mix"
+      mixModules="$PWD/mix-modules"
+      touch "$mixModules"
+      findModules "$mixModules" "$out/share/hpc/vanilla/mix/"
 
-      markup srcDirs mixDirs allMixModules "$markupOutDir" "$tixFile"
+      markup "$mixModules" "$markupOutDir" "$tixFile"
 
       echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
       ( cd $out/share/hpc/vanilla/html ; zip -r $out/share/hpc/vanilla/html.zip . )
