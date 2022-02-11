@@ -180,5 +180,5 @@ let
     };
 
 in {
-  inherit parseIndexState parseSourceRepositoryPackages parseRepositories;
+  inherit parseIndexState parseSourceRepositoryPackages parseRepositories parseBlock;
 }
