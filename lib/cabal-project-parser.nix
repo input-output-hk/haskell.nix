@@ -143,8 +143,7 @@ let
             ls -ld $out/.cabal
         '';
       hackage = import (
-        pkgs.evalPackages.runCommandLocal name { nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ]; } ''
-            echo HELLO
+        pkgs.evalPackages.runCommandLocal ("hackageg-to-nix-" + name) { nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ]; } ''
             mkdir -p $out
             hackage-to-nix $out ${home}/.cabal/packages/${name}/01-index.tar ${attrs.url}
         '');
