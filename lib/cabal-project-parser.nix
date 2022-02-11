@@ -124,6 +124,8 @@ let
       home =
         pkgs.evalPackages.runCommandLocal name {
           nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
+          LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
+          LANG = "en_US.UTF-8";
           outputHashMode = "recursive";
           outputHashAlgo = "sha256";
           outputHash = attrs."--sha256" or (lookupSha256 attrs);
@@ -143,7 +145,11 @@ let
             ls -ld $out/.cabal
         '';
       hackage = import (
-        pkgs.evalPackages.runCommandLocal ("hackageg-to-nix-" + name) { nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ]; } ''
+        pkgs.evalPackages.runCommandLocal ("hackageg-to-nix-" + name) {
+          nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
+          LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
+          LANG = "en_US.UTF-8";
+        } ''
             mkdir -p $out
             hackage-to-nix $out ${home}/.cabal/packages/${name}/01-index.tar ${attrs.url}
         '');
