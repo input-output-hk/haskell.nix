@@ -186,6 +186,7 @@ let
     stack-source-repo = callTest ./stack-source-repo { inherit compiler-nix-name; };
     cabal-doctests = callTest ./cabal-doctests { inherit util compiler-nix-name; };
     extra-hackage = callTest ./extra-hackage { inherit compiler-nix-name; };
+    ghcjs-overlay = callTest ./ghcjs-overlay { inherit compiler-nix-name; };
     hls-cabal = callTest ./haskell-language-server/cabal.nix { inherit compiler-nix-name; };
     hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
     cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };

@@ -1,0 +1,9 @@
+packages: *.cabal
+
+repository ghcjs-overlay
+  url: https://input-output-hk.github.io/hackage-overlay-ghcjs
+  secure: True
+  root-keys:
+  key-threshold: 0
+  --sha256: sha256-EPlLYPmIGtxeahlOspRzwJv+60N5mqrNC2BY4jZKceE=
+
