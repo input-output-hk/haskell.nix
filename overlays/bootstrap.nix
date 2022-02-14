@@ -835,10 +835,8 @@ in {
             src = final.haskell-nix.sources.nix-tools;
             # This is a handy way to use a local git clone of nix-tools when developing
             # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
-            index-state = final.haskell-nix.internalHackageIndexState;
             cabalProjectLocal = ''
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
-              index-state: ${final.haskell-nix.internalHackageIndexState}
             '';
             materialized = ../materialized + "/${compiler-nix-name}/nix-tools";
             modules = [{

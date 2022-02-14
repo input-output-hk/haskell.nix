@@ -118,7 +118,7 @@ If you have a `nix/hix.nix` file with suitable configuration that
 you want to make available to users with Nix (without having to
 install Hix).
 
-[Niv](https://github.com/nmattia/niv) is a command line tool for keeping tack of Nix project dependencies.
+[Niv](https://github.com/nmattia/niv) is a command line tool for keeping track of Nix project dependencies.
 
 After installing niv you can initialize niv and pin the latest haskell.nix
 commit by running the following in the root directory of the project:
