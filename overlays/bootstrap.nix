@@ -40,7 +40,7 @@ let
         }
         else if final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64
         then {
-            compilerNixName = "ghc882";
+            compilerNixName = "ghc884";
         }
         else {
             compilerNixName = "ghc844";
@@ -835,10 +835,8 @@ in {
             src = final.haskell-nix.sources.nix-tools;
             # This is a handy way to use a local git clone of nix-tools when developing
             # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
-            index-state = final.haskell-nix.internalHackageIndexState;
             cabalProjectLocal = ''
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
-              index-state: ${final.haskell-nix.internalHackageIndexState}
             '';
             materialized = ../materialized + "/${compiler-nix-name}/nix-tools";
             modules = [{

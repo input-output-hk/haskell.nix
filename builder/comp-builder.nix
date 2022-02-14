@@ -203,7 +203,7 @@ let
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
-      # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
+      # `--ghc-option=-optl=-L` options to the `configureFlags` of the
       # component.
       "--disable-executable-dynamic"
       "--ghc-option=-optl=-pthread"
