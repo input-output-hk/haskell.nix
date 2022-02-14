@@ -227,7 +227,7 @@ let
 
       # Parse the `repository` blocks
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        cabalProjectFileName lookupSha256 cabal-install nix-tools sourceRepoPackageResult.otherText;
+        cabalProjectFileName sha256map cabal-install nix-tools sourceRepoPackageResult.otherText;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)

@@ -6,6 +6,11 @@ let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
     inherit compiler-nix-name;
+    # Alternative to the --sha256 comment in cabal.project
+    # sha256map = {
+    #  "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32" =
+    #    "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
+    # };
   };
   packages = project.hsPkgs;
 

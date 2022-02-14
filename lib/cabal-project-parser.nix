@@ -113,7 +113,7 @@ let
     };
 
   # Parse a repository
-  parseRepositoryBlock = cabalProjectFileName: lookupSha256: cabal-install: nix-tools: block:
+  parseRepositoryBlock = cabalProjectFileName: sha256map: cabal-install: nix-tools: block:
     let
       lines = pkgs.lib.splitString "\n" block;
       x = span (pkgs.lib.strings.hasPrefix " ") (__tail lines);
@@ -128,7 +128,7 @@ let
           LANG = "en_US.UTF-8";
           outputHashMode = "recursive";
           outputHashAlgo = "sha256";
-          outputHash = attrs."--sha256" or (lookupSha256 attrs);
+          outputHash = attrs."--sha256" or sha256map.${attrs.url};
         } ''
             mkdir -p $out/.cabal
             cat <<EOF > $out/.cabal/config
@@ -166,11 +166,11 @@ let
         '' + pkgs.lib.strings.concatStringsSep "\n" x.snd;
     };
 
-  parseRepositories = cabalProjectFileName: lookupSha256: cabal-install: nix-tools: projectFile:
+  parseRepositories = cabalProjectFileName: sha256map: cabal-install: nix-tools: projectFile:
     let
       blocks = pkgs.lib.splitString "\nrepository " ("\n" + projectFile);
       initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName lookupSha256 cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
+      repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName sha256map cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
     in {
       extra-hackages = pkgs.lib.lists.map (block: block.hackage) repoBlocks;
       tarballs = pkgs.lib.lists.map (block: block.tarball) repoBlocks;
