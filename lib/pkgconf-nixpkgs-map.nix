@@ -117,6 +117,7 @@ pkgs:
     "pfs-1.2"                            = [ pkgs."pfstools" ];
     "png"                                = [ pkgs."libpng" ];
     "poppler-glib"                       = [ pkgs."poppler" ];
+    "poppler-cpp"                        = [ pkgs."poppler" ];
     "pq"                                 = [ pkgs."postgresql" ];
     "libpq"                              = [ pkgs."postgresql" ];
     "pthread"                            = [];
