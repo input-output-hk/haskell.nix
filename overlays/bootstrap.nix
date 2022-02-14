@@ -40,7 +40,7 @@ let
         }
         else if final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64
         then {
-            compilerNixName = "ghc882";
+            compilerNixName = "ghc884";
         }
         else {
             compilerNixName = "ghc844";
