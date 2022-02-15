@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
