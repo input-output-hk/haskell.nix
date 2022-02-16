@@ -171,8 +171,7 @@ let
         '');
       # Tarball info in the same format as `extra-hackage-tarballs` passed in to cabalProject
       tarball = {
-        inherit name;
-        index = home + "/.cabal/packages/${name}/01-index.tar.gz";
+        ${name} = home + "/.cabal/packages/${name}/01-index.tar.gz";
       };
       # Replacement `repository` block using `file:` uri and the remaining text (text that was not part of the attribute block).
       updatedText = ''
@@ -192,7 +191,7 @@ let
       repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName sha256map cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
     in {
       extra-hackages = pkgs.lib.lists.map (block: block.hackage) repoBlocks;
-      tarballs = pkgs.lib.lists.map (block: block.tarball) repoBlocks;
+      tarballs = pkgs.lib.lists.foldl' (x: block: x // block.tarball) {} repoBlocks;
       updatedText = pkgs.lib.strings.concatStringsSep "\n" (
         initialText
         ++ (builtins.map (x: x.updatedText) repoBlocks));
