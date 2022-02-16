@@ -106,8 +106,8 @@ in {
       '';
     };
     extra-hackage-tarballs = mkOption {
-      type = nullOr (listOf unspecified);
-      default = [];
+      type = nullOr attrs;
+      default = {};
     };
     source-repo-override = mkOption {
       type = attrsOf (functionTo attrs);

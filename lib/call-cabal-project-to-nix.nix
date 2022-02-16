@@ -37,7 +37,7 @@ in
                      #       "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32"
                      #         = "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
                      #     };
-, extra-hackage-tarballs ? []
+, extra-hackage-tarballs ? {}
 , source-repo-override ? {} # Cabal seems to behave incoherently when
                             # two source-repository-package entries
                             # provide the same packages, making it
@@ -526,10 +526,7 @@ let
       # which is used by cabal (cached-index-state >= index-state-found).
       dotCabal {
         inherit cabal-install nix-tools;
-        extra-hackage-tarballs =
-          if __length extra-hackage-tarballs != 0
-            then extra-hackage-tarballs
-            else fixedProject.tarballs;
+        extra-hackage-tarballs = fixedProject.tarballs // extra-hackage-tarballs;
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
