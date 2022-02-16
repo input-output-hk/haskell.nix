@@ -245,7 +245,7 @@ let
       sourceRepos = sourceReposBuild;
       inherit (repoResult) tarballs extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${pkgs.evalPackages.writeText "cabal.project" repoResult.otherText} ./cabal.project
+        cp -f ${pkgs.evalPackages.writeText "cabal.project" repoResult.updatedText} ./cabal.project
       '' +
         pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
         chmod +w -R ./cabal.project

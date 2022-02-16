@@ -191,7 +191,7 @@ let
     hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
     cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
     index-state = callTest ./index-state { inherit compiler-nix-name; };
-    lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
+    sha256map = callTest ./sha256map { inherit compiler-nix-name; };
     # fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
     shell-for = callTest ./shell-for { inherit compiler-nix-name; };
     cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };

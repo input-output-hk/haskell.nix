@@ -43,10 +43,9 @@ in { haskell-nix = prev.haskell-nix // {
     pandoc = {
       # Function that returns a sha256 string by looking up the location
       # and tag in a nested attrset
-      lookupSha256 = { location, tag, ... }:
+      sha256map =
         { "https://github.com/jgm/pandoc-citeproc"."0.17"
-            = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
-          ."${location}"."${tag}";
+            = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
     };
 
     # See https://github.com/input-output-hk/haskell.nix/issues/948

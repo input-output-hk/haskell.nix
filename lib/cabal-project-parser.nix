@@ -87,6 +87,7 @@ let
   };
 
   # Parse a source-repository-package and return data of `type: git` repositories
+  # See tests/unit.nix for examples of input and output.
   parseSourceRepositoryPackageBlock = cabalProjectFileName: sha256map: block:
     let
       x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
@@ -120,6 +121,7 @@ let
   # able to simply replace the `repository` blocks with local `file:/nix/store` ones.
   # This works because `cabal configure` does not include any of the `/nix/sore/`
   # paths in the `plan.json` (so materialized plan-nix will still work as expeced).
+  # See tests/unit.nix for examples of input and output.
   parseRepositoryBlock = cabalProjectFileName: sha256map: cabal-install: nix-tools: block:
     let
       lines = pkgs.lib.splitString "\n" block;

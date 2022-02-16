@@ -1,6 +1,13 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Feb 16, 2022
+* Removed lookupSha256 argument from project functions.
+  Pass a `sha256map` instead.
+* Added better support for `repository` in `cabal.project`.  These
+  blocks should now work without the need for passing `extra-hackages` and
+  `extra-hackage-tarballs`.
+
 ## Aug 6, 2021
 * Included dependencies of haskell.nix that were tracked in `nix/sources.json`
   as flake inputs (`flake.lock` replaces `nix/sources.json`).
