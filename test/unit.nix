@@ -142,8 +142,7 @@ lib.runTests {
         '';
         home = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay";
         tarball = {
-          index = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay/.cabal/packages/ghcjs-overlay/01-index.tar.gz";
-          name = "ghcjs-overlay";
+          ghcjs-overlay = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay/.cabal/packages/ghcjs-overlay/01-index.tar.gz";
         };
         hackage = {
           Cabal = {
