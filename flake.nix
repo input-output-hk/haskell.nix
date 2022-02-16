@@ -2,7 +2,7 @@
   description = "Alternative Haskell Infrastructure for Nixpkgs";
 
   inputs = {
-    nixpkgs.follows = "nixpkgs-2111";
+    nixpkgs.follows = "nixpkgs-unstable";
     nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
     nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
     nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
