@@ -152,7 +152,7 @@ let
   # An empty list means success.
   unitTests =
     let
-      tests = haskell-nix.callPackage ./unit.nix {};
+      tests = haskell-nix.callPackage ./unit.nix { inherit compiler-nix-name; };
       testsFailedEcho = lib.concatMapStringsSep "\n" (t: "echo ${t.name} failed") tests;
       testsFinalLine = if builtins.length tests == 0 then "\ntouch $out" else "\nexit 1";
       testsScript = testsFailedEcho + testsFinalLine;

@@ -30,12 +30,13 @@ in
                      # An alternative to adding `--sha256` comments into the
                      # cabal.project file:
                      #   sha256map =
-                     #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
-                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
-, lookupSha256  ?
-  if sha256map != null
-    then { location, tag, ...}: sha256map."${location}"."${tag}"
-    else _: null
+                     #     { # For a `source-repository-package` use the `location` and `tag` as the key
+                     #       "https://github.com/jgm/pandoc-citeproc"."0.17"
+                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q";
+                     #       # For a `repository` use the `url` as the key
+                     #       "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32"
+                     #         = "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
+                     #     };
 , extra-hackage-tarballs ? []
 , source-repo-override ? {} # Cabal seems to behave incoherently when
                             # two source-repository-package entries
@@ -200,7 +201,7 @@ let
             else
               let drv = builtins.fetchGit { inherit (repoData) url ref; };
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
-                (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
+                (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a sha256map argument"
                  drv);
         in {
           # Download the source-repository-package commit and add it to a minimal git
@@ -223,7 +224,7 @@ let
 
       # Parse the `source-repository-package` blocks
       sourceRepoPackageResult = pkgs.haskell-nix.haskellLib.parseSourceRepositoryPackages
-        cabalProjectFileName lookupSha256 source-repo-override projectFile;
+        cabalProjectFileName sha256map source-repo-override projectFile;
 
       # Parse the `repository` blocks
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
