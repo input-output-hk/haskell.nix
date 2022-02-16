@@ -280,7 +280,7 @@ let
 
   fixedProject =
     if rawCabalProject == null
-      then { sourceRepos = []; tarballs = []; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
+      then { sourceRepos = []; tarballs = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
       else replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
