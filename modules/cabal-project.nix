@@ -105,15 +105,9 @@ in {
               = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
       '';
     };
-    lookupSha256 = mkOption {
-      type = nullOr unspecified;
-      default = if config.sha256map != null
-        then { location, tag, ...}: config.sha256map.${location}.${tag}
-        else _: null;
-    };
     extra-hackage-tarballs = mkOption {
-      type = nullOr (listOf unspecified);
-      default = [];
+      type = nullOr attrs;
+      default = {};
     };
     source-repo-override = mkOption {
       type = attrsOf (functionTo attrs);

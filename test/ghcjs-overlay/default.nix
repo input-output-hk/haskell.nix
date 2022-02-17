@@ -3,27 +3,14 @@
 with lib;
 
 let
-
-  hackage = import ./hackage;
-
-  tarballs = {
-    extra-hackage-demo = ./01-index.tar.gz;
-  };
-
-  demo-src = ./external-package-demo-0.1.0.0.tar.gz;
-
   project = cabalProject' {
+    src = testSrc "ghcjs-overlay";
     inherit compiler-nix-name;
-    src = testSrc "extra-hackage/external-package-user";
-
-    extra-hackages = [ hackage ];
-    extra-hackage-tarballs = tarballs;
-
-    modules = [
-      # To prevent nix-build from trying to download it from the
-      # actual Hackage.
-      { packages.external-package-demo.src = demo-src; }
-    ];
+    # Alternative to the --sha256 comment in cabal.project
+    # sha256map = {
+    #  "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32" =
+    #    "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
+    # };
   };
   packages = project.hsPkgs;
 
@@ -32,15 +19,15 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
   run = stdenv.mkDerivation {
-    name = "external-hackage-test";
+    name = "ghcjs-overlay-test";
 
     buildCommand = ''
-      exe="${packages.external-package-user.components.exes.external-package-user.exePath}"
+      exe="${packages.ghcjs-overlay-test.components.exes.ghcjs-overlay-test.exePath}"
       size=$(command stat --format '%s' "$exe")
       printf "size of executable $exe is $size. \n" >& 2
       # fixme: run on target platform when cross-compiled
       printf "checking whether executable runs... " >& 2
-      cat ${haskellLib.check packages.external-package-user.components.exes.external-package-user}/test-stdout
+      cat ${haskellLib.check packages.ghcjs-overlay-test.components.exes.ghcjs-overlay-test}/test-stdout
     '' + (if stdenv.hostPlatform.isMusl
       then ''
         printf "checking that executable is statically linked... " >& 2

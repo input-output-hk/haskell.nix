@@ -152,7 +152,7 @@ let
   # An empty list means success.
   unitTests =
     let
-      tests = haskell-nix.callPackage ./unit.nix {};
+      tests = haskell-nix.callPackage ./unit.nix { inherit compiler-nix-name; };
       testsFailedEcho = lib.concatMapStringsSep "\n" (t: "echo ${t.name} failed") tests;
       testsFinalLine = if builtins.length tests == 0 then "\ntouch $out" else "\nexit 1";
       testsScript = testsFailedEcho + testsFinalLine;
@@ -186,11 +186,12 @@ let
     stack-source-repo = callTest ./stack-source-repo { inherit compiler-nix-name; };
     cabal-doctests = callTest ./cabal-doctests { inherit util compiler-nix-name; };
     extra-hackage = callTest ./extra-hackage { inherit compiler-nix-name; };
+    ghcjs-overlay = callTest ./ghcjs-overlay { inherit compiler-nix-name; };
     hls-cabal = callTest ./haskell-language-server/cabal.nix { inherit compiler-nix-name; };
     hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
     cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
     index-state = callTest ./index-state { inherit compiler-nix-name; };
-    lookup-sha256 = callTest ./lookup-sha256 { inherit compiler-nix-name; };
+    sha256map = callTest ./sha256map { inherit compiler-nix-name; };
     # fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
     shell-for = callTest ./shell-for { inherit compiler-nix-name; };
     cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
