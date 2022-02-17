@@ -166,6 +166,14 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="feb-16-2022">Feb 16, 2022<a class="headerlink" href="#feb-16-2022" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed lookupSha256 argument from project functions.
+  Pass a <code>sha256map</code> instead.</li>
+<li>Added better support for <code>repository</code> in <code>cabal.project</code>.  These
+  blocks should now work without the need for passing <code>extra-hackages</code> and
+  <code>extra-hackage-tarballs</code>.</li>
+</ul>
 <h2 id="aug-6-2021">Aug 6, 2021<a class="headerlink" href="#aug-6-2021" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Included dependencies of haskell.nix that were tracked in <code>nix/sources.json</code>
