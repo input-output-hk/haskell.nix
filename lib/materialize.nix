@@ -143,6 +143,7 @@ let
       fi
 
       # Generate the files
+      mkdir -p $TARGET
       rm -rf $TARGET
       cp -r ${calculateNoHash} "$TARGET"
       chmod -R +w "$TARGET"
