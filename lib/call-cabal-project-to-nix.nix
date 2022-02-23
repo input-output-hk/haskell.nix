@@ -530,12 +530,12 @@ let
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
-    } cabal v2-freeze \
-        --index-state=${
-            # Setting the desired `index-state` here in case it was not
-            # from the cabal.project file. This will further restrict the
-            # packages used by the solver (cached-index-state >= index-state-found).
-           index-state-found} \
+    } cabal v2-freeze ${
+          # Setting the desired `index-state` here in case it is not
+          # in the cabal.project file. This will further restrict the
+          # packages used by the solver (cached-index-state >= index-state-found).
+          pkgs.lib.optionalString (index-state != null) "--index-state=${index-state}"
+        } \
         -w ${
           # We are using `-w` rather than `--with-ghc` here to override
           # the `with-compiler:` in the `cabal.project` file.
