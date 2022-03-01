@@ -119,6 +119,8 @@ stdenv.mkDerivation (rec {
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ] ++ lib.optionals (targetPlatform.isDarwin) [
+        "--without-libcharset"
     ];
 
     outputs = [ "out" "doc" ];
