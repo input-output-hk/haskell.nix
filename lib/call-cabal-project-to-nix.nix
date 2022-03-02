@@ -207,7 +207,7 @@ let
           # Download the source-repository-package commit and add it to a minimal git
           # repository that `cabal` will be able to access from a non fixed output derivation.
           location = pkgs.evalPackages.runCommand "source-repository-package" {
-              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.git ];
+              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.gitMinimal ];
             } ''
             mkdir $out
             rsync -a --prune-empty-dirs "${fetched}/" "$out/"
@@ -437,7 +437,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (pkgs.evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync pkgs.evalPackages.git ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync pkgs.evalPackages.gitMinimal ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
