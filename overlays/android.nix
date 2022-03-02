@@ -23,6 +23,9 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
   gmp6 = (prev.gmp6.override { withStatic = true; }).overrideAttrs(_: {
     hardeningDisable = [ "fortify" "stackprotector" "format" ];
   });
+  numactl = (prev.numactl.overrideAttrs (attrs: {
+     patches = attrs.patches + [ ./patches/numactl-2.0.14-no-librt.patch ];
+  });
 }) // prev.lib.optionalAttrs prev.stdenv.targetPlatform.isAndroid ({
   bionic = prev.bionic.override { enableStatic = true; };
 })
