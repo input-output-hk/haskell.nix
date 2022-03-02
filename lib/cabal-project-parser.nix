@@ -137,10 +137,11 @@ let
       name = __head lines;
       # The $HOME dir with `.cabal` sub directory after running `cabal new-update` to download the repository
       home =
-        pkgs.evalPackages.runCommandLocal name ({
+        pkgs.evalPackages.runCommand name ({
           nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
           LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
+          preferLocalBuild = true;
         } // pkgs.lib.optionalAttrs (sha256 != null) {
           outputHashMode = "recursive";
           outputHashAlgo = "sha256";
@@ -161,10 +162,11 @@ let
         '';
       # Output of hackage-to-nix
       hackage = import (
-        pkgs.evalPackages.runCommandLocal ("hackage-to-nix-" + name) {
+        pkgs.evalPackages.runCommand ("hackage-to-nix-" + name) {
           nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
           LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
+          preferLocalBuild = true;
         } ''
           mkdir -p $out
           hackage-to-nix $out ${home}/.cabal/packages/${name}/01-index.tar ${attrs.url}
