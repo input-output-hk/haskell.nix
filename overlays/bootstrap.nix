@@ -38,7 +38,11 @@ let
         then {
             compilerNixName = "ghc8107";
         }
-        else if final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64
+        else if final.buildPlatform.isAarch64
+        then {
+            compilerNixName = "ghc883";
+        }
+        else if final.targetPlatform.isAarch64
         then {
             compilerNixName = "ghc884";
         }
@@ -62,8 +66,12 @@ let
       "8.8" = "8.8.4";
       "8.10" = "8.10.7";
     };
-    traceWarnOld = v: x: __trace
-      "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x;
+    traceWarnOld = v: x:
+      # There is no binary for aarch64-linux ghc 8.8.4 so don't warn about 8.8.3
+      if x.src-spec.version == "8.8.3" && (final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64)
+        then x
+        else __trace
+          "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x;
     errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVer.${up}}";
 in {
   haskell-nix = prev.haskell-nix // {
