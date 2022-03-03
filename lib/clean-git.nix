@@ -1,5 +1,5 @@
 # From https://github.com/NixOS/nix/issues/2944
-{ lib, runCommandLocal, git, cleanSourceWith }:
+{ lib, runCommand, git, cleanSourceWith }:
 { name ? null, src, subDir ? "", includeSiblings ? false, keepGitDir ? false }:
 
 # The function call
@@ -112,7 +112,7 @@ then
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
     whitelist_files = knownSubmoduleDirs:
-      runCommandLocal "git-ls-files" {} ''
+      runCommand "git-ls-files" { preferLocalBuild = true; } ''
         tmp=$(mktemp -d)
         cd $tmp
         ${ lib.optionalString hasSubmodules ''
