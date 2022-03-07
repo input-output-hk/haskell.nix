@@ -14,7 +14,7 @@ let
   };
 
   env = project.shellFor {
-    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921"];
+    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"];
   };
 
 in recurseIntoAttrs ({

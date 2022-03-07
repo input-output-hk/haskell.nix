@@ -39,7 +39,8 @@
       ghc8107 = true;
       ghc901 = false;
       ghc902 = true;
-      ghc921 = true;
+      ghc921 = false;
+      ghc922 = true;
       ghc810420210212 = false;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (

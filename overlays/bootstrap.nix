@@ -65,6 +65,8 @@ let
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
       "8.10" = "8.10.7";
+      "9.0" = "9.0.2";
+      "9.2" = "9.2.2";
     };
     traceWarnOld = v: x:
       # There is no binary for aarch64-linux ghc 8.8.4 so don't warn about 8.8.3
@@ -194,8 +196,8 @@ in {
                 ++ final.lib.optionals final.hostPlatform.isDarwin
                   (fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-darwin-allocateExec.patch)
                 ++ until              "8.10.6" ./patches/ghc/Sphinx_Unicode_Error.patch
-                ++ from      "9.0.2"           ./patches/ghc/ghc-9.2.1-xattr-fix.patch      # Problem was backported to 9.0.2
-                ++ fromUntil "8.10"   "9.2.2"  ./patches/ghc/MR6654-nonmoving-maxmem.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6654
+                ++ fromUntil "9.0.2"  "9.2.2"  ./patches/ghc/ghc-9.2.1-xattr-fix.patch      # Problem was backported to 9.0.2
+                ++ fromUntil "8.10"   "9.3"    ./patches/ghc/MR6654-nonmoving-maxmem.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6654
                 ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6617-nonmoving-mvar.patch    # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6617
                 ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6595-nonmoving-mutvar.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6595
                 ++ fromUntil "8.10"   "8.11"   ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
@@ -592,6 +594,26 @@ in {
 
                 ghc-patches = ghc-patches "9.2.1";
             };
+            ghc922 = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc922; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.2.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-kCRjpMxu5Hmvk1i5+LLuMjewPpNKHqZbbR/PPg10nqY=";
+                };
+
+                ghc-patches = ghc-patches "9.2.2";
+            };
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
@@ -833,7 +855,7 @@ in {
         # Until all the dependencies build with 9.0.1 we will have to avoid
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
-          if args.compiler-nix-name == "ghc901" || args.compiler-nix-name == "ghc902" || args.compiler-nix-name == "ghc921"
+          if __elem args.compiler-nix-name [ "ghc901" "ghc902" "ghc921" "ghc922" ]
             then "ghc8107"
             else args.compiler-nix-name;
         project =
