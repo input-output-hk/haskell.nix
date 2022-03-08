@@ -112,7 +112,7 @@ then
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
     whitelist_files = knownSubmoduleDirs:
-      runCommand "git-ls-files" {} ''
+      runCommand "git-ls-files" { preferLocalBuild = true; } ''
         tmp=$(mktemp -d)
         cd $tmp
         ${ lib.optionalString hasSubmodules ''
@@ -135,7 +135,7 @@ then
         ${git}/bin/git ls-files --recurse-submodules > $out/files
       '';
 
-    # Find the submodules 
+    # Find the submodules
     whitelist_recursive = knownSubmoduleDirs:
       let
         # Get the new list of submoduleDirs and files
@@ -176,7 +176,7 @@ then
       );
 
     # Identify files in the `.git` dir
-    isGitDirPath = path: 
+    isGitDirPath = path:
           path == origSrcSubDir + "/.git"
         || lib.hasPrefix (origSrcSubDir + "/.git/") path;
 

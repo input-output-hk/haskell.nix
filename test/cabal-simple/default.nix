@@ -30,7 +30,7 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = project.shellFor { tools = { cabal = "3.6.2.0"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921"]; };
+  test-shell = project.shellFor { tools = { cabal = "3.6.2.0"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]; };
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";

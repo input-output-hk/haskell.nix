@@ -6,7 +6,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name;
     src = testSrc "cabal-22";
-    modules = [(lib.optionalAttrs (__elem compiler-nix-name ["ghc902" "ghc921"]) {
+    modules = [(lib.optionalAttrs (__elem compiler-nix-name ["ghc902" "ghc921" "ghc922"]) {
       nonReinstallablePkgs = [
         "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
         "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
@@ -30,7 +30,8 @@ in recurseIntoAttrs {
   # When using ghcjs on darwin this test fails with
   # ReferenceError: h$hs_clock_darwin_gettime is not defined
   # https://github.com/input-output-hk/haskell.nix/issues/925
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  # Also `hspec` now depends on `ghc`, which breaks this test for cross compilation
+  meta.disabled = stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows;
   ifdInputs = {
     inherit (project) plan-nix;
   };

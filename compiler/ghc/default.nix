@@ -90,6 +90,8 @@ let
 
   targetIconv = targetPackages.libiconv or libiconv;
 
+  targetNumactl = targetPackages.numactl or numactl;
+
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = lib.optionalString
     (targetPlatform != hostPlatform)
@@ -259,7 +261,18 @@ stdenv.mkDerivation (rec {
                    ++ lib.optional stdenv.targetPlatform.isAarch32 "pic"
                    ++ lib.optional stdenv.targetPlatform.isMusl "pie";
 
-  postInstall = ''
+  postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux) ''
+    # Patch rts.conf to ensure libnuma can be found
+
+    for file in $(find "$out/lib" -name "rts*.conf"); do
+      if grep -q numa $file; then
+        substituteInPlace $file \
+          --replace "library-dirs:" "library-dirs: ${targetNumactl}/lib" \
+          --replace "include-dirs:" "include-dirs: ${targetNumactl}/include"
+        "$out/bin/${targetPrefix}ghc-pkg" recache
+      fi
+    done
+  '' + ''
     # Install the bash completion file.
     install -D -m 444 utils/completion/ghc.bash $out/share/bash-completion/completions/${targetPrefix}ghc
 

@@ -9,10 +9,6 @@
                      #   sha256map =
                      #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
                      #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
-, lookupSha256 ?
-  if sha256map != null
-    then { location, tag, ...}: sha256map."${location}"."${tag}"
-    else _: null
 , branchMap    ? null
                      # A way to specify in which branch a git commit can
                      # be found
@@ -85,12 +81,10 @@ in with pkgs.lib;
 concatMap (dep:
         let
             is-private = private dep.url;
-            sha256 = if dep.sha256 != null
-              then dep.sha256
-              else lookupSha256 {
-                  location = dep.url;
-                  tag = dep.rev;
-                };
+            sha256 =
+              if dep.sha256 != null then dep.sha256
+              else if sha256map != null then sha256map."${dep.url}"."${dep.rev}"
+              else null;
             branch = lookupBranch {
               location = dep.url;
               tag = dep.rev;

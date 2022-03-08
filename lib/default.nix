@@ -275,7 +275,7 @@ in {
 
   inherit (import ./cabal-project-parser.nix {
     inherit pkgs;
-  }) parseIndexState parseBlock;
+  }) parseIndexState parseSourceRepositoryPackages parseRepositories parseSourceRepositoryPackageBlock parseRepositoryBlock;
 
 
   cabalToNixpkgsLicense = import ./spdx/cabal.nix pkgs;
