@@ -80,6 +80,7 @@ with pkgs;
   opencv = [ opencv3 ];
   icuuc = [ icu ];
   icui18n = [ icu ];
+  icu-i18n = [ icu ];
   icudata = [ icu ];
   vulkan = [ vulkan-loader ];
   sodium = [ libsodium ];
