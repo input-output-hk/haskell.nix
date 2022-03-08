@@ -40,7 +40,7 @@ in
     # This test will need to be updated to use newer hackage index-state for it
     # to work with GHC 9 and above.
     # Does not work for GHCJS
-    meta.disabled = stdenv.hostPlatform.isGhcjs || __elem compiler-nix-name ["ghc901" "ghc902" "ghc921"];
+    meta.disabled = stdenv.hostPlatform.isGhcjs || __elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"];
     
 
     passthru = {

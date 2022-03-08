@@ -6,7 +6,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name;
     src = testSrc "cabal-22";
-    modules = [(lib.optionalAttrs (__elem compiler-nix-name ["ghc902" "ghc921"]) {
+    modules = [(lib.optionalAttrs (__elem compiler-nix-name ["ghc902" "ghc921" "ghc922"]) {
       nonReinstallablePkgs = [
         "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
         "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
