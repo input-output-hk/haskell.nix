@@ -16,7 +16,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   zstd = prev.zstd.override { static = true; };
   pcre = prev.pcre.overrideAttrs (_: { dontDisableStatic = true; });
 
-  numactl = prev.numactl.overrideAttrs (_: { configureFlags = "--enable-static"; });
+  numactl = prev.numactl.overrideAttrs (_: { configureFlags = ["--enable-static"];});
 
   # See https://github.com/input-output-hk/haskell.nix/issues/948
   postgresql = (prev.postgresql.overrideAttrs (old: { dontDisableStatic = true; }))
