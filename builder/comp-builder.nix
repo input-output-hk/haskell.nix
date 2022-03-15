@@ -84,6 +84,9 @@ let self =
 , useLLVM ? ghc.useLLVM
 , smallAddressSpace ? false
 
+, THSupport ? {}
+
+, setupBuildFlags' ? setupBuildFlags ++ (THSupport.setupBuildFlags or [])
 }@drvArgs:
 
 let
@@ -216,6 +219,7 @@ let
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
       ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
+      ++ (THSupport.configureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
       ++ lib.optional enableTSanRTS "--ghc-option=-tsan"
       ++ lib.optional enableDWARF "--ghc-option=-g3"
@@ -307,7 +311,7 @@ let
   };
 
   drv = stdenv.mkDerivation (commonAttrs // {
-    pname = nameOnly;
+    pname = __trace "${nameOnly} (build: ${stdenv.buildPlatform.config}; host: ${stdenv.hostPlatform.config})" nameOnly;
     inherit (package.identifier) version;
 
     doCheck = false;
@@ -385,12 +389,12 @@ let
     buildPhase = if stdenv.hostPlatform.isGhcjs then ''
       runHook preBuild
       # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}
+      $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags'}
       runHook postBuild
     '' else ''
       runHook preBuild
       # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
+      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags'}
       runHook postBuild
     ''
     ;

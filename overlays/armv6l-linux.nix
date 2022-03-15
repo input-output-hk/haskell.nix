@@ -7,8 +7,8 @@ final: prev:
         withTH = import ./linux-cross.nix {
           inherit (pkgs.stdenv) hostPlatform buildPlatform;
           inherit (pkgs) stdenv lib writeScriptBin;
-          # qemu for linux
-          qemu = pkgs.buildPackages.qemu;
+          # qemu for linux; use nixosTestRunner to disable most of the useless features.
+          qemu = pkgs.buildPackages.qemu.override { nixosTestRunner = true; };
 
 #          wine = pkgs.buildPackages.winePackages.minimal;
 #          inherit (pkgs.windows) mingw_w64_pthreads;
@@ -51,20 +51,20 @@ final: prev:
           # `-fexternal-interpreter` would install here.  That would ultimately
           # result in cyclic dependencies as it injects `remote-iserv` and
           # `iserv-proxy` as a dependency into every package.
-          bytestring.setupBuildFlags = [];
-          containers.setupBuildFlags = [];
-          binary.setupBuildFlags = [];
-          filepath.setupBuildFlags = [];
-          time.setupBuildFlags = [];
-          Win32.setupBuildFlags = [];
-          libiserv.setupBuildFlags = [];
-          remote-iserv.setupBuildFlags = [];
-          directory.setupBuildFlags = [];
-          ghc-boot.setupBuildFlags = [];
-          transformers.setupBuildFlags = [];
-          ghci.setupBuildFlags = [];
-          network.setupBuildFlags = [];
-          unix.setupBuildFlags = [];
+          bytestring.THSupport = {};
+          containers.THSupport = {};
+          binary.THSupport = {};
+          filepath.THSupport = {};
+          time.THSupport = {};
+          Win32.THSupport = {};
+          libiserv.THSupport = {};
+          remote-iserv.THSupport = {};
+          directory.THSupport = {};
+          ghc-boot.THSupport = {};
+          transformers.THSupport = {};
+          ghci.THSupport = {};
+          network.THSupport = {};
+          unix.THSupport = {};
         };
       }// withTH
       )

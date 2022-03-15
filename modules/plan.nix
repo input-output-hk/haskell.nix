@@ -148,6 +148,11 @@ let
             type = unspecified; # Can be either a string or a function
             default = (def.shellHook or "");
           };
+          THSupport = mkOption {
+            description = "TemplateHaskell support hooks";
+            type = unspecified;
+            default = (def.THSupport or {});
+          };
     enableLibraryProfiling = mkOption {
       type = bool;
       default = (def.enableLibraryProfiling or false);
@@ -245,7 +250,7 @@ let
       default = def.ghcOptions or [];
     };
     planned = mkOption {
-      description = "Set to true by `plan-to-nix` for any component that was included in the `plan.json` file.";  
+      description = "Set to true by `plan-to-nix` for any component that was included in the `plan.json` file.";
       # This is here so that (rather than in componentOptions) so it can be set project wide for stack projects
       type = bool;
       default = def.planned or false;
