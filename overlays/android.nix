@@ -26,6 +26,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isAndroid ({
   numactl = prev.numactl.overrideAttrs (attrs: {
      patches = (attrs.patches or []) ++ [ ./patches/numactl-2.0.14-no-librt.patch ];
   });
+  zlib = prev.zlib.override { shared = false; };
 }) // prev.lib.optionalAttrs prev.stdenv.targetPlatform.isAndroid ({
   bionic = prev.bionic.override { enableStatic = true; };
 })
