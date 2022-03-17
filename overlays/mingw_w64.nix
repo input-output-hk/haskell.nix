@@ -28,7 +28,19 @@ let
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting remote-iserv on port $PORT")
-    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 ${remote-iserv}/bin/remote-iserv.exe tmp $PORT &
+    REMOTE_ISERV=$(mktemp -d)
+    ln -s ${remote-iserv}/bin/* $REMOTE_ISERV
+    for p in $pkgsHostTargetAsString; do
+      find "$p" -iname '*.dll' -exec ln -s {} $REMOTE_ISERV \;
+      find "$p" -iname '*.dll.a' -exec ln -s {} $REMOTE_ISERV \;
+    done
+    (
+    cd $REMOTE_ISERV
+    for l in lib*.dll; do
+      if [[ ! -e "''${l#lib}" ]]; then ln -s "$l" "''${l#lib}"; fi
+    done
+    )
+    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/remote-iserv.exe tmp $PORT &
     (>&2 echo "---| remote-iserv should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
@@ -46,7 +58,19 @@ let
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting remote-iserv on port $PORT")
-    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 ${remote-iserv.override { enableProfiling = true; }}/bin/remote-iserv.exe tmp $PORT &
+    REMOTE_ISERV=$(mktemp -d)
+    ln -s ${remote-iserv.override { enableProfiling = true; }}/bin/* $REMOTE_ISERV
+    for p in $pkgsHostTargetAsString; do
+      find "$p" -iname '*.dll' -exec ln -s {} $REMOTE_ISERV \;
+      find "$p" -iname '*.dll.a' -exec ln -s {} $REMOTE_ISERV \;
+    done
+    (
+    cd $REMOTE_ISERV
+    for l in lib*.dll; do
+      if [[ ! -e "''${l#lib}" ]]; then ln -s "$l" "''${l#lib}"; fi
+    done
+    )
+    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/remote-iserv.exe tmp $PORT &
     (>&2 echo "---| remote-iserv should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
