@@ -39,7 +39,7 @@ let
     # This was a problem for `double-conversion` package when used in TH code.
     # Creating links from the `X.dll` to `libX.dll` works around this issue.
     (
-    cd $out/bin
+    cd $REMOTE_ISERV
     for l in lib*.dll; do
       ln -s "$l" "''${l#lib}"
     done
