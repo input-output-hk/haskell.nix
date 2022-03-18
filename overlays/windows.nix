@@ -78,12 +78,6 @@ final: prev:
               find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
               find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
             done
-            (
-            cd $out/bin
-            for l in lib*.dll; do
-              ln -s "$l" "''${l#lib}"
-            done
-            )
           '');
 
           # Apply https://github.com/haskell/cabal/pull/6055

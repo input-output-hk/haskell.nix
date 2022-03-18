@@ -35,12 +35,6 @@ let
       find "$p" -iname '*.dll' -exec ln -s {} $REMOTE_ISERV \;
       find "$p" -iname '*.dll.a' -exec ln -s {} $REMOTE_ISERV \;
     done
-    (
-    cd $REMOTE_ISERV
-    for l in lib*.dll; do
-      if [[ ! -e "''${l#lib}" ]]; then ln -s "$l" "''${l#lib}"; fi
-    done
-    )
     WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/remote-iserv.exe tmp $PORT &
     (>&2 echo "---| remote-iserv should have started on $PORT")
     RISERV_PID="$!"
