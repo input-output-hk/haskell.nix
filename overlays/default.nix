@@ -10,7 +10,6 @@ let
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
-    hydra = import ./hydra.nix args;
     darwin = import ./darwin.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
@@ -57,7 +56,6 @@ let
     gobject-introspection
     hix
     eval-packages
-    hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
