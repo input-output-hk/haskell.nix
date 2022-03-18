@@ -8,6 +8,7 @@ writeScript "check-hydra.sh" ''
   set -euo pipefail
 
   export PATH="${makeBinPath [ coreutils time gnutar gzip hydra-unstable jq gitMinimal ]}"
+  export NIX_PATH=
 
   echo '~~~ Evaluating release.nix with --arg ifdLevel '$1
   command time --format '%e' -o eval-time.txt \
@@ -15,7 +16,7 @@ writeScript "check-hydra.sh" ''
       --option allowed-uris "https://github.com/NixOS https://github.com/input-output-hk" \
       --arg supportedSystems '[ builtins.currentSystem ]' \
       --arg ifdLevel $1 \
-      -I . release.nix > eval.json
+      -I $(realpath .) release.nix > eval.json
   EVAL_EXIT_CODE="$?"
   if [ "$EVAL_EXIT_CODE" != 0 ]
   then

@@ -31,7 +31,7 @@ pkgs:
     "gconf-2.0"                          = [ pkgs."GConf" ];
     "gdk-2.0"                            = [ pkgs."gtk2" ];
     "gdk-3.0"                            = [ pkgs."gtk3" ];
-    "gdk-pixbuf-2.0"                     = [ pkgs."gdk_pixbuf" ];
+    "gdk-pixbuf-2.0"                     = [ (pkgs."gdk-pixbuf" or pkgs."gdk_pixbuf") ];
     "gdk-x11-2.0"                        = [ pkgs."gdk_x11" ];
     "gdk-x11-3.0"                        = [ pkgs."gtk3" ];
     "gio-2.0"                            = [ pkgs."glib" ];

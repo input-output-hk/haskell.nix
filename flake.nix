@@ -8,6 +8,7 @@
     nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-utils = { url = "github:numtide/flake-utils"; };
+    hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
       flake = false;
