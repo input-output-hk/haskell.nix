@@ -30,6 +30,7 @@ let
     (>&2 echo "---> Starting remote-iserv on port $PORT")
     REMOTE_ISERV=$(mktemp -d)
     ln -s ${remote-iserv.override { inherit enableProfiling; }}/bin/* $REMOTE_ISERV
+    -- See coment in comp-builder.nix for where this comes from and why it's here
     for p in $pkgsHostTargetAsString; do
       find "$p" -iname '*.dll' -exec ln -s {} $REMOTE_ISERV \;
       find "$p" -iname '*.dll.a' -exec ln -s {} $REMOTE_ISERV \;
