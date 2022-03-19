@@ -115,9 +115,4 @@
     };
 
   pathHasContext = builtins.hasContext or (lib.hasPrefix builtins.storeDir);
-
-  canCleanSource = src:
-       src ? _isLibCleanSourceWithEx
-    || src ? _isLibCleanSourceWith
-    || !(pathHasContext (toString src));
 }
