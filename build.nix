@@ -68,7 +68,11 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {};
+    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {
+      # TODO remove this when nixpkgs-2205 is released and used for `pkgs`
+      # check-path-support fails unless we have nix 2.4 or newer.
+      inherit (import haskellNix.sources.nixpkgs-unstable {}) nix;
+    };
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra
