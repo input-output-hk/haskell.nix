@@ -198,10 +198,10 @@ substituters = [...] https://hydra.iohk.io [...]
 </code></pre>
 <p>If you're running NixOS, you need to add/update the following in your <code>/etc/nixos/configuration.nix</code> files instead.</p>
 <pre><code># Binary Cache for Haskell.nix
-nix.binaryCachePublicKeys = [
+nix.settings.trusted-public-keys = [
   &quot;hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=&quot;
 ];
-nix.binaryCaches = [
+nix.settings.substituters = [
   &quot;https://hydra.iohk.io&quot;
 ];
 </code></pre>
