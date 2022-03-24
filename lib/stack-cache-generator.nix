@@ -30,25 +30,22 @@ let
       }) resolver fetchedResolver;
 
     # Filter just the stack yaml file and any resolver yaml file it points to.
-    maybeCleanedSource =
-      if haskellLib.canCleanSource src
-        then haskellLib.cleanSourceWith {
-          inherit src;
-          filter = path: type:
-            let
-              origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
-              origSubDir = if src ? _isLibCleanSourceWithEx then src.origSubDir else "";
-              relPath = pkgs.lib.removePrefix (toString origSrc + origSubDir + "/") path;
+    maybeCleanedSource = haskellLib.cleanSourceWith {
+      inherit src;
+      filter = path: type:
+        let
+          origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
+          origSubDir = if src ? _isLibCleanSourceWithEx then src.origSubDir else "";
+          relPath = pkgs.lib.removePrefix (toString origSrc + origSubDir + "/") path;
 
-              # checks if path1 is a parent directory for path2
-              isParent = path1: path2: pkgs.lib.hasPrefix "${path1}/" path2;
+          # checks if path1 is a parent directory for path2
+          isParent = path1: path2: pkgs.lib.hasPrefix "${path1}/" path2;
 
-            in
-              (relPath == stackYaml)
-              || (resolver != null && (relPath == resolver || isParent relPath resolver))
-            ;
-        }
-        else src;
+        in
+          (relPath == stackYaml)
+          || (resolver != null && (relPath == resolver || isParent relPath resolver))
+        ;
+    };
 
     # All repos served via ssh or git protocols are usually private
     private = url: pkgs.lib.substring 0 4 url != "http";
