@@ -382,18 +382,26 @@ let
       runHook postConfigure
     '';
 
-    buildPhase = if stdenv.hostPlatform.isGhcjs then ''
-      runHook preBuild
-      # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}
-      runHook postBuild
-    '' else ''
-      runHook preBuild
-      # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
-      runHook postBuild
-    ''
-    ;
+    buildPhase =
+      # It seems that by the time the iserv wrapper specifiec by `--ghc-option=-pgmi` runs
+      # all the array environment variables are removed from the environment.  To get a list
+      # of all the locations a DLLs might be present we need access to pkgsHostTarget.
+      # Adding a string version of the list array of nix store paths allows us to get that
+      # list when we need it.
+      (lib.optionalString stdenv.hostPlatform.isWindows ''
+        export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
+      '') +
+      (if stdenv.hostPlatform.isGhcjs then ''
+        runHook preBuild
+        # https://gitlab.haskell.org/ghc/ghc/issues/9221
+        $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '' else ''
+        runHook preBuild
+        # https://gitlab.haskell.org/ghc/ghc/issues/9221
+        $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '');
 
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #

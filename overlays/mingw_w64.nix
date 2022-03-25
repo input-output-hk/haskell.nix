@@ -18,7 +18,7 @@ let
 
   configureFlags = lib.optional hostPlatform.isWindows "--disable-split-sections";
 
-  wineIservWrapperVanilla = writeScriptBin "iserv-wrapper" ''
+  wineIservWrapperScript = enableProfiling: writeScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
     #!${stdenv.shell}
     set -euo pipefail
     # unset the configureFlags.
@@ -28,7 +28,23 @@ let
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting remote-iserv on port $PORT")
-    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 ${remote-iserv}/bin/remote-iserv.exe tmp $PORT &
+    REMOTE_ISERV=$(mktemp -d)
+    ln -s ${if enableProfiling then remote-iserv.override { inherit enableProfiling; } else remote-iserv}/bin/* $REMOTE_ISERV
+    # See coment in comp-builder.nix for where this comes from and why it's here
+    for p in $pkgsHostTargetAsString; do
+      find "$p" -iname '*.dll' -exec ln -s {} $REMOTE_ISERV \;
+      find "$p" -iname '*.dll.a' -exec ln -s {} $REMOTE_ISERV \;
+    done
+    # Some DLLs have a `lib` prefix but we attempt to load them without the prefix.
+    # This was a problem for `double-conversion` package when used in TH code.
+    # Creating links from the `X.dll` to `libX.dll` works around this issue.
+    (
+    cd $REMOTE_ISERV
+    for l in lib*.dll; do
+      ln -s "$l" "''${l#lib}"
+    done
+    )
+    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/remote-iserv.exe tmp $PORT &
     (>&2 echo "---| remote-iserv should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
@@ -36,25 +52,7 @@ let
     kill $RISERV_PID
   '';
 
-  wineIservWrapperProf = writeScriptBin "iserv-wrapper-prof" ''
-    #!${stdenv.shell}
-    set -euo pipefail
-    # unset the configureFlags.
-    # configure should have run already
-    # without restting it, wine might fail
-    # due to a too large environment.
-    unset configureFlags
-    PORT=$((5000 + $RANDOM % 5000))
-    (>&2 echo "---> Starting remote-iserv on port $PORT")
-    WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 ${remote-iserv.override { enableProfiling = true; }}/bin/remote-iserv.exe tmp $PORT &
-    (>&2 echo "---| remote-iserv should have started on $PORT")
-    RISERV_PID="$!"
-    ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
-    (>&2 echo "---> killing remote-iserv...")
-    kill $RISERV_PID
-  '';
-
-  wineIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ wineIservWrapperVanilla wineIservWrapperProf ]; };
+  wineIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (wineIservWrapperScript false) (wineIservWrapperScript true) ]; };
 
   ################################################################################
   # Build logic (TH support via remote iserv via wine)

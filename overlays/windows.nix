@@ -73,17 +73,11 @@ final: prev:
           # dependencies) and then placing them somewhere where wine+remote-iserv
           # will find them.
           remote-iserv.postInstall = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
-            let extra-libs = [ pkgs.openssl.bin pkgs.libffi pkgs.gmp (pkgs.libsodium-vrf or pkgs.libsodium) pkgs.windows.mcfgthreads pkgs.buildPackages.gcc.cc pkgs.secp256k1 ]; in ''
+            let extra-libs = [ pkgs.libffi pkgs.gmp pkgs.windows.mcfgthreads pkgs.buildPackages.gcc.cc ]; in ''
             for p in ${lib.concatStringsSep " "extra-libs}; do
               find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
               find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
             done
-            (
-            cd $out/bin
-            for l in lib*.dll; do
-              ln -s "$l" "''${l#lib}"
-            done
-            )
           '');
 
           # Apply https://github.com/haskell/cabal/pull/6055
