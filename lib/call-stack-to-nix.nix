@@ -24,12 +24,15 @@ let
 
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
-  cleanedSource = (haskellLib.cleanSourceWith {
-    name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
-    src = src.origSrc or src;
-    filter = path: type: (!(src ? filter) || src.filter path type) && (
-      type == "directory" ||
-      pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ stackYaml ".cabal" "package.yaml" ]); });
+  maybeCleanedSource =
+    if haskellLib.canCleanSource src
+      then (haskellLib.cleanSourceWith {
+        name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
+        src = src.origSrc or src;
+        filter = path: type: (!(src ? filter) || src.filter path type) && (
+          type == "directory" ||
+          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ stackYaml ".cabal" "package.yaml" ]); })
+      else src.origSrc or src;
 
   stackToNixArgs = builtins.concatStringsSep " " [
     "--full"
@@ -56,14 +59,14 @@ let
     mkdir -p $out${subDir'}
     SRC=$(mktemp -d)
     cd $SRC
-    # if cleanedSource is empty, this means it's a new
+    # if maybeCleanedSource is empty, this means it's a new
     # project where the files haven't been added to the git
     # repo yet. We fail early and provide a useful error
     # message to prevent headaches (#290).
-    if [ -z "$(ls -A ${cleanedSource})" ]; then
+    if [ -z "$(ls -A ${maybeCleanedSource})" ]; then
       echo "cleaned source is empty. Did you forget to 'git add -A'?"; exit 1;
     fi
-    lndir -silent "${cleanedSource}/." $SRC
+    lndir -silent "${maybeCleanedSource}/." $SRC
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${
     # If a resolver was fetched use the it instead of the original stack.yaml
