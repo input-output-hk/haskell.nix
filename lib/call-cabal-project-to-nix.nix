@@ -103,15 +103,13 @@ let
   ghc = ghc';
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
-  maybeCleanedSource =
-    if haskellLib.canCleanSource src
-      then (haskellLib.cleanSourceWith {
-        name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
-        src = src.origSrc or src;
-        filter = path: type: (!(src ? filter) || src.filter path type) && (
-          type == "directory" ||
-          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); })
-      else src.origSrc or src;
+
+  cleanedSource = haskellLib.cleanSourceWith {
+    name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
+    src = src.origSrc or src;
+    filter = path: type: (!(src ? filter) || src.filter path type) && (
+      type == "directory" ||
+      pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); };
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
   # access to the store is restricted.  If origSrc was already in the store
@@ -473,17 +471,17 @@ let
   } ''
     tmp=$(mktemp -d)
     cd $tmp
-    # if maybeCleanedSource is empty, this means it's a new
+    # if cleanedSource is empty, this means it's a new
     # project where the files haven't been added to the git
     # repo yet. We fail early and provide a useful error
     # message to prevent headaches (#290).
-    if [ -z "$(ls -A ${maybeCleanedSource})" ]; then
+    if [ -z "$(ls -A ${cleanedSource})" ]; then
       echo "cleaned source is empty. Did you forget to 'git add -A'?"
       ${pkgs.lib.optionalString (__length fixedProject.sourceRepos == 0) ''
         exit 1
       ''}
     else
-      cp -r ${maybeCleanedSource}/* .
+      cp -r ${cleanedSource}/* .
     fi
     chmod +w -R .
     # Decide what to do for each `package.yaml` file.
