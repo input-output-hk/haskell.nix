@@ -169,6 +169,8 @@ in {
                 ++ fromUntil "8.8.2" "8.9"                ./patches/ghc/ghc-8.8.2-reinstallable-lib-ghc.patch
                 ++ final.lib.optional (version == "8.6.4") ./patches/ghc/ghc-8.6.4-better-plusSimplCountErrors.patch
                 ++ final.lib.optional (versionAtLeast "8.6.4" && versionLessThan "9.0" && final.stdenv.isDarwin) ./patches/ghc/ghc-macOS-loadArchive-fix.patch
+                ++ final.lib.optional (versionAtLeast "9.0.0" && versionLessThan "9.2" && final.stdenv.isDarwin) ./patches/ghc/ghc-9.0-macOS-loadArchive-fix.patch
+                ++ final.lib.optional (versionAtLeast "9.2.0" && versionLessThan "9.3" && final.stdenv.isDarwin) ./patches/ghc/ghc-9.2-macOS-loadArchive-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.4.4" && versionLessThan "8.10" && final.stdenv.isDarwin) ./patches/ghc/ghc-darwin-gcc-version-fix.patch
                 ++ final.lib.optional (versionAtLeast "8.10.1" && versionLessThan "9.0.2" && final.stdenv.isDarwin) ./patches/ghc/ghc-8.10-darwin-gcc-version-fix.patch
                 # backport of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3227

@@ -192,11 +192,11 @@ in {
   collectChecks' = collectChecks (_: true);
 
   # Replacement for lib.cleanSourceWith that has a subDir argument.
-  inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;
+  inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith;
 
   # Use cleanSourceWith to filter just the files needed for a particular
   # component of a package
-  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith canCleanSource; };
+  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith; };
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
@@ -290,26 +290,9 @@ in {
     if subDir == ""
       then src
       else
-        if haskellLib.canCleanSource src
-          then haskellLib.cleanSourceWith {
-            inherit src subDir includeSiblings;
-          }
-          else let name = src.name or "source" + "-" + __replaceStrings ["/"] ["-"] subDir;
-            in if includeSiblings
-              then rec {
-                # Keep `src.origSrc` so it can be used to allow references
-                # to other parts of that root.
-                inherit name;
-                origSrc = src.origSrc or src;
-                origSubDir = src.origSubDir or "" + "/" + subDir;
-                outPath = origSrc + origSubDir;
-              }
-              else {
-                # We are not going to need other parts of `origSrc` if there
-                # was one and we can ignore it
-                inherit name;
-                outPath = src + "/" + subDir;
-              };
+        haskellLib.cleanSourceWith {
+          inherit src subDir includeSiblings;
+        };
 
   # Givin a `src` split it into a `root` path (based on `src.origSrc` if
   # present) and `subDir` (based on `src.origSubDir).  The
