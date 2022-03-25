@@ -76,7 +76,7 @@ let
   # (used in call-cabal-project-to-nix.nix to create a fixed-output derivation)
   extractSourceRepoPackageData = cabalProjectFileName: sha256map: repo: {
     url = repo.location;
-    ref = repo.tag;
+    ref = if repo ? commit then repo.commit else repo.tag;
     sha256 = repo."--sha256" or (
       if sha256map != null
         then sha256map."${repo.location}"."${repo.tag}"
