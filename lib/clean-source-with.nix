@@ -73,6 +73,8 @@
   #       if builtins.hasContext (toString path) then path else builtins.path args;
   #   };
   #
+  # Currently `haskell-nix.hackage-project` (used by `hackage-package`, `tool` and `tools`) disables
+  # filtering.  See `overlays/haskell.nix` for details.
   cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null
       , caller ? "cleanSourceWith", includeSiblings ? false }:
     let
