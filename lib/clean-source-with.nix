@@ -75,6 +75,8 @@
   #
   # Currently `haskell-nix.hackage-project` (used by `hackage-package`, `tool` and `tools`) disables
   # filtering.  See `overlays/haskell.nix` for details.
+  #
+  # For more see https://github.com/input-output-hk/haskell.nix/pull/1418
   cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null
       , caller ? "cleanSourceWith", includeSiblings ? false }:
     let
