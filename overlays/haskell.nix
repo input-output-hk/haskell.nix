@@ -471,7 +471,15 @@ final: prev: {
                   inherit (rev) sha256;
                 };
                 revSuffix = final.lib.optionalString (rev.revNum > 0) "-r${toString rev.revNum}";
-            in let src = final.buildPackages.pkgs.runCommand "${name}-${version'}${revSuffix}-src" { } (''
+            in let src = final.buildPackages.pkgs.runCommand "${name}-${version'}${revSuffix}-src" {
+                passthru = {
+                  # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
+                  # Disable filtering keeps pre ond post nix 2.4 behaviour the same.  This means that
+                  # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
+                  # that `tools` in the shell will be built the same.
+                  filterPath = { path, ... }: path;
+                };
+             } (''
                   tmp=$(mktemp -d)
                   cd $tmp
                   tar xzf ${tarball}
