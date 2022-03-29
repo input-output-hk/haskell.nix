@@ -6,14 +6,11 @@
 let
   # Full source including possible relative paths form the
   # project directory.
-  srcRoot =
-    if haskellLib.canCleanSource src
-      then haskellLib.cleanSourceWith {
-        name = if src ? name then "${src.name}-root" else "source-root";
-        src = src.origSrc or src;
-        filter = src.filter or (_: _: true);
-      }
-      else src.origSrc or src;
+  srcRoot = haskellLib.cleanSourceWith {
+    name = if src ? name then "${src.name}-root" else "source-root";
+    src = src.origSrc or src;
+    filter = src.filter or (_: _: true);
+  };
   # The sub directory containing the cabal.project or stack.yaml file
   projectSubDir' = src.origSubDir or "";                                     # With leading /
   projectSubDir = pkgs.lib.strings.removePrefix "/" projectSubDir';          # Without /

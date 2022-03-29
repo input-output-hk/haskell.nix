@@ -2,7 +2,10 @@
 # https://github.com/NixOS/nixpkgs/blob/1d9d31a0eb8e8358830528538a391df52f6a075a/lib/sources.nix#L41
 # It adds a subDir argument in a way that allows descending into a subdirectory
 # to compose with cleaning the source with a filter.
-{ lib }: rec {
+{ lib }:
+if lib.versionOlder builtins.nixVersion "2.4"
+then throw "Nix version 2.4 or higher is required for Haskell.nix"
+else rec {
 
   # Like `builtins.filterSource`, except it will compose with itself,
   # allowing you to chain multiple calls together without any
@@ -113,11 +116,4 @@
       _isLibCleanSourceWith = origSubDir == "";
       name = name';
     };
-
-  pathHasContext = builtins.hasContext or (lib.hasPrefix builtins.storeDir);
-
-  canCleanSource = src:
-       src ? _isLibCleanSourceWithEx
-    || src ? _isLibCleanSourceWith
-    || !(pathHasContext (toString src));
 }
