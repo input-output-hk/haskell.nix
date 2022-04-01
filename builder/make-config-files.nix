@@ -82,7 +82,10 @@ let
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") component.libs
-        ++ lib.optionals (stdenv.hostPlatform.isWindows) (map (p: "${lib.getBin p}/bin") component.libs);
+        # On windows also include `bin` directories that may contain DLLs
+        ++ lib.optionals (stdenv.hostPlatform.isWindows)
+          (map (p: "${lib.getBin p}/bin")
+               (component.libs ++ lib.concatLists component.pkgconfig));
       "extra-include-dirs" = map (p: "${lib.getDev p}/include") component.libs;
       "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
     })}
