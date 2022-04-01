@@ -96,6 +96,7 @@ let
   component = {
     depends = packageInputs;
     libs = [];
+    pkgconfig = [];
     frameworks = [];
     doExactConfig = false;
   };
