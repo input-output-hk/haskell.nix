@@ -5,6 +5,11 @@ on:
 jobs:
   tests:
     runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: bash
+
     steps:
 
     - uses: haskell/actions/setup@v1
