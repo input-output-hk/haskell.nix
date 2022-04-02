@@ -14,7 +14,7 @@ jobs:
         cabal-version: 3.6.2.0
      
     - name: Install pkgconfiglite
-      run: retry 2 choco install -y pkgconfiglite
+      run: choco install -y pkgconfiglite
 
     - name: Install libsecp256k1
       run: |
@@ -35,7 +35,7 @@ jobs:
         echo "$SECP256K1_PATH" >> $GITHUB_PATH
 
     - name: Cabal update
-      run: retry 2 cabal update
+      run: cabal update
 
     - name: Build and run haskell-secp256k1 tests
       run: |
