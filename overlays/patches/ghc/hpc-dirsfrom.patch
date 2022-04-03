@@ -46,7 +46,7 @@ index 2d78375003..f19ff5f108 100644
    , srcDirs             :: [String]
 +  , srcDirsFrom         :: Maybe String
    , destDir             :: String
- 
+
    , perModule           :: Bool
 @@ -36,9 +40,13 @@ default_flags :: Flags
  default_flags = Flags
@@ -60,22 +60,22 @@ index 2d78375003..f19ff5f108 100644
    , srcDirs             = []
 +  , srcDirsFrom         = Nothing
    , destDir             = "."
- 
+
    , perModule           = False
 @@ -76,32 +84,69 @@ default_final_flags flags = flags
                else srcDirs flags
    }
- 
+
 -type FlagOptSeq = [OptDescr (Flags -> Flags)] -> [OptDescr (Flags -> Flags)]
 +type FlagOptSeq = [OptDescr (Flags -> IO Flags)] -> [OptDescr (Flags -> IO Flags)]
- 
+
  noArg :: String -> String -> (Flags -> Flags) -> FlagOptSeq
 -noArg flag detail fn = (:) $ Option [] [flag] (NoArg $ fn) detail
 +noArg flag detail fn = noArgIO flag detail (pure . fn)
 +
 +noArgIO :: String -> String -> (Flags -> IO Flags) -> FlagOptSeq
 +noArgIO flag detail fn = (:) $ Option [] [flag] (NoArg fn) detail
- 
+
  anArg :: String -> String -> String -> (String -> Flags -> Flags) -> FlagOptSeq
 -anArg flag detail argtype fn = (:) $ Option [] [flag] (ReqArg fn argtype) detail
 +anArg flag detail argtype fn = anArgIO flag detail argtype (\s xs -> pure $ fn s xs)
@@ -88,11 +88,11 @@ index 2d78375003..f19ff5f108 100644
 +
 +optArgIO :: String -> String -> String -> (String -> Flags -> IO Flags) -> FlagOptSeq
 +optArgIO flag detail argtype fn = (:) $ Option [] [flag] (OptArg (maybe pure fn) argtype) detail
- 
+
  infoArg :: String -> FlagOptSeq
 -infoArg info = (:) $ Option [] [] (NoArg $ id) info
 +infoArg info = (:) $ Option [] [] (NoArg $ pure) info
- 
+
 -excludeOpt, includeOpt, hpcDirOpt, resetHpcDirsOpt, srcDirOpt,
 -    destDirOpt, outputOpt, verbosityOpt,
 +excludeOpt, excludesFromOpt, includeOpt, includesFromOpt, hpcDirOpt, hpcDirsFromOpt, resetHpcDirsOpt,
@@ -110,10 +110,10 @@ index 2d78375003..f19ff5f108 100644
 +                      , excludeModsFrom = Just a
 +                      }
 +                  )
- 
+
  includeOpt      = anArg "include"    "include MODULE and/or PACKAGE" "[PACKAGE:][MODULE]"
                  $ \ a f -> f { includeMods = a `Set.insert` includeMods f }
- 
+
 +includesFromOpt = optArgIO "includes-from"    "a file with a list of MODULE and/or PACKAGE names to include" "FILE"
 +                  (\ a f -> do
 +                    content <- readFile a
@@ -125,7 +125,7 @@ index 2d78375003..f19ff5f108 100644
  hpcDirOpt       = anArg "hpcdir"     "append sub-directory that contains .mix files" "DIR"
                     (\ a f -> f { hpcDirs = hpcDirs f ++ [a] })
                  .  infoArg "default .hpc [rarely used]"
- 
+
 +hpcDirsFromOpt   = optArgIO "hpcdirs-from" "read from a file and append sub-directories that contain .mix files" "FILE"
 +                   (\ a f -> do
 +                     content <- readFile a
@@ -141,7 +141,7 @@ index 2d78375003..f19ff5f108 100644
 @@ -110,6 +155,16 @@ srcDirOpt       = anArg "srcdir"     "path to source directory of .hs files" "DI
                    (\ a f -> f { srcDirs = srcDirs f ++ [a] })
                  . infoArg "multi-use of srcdir possible"
- 
+
 +
 +srcDirsFromOpt   = optArgIO "srcdirs-from" "read paths to source directories of .hs files from a file" "FILE"
 +                   (\ a f -> do
@@ -154,7 +154,7 @@ index 2d78375003..f19ff5f108 100644
 +
  destDirOpt      = anArg "destdir"   "path to write output to" "DIR"
                  $ \ a f -> f { destDir = a }
- 
+
 diff --git a/utils/hpc/HpcMarkup.hs b/utils/hpc/HpcMarkup.hs
 index 1d5efcf6d6..7ed952aeaa 100644
 --- a/utils/hpc/HpcMarkup.hs
@@ -229,7 +229,7 @@ index 3f1813f243..64f88341eb 100644
 +++ b/utils/hpc/Main.hs
 @@ -1,6 +1,7 @@
  -- (c) 2007 Andy Gill
- 
+
  -- Main driver for Hpc
 +import Control.Monad
  import Data.Version
@@ -245,5 +245,5 @@ index 3f1813f243..64f88341eb 100644
 +                         intermediate_flags <- foldr (<=<) pure o $ init_flags plugin
 +                         let flags = final_flags plugin intermediate_flags
                           implementation plugin flags ns
- 
+
  main :: IO ()
