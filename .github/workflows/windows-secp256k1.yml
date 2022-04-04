@@ -27,7 +27,7 @@ jobs:
           --retry 5 \
           --retry-delay 0 \
           --retry-max-time 40 \
-          https://hydra.iohk.io/job/Cardano/haskell-nix-bors-trying/windows-secp256k1/latest/download/1 -o secp256k1.zip
+          https://hydra.iohk.io/job/Cardano/haskell-nix/windows-secp256k1/latest/download/1 -o secp256k1.zip
         mkdir secp256k1
         cd secp256k1
         unzip ../secp256k1.zip
