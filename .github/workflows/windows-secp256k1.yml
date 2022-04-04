@@ -1,7 +1,5 @@
 name: "Test secp256k1 on windows"
 on:
-  pull_request:
-  push:
 jobs:
   tests:
     runs-on: windows-latest
