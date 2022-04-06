@@ -42,13 +42,13 @@ in {
     (fromUntil "3.6.0.0" "3.7" ../overlays/patches/Cabal/Cabal-3.6.0.0-no-final-checks.diff)
   ];
 
-  # These two patches are:
-  #   https://github.com/haskell/cabal/pull/7490
-  #   https://github.com/haskell/cabal/pull/7532
-  # back poerted to cabal 3.4
   packages.cabal-install.patches = [
+    # https://github.com/haskell/cabal/pull/7532
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-defer-build-tool-depends-7532.patch)
+    # https://github.com/haskell/cabal/pull/7490
     (fromUntil "3.4.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.4-speedup-solver-when-tests-enabled-7490.patch)
+    # https://github.com/haskell/cabal/pull/8086
+    (fromUntil "3.6.0.0" "3.7" ../overlays/patches/Cabal/fix-index-state-warning-8086.diff)
   ];
   # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
   packages.mintty.components.library.build-tools = pkgs.lib.mkForce [];

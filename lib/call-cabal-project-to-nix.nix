@@ -163,7 +163,7 @@ let
       let
         suitable-index-states =
           builtins.filter
-            (s: s >= index-state-found) # This compare is why we need zulu time
+            (s: s > index-state-found) # This compare is why we need zulu time
             (builtins.attrNames index-state-hashes);
       in
         if builtins.length suitable-index-states == 0
