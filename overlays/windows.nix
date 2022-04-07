@@ -16,12 +16,12 @@ final: prev:
   #   postFixup = "";
   #  });
 } // prev.lib.optionalAttrs (prev ? mfpr) {
-   mfpr = prev.mfpr.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ prev.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+   mfpr = if !prev.stdenv.hostPlatform.isWindows then prev.mpfr else prev.mfpr.overrideAttrs (drv: {
+     configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
 } // {
-   libmpc = prev.libmpc.overrideAttrs (drv: {
-     configureFlags = (drv.configureFlags or []) ++ prev.lib.optional prev.stdenv.hostPlatform.isWindows "--enable-static --disable-shared" ;
+   libmpc = if !prev.stdenv.hostPlatform.isWindows then prev.libmpc else prev.libmpc.overrideAttrs (drv: {
+     configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
 
    binutils-unwrapped = prev.binutils-unwrapped.overrideAttrs (attrs: {
