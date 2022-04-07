@@ -153,22 +153,27 @@ in
 
 let
   # If a hash was not specified find a suitable cached index state to
-  # use that will contain all the packages we need.  By using the
-  # first one after the desired index-state we can avoid recalculating
-  # when new index-state-hashes are added.
+  # use that will contain all the packages we need.
   # See https://github.com/input-output-hk/haskell.nix/issues/672
+  # Although it will contain all the records for the `index-state`
+  # the first record may not contain any after that date and
+  # `cabal` will be unsure if we have everything we need.
+  # Skipping it and using the next available index-state makes
+  # should keep `cabal` happy.
   cached-index-state = if index-sha256 != null
     then index-state-found
     else
       let
+        # All the known index-states hashes that will contain the everything needed for `index-state-found`
         suitable-index-states =
           builtins.filter
-            (s: s > index-state-found) # This compare is why we need zulu time
+            (s: s >= index-state-found) # This compare is why we need zulu time
             (builtins.attrNames index-state-hashes);
       in
-        if builtins.length suitable-index-states == 0
+        # Skip the first one so that we will have some extra records to keep cabal happy
+        if builtins.length suitable-index-states <= 1
           then index-state-found
-          else pkgs.lib.head suitable-index-states;
+          else pkgs.lib.head (pkgs.lib.tail suitable-index-states);
 
   # Lookup hash for the index state we found
   index-sha256-found = if index-sha256 != null
