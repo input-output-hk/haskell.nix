@@ -209,16 +209,15 @@
     "nix-tools": {
       "flake": false,
       "locked": {
-        "lastModified": 1649400552,
-        "narHash": "sha256-k3rz+16TZZP2D5gxn+C7XRc8vbuDJJuuobvgUJCjmfI=",
+        "lastModified": 1649424170,
+        "narHash": "sha256-XgKXWispvv5RCvZzPb+p7e6Hy3LMuRjafKMl7kXzxGw=",
         "owner": "input-output-hk",
         "repo": "nix-tools",
-        "rev": "b9ff707b480bc50c0d61273b77ae5e5782f6e99b",
+        "rev": "e109c94016e3b6e0db7ed413c793e2d4bdb24aa7",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "hkm/fix-hackage-sigs",
         "repo": "nix-tools",
         "type": "github"
       }
