@@ -45,7 +45,7 @@
       flake = false;
     };
     nix-tools = {
-      url = "github:input-output-hk/nix-tools/hkm/fix-hackage-sigs";
+      url = "github:input-output-hk/nix-tools";
       flake = false;
     };
     old-ghc-nix = {
