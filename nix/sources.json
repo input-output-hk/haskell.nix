@@ -5,10 +5,10 @@
         "homepage": "https://input-output-hk.github.io/haskell.nix",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "355cd3701db115b494b13dbb613175345df059ed",
-        "sha256": "0lvwnva4g3wjmqpzj9cny7v1wrya4kq5617zxz61fhjhf8z79wk6",
+        "rev": "aaae688f4700c788243e5c5508c5e17e0f8f50ab",
+        "sha256": "0b7ih529mfq72sfpmzix8r6zqgvqwcz0j9va9z9qm5gr3hb2y698",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/haskell.nix/archive/355cd3701db115b494b13dbb613175345df059ed.tar.gz",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/aaae688f4700c788243e5c5508c5e17e0f8f50ab.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "niv": {
@@ -21,18 +21,6 @@
         "sha256": "0jlmrx633jvqrqlyhlzpvdrnim128gc81q5psz2lpp2af8p8q9qs",
         "type": "tarball",
         "url": "https://github.com/nmattia/niv/archive/f73bf8d584148677b01859677a63191c31911eae.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "nixpkgs": {
-        "branch": "nixos-19.09",
-        "description": "A read-only mirror of NixOS/nixpkgs tracking the released channels. Send issues and PRs to",
-        "homepage": "https://github.com/NixOS/nixpkgs",
-        "owner": "NixOS",
-        "repo": "nixpkgs-channels",
-        "rev": "289466dd6a11c65a7de4a954d6ebf66c1ad07652",
-        "sha256": "0r5ja052s86fr54fm1zlhld3fwawz2w1d1gd6vbvpjrpjfyajibn",
-        "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs-channels/archive/289466dd6a11c65a7de4a954d6ebf66c1ad07652.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
