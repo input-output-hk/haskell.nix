@@ -132,17 +132,9 @@ lib.runTests {
       '');
       expected = __toJSON {
         name = "ghcjs-overlay";
-        updatedText = ''
-          repository ghcjs-overlay
-            url: file:/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay/.cabal/packages/ghcjs-overlay
-            secure: True
-            root-keys:
-            key-threshold: 0
-          -- end of block
-        '';
         home = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay";
-        tarball = {
-          ghcjs-overlay = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay/.cabal/packages/ghcjs-overlay/01-index.tar.gz";
+        repo = {
+          ghcjs-overlay = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay/.cabal/packages/ghcjs-overlay";
         };
         hackage = {
           Cabal = {
