@@ -241,9 +241,9 @@ let
       sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
     in {
       sourceRepos = sourceReposBuild;
-      inherit (repoResult) tarballs extra-hackages;
+      inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${pkgs.evalPackages.writeText "cabal.project" repoResult.updatedText} ./cabal.project
+        cp -f ${pkgs.evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
       '' +
         pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
         chmod +w -R ./cabal.project
@@ -278,7 +278,7 @@ let
 
   fixedProject =
     if rawCabalProject == null
-      then { sourceRepos = []; tarballs = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
+      then { sourceRepos = []; repos = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
       else replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
@@ -523,8 +523,8 @@ let
       # some packages that will be excluded by `index-state-found`
       # which is used by cabal (cached-index-state >= index-state-found).
       dotCabal {
-        inherit cabal-install nix-tools;
-        extra-hackage-tarballs = fixedProject.tarballs // extra-hackage-tarballs;
+        inherit cabal-install nix-tools extra-hackage-tarballs;
+        extra-hackage-repos = fixedProject.repos;
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }

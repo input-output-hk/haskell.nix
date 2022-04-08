@@ -171,32 +171,20 @@ let
           mkdir -p $out
           hackage-to-nix $out ${home}/.cabal/packages/${name}/01-index.tar ${attrs.url}
         '');
-      # Tarball info in the same format as `extra-hackage-tarballs` passed in to cabalProject
-      tarball = {
-        ${name} = home + "/.cabal/packages/${name}/01-index.tar.gz";
+      # Directory to `lndir` when constructing a suitable $HOME/.cabal dir
+      repo = {
+        ${name} = home + "/.cabal/packages/${name}";
       };
-      # Replacement `repository` block using `file:` uri and the remaining text (text that was not part of the attribute block).
-      updatedText = ''
-        repository ${name}
-          url: file:${home + "/.cabal/packages/${name}"}
-          secure: True
-          root-keys:
-          key-threshold: 0
-        '' + pkgs.lib.strings.concatStringsSep "\n" x.snd;
     };
 
   parseRepositories = cabalProjectFileName: sha256map: cabal-install: nix-tools: projectFile:
     let
       # This will leave the name of repository in the first line of each block
       blocks = pkgs.lib.splitString "\nrepository " ("\n" + projectFile);
-      initialText = pkgs.lib.lists.take 1 blocks;
       repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName sha256map cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
     in {
       extra-hackages = pkgs.lib.lists.map (block: block.hackage) repoBlocks;
-      tarballs = pkgs.lib.lists.foldl' (x: block: x // block.tarball) {} repoBlocks;
-      updatedText = pkgs.lib.strings.concatStringsSep "\n" (
-        initialText
-        ++ (builtins.map (x: x.updatedText) repoBlocks));
+      repos = pkgs.lib.lists.foldl' (x: block: x // block.repo) {} repoBlocks;
     };
 
 in {
