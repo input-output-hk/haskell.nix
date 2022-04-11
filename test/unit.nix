@@ -119,7 +119,7 @@ lib.runTests {
   };
 
   testParseRepositoryBlock = {
-      expr = __toJSON (haskellLib.parseRepositoryBlock "cabal.project" {}
+      expr = __toJSON (haskellLib.parseRepositoryBlock "cabal.project" {} {}
         pkgs.evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
         pkgs.evalPackages.haskell-nix.nix-tools.${compiler-nix-name} ''
           ghcjs-overlay
