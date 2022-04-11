@@ -207,7 +207,7 @@ let
             else if inputMap ? ${repoData.url}
               then
                 (if inputMap.${repoData.url}.rev != repoData.ref
-                  then throw "${inputMap.${repoData.url}.rev} may not match ${repoData.ref} for ${repoData.url} use "${repoData.url}/${repoData.ref}" as the inputMap key if ${repoData.ref} is a branch or tag that points to ${inputMap.${repoData.url}.rev}."
+                  then throw "${inputMap.${repoData.url}.rev} may not match ${repoData.ref} for ${repoData.url} use \"${repoData.url}/${repoData.ref}\" as the inputMap key if ${repoData.ref} is a branch or tag that points to ${inputMap.${repoData.url}.rev}."
                   else inputMap.${repoData.url})
             else if repoData.sha256 != null
               then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
