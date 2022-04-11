@@ -38,6 +38,7 @@ in
                      #         = "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
                      #     };
 , extra-hackage-tarballs ? {}
+, inputs ? {}
 , source-repo-override ? {} # Cabal seems to behave incoherently when
                             # two source-repository-package entries
                             # provide the same packages, making it
@@ -226,7 +227,7 @@ let
 
       # Parse the `repository` blocks
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        cabalProjectFileName sha256map cabal-install nix-tools sourceRepoPackageResult.otherText;
+        cabalProjectFileName sha256map inputs cabal-install nix-tools sourceRepoPackageResult.otherText;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)

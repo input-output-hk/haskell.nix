@@ -122,7 +122,7 @@ let
   # This works because `cabal configure` does not include any of the `/nix/sore/`
   # paths in the `plan.json` (so materialized plan-nix will still work as expeced).
   # See tests/unit.nix for examples of input and output.
-  parseRepositoryBlock = cabalProjectFileName: sha256map: cabal-install: nix-tools: block:
+  parseRepositoryBlock = cabalProjectFileName: sha256map: inputs: cabal-install: nix-tools: block:
     let
       lines = pkgs.lib.splitString "\n" block;
       # The first line will contain the repository name.
@@ -136,8 +136,25 @@ let
       # This is `some-name` from the `repository some-name` line in the `cabal.project` file.
       name = __head lines;
       # The $HOME dir with `.cabal` sub directory after running `cabal new-update` to download the repository
-      home =
-        pkgs.evalPackages.runCommand name ({
+      home = if inputs ? ${name}
+        # If there is an input use it to make `file:` url and create a suitable `.cabal/packages/${name}` directory
+        then pkgs.evalPackages.runCommand name ({
+          nativeBuildInputs = [ cabal-install ];
+          preferLocalBuild = true;
+        }) ''
+            mkdir -p $out/.cabal
+            cat <<EOF > $out/.cabal/config
+            repository ${name}
+              url: file:${inputs.${name}}
+              ${pkgs.lib.optionalString (attrs ? secure) "secure: ${attrs.secure}"}
+              ${pkgs.lib.optionalString (attrs ? root-keys) "root-keys: ${attrs.root-keys}"}
+              ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
+            EOF
+
+            mkdir -p $out/.cabal/packages/${name}
+            HOME=$out cabal new-update ${name}
+        ''
+        else pkgs.evalPackages.runCommand name ({
           nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
           LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
@@ -177,11 +194,11 @@ let
       };
     };
 
-  parseRepositories = cabalProjectFileName: sha256map: cabal-install: nix-tools: projectFile:
+  parseRepositories = cabalProjectFileName: sha256map: inputs: cabal-install: nix-tools: projectFile:
     let
       # This will leave the name of repository in the first line of each block
       blocks = pkgs.lib.splitString "\nrepository " ("\n" + projectFile);
-      repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName sha256map cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
+      repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName sha256map inputs cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
     in {
       extra-hackages = pkgs.lib.lists.map (block: block.hackage) repoBlocks;
       repos = pkgs.lib.lists.foldl' (x: block: x // block.repo) {} repoBlocks;

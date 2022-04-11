@@ -109,6 +109,10 @@ in {
       type = nullOr attrs;
       default = {};
     };
+    inputs = mkOption {
+      type = nullOr attrs;
+      default = {};
+    };
     source-repo-override = mkOption {
       type = attrsOf (functionTo attrs);
       default = {};
