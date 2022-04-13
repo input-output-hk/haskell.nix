@@ -203,16 +203,15 @@ final: prev: {
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, ... }@args:
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
             let
               allTarballs = hackageTarball args // extra-hackage-tarballs;
               allNames = final.lib.concatStringsSep "-" (builtins.attrNames allTarballs);
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
-            in
-            # This is very big, and cheap to build: prefer building it locally
-            final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; preferLocalBuild = true; } ''
+              # This is very big, and cheap to build: prefer building it locally
+              tarballRepos = final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; preferLocalBuild = true; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
@@ -237,6 +236,17 @@ final: prev: {
                 ${final.lib.concatStrings (map (name: ''
                   HOME=$out cabal new-update ${name}
                 '') (builtins.attrNames allTarballs))}
+              '';
+            in
+              # Add the extra-hackage-repos where we have all the files needed.
+              final.evalPackages.runCommand dotCabalName { nativeBuildInputs = [ final.evalPackages.xorg.lndir ]; } ''
+                mkdir $out
+                lndir ${tarballRepos} $out
+
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  mkdir -p $out/.cabal/packages/${name}
+                  lndir ${repo} $out/.cabal/packages/${name}
+                '') extra-hackage-repos)}
             '';
 
         # Some of features of haskell.nix rely on using a hackage index
