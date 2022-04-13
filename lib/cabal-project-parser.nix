@@ -135,15 +135,16 @@ let
     in rec {
       # This is `some-name` from the `repository some-name` line in the `cabal.project` file.
       name = __head lines;
-      # The $HOME dir with `.cabal` sub directory after running `cabal new-update` to download the repository
-      home = if inputMap ? ${attrs.url}
+      # The $HOME/.cabal/packages/${name} after running `cabal v2-update` to download the repository
+      repoContents = if inputMap ? ${attrs.url}
         # If there is an input use it to make `file:` url and create a suitable `.cabal/packages/${name}` directory
         then pkgs.evalPackages.runCommand name ({
           nativeBuildInputs = [ cabal-install ];
           preferLocalBuild = true;
         }) ''
-            mkdir -p $out/.cabal
-            cat <<EOF > $out/.cabal/config
+            HOME=$(mktemp -d)
+            mkdir -p $HOME/.cabal/packages/${name}
+            cat <<EOF > $HOME/.cabal/config
             repository ${name}
               url: file:${inputMap.${attrs.url}}
               ${pkgs.lib.optionalString (attrs ? secure) "secure: ${attrs.secure}"}
@@ -151,8 +152,8 @@ let
               ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
             EOF
 
-            mkdir -p $out/.cabal/packages/${name}
-            HOME=$out cabal new-update ${name}
+            cabal v2-update ${name}
+            cp -r $HOME/.cabal/packages/${name} $out
         ''
         else pkgs.evalPackages.runCommand name ({
           nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
@@ -164,8 +165,9 @@ let
           outputHashAlgo = "sha256";
           outputHash = sha256;
         }) ''
-            mkdir -p $out/.cabal
-            cat <<EOF > $out/.cabal/config
+            HOME=$(mktemp -d)
+            mkdir -p $HOME/.cabal/packages/${name}
+            cat <<EOF > $HOME/.cabal/config
             repository ${name}
               url: ${attrs.url}
               ${pkgs.lib.optionalString (attrs ? secure) "secure: ${attrs.secure}"}
@@ -174,8 +176,8 @@ let
             EOF
 
             export SSL_CERT_FILE=${pkgs.evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
-            mkdir -p $out/.cabal/packages/${name}
-            HOME=$out cabal new-update ${name}
+            cabal v2-update ${name}
+            cp -r $HOME/.cabal/packages/${name} $out
         '';
       # Output of hackage-to-nix
       hackage = import (
@@ -186,11 +188,11 @@ let
           preferLocalBuild = true;
         } ''
           mkdir -p $out
-          hackage-to-nix $out ${home}/.cabal/packages/${name}/01-index.tar ${attrs.url}
+          hackage-to-nix $out ${repoContents}/01-index.tar ${attrs.url}
         '');
       # Directory to `lndir` when constructing a suitable $HOME/.cabal dir
       repo = {
-        ${name} = home + "/.cabal/packages/${name}";
+        ${name} = repoContents;
       };
     };
 
