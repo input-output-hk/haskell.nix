@@ -5,5 +5,5 @@ repository ghcjs-overlay
   secure: True
   root-keys:
   key-threshold: 0
-  --sha256: sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=
+  --sha256: sha256-y1vQnXI1XzkjnC4h66tVDmu2TZjZPcMrZEnE3m0XOfg=
 
