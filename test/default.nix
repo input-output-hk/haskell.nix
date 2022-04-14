@@ -203,6 +203,7 @@ let
     githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
     c-ffi = callTest ./c-ffi { inherit util compiler-nix-name; };
     th-dlls = callTest ./th-dlls { inherit util compiler-nix-name; };
+    exe-dlls = callTest ./exe-dlls { inherit util compiler-nix-name; };
 
     unit = unitTests;
   };
