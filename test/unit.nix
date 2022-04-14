@@ -119,7 +119,7 @@ lib.runTests {
   };
 
   testParseRepositoryBlock = {
-      expr = __toJSON (haskellLib.parseRepositoryBlock "cabal.project" {}
+      expr = __toJSON (haskellLib.parseRepositoryBlock "cabal.project" {} {}
         pkgs.evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
         pkgs.evalPackages.haskell-nix.nix-tools.${compiler-nix-name} ''
           ghcjs-overlay
@@ -127,22 +127,14 @@ lib.runTests {
             secure: True
             root-keys:
             key-threshold: 0
-            --sha256: sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=
+            --sha256: sha256-y1vQnXI1XzkjnC4h66tVDmu2TZjZPcMrZEnE3m0XOfg=
           -- end of block
       '');
       expected = __toJSON {
         name = "ghcjs-overlay";
-        updatedText = ''
-          repository ghcjs-overlay
-            url: file:/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay/.cabal/packages/ghcjs-overlay
-            secure: True
-            root-keys:
-            key-threshold: 0
-          -- end of block
-        '';
-        home = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay";
-        tarball = {
-          ghcjs-overlay = "/nix/store/0lx8536b53bqssqzzbyzi22j117a7q2g-ghcjs-overlay/.cabal/packages/ghcjs-overlay/01-index.tar.gz";
+        repoContents = "/nix/store/gzjj6rjjgvkm5midldy292ghbq7hszna-ghcjs-overlay";
+        repo = {
+          ghcjs-overlay = "/nix/store/gzjj6rjjgvkm5midldy292ghbq7hszna-ghcjs-overlay";
         };
         hackage = {
           Cabal = {

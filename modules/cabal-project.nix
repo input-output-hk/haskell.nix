@@ -105,6 +105,14 @@ in {
               = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
       '';
     };
+    inputMap = mkOption {
+      type = nullOr attrs;
+      default = {};
+      description = ''
+        Specifies the contents of urls in the cabal.project file.
+        The `.rev` attribute is checked against the `tag` for `source-repository-packages`.
+      '';
+    };
     extra-hackage-tarballs = mkOption {
       type = nullOr attrs;
       default = {};
