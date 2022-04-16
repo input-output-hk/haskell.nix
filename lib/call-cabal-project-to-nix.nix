@@ -37,6 +37,14 @@ in
                      #       "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32"
                      #         = "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
                      #     };
+, inputMap ? {}
+                     # An alternative to providing a `sha256` handy for flakes
+                     # cabal.project file:
+                     #   inputs.pandoc-citeproc.url = "github:jgm/pandoc-citeproc/0.17";
+                     #   inputs.pandoc-citeproc.flake = false;
+                     #   outputs = inputs:
+                     #     ...
+                     #     inputMap."https://github.com/jgm/pandoc-citeproc" = inputs.inputs.pandoc-citeproc;
 , extra-hackage-tarballs ? {}
 , source-repo-override ? {} # Cabal seems to behave incoherently when
                             # two source-repository-package entries
@@ -194,8 +202,15 @@ let
       fetchPackageRepo = fetchgit: repoData:
         let
           fetched =
-            if repoData.sha256 != null
-            then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
+            if inputMap ? "${repoData.url}/${repoData.ref}"
+              then inputMap."${repoData.url}/${repoData.ref}"
+            else if inputMap ? ${repoData.url}
+              then
+                (if inputMap.${repoData.url}.rev != repoData.ref
+                  then throw "${inputMap.${repoData.url}.rev} may not match ${repoData.ref} for ${repoData.url} use \"${repoData.url}/${repoData.ref}\" as the inputMap key if ${repoData.ref} is a branch or tag that points to ${inputMap.${repoData.url}.rev}."
+                  else inputMap.${repoData.url})
+            else if repoData.sha256 != null
+              then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
             else
               let drv = builtins.fetchGit { inherit (repoData) url ref; };
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
@@ -226,7 +241,7 @@ let
 
       # Parse the `repository` blocks
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        cabalProjectFileName sha256map cabal-install nix-tools sourceRepoPackageResult.otherText;
+        cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
@@ -241,9 +256,9 @@ let
       sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
     in {
       sourceRepos = sourceReposBuild;
-      inherit (repoResult) tarballs extra-hackages;
+      inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${pkgs.evalPackages.writeText "cabal.project" repoResult.updatedText} ./cabal.project
+        cp -f ${pkgs.evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
       '' +
         pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
         chmod +w -R ./cabal.project
@@ -278,7 +293,7 @@ let
 
   fixedProject =
     if rawCabalProject == null
-      then { sourceRepos = []; tarballs = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
+      then { sourceRepos = []; repos = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
       else replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
@@ -523,8 +538,8 @@ let
       # some packages that will be excluded by `index-state-found`
       # which is used by cabal (cached-index-state >= index-state-found).
       dotCabal {
-        inherit cabal-install nix-tools;
-        extra-hackage-tarballs = fixedProject.tarballs // extra-hackage-tarballs;
+        inherit cabal-install nix-tools extra-hackage-tarballs;
+        extra-hackage-repos = fixedProject.repos;
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
