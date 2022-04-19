@@ -33,7 +33,7 @@ nix.settings.substituters = [
 ];
 ```
 
-This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../../troubleshooting#why-am-i-building-ghc).
+This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../troubleshooting.md#why-am-i-building-ghc).
 
 ## Niv
 
