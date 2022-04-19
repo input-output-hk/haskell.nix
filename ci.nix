@@ -58,7 +58,7 @@
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"]) && system != "aarch64-darwin") {
+    in lib.optionalAttrs (nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"] && system != "aarch64-darwin") {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" &&
          nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
