@@ -113,7 +113,7 @@ in rec {
             then final.evalPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.evalPackages.xorg.lndir]; } ''
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
-              ln -s ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/* $out/GHC
+              lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
             ''
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
