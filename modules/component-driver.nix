@@ -54,7 +54,7 @@ in
   # without reinstallable-lib:ghc, this is significantly larger.
 
   config.nonReinstallablePkgs =
-    [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+    [ "rts" "ghc-prim" "integer-gmp" "integer-simple" "base"
       "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
       # ghcjs custom packages
       "ghcjs-prim" "ghcjs-th"
@@ -72,6 +72,9 @@ in
       "mtl" "parsec" "process" "text" "time" "transformers"
       "unix" "xhtml" "terminfo"
       # "stm"
+    ]
+    ++ lib.optionals (!config.reinstallableLibGhc || __elem config.compiler.nix-name ["ghc865"]) [
+      "ghc-heap"
     ];
 
   options.bootPkgs = lib.mkOption {
@@ -80,7 +83,6 @@ in
 
   config.bootPkgs =  [
       "rts" "ghc-boot-th"
-      "ghc-heap" # since ghc 8.6.
       "ghcjs-prim"
    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
     ++ lib.optionals (

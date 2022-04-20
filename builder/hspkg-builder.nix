@@ -23,7 +23,14 @@ assert (if ghc.isHaskellNixCompiler or false then true
     + pkgs.lib.optionalString (name != null) (" for " + name)));
 
 let
-  cabalFile = if revision == null || revision == 0 then null else
+  # Some packages bundled with GHC are not the same as they are in hackage.
+  bundledSrc = {
+      # These are problematic because the hackage versions will not install and are part of LTS.
+      "ghc902/stm-2.5.0.0" = "/libraries/stm";
+      "ghc902/filepath-1.4.2.1" = "/libraries/filepath";
+    }."${compiler-nix-name}/${name}" or null;
+  src = if bundledSrc == null then pkg.src else ghc.configured-src + bundledSrc;
+  cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
     fetchurl {
       name = "${name}-${toString revision}.cabal";
       url = "https://hackage.haskell.org/package/${name}/revision/${toString revision}.cabal";
@@ -94,7 +101,8 @@ let
       synopsis = null;
       license = "MIT";
     };
-    src = null; cleanSrc = buildPackages.runCommand "default-Setup-src" {} ''
+    src = null;
+    cleanSrc = buildPackages.runCommand "default-Setup-src" {} ''
       mkdir $out
       cat ${defaultSetupSrc} > $out/Setup.hs
     '';

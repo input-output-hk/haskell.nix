@@ -3,6 +3,10 @@
 { identifier, component, fullName, flags ? {}, needsProfiling ? false, enableDWARF ? false, chooseDrv ? drv: drv, nonReinstallablePkgs ? defaults.nonReinstallablePkgs }:
 
 let
+  # Sort and remove duplicates from nonReinstallablePkgs.
+  # That way changes to the order of nonReinstallablePkgs does not require rebuilds.
+  nonReinstallablePkgs' = __attrNames (lib.genAttrs nonReinstallablePkgs (x: x));
+
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
@@ -93,7 +97,7 @@ let
     ghc=${ghc}
     ${ # Copy over the nonReinstallablePkgs from the global package db.
     ''
-      for p in ${lib.concatStringsSep " " nonReinstallablePkgs}; do
+      for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
         find $ghc/lib/${ghc.name}/package.conf.d -name $p'*.conf' -exec cp -f {} $out/${packageCfgDir} \;
       done
     ''}
@@ -152,13 +156,13 @@ let
         cat $p/exactDep/cabal.config >> $out/cabal.config
       ''}
     done
-    for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs)}; do
+    for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs')}; do
       if [ -e $ghc/envDeps/$p ]; then
         cat $ghc/envDeps/$p >> $out/ghc-environment
       fi
     done
   '' + lib.optionalString component.doExactConfig ''
-    for p in ${lib.concatStringsSep " " nonReinstallablePkgs}; do
+    for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
       if [ -e $ghc/exactDeps/$p ]; then
         cat $ghc/exactDeps/$p/configure-flags >> $out/configure-flags
         cat $ghc/exactDeps/$p/cabal.config >> $out/cabal.config
