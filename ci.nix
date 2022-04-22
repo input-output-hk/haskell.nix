@@ -63,7 +63,7 @@
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" &&
-         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
+         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107" "ghc902" "ghc922"])) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && compiler-nix-name == "ghc8107") {

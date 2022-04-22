@@ -154,6 +154,7 @@ in {
                 ++ until             "9.2"   ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
                 ++ until             "8.10"  ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
                 ++ fromUntil "8.8"   "9.2"   ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
+                ++ fromUntil "9.2"   "9.3"   ./patches/ghc/ghc-9.2-cabal-host.patch                              # https://github.com/haskell/cabal/issues/5887
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
@@ -194,6 +195,7 @@ in {
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
                 ++ fromUntil "8.10.5" "8.11"   ./patches/ghc/ghc-8.10.5-ubxt.patch
                 ++ fromUntil "8.6.4"  "9.2"    ./patches/ghc/Cabal-3886.patch
+                ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-Cabal-3886.patch
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ++ final.lib.optionals final.targetPlatform.isWindows
@@ -210,7 +212,8 @@ in {
                 ++ fromUntil "8.10"   "9.3"    ./patches/ghc/MR6654-nonmoving-maxmem.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6654
                 ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6617-nonmoving-mvar.patch    # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6617
                 ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6595-nonmoving-mutvar.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6595
-                ++ fromUntil "8.10"   "9.2"   ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
+                ++ fromUntil "8.10"   "9.2"    ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
+                ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
                 ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch

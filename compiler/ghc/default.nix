@@ -384,13 +384,24 @@ stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-} // lib.optionalAttrs stdenv.buildPlatform.isDarwin {
+} // lib.optionalAttrs (stdenv.buildPlatform.isDarwin || stdenv.targetPlatform.isWindows) {
   # ghc install on macOS wants to run `xattr -r -c`
   # The macOS version fails because it wants python 2.
   # The nix version of xattr does not support those args.
   # Luckily setting the path to something that does not exist will skip the step.
-  preBuild = ''
+  preBuild = lib.optionalString stdenv.buildPlatform.isDarwin ''
     export XATTR=$(mktemp -d)/nothing
+  ''
+  # We need to point at a stand in `windows.h` header file so that the RTS headers can
+  # work on the hostPlatform.  We also need to work around case sensitve file system issues.
+  + lib.optionalString stdenv.targetPlatform.isWindows ''
+    export NIX_CFLAGS_COMPILE_${stdenv.hostPlatform.config}+=" -I${../windows/include}"
+    if [[ -f libraries/base/include/winio_structs.h ]]; then
+      substituteInPlace libraries/base/include/winio_structs.h --replace Windows.h windows.h
+    fi
+    if [[ -f rts/win32/ThrIOManager.c ]]; then
+      substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
+    fi
   '';
 });
 in self

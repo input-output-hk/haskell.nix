@@ -1,0 +1,54 @@
+diff --git a/compiler/cbits/genSym.c b/compiler/cbits/genSym.c
+index 8a47d77f27..eed2b4f142 100644
+--- a/compiler/cbits/genSym.c
++++ b/compiler/cbits/genSym.c
+@@ -1,9 +1,15 @@
+ #include <Rts.h>
+ #include <assert.h>
+ #include "Unique.h"
++#include "ghcversion.h"
+
++// These global variables have been moved into the RTS.  It allows them to be
++// shared with plugins even if two different instances of the GHC library are
++// loaded at the same time (#19940)
++#if !MIN_VERSION_GLASGOW_HASKELL(9,3,0,0)
+ HsInt ghc_unique_counter = 0;
+ HsInt ghc_unique_inc     = 1;
++#endif
+
+ #define UNIQUE_BITS (sizeof (HsInt) * 8 - UNIQUE_TAG_BITS)
+ #define UNIQUE_MASK ((1ULL << UNIQUE_BITS) - 1)
+diff --git a/includes/rts/Globals.h b/includes/rts/Globals.h
+index 8d8df48b21..bd3aa637db 100644
+--- a/includes/rts/Globals.h
++++ b/includes/rts/Globals.h
+@@ -32,3 +32,5 @@ mkStoreAccessorPrototype(LibHSghcFastStringTable)
+ mkStoreAccessorPrototype(LibHSghcGlobalHasPprDebug)
+ mkStoreAccessorPrototype(LibHSghcGlobalHasNoDebugOutput)
+ mkStoreAccessorPrototype(LibHSghcGlobalHasNoStateHack)
++extern HsInt ghc_unique_counter;
++extern HsInt ghc_unique_inc;
+diff --git a/rts/Globals.c b/rts/Globals.c
+index 5569ee7910..848581e4d2 100644
+--- a/rts/Globals.c
++++ b/rts/Globals.c
+@@ -107,3 +107,6 @@ mkStoreAccessor(LibHSghcFastStringTable)
+ mkStoreAccessor(LibHSghcGlobalHasPprDebug)
+ mkStoreAccessor(LibHSghcGlobalHasNoDebugOutput)
+ mkStoreAccessor(LibHSghcGlobalHasNoStateHack)
++
++HsInt ghc_unique_counter = 0;
++HsInt ghc_unique_inc     = 1;
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 987755651d..5a6ec21152 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -679,6 +679,8 @@ extern char **environ;
+       SymI_HasProto(getOrSetLibHSghcGlobalHasPprDebug)                  \
+       SymI_HasProto(getOrSetLibHSghcGlobalHasNoDebugOutput)             \
+       SymI_HasProto(getOrSetLibHSghcGlobalHasNoStateHack)               \
++      SymI_HasProto(ghc_unique_counter)                                 \
++      SymI_HasProto(ghc_unique_inc)                                     \
+       SymI_HasProto(genericRaise)                                       \
+       SymI_HasProto(getProgArgv)                                        \
+       SymI_HasProto(getFullProgArgv)                                    \
