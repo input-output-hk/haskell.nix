@@ -38,7 +38,6 @@ let
       haskellPackages = { };
       haskell-nix-prev = prev;
     })
-    wine
     haskell
     hackage-quirks
     bootstrap
