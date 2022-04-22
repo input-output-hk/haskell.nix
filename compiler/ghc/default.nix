@@ -395,7 +395,13 @@ stdenv.mkDerivation (rec {
   # We need to point at a stand in `windows.h` header file so that the RTS headers can
   # work on the hostPlatform.  We also need to work around case sensitve file system issues.
   + lib.optionalString stdenv.targetPlatform.isWindows ''
-    export NIX_CFLAGS_COMPILE_${stdenv.hostPlatform.config}+=" -I${../windows/include}"
+    export NIX_CFLAGS_COMPILE_${
+        # We want this only to apply to the non windows hostPlatform (the
+        # windows gcc cross compiler has a full `windows.h`).
+        # This matches the way `suffixSalt` is calculated in nixpkgs.
+        # See https://github.com/NixOS/nixpkgs/blob/8411006d6bcd7f6e6a8a1a80ce8fcdccdd16c6ab/pkgs/build-support/cc-wrapper/default.nix#L58
+        replaceStrings ["-" "."] ["_" "_"] stdenv.hostPlatform.config
+      }+=" -I${../windows/include}"
     if [[ -f libraries/base/include/winio_structs.h ]]; then
       substituteInPlace libraries/base/include/winio_structs.h --replace Windows.h windows.h
     fi
