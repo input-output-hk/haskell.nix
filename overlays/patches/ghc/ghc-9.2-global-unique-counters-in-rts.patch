@@ -11,7 +11,7 @@ index 8a47d77f27..eed2b4f142 100644
 +// These global variables have been moved into the RTS.  It allows them to be
 +// shared with plugins even if two different instances of the GHC library are
 +// loaded at the same time (#19940)
-+#if !MIN_VERSION_GLASGOW_HASKELL(9,3,0,0)
++#if !MIN_VERSION_GLASGOW_HASKELL(9,2,0,0) || GHC_STAGE < 2
  HsInt ghc_unique_counter = 0;
  HsInt ghc_unique_inc     = 1;
 +#endif
@@ -22,12 +22,14 @@ diff --git a/includes/rts/Globals.h b/includes/rts/Globals.h
 index 8d8df48b21..bd3aa637db 100644
 --- a/includes/rts/Globals.h
 +++ b/includes/rts/Globals.h
-@@ -32,3 +32,5 @@ mkStoreAccessorPrototype(LibHSghcFastStringTable)
+@@ -32,3 +32,7 @@ mkStoreAccessorPrototype(LibHSghcFastStringTable)
  mkStoreAccessorPrototype(LibHSghcGlobalHasPprDebug)
  mkStoreAccessorPrototype(LibHSghcGlobalHasNoDebugOutput)
  mkStoreAccessorPrototype(LibHSghcGlobalHasNoStateHack)
++#if GHC_STAGE >= 2
 +extern HsInt ghc_unique_counter;
 +extern HsInt ghc_unique_inc;
++#endif
 diff --git a/rts/Globals.c b/rts/Globals.c
 index 5569ee7910..848581e4d2 100644
 --- a/rts/Globals.c
