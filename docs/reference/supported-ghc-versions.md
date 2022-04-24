@@ -8,6 +8,7 @@ for each, though not all are cached or tested by CI):
 - 8.10.{1,2,3,4,5}
 - 9.0.1
 - 9.2.1
+- 9.2.2
 
 The following table shows the Nixpkgs/GHC versions which are built/cached, and
 which of those are further tested.  If you use a combination of Nixpkgs version
