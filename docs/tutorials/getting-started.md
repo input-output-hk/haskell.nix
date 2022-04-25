@@ -33,7 +33,19 @@ nix.settings.substituters = [
 ];
 ```
 
-This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../../troubleshooting#why-am-i-building-ghc).
+NixOS-21.11 and older use slightly different settings.
+
+```
+# Binary Cache for Haskell.nix  
+nix.binaryCachePublicKeys = [
+  "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+];
+nix.binaryCaches = [
+  "https://hydra.iohk.io"
+];   
+```
+
+This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../troubleshooting.md#why-am-i-building-ghc).
 
 ## Niv
 

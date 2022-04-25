@@ -65,6 +65,7 @@ pkgs:
     "hidapi-libusb"                      = [ pkgs."hidapi" ];
     "icudata"                            = [ pkgs."icu" ];
     "icui18n"                            = [ pkgs."icu" ];
+    "icu-i18n"                           = [ pkgs."icu" ];
     "icuuc"                              = [ pkgs."icu" ];
     "idn"                                = [ pkgs."libidn" ];
     "IL"                                 = [ pkgs."libdevil" ];

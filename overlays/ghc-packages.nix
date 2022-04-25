@@ -106,24 +106,42 @@ let
 in rec {
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
     (ghcName: ghc: builtins.mapAttrs
-      (pkgName: dir: rec {
+      (pkgName: subDir: rec {
         src =
           # Add in the generated files needed by ghc-boot
-          if dir == "libraries/ghc-boot"
-            then final.evalPackages.runCommand "ghc-boot-src" {} ''
-              cp -Lr ${ghc.passthru.configured-src}/${dir} $out
-              chmod -R +w $out
-              cp -Lr ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/* $out/GHC
+          if subDir == "libraries/ghc-boot"
+            then final.evalPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.evalPackages.xorg.lndir]; } ''
+              mkdir $out
+              lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
+              lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
             ''
-            else if dir == "compiler"
-            then final.evalPackages.runCommand "ghc-src" {} ''
-              cp -Lr ${ghc.passthru.configured-src}/${dir} $out
-              chmod -R +w $out
-              if [[ -f ${ghc.generated}/compiler/stage2/build/Config.hs ]]; then
-                cp -Lr ${ghc.generated}/compiler/stage2/build/Config.hs $out
-              fi
-            ''
-            else "${ghc.passthru.configured-src}/${dir}";
+          else if subDir == "compiler"
+            then final.haskell-nix.haskellLib.cleanSourceWith {
+              src = final.evalPackages.runCommand "ghc-src" { nativeBuildInputs = [final.evalPackages.xorg.lndir]; } ''
+                mkdir $out
+                lndir -silent ${ghc.passthru.configured-src} $out
+                if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
+                  ln -s ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs $out/libraries/ghc-boot/GHC
+                fi
+                if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
+                  ln -s ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $out/libraries/ghc-boot/GHC/Platform
+                fi
+                if [[ -f ${ghc.generated}/compiler/stage2/build/Config.hs ]]; then
+                  ln -s ${ghc.generated}/compiler/stage2/build/Config.hs $out/compiler
+                fi
+                if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
+                  ln -s ${ghc.generated}/compiler/stage2/build/GHC/Platform/Constants.hs $out/compiler/GHC/Platform
+                fi
+                if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs ]]; then
+                  ln -s ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs $out/compiler/GHC/Settings
+                fi
+                ln -s ${ghc.generated}/includes/dist-derivedconstants/header/* $out/compiler
+                ln -s ${ghc.generated}/compiler/stage2/build/*.hs-incl $out/compiler
+              '';
+              inherit subDir;
+              includeSiblings = true;
+            }
+            else "${ghc.passthru.configured-src}/${subDir}";
         nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
       }) (ghc-extra-pkgs ghc.version))
     final.buildPackages.haskell-nix.compiler;

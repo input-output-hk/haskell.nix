@@ -44,15 +44,23 @@
       ghc810420210212 = false;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
-    nixpkgs.lib.filter (v: v != "aarch64-darwin" || (
-      # aarch64-darwin requires ghc 8.10.7 and does not work on older nixpkgs
-         !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901"]
-      && !__elem nixpkgsName ["R2105"])) supportedSystems) (v: v);
+    nixpkgs.lib.filter (v:
+        # We have less x86_64-darwin build capacity so build fewer GhC versions and no R2105
+        (v != "x86_64-darwin" || (
+           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
+        && !__elem nixpkgsName ["R2105"]))
+      &&
+        # aarch64-darwin requires ghc 8.10.7 and does not work on older nixpkgs
+        (v != "aarch64-darwin" || (
+           !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
+        && !__elem nixpkgsName ["R2105"]))) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"]) && system != "aarch64-darwin") {
+    in lib.optionalAttrs (nixpkgsName == "unstable"
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"]) 
+       || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (system == "x86_64-linux" &&
          nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {

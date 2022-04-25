@@ -288,7 +288,7 @@ stdenv.mkDerivation (rec {
         $i
     done
 
-    # Save generated files for needed when building ghcjs
+    # Save generated files for needed when building ghc and ghcjs
     mkdir -p $generated/includes/dist-derivedconstants/header
     cp includes/dist-derivedconstants/header/GHCConstantsHaskell*.hs \
        $generated/includes/dist-derivedconstants/header
@@ -299,6 +299,15 @@ stdenv.mkDerivation (rec {
     fi
     mkdir -p $generated/compiler/stage2/build
     cp compiler/stage2/build/Config.hs $generated/compiler/stage2/build || true
+    if [[ -f compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
+      mkdir -p $generated/compiler/stage2/build/GHC/Platform
+      cp compiler/stage2/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
+    fi
+    if [[ -f compiler/stage2/build/GHC/Settings/Config.hs ]]; then
+      mkdir -p $generated/compiler/stage2/build/GHC/Settings
+      cp compiler/stage2/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
+    fi
+    cp compiler/stage2/build/*.hs-incl $generated/compiler/stage2/build || true
     mkdir -p $generated/rts/build
     cp rts/build/config.hs-incl $generated/rts/build || true
 

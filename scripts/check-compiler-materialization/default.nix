@@ -20,14 +20,20 @@ in eval.linkFarm "check-${compiler-nix-name}" (builtins.concatMap (system:
   { name = "${system}-nix-tools";     path = pkgs.haskell-nix.nix-tools.${compiler-nix-name}; }
   { name = "${system}-extra";         path = pkgs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${system}-boot";          path = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
+  { name = "${system}-hello";         path = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux") ([
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
   { name = "${system}-musl";          path = pkgs.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${system}-hello-musl";    path = pkgs.pkgsCross.musl64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (!__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]) [
   { name = "${system}-windows";       path = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${system}-hello-windows"; path = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (__elem compiler-nix-name ["ghc884" "ghc8105" "ghc8106" "ghc8107"]) [
   { name = "${system}-arm";           path = pkgs.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+] ++ eval.lib.optionals (__elem compiler-nix-name ["ghc884" "ghc8106" "ghc8107"]) [
+  { name = "${system}-hello-arm";     path = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.tool compiler-nix-name "hello" {}; }
 ]) ++ eval.lib.optionals (__elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107"] && system != "aarch64-darwin") [
   { name = "${system}-ghcjs";         path = pkgs.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${system}-hello-ghcjs";   path = pkgs.pkgsCross.ghcjs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ]) systems)
 
