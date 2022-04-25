@@ -113,6 +113,7 @@ let
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
     inherit enableDWARF;
+    plugins = [];
   };
 
   hoogleIndex = let
