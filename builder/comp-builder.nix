@@ -346,10 +346,13 @@ let
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
       ++ builtins.concatLists pkgconfig
-      ++ lib.optionals (stdenv.hostPlatform.isWindows) (lib.flatten component.libs);
+      ++ lib.optionals (stdenv.hostPlatform.isWindows)
+        (lib.flatten component.libs
+        ++ map haskellLib.dependToLib component.depends);
 
-    buildInputs = lib.optionals (!stdenv.hostPlatform.isWindows) (lib.flatten component.libs)
-      ++ map haskellLib.dependToLib component.depends;
+    buildInputs = lib.optionals (!stdenv.hostPlatform.isWindows)
+      (lib.flatten component.libs
+      ++ map haskellLib.dependToLib component.depends);
 
     nativeBuildInputs =
       [shellWrappers buildPackages.removeReferencesTo]
