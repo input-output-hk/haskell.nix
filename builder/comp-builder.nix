@@ -345,9 +345,10 @@ let
          frameworks # Frameworks will be needed at link time
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
-      ++ builtins.concatLists pkgconfig;
+      ++ builtins.concatLists pkgconfig
+      ++ lib.optionals (stdenv.hostPlatform.isWindows) (lib.flatten component.libs);
 
-    buildInputs = component.libs
+    buildInputs = lib.optionals (!stdenv.hostPlatform.isWindows) (lib.flatten component.libs)
       ++ map haskellLib.dependToLib component.depends;
 
     nativeBuildInputs =
@@ -481,7 +482,9 @@ let
         fi
       '')
       # In case `setup copy` did not create this
-      + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
+      + (lib.optionalString enableSeparateDataOutput ''
+         mkdir -p $data
+      '')
       + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) (''
         echo "Symlink libffi and gmp .dlls ..."
         for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
@@ -489,14 +492,10 @@ let
         done
         ''
         # symlink all .dlls into the local directory.
-        # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
-        # to symlink over dlls as needed.
         + ''
-        echo "Symlink library dependencies..."
-        for libdir in $(${stdenv.hostPlatform.config}-ghc-pkg field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
-          if [ -d "$libdir" ]; then
-            find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
-          fi
+        for p in $pkgsHostTargetAsString; do
+          find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
+          find "$p" -iname '*.dll.a' -exec ln -s {} $out/bin \;
         done
       ''))
       + (lib.optionalString doCoverage ''

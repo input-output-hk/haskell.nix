@@ -6,11 +6,20 @@ pkgs:
 
 with pkgs;
 
+let
+  stdcplusplus = if pkgs.stdenv.hostPlatform.isWindows then [
+    pkgs.windows.mcfgthreads
+    (pkgs.evalPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.evalPackages.xorg.lndir ]; } ''
+      mkdir $out
+      lndir ${pkgs.buildPackages.gcc.cc} $out
+    '')
+  ] else [];
+in
 # -- linux
 { crypto = [ openssl ];
-  "c++" = null; # no libc++
-  "stdc++" = null;
-  "stdc++-6" = null;
+  "c++" = []; # no libc++
+  "stdc++" = stdcplusplus;
+  "stdc++-6" = stdcplusplus;
   ssl = [ openssl ];
   z = [ zlib ];
   pcap = [ libpcap ];

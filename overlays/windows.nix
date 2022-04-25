@@ -62,24 +62,6 @@ final: prev:
       in {
         packages = {
 
-          # This is a rather bad hack.  What we *really* would want is to make
-          # sure remote-iserv has access to all the relevant libraries it needs.
-          # As windows looks the libraries up next to the executable, and iserv
-          # ends up dynamically loading code and executing it, we need to place
-          # the necessary libraries right next to it. At least those libraries
-          # we need during the build.
-          # This would be fixed properly in the mingw_w64.nix file by dynamically
-          # figuring out which libraries we need for the build (walking the
-          # dependencies) and then placing them somewhere where wine+remote-iserv
-          # will find them.
-          remote-iserv.postInstall = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isWindows (
-            let extra-libs = [ pkgs.libffi pkgs.gmp pkgs.windows.mcfgthreads pkgs.buildPackages.gcc.cc ]; in ''
-            for p in ${lib.concatStringsSep " "extra-libs}; do
-              find "$p" -iname '*.dll' -exec cp {} $out/bin/ \;
-              find "$p" -iname '*.dll.a' -exec cp {} $out/bin/ \;
-            done
-          '');
-
           # Apply https://github.com/haskell/cabal/pull/6055
           # See also https://github.com/input-output-hk/iohk-nix/issues/136
           # Cabal.patches = [ ({ version, revision }: (if builtins.compareVersions version "3.0.0" < 0

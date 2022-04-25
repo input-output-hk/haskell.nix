@@ -66,7 +66,7 @@
          nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107" "ghc902" "ghc922"])) {
     # Windows cross compilation is currently broken on macOS
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && compiler-nix-name == "ghc8107") {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
