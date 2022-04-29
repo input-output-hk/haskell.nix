@@ -71,6 +71,10 @@ let self =
 assert !enableIntegerSimple -> gmp != null;
 
 let
+  src = if src-spec ? file
+    then src-spec.file
+    else fetchurl { inherit (src-spec) url sha256; };
+
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
@@ -158,16 +162,28 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
+  useHadrian = ghc-version == "9.2.2";
+
+  inherit ((buildPackages.haskell-nix.cabalProject {
+      compiler-nix-name = "ghc8107";
+      src = haskell-nix.haskellLib.cleanSourceWith {
+        src = buildPackages.srcOnly { name = "hadrian-src"; inherit src; };
+        subDir = "hadrian";
+      };
+    }).hsPkgs.hadrian.components.exes) hadrian;
+
+  hadrianArgs = "--flavour=${
+        if (ghcFlavour != "") then ghcFlavour else "default"
+        + lib.optionalString (!enableShared) "+no_dynamic_ghc"
+      } --docs=no-sphinx -j";
+
 in
 stdenv.mkDerivation (rec {
   version = ghc-version;
   name = "${targetPrefix}ghc-${version}";
 
+  inherit src;
   patches = ghc-patches;
-
-  src = if src-spec ? file
-    then src-spec.file
-    else fetchurl { inherit (src-spec) url sha256; };
 
   # configure was run by configured-src already.
   phases = [ "unpackPhase" "patchPhase" ]
@@ -323,38 +339,77 @@ stdenv.mkDerivation (rec {
         $i
     done
 
-    # Save generated files for needed when building ghc and ghcjs
-    mkdir -p $generated/includes/dist-derivedconstants/header
-    cp includes/dist-derivedconstants/header/GHCConstantsHaskell*.hs \
-       $generated/includes/dist-derivedconstants/header
-    if [[ -f includes/ghcplatform.h ]]; then
-      cp includes/ghcplatform.h $generated/includes
-    elif [[ -f includes/dist-install/build/ghcplatform.h ]]; then
-      cp includes/dist-install/build/ghcplatform.h $generated/includes
-    fi
-    mkdir -p $generated/compiler/stage2/build
-    cp compiler/stage2/build/Config.hs $generated/compiler/stage2/build || true
-    if [[ -f compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
-      mkdir -p $generated/compiler/stage2/build/GHC/Platform
-      cp compiler/stage2/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
-    fi
-    if [[ -f compiler/stage2/build/GHC/Settings/Config.hs ]]; then
-      mkdir -p $generated/compiler/stage2/build/GHC/Settings
-      cp compiler/stage2/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
-    fi
-    cp compiler/stage2/build/*.hs-incl $generated/compiler/stage2/build || true
-    mkdir -p $generated/rts/build
-    cp rts/build/config.hs-incl $generated/rts/build || true
+    ${ if useHadrian
+    then
+      # Save generated files for needed when building ghc and ghcjs
+      ''
+        mkdir -p $generated/includes
+        if [[ -f _build/stage1/lib/ghcplatform.h ]]; then
+          cp _build/stage1/lib/ghcplatform.h $generated/includes
+        fi
+        if [[ -f _build/stage1/compiler/build/GHC/PlatformConstants.hs ]]; then
+          mkdir -p $generated/compiler/stage2/build/GHC/Platform
+          cp _build/stage1/compiler/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
+        fi
+        mkdir -p $generated/compiler/stage2/build
+        if [[ -f _build/stage1/compiler/build/GHC/Settings/Config.hs ]]; then
+          mkdir -p $generated/compiler/stage2/build/GHC/Settings
+          cp _build/stage1/compiler/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
+        fi
+        cp _build/stage1/compiler/build/*.hs-incl $generated/compiler/stage2/build || true
+      ''
+      # Save generated files for needed when building ghc-boot
+      + ''
+        mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
+        if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Version.hss ]]; then
+          cp _build/stage1/libraries/ghc-boot/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
+        fi
+        if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs ]]; then
+          cp _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
+        fi
+      ''
+      # Convert ${pkgroot} relative paths to /nix/store paths
+      + ''
+        for f in "$out/lib/${targetPrefix}ghc-${ghc-version}/lib/package.conf.d/"*.conf; do
+          sed -i -e "s|\''${pkgroot}/../lib/|$out/lib/${targetPrefix}ghc-${ghc-version}/lib/|" \
+                 -e "s|\''${pkgroot}/../share/|$out/lib/${targetPrefix}ghc-${ghc-version}/share/|" \
+                 -e "s|\''${pkgroot}/../../../share/doc/|$doc/share/doc/|" $f
+        done
+      ''
+    else
+      ''
+        # Save generated files for needed when building ghc and ghcjs
+        mkdir -p $generated/includes/dist-derivedconstants/header
+        cp includes/dist-derivedconstants/header/GHCConstantsHaskell*.hs \
+           $generated/includes/dist-derivedconstants/header
+        if [[ -f includes/ghcplatform.h ]]; then
+          cp includes/ghcplatform.h $generated/includes
+        elif [[ -f includes/dist-install/build/ghcplatform.h ]]; then
+          cp includes/dist-install/build/ghcplatform.h $generated/includes
+        fi
+        mkdir -p $generated/compiler/stage2/build
+        cp compiler/stage2/build/Config.hs $generated/compiler/stage2/build || true
+        if [[ -f compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
+          mkdir -p $generated/compiler/stage2/build/GHC/Platform
+          cp compiler/stage2/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
+        fi
+        if [[ -f compiler/stage2/build/GHC/Settings/Config.hs ]]; then
+          mkdir -p $generated/compiler/stage2/build/GHC/Settings
+          cp compiler/stage2/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
+        fi
+        cp compiler/stage2/build/*.hs-incl $generated/compiler/stage2/build || true
+        mkdir -p $generated/rts/build
+        cp rts/build/config.hs-incl $generated/rts/build || true
 
-    # Save generated files for needed when building ghc-boot
-    mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
-    if [[ -f libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
-      cp libraries/ghc-boot/dist-install/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
-    fi
-    if [[ -f libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
-      cp libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
-    fi
-
+        # Save generated files for needed when building ghc-boot
+        mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
+        if [[ -f libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
+          cp libraries/ghc-boot/dist-install/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
+        fi
+        if [[ -f libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
+          cp libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
+        fi
+    ''}
     ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
@@ -370,14 +425,16 @@ stdenv.mkDerivation (rec {
       echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
       exit 1
     fi
+    ${ lib.optionalString (!useHadrian) ''
     if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
       echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
       exit 1
     fi
-  '';
+    ''}'';
 
   passthru = {
     inherit bootPkgs targetPrefix;
+    libDir = "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
 
     inherit llvmPackages;
     inherit enableShared;
@@ -466,6 +523,14 @@ stdenv.mkDerivation (rec {
     if [[ -f rts/win32/ThrIOManager.c ]]; then
       substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
     fi
+  '';
+} // lib.optionalAttrs useHadrian {
+  buildPhase = ''
+    ${hadrian}/bin/hadrian ${hadrianArgs}
+  '';
+  installPhase = ''
+    ${hadrian}/bin/hadrian ${hadrianArgs} install --prefix=$out
+    runHook postInstall
   '';
 });
 in self
