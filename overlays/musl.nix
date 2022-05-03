@@ -9,11 +9,13 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   zlib = prev.zlib.override { splitStaticOutput = false; };
 
   # and a few more packages that need their static libs explicitly enabled
-  bzip2 = prev.bzip2.overrideAttrs (_: { dontDisableStatic = true; });
+  bzip2 = prev.bzip2.override { linkStatic = true; };
   gmp = prev.gmp.override { withStatic = true; };
   ncurses = prev.ncurses.override { enableStatic = true; };
   libsodium = prev.libsodium.overrideAttrs (_: { dontDisableStatic = true; });
   zstd = prev.zstd.override { static = true; };
+  xz = prev.xz.override { enableStatic = true; };
+  lzma = prev.lzma.override { enableStatic = true; };
   pcre = prev.pcre.overrideAttrs (_: { dontDisableStatic = true; });
   secp256k1 = prev.secp256k1.overrideAttrs ( oldAttrs: {
     configureFlags = oldAttrs.configureFlags ++ ["--enable-static"];  });
