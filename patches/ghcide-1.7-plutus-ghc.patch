@@ -1,0 +1,13 @@
+Only in ghcide-1.7.0.0-patched: dist-newstyle
+diff -ur ghcide-1.7.0.0/src/Development/IDE/Core/Compile.hs ghcide-1.7.0.0-patched/src/Development/IDE/Core/Compile.hs
+--- ghcide-1.7.0.0/src/Development/IDE/Core/Compile.hs	2022-05-03 07:38:52.746091918 +0000
++++ ghcide-1.7.0.0-patched/src/Development/IDE/Core/Compile.hs	2022-05-03 07:20:48.065746275 +0000
+@@ -435,7 +435,7 @@
+   let !partial_iface = force (mkPartialIface session details simplified_guts)
+   final_iface <- mkFullIface session partial_iface Nothing
+ #elif MIN_VERSION_ghc(8,10,0)
+-  let !partial_iface = force (mkPartialIface session details simplified_guts)
++  partial_iface <- mkPartialIface session details simplified_guts
+   final_iface <- mkFullIface session partial_iface
+ #else
+   (final_iface,_) <- mkIface session Nothing details simplified_guts

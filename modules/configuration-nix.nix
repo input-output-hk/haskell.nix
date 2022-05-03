@@ -72,5 +72,9 @@ in {
     # Work out if we have applied the unboxed tupple patch in overlays/bootstrap.nix
     pkgs.lib.optional (__elem config.compiler.nix-name [
       "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc810420210212"
-    ]) (from "1.7.0.0" ../patches/ghcide-1.7-unboxed-tuple-fix-issue-1455.patch);
+    ]) (from "1.7.0.0" ../patches/ghcide-1.7-unboxed-tuple-fix-issue-1455.patch)
+    # This is needed for a patch only applied to ghc810420210212
+    ++ pkgs.lib.optional (__elem config.compiler.nix-name [
+      "ghc810420210212"
+    ]) (from "1.7.0.0" ../patches/ghcide-1.7-plutus-ghc.patch);
 }
