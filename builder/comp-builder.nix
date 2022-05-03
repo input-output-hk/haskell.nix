@@ -236,6 +236,7 @@ let
   shellWrappers = ghcForComponent {
     componentName = fullName;
     inherit configFiles enableDWARF;
+    inherit (component) plugins;
   };
 
   # In order to let shell hooks make package-specific things like Hoogle databases

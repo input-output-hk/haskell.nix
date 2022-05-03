@@ -56,6 +56,7 @@ let
     componentName = fullName;
     configFiles = docsConfigFiles;
     inherit (componentDrv) enableDWARF;
+    inherit (component) plugins;
   };
 
   drv = stdenv.mkDerivation (commonAttrs // {
