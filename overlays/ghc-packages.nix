@@ -109,9 +109,7 @@ in rec {
       (pkgName: subDir: rec {
         src =
           # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
-          # Disable filtering keeps pre ond post nix 2.4 behaviour the same.  This means that
-          # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
-          # that `tools` in the shell will be built the same.
+          # See https://github.com/input-output-hk/haskell.nix/issues/1459 
           let nix24srcFix = src: src // { filterPath = { path, ... }: path; };
           # Add in the generated files needed by ghc-boot
           in if subDir == "libraries/ghc-boot"
