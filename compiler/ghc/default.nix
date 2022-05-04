@@ -180,7 +180,9 @@ stdenv.mkDerivation (rec {
              ];
 
   # GHC is a bit confused on its cross terminology.
-  preConfigure = ''
+  preConfigure =
+    # This code is only included when cross compiling as it breaks aarch64-darwin native compilation
+    lib.optionalString haskell-nix.haskellLib.isCrossTarget ''
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
@@ -196,7 +198,7 @@ stdenv.mkDerivation (rec {
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
-
+    '' + ''
         echo -n "${buildMK}" > mk/build.mk
         sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
     '' + lib.optionalString useLLVM ''
@@ -387,6 +389,9 @@ stdenv.mkDerivation (rec {
     haskellCompilerName = "ghc-${version}";
 
     # This uses a similar trick to `pkgs.srcOnly` to get the configured src
+    # We could add `configured-src` as an output of the ghc derivation, but
+    # having it as its own derivation means it can be accessed quickly without
+    # building GHC.
     configured-src = stdenv.mkDerivation ({
       name = name + "-configured-src";
       inherit
@@ -403,9 +408,16 @@ stdenv.mkDerivation (rec {
         preConfigure
         configurePlatforms
         configureFlags
+        outputs
         ;
 
-      installPhase = "cp -r . $out";
+      # Including all the outputs (not just $out) causes `mkDerivation` to use the nixpkgs multiple-outputs.sh hook.
+      # This hook changes the arguments passed to `configure`.
+      installPhase = ''
+        cp -r . $out
+        mkdir $doc
+        mkdir $generated
+      '';
       phases = [ "unpackPhase" "patchPhase" ]
             ++ lib.optional (ghc-patches != []) "autoreconfPhase"
             ++ [ "configurePhase" "installPhase"];
