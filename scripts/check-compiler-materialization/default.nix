@@ -21,6 +21,7 @@ in eval.linkFarm "check-${compiler-nix-name}" (builtins.concatMap (system:
   { name = "${system}-extra";         path = pkgs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${system}-boot";          path = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
   { name = "${system}-hello";         path = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
+] ++ eval.lib.optionals (system != "aarch64-darwin") [
   { name = "${system}-windows";       path = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${system}-hello-windows"; path = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux") ([
