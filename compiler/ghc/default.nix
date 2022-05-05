@@ -182,7 +182,7 @@ stdenv.mkDerivation (rec {
   # GHC is a bit confused on its cross terminology.
   preConfigure =
     # This code is only included when cross compiling as it breaks aarch64-darwin native compilation
-    lib.optionalString haskell-nix.haskellLib.isCrossTarget ''
+    lib.optionalString (targetPlatform != hostPlatform) ''
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
