@@ -644,7 +644,7 @@ in {
                     sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
                 };
                 ghc-patches = ghc-patches "8.10.4"
-                 ++ [ ./patches/ghc/core-field.patch ];
+                 ++ [ ./patches/ghc/core-field.patch ./patches/ghc/external-static-8.10.4.patch ];
 
                 # Avoid clashes with normal ghc8104
                 ghc-version = "8.10.4.20210212";
