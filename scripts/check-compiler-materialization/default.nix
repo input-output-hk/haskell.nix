@@ -13,31 +13,33 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
           then pkgs
           else import haskellNix.sources.nixpkgs-2105
               (haskellNix.nixpkgsArgs // { localSystem = { inherit system; }; });
+      prefix = "${system}-${compiler-nix-name}";
   in
   # Exclude version that are older than the boot compiler
     eval.lib.optionals (
-        (system != "aarch64-linux"  || !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882"])
-     && (system != "aarch64-darwin" || !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106"])) ([
+        (system != "aarch64-linux"  || !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"])
+     && (system != "aarch64-darwin" || !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106"])
+     && (system != "x86_64-darwin" || !__elem compiler-nix-name ["ghc8102" "ghc8103"])) ([
   # This set of derivations should be enough to ensure all the materialized files for a
   # given GHC version are checked.
-  { name = "${system}-cabal-install"; value = pkgs.haskell-nix.cabal-install.${compiler-nix-name}; }
-  { name = "${system}-nix-tools";     value = pkgs.haskell-nix.nix-tools.${compiler-nix-name}; }
-  { name = "${system}-extra";         value = pkgs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-  { name = "${system}-boot";          value = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
-  { name = "${system}-hello";         value = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
+  { name = "${prefix}-cabal-install"; value = pkgs.haskell-nix.cabal-install.${compiler-nix-name}; }
+  { name = "${prefix}-nix-tools";     value = pkgs.haskell-nix.nix-tools.${compiler-nix-name}; }
+  { name = "${prefix}-extra";         value = pkgs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${prefix}-boot";          value = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
+  { name = "${prefix}-hello";         value = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (!__elem system ["aarch64-darwin" "aarch64-linux"]) [
-  { name = "${system}-windows";       value = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-  { name = "${system}-hello-windows"; value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
+  { name = "${prefix}-windows";       value = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${prefix}-hello-windows"; value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux") [
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
-  { name = "${system}-musl";          value = pkgs.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-  { name = "${system}-hello-musl";    value = pkgs.pkgsCross.musl64.haskell-nix.tool compiler-nix-name "hello" {}; }
+  { name = "${prefix}-musl";          value = pkgs.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${prefix}-hello-musl";    value = pkgs.pkgsCross.musl64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux" && __elem compiler-nix-name ["ghc884" "ghc8105" "ghc8106" "ghc8107"]) [
-  { name = "${system}-arm";           value = pkgs.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${prefix}-arm";           value = pkgs.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
 ] ++ eval.lib.optionals (system == "x86_64-linux" && __elem compiler-nix-name ["ghc884" "ghc8106" "ghc8107"]) [
-  { name = "${system}-hello-arm";     value = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.tool compiler-nix-name "hello" {}; }
+  { name = "${prefix}-hello-arm";     value = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (!__elem system ["aarch64-darwin" "aarch64-linux"] && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107"]) [
-  { name = "${system}-ghcjs";         value = pkgs.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-  { name = "${system}-hello-ghcjs";   value = pkgs.pkgsCross.ghcjs.haskell-nix.tool compiler-nix-name "hello" {}; }
+  { name = "${prefix}-ghcjs";         value = pkgs.pkgsCross.ghcjs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
+  { name = "${prefix}-hello-ghcjs";   value = pkgs.pkgsCross.ghcjs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ])) compiler-nix-names) systems)
 

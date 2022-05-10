@@ -34,6 +34,7 @@
           (pkgs."mingw32" or (errorHandler.sysDepError "mingw32"))
           (pkgs."mingwex" or (errorHandler.sysDepError "mingwex"))
           ] ++ (pkgs.lib).optionals (system.isLinux) [
+          (pkgs."gcc" or (errorHandler.sysDepError "gcc"))
           (pkgs."c" or (errorHandler.sysDepError "c"))
           (pkgs."m" or (errorHandler.sysDepError "m"))
           ];
