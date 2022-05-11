@@ -65,9 +65,13 @@ then
                 first_line = head git_content;
                 prefix = "gitdir: ";
                 ok = length git_content == 1 && lib.hasPrefix prefix first_line;
+                raw_path = remove_prefix prefix first_line;
               in
                 if ok
-                then /. + remove_prefix prefix first_line
+                then
+                  if lib.hasPrefix "/" raw_path
+                  then /. + raw_path
+                  else /. + builtins.toPath (origSrcSubDir + "/" + raw_path)
                 else abort "gitSource.nix: Cannot parse ${origSrcSubDir + "/.git"}";
     }));
 
