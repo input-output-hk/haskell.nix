@@ -872,7 +872,14 @@ in {
           final.haskell-nix.cabalProject ({
             caller = "nix-tools-set";
             name = "nix-tools";
-            src = final.haskell-nix.sources.nix-tools;
+            src = {
+              outPath = final.haskell-nix.sources.nix-tools;
+              # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
+              # Disable filtering keeps pre ond post nix 2.4 behaviour the same.  This means that
+              # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
+              # that `tools` in the shell will be built the same.
+              filterPath = { path, ... }: path;
+            };
             # This is a handy way to use a local git clone of nix-tools when developing
             # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
             cabalProjectLocal = ''
