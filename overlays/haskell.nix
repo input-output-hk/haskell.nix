@@ -546,12 +546,19 @@ final: prev: {
                 };
             in project);
 
-
         # Take `hsPkgs` from the `rawProject` and update all the packages and
         # components so they have a `.project` attribute and as well as
         # a `.package` attribute on the components.
-        addProjectAndPackageAttrs = rawProject:
-          final.lib.fix (project':
+        addProjectAndPackageAttrs = let
+          # helper function similar to nixpkgs 'makeExtensible' but that keep track
+          # of extension function so that it can be reused to extend another project:
+          makeExtensible = f: rattrs: final.lib.fix (final.lib.extends f (self: rattrs self // {
+            __overlay__ = f;
+            extend = f: makeExtensible (final.lib.composeExtensions self.__overlay__ f) rattrs;
+            appendOverlays = extraOverlays: self.extend (final.lib.composeManyExtensions ([self.__overlay__] ++ extraOverlays));
+          }));
+         in rawProject:
+          makeExtensible (final: prev: {}) (project':
             let project = project' // { recurseForDerivations = false; };
             in rawProject // rec {
               # It is often handy to be able to get nix pkgs from the project.
@@ -601,17 +608,21 @@ final: prev: {
             # `projectCross.<system>` where system is a member of nixpkgs lib.systems.examples.
             # See https://nixos.wiki/wiki/Cross_Compiling
             projectCross = (final.lib.mapAttrs (_: pkgs:
-                rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule
+                (rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule)
+                # Re-apply overlay from original project:
+                .extend project.__overlay__
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
             # re-eval this project with an extra module (or module list).
-            appendModule = extraProjectModule: rawProject.projectFunction final.haskell-nix
+            appendModule = extraProjectModule: (rawProject.projectFunction final.haskell-nix
               ((if builtins.isList rawProject.projectModule
                 then rawProject.projectModule
                 else [rawProject.projectModule])
               ++ (if builtins.isList extraProjectModule
                 then extraProjectModule
-                else [extraProjectModule]));
+                else [extraProjectModule])))
+                # Re-apply overlay from original project:
+                .extend project.__overlay__;
 
             # Add support for passing in `crossPlatforms` argument.
             # crossPlatforms is an easy way to include the inputs for a basic
