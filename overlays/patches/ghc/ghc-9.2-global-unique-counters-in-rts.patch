@@ -1,7 +1,16 @@
 diff --git a/compiler/GHC/Types/Unique/Supply.hs b/compiler/GHC/Types/Unique/Supply.hs
-index f3e2b4b353..7a858a515e 100644
+index f3e2b4b353..bf4e3b932e 100644
 --- a/compiler/GHC/Types/Unique/Supply.hs
 +++ b/compiler/GHC/Types/Unique/Supply.hs
+@@ -41,7 +41,7 @@ import GHC.Utils.Monad
+ import Control.Monad
+ import Data.Char
+ import GHC.Exts( Ptr(..), noDuplicate#, oneShot )
+-#if MIN_VERSION_GLASGOW_HASKELL(9,1,0,0)
++#if MIN_VERSION_GLASGOW_HASKELL(8,10,0,0)
+ import GHC.Exts( Int(..), word2Int#, fetchAddWordAddr#, plusWord#, readWordOffAddr# )
+ #if defined(DEBUG)
+ import GHC.Utils.Misc
 @@ -225,7 +225,7 @@ mkSplitUniqSupply c
          (# s4, MkSplitUniqSupply (mask .|. u) x y #)
          }}}}
