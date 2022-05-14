@@ -1,3 +1,21 @@
+diff --git a/compiler/GHC/Types/Unique/Supply.hs b/compiler/GHC/Types/Unique/Supply.hs
+index f3e2b4b353..3d68a1a91a 100644
+--- a/compiler/GHC/Types/Unique/Supply.hs
++++ b/compiler/GHC/Types/Unique/Supply.hs
+@@ -246,8 +246,13 @@ genSym = do
+     return u
+ #endif
+ 
++#if !MIN_VERSION_GLASGOW_HASKELL(9,1,0,0)
++foreign import ccall unsafe "&GenSymCounter" ghc_unique_counter :: Ptr Word
++foreign import ccall unsafe "&GenSymInc"     ghc_unique_inc     :: Ptr Int
++#else
+ foreign import ccall unsafe "&ghc_unique_counter" ghc_unique_counter :: Ptr Word
+ foreign import ccall unsafe "&ghc_unique_inc"     ghc_unique_inc     :: Ptr Int
++#endif
+ 
+ initUniqSupply :: Word -> Int -> IO ()
+ initUniqSupply counter inc = do
 diff --git a/compiler/cbits/genSym.c b/compiler/cbits/genSym.c
 index 8a47d77f27..005e7e91e7 100644
 --- a/compiler/cbits/genSym.c
