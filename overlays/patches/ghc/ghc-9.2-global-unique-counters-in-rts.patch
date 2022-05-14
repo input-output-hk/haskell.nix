@@ -1,5 +1,32 @@
+diff --git a/compiler/GHC/Types/Unique/Supply.hs b/compiler/GHC/Types/Unique/Supply.hs
+index f3e2b4b353..7a858a515e 100644
+--- a/compiler/GHC/Types/Unique/Supply.hs
++++ b/compiler/GHC/Types/Unique/Supply.hs
+@@ -225,7 +225,7 @@ mkSplitUniqSupply c
+         (# s4, MkSplitUniqSupply (mask .|. u) x y #)
+         }}}}
+ 
+-#if !MIN_VERSION_GLASGOW_HASKELL(9,1,0,0)
++#if !MIN_VERSION_GLASGOW_HASKELL(8,10,0,0)
+ foreign import ccall unsafe "genSym" genSym :: IO Int
+ #else
+ genSym :: IO Int
+@@ -246,8 +246,13 @@ genSym = do
+     return u
+ #endif
+ 
++#if !MIN_VERSION_GLASGOW_HASKELL(9,2,0,0)
++foreign import ccall unsafe "&ghc_unique_counter" GenSymCounter :: Ptr Word
++foreign import ccall unsafe "&ghc_unique_inc"     GenSymInc     :: Ptr Int
++#else
+ foreign import ccall unsafe "&ghc_unique_counter" ghc_unique_counter :: Ptr Word
+ foreign import ccall unsafe "&ghc_unique_inc"     ghc_unique_inc     :: Ptr Int
++#endif
+ 
+ initUniqSupply :: Word -> Int -> IO ()
+ initUniqSupply counter inc = do
 diff --git a/compiler/cbits/genSym.c b/compiler/cbits/genSym.c
-index 8a47d77f27..eed2b4f142 100644
+index 8a47d77f27..a356b6352c 100644
 --- a/compiler/cbits/genSym.c
 +++ b/compiler/cbits/genSym.c
 @@ -1,9 +1,15 @@
@@ -7,7 +34,7 @@ index 8a47d77f27..eed2b4f142 100644
  #include <assert.h>
  #include "Unique.h"
 +#include "ghcversion.h"
-
+ 
 +// These global variables have been moved into the RTS.  It allows them to be
 +// shared with plugins even if two different instances of the GHC library are
 +// loaded at the same time (#19940)
@@ -15,11 +42,11 @@ index 8a47d77f27..eed2b4f142 100644
  HsInt ghc_unique_counter = 0;
  HsInt ghc_unique_inc     = 1;
 +#endif
-
+ 
  #define UNIQUE_BITS (sizeof (HsInt) * 8 - UNIQUE_TAG_BITS)
  #define UNIQUE_MASK ((1ULL << UNIQUE_BITS) - 1)
 diff --git a/includes/rts/Globals.h b/includes/rts/Globals.h
-index 8d8df48b21..bd3aa637db 100644
+index 8d8df48b21..c95e405ddc 100644
 --- a/includes/rts/Globals.h
 +++ b/includes/rts/Globals.h
 @@ -32,3 +32,7 @@ mkStoreAccessorPrototype(LibHSghcFastStringTable)
