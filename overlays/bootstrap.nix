@@ -186,7 +186,8 @@ in {
                 ++ fromUntil "8.10.2" "8.10.3" ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 # See https://github.com/input-output-hk/haskell.nix/issues/1027
-                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/3434.patch
+                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
+                ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
 
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
                 ++ from      "8.10.1"          ./patches/ghc/ghc-mprotect-nonzero-len.patch
