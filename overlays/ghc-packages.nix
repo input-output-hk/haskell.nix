@@ -44,7 +44,7 @@ let
           materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName +
               # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
               # so it needs its own materialization.
-              final.lib.optionalString (ghcName == "ghc-prim" && final.targetPlatform.isAarch64) "-aarch64"
+              final.lib.optionalString final.targetPlatform.isAarch64 "-aarch64"
             }";
         } // final.lib.optionalAttrs unchecked {
           checkMaterialization = false;
