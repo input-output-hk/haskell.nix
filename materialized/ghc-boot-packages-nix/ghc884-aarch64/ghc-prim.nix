@@ -8,10 +8,10 @@
   , config
   , ... }:
   {
-    flags = {};
+    flags = { boot = false; install = true; };
     package = {
-      specVersion = "2.2";
-      identifier = { name = "ghc-prim"; version = "0.7.0"; };
+      specVersion = "3.0";
+      identifier = { name = "ghc-prim"; version = "0.5.3"; };
       license = "BSD-3-Clause";
       copyright = "";
       maintainer = "libraries@haskell.org";

@@ -11,7 +11,7 @@
     flags = {};
     package = {
       specVersion = "2.2";
-      identifier = { name = "ghc-prim"; version = "0.7.0"; };
+      identifier = { name = "ghc-prim"; version = "0.6.1"; };
       license = "BSD-3-Clause";
       copyright = "";
       maintainer = "libraries@haskell.org";
@@ -34,6 +34,7 @@
           (pkgs."mingw32" or (errorHandler.sysDepError "mingw32"))
           (pkgs."mingwex" or (errorHandler.sysDepError "mingwex"))
           ] ++ (pkgs.lib).optionals (system.isLinux) [
+          (pkgs."gcc" or (errorHandler.sysDepError "gcc"))
           (pkgs."c" or (errorHandler.sysDepError "c"))
           (pkgs."m" or (errorHandler.sysDepError "m"))
           ];

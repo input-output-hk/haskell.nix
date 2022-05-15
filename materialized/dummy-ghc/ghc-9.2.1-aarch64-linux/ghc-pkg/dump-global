@@ -1041,7 +1041,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-prim-0.8.0
-extra-libraries:      c m
+extra-libraries:      gcc c m
 depends:              rts
 haddock-interfaces:
 haddock-html:
