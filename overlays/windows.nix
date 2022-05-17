@@ -108,6 +108,9 @@ final: prev:
           network.setupBuildFlags = [];
           unix.setupBuildFlags = [];
 
+          # Newer Win32 includes hsc2hs, but we can get that that from the ghc derivation and
+          # if the cabal plan included hsc2hs it winds up trying to build a windows version.
+          Win32.components.library.build-tools = pkgs.lib.mkForce [];
         }
         # Fix dependencies and case-sensitive filesystem builds for unix-time.
         // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isWindows {

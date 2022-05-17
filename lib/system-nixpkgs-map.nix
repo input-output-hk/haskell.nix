@@ -7,8 +7,10 @@ pkgs:
 with pkgs;
 
 let
-  stdcplusplus = if pkgs.stdenv.hostPlatform.isWindows then [
+  # On windows systems we need these to be propagatedBuildInputs so that the DLLs will be found.
+  gcclibs = if pkgs.stdenv.hostPlatform.isWindows then [
     pkgs.windows.mcfgthreads
+    # If we just use `pkgs.buildPackages.gcc.cc` here it breaks the `th-dlls` test. TODO figure out why exactly.
     (pkgs.evalPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.evalPackages.xorg.lndir ]; } ''
       mkdir $out
       lndir ${pkgs.buildPackages.gcc.cc} $out
@@ -18,8 +20,11 @@ in
 # -- linux
 { crypto = [ openssl ];
   "c++" = []; # no libc++
-  "stdc++" = stdcplusplus;
-  "stdc++-6" = stdcplusplus;
+  "stdc++" = gcclibs;
+  "stdc++-6" = gcclibs;
+  gcc_s_seh-1 = gcclibs;
+  gcc_s = gcclibs;
+  gcc = gcclibs;
   ssl = [ openssl ];
   z = [ zlib ];
   pcap = [ libpcap ];
@@ -106,8 +111,6 @@ in
      # this should be bundled with gcc.
      # if it's not we have more severe
      # issues anyway.
-     gcc_s_seh-1 = null;
-     gcc_s = null;
      ssl32 = null; eay32 = [ openssl ];
      iphlpapi = null; # IP Help API
      msvcrt = null; # this is the libc
