@@ -24,6 +24,11 @@ final: prev:
           shift
           ${final.buildPackages.nodejs-12_x}/bin/node $exe $@
         '') + "/bin/node-wrapper")];
+        packages.unix.components.library.preConfigure = ''
+          cp ${./patches/config.sub} config.sub
+          cp ${./patches/config.guess} config.guess
+          chmod +w config.*
+        '';
       })
     );
   });
