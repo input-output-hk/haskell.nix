@@ -53,7 +53,12 @@
         # aarch64-darwin requires ghc 8.10.7 and does not work on older nixpkgs
         (v != "aarch64-darwin" || (
            !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
-        && !__elem nixpkgsName ["R2105"]))) supportedSystems) (v: v);
+        && !__elem nixpkgsName ["R2105"]))
+      &&
+        # aarch64-linux requires ghc 8.8.4
+        (v != "aarch64-linux" || (
+           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
+        ))) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
