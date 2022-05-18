@@ -77,4 +77,8 @@ in {
     ++ pkgs.lib.optional (__elem config.compiler.nix-name [
       "ghc810420210212"
     ]) (from "1.7.0.0" ../patches/ghcide-1.7-plutus-ghc.patch);
+
+  packages.language-c.patches = [
+    (fromUntil "0.9.1" "0.9.2" ../patches/languge-c-int128.patch)
+  ];
 }
