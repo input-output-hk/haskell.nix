@@ -6,6 +6,7 @@ with lib;
 let
   modules = [
     {
+      reinstallableLibGhc = true;
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
       packages.cabal-simple.doHaddock = false;

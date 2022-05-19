@@ -158,24 +158,6 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
-  configured-src = import ./configured-src.nix {
-    inherit stdenv lib fetchurl
-    ghc-version ghc-version-date ghc-patches src-spec
-    targetPrefix
-    targetPlatform hostPlatform
-    targetPackages
-    perl autoconf automake m4 python3 sphinx ghc bootPkgs
-    autoreconfHook toolsForTarget bash
-    libDeps
-    useLLVM llvmPackages
-    targetCC
-    enableIntegerSimple targetGmp
-    enableDWARF elfutils
-    ncurses targetLibffi libiconv targetIconv
-    disableLargeAddressSpace
-    buildMK
-    ;
-  };
 in
 stdenv.mkDerivation (rec {
   version = ghc-version;
@@ -183,45 +165,100 @@ stdenv.mkDerivation (rec {
 
   patches = ghc-patches;
 
-  # for this to properly work (with inheritance of patches, postPatch, ...)
-  # this needs to be a function over the values we want to inherit and then called
-  # accordingly. Most trivial might be to just have args, and mash them into the
-  # attrset.
-  src = configured-src;
+  src = if src-spec ? file
+    then src-spec.file
+    else fetchurl { inherit (src-spec) url sha256; };
 
   # configure was run by configured-src already.
-  phases = [ "unpackPhase" "buildPhase"
+  phases = [ "unpackPhase" "patchPhase" ]
+            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
+            ++ [ "configurePhase" "buildPhase"
              "checkPhase" "installPhase"
              "fixupPhase"
              "installCheckPhase"
              "distPhase"
              ];
 
-  # ghc hardcodes the TOP dir during config, this breaks when
-  # splitting the configured src from the build process.
-  postUnpack = ''
-    (cd $sourceRoot
-     TOP=$(cat mk/config.mk|grep ^TOP|awk -F\  '{ print $3 }')
-     PREFIX=$(cat mk/install.mk|grep ^prefix|awk -F\  '{ print $3 }')
+  # GHC is a bit confused on its cross terminology.
+  preConfigure =
+    # This code is only included when cross compiling as it breaks aarch64-darwin native compilation
+    lib.optionalString (targetPlatform != hostPlatform) ''
+        for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
+        export "''${env#TARGET_}=''${!env}"
+        done
+        # GHC is a bit confused on its cross terminology, as these would normally be
+        # the *host* tools.
+        export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
+        export CXX="${targetCC}/bin/${targetCC.targetPrefix}cxx"
+        # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
+        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
+        export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
+        export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
+        export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
+        export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
+        export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
+        export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
+    '' + ''
+        echo -n "${buildMK}" > mk/build.mk
+        sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
+    '' + lib.optionalString useLLVM ''
+        export LLC="${llvmPackages.llvm}/bin/llc"
+        export OPT="${llvmPackages.llvm}/bin/opt"
+    '' + lib.optionalString (!stdenv.isDarwin) ''
+        export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${ghc-version}"
+    '' + lib.optionalString stdenv.isDarwin ''
+        export NIX_LDFLAGS+=" -no_dtrace_dof"
+    '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
+        sed -i -e '5i ,("armv7a-unknown-linux-androideabi", ("e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64", "cortex-a8", ""))' llvm-targets
+    '' + lib.optionalString targetPlatform.isMusl ''
+        echo "patching llvm-targets for musl targets..."
+        echo "Cloning these existing '*-linux-gnu*' targets:"
+        grep linux-gnu llvm-targets | sed 's/^/  /'
+        echo "(go go gadget sed)"
+        sed -i 's,\(^.*linux-\)gnu\(.*\)$,\0\n\1musl\2,' llvm-targets
+        echo "llvm-targets now contains these '*-linux-musl*' targets:"
+        grep linux-musl llvm-targets | sed 's/^/  /'
 
-     # these two are required
-     substituteInPlace mk/config.mk  --replace "$TOP" "$PWD" \
-                                     --replace "$PREFIX" "$out" \
-                                     --replace "${configured-src.doc}" "$doc"
+        echo "And now patching to preserve '-musleabi' as done with '-gnueabi'"
+        # (aclocal.m4 is actual source, but patch configure as well since we don't re-gen)
+        for x in configure aclocal.m4; do
+            substituteInPlace $x \
+            --replace '*-android*|*-gnueabi*)' \
+                        '*-android*|*-gnueabi*|*-musleabi*)'
+        done
+    '' + lib.optionalString (src-spec.version != ghc-version) ''
+        substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        echo '${ghc-version}' > VERSION
+    '' + lib.optionalString (ghc-version-date != null) ''
+        substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        echo '${ghc-version-date}' > VERSION_DATE
+    '';
 
-     substituteInPlace mk/install.mk --replace "$TOP" "$PWD" \
-                                     --replace "$PREFIX" "$out" \
-                                     --replace "${configured-src.doc}" "$doc"
-
-     # these two only for convencience.
-     substituteInPlace config.log    --replace "$TOP" "$PWD" \
-                                     --replace "$PREFIX" "$out" \
-                                     --replace "${configured-src.doc}" "$doc"
-
-     substituteInPlace config.status --replace "$TOP" "$PWD" \
-                                     --replace "$PREFIX" "$out" \
-                                     --replace "${configured-src.doc}" "$doc")
-  '';
+  configurePlatforms = [ "build" "host" "target" ];
+  # `--with` flags for libraries needed for RTS linker
+  configureFlags = [
+        "--datadir=$doc/share/doc/ghc"
+        "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
+    ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
+    ] ++ lib.optional (!enableIntegerSimple) [
+        "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
+    ] ++ lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
+        "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
+    ] ++ lib.optional (targetPlatform != hostPlatform) [
+        "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
+    ] ++ lib.optionals (targetPlatform != hostPlatform) [
+        "--enable-bootstrap-with-devel-snapshot"
+    ] ++ lib.optionals (disableLargeAddressSpace) [
+        "--disable-large-address-space"
+    ] ++ lib.optionals (targetPlatform.isAarch32) [
+        "CFLAGS=-fuse-ld=gold"
+        "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
+        "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
+    ] ++ lib.optionals enableDWARF [
+        "--enable-dwarf-unwind"
+        "--with-libdw-includes=${lib.getDev elfutils}/include"
+        "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ];
 
   enableParallelBuilding = true;
   postPatch = "patchShebangs .";
@@ -351,7 +388,40 @@ stdenv.mkDerivation (rec {
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
 
-    configured-src = configured-src;
+    # This uses a similar trick to `pkgs.srcOnly` to get the configured src
+    # We could add `configured-src` as an output of the ghc derivation, but
+    # having it as its own derivation means it can be accessed quickly without
+    # building GHC.
+    configured-src = stdenv.mkDerivation ({
+      name = name + "-configured-src";
+      inherit
+        buildInputs
+        version
+        nativeBuildInputs
+        patches
+        src
+        strictDeps
+        depsBuildTarget
+        depsTargetTarget
+        depsTargetTargetPropagated
+        postPatch
+        preConfigure
+        configurePlatforms
+        configureFlags
+        outputs
+        ;
+
+      # Including all the outputs (not just $out) causes `mkDerivation` to use the nixpkgs multiple-outputs.sh hook.
+      # This hook changes the arguments passed to `configure`.
+      installPhase = ''
+        cp -r . $out
+        mkdir $doc
+        mkdir $generated
+      '';
+      phases = [ "unpackPhase" "patchPhase" ]
+            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
+            ++ [ "configurePhase" "installPhase"];
+    });
 
     # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
     isHaskellNixCompiler = true;
@@ -384,13 +454,30 @@ stdenv.mkDerivation (rec {
   dontStrip = true;
   dontPatchELF = true;
   noAuditTmpdir = true;
-} // lib.optionalAttrs stdenv.buildPlatform.isDarwin {
+} // lib.optionalAttrs (stdenv.buildPlatform.isDarwin || stdenv.targetPlatform.isWindows) {
   # ghc install on macOS wants to run `xattr -r -c`
   # The macOS version fails because it wants python 2.
   # The nix version of xattr does not support those args.
   # Luckily setting the path to something that does not exist will skip the step.
-  preBuild = ''
+  preBuild = lib.optionalString stdenv.buildPlatform.isDarwin ''
     export XATTR=$(mktemp -d)/nothing
+  ''
+  # We need to point at a stand in `windows.h` header file so that the RTS headers can
+  # work on the hostPlatform.  We also need to work around case sensitve file system issues.
+  + lib.optionalString stdenv.targetPlatform.isWindows ''
+    export NIX_CFLAGS_COMPILE_${
+        # We want this only to apply to the non windows hostPlatform (the
+        # windows gcc cross compiler has a full `windows.h`).
+        # This matches the way `suffixSalt` is calculated in nixpkgs.
+        # See https://github.com/NixOS/nixpkgs/blob/8411006d6bcd7f6e6a8a1a80ce8fcdccdd16c6ab/pkgs/build-support/cc-wrapper/default.nix#L58
+        lib.replaceStrings ["-" "."] ["_" "_"] stdenv.hostPlatform.config
+      }+=" -I${../windows/include}"
+    if [[ -f libraries/base/include/winio_structs.h ]]; then
+      substituteInPlace libraries/base/include/winio_structs.h --replace Windows.h windows.h
+    fi
+    if [[ -f rts/win32/ThrIOManager.c ]]; then
+      substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
+    fi
   '';
 });
 in self

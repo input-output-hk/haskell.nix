@@ -204,6 +204,8 @@ let
     c-ffi = callTest ./c-ffi { inherit util compiler-nix-name; };
     th-dlls = callTest ./th-dlls { inherit util compiler-nix-name; };
     external-static-plugin = callTest ./external-static-plugin { inherit compiler-nix-name; };
+    exe-dlls = callTest ./exe-dlls { inherit util compiler-nix-name; };
+    exe-lib-dlls = callTest ./exe-lib-dlls { inherit util compiler-nix-name; };
 
     unit = unitTests;
   };

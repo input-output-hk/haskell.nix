@@ -9,18 +9,6 @@
 
 pkgs:
 
-let
-  buildEnvMaybe = name: paths:
-    if builtins.length paths == 1
-      then builtins.head paths
-      else pkgs.buildEnv { name = "${name}-env"; inherit paths; };
-
-  mapPackages = name: ps:
-    if builtins.typeOf ps == "list"
-      then buildEnvMaybe name ps
-      else ps;
-
-in
   # Base packages.
   pkgs
 
@@ -30,4 +18,4 @@ in
   // { fetchgit = pkgs.evalPackages.fetchgit; }
 
   # Apply the mapping.
-  // builtins.mapAttrs mapPackages (import ./system-nixpkgs-map.nix pkgs)
+  // import ./system-nixpkgs-map.nix pkgs

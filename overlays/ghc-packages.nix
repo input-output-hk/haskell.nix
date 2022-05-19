@@ -41,7 +41,11 @@ let
   # into a single derivation and materialize it.
   combineAndMaterialize = unchecked: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
-          materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName}";
+          materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName +
+              # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
+              # so it needs its own materialization.
+              final.lib.optionalString final.targetPlatform.isAarch64 "-aarch64"
+            }";
         } // final.lib.optionalAttrs unchecked {
           checkMaterialization = false;
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs

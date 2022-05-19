@@ -1,0 +1,13 @@
+diff --git a/libraries/Cabal/Cabal/src/Distribution/Simple.hs b/libraries/Cabal/Cabal/src/Distribution/Simple.hs
+index e632acc88..1a687bb2e 100644
+--- a/libraries/Cabal/Cabal/src/Distribution/Simple.hs
++++ b/libraries/Cabal/Cabal/src/Distribution/Simple.hs
+@@ -755,7 +755,7 @@ runConfigureScript verbosity backwardsCompatHack flags lbi = do
+                 [("PATH", Just pathEnv) | not (null extraPath)]
+       hp = hostPlatform lbi
+       maybeHostFlag = if hp == buildPlatform then [] else ["--host=" ++ show (pretty hp)]
+-      args' = configureFile':args ++ ["CC=" ++ ccProgShort] ++ maybeHostFlag
++      args' = configureFile':maybeHostFlag ++ args ++ ["CC=" ++ ccProgShort]
+       shProg = simpleProgram "sh"
+       progDb = modifyProgramSearchPath
+                (\p -> map ProgramSearchPathDir extraPath ++ p) emptyProgramDb

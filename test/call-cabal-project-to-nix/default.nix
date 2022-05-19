@@ -18,6 +18,7 @@ let
     plan-pkgs = importAndFilterProject {
       inherit (callProjectResults) projectNix sourceRepos src;
     };
+    modules = [{ reinstallableLibGhc = true; }];
   };
   packages = pkgSet.config.hsPkgs;
 
