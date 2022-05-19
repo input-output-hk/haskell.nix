@@ -155,7 +155,9 @@ let
 
     enableSeparateDataOutput = mkOption {
       type = bool;
-      default = (def.enableSeparateDataOutput or false);
+      default = if def ? enableSeparateDataOutput
+                then def.enableSeparateDataOutput
+                else true;
     };
 
     enableProfiling = mkOption {
