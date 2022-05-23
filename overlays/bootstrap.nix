@@ -154,6 +154,7 @@ in {
                 ++ until             "9.2"   ./patches/ghc/ghc-8.4.3-Cabal2201-no-hackage-tests.patch            # ?
                 ++ until             "8.10"  ./patches/ghc/MR948--32bit-cross-th.patch                           # https://gitlab.haskell.org/ghc/ghc/merge_requests/948  -- open
                 ++ fromUntil "8.8"   "9.2"   ./patches/ghc/cabal-host.patch                                      # https://github.com/haskell/cabal/issues/5887
+                ++ fromUntil "9.2"   "9.3"   ./patches/ghc/ghc-9.2-cabal-host.patch                              # https://github.com/haskell/cabal/issues/5887
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/ghc-8.6.4-prim-no-arm-atomics.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table.patch
                 ++ fromUntil "8.6.4" "8.8"   ./patches/ghc/global-offset-table-2.patch
@@ -185,19 +186,21 @@ in {
                 ++ fromUntil "8.10.2" "8.10.3" ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 # See https://github.com/input-output-hk/haskell.nix/issues/1027
-                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/3434.patch
+                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
+                ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
 
                 ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
                 ++ from      "8.10.1"          ./patches/ghc/ghc-mprotect-nonzero-len.patch
 
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
-                ++ fromUntil "8.10.5" "8.11"   ./patches/ghc/ghc-8.10.5-ubxt.patch
+                ++ fromUntil "8.10.5" "9.0"    ./patches/ghc/ghc-8.10.5-ubxt.patch
                 ++ fromUntil "8.6.4"  "9.2"    ./patches/ghc/Cabal-3886.patch
+                ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-Cabal-3886.patch
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ++ final.lib.optionals final.targetPlatform.isWindows
-                  (fromUntil "8.10.4" "8.10.8" ./patches/ghc/ghc-8.10-z-drive-fix.patch)
+                  (fromUntil "8.10.4" "9.3" ./patches/ghc/ghc-8.10-z-drive-fix.patch)
                 ++ final.lib.optional (versionAtLeast "8.6.5") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
@@ -208,10 +211,11 @@ in {
                 ++ until              "8.10.6" ./patches/ghc/Sphinx_Unicode_Error.patch
                 ++ fromUntil "9.0.2"  "9.2.2"  ./patches/ghc/ghc-9.2.1-xattr-fix.patch      # Problem was backported to 9.0.2
                 ++ fromUntil "8.10"   "9.3"    ./patches/ghc/MR6654-nonmoving-maxmem.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6654
-                ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6617-nonmoving-mvar.patch    # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6617
-                ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/MR6595-nonmoving-mutvar.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6595
-                ++ fromUntil "8.10"   "9.2"   ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
-                ++ fromUntil "8.10"   "8.10.8" ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
+                ++ fromUntil "8.10"   "9.0.2"  ./patches/ghc/MR6617-nonmoving-mvar.patch    # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6617
+                ++ fromUntil "8.10"   "9.0.2"  ./patches/ghc/MR6595-nonmoving-mutvar.patch  # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6595
+                ++ fromUntil "8.10"   "9.2"    ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
+                ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
+                ++ fromUntil "8.10"   "9.1"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
@@ -872,28 +876,43 @@ in {
           final.haskell-nix.cabalProject ({
             caller = "nix-tools-set";
             name = "nix-tools";
-            src = final.haskell-nix.sources.nix-tools;
+            src = {
+              outPath = final.haskell-nix.sources.nix-tools;
+              # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
+              # Disable filtering keeps pre ond post nix 2.4 behaviour the same.  This means that
+              # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
+              # that `tools` in the shell will be built the same.
+              filterPath = { path, ... }: path;
+            };
             # This is a handy way to use a local git clone of nix-tools when developing
             # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
             cabalProjectLocal = ''
               allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
             '';
             materialized = ../materialized + "/${compiler-nix-name}/nix-tools";
-            modules = [{
-              packages.transformers-compat.components.library.doExactConfig = true;
-              packages.time-compat.components.library.doExactConfig = true;
-              packages.time-locale-compat.components.library.doExactConfig = true;
-              # Make Cabal reinstallable
-              nonReinstallablePkgs =
-                [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                  "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-                  "ghc-boot"
-                  "ghc" "Win32" "array" "binary" "bytestring" "containers"
-                  "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
-                  "hpc"
-                  "mtl" "parsec" "process" "text" "time" "transformers"
-                  "unix" "xhtml"
-                ];
+            modules = [
+              # Work around issue when using older ghc on new MacOS versions.  The
+              # old process library used by these versions of ghc uses `fork` in a
+              # way that can sometimes while evaluating template haskell.
+              ({pkgs, ...}: final.lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin
+                  && __elem args.compiler-nix-name [ "ghc865" "ghc881" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" ]
+                ) { packages.hnix.components.library.ghcOptions = [ "-j1" ]; }
+              )
+              {
+                packages.transformers-compat.components.library.doExactConfig = true;
+                packages.time-compat.components.library.doExactConfig = true;
+                packages.time-locale-compat.components.library.doExactConfig = true;
+                # Make Cabal reinstallable
+                nonReinstallablePkgs =
+                  [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+                    "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+                    "ghc-boot"
+                    "ghc" "Win32" "array" "binary" "bytestring" "containers"
+                    "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+                    "hpc"
+                    "mtl" "parsec" "process" "text" "time" "transformers"
+                    "unix" "xhtml"
+                  ];
             }];
           } // args // { inherit compiler-nix-name; });
         exes =

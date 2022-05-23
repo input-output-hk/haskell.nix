@@ -86,7 +86,7 @@ let
         ]
         ++ [ ghc cabal-install emsdk ];
     # Configured the GHCJS source
-    configured-src = pkgs.runCommandCC "configured-ghcjs-src" {
+    configured-src = (pkgs.runCommandCC "configured-ghcjs-src" {
         buildInputs = configureInputs;
         inherit src;
         } ''
@@ -129,7 +129,10 @@ let
         for a in integer-gmp base unix; do
           cp ${../overlays/patches/config.sub} lib/boot/pkg/$a/config.sub
         done
-        '';
+        '')  // {
+          # The configured source includes /nix/store paths and so filtering can fail.
+          filterPath = { path, ... }: path;
+        };
         # see https://github.com/ghcjs/ghcjs/issues/751 for the happy upper bound.
 
     ghcjsProject = pkgs.haskell-nix.cabalProject' (

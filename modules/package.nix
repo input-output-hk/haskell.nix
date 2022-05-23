@@ -53,7 +53,7 @@ let
         default = [];
       };
       libs = mkOption {
-        type = listOfFilteringNulls (nullOr package);
+        type = listOfFilteringNulls (either (nullOr package) (listOfFilteringNulls package));
         default = [];
       };
       frameworks = mkOption {

@@ -7,6 +7,7 @@ let
   project = project' {
     inherit compiler-nix-name;
     src = testSrc "th-dlls";
+    modules = [{ reinstallableLibGhc = true; }];
   };
 
   packages = project.hsPkgs;

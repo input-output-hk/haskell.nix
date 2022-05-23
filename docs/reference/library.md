@@ -167,6 +167,7 @@ Then feeding its result into [mkCabalProjectPkgSet](#mkcabalprojectpkgset) passi
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                       |
 | `projectCross`    | Attrset                                          | Like `pkgs.pkgsCross.<system>` from nixpkgs `p.projectCross.<system>` returns the project results for cross compilation (where system is a member of nixpkgs lib.systems.examples).  So `p.projectCross.ghcjs.hsPkgs` is the same as `hsPkgs` but compiled with ghcjs |
 | `appendModule`    | Function                                          |  Re-eval the project with an extra module (or module list). |
+| `extend` and `appendOverlays` | Function                                          |  Modify a project, or add attributes, through overlays: `p.extend(final: prev: { })`. The overlays are carried-over `projectCross` and `appendModule` invocations. |
 
 ## project, cabalProject and stackProject
 

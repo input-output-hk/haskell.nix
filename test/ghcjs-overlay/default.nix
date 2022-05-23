@@ -6,6 +6,14 @@ let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
     inherit compiler-nix-name;
+    cabalProjectLocal = lib.optionalString stdenv.hostPlatform.isGhcjs ''
+      repository ghcjs-overlay
+        url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32
+        secure: True
+        root-keys:
+        key-threshold: 0
+        --sha256: sha256-y1vQnXI1XzkjnC4h66tVDmu2TZjZPcMrZEnE3m0XOfg=
+    '';
     # Alternative to the --sha256 comment in cabal.project
     # sha256map = {
     #  "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32" =

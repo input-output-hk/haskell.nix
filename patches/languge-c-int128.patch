@@ -1,0 +1,146 @@
+diff --git a/src/Language/C/Parser/Lexer.x b/src/Language/C/Parser/Lexer.x
+index 6f6592b..3a0d79d 100644
+--- a/src/Language/C/Parser/Lexer.x
++++ b/src/Language/C/Parser/Lexer.x
+@@ -284,7 +284,7 @@ alignof _Alignof __alignof alignof __alignof__,
+ asm @__,
+ atomic _Atomic,
+ auto, break, bool _Bool,
+-case, char, const @__, continue,
++case, char, const @__, const __constant, continue,
+ complex _Complex __complex__
+ default, do, double,
+ else, enum, extern,
+@@ -293,6 +293,8 @@ generic _Generic,
+ goto,
+ if, inline @__, int,
+ int128 __int128,
++int128 __int128_t,
++UInt128 __uint128_t,
+ long,
+ noreturn _Noreturn,
+ nullable _Nullable __nullable,
+@@ -324,7 +326,7 @@ label __label__
+ (CTokGnuC GnuCTyCompat) __builtin_types_compatible_p
+ (flip CTokClangC ClangBuiltinConvertVector) __builtin_convertvector
+ -}
+--- Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 long _Noreturn _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ _Float32 _Float32x _Float64 _Float64x _Float128 __float128 _Float128x __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p __builtin_convertvector
++-- Tokens: _Alignas _Alignof __alignof alignof __alignof__ __asm asm __asm__ _Atomic auto break _Bool case char __const const __const__ __constant continue _Complex __complex__ default do double else enum extern float for _Generic goto if __inline inline __inline__ int __int128 __int128_t __uint128_t long _Noreturn _Nullable __nullable _Nonnull __nonnull register __restrict restrict __restrict__ return short __signed signed __signed__ sizeof static _Static_assert struct switch typedef __typeof typeof __typeof__ __thread _Thread_local union unsigned void __volatile volatile __volatile__ while __label__ _Float32 _Float32x _Float64 _Float64x _Float128 __float128 _Float128x __attribute __attribute__ __extension__ __real __real__ __imag __imag__ __builtin_va_arg __builtin_offsetof __builtin_types_compatible_p __builtin_convertvector
+ idkwtok ('_' : 'A' : 'l' : 'i' : 'g' : 'n' : 'a' : 's' : []) = tok 8 CTokAlignas
+ idkwtok ('_' : 'A' : 'l' : 'i' : 'g' : 'n' : 'o' : 'f' : []) = tok 8 CTokAlignof
+ idkwtok ('_' : 'A' : 't' : 'o' : 'm' : 'i' : 'c' : []) = tok 7 CTokAtomic
+@@ -377,6 +379,7 @@ idkwtok ('i' : 'n' : 'l' : 'i' : 'n' : 'e' : []) = tok 6 CTokInline
+ idkwtok ('_' : '_' : 'i' : 'n' : 'l' : 'i' : 'n' : 'e' : '_' : '_' : []) = tok 10 CTokInline
+ idkwtok ('i' : 'n' : 't' : []) = tok 3 CTokInt
+ idkwtok ('_' : '_' : 'i' : 'n' : 't' : '1' : '2' : '8' : []) = tok 8 CTokInt128
++idkwtok ('_' : '_' : 'i' : 'n' : 't' : '1' : '2' : '8' : '_' : 't' : []) = tok 10 CTokInt128
+ idkwtok ('_' : '_' : 'l' : 'a' : 'b' : 'e' : 'l' : '_' : '_' : []) = tok 9 CTokLabel
+ idkwtok ('l' : 'o' : 'n' : 'g' : []) = tok 4 CTokLong
+ idkwtok ('_' : '_' : 'n' : 'o' : 'n' : 'n' : 'u' : 'l' : 'l' : []) = tok 9 CTokNonnull
+@@ -401,6 +404,7 @@ idkwtok ('t' : 'y' : 'p' : 'e' : 'd' : 'e' : 'f' : []) = tok 7 CTokTypedef
+ idkwtok ('_' : '_' : 't' : 'y' : 'p' : 'e' : 'o' : 'f' : []) = tok 8 CTokTypeof
+ idkwtok ('t' : 'y' : 'p' : 'e' : 'o' : 'f' : []) = tok 6 CTokTypeof
+ idkwtok ('_' : '_' : 't' : 'y' : 'p' : 'e' : 'o' : 'f' : '_' : '_' : []) = tok 10 CTokTypeof
++idkwtok ('_' : '_' : 'u' : 'i' : 'n' : 't' : '1' : '2' : '8' : '_' : 't' : []) = tok 11 CTokUInt128
+ idkwtok ('u' : 'n' : 'i' : 'o' : 'n' : []) = tok 5 CTokUnion
+ idkwtok ('u' : 'n' : 's' : 'i' : 'g' : 'n' : 'e' : 'd' : []) = tok 8 CTokUnsigned
+ idkwtok ('v' : 'o' : 'i' : 'd' : []) = tok 4 CTokVoid
+diff --git a/src/Language/C/Parser/Parser.y b/src/Language/C/Parser/Parser.y
+index fb494dc..d976c23 100644
+--- a/src/Language/C/Parser/Parser.y
++++ b/src/Language/C/Parser/Parser.y
+@@ -215,6 +215,8 @@ if		{ CTokIf	_ }
+ inline		{ CTokInline	_ }
+ int		{ CTokInt	_ }
+ "__int128"      { CTokInt128    _ }
++"__int128_t"    { CTokInt128    _ }
++"__uint128_t"   { CTokUInt128   _ }
+ long		{ CTokLong	_ }
+ "__label__"	{ CTokLabel	_ }
+ "_Noreturn"     { CTokNoreturn  _ }
+@@ -892,6 +894,7 @@ basic_type_name
+   | "_Bool"			{% withNodeInfo $1 $ CBoolType }
+   | "_Complex"			{% withNodeInfo $1 $ CComplexType }
+   | "__int128"                  {% withNodeInfo $1 $ CInt128Type }
++  | "__uint128_t"               {% withNodeInfo $1 $ CUInt128Type }
+   | "_Float32"                  {% withNodeInfo $1 $ (CFloatNType 32 False) }
+   | "_Float32x"                 {% withNodeInfo $1 $ (CFloatNType 32 True) }
+   | "_Float64"                  {% withNodeInfo $1 $ (CFloatNType 64 False) }
+diff --git a/src/Language/C/Parser/Tokens.hs b/src/Language/C/Parser/Tokens.hs
+index 66b77a9..fabde66 100644
+--- a/src/Language/C/Parser/Tokens.hs
++++ b/src/Language/C/Parser/Tokens.hs
+@@ -101,7 +101,8 @@ data CToken = CTokLParen   !PosLength            -- `('
+                                                 -- (or `__inline',
+                                                 -- `__inline__')
+             | CTokInt      !PosLength            -- `int'
+-            | CTokInt128   !PosLength            -- `__int128`
++            | CTokInt128   !PosLength            -- `__int128' (or `__int128_t')
++            | CTokUInt128  !PosLength            -- `__uint128_t'
+             | CTokLong     !PosLength            -- `long'
+             | CTokLabel    !PosLength            -- `__label__
+             | CTokNoreturn !PosLength            -- `_Noreturn'
+@@ -237,6 +238,7 @@ posLenOfTok (CTokGeneric  pos  ) = pos
+ posLenOfTok (CTokGoto     pos  ) = pos
+ posLenOfTok (CTokInt      pos  ) = pos
+ posLenOfTok (CTokInt128   pos  ) = pos
++posLenOfTok (CTokUInt128  pos  ) = pos
+ posLenOfTok (CTokInline   pos  ) = pos
+ posLenOfTok (CTokIf       pos  ) = pos
+ posLenOfTok (CTokLong     pos  ) = pos
+@@ -352,6 +354,7 @@ instance Show CToken where
+   showsPrec _ (CTokInline   _  ) = showString "inline"
+   showsPrec _ (CTokInt      _  ) = showString "int"
+   showsPrec _ (CTokInt128   _  ) = showString "__int128"
++  showsPrec _ (CTokUInt128  _  ) = showString "__uint128_t"
+   showsPrec _ (CTokLong     _  ) = showString "long"
+   showsPrec _ (CTokLabel    _  ) = showString "__label__"
+   showsPrec _ (CTokNoreturn    _  ) = showString "_Noreturn"
+diff --git a/src/Language/C/Pretty.hs b/src/Language/C/Pretty.hs
+index 1db99ed..55bfcfb 100644
+--- a/src/Language/C/Pretty.hs
++++ b/src/Language/C/Pretty.hs
+@@ -256,6 +256,7 @@ instance Pretty CTypeSpec where
+     pretty (CBoolType _)        = text "_Bool"
+     pretty (CComplexType _)     = text "_Complex"
+     pretty (CInt128Type _)      = text "__int128"
++    pretty (CUInt128Type _)     = text "__uint128_t"
+     pretty (CSUType union _)    = pretty union
+     pretty (CEnumType enum _)   = pretty enum
+     pretty (CTypeDef ident _)   = identP ident
+diff --git a/src/Language/C/Syntax/AST.hs b/src/Language/C/Syntax/AST.hs
+index 2bdc642..c58d822 100644
+--- a/src/Language/C/Syntax/AST.hs
++++ b/src/Language/C/Syntax/AST.hs
+@@ -468,6 +468,7 @@ data CTypeSpecifier a
+   | CBoolType    a
+   | CComplexType a
+   | CInt128Type  a
++  | CUInt128Type a
+   | CFloatNType Int Bool a           -- ^ IEC 60227: width (32,64,128), extended flag
+   | CSUType      (CStructureUnion a) a      -- ^ Struct or Union specifier
+   | CEnumType    (CEnumeration a)    a      -- ^ Enumeration specifier
+@@ -1096,6 +1097,7 @@ instance CNode t1 => CNode (CTypeSpecifier t1) where
+         nodeInfo (CBoolType d) = nodeInfo d
+         nodeInfo (CComplexType d) = nodeInfo d
+         nodeInfo (CInt128Type d) = nodeInfo d
++        nodeInfo (CUInt128Type d) = nodeInfo d
+         nodeInfo (CSUType _ n) = nodeInfo n
+         nodeInfo (CEnumType _ n) = nodeInfo n
+         nodeInfo (CTypeDef _ n) = nodeInfo n
+@@ -1119,6 +1121,7 @@ instance Functor CTypeSpecifier where
+         fmap _f (CBoolType a1) = CBoolType (_f a1)
+         fmap _f (CComplexType a1) = CComplexType (_f a1)
+         fmap _f (CInt128Type a1) = CInt128Type (_f a1)
++        fmap _f (CUInt128Type a1) = CUInt128Type (_f a1)
+         fmap _f (CSUType a1 a2) = CSUType (fmap _f a1) (_f a2)
+         fmap _f (CEnumType a1 a2) = CEnumType (fmap _f a1) (_f a2)
+         fmap _f (CTypeDef a1 a2) = CTypeDef a1 (_f a2)
+@@ -1140,6 +1143,7 @@ instance Annotated CTypeSpecifier where
+         annotation (CBoolType n) = n
+         annotation (CComplexType n) = n
+         annotation (CInt128Type n) = n
++        annotation (CUInt128Type n) = n
+         annotation (CSUType _ n) = n
+         annotation (CEnumType _ n) = n
+         annotation (CTypeDef _ n) = n
