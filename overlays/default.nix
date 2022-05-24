@@ -2,7 +2,6 @@
 
 let
   overlays = {
-    wine = import ./wine.nix;
     #ghcjs = import ./ghcjs-asterius-triple.nix;
     #python = import ./python.nix;
     haskell = import ./haskell.nix args;
@@ -40,7 +39,6 @@ let
       haskellPackages = { };
       haskell-nix-prev = prev;
     })
-    wine
     haskell
     hackage-quirks
     bootstrap

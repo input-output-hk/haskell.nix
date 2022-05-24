@@ -3,11 +3,15 @@
 # package sets out of this repo. Ideally, this file is only used for
 # fixing things that are broken due to the Nix infrastructure.
 
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 let
   fromUntil = from: until: patch: { version, revision }:
     if   builtins.compareVersions version from  >= 0
       && builtins.compareVersions version until <  0
+      then patch
+      else null;
+  from = v: patch: { version, revision }:
+    if builtins.compareVersions version v >= 0
       then patch
       else null;
 in {
@@ -60,5 +64,23 @@ in {
   # See https://github.com/haskell-nix/hnix/pull/1053
   packages.hnix.patches = [
     (fromUntil "0.16.0" "0.16.0.1" ../patches/hnix.patch)
+  ];
+
+  # See https://github.com/input-output-hk/haskell.nix/issues/1455
+  # This is a work around to make `ghcide` and `haskell-language-server` build with the unboxed tuple patch.
+  packages.ghcide.patches =
+    # Work out if we have applied the unboxed tupple patch in overlays/bootstrap.nix
+    pkgs.lib.optional (__elem config.compiler.nix-name [
+      "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc810420210212"
+    ]) (from "1.7.0.0" ../patches/ghcide-1.7-unboxed-tuple-fix-issue-1455.patch)
+    # This is needed for a patch only applied to ghc810420210212
+    ++ pkgs.lib.optional (__elem config.compiler.nix-name [
+      "ghc810420210212"
+    ]) (from "1.7.0.0" ../patches/ghcide-1.7-plutus-ghc.patch);
+
+  packages.language-c.patches = [
+    # See https://github.com/visq/language-c/pull/89
+    # this adds support for __int128_t and __uint128_t to language-c
+    (fromUntil "0.9.1" "0.9.2" ../patches/languge-c-int128.patch)
   ];
 }

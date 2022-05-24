@@ -32,8 +32,8 @@ let
     ln -s ${if enableProfiling then remote-iserv.override { inherit enableProfiling; } else remote-iserv}/bin/* $REMOTE_ISERV
     # See coment in comp-builder.nix for where this comes from and why it's here
     for p in $pkgsHostTargetAsString; do
-      find "$p" -iname '*.dll' -exec ln -s {} $REMOTE_ISERV \;
-      find "$p" -iname '*.dll.a' -exec ln -s {} $REMOTE_ISERV \;
+      find "$p" -iname '*.dll' -exec ln -sf {} $REMOTE_ISERV \;
+      find "$p" -iname '*.dll.a' -exec ln -sf {} $REMOTE_ISERV \;
     done
     # Some DLLs have a `lib` prefix but we attempt to load them without the prefix.
     # This was a problem for `double-conversion` package when used in TH code.

@@ -1,0 +1,83 @@
+diff --git a/compiler/GHC/Types/Unique/Supply.hs b/compiler/GHC/Types/Unique/Supply.hs
+index f3e2b4b353..3d68a1a91a 100644
+--- a/compiler/GHC/Types/Unique/Supply.hs
++++ b/compiler/GHC/Types/Unique/Supply.hs
+@@ -246,8 +246,13 @@ genSym = do
+     return u
+ #endif
+ 
++#if !MIN_VERSION_GLASGOW_HASKELL(9,1,0,0)
++foreign import ccall unsafe "&GenSymCounter" ghc_unique_counter :: Ptr Word
++foreign import ccall unsafe "&GenSymInc"     ghc_unique_inc     :: Ptr Int
++#else
+ foreign import ccall unsafe "&ghc_unique_counter" ghc_unique_counter :: Ptr Word
+ foreign import ccall unsafe "&ghc_unique_inc"     ghc_unique_inc     :: Ptr Int
++#endif
+ 
+ initUniqSupply :: Word -> Int -> IO ()
+ initUniqSupply counter inc = do
+diff --git a/compiler/cbits/genSym.c b/compiler/cbits/genSym.c
+index 8a47d77f27..96f9d17df2 100644
+--- a/compiler/cbits/genSym.c
++++ b/compiler/cbits/genSym.c
+@@ -1,15 +1,22 @@
+ #include <Rts.h>
+ #include <assert.h>
+ #include "Unique.h"
++#include "ghcversion.h"
+ 
+-HsInt ghc_unique_counter = 0;
+-HsInt ghc_unique_inc     = 1;
++#if !MIN_VERSION_GLASGOW_HASKELL(9,2,0,0)
++extern HsInt GenSymCounter;
++extern HsInt GenSymInc;
++#endif
+ 
+ #define UNIQUE_BITS (sizeof (HsInt) * 8 - UNIQUE_TAG_BITS)
+ #define UNIQUE_MASK ((1ULL << UNIQUE_BITS) - 1)
+ 
+ HsInt genSym(void) {
++#if !MIN_VERSION_GLASGOW_HASKELL(9,2,0,0)
++    HsInt u = atomic_inc((StgWord *)&GenSymCounter, GenSymInc) & UNIQUE_MASK;
++#else
+     HsInt u = atomic_inc((StgWord *)&ghc_unique_counter, ghc_unique_inc) & UNIQUE_MASK;
++#endif
+ #if DEBUG
+     // Uh oh! We will overflow next time a unique is requested.
+     assert(u != UNIQUE_MASK);
+diff --git a/includes/rts/Globals.h b/includes/rts/Globals.h
+index 8d8df48b21..c95e405ddc 100644
+--- a/includes/rts/Globals.h
++++ b/includes/rts/Globals.h
+@@ -32,3 +32,7 @@ mkStoreAccessorPrototype(LibHSghcFastStringTable)
+ mkStoreAccessorPrototype(LibHSghcGlobalHasPprDebug)
+ mkStoreAccessorPrototype(LibHSghcGlobalHasNoDebugOutput)
+ mkStoreAccessorPrototype(LibHSghcGlobalHasNoStateHack)
++#if GHC_STAGE >= 2
++extern HsInt ghc_unique_counter;
++extern HsInt ghc_unique_inc;
++#endif
+diff --git a/rts/Globals.c b/rts/Globals.c
+index 5569ee7910..848581e4d2 100644
+--- a/rts/Globals.c
++++ b/rts/Globals.c
+@@ -107,3 +107,6 @@ mkStoreAccessor(LibHSghcFastStringTable)
+ mkStoreAccessor(LibHSghcGlobalHasPprDebug)
+ mkStoreAccessor(LibHSghcGlobalHasNoDebugOutput)
+ mkStoreAccessor(LibHSghcGlobalHasNoStateHack)
++
++HsInt ghc_unique_counter = 0;
++HsInt ghc_unique_inc     = 1;
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 987755651d..5a6ec21152 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -679,6 +679,8 @@ extern char **environ;
+       SymI_HasProto(getOrSetLibHSghcGlobalHasPprDebug)                  \
+       SymI_HasProto(getOrSetLibHSghcGlobalHasNoDebugOutput)             \
+       SymI_HasProto(getOrSetLibHSghcGlobalHasNoStateHack)               \
++      SymI_HasProto(ghc_unique_counter)                                 \
++      SymI_HasProto(ghc_unique_inc)                                     \
+       SymI_HasProto(genericRaise)                                       \
+       SymI_HasProto(getProgArgv)                                        \
+       SymI_HasProto(getFullProgArgv)                                    \

@@ -1,0 +1,24 @@
+cabal-version:       >=1.10
+name:                exe-lib-dlls
+version:             0.1.0.0
+license:             PublicDomain
+author:              Hamish Mackenzie
+maintainer:          Hamish.K.Mackenzie@gmail.com
+build-type:          Simple
+
+library
+  build-depends:       base
+                     , HsOpenSSL
+                     , libsodium
+                     , template-haskell
+                     , text
+                     , double-conversion
+  exposed-modules:     Lib
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+executable exe-lib-dlls
+  build-depends:       base, exe-lib-dlls
+  main-is:             Main.hs
+  hs-source-dirs:      exes
+  default-language:    Haskell2010

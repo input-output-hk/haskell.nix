@@ -31,12 +31,29 @@ let
         type = bool;
         default = true;
       };
+      plugins = mkOption {
+        type = listOf (submodule {
+          options = {
+            library = mkOption {
+              type = unspecified;
+            };
+            moduleName = mkOption {
+              type = str;
+            };
+            args = mkOption {
+              type = listOf str;
+              default = [];
+            };
+          };
+        });
+        default = [];
+      };
       depends = mkOption {
         type = listOfFilteringNulls unspecified;
         default = [];
       };
       libs = mkOption {
-        type = listOfFilteringNulls (nullOr package);
+        type = listOfFilteringNulls (either (nullOr package) (listOfFilteringNulls package));
         default = [];
       };
       frameworks = mkOption {

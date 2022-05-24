@@ -6,6 +6,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name;
     src = testSrc "cabal-source-repo-comments";
+    modules = [{ reinstallableLibGhc = true; }];
   };
   packages = project.hsPkgs;
 in recurseIntoAttrs {

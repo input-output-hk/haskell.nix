@@ -1,0 +1,219 @@
+commit 43b4a6c9a6af630ae701b4c8e8f58e45b7d571bb
+Author: Shea Levy <shea@shealevy.com>
+Date:   Sun Apr 24 23:10:11 2022 -0400
+
+    Backport !7377: external static plugins
+    
+    https://gitlab.haskell.org/ghc/ghc/-/merge_requests/7377
+
+diff --git a/compiler/main/DynFlags.hs b/compiler/main/DynFlags.hs
+index 2ea0b3d5e9..587fef29ff 100644
+--- a/compiler/main/DynFlags.hs
++++ b/compiler/main/DynFlags.hs
+@@ -282,7 +282,7 @@ import Settings
+ import ToolSettings
+ 
+ import Foreign.C        ( CInt(..) )
+-import System.IO.Unsafe ( unsafeDupablePerformIO )
++import System.IO.Unsafe ( unsafeDupablePerformIO, unsafePerformIO )
+ import {-# SOURCE #-} ErrUtils ( Severity(..), MsgDoc, mkLocMessageAnn
+                                , getCaretDiagnostic )
+ import Json
+@@ -2011,7 +2011,7 @@ defaultDynFlags mySettings llvmConfig =
+         pluginModNameOpts       = [],
+         frontendPluginOpts      = [],
+         cachedPlugins           = [],
+-        staticPlugins           = [],
++        staticPlugins           = unsafePerformIO initStaticPlugins,
+         hooks                   = emptyHooks,
+ 
+         outputFile              = Nothing,
+diff --git a/compiler/main/Plugins.hs b/compiler/main/Plugins.hs
+index 25e69c15e5..5028b617bb 100644
+--- a/compiler/main/Plugins.hs
++++ b/compiler/main/Plugins.hs
+@@ -1,4 +1,8 @@
+ {-# LANGUAGE RankNTypes #-}
++{-# LANGUAGE LambdaCase #-}
++{-# LANGUAGE BlockArguments #-}
++{-# LANGUAGE UnboxedTuples #-}
++{-# LANGUAGE MagicHash #-}
+ {-# LANGUAGE CPP #-}
+ 
+ -- | Definitions for writing /plugins/ for GHC. Plugins can hook into
+@@ -45,6 +49,7 @@ module Plugins (
+     , LoadedPlugin(..), lpModuleName
+     , StaticPlugin(..)
+     , mapPlugins, withPlugins, withPlugins_
++    , initStaticPlugins
+     ) where
+ 
+ import GhcPrelude
+@@ -61,13 +66,22 @@ import DriverPhases
+ import Module ( ModuleName, Module(moduleName))
+ import Fingerprint
+ import Data.List (sort)
+-import Outputable (Outputable(..), text, (<+>))
++import Outputable
++import Panic
+ 
+ --Qualified import so we can define a Semigroup instance
+ -- but it doesn't clash with Outputable.<>
+ import qualified Data.Semigroup
+ 
+ import Control.Monad
++import Text.Read (readMaybe)
++
++import qualified System.Environment as Env
++#if defined(HAVE_INTERNAL_INTERPRETER)
++import GHCi.ObjLink
++import GHC.Exts (addrToAny#, Ptr(..))
++import Encoding
++#endif
+ 
+ -- | Command line options gathered from the -PModule.Name:stuff syntax
+ -- are given to you as this type
+@@ -262,3 +276,126 @@ data FrontendPlugin = FrontendPlugin {
+     }
+ defaultFrontendPlugin :: FrontendPlugin
+ defaultFrontendPlugin = FrontendPlugin { frontend = \_ _ -> return () }
++
++
++-- Note [External Static Plugins]
++-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++-- GHC supports two kinds of "static" plugins:
++--  1. internal: setup with GHC-API
++--  2. external: setup as explained below and loaded from shared libraries
++--
++-- External static plugins can be configured with the GHC_PLUGINS global
++-- environment variable. Its syntax corresponds to the Read instance of
++--    [(FilePath,String,String,[String])]
++-- that is a list of (library path, unit-id, module name, plugin arguments)
++--
++-- Example:
++--  GHC_PLUGINS='[(".../myplugin.so","my-plugin-unit","ZiPlugin.Plugin",["Arg1","Arg3"])]'
++--
++-- Building the plugin library:
++--  1. link with the libraries used to build the compiler you target.  If you
++--  target a cross-compiler (stage2), you can't directly use it to build the
++--  plugin library. Use the stage1 compiler instead.
++--
++--  2. if you use cabal to build the library, its unit-id will be set by cabal
++--  and will contain a hash (e.g. "my-plugin-unit-1345656546ABCDEF"). To force
++--  the unit id, use GHC's `-this-unit-id` command line flag:
++--    e.g. -this-unit-id my-plugin-unit
++--  You can set this in the .cabal file of your library with the following
++--  stanza: `ghc-options: -this-unit-id my-plugin-unit`
++--
++--  3. To make your plugin easier to distribute, you may want to link it
++--  statically with all its dependencies. You would need to use `-shared`
++--  without `-dynamic` when building your library.
++--
++--  However, all the static dependencies have to be built with `-fPIC` and it's
++--  not done by default. See
++--  https://www.hobson.space/posts/haskell-foreign-library/ for a way to modify
++--  the compiler to do it.
++--
++--  In any case, don't link your plugin library statically with the RTS (e.g.
++--  use `-fno-link-rts`) as there are some global variables in the RTS that must
++--  be shared between the plugin and the compiler.
++--
++-- With external static plugins we don't check the type of the `plugin` closure
++-- we look up. If it's not a valid `Plugin` value, it will probably crash badly.
++--
++-- TODO:
++--  * support configuration via command-line flags
++--  * support search paths for the plugin library
++
++
++initStaticPlugins :: IO [StaticPlugin]
++initStaticPlugins = do
++  -- detect static plugins in environment variables
++  Env.lookupEnv "GHC_PLUGINS" >>= \case
++    Nothing  -> return []
++    Just str -> case parseExternalStaticPlugins str of
++      Nothing -> panic "Couldn't parse `GHC_PLUGINS` environment variable"
++      Just [] -> return []
++      Just ps -> initExternalStaticPlugins ps
++
++-- | Parse external static plugin description string
++--
++-- E.g. '[(".../myplugin.so","my-plugin-unit","ZiPlugin.Plugin",["Arg1","Arg3"])]'
++parseExternalStaticPlugins :: String -> Maybe [ExternalStaticPlugin]
++parseExternalStaticPlugins s = fmap (fmap to) (readMaybe s)
++  where
++    to :: (FilePath,String,String,[String]) -> ExternalStaticPlugin
++    to (path,unit_id,mod_name,args) = ExternalStaticPlugin
++                                        { esp_lib     = path
++                                        , esp_unit_id = unit_id
++                                        , esp_module  = mod_name
++                                        , esp_args    = args
++                                        }
++
++
++data ExternalStaticPlugin = ExternalStaticPlugin
++  { esp_lib     :: !FilePath
++  , esp_unit_id :: !String
++  , esp_module  :: !String
++  , esp_args    :: ![String]
++  }
++
++initExternalStaticPlugins :: [ExternalStaticPlugin] -> IO [StaticPlugin]
++initExternalStaticPlugins _ps = do
++#if !defined(HAVE_INTERNAL_INTERPRETER)
++  panic "initExternalStaticPlugins: can't load external static plugins with GHC built without internal interpreter"
++#elif !defined(CAN_LOAD_DLL)
++  panic "initExternalStaticPlugins: loading shared libraries isn't supported by this compiler"
++#else
++  initObjLinker RetainCAFs
++  forM _ps \(ExternalStaticPlugin path unit mod_name opts) -> do
++    let ztmp = zEncodeString mod_name ++ "_plugin_closure"
++        symbol
++          | null unit = ztmp
++          | otherwise = zEncodeString unit ++ "_" ++ ztmp
++    plugin <- loadPluginLib path symbol
++    pure $ StaticPlugin (PluginWithArgs plugin opts)
++
++
++loadPluginLib :: FilePath -> String -> IO Plugin
++loadPluginLib path symbol_name = do
++  -- load library
++  loadDLL path >>= \case
++    Just errmsg -> pprPanic "loadPluginLib"
++                    (vcat [ text "Can't load plugin library"
++                          , text "  Library path: " <> text path
++                          , text "  Error       : " <> text errmsg
++                          ])
++    Nothing -> do
++      -- resolve objects
++      resolveObjs >>= \case
++        True -> return ()
++        False -> pprPanic "loadPluginLib" (text "Unable to resolve objects")
++
++      -- lookup symbol
++      lookupSymbol symbol_name >>= \case
++        Nothing -> pprPanic "loadPluginLib"
++                    (vcat [ text "Symbol not found"
++                          , text "  Library path: " <> text path
++                          , text "  Symbol      : " <> text symbol_name
++                          ])
++        Just (Ptr addr) -> case addrToAny# addr of
++          (# a #) -> pure a
++#endif
+diff --git a/compiler/main/Plugins.hs-boot b/compiler/main/Plugins.hs-boot
+index c90c6ebaf7..1a26ad4e71 100644
+--- a/compiler/main/Plugins.hs-boot
++++ b/compiler/main/Plugins.hs-boot
+@@ -2,9 +2,11 @@
+ -- exposed without importing all of its implementation.
+ module Plugins where
+ 
+-import GhcPrelude ()
++import GhcPrelude (IO)
+ 
+ data Plugin
+ 
+ data LoadedPlugin
+ data StaticPlugin
++
++initStaticPlugins :: IO [StaticPlugin]
