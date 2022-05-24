@@ -56,7 +56,6 @@ let
     hix
     eval-packages
     hydra
-    libm
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
