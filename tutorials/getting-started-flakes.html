@@ -193,7 +193,25 @@ start setting up your project.</p>
 <p>You can configure Nix to use our binary cache, which is pushed to by CI, so should contain the artifacts that you need.</p>
 <p>You need to add the following sections to <code>/etc/nix/nix.conf</code> or, if you are a trusted user, <code>~/.config/nix/nix.conf</code> (if you don't know what a "trusted user" is, you probably want to do the former).</p>
 <pre><code>trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
-substituters = [...] https://hydra.iohk.io [...]
+substituters = [...] https://cache.iog.io [...]
+</code></pre>
+<p>If you're running NixOS, you need to add/update the following in your <code>/etc/nixos/configuration.nix</code> files instead.</p>
+<pre><code># Binary Cache for Haskell.nix
+nix.settings.trusted-public-keys = [
+  &quot;hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=&quot;
+];
+nix.settings.substituters = [
+  &quot;https://cache.iog.io&quot;
+];
+</code></pre>
+<p>NixOS-21.11 and older use slightly different settings.</p>
+<pre><code># Binary Cache for Haskell.nix  
+nix.binaryCachePublicKeys = [
+  &quot;hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=&quot;
+];
+nix.binaryCaches = [
+  &quot;https://cache.iog.io&quot;
+];   
 </code></pre>
 <p>This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding <a href="../troubleshooting.html#why-am-i-building-ghc">troubleshooting section</a>.</p>
 <h2 id="scaffolding">Scaffolding<a class="headerlink" href="#scaffolding" title="Permanent link">&para;</a></h2>
