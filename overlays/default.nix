@@ -22,7 +22,6 @@ let
     hix = import ./hix.nix;
     eval-packages = import ./eval-packages.nix combined;
     ghcjs = import ./ghcjs.nix;
-    libm = import ./libm.nix;
   };
 
   composeExtensions = f: g: final: prev:
