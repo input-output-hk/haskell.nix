@@ -72,9 +72,9 @@ in pkgs.runCommand "project-coverage-report"
       local tixFile=$3
 
       local hpcMarkupCmd=("hpc" "markup" "--destdir=$destDir")
-      hpcMarkupCmd+=("--srcdirs-from=${srcDirsFile}")
-      hpcMarkupCmd+=("--hpcdirs-from=${mixDirsFile}")
-      hpcMarkupCmd+=("--includes-from=$modulesFile")
+      hpcMarkupCmd+=("--srcdir=@${srcDirsFile}")
+      hpcMarkupCmd+=("--hpcdir=@${mixDirsFile}")
+      hpcMarkupCmd+=("--include=@$modulesFile")
       hpcMarkupCmd+=("$tixFile")
 
       echo "''${hpcMarkupCmd[@]}"
