@@ -27,6 +27,7 @@ in
   gcc = gcclibs;
   ssl = [ openssl ];
   z = [ zlib ];
+  m = null;
   pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
