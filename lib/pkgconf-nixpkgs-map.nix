@@ -27,6 +27,7 @@ pkgs:
     "dl"                                 = []; # provided by glibc
     "fftw3"                              = [ pkgs."fftw" ];
     "fftw3f"                             = [ pkgs."fftwFloat" ];
+    "freetype2"                          = [ pkgs."freetype" ];
     "gconf"                              = [ pkgs."GConf" ];
     "gconf-2.0"                          = [ pkgs."GConf" ];
     "gdk-2.0"                            = [ pkgs."gtk2" ];
