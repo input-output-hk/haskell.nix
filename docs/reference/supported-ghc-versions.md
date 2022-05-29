@@ -33,7 +33,8 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 | unstable         | `nixpkgs-unstable` | 8.10.7      | `ghc8107`             | Yes           |
 | unstable         | `nixpkgs-unstable` | 9.0.1       | `ghc901`              | No            |
 | unstable         | `nixpkgs-unstable` | 9.2.1       | `ghc921`              | No            |
-| unstable         | `nixpkgs-unstable` | 9.2.2       | `ghc922`              | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.2.2       | `ghc922`              | No            |
+| unstable         | `nixpkgs-unstable` | 9.2.3       | `ghc923`              | Yes           |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)
 for the source of truth about what is built and tested (in the off chance this
