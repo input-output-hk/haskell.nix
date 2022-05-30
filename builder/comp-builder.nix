@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs, contentAddressed }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -315,7 +315,14 @@ let
     componentDrv = drv;
   };
 
-  drv = stdenv.mkDerivation (commonAttrs // {
+  contentAddressedAttrs = if (contentAddressed.enable && contentAddressed.include nameOnly)
+    then {
+      __contentAddressed = true;
+      outputHashMode = "recursive";
+      outputHashAlgo = "sha256";
+    } else {};
+                    
+  drv = stdenv.mkDerivation (commonAttrs // contentAddressedAttrs // {
     pname = nameOnly;
     inherit (package.identifier) version;
 

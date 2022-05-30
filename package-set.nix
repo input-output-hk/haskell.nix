@@ -83,6 +83,8 @@ in pkgs.lib.evalModules {
 
     })
 
+    ./modules/content-addressed.nix
+
     # Error handlers
     ./modules/error-handler.nix
 

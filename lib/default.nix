@@ -324,6 +324,7 @@ in {
           # Include ../modules/cabal-project.nix or ../modules/stack-project.nix
           (import ../modules/project-common.nix)
           (import projectType)
+          (import ../modules/content-addressed.nix)
           # Pass the pkgs and the buildProject to the modules
           ({ config, lib, ... }: {
             _module.args = {
