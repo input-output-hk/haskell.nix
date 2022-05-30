@@ -37,12 +37,9 @@
       ghc8105 = false;
       ghc8106 = false;
       ghc8107 = true;
-      ghc901 = false;
       ghc902 = true;
-      ghc921 = false;
       ghc922 = false;
       ghc923 = true;
-      ghc810420210212 = true;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
     nixpkgs.lib.filter (v:
@@ -58,7 +55,9 @@
       &&
         # aarch64-linux requires ghc 8.8.4
         (v != "aarch64-linux" || (
-           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
+           !__elem compiler-nix-name (["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
+             # ghc 9.2 seems ok on nixpkgs-unstable, but older versions get error "Please implement set_initial_registers() for your arch"
+             ++ nixpkgs.lib.optional (__elem nixpkgsName ["unstable" "R2111"]) ["ghc8107" "ghc902"])
         ))) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
@@ -68,9 +67,8 @@
       && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"]) 
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (system == "x86_64-linux" &&
-         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc810420210212" "ghc8107" "ghc902" "ghc922" "ghc923"])) {
-    # Windows cross compilation is currently broken on macOS
+  } // lib.optionalAttrs (__elem system [ "x86_64-linux" "x86_64-darwin" ] &&
+         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107" "ghc902" "ghc923"])) {
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923"]) {
     # Musl cross only works on linux

@@ -31,8 +31,7 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 | unstable         | `nixpkgs-unstable` | 8.10.5      | `ghc8105`             | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.6      | `ghc8106`             | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.7      | `ghc8107`             | Yes           |
-| unstable         | `nixpkgs-unstable` | 9.0.1       | `ghc901`              | No            |
-| unstable         | `nixpkgs-unstable` | 9.2.1       | `ghc921`              | No            |
+| unstable         | `nixpkgs-unstable` | 9.0.2       | `ghc902`              | Yes            |
 | unstable         | `nixpkgs-unstable` | 9.2.2       | `ghc922`              | No            |
 | unstable         | `nixpkgs-unstable` | 9.2.3       | `ghc923`              | Yes           |
 
