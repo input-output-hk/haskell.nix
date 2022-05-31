@@ -24,8 +24,9 @@ in rec {
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" "latest";
-      hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
-      hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
+      hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else { modules = [{ reinstallableLibGhc = true; }]; });
+    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc921" "ghc922"]) {
+      hls-latest = tool compiler-nix-name "haskell-language-server" { modules = [{ reinstallableLibGhc = true; }]; };
     })
   );
 
