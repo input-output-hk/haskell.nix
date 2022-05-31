@@ -198,16 +198,6 @@ index 01628dc..6be809a 100644
  Library
      Default-Language: Haskell2010
      Exposed: False
-@@ -67,6 +73,9 @@ Library
-                    ghc-heap   == @ProjectVersionMunged@,
-                    ghci == @ProjectVersionMunged@
-
-+    build-tool-depends: alex:alex,
-+                        happy:happy
-+
-     if os(windows)
-         Build-Depends: Win32  >= 2.3 && < 2.7
-     else
 @@ -80,6 +89,15 @@ Library
                   -Wnoncanonical-monadfail-instances
                   -Wnoncanonical-monoid-instances
