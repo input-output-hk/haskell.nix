@@ -1,4 +1,4 @@
-{ testSrc, evalPackages, haskell-nix, compiler-nix-name, recurseIntoAttrs }:
+{ stdenv, testSrc, evalPackages, haskell-nix, compiler-nix-name, recurseIntoAttrs }:
 let
   inherit (haskell-nix.tool compiler-nix-name "haskell-language-server" { modules = [{ reinstallableLibGhc = true; }]; }) project;
 in recurseIntoAttrs {
@@ -8,5 +8,5 @@ in recurseIntoAttrs {
   build = project.getComponent "haskell-language-server:exe:haskell-language-server";
 
   # Haskell Language Server in hackage does not build for GHC 9.2 yet
-  meta.disabled = __elem compiler-nix-name ["ghc921" "ghc922" "ghc923"] || haskell-nix.haskellLib.isCrossHost;
+  meta.disabled = __elem compiler-nix-name ["ghc921" "ghc922" "ghc923"] || stdenv.hostPlatform != stdenv.buildPlatform;
 }
