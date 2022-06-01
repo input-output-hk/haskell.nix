@@ -1,6 +1,6 @@
 { stdenv, testSrc, evalPackages, haskell-nix, compiler-nix-name, recurseIntoAttrs }:
 let
-  inherit (haskell-nix.tool compiler-nix-name "haskell-language-server" { modules = [{ reinstallableLibGhc = true; }]; }) project;
+  inherit (haskell-nix.tool compiler-nix-name "haskell-language-server" {}) project;
 in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;

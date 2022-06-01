@@ -12,7 +12,6 @@ let
       #   haddock: No input file(s)
       packages.bytestring-builder.doHaddock = false;
     }
-    { reinstallableLibGhc = true; } ];
   };
 
   meta = {

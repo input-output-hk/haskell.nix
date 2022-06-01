@@ -923,6 +923,7 @@ in {
                 packages.time-compat.components.library.doExactConfig = true;
                 packages.time-locale-compat.components.library.doExactConfig = true;
                 # Make Cabal reinstallable
+                reinstallableLibGhc = false;
                 nonReinstallablePkgs =
                   [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
                     "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
@@ -1089,12 +1090,14 @@ in {
                 version = "3.2.4";
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
+                modules = [{ reinstallableLibGhc = false; }];
             } // args);
             alex = bootstrap.packages.alex-tool {};
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
             happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy" ({
                 inherit version ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
+                modules = [{ reinstallableLibGhc = false; }];
             } // args);
             happy = bootstrap.packages.happy-tool {};
             happy-unchecked = bootstrap.packages.happy-tool { checkMaterialization = false; };
@@ -1107,6 +1110,7 @@ in {
                 version = "1.24.4";
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
+                modules = [{ reinstallableLibGhc = false; }];
             } // args)).getComponent "exe:HsColour";
             hscolour = bootstrap.packages.hscolour-tool {};
             hscolour-unchecked = bootstrap.packages.hscolour-tool { checkMaterialization = false; };

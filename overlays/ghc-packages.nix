@@ -222,6 +222,7 @@ in rec {
                        + "/${ghc-extra-projects-type}/${ghcName}";
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
+      modules = [{ reinstallableLibGhc = false; }];
     })
     ghc-extra-pkgs-cabal-projects;
 
