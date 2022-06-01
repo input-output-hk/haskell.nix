@@ -30,16 +30,6 @@ in { haskell-nix = prev.haskell-nix // {
       modules = [ { reinstallableLibGhc = true; } ];
     };
 
-    hlint = {
-      pkg-def-extras = [
-        (hackage: {
-          packages = {
-            "alex" = (((hackage.alex)."3.2.5").revisions).default;
-          };
-        })
-      ];
-    };
-
     pandoc = {
       # Function that returns a sha256 string by looking up the location
       # and tag in a nested attrset
