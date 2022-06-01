@@ -11,7 +11,7 @@ let
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
       packages.bytestring-builder.doHaddock = false;
-    }
+    }];
   };
 
   meta = {
