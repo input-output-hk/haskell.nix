@@ -21,19 +21,13 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 
 | Nixpkgs version  | Nixpkgs pinning    | GHC version | `compiler-nix-name`   | Tested in CI? |
 |------------------|--------------------|-------------|-----------------------|---------------|
-| 21.05            | `nixpkgs-2105`     | 8.6.5       | `ghc865`              | No            |
-| 21.05            | `nixpkgs-2105`     | 8.10.7      | `ghc8107`             | No            |
 | 21.11            | `nixpkgs-2111`     | 8.6.5       | `ghc865`              | No            |
 | 21.11            | `nixpkgs-2111`     | 8.10.7      | `ghc8107`             | Yes           |
 | unstable         | `nixpkgs-unstable` | 8.6.5       | `ghc865`              | No            |
 | unstable         | `nixpkgs-unstable` | 8.8.4       | `ghc884`              | No            |
-| unstable         | `nixpkgs-unstable` | 8.10.4      | `ghc8104`             | No            |
-| unstable         | `nixpkgs-unstable` | 8.10.5      | `ghc8105`             | No            |
-| unstable         | `nixpkgs-unstable` | 8.10.6      | `ghc8106`             | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.7      | `ghc8107`             | Yes           |
-| unstable         | `nixpkgs-unstable` | 9.0.1       | `ghc901`              | No            |
-| unstable         | `nixpkgs-unstable` | 9.2.1       | `ghc921`              | No            |
-| unstable         | `nixpkgs-unstable` | 9.2.2       | `ghc922`              | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.0.2       | `ghc902`              | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.2.3       | `ghc923`              | Yes           |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)
 for the source of truth about what is built and tested (in the off chance this

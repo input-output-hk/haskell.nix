@@ -99,9 +99,10 @@ let
     && !stdenv.hostPlatform.isMusl
     && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
 
-  ghc = if enableDWARF then defaults.ghc.dwarf else
-        if smallAddressSpace then defaults.ghc.smallAddressSpace else defaults.ghc;
-  setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
+  ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
+  setup = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) drvArgs.setup);
 
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
