@@ -10,7 +10,6 @@
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
-    "R2105" = "nixpkgs-2105";
     "R2111" = "nixpkgs-2111";
     "unstable" = "nixpkgs-unstable";
   };
@@ -24,40 +23,29 @@
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
-      ghc865 = false;
-      ghc8107 = false;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
+    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
       ghc865 = false;
       ghc8107 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
-      ghc8104 = false;
-      ghc8105 = false;
-      ghc8106 = false;
       ghc8107 = true;
-      ghc901 = false;
       ghc902 = true;
-      ghc921 = false;
-      ghc922 = true;
-      ghc810420210212 = true;
+      ghc923 = true;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
     nixpkgs.lib.filter (v:
-        # We have less x86_64-darwin build capacity so build fewer GhC versions and no R2105
+        # We have less x86_64-darwin build capacity so build fewer GhC versions
         (v != "x86_64-darwin" || (
-           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
-        && !__elem nixpkgsName ["R2105"]))
+           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
-        # aarch64-darwin requires ghc 8.10.7 and does not work on older nixpkgs
+        # aarch64-darwin requires ghc 8.10.7
         (v != "aarch64-darwin" || (
-           !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
-        && !__elem nixpkgsName ["R2105"]))
+           !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-linux requires ghc 8.8.4
         (v != "aarch64-linux" || (
-           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
+           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
         ))) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
@@ -67,11 +55,11 @@
       && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"]) 
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (system == "x86_64-linux" &&
-         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc810420210212" "ghc8107" "ghc902" "ghc922"])) {
-    # Windows cross compilation is currently broken on macOS
+  } // lib.optionalAttrs (nixpkgsName == "unstable"
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc923"]) 
+       || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;

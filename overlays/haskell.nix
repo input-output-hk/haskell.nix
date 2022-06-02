@@ -71,7 +71,7 @@ final: prev: {
             }@args:
 
             let
-              hackageAll = builtins.foldl' (base: extra: base // extra) hackage extra-hackages;
+              hackageAll = builtins.foldl' final.lib.recursiveUpdate hackage extra-hackages;
             in
 
             import ../package-set.nix {
@@ -415,7 +415,7 @@ final: prev: {
                             )
                         else
                           final.evalPackages.fetchgit { inherit url rev sha256; };
-                    } // final.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                    } // final.buildPackages.lib.optionalAttrs (subdir != null && subdir != ".") { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                   };
 
                   cacheMap = builtins.map repoToAttr cache;
@@ -912,8 +912,9 @@ final: prev: {
         # project as it will automatically match the `compiler-nix-name`
         # of the project.
         roots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
-          (final.lib.mapAttrsToList (name: path: { inherit name path; })
-            (roots' compiler-nix-name 2));
+          (final.lib.filter (x: x.name != "recurseForDerivations")
+            (final.lib.mapAttrsToList (name: path: { inherit name path; })
+              (roots' compiler-nix-name 2)));
 
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({

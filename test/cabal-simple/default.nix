@@ -6,7 +6,6 @@ with lib;
 let
   modules = [
      {
-       reinstallableLibGhc = true;
        # Package has no exposed modules which causes
        #   haddock: No input file(s)
        packages.cabal-simple.doHaddock = false;
@@ -31,7 +30,7 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = project.shellFor { tools = { cabal = "3.6.2.0"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]; };
+  test-shell = project.shellFor { tools = { cabal = "3.6.2.0"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923"]; };
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
