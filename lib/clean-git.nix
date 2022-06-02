@@ -65,9 +65,13 @@ then
                 first_line = head git_content;
                 prefix = "gitdir: ";
                 ok = length git_content == 1 && lib.hasPrefix prefix first_line;
+                raw_path = remove_prefix prefix first_line;
               in
                 if ok
-                then /. + remove_prefix prefix first_line
+                then
+                  if lib.hasPrefix "/" raw_path
+                  then /. + raw_path
+                  else /. + builtins.toPath (origSrcSubDir + "/" + raw_path)
                 else abort "gitSource.nix: Cannot parse ${origSrcSubDir + "/.git"}";
     }));
 
@@ -112,7 +116,7 @@ then
     # `git ls-files --recurse-submodules` to give us an accurate list
     # of all the files in the index.
     whitelist_files = knownSubmoduleDirs:
-      runCommand "git-ls-files" {} ''
+      runCommand "git-ls-files" { preferLocalBuild = true; } ''
         tmp=$(mktemp -d)
         cd $tmp
         ${ lib.optionalString hasSubmodules ''
@@ -135,7 +139,7 @@ then
         ${git}/bin/git ls-files --recurse-submodules > $out/files
       '';
 
-    # Find the submodules 
+    # Find the submodules
     whitelist_recursive = knownSubmoduleDirs:
       let
         # Get the new list of submoduleDirs and files
@@ -176,7 +180,7 @@ then
       );
 
     # Identify files in the `.git` dir
-    isGitDirPath = path: 
+    isGitDirPath = path:
           path == origSrcSubDir + "/.git"
         || lib.hasPrefix (origSrcSubDir + "/.git/") path;
 

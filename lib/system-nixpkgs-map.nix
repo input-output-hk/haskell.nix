@@ -6,13 +6,28 @@ pkgs:
 
 with pkgs;
 
+let
+  # On windows systems we need these to be propagatedBuildInputs so that the DLLs will be found.
+  gcclibs = if pkgs.stdenv.hostPlatform.isWindows then [
+    pkgs.windows.mcfgthreads
+    # If we just use `pkgs.buildPackages.gcc.cc` here it breaks the `th-dlls` test. TODO figure out why exactly.
+    (pkgs.evalPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.evalPackages.xorg.lndir ]; } ''
+      mkdir $out
+      lndir ${pkgs.buildPackages.gcc.cc} $out
+    '')
+  ] else [];
+in
 # -- linux
 { crypto = [ openssl ];
-  "c++" = null; # no libc++
-  "stdc++" = null;
-  "stdc++-6" = null;
+  "c++" = []; # no libc++
+  "stdc++" = gcclibs;
+  "stdc++-6" = gcclibs;
+  gcc_s_seh-1 = gcclibs;
+  gcc_s = gcclibs;
+  gcc = gcclibs;
   ssl = [ openssl ];
   z = [ zlib ];
+  m = []; # Included with ghc
   pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
@@ -81,13 +96,15 @@ with pkgs;
   opencv = [ opencv3 ];
   icuuc = [ icu ];
   icui18n = [ icu ];
+  icu-i18n = [ icu ];
   icudata = [ icu ];
   vulkan = [ vulkan-loader ];
   sodium = [ libsodium ];
   gfortran = [ gfortran.cc.lib ];
+  ssh2 = [ libssh2 ];
+  gpiod = [ libgpiod ];
   png = [ libpng ];
   jpeg = [ libjpeg ];
-  m = []; # Included with ghc
   freenect_sync = [ freenect ];
   FLAC = [ flac ];
   mp3lame = [ lame ];
@@ -106,8 +123,6 @@ with pkgs;
      # this should be bundled with gcc.
      # if it's not we have more severe
      # issues anyway.
-     gcc_s_seh-1 = null;
-     gcc_s = null;
      ssl32 = null; eay32 = [ openssl ];
      iphlpapi = null; # IP Help API
      msvcrt = null; # this is the libc

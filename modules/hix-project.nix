@@ -11,7 +11,7 @@
     nixpkgsPin = lib.mkOption {
       type = lib.types.str;
       default = "nixpkgs-unstable";
-      description = "The name of a haskell.nix nixpkgs pin to use (e.g. nixpkgs-unstable or nixpkgs-2009)";
+      description = "The name of a haskell.nix nixpkgs pin to use (e.g. nixpkgs-unstable or nixpkgs-2111)";
     };
     nixpkgs = lib.mkOption {
       type = lib.types.nullOr lib.types.path;

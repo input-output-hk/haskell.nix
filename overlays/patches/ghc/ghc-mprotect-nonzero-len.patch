@@ -1,0 +1,14 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index f1c0db7c92..10b0764b38 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1161,6 +1161,9 @@ void mmapForLinkerMarkExecutable(void *start, size_t len)
+     IF_DEBUG(linker,
+              debugBelch("mmapForLinkerMarkExecutable: protecting %" FMT_Word
+                         " bytes starting at %p\n", (W_)len, start));
++    if (len == 0) {
++      return;
++    }
+     if (mprotect(start, len, PROT_READ|PROT_EXEC) == -1) {
+        barf("mmapForLinkerMarkExecutable: mprotect: %s\n", strerror(errno));
+     }

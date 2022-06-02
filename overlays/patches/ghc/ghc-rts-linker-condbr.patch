@@ -1,0 +1,73 @@
+diff --git a/rts/linker/elf_plt_aarch64.c b/rts/linker/elf_plt_aarch64.c
+index 11354a6..6b27a2c 100644
+--- a/rts/linker/elf_plt_aarch64.c
++++ b/rts/linker/elf_plt_aarch64.c
+@@ -25,6 +25,7 @@ const size_t stubSizeAarch64 = 5 * 4;
+  */
+ bool needStubForRelAarch64(Elf_Rel * rel) {
+     switch(ELF64_R_TYPE(rel->r_info)) {
++        case COMPAT_R_AARCH64_CONDBR19:
+         case COMPAT_R_AARCH64_CALL26:
+         case COMPAT_R_AARCH64_JUMP26:
+             return true;
+@@ -34,6 +35,7 @@ bool needStubForRelAarch64(Elf_Rel * rel) {
+ }
+ bool needStubForRelaAarch64(Elf_Rela * rela) {
+     switch(ELF64_R_TYPE(rela->r_info)) {
++        case COMPAT_R_AARCH64_CONDBR19:
+         case COMPAT_R_AARCH64_CALL26:
+         case COMPAT_R_AARCH64_JUMP26:
+             return true;
+diff --git a/rts/linker/elf_reloc_aarch64.c b/rts/linker/elf_reloc_aarch64.c
+index 0e11585..9d93369 100644
+--- a/rts/linker/elf_reloc_aarch64.c
++++ b/rts/linker/elf_reloc_aarch64.c
+@@ -104,8 +104,24 @@ encodeAddendAarch64(Section * section, Elf_Rel * rel, int64_t addend) {
+             break;
+         }
+         /* - control flow relocations */
++        case COMPAT_R_AARCH64_CONDBR19: { /* relocate b.* ... */
++            // 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
++            //  0  1  0  1  0  1  0  0 [ imm19 ...
++            //
++            // 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
++            // ...        imm19               ]  0  [  cond  ]
++            assert(isInt64(19+2, addend));
++            *(inst_t *)P = (*(inst_t *)P & 0xff00001f)
++                         | ((uint32_t)(addend << (5-2)) & 0x00ffffe0);
++            break;
++        }
+         case COMPAT_R_AARCH64_JUMP26:   /* relocate b ... */
+         case COMPAT_R_AARCH64_CALL26: { /* relocate bl ... */
++            // 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
++            // 0|1 0  0  1  0  1 [ imm26 ...
++
++            // 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
++            // ...        imm26                              ]
+             assert(isInt64(26+2, addend)); /* X in range */
+             *(inst_t *)P = (*(inst_t *)P & 0xfc000000) /* keep upper 6 (32-6)
+  * bits */
+@@ -221,6 +237,23 @@ computeAddend(ObjectCode * oc, Section * section, Elf_Rel * rel,
+         case COMPAT_R_AARCH64_ADD_ABS_LO12_NC:
+             /* type: static, class: aarch64, op: S + A */
+             return (S + A) & 0xfff;
++        case COMPAT_R_AARCH64_CONDBR19: {
++            int64_t V = S + A - P;
++            if(!isInt64(19+2, V)) {
++                /* need a stub */
++                /* check if we already have that stub */
++                if(findStub(section, (void**)&S, 0)) {
++                    /* did not find it. Crete a new stub. */
++                    if(makeStub(section, (void**)&S, 0)) {
++                        abort(/* could not find or make stub */);
++                    }
++                }
++
++                V = S + A -P;
++                assert(isInt64(19+2, V));
++            }
++            return V;
++        }
+         case COMPAT_R_AARCH64_JUMP26:
+         case COMPAT_R_AARCH64_CALL26: {
+             // S+A-P

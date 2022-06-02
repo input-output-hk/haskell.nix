@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, numactl, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -61,7 +61,7 @@ let self =
 
 # Profiling
 , enableLibraryProfiling ? component.enableLibraryProfiling
-, enableExecutableProfiling ? component.enableExecutableProfiling
+, enableProfiling ? component.enableProfiling
 , profilingDetail ? component.profilingDetail
 
 # Coverage
@@ -82,6 +82,7 @@ let self =
 
 # LLVM
 , useLLVM ? ghc.useLLVM
+, smallAddressSpace ? false
 
 }@drvArgs:
 
@@ -98,8 +99,10 @@ let
     && !stdenv.hostPlatform.isMusl
     && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
 
-  ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
-  setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
+  ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
+  setup = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) drvArgs.setup);
 
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
@@ -129,7 +132,7 @@ let
 
   fullName = "${nameOnly}-${package.identifier.version}";
 
-  needsProfiling = enableExecutableProfiling || enableLibraryProfiling;
+  needsProfiling = enableProfiling || enableLibraryProfiling;
 
   configFiles = makeConfigFiles {
     component = componentForSetup;
@@ -176,7 +179,7 @@ let
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
       # BINTOOLS
-      (if stdenv.hostPlatform.isLinux
+      (if stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isAndroid # might be better check to see if cc is clang/llvm?
         # use gold as the linker on linux to improve link times
         then [
           "--with-ld=${stdenv.cc.bintools.targetPrefix}ld.gold"
@@ -193,7 +196,7 @@ let
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")
       (enableFeature enableLibraryProfiling "library-profiling")
-      (enableFeature enableExecutableProfiling "executable-profiling")
+      (enableFeature enableProfiling "profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
       (enableFeature doCoverage "coverage")
@@ -201,13 +204,13 @@ let
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
-      # `--ghc-option=-optl=-L` options to the `configurationFlags` of the
+      # `--ghc-option=-optl=-L` options to the `configureFlags` of the
       # component.
       "--disable-executable-dynamic"
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
-      ++ lib.optional (enableLibraryProfiling || enableExecutableProfiling) "--profiling-detail=${profilingDetail}"
+      ++ lib.optional (enableLibraryProfiling || enableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals haskellLib.isCrossHost (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
@@ -221,6 +224,14 @@ let
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
       ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${o}"'') ghcOptions
+      ++ lib.optional (
+        # GHC 9.2 cross compiler built with older versions of GHC seem to have problems
+        # with unique conters.  Perhaps because the name changed for the counters.
+        # TODO This work around to use `-j1` should be removed once we are able to build 9.2 with 9.2.
+        haskellLib.isCrossHost
+          && builtins.compareVersions defaults.ghc.version "9.2.1" >= 0
+          && builtins.compareVersions defaults.ghc.version "9.3" < 0)
+        "--ghc-options=-j1"
     );
 
   executableToolDepends =
@@ -244,6 +255,7 @@ let
   shellWrappers = ghcForComponent {
     componentName = fullName;
     inherit configFiles enableDWARF;
+    inherit (component) plugins;
   };
 
   # In order to let shell hooks make package-specific things like Hoogle databases
@@ -354,10 +366,14 @@ let
       lib.optionals stdenv.hostPlatform.isDarwin frameworks
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
-      ++ builtins.concatLists pkgconfig;
+      ++ builtins.concatLists pkgconfig
+      ++ lib.optionals (stdenv.hostPlatform.isWindows)
+        (lib.flatten component.libs
+        ++ map haskellLib.dependToLib component.depends);
 
-    buildInputs = component.libs
-      ++ map haskellLib.dependToLib component.depends;
+    buildInputs = lib.optionals (!stdenv.hostPlatform.isWindows)
+      (lib.flatten component.libs
+      ++ map haskellLib.dependToLib component.depends);
 
     nativeBuildInputs =
       [shellWrappers buildPackages.removeReferencesTo]
@@ -391,12 +407,26 @@ let
       runHook postConfigure
     '';
 
-    buildPhase = ''
-      runHook preBuild
-      # https://gitlab.haskell.org/ghc/ghc/issues/9221
-      $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
-      runHook postBuild
-    '';
+    buildPhase =
+      # It seems that by the time the iserv wrapper specifiec by `--ghc-option=-pgmi` runs
+      # all the array environment variables are removed from the environment.  To get a list
+      # of all the locations a DLLs might be present we need access to pkgsHostTarget.
+      # Adding a string version of the list array of nix store paths allows us to get that
+      # list when we need it.
+      (lib.optionalString stdenv.hostPlatform.isWindows ''
+        export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
+      '') +
+      (if stdenv.hostPlatform.isGhcjs then ''
+        runHook preBuild
+        # https://gitlab.haskell.org/ghc/ghc/issues/9221
+        $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '' else ''
+        runHook preBuild
+        # https://gitlab.haskell.org/ghc/ghc/issues/9221
+        $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '');
 
     # Note: Cabal does *not* copy test executables during the `install` phase.
     #
@@ -468,7 +498,7 @@ let
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
           ${if stdenv.hostPlatform.isGhcjs then ''
-            cat <(echo \#!${lib.getBin buildPackages.nodejs}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+            cat <(echo \#!${lib.getBin buildPackages.nodejs-12_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
           '' else ''
              cp -r ${testExecutable} $(dirname $out/bin/${exeName})
@@ -476,7 +506,9 @@ let
         fi
       '')
       # In case `setup copy` did not create this
-      + (lib.optionalString enableSeparateDataOutput "mkdir -p $data")
+      + (lib.optionalString enableSeparateDataOutput ''
+         mkdir -p $data
+      '')
       + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) (''
         echo "Symlink libffi and gmp .dlls ..."
         for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
@@ -484,14 +516,10 @@ let
         done
         ''
         # symlink all .dlls into the local directory.
-        # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
-        # to symlink over dlls as needed.
         + ''
-        echo "Symlink library dependencies..."
-        for libdir in $(${stdenv.hostPlatform.config}-ghc-pkg field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
-          if [ -d "$libdir" ]; then
-            find "$libdir" -iname '*.dll' -exec ln -s {} $out/bin \;
-          fi
+        for p in $pkgsHostTargetAsString; do
+          find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
+          find "$p" -iname '*.dll.a' -exec ln -s {} $out/bin \;
         done
       ''))
       + (lib.optionalString doCoverage ''

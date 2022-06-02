@@ -11,21 +11,18 @@ let
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
       packages.bytestring-builder.doHaddock = false;
-    }
-    { reinstallableLibGhc = true; } ];
+    }];
   };
 
   meta = {
     platforms = platforms.unix;
-    # Building reinstallable lib GHC is broken on 8.10, and we require lib ghc so this won't work with cross-compiling.
+    # We require lib ghc so this won't work with cross-compiling.
     # Moreover, even building the plan doesn't seem to work in these circumstances.
-    disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl || __elem compiler-nix-name ["ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc810420210212"];
+    disabled = stdenv.buildPlatform != stdenv.hostPlatform || stdenv.hostPlatform.isMusl;
   };
 in 
 
 recurseIntoAttrs ({
-  meta.disabled = compiler-nix-name == "ghc901";
-
   ifdInputs = {
     plan-nix = addMetaAttrs meta project.plan-nix;
   };

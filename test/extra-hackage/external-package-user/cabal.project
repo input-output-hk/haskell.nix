@@ -1,4 +1,8 @@
 packages: *.cabal
 
-repository local
-    url: http://127.0.0.1:7777
+-- Including `repository` here now actually causes haskell.nix to try
+-- to download the repository.  Luckily this test still works with this
+-- commented out.
+-- See the ghcjs-overlays test for an example of how to use `repository` blocks.
+-- repository local
+--    url: http://127.0.0.1:7777

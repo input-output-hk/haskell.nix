@@ -2,12 +2,13 @@
   description = "Alternative Haskell Infrastructure for Nixpkgs";
 
   inputs = {
-    nixpkgs.follows = "nixpkgs-2105";
+    nixpkgs.follows = "nixpkgs-unstable";
     nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
-    nixpkgs-2009 = { url = "github:NixOS/nixpkgs/nixpkgs-20.09-darwin"; };
     nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
+    nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-utils = { url = "github:numtide/flake-utils"; };
+    hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
       flake = false;
@@ -22,6 +23,10 @@
     };
     cabal-34 = {
       url = "github:haskell/cabal/3.4";
+      flake = false;
+    };
+    cabal-36 = {
+      url = "github:haskell/cabal/3.6";
       flake = false;
     };
     cardano-shell = {
@@ -53,8 +58,8 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, ... }@inputs:
-    let compiler = "ghc884";
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, flake-utils, ... }@inputs:
+    let compiler = "ghc923";
       config = import ./config.nix;
     in {
       inherit config;
@@ -106,8 +111,9 @@
       # supported by haskell.nix, e.g. with remote builders, in order to check this flake.
       # If you want to run the tests for just your platform, run `./test/tests.sh` or
       # `nix-build -A checks.$PLATFORM`
-    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system: {
+    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: rec {
       legacyPackages = (self.internal.compat { inherit system; }).pkgs;
+      legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
 
       # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
       # (and maybe other tests) import projects that use builtins.currentSystem
@@ -119,6 +125,8 @@
         compiler-nix-name = compiler;
         pkgs = haskellNix.pkgs;
       })));
+      # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
+      roots = legacyPackagesUnstable.haskell-nix.roots compiler;
 
       devShell = with self.legacyPackages.${system};
         mkShell {

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 import Distribution.Simple
 
 -- https://github.com/snoyberg/conduit#readme
@@ -7,7 +8,11 @@ import System.Directory (removeFile)
 
 -- Make sure Cabal and ghc were included
 import Distribution.Package ()
+#if MIN_VERSION_ghc(9,0,0)
+import GHC.SysTools.Ar ()
+#else
 import Ar ()
+#endif
 
 example = do
     -- Pure operations: summing numbers.

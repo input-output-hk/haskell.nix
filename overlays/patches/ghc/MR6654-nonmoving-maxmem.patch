@@ -1,0 +1,31 @@
+From 878e265680651be374effe4adcd5753f92eb2704 Mon Sep 17 00:00:00 2001
+From: Teo Camarasu <teofilcamarasu@gmail.com>
+Date: Mon, 4 Oct 2021 11:40:51 +0100
+Subject: [PATCH] fix non-moving gc heap space requirements estimate
+
+The space requirements of the non-moving gc are comparable to the
+compacting gc, not the copying gc.
+
+The copying gc requires a much larger overhead.
+
+Fixes #20475
+---
+ rts/sm/GC.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rts/sm/GC.c b/rts/sm/GC.c
+index 90a5164414..1799cf98c4 100644
+--- a/rts/sm/GC.c
++++ b/rts/sm/GC.c
+@@ -1963,7 +1963,7 @@ resizeGenerations (void)
+             heapOverflow();
+         }
+ 
+-        if (oldest_gen->compact) {
++        if (oldest_gen->compact || RtsFlags.GcFlags.useNonmoving) {
+             if ( (size + (size - 1) * (gens - 2) * 2) + min_alloc > max ) {
+                 size = (max - min_alloc) / ((gens - 1) * 2 - 1);
+             }
+-- 
+2.33.1
+

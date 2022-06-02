@@ -1,0 +1,21 @@
+cabal-version:       2.4
+name:                ghcjs-overlay-test
+version:             0.1.0.0
+synopsis:            User package
+description:         Uses ghcjs-overlay to get patched double-conversion
+license:             BSD-3-Clause
+author:              Hamish Mackenzie
+maintainer:          Hamish.K.Mackenzie@gmail.com
+extra-source-files:  CHANGELOG.md
+
+library
+  exposed-modules:     MyLib
+  build-depends:       base < 5,
+                       double-conversion ==2.0.2.0
+  default-language:    Haskell2010
+
+executable ghcjs-overlay-test
+  main-is:             Main.hs
+  other-modules:       MyLib
+  build-depends:       base, ghcjs-overlay-test
+  default-language:    Haskell2010

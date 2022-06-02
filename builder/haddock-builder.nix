@@ -41,6 +41,7 @@ let
     inherit (package) identifier;
     inherit component fullName flags needsProfiling;
     chooseDrv = p: p.haddock;
+    inherit (componentDrv) enableDWARF;
   };
 
   finalConfigureFlags = lib.concatStringsSep " " (
@@ -55,6 +56,7 @@ let
     componentName = fullName;
     configFiles = docsConfigFiles;
     inherit (componentDrv) enableDWARF;
+    inherit (component) plugins;
   };
 
   drv = stdenv.mkDerivation (commonAttrs // {

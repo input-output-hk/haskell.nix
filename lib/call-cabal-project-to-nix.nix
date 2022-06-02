@@ -30,13 +30,40 @@ in
                      # An alternative to adding `--sha256` comments into the
                      # cabal.project file:
                      #   sha256map =
-                     #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
-                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
-, lookupSha256  ?
-  if sha256map != null
-    then { location, tag, ...}: sha256map."${location}"."${tag}"
-    else _: null
-, extra-hackage-tarballs ? []
+                     #     { # For a `source-repository-package` use the `location` and `tag` as the key
+                     #       "https://github.com/jgm/pandoc-citeproc"."0.17"
+                     #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q";
+                     #       # For a `repository` use the `url` as the key
+                     #       "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32"
+                     #         = "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
+                     #     };
+, inputMap ? {}
+                     # An alternative to providing a `sha256` handy for flakes
+                     # cabal.project file:
+                     #   inputs.pandoc-citeproc.url = "github:jgm/pandoc-citeproc/0.17";
+                     #   inputs.pandoc-citeproc.flake = false;
+                     #   outputs = inputs:
+                     #     ...
+                     #     inputMap."https://github.com/jgm/pandoc-citeproc" = inputs.inputs.pandoc-citeproc;
+, extra-hackage-tarballs ? {}
+, source-repo-override ? {} # Cabal seems to behave incoherently when
+                            # two source-repository-package entries
+                            # provide the same packages, making it
+                            # impossible to override cabal.project
+                            # with e.g. a cabal.project.local. In CI,
+                            # we want to be able to test against the
+                            # latest versions of various dependencies.
+                            #
+                            # This argument is a map from url to
+                            # a function taking the existing repoData
+                            # and returning the new repoData in its
+                            # place. E.g.
+                            #
+                            # { "https://github.com/input-output-hk/plutus-apps" = orig: orig // { subdirs = (orig.subdirs or [ "." ]) ++ [ "foo" ]; }; }
+                            #
+                            # would result in the "foo" subdirectory of
+                            # any plutus-apps input being used for a
+                            # package.
 , ...
 }@args:
 
@@ -84,15 +111,13 @@ let
   ghc = ghc';
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
-  maybeCleanedSource =
-    if haskellLib.canCleanSource src
-      then (haskellLib.cleanSourceWith {
-        name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
-        src = src.origSrc or src;
-        filter = path: type: (!(src ? filter) || src.filter path type) && (
-          type == "directory" ||
-          pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); })
-      else src.origSrc or src;
+
+  cleanedSource = haskellLib.cleanSourceWith {
+    name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
+    src = src.origSrc or src;
+    filter = path: type: (!(src ? filter) || src.filter path type) && (
+      type == "directory" ||
+      pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); };
 
   # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
   # access to the store is restricted.  If origSrc was already in the store
@@ -174,21 +199,28 @@ let
 
   replaceSourceRepos = projectFile:
     let
-      fetchRepo = fetchgit: repoData:
+      fetchPackageRepo = fetchgit: repoData:
         let
           fetched =
-            if repoData.sha256 != null
-            then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
+            if inputMap ? "${repoData.url}/${repoData.ref}"
+              then inputMap."${repoData.url}/${repoData.ref}"
+            else if inputMap ? ${repoData.url}
+              then
+                (if inputMap.${repoData.url}.rev != repoData.ref
+                  then throw "${inputMap.${repoData.url}.rev} may not match ${repoData.ref} for ${repoData.url} use \"${repoData.url}/${repoData.ref}\" as the inputMap key if ${repoData.ref} is a branch or tag that points to ${inputMap.${repoData.url}.rev}."
+                  else inputMap.${repoData.url})
+            else if repoData.sha256 != null
+              then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
             else
               let drv = builtins.fetchGit { inherit (repoData) url ref; };
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
-                (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a lookupSha256 argument"
+                (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a sha256map argument"
                  drv);
         in {
           # Download the source-repository-package commit and add it to a minimal git
           # repository that `cabal` will be able to access from a non fixed output derivation.
           location = pkgs.evalPackages.runCommand "source-repository-package" {
-              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.git ];
+              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.gitMinimal ];
             } ''
             mkdir $out
             rsync -a --prune-empty-dirs "${fetched}/" "$out/"
@@ -203,13 +235,13 @@ let
           tag = "minimal";
         };
 
-      blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
-      initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (pkgs.haskell-nix.haskellLib.parseBlock cabalProjectFileName lookupSha256) (pkgs.lib.lists.drop 1 blocks);
-      sourceRepoData = pkgs.lib.lists.map (x: x.sourceRepo) repoBlocks;
-      otherText = pkgs.evalPackages.writeText "cabal.project" (pkgs.lib.strings.concatStringsSep "\n" (
-        initialText
-        ++ (builtins.map (x: x.otherText) repoBlocks)));
+      # Parse the `source-repository-package` blocks
+      sourceRepoPackageResult = pkgs.haskell-nix.haskellLib.parseSourceRepositoryPackages
+        cabalProjectFileName sha256map source-repo-override projectFile;
+
+      # Parse the `repository` blocks
+      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
+        cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
@@ -220,12 +252,13 @@ let
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposEval = builtins.map (fetchRepo pkgs.evalPackages.fetchgit) sourceRepoData;
-      sourceReposBuild = builtins.map (x: (fetchRepo pkgs.fetchgit x).fetched) sourceRepoData;
+      sourceReposEval = builtins.map (fetchPackageRepo pkgs.evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos;
+      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
     in {
       sourceRepos = sourceReposBuild;
+      inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${otherText} ./cabal.project
+        cp -f ${pkgs.evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
       '' +
         pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
         chmod +w -R ./cabal.project
@@ -260,7 +293,7 @@ let
 
   fixedProject =
     if rawCabalProject == null
-      then { sourceRepos = []; makeFixedProjectFile = ""; replaceLocations = ""; }
+      then { sourceRepos = []; repos = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
       else replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
@@ -417,7 +450,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (pkgs.evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync pkgs.evalPackages.git ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync pkgs.evalPackages.gitMinimal ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
@@ -453,17 +486,17 @@ let
   } ''
     tmp=$(mktemp -d)
     cd $tmp
-    # if maybeCleanedSource is empty, this means it's a new
+    # if cleanedSource is empty, this means it's a new
     # project where the files haven't been added to the git
     # repo yet. We fail early and provide a useful error
     # message to prevent headaches (#290).
-    if [ -z "$(ls -A ${maybeCleanedSource})" ]; then
+    if [ -z "$(ls -A ${cleanedSource})" ]; then
       echo "cleaned source is empty. Did you forget to 'git add -A'?"
       ${pkgs.lib.optionalString (__length fixedProject.sourceRepos == 0) ''
         exit 1
       ''}
     else
-      cp -r ${maybeCleanedSource}/* .
+      cp -r ${cleanedSource}/* .
     fi
     chmod +w -R .
     # Decide what to do for each `package.yaml` file.
@@ -506,15 +539,16 @@ let
       # which is used by cabal (cached-index-state >= index-state-found).
       dotCabal {
         inherit cabal-install nix-tools extra-hackage-tarballs;
+        extra-hackage-repos = fixedProject.repos;
         index-state = cached-index-state;
         sha256 = index-sha256-found;
       }
-    } cabal v2-freeze \
-        --index-state=${
-            # Setting the desired `index-state` here in case it was not
-            # from the cabal.project file. This will further restrict the
-            # packages used by the solver (cached-index-state >= index-state-found).
-           index-state-found} \
+    } cabal v2-freeze ${
+          # Setting the desired `index-state` here in case it is not
+          # in the cabal.project file. This will further restrict the
+          # packages used by the solver (cached-index-state >= index-state-found).
+          pkgs.lib.optionalString (index-state != null) "--index-state=${index-state}"
+        } \
         -w ${
           # We are using `-w` rather than `--with-ghc` here to override
           # the `with-compiler:` in the `cabal.project` file.
@@ -591,5 +625,5 @@ in {
   projectNix = plan-nix;
   index-state = index-state-found;
   inherit src;
-  inherit (fixedProject) sourceRepos;
+  inherit (fixedProject) sourceRepos extra-hackages;
 }

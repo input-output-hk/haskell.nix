@@ -11,7 +11,7 @@
     flags = {};
     package = {
       specVersion = "1.22";
-      identifier = { name = "ghc-boot"; version = "8.10.5"; };
+      identifier = { name = "ghc-boot"; version = "8.10.7"; };
       license = "BSD-3-Clause";
       copyright = "";
       maintainer = "ghc-devs@haskell.org";

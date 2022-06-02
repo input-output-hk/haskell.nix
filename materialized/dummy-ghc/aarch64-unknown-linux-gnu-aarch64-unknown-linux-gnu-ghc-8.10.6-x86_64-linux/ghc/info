@@ -30,8 +30,6 @@
  ,("target has RTS linker","YES")
  ,("Unregisterised","NO")
  ,("LLVM target","aarch64-unknown-linux")
- ,("LLVM llc command","llc")
- ,("LLVM opt command","opt")
  ,("LLVM clang command","clang")
  ,("integer library","integer-gmp")
  ,("Use interpreter","YES")

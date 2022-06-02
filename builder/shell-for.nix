@@ -13,6 +13,7 @@
   # Additional packages to be added unconditionally
 , additional ? _: []
 , withHoogle ? true
+, withHaddock ? withHoogle
 , exactDeps ? false
 , tools ? {}
 , packageSetupDeps ? true
@@ -95,13 +96,15 @@ let
   component = {
     depends = packageInputs;
     libs = [];
+    pkgconfig = [];
     frameworks = [];
     doExactConfig = false;
   };
   configFiles = makeConfigFiles {
     fullName = args.name or name;
     identifier.name = name;
-    inherit component;
+    inherit component enableDWARF;
+    chooseDrv = p: if withHaddock && p ? haddock then p.haddock else p;
   };
   ghcEnv = ghcForComponent {
     inherit configFiles;
@@ -110,6 +113,7 @@ let
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
     inherit enableDWARF;
+    plugins = [];
   };
 
   hoogleIndex = let
@@ -163,8 +167,6 @@ in
       echo "${"Shell for " + toString (builtins.map (p : p.identifier.name) selectedPackages)}"
       echo $nativeBuildInputs $buildInputs > $out
     '';
-    LANG = "en_US.UTF-8";
-    LOCALE_ARCHIVE = lib.optionalString (stdenv.hostPlatform.libc == "glibc") "${glibcLocales}/lib/locale/locale-archive";
 
     # This helps tools like `ghcide` (that use the ghc api) to find
     # the correct global package DB.

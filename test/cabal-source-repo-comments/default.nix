@@ -13,7 +13,7 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
   run = stdenv.mkDerivation {
-    name = "call-cabal-project-to-nix-test";
+    name = "cabal-source-repo-comments-test";
 
     buildCommand = ''
       exe="${packages.use-cabal-simple.components.exes.use-cabal-simple.exePath}"

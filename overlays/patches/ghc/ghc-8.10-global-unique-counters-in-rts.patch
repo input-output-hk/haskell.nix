@@ -1,0 +1,55 @@
+diff --git a/compiler/cbits/genSym.c b/compiler/cbits/genSym.c
+index ecb318d5a8..8e70db33fc 100644
+--- a/compiler/cbits/genSym.c
++++ b/compiler/cbits/genSym.c
+@@ -1,9 +1,15 @@
+ #include <Rts.h>
+ #include <assert.h>
+ #include "Unique.h"
++#include "ghcversion.h"
+ 
++// These global variables have been moved into the RTS.  It allows them to be
++// shared with plugins even if two different instances of the GHC library are
++// loaded at the same time (#19940)
++#if !MIN_VERSION_GLASGOW_HASKELL(8,10,0,0) || GHC_STAGE < 2
+ static HsInt GenSymCounter = 0;
+ static HsInt GenSymInc = 1;
++#endif
+ 
+ #define UNIQUE_BITS (sizeof (HsInt) * 8 - UNIQUE_TAG_BITS)
+ #define UNIQUE_MASK ((1ULL << UNIQUE_BITS) - 1)
+diff --git a/includes/rts/Globals.h b/includes/rts/Globals.h
+index ff36572c56..12db025423 100644
+--- a/includes/rts/Globals.h
++++ b/includes/rts/Globals.h
+@@ -34,3 +34,7 @@ mkStoreAccessorPrototype(LibHSghcInitLinkerDone)
+ mkStoreAccessorPrototype(LibHSghcGlobalDynFlags)
+ mkStoreAccessorPrototype(LibHSghcStaticOptions)
+ mkStoreAccessorPrototype(LibHSghcStaticOptionsReady)
++#if GHC_STAGE >= 2
++extern HsInt GenSymCounter;
++extern HsInt GenSymInc;
++#endif
+diff --git a/rts/Globals.c b/rts/Globals.c
+index c9980d9a3a..56522937ef 100644
+--- a/rts/Globals.c
++++ b/rts/Globals.c
+@@ -111,3 +111,5 @@ mkStoreAccessor(LibHSghcInitLinkerDone)
+ mkStoreAccessor(LibHSghcGlobalDynFlags)
+ mkStoreAccessor(LibHSghcStaticOptions)
+ mkStoreAccessor(LibHSghcStaticOptionsReady)
++HsInt GenSymCounter = 0;
++HsInt GenSymInc = 1;
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index d5b8cc5fec..7ed561ff3f 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -646,6 +646,8 @@
+       SymI_HasProto(getOrSetLibHSghcPersistentLinkerState)              \
+       SymI_HasProto(getOrSetLibHSghcInitLinkerDone)                     \
+       SymI_HasProto(getOrSetLibHSghcGlobalDynFlags)                     \
++      SymI_HasProto(GenSymCounter)                                      \
++      SymI_HasProto(GenSymInc)                                          \
+       SymI_HasProto(genericRaise)                                       \
+       SymI_HasProto(getProgArgv)                                        \
+       SymI_HasProto(getFullProgArgv)                                    \

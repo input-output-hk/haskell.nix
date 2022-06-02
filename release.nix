@@ -21,8 +21,8 @@ let
     # added here will also included without aggregation, making it easier
     # to find a failing test.  Keep in mind though that adding too many
     # of these will slow down eval times.
-    linux = allJobs.R2105.ghc8107.linux.native or {};
-    darwin = allJobs.R2105.ghc8107.darwin.native or {};
+    x86_64-linux = allJobs.R2111.ghc8107.x86_64-linux.native or {};
+    x86_64-darwin = allJobs.R2111.ghc8107.x86_64-darwin.native or {};
   };
   names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
     (builtins.attrNames x);
@@ -46,6 +46,19 @@ let
         ) (names nixpkgsJobs)
       ) (names allJobs));
 in traceNames "job " (latestJobs // requiredJobs // {
+    windows-secp256k1 =
+      let
+        pkgs = (import ./. {}).pkgs-unstable; 
+        makeBinDist = drv: pkgs.runCommand drv.name {
+          nativeBuildInputs = [ pkgs.zip ];
+        } ''
+          mkdir -p $out/nix-support
+          cp -r ${drv}/* .
+          chmod -R +w .
+          zip -r $out/${drv.name}.zip .
+          echo "file binary-dist $out/${drv.name}.zip" > $out/nix-support/hydra-build-products
+       '';
+      in makeBinDist pkgs.pkgsCross.mingwW64.secp256k1;
     required = genericPkgs.releaseTools.aggregate {
       name = "haskell.nix-required";
       meta.description = "All jobs required to pass CI";

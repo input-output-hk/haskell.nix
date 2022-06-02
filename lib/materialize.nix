@@ -123,11 +123,7 @@ let
   calculateUseMaterialized =
     assert materialized != null;
     assert __pathExists materialized;
-    runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
-      cp -Lr ${materialized} $out
-      # Make sure output files can be removed from the sandbox
-      chmod -R +w $out
-    '';
+    { outPath = materialized; inherit name; };
   calculateMaterializedSha =
     writeShellScript "calculateSha" ''${nix}/bin/nix-hash --base32 --type sha256 ${calculateNoHash}'';
 
@@ -143,6 +139,7 @@ let
       fi
 
       # Generate the files
+      mkdir -p $TARGET
       rm -rf $TARGET
       cp -r ${calculateNoHash} "$TARGET"
       chmod -R +w "$TARGET"

@@ -9,10 +9,6 @@
                      #   sha256map =
                      #     { "https://github.com/jgm/pandoc-citeproc"."0.17"
                      #         = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
-, lookupSha256 ?
-  if sha256map != null
-    then { location, tag, ...}: sha256map."${location}"."${tag}"
-    else _: null
 , branchMap    ? null
                      # A way to specify in which branch a git commit can
                      # be found
@@ -34,25 +30,22 @@ let
       }) resolver fetchedResolver;
 
     # Filter just the stack yaml file and any resolver yaml file it points to.
-    maybeCleanedSource =
-      if haskellLib.canCleanSource src
-        then haskellLib.cleanSourceWith {
-          inherit src;
-          filter = path: type:
-            let
-              origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
-              origSubDir = if src ? _isLibCleanSourceWithEx then src.origSubDir else "";
-              relPath = pkgs.lib.removePrefix (toString origSrc + origSubDir + "/") path;
+    maybeCleanedSource = haskellLib.cleanSourceWith {
+      inherit src;
+      filter = path: type:
+        let
+          origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
+          origSubDir = if src ? _isLibCleanSourceWithEx then src.origSubDir else "";
+          relPath = pkgs.lib.removePrefix (toString origSrc + origSubDir + "/") path;
 
-              # checks if path1 is a parent directory for path2
-              isParent = path1: path2: pkgs.lib.hasPrefix "${path1}/" path2;
+          # checks if path1 is a parent directory for path2
+          isParent = path1: path2: pkgs.lib.hasPrefix "${path1}/" path2;
 
-            in
-              (relPath == stackYaml)
-              || (resolver != null && (relPath == resolver || isParent relPath resolver))
-            ;
-        }
-        else src;
+        in
+          (relPath == stackYaml)
+          || (resolver != null && (relPath == resolver || isParent relPath resolver))
+        ;
+    };
 
     # All repos served via ssh or git protocols are usually private
     private = url: pkgs.lib.substring 0 4 url != "http";
@@ -85,12 +78,10 @@ in with pkgs.lib;
 concatMap (dep:
         let
             is-private = private dep.url;
-            sha256 = if dep.sha256 != null
-              then dep.sha256
-              else lookupSha256 {
-                  location = dep.url;
-                  tag = dep.rev;
-                };
+            sha256 =
+              if dep.sha256 != null then dep.sha256
+              else if sha256map != null then sha256map."${dep.url}"."${dep.rev}"
+              else null;
             branch = lookupBranch {
               location = dep.url;
               tag = dep.rev;

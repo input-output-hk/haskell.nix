@@ -27,11 +27,12 @@ pkgs:
     "dl"                                 = []; # provided by glibc
     "fftw3"                              = [ pkgs."fftw" ];
     "fftw3f"                             = [ pkgs."fftwFloat" ];
+    "freetype2"                          = [ pkgs."freetype" ];
     "gconf"                              = [ pkgs."GConf" ];
     "gconf-2.0"                          = [ pkgs."GConf" ];
     "gdk-2.0"                            = [ pkgs."gtk2" ];
     "gdk-3.0"                            = [ pkgs."gtk3" ];
-    "gdk-pixbuf-2.0"                     = [ pkgs."gdk_pixbuf" ];
+    "gdk-pixbuf-2.0"                     = [ (pkgs."gdk-pixbuf" or pkgs."gdk_pixbuf") ];
     "gdk-x11-2.0"                        = [ pkgs."gdk_x11" ];
     "gdk-x11-3.0"                        = [ pkgs."gtk3" ];
     "gio-2.0"                            = [ pkgs."glib" ];
@@ -66,6 +67,7 @@ pkgs:
     "hidapi-libusb"                      = [ pkgs."hidapi" ];
     "icudata"                            = [ pkgs."icu" ];
     "icui18n"                            = [ pkgs."icu" ];
+    "icu-i18n"                           = [ pkgs."icu" ];
     "icuuc"                              = [ pkgs."icu" ];
     "idn"                                = [ pkgs."libidn" ];
     "IL"                                 = [ pkgs."libdevil" ];
@@ -99,6 +101,7 @@ pkgs:
     "libxml-2.0"                         = [ pkgs."libxml2" ];
     "libzip"                             = [ pkgs."libzip" ];
     "libzmq"                             = [ pkgs."zeromq" ];
+    "libzstd"                            = [ pkgs."zstd" ];
     "m"                                  = []; # in stdenv
     "magic"                              = [ pkgs."file" ];
     "MagickWand"                         = [ pkgs."imagemagick" ];
@@ -119,6 +122,7 @@ pkgs:
     "pfs-1.2"                            = [ pkgs."pfstools" ];
     "png"                                = [ pkgs."libpng" ];
     "poppler-glib"                       = [ pkgs."poppler" ];
+    "poppler-cpp"                        = [ pkgs."poppler" ];
     "pq"                                 = [ pkgs."postgresql" ];
     "libpq"                              = [ pkgs."postgresql" ];
     "pthread"                            = [];

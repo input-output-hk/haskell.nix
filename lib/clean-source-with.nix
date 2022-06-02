@@ -50,6 +50,33 @@
   #             (and forward a `name` argument) can use this to make
   #             the message to the use more meaningful.
   #
+  # Nix <2.4 Suport with filterPath
+  #
+  # As of Nix >=2.4 filtering is now possible on all paths (including those in the store).
+  # If you still need to support older versions of Nix and want to maximise cache hits for your project
+  # you may want to consider using setting the `filterPath` attribute on `src` (must be done on
+  # the original src not the output of another `cleanSourceWith`).
+  #
+  # To disable filtering completely replace:
+  #
+  #   src = ./.;
+  #
+  # with:
+  #
+  #   src = { outPath = ./.; filterPath = { path, ... }: path; };
+  #
+  # To disable filtering only when the path is in the store use (when Nix <2.4 is unable to filter it):
+  #
+  #   src = {
+  #     outPath = ./.;
+  #     filterPath = { path, ... }@args:
+  #       if builtins.hasContext (toString path) then path else builtins.path args;
+  #   };
+  #
+  # Currently `haskell-nix.hackage-project` (used by `hackage-package`, `tool` and `tools`) disables
+  # filtering.  See `overlays/haskell.nix` for details.
+  #
+  # For more see https://github.com/input-output-hk/haskell.nix/pull/1418
   cleanSourceWith = { filter ? _path: _type: true, src, subDir ? "", name ? null
       , caller ? "cleanSourceWith", includeSiblings ? false }:
     let
@@ -103,21 +130,21 @@
                 __trace (
                     "WARNING: `${caller}` called on ${toString src} without a `name`. "
                     + "Consider adding `name = \"${baseNameOf src}\";`") "source";
+      filterPath = origSrc.filterPath or (
+        if builtins.compareVersions builtins.nixVersion "2.4" >= 0
+          then builtins.path
+        else __trace "WARNING: Using nix <2.4 will result in inconsistent filtering of ${toString origSrc} (see lib/clean-source-with.nix)"
+          (if builtins.hasContext or (lib.hasPrefix builtins.storeDir) (toString origSrc)
+            then { path, ... }: path
+            else builtins.path));
     in {
       inherit origSrc origSubDir origSrcSubDir;
       filter = filter';
-      outPath = (builtins.path { filter = filter'; path = origSrc; name = name'; }) + origSubDir;
+      outPath = (filterPath { filter = filter'; path = origSrc; name = name'; }) + origSubDir;
       _isLibCleanSourceWithEx = true;
       # It is only safe for older cleanSourceWith to filter this one
       # if the we are still looking at the root of origSrc
       _isLibCleanSourceWith = origSubDir == "";
       name = name';
     };
-
-  pathHasContext = builtins.hasContext or (lib.hasPrefix builtins.storeDir);
-
-  canCleanSource = src:
-       src ? _isLibCleanSourceWithEx
-    || src ? _isLibCleanSourceWith
-    || !(pathHasContext (toString src));
 }

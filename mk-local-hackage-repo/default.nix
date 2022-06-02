@@ -17,13 +17,13 @@
 pkgs:
 { name, index }:
 
-pkgs.evalPackages.runCommandLocal "hackage-repo-${name}" { nativeBuildInputs = [ pkgs.evalPackages.nix ]; } ''
+pkgs.evalPackages.runCommand "hackage-repo-${name}" { preferLocalBuild = true; } ''
 mkdir -p $out
 export expires="4000-01-01T00:00:00Z"
 
 ln -sf ${index} $out/01-index.tar.gz
-export index_md5=$(nix-hash --flat --type md5 ${index})
-export index_sha256=$(nix-hash --flat --type sha256 ${index})
+export index_md5=$(md5sum ${index} | awk '{ print $1 }')
+export index_sha256=$(sha256sum ${index} | awk '{ print $1 }')
 ${
   # When possible check the hash we calculate here against the `outputHash`
   # of the index derivation (when the `extra-hackages` feature is used the index
@@ -37,18 +37,18 @@ ${
 export index_length=$(stat --printf="%s" ${index})
 
 substituteAll ${./root.json} $out/root.json
-export root_md5=$(nix-hash --flat --type md5 $out/root.json)
-export root_sha256=$(nix-hash --flat --type sha256 $out/root.json)
+export root_md5=$(md5sum $out/root.json | awk '{ print $1 }')
+export root_sha256=$(sha256sum $out/root.json | awk '{ print $1 }')
 export root_length=$(stat --printf="%s" $out/root.json)
 
 substituteAll ${./mirrors.json} $out/mirrors.json
-export mirrors_md5=$(nix-hash --flat --type md5 $out/mirrors.json)
-export mirrors_sha256=$(nix-hash --flat --type sha256 $out/mirrors.json)
+export mirrors_md5=$(md5sum $out/mirrors.json | awk '{ print $1 }')
+export mirrors_sha256=$(sha256sum $out/mirrors.json | awk '{ print $1 }')
 export mirrors_length=$(stat --printf="%s" $out/mirrors.json)
 
 substituteAll ${./snapshot.json} $out/snapshot.json
-export snapshot_md5=$(nix-hash --flat --type md5 $out/snapshot.json)
-export snapshot_sha256=$(nix-hash --flat --type sha256 $out/snapshot.json)
+export snapshot_md5=$(md5sum $out/snapshot.json | awk '{ print $1 }')
+export snapshot_sha256=$(sha256sum $out/snapshot.json | awk '{ print $1 }')
 export snapshot_length=$(stat --printf="%s" $out/snapshot.json)
 
 substituteAll ${./timestamp.json} $out/timestamp.json

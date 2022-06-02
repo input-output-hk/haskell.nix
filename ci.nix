@@ -10,8 +10,7 @@
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
-    "R2009" = "nixpkgs-2009";
-    "R2105" = "nixpkgs-2105";
+    "R2111" = "nixpkgs-2111";
     "unstable" = "nixpkgs-unstable";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
@@ -24,38 +23,43 @@
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2009") {
-      ghc865 = false;
-      ghc8105 = false;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
+    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
       ghc865 = false;
       ghc8107 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
-      ghc8104 = false;
-      ghc8105 = false;
-      ghc8106 = false;
       ghc8107 = true;
-      ghc901 = true;
-      ghc810420210212 = false;
+      ghc902 = true;
+      ghc923 = true;
     });
-  systems = nixpkgs: nixpkgs.lib.filterAttrs (_: v: builtins.elem v supportedSystems) {
-    # I wanted to take these from 'lib.systems.examples', but apparently there isn't one for linux!
-    linux = "x86_64-linux";
-    darwin = "x86_64-darwin";
-  };
+  systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
+    nixpkgs.lib.filter (v:
+        # We have less x86_64-darwin build capacity so build fewer GhC versions
+        (v != "x86_64-darwin" || (
+           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
+      &&
+        # aarch64-darwin requires ghc 8.10.7
+        (v != "aarch64-darwin" || (
+           !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
+      &&
+        # aarch64-linux requires ghc 8.8.4
+        (v != "aarch64-linux" || (
+           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
+        ))) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
-    in lib.optionalAttrs (nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
+    in lib.optionalAttrs (nixpkgsName == "unstable"
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"]) 
+       || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (system == "x86_64-linux" &&
-         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc8107"])) {
-    # Windows cross compilation is currently broken on macOS
+  } // lib.optionalAttrs (nixpkgsName == "unstable"
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc923"]) 
+       || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && compiler-nix-name == "ghc8107") {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
@@ -67,7 +71,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       # We need this for generic nixpkgs stuff at the right version
       genericPkgs = import pinnedNixpkgsSrc {};
   in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compiler-nix-name: {nixpkgsArgs, runTests}:
-    dimension "System" (systems genericPkgs) (systemName: system:
+    dimension "System" (systems nixpkgsName genericPkgs compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
           platformFilter = platformFilterGeneric pkgs system;

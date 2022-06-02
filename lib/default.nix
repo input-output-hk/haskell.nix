@@ -192,11 +192,11 @@ in {
   collectChecks' = collectChecks (_: true);
 
   # Replacement for lib.cleanSourceWith that has a subDir argument.
-  inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith canCleanSource;
+  inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith;
 
   # Use cleanSourceWith to filter just the files needed for a particular
   # component of a package
-  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith canCleanSource; };
+  cleanCabalComponent = import ./clean-cabal-component.nix { inherit lib cleanSourceWith; };
 
   # Clean git directory based on `git ls-files --recurse-submodules`
   cleanGit = import ./clean-git.nix {
@@ -251,10 +251,10 @@ in {
   # In most cases we do not want to treat musl as a cross compiler.
   # For instance when building ghc we want to include ghci.
   isCrossHost = stdenv.hostPlatform != stdenv.buildPlatform
-    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl && stdenv.buildPlatform.isx86 && stdenv.hostPlatform.isx86);
+    && !(stdenv.buildPlatform.isLinux && stdenv.hostPlatform.isMusl && stdenv.buildPlatform.linuxArch == stdenv.hostPlatform.linuxArch);
   # This is the same as isCrossHost but for use when building ghc itself
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
-    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.isx86 && stdenv.targetPlatform.isx86);
+    && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch);
   # Native musl build-host-target combo
   isNativeMusl = stdenv.hostPlatform.isMusl
     && stdenv.buildPlatform == stdenv.hostPlatform
@@ -275,7 +275,7 @@ in {
 
   inherit (import ./cabal-project-parser.nix {
     inherit pkgs;
-  }) parseIndexState parseBlock;
+  }) parseIndexState parseSourceRepositoryPackages parseRepositories parseSourceRepositoryPackageBlock parseRepositoryBlock;
 
 
   cabalToNixpkgsLicense = import ./spdx/cabal.nix pkgs;
@@ -290,26 +290,9 @@ in {
     if subDir == ""
       then src
       else
-        if haskellLib.canCleanSource src
-          then haskellLib.cleanSourceWith {
-            inherit src subDir includeSiblings;
-          }
-          else let name = src.name or "source" + "-" + __replaceStrings ["/"] ["-"] subDir;
-            in if includeSiblings
-              then rec {
-                # Keep `src.origSrc` so it can be used to allow references
-                # to other parts of that root.
-                inherit name;
-                origSrc = src.origSrc or src;
-                origSubDir = src.origSubDir or "" + "/" + subDir;
-                outPath = origSrc + origSubDir;
-              }
-              else {
-                # We are not going to need other parts of `origSrc` if there
-                # was one and we can ignore it
-                inherit name;
-                outPath = src + "/" + subDir;
-              };
+        haskellLib.cleanSourceWith {
+          inherit src subDir includeSiblings;
+        };
 
   # Givin a `src` split it into a `root` path (based on `src.origSrc` if
   # present) and `subDir` (based on `src.origSubDir).  The
@@ -334,22 +317,31 @@ in {
   # Run evalModules passing the project function argument (m) as a module along with
   # the the a projectType module (../modules/cabal-project.nix or ../modules/stack-project.nix).
   # The resulting config is then passed to the project function's implementation.
-  evalProjectModule = projectType: m: f: f
+  evalProjectModule = projectType: m: f:
+    let project = f
       (lib.evalModules {
         modules = (if builtins.isList m then m else [m]) ++ [
           # Include ../modules/cabal-project.nix or ../modules/stack-project.nix
           (import ../modules/project-common.nix)
           (import projectType)
-          # Pass the pkgs to the modules
+          # Pass the pkgs and the buildProject to the modules
           ({ config, lib, ... }: {
             _module.args = {
               inherit pkgs;
+              # to make it easy to depends on build packages in, eg., shell definition:
+              inherit (project) buildProject;
             };
+            inherit (project) hsPkgs;
           })
         ];
       }).config;
+    in project;
 
   # Converts from a `compoent.depends` value to a library derivation.
   # In the case of sublibs the `depends` value should already be the derivation.
   dependToLib = d: d.components.library or d;
+
+  projectOverlays = import ./project-overlays.nix {
+    inherit lib haskellLib;
+  };
 }

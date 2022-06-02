@@ -155,12 +155,12 @@ let
 
     enableSeparateDataOutput = mkOption {
       type = bool;
-      default = (def.enableSeparateDataOutput or false);
+      default = (def.enableSeparateDataOutput or true);
     };
 
-    enableExecutableProfiling = mkOption {
+    enableProfiling = mkOption {
       type = bool;
-      default = (def.enableExecutableProfiling or false);
+      default = (def.enableProfiling or false);
     };
 
     profilingDetail = mkOption {

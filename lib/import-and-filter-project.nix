@@ -6,14 +6,11 @@
 let
   # Full source including possible relative paths form the
   # project directory.
-  srcRoot =
-    if haskellLib.canCleanSource src
-      then haskellLib.cleanSourceWith {
-        name = if src ? name then "${src.name}-root" else "source-root";
-        src = src.origSrc or src;
-        filter = src.filter or (_: _: true);
-      }
-      else src.origSrc or src;
+  srcRoot = haskellLib.cleanSourceWith {
+    name = if src ? name then "${src.name}-root" else "source-root";
+    src = src.origSrc or src;
+    filter = src.filter or (_: _: true);
+  };
   # The sub directory containing the cabal.project or stack.yaml file
   projectSubDir' = src.origSubDir or "";                                     # With leading /
   projectSubDir = pkgs.lib.strings.removePrefix "/" projectSubDir';          # Without /
@@ -36,7 +33,7 @@ in project // {
                     isProject = false;
                     packageSrc = pkgs.lib.lists.elemAt sourceRepos (toInt oldPkg.src.url);
                   }
-                else if !hasPrefix (toString projectNix) (toString oldPkg.src.content)
+                else if !hasPrefix "${projectNix}" (toString oldPkg.src.content)
                   then {
                     # Source location does not match project prefix
                     isProject = false;
@@ -47,7 +44,7 @@ in project // {
                     isProject = true;
                     packageSrc = haskellLib.appendSubDir {
                       src = srcRoot;
-                      subDir = removePrefix "/" (removePrefix (toString projectNix)
+                      subDir = removePrefix "/" (removePrefix "${projectNix}"
                                                               (toString oldPkg.src.content));
                       includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
                                               # component builder so that relative paths can be used to

@@ -18,24 +18,9 @@ in { haskell-nix = prev.haskell-nix // {
         allow-newer: cabal-install:base, *:base, *:template-haskell
       '';
       modules = [
-        { reinstallableLibGhc = true; }
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
         (lib.optionalAttrs (version == "3.2.0.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
-        })
-      ];
-    };
-
-    hpack = {
-      modules = [ { reinstallableLibGhc = true; } ];
-    };
-
-    hlint = {
-      pkg-def-extras = [
-        (hackage: {
-          packages = {
-            "alex" = (((hackage.alex)."3.2.5").revisions).default;
-          };
         })
       ];
     };
@@ -51,10 +36,9 @@ in { haskell-nix = prev.haskell-nix // {
     pandoc = {
       # Function that returns a sha256 string by looking up the location
       # and tag in a nested attrset
-      lookupSha256 = { location, tag, ... }:
+      sha256map =
         { "https://github.com/jgm/pandoc-citeproc"."0.17"
-            = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; }
-          ."${location}"."${tag}";
+            = "0dxx8cp2xndpw3jwiawch2dkrkp15mil7pyx7dvd810pwc22pm2q"; };
     };
 
     # See https://github.com/input-output-hk/haskell.nix/issues/948
@@ -73,6 +57,15 @@ in { haskell-nix = prev.haskell-nix // {
            "--ghc-option=-optl=-L${pkgs.openssl.out}/lib"
          ];
       })];
+    };
+
+    ormolu = {
+      modules = [
+        ({ lib, ... }: {
+          options.nonReinstallablePkgs =
+            lib.mkOption { apply = lib.remove "Cabal"; };
+        })
+      ];
     };
 
   }."${name}" or {};

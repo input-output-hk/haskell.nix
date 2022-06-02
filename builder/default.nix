@@ -17,8 +17,8 @@ let
     # in the native case, it would be the same in the cross case however
     # we *really* want to build the Setup.hs on the build machine and not
     # have the stdenv confuse it with the target/host env.
-    inherit (buildPackages) stdenv;
-    inherit buildPackages pkgconfig;
+    inherit (buildPackages) stdenv pkgconfig;
+    inherit buildPackages;
     inherit haskellLib nonReinstallablePkgs makeSetupConfigFiles;
   };
 
@@ -45,18 +45,24 @@ let
 
   hoogleLocal = let
     nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool compiler.nix-name "hoogle" {
-        version = "5.0.17.15";
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "ghc8107" "hoogle" {
+        version = "5.0.18.3";
         index-state = pkgs.haskell-nix.internalHackageIndexState;
       }
     }:
-    haskellLib.weakCallPackage pkgs nixpkgsHoogle {
-      # For musl we can use haddock from the buildGHC
-      ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
-        then ghc.buildGHC
-        else ghc;
-      inherit packages hoogle;
-    };
+    let
+      haskellPackages = {
+        # For musl we can use haddock from the buildGHC
+        ghc = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
+          then ghc.buildGHC
+          else ghc;
+        inherit packages hoogle;
+      };
+    in if lib.versionAtLeast lib.trivial.release "22.05"
+      then haskellLib.weakCallPackage pkgs nixpkgsHoogle {
+          inherit haskellPackages;
+        } (p: p.packages)
+      else haskellLib.weakCallPackage pkgs nixpkgsHoogle haskellPackages;
 
   # Same as haskellPackages.shellFor in nixpkgs.
   shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {

@@ -18,7 +18,6 @@ let
     pkg-def-extras = (pkg-def-extras name)
       ++ [(hackage: ghc-boot-packages.${(pkg-def hackage).compiler.nix-name})];
     modules = [
-      { reinstallableLibGhc = true; } # Allow ghc library to be installed for packages that need it
       { planned = true; } # All components in the snapshot are planned
       { packages.alex.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }
       { packages.happy.package.setup-depends = [pkgSet.config.hsPkgs.Cabal]; }

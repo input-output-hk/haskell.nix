@@ -1,0 +1,189 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 10b0764..7d473f8 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -273,7 +273,7 @@ int ghciInsertSymbolTable(
+    RtsSymbolInfo *pinfo = lookupStrHashTable(table, key);
+    if (!pinfo) /* new entry */
+    {
+-      pinfo = stgMallocBytes(sizeof (*pinfo), "ghciInsertToSymbolTable");
++      pinfo = stgCallocBytes(1, sizeof (*pinfo), "ghciInsertToSymbolTable");
+       pinfo->value = data;
+       pinfo->owner = owner;
+       pinfo->weak = weak;
+@@ -1329,7 +1329,7 @@ mkOc( pathchar *path, char *image, int imageSize,
+    ObjectCode* oc;
+ 
+    IF_DEBUG(linker, debugBelch("mkOc: start\n"));
+-   oc = stgMallocBytes(sizeof(ObjectCode), "mkOc(oc)");
++   oc = stgCallocBytes(1, sizeof(ObjectCode), "mkOc(oc)");
+ 
+    oc->info = NULL;
+ 
+@@ -1496,12 +1496,12 @@ preloadObjectFile (pathchar *path)
+     // reading the file, and then we misalign image on purpose so
+     // that the actual sections end up aligned again.
+    misalignment = machoGetMisalignment(f);
+-   image = stgMallocBytes(fileSize + misalignment, "loadObj(image)");
++   image = stgCallocBytes(1, fileSize + misalignment, "loadObj(image)");
+    image += misalignment;
+ 
+ # else /* !defined(darwin_HOST_OS) */
+ 
+-   image = stgMallocBytes(fileSize, "loadObj(image)");
++   image = stgCallocBytes(1, fileSize, "loadObj(image)");
+ 
+ #endif
+ 
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index f326a84..a846bf5 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -209,6 +209,10 @@ typedef struct _ObjectCode {
+     int n_segments;
+     Segment *segments;
+ 
++    // COMMON section
++    void * common_mem;
++    unsigned long common_size;
++
+     //
+     // Garbage collection fields
+     //
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index fdfe87a..c3f9110 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -325,6 +325,15 @@ ocDeinit_ELF(ObjectCode * oc)
+         stgFree(oc->info);
+         oc->info = NULL;
+     }
++    if(NULL != oc->common_mem) {
++#if RTS_LINKER_USE_MMAP
++        munmap(oc->common_mem, oc->common_size);
++#else
++        stgFree(oc->common_mem);
++#endif
++    }
++    oc->common_mem = NULL;
++    oc->common_size = 0;
+ }
+ 
+ /*
+@@ -861,14 +870,17 @@ ocGetNames_ELF ( ObjectCode* oc )
+            for (size_t j = 0; j < symTab->n_symbols; j++) {
+                ElfSymbol *symbol = &symTab->symbols[j];
+                if (SHN_COMMON == symTab->symbols[j].elf_sym->st_shndx) {
+-                   common_size += symbol->elf_sym->st_size;
++                   // st_value holds the alignment. Adding alignment always
++                   // should give us some wiggle room to get alignment right.
++                   common_size += symbol->elf_sym->st_size + symbol->elf_sym->st_value;
+                }
+            }
+       }
+-      void * common_mem = NULL;
++      oc->common_mem = NULL;
++      oc->common_size = common_size;
+       if(common_size > 0) {
+-          common_mem = mmapAnonForLinker(common_size);
+-          if (common_mem == NULL) {
++          oc->common_mem = mmapAnonForLinker(common_size);
++          if (oc->common_mem == NULL) {
+             barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
+           }
+       }
+@@ -909,9 +921,10 @@ ocGetNames_ELF ( ObjectCode* oc )
+                if (shndx == SHN_COMMON) {
+                    isLocal = false;
+                    ASSERT(common_used < common_size);
+-                   ASSERT(common_mem);
+-                   symbol->addr = (void*)((uintptr_t)common_mem + common_used);
+-                   common_used += symbol->elf_sym->st_size;
++                   ASSERT(oc->common_mem);
++                   int alignment = symbol->elf_sym->st_value-1;
++                   symbol->addr = (void*)(((uintptr_t)oc->common_mem + common_used + alignment) & ~alignment);
++                   common_used = (uintptr_t)symbol->addr - (uintptr_t)oc->common_mem + symbol->elf_sym->st_size;
+                    ASSERT(common_used <= common_size);
+ 
+                    IF_DEBUG(linker,
+@@ -925,7 +938,9 @@ ocGetNames_ELF ( ObjectCode* oc )
+                            || ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
+                                                                   )
+                           /* and not an undefined symbol */
+-                          && shndx != SHN_UNDEF
++                          && (shndx != SHN_UNDEF
++                             /* unless it's weak */
++                             || (shndx == SHN_UNDEF && ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK))
+                           /* and not in a "special section" */
+                           && (shndx < SHN_LORESERVE
+ #if defined(SHN_XINDEX)
+@@ -963,33 +978,20 @@ ocGetNames_ELF ( ObjectCode* oc )
+                        isWeak = ELF_ST_BIND(symbol->elf_sym->st_info)
+                                 == STB_WEAK;
+                    }
+-               }
+-
+-               /* And the decision is ... */
+-
+-               if (symbol->addr != NULL) {
+-                   ASSERT(nm != NULL);
+-                   /* Acquire! */
+-                   if (!isLocal) {
+-
+-                       if (isWeak == HS_BOOL_TRUE) {
+-                           setWeakSymbol(oc, nm);
+-                       }
+-                       if (!ghciInsertSymbolTable(oc->fileName, symhash,
+-                                                  nm, symbol->addr, isWeak, oc)
+-                           ) {
+-                           goto fail;
+-                       }
+-                       oc->symbols[curSymbol++].name = nm;
+-                       oc->symbols[curSymbol].addr = symbol->addr;
+-                   }
+-               } else {
+-                   /* Skip. */
++               } else if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
++                          && shndx == SHN_UNDEF
++                          && (ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_FUNC
++                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_OBJECT
++                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_NOTYPE)) {
++                        symbol->addr = NULL;
++                        isLocal = false;
++                        isWeak = true;
++                } else {
++                    /* skip this symbol */
+                    IF_DEBUG(linker,
+                             debugBelch("skipping `%s'\n",
+                                                nm)
+                    );
+-
+                    /*
+                    debugBelch(
+                       "skipping   bind = %d,  type = %d,  secno = %d   `%s'\n",
+@@ -999,7 +1001,24 @@ ocGetNames_ELF ( ObjectCode* oc )
+                       nm
+                    );
+                    */
+-               }
++                    continue;
++                }
++
++               /* And the decision is ... */
++                ASSERT(nm != NULL);
++                /* Acquire! */
++                if (!isLocal) {
++
++                    if (isWeak == HS_BOOL_TRUE) {
++                        setWeakSymbol(oc, nm);
++                    }
++                    if (!ghciInsertSymbolTable(oc->fileName, symhash,
++                                               nm, symbol->addr, isWeak, oc)) {
++                        goto fail;
++                    }
++                    oc->symbols[curSymbol++].name = nm;
++                    oc->symbols[curSymbol].addr = symbol->addr;
++                }
+            }
+       }
+    }

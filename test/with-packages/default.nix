@@ -1,4 +1,4 @@
-{ stdenv, lib, numactl, util, mkPkgSet, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, mkPkgSet, recurseIntoAttrs, testSrc, compiler-nix-name }:
 
 with lib;
 with util;
@@ -33,7 +33,7 @@ let
 
   pkgId = p: "${p.identifier.name}-${p.identifier.version}";
   showDepends = component: concatMapStringsSep " " pkgId (component.depends or []);
-  extraFlags = if stdenv.isLinux then "-L${numactl}/lib" else "";
+  extraFlags = "";
 
 in recurseIntoAttrs {
   meta.disabled = compiler-nix-name != "ghc865";

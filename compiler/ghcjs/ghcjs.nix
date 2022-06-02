@@ -59,6 +59,7 @@ let
         # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
         isHaskellNixCompiler = true;
       } // ghcjs.components.exes;
+      dontUpdateAutotoolsGnuConfigScripts = true;
       dontConfigure = true;
       dontInstall = true;
       buildPhase = ''

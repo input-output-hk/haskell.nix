@@ -1,4 +1,4 @@
-{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }:
+{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }@defaults:
 
 let self =
 { component, package, name, src, enableDWARF ? false, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
@@ -7,9 +7,14 @@ let self =
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , cleanSrc ? haskellLib.cleanCabalComponent package component "setup" src
+, nonReinstallablePkgs ? defaults.nonReinstallablePkgs
+, smallAddressSpace ? false
 }@drvArgs:
 
 let
+  ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
+
   cleanSrc' = haskellLib.rootAndSubDir cleanSrc;
 
   fullName = "${name}-setup";
@@ -18,7 +23,7 @@ let
 
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
-    inherit fullName flags component enableDWARF;
+    inherit fullName flags component enableDWARF nonReinstallablePkgs;
   };
   hooks = haskellLib.optionalHooks {
     inherit
@@ -52,6 +57,7 @@ let
         cleanSrc = cleanSrc';
         inherit configFiles;
         dwarf = self (drvArgs // { enableDWARF = true; });
+        smallAddressSpace = self (drvArgs // { smallAddressSpace = true; });
       };
 
       meta = {
