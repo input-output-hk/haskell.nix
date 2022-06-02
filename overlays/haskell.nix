@@ -495,8 +495,10 @@ final: prev: {
                   # that `tools` in the shell will be built the same.
                   filterPath = { path, ... }: path;
                 };
-          in cabalProject' (
-            (final.haskell-nix.hackageQuirks { inherit name; version = version'; }) //
+          in cabalProject' ({
+              # Avoid readDir and readFile IFD functions looking for these files in the hackage source
+              cabalProject = null; cabalProjectLocal = null; cabalProjectFreeze = null;
+            } // final.haskell-nix.hackageQuirks { inherit name; version = version'; } //
               builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
