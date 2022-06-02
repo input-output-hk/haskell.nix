@@ -71,7 +71,7 @@ final: prev: {
             }@args:
 
             let
-              hackageAll = builtins.foldl' (base: extra: base // extra) hackage extra-hackages;
+              hackageAll = builtins.foldl' final.lib.recursiveUpdate hackage extra-hackages;
             in
 
             import ../package-set.nix {
