@@ -83,5 +83,32 @@ in {
     # See https://github.com/visq/language-c/pull/89
     # this adds support for __int128_t and __uint128_t to language-c
     (fromUntil "0.9.1" "0.9.2" ../patches/languge-c-int128.patch)
+
+  packages.discount.components.library.libs = pkgs.lib.mkForce [ pkgs.discount ];
+
+  packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [ pkgs.llvm ];
+
+  packages.BNFC.components.tests.doctests.build-tools = [
+    config.hsPkgs.buildPackages.alex
+    config.hsPkgs.buildPackages.happy
+  ];
+
+  packages.Sit.components.library.build-tools = [
+    # These may not be in `config.hsPkgs.buildPackages` are not even included
+    # as dependencies of the Sit package at all.
+    (pkgs.buildPackages.haskell-nix.tool config.compiler.nix-name "alex" {})
+    (pkgs.buildPackages.haskell-nix.tool config.compiler.nix-name "happy" {})
+  ];
+
+  packages.bindings-GLFW.components.library.libs = [
+    pkgs.xorg.libXext
+  ];
+
+  packages.GLFW-b.components.library.libs = [
+    pkgs.xorg.libXi
+  ];
+
+  packages.closed.components.tests.readme.build-tools = [
+    config.hsPkgs.buildPackages.markdown-unlit
   ];
 }

@@ -25,6 +25,14 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
+    lsp-test = {
+      cabalProject = ''
+        packages: .
+        package lsp
+          flags: +demo
+      '';
+    };
+
     pandoc = {
       # Function that returns a sha256 string by looking up the location
       # and tag in a nested attrset

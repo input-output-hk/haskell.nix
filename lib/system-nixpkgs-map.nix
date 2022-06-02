@@ -27,7 +27,7 @@ in
   gcc = gcclibs;
   ssl = [ openssl ];
   z = [ zlib ];
-  m = null;
+  m = []; # Included with ghc
   pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
@@ -50,6 +50,7 @@ in
   util = [ utillinux ];
   magic = [ file ];
   pq = [ postgresql ];
+  libpq = [ postgresql ];
   iconv = [ libiconv ];
   lapack = [ liblapack ];
   boost_atomic = [ boost ];
@@ -102,6 +103,16 @@ in
   gfortran = [ gfortran.cc.lib ];
   ssh2 = [ libssh2 ];
   gpiod = [ libgpiod ];
+  png = [ libpng ];
+  jpeg = [ libjpeg ];
+  freenect_sync = [ freenect ];
+  FLAC = [ flac ];
+  mp3lame = [ lame ];
+  tag_c = [ taglib ];
+  jwt = [ libjwt ];
+  GeoIP = [ geoip ];
+  pulse-simple = [ libpulseaudio ];
+  oath = [ liboauth ];
 }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
