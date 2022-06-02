@@ -91,7 +91,8 @@ let
           (map (p: "${lib.getBin p}/bin")
                (lib.flatten component.libs ++ lib.concatLists component.pkgconfig));
       "extra-include-dirs" = map (p: "${lib.getDev p}/include") (lib.flatten component.libs);
-      "extra-framework-dirs" = map (p: "${p}/Library/Frameworks") component.frameworks;
+      "extra-framework-dirs" = lib.optionals (stdenv.hostPlatform.isDarwin)
+        (map (p: "${p}/Library/Frameworks") component.frameworks);
     })}
 
     ghc=${ghc}
