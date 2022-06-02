@@ -83,6 +83,7 @@ in {
     # See https://github.com/visq/language-c/pull/89
     # this adds support for __int128_t and __uint128_t to language-c
     (fromUntil "0.9.1" "0.9.2" ../patches/languge-c-int128.patch)
+  ];
 
   packages.discount.components.library.libs = pkgs.lib.mkForce [ pkgs.discount ];
 
