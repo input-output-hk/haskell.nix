@@ -31,10 +31,9 @@ in rec {
             "ghc883" = "3.3.6";
             "ghc884" = "3.3.6";
           }.compiler-nix-name or "latest";
-        modules = [{ reinstallableLibGhc = true; }];
       };
     } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc921" "ghc922" "ghc923"]) {
-      hls-latest = tool compiler-nix-name "haskell-language-server" { modules = [{ reinstallableLibGhc = true; }]; };
+      hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
     })
   );
 
