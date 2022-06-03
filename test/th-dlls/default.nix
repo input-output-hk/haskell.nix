@@ -20,4 +20,5 @@ in recurseIntoAttrs {
 
   build = packages.th-dlls.components.library;
   build-profiled = packages.th-dlls.components.library.profiled;
+  just-template-haskell = packages.th-dlls.components.exes.just-template-haskell;
 }
