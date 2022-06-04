@@ -11,6 +11,7 @@
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
     "R2111" = "nixpkgs-2111";
+    "R2205" = "nixpkgs-2205";
     "unstable" = "nixpkgs-unstable";
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
@@ -24,6 +25,9 @@
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
     nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
+      ghc865 = false;
+      ghc8107 = true;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
       ghc865 = false;
       ghc8107 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
