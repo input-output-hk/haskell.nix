@@ -24,7 +24,7 @@ in
 
   options.reinstallableLibGhc = lib.mkOption {
     type = lib.types.bool;
-    default = false;
+    default = true;
     description = "Is lib:ghc reinstallable?";
   };
   options.setup-depends = lib.mkOption {
@@ -61,7 +61,7 @@ in
     ]
     # TODO make this unconditional
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]) [
+      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923"]) [
       "ghc-bignum" ]
     ++ lib.optionals (!config.reinstallableLibGhc) [
       "ghc-boot"
@@ -86,7 +86,7 @@ in
       "ghcjs-prim"
    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]) [
+      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923"]) [
       "ghc-bignum" ];
 
   options.hsPkgs = lib.mkOption {

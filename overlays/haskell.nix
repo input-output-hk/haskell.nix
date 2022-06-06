@@ -71,7 +71,7 @@ final: prev: {
             }@args:
 
             let
-              hackageAll = builtins.foldl' (base: extra: base // extra) hackage extra-hackages;
+              hackageAll = builtins.foldl' final.lib.recursiveUpdate hackage extra-hackages;
             in
 
             import ../package-set.nix {
@@ -415,7 +415,7 @@ final: prev: {
                             )
                         else
                           final.evalPackages.fetchgit { inherit url rev sha256; };
-                    } // final.buildPackages.lib.optionalAttrs (subdir != null) { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
+                    } // final.buildPackages.lib.optionalAttrs (subdir != null && subdir != ".") { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                   };
 
                   cacheMap = builtins.map repoToAttr cache;
@@ -495,8 +495,10 @@ final: prev: {
                   # that `tools` in the shell will be built the same.
                   filterPath = { path, ... }: path;
                 };
-          in cabalProject' (
-            (final.haskell-nix.hackageQuirks { inherit name; version = version'; }) //
+          in cabalProject' ({
+              # Avoid readDir and readFile IFD functions looking for these files in the hackage source
+              cabalProject = null; cabalProjectLocal = null; cabalProjectFreeze = null;
+            } // final.haskell-nix.hackageQuirks { inherit name; version = version'; } //
               builtins.removeAttrs args [ "version" "revision" ] // { inherit src; });
 
         # This function is like `cabalProject` but it makes the plan-nix available
@@ -910,8 +912,9 @@ final: prev: {
         # project as it will automatically match the `compiler-nix-name`
         # of the project.
         roots = compiler-nix-name: final.linkFarm "haskell-nix-roots-${compiler-nix-name}"
-          (final.lib.mapAttrsToList (name: path: { inherit name path; })
-            (roots' compiler-nix-name 2));
+          (final.lib.filter (x: x.name != "recurseForDerivations")
+            (final.lib.mapAttrsToList (name: path: { inherit name path; })
+              (roots' compiler-nix-name 2)));
 
         roots' = compiler-nix-name: ifdLevel:
           	final.recurseIntoAttrs ({

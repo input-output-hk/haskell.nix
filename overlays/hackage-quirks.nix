@@ -18,7 +18,6 @@ in { haskell-nix = prev.haskell-nix // {
         allow-newer: cabal-install:base, *:base, *:template-haskell
       '';
       modules = [
-        { reinstallableLibGhc = true; }
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
         (lib.optionalAttrs (version == "3.2.0.0") {
           packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
@@ -26,18 +25,12 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
-    hpack = {
-      modules = [ { reinstallableLibGhc = true; } ];
-    };
-
-    hlint = {
-      pkg-def-extras = [
-        (hackage: {
-          packages = {
-            "alex" = (((hackage.alex)."3.2.5").revisions).default;
-          };
-        })
-      ];
+    lsp-test = {
+      cabalProject = ''
+        packages: .
+        package lsp
+          flags: +demo
+      '';
     };
 
     pandoc = {

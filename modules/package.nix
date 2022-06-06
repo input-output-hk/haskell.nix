@@ -351,7 +351,7 @@ in {
         # (a common use case for `all` is in `shellFor` and it only has an
         # install phase).
         builtins.removeAttrs c ["preCheck" "postCheck" "keepSource"]
-      ) allComps
+      ) (lib.filter (c: c.buildable && c.planned) allComps)
     ) // {
       # If any one of the components needs us to keep the source
       # then keep it for the `all` component

@@ -59,7 +59,7 @@
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, flake-utils, ... }@inputs:
-    let compiler = "ghc884";
+    let compiler = "ghc923";
       config = import ./config.nix;
     in {
       inherit config;
@@ -111,7 +111,7 @@
       # supported by haskell.nix, e.g. with remote builders, in order to check this flake.
       # If you want to run the tests for just your platform, run `./test/tests.sh` or
       # `nix-build -A checks.$PLATFORM`
-    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: {
+    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: rec {
       legacyPackages = (self.internal.compat { inherit system; }).pkgs;
       legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
 
@@ -125,6 +125,8 @@
         compiler-nix-name = compiler;
         pkgs = haskellNix.pkgs;
       })));
+      # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
+      roots = legacyPackagesUnstable.haskell-nix.roots compiler;
 
       devShell = with self.legacyPackages.${system};
         mkShell {

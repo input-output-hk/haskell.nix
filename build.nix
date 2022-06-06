@@ -24,9 +24,16 @@ in rec {
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" "latest";
-    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]) {
+      hlint-latest = tool compiler-nix-name "hlint" {
+        version = {
+            "ghc865" = "3.2.8";
+            "ghc882" = "3.3.6";
+            "ghc883" = "3.3.6";
+            "ghc884" = "3.3.6";
+          }.compiler-nix-name or "latest";
+      };
+    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc921" "ghc922" "ghc923"]) {
       hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
-      hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
     })
   );
 
