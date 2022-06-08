@@ -5,11 +5,11 @@ final: prev:
 {
     winePackages = prev.winePackages // {
         minimal = prev.winePackages.minimal.overrideAttrs (oldAttrs: {
-            name = "wine-3.21";
-            version = "3.21";
+            name = "wine-5.4";
+            version = "5.4";
             src = prev.fetchurl {
-            url = "https://dl.winehq.org/wine/source/3.x/wine-3.21.tar.xz";
-            sha256 = "1h70wb7kysbzv36i3fblyiihvalwhy6sj4s2a8nf21nz2mhc0k58"; };
+            url = "https://dl.winehq.org/wine/source/5.x/wine-5.4.tar.xz";
+            sha256 = "sha256-Sz4rD/pUFfGZVA5gUcKMOXb86R6lv7LPSgmcJXMXBSw="; };
             patches = [];
             });
         };
