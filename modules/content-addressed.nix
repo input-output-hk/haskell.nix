@@ -19,8 +19,8 @@ with lib.types;
         description = ''
           Predicate indicating which components are content addressed, by default every
           component is content addressed.
-          The predicate argument is the `nameOnly` string used by the `comp-builder` i.e.
-          \"$${package.identifier.name}-$${componentId.ctype}-$${componentId.cname}"
+          The predicate argument is the `nameOnly` string used by the `comp-builder` e.g.
+          \"foo-lib-foo\" or \"bar-exe-bar\"
         '';
         example = literalExpression ''
           {
