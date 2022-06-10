@@ -13,7 +13,7 @@ let self =
 , autoreconfHook
 , bash
 
-, libiconv ? null, ncurses
+, libiconv ? null
 
 , installDeps
 
@@ -41,8 +41,7 @@ let self =
 
 , enableDWARF ? false
 
-, # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
-  enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
+, enableTerminfo ? true
 
 , # Wheter to build in NUMA support
   enableNUMA ? true
@@ -144,7 +143,7 @@ let
   '';
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional enableTerminfo [ ncurses ncurses.dev ]
+  libDeps = platform: lib.optional enableTerminfo [ targetPackages.ncurses targetPackages.ncurses.dev ]
     ++ [targetLibffi]
     ++ lib.optional (!enableIntegerSimple) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
@@ -240,7 +239,7 @@ stdenv.mkDerivation (rec {
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-        "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
+        "--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
     ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
     ] ++ lib.optional (!enableIntegerSimple) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
