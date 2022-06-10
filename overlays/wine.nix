@@ -2,7 +2,7 @@
 # this will inevitably replace *any* wine version. Thus this might not
 # really be what we ultimately want.
 final: prev:
-{
+prev.lib.optionalAttrs (!prev.stdenv.hostPlatform.isDarwin) {
     winePackages = prev.winePackages // {
         minimal = prev.winePackages.minimal.overrideAttrs (oldAttrs: {
             name = "wine-5.4";
