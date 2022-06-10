@@ -88,7 +88,7 @@ let
       then "windows"
       else if final.stdenv.hostPlatform.isGhcjs
         then "ghcjs"
-        else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
+        else if final.haskell-nix.haskellLib.isCrossHost
           then "cross"
           else "default";
 
