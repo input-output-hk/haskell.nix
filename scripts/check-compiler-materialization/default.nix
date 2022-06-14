@@ -17,7 +17,7 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   in
   # Exclude version that are older than the boot compiler
     eval.lib.optionals (
-        (system != "aarch64-linux"  || !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212"])
+        (system != "aarch64-linux"  || !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212" "ghc8105"])
      && (system != "aarch64-darwin" || !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106"])
      && (system != "x86_64-darwin" || !__elem compiler-nix-name ["ghc8102" "ghc8103"])) ([
   # This set of derivations should be enough to ensure all the materialized files for a
