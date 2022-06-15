@@ -315,7 +315,9 @@ let
     componentDrv = drv;
   };
 
-  contentAddressedAttrs = if (contentAddressed.enable && contentAddressed.include nameOnly)
+  CAComponent = with contentAddressed; enable && (include nameOnly);
+
+  contentAddressedAttrs = if CAComponent
     then {
       __contentAddressed = true;
       outputHashMode = "recursive";
@@ -411,7 +413,15 @@ let
       (lib.optionalString stdenv.hostPlatform.isWindows ''
         export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
       '') +
-      (if stdenv.hostPlatform.isGhcjs then ''
+      # this could be refactored but would lead to many rebuilds
+      (if CAComponent then ''
+        runHook preBuild
+        # we need avoid parallel building (passing -j1) in order to have a deterministic output and therefore
+        # avoid potential situations where the binary cache becomes useless
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/12935
+        $SETUP_HS build ${haskellLib.componentTarget componentId} -j1 ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '' else if stdenv.hostPlatform.isGhcjs then ''
         runHook preBuild
         # https://gitlab.haskell.org/ghc/ghc/issues/9221
         $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}
