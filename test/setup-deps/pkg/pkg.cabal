@@ -18,6 +18,9 @@ custom-setup
                      , Cabal
                      , ghc
                      , async >=2.0.0.0
+                     -- TODO remove the following once upper bound for `vector` in `vector-algorithms` is fixed.
+                     -- See https://github.com/erikd/vector-algorithms/issues/38#issuecomment-1160243744
+                     , vector <0.13
 
 library
   exposed-modules:     Pkg
