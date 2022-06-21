@@ -413,12 +413,14 @@ let
       (lib.optionalString stdenv.hostPlatform.isWindows ''
         export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
       '') +
-      # this could be refactored but would lead to many rebuilds
+      # The following could be refactored but would lead to many rebuilds
+
+      # In case of content addressed components we need avoid parallel building (passing -j1)
+      # in order to have a deterministic output and therefore avoid potential situations
+      # where the binary cache becomes useless
+      # See also https://gitlab.haskell.org/ghc/ghc/-/issues/12935
       (if CAComponent then ''
         runHook preBuild
-        # we need avoid parallel building (passing -j1) in order to have a deterministic output and therefore
-        # avoid potential situations where the binary cache becomes useless
-        # https://gitlab.haskell.org/ghc/ghc/-/issues/12935
         $SETUP_HS build ${haskellLib.componentTarget componentId} -j1 ${lib.concatStringsSep " " setupBuildFlags}
         runHook postBuild
       '' else if stdenv.hostPlatform.isGhcjs then ''
