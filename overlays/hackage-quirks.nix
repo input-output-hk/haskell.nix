@@ -25,13 +25,15 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
-    # TODO remove this when `dependent-sum-0.7.1.0` constraint on `some` has been updated.
+    # TODO remove `dependent-sum` constraint when `dependent-sum-0.7.1.0` constraint on `some` has been updated in hackage.
     # See https://github.com/haskell/haskell-language-server/issues/2969
     # and https://github.com/obsidiansystems/dependent-sum/issues/71
+    # TODO remove `algebraic-graphs` constraint when it is added to `hiedb` in hackage.
+    # See https://github.com/wz1000/HieDb/issues/42
     haskell-language-server = {
       cabalProject = ''
         packages: .
-        constraints: dependent-sum >=0.7.1.0
+        constraints: dependent-sum >=0.7.1.0, algebraic-graphs <0.7
       '';
     };
 
