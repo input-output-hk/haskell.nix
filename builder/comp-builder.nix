@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs, contentAddressed }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -50,6 +50,7 @@ let self =
 , writeHieFiles ? component.writeHieFiles
 
 , ghcOptions ? component.ghcOptions
+, contentAddressed ? component.contentAddressed
 
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
@@ -315,14 +316,11 @@ let
     componentDrv = drv;
   };
 
-  CAComponent = with contentAddressed; enable && (include nameOnly);
-
-  contentAddressedAttrs = if CAComponent
-    then {
-      __contentAddressed = true;
-      outputHashMode = "recursive";
-      outputHashAlgo = "sha256";
-    } else {};
+  contentAddressedAttrs = lib.optionalAttrs contentAddressed {
+    __contentAddressed = true;
+    outputHashMode = "recursive";
+    outputHashAlgo = "sha256";
+  };
                     
   drv = stdenv.mkDerivation (commonAttrs // contentAddressedAttrs // {
     pname = nameOnly;
@@ -419,7 +417,7 @@ let
       # in order to have a deterministic output and therefore avoid potential situations
       # where the binary cache becomes useless
       # See also https://gitlab.haskell.org/ghc/ghc/-/issues/12935
-      (if CAComponent then ''
+      (if contentAddressed then ''
         runHook preBuild
         $SETUP_HS build ${haskellLib.componentTarget componentId} -j1 ${lib.concatStringsSep " " setupBuildFlags}
         runHook postBuild
