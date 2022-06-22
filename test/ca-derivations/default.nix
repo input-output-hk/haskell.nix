@@ -6,14 +6,6 @@ with lib;
 
 let
 
-  modules = [
-    {
-      # Package has no exposed modules which causes
-      #   haddock: No input file(s)
-      packages.cabal-simple.doHaddock = false;
-    }
-  ];
-
   cabalProject = ''
     packages: .
     allow-newer: aeson:*
@@ -29,15 +21,15 @@ let
   '';
 
   projectPlain = project' {
-    inherit compiler-nix-name modules cabalProject;
+    inherit compiler-nix-name cabalProject;
     src = srcPlain;
-    contentAddressed.enable = true;
+    modules = [{ contentAddressed = true; }];
   };
 
   projectWithComment = project' {
-    inherit compiler-nix-name modules cabalProject;
+    inherit compiler-nix-name cabalProject;
     src = srcWithComment;
-    contentAddressed.enable = true;
+    modules = [{ contentAddressed = true; }];
   };
 
   exe-plain = projectPlain.hsPkgs.cabal-simple.components.exes.cabal-simple.exePath;

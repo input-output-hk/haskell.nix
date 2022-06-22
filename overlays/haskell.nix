@@ -529,13 +529,6 @@ final: prev: {
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
                         { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
-                    ++ final.lib.optional (args.contentAddressed.enable)
-                        {
-                          contentAddressed = {
-                            enable = final.lib.mkForce args.contentAddressed.enable;
-                            include = final.lib.mkForce args.contentAddressed.include;
-                          };
-                        }
                     ++ [ { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; } ];
                   extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
@@ -828,14 +821,7 @@ final: prev: {
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
                     ++ final.lib.optional (args.compiler-nix-name != null)
-                        { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; }
-                    ++ final.lib.optional (args.contentAddressed.enable)
-                        {
-                          contentAddressed = {
-                            enable = final.lib.mkForce args.contentAddressed.enable;
-                            include = final.lib.mkForce args.contentAddressed.include;
-                          };
-                        };
+                        { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
                 };
 
                 project = addProjectAndPackageAttrs {
@@ -868,7 +854,6 @@ final: prev: {
             inherit ((final.lib.evalModules {
               modules = [
                 (import ../modules/project-common.nix)
-                (import ../modules/content-addressed.nix)
                 (import ../modules/stack-project.nix)
                 (import ../modules/cabal-project.nix)
                 (import ../modules/project.nix)
