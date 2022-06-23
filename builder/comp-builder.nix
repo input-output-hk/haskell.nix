@@ -50,6 +50,7 @@ let self =
 , writeHieFiles ? component.writeHieFiles
 
 , ghcOptions ? component.ghcOptions
+, contentAddressed ? component.contentAddressed
 
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
@@ -316,7 +317,13 @@ let
     componentDrv = drv;
   };
 
-  drv = stdenv.mkDerivation (commonAttrs // {
+  contentAddressedAttrs = lib.optionalAttrs contentAddressed {
+    __contentAddressed = true;
+    outputHashMode = "recursive";
+    outputHashAlgo = "sha256";
+  };
+                    
+  drv = stdenv.mkDerivation (commonAttrs // contentAddressedAttrs // {
     pname = nameOnly;
     inherit (package.identifier) version;
 
@@ -405,7 +412,17 @@ let
       (lib.optionalString stdenv.hostPlatform.isWindows ''
         export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
       '') +
-      (if stdenv.hostPlatform.isGhcjs then ''
+      # The following could be refactored but would lead to many rebuilds
+
+      # In case of content addressed components we need avoid parallel building (passing -j1)
+      # in order to have a deterministic output and therefore avoid potential situations
+      # where the binary cache becomes useless
+      # See also https://gitlab.haskell.org/ghc/ghc/-/issues/12935
+      (if contentAddressed then ''
+        runHook preBuild
+        $SETUP_HS build ${haskellLib.componentTarget componentId} -j1 ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '' else if stdenv.hostPlatform.isGhcjs then ''
         runHook preBuild
         # https://gitlab.haskell.org/ghc/ghc/issues/9221
         $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}

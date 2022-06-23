@@ -112,4 +112,11 @@ in {
   packages.closed.components.tests.readme.build-tools = [
     config.hsPkgs.buildPackages.markdown-unlit
   ];
+
+  # Build ghci and ghc with internal interpreter support to make the
+  # `reinstallableLibGhc` build more like the boot version.
+  # See https://github.com/input-output-hk/haskell.nix/issues/1512
+  packages.ghc.flags.ghci = true;
+  packages.ghci.flags.ghci = true;
+  packages.ghci.flags.internal-interpreter = true;
 }
