@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+# check if Nix has the `ca-derivations` experimental features (code 0) is enabled
+NIX_CA_DERIVATIONS=$(jq -e '."experimental-features".value|any(. == 0)' <<< $(nix show-config --json)) || true
 NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
 
 cd $(dirname $0)
@@ -24,7 +26,8 @@ nix build $NIX_BUILD_ARGS \
    --option restrict-eval true \
    --option allowed-uris "https://github.com/NixOS https://github.com/input-output-hk" \
    --no-link --keep-going -f default.nix \
-   --argstr compiler-nix-name $GHC
+   --argstr compiler-nix-name $GHC \
+   --arg CADerivationsEnabled $NIX_CA_DERIVATIONS
 echo >& 2
 
 printf "*** Running the unit tests... " >& 2

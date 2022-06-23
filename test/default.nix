@@ -4,6 +4,7 @@
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name
+, CADerivationsEnabled ? false
 , checkMaterialization ? false
 }:
 
@@ -206,6 +207,8 @@ let
     external-static-plugin = callTest ./external-static-plugin { inherit compiler-nix-name; };
     exe-dlls = callTest ./exe-dlls { inherit util compiler-nix-name; };
     exe-lib-dlls = callTest ./exe-lib-dlls { inherit util compiler-nix-name; };
+    ca-derivations = callTest ./ca-derivations { inherit compiler-nix-name CADerivationsEnabled; };
+    ca-derivations-include = callTest ./ca-derivations-include { inherit compiler-nix-name CADerivationsEnabled; };
 
     unit = unitTests;
   };
