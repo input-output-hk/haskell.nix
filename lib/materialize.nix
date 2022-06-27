@@ -24,7 +24,7 @@
 }: derivation:
 
 let
-  inherit (derivation) name;
+  name = derivation.name + pkgs.lib.optionalString (derivation ? version) "-${derivation.version}";
 
   traceIgnoringSha256 = reason: x:
     if sha256 != null
@@ -38,8 +38,8 @@ let
 
   unchecked =
     let
-      sha256message = "To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
-      materializeMessage = "To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
+      sha256message = "${name}: To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
+      materializeMessage = "${name}: To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
