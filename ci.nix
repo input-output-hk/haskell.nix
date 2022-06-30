@@ -59,9 +59,12 @@
       && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"]) 
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc923"]) 
-       || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
+  } // lib.optionalAttrs ((nixpkgsName == "unstable"
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc902" "ghc923"]) 
+       || (system == "x86_64-darwin" && __elem compiler-nix-name [])))
+    || (nixpkgsName == "R2205"
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107"]) 
+       || (system == "x86_64-darwin" && __elem compiler-nix-name [])))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923"]) {
     # Musl cross only works on linux
