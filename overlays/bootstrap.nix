@@ -204,6 +204,8 @@ in {
                    ++ fromUntil "8.10.1" "9.0" ./patches/ghc/ghc-8.10-windres-arg-fix.diff # Backported fix needed for newer nixpkgs.  See https://gitlab.haskell.org/ghc/ghc/-/commit/3302f42a57a9e26423e30221e455de5a173cd6c5
                    ++ fromUntil "9.0.1"  "9.2" ./patches/ghc/ghc-9.0-windres-arg-fix.diff
                    ++ fromUntil "9.2.1"  "9.4" ./patches/ghc/ghc-9.2-windres-arg-fix.diff
+                   ++ fromUntil "9.0.1"  "9.2" ./patches/ghc/ghc-9.0-fix-linking-with-non-zero-base-address.diff # See https://gitlab.haskell.org/hsyl20/ghc/-/commit/c3b1f100156e9d3d9fee87cfe2650c8b425ac3ee
+                   ++ fromUntil "9.2.1"  "9.4" ./patches/ghc/ghc-9.2-fix-linking-with-non-zero-base-address.diff
                   )
                 ++ final.lib.optional (versionAtLeast "8.6.5") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
@@ -220,6 +222,7 @@ in {
                 ++ fromUntil "8.10"   "9.2"    ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
                 ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
                 ++ fromUntil "8.10"   "9.1"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
+
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
