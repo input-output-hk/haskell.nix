@@ -39,37 +39,28 @@ let
 
   defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
-  # Get the Cabal lib used to build `cabal-install`.
-  # To avoid infinite recursion we have to leave this out for packages
-  # needed to build `cabal-install`.
-  # We always do this for ghcjs as the patched version of Cabal is needed.
-  cabalLibDepends = lib.optional (
-    stdenv.hostPlatform.isGhcjs || (
-        !builtins.elem package.identifier.name
-          ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
-           "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
-           "containers" "binary" "mtl" "text" "process" "parsec"]
-      )
-    )
-    buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
+  # This is the `Cabal` library that was built for `cabal-install` to use.
+  # It makes sense to use this version (when possible) because it will match the behavior of
+  # building with `cabal-install` (including fixes that may not be in the
+  # version of Cabal bundled with GHC).
+  cabalFromCabalInstall = buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
 
-  # This logic is needed so that we don't get duplicate packages if we
-  # add a custom Cabal package to the dependencies.  That way custom
-  # setups won't complain about e.g. binary from the Cabal dependencies
-  # and binary from the global package-db.
-  nonReinstallablePkgs = if (
-    stdenv.hostPlatform.isGhcjs || (
+  # Check there is no chance we are building `cabalFromCabalInstall`.  Using `cabalFromCabalInstall`
+  # to build itseld would cause infinite recursion.
+  useCabalFromCabalInstall =
+        # `cabalFromCabalInstall` is not cross compiled
+        stdenv.buildPlatform != stdenv.hostPlatform
+      ||
+        # These are the dependencies of `Cabal`
         !builtins.elem package.identifier.name
           ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
            "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
-           "containers" "binary" "mtl" "text" "process" "parsec"]
-      )
-    ) then [] else null;
+           "containers" "binary" "mtl" "text" "process" "parsec"];
 
   defaultSetup = setup-builder ({
     name = "${ghc.targetPrefix}default-Setup";
     component = {
-      depends = config.setup-depends ++ cabalLibDepends;
+      depends = config.setup-depends ++ lib.optional useCabalFromCabalInstall cabalFromCabalInstall;
       libs = [];
       frameworks = [];
       doExactConfig = false;
@@ -103,7 +94,13 @@ let
       cat ${defaultSetupSrc} > $out/Setup.hs
     '';
     inherit defaultSetupSrc;
-  } // (if nonReinstallablePkgs == null then {} else { inherit nonReinstallablePkgs; }));
+  } // lib.optionalAttrs useCabalFromCabalInstall {
+    # This is needed so that we don't get duplicate packages when we
+    # add a custom Cabal package to the dependencies.  That way custom
+    # setups won't complain about e.g. binary from the Cabal dependencies
+    # and binary from the global package-db.
+    nonReinstallablePkgs = [];
+  });
 
   # buildPackages.runCommand "default-Setup" { nativeBuildInputs = [(ghc.passthru.buildGHC or ghc)]; } ''
   #   cat ${defaultSetupSrc} > Setup.hs
@@ -134,7 +131,7 @@ in rec {
   checks = pkgs.recurseIntoAttrs (builtins.mapAttrs
     (_: d: haskellLib.check d)
       (lib.filterAttrs (_: d: d.config.doCheck) components.tests));
-  inherit (package) identifier detailLevel isLocal isProject;
+  inherit (package) identifier detailLevel isLocal isProject buildType;
   inherit setup cabalFile;
   isHaskell = true;
   inherit src;

@@ -71,9 +71,12 @@ let
   removeSelectedInputs =
     lib.filter (input: !(isSelectedComponent input));
 
-  # The configs of all the selected components
+  # The configs of all the selected components.
+  # This excludes the `setup` dependencies of `Simple` packages, because
+  # `cabal-install` does not build a `Setup` executable for `Simple` packages.
   selectedConfigs = map (c: c.config) selectedComponents
-    ++ lib.optionals packageSetupDeps (map (p: p.setup.config) selectedPackages);
+    ++ lib.optionals packageSetupDeps (map (p: p.setup.config)
+         (lib.filter (p: p.buildType != "Simple") selectedPackages));
 
   name = if lib.length selectedPackages == 1
     then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
