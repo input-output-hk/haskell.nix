@@ -62,7 +62,7 @@
   } // lib.optionalAttrs ((nixpkgsName == "unstable"
       && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc902" "ghc923"]) 
        || (system == "x86_64-darwin" && __elem compiler-nix-name [])))
-    || (nixpkgsName == "R2205"
+    || (nixpkgsName == "R2111"
       && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107"]) 
        || (system == "x86_64-darwin" && __elem compiler-nix-name [])))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
