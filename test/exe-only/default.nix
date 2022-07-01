@@ -36,7 +36,7 @@ in recurseIntoAttrs {
       '' else ''
         printf "checking that executable is dynamically linked to system libraries... " >& 2
       '' + optionalString stdenv.isLinux ''
-        ldd $exe | grep 'libc\.so'
+        ldd $exe | grep libpthread
       '' + optionalString stdenv.isDarwin ''
         otool -L $exe |grep .dylib
     '') + ''
