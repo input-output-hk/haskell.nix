@@ -36,7 +36,6 @@ pkgs:
     "gdk-x11-2.0"                        = [ pkgs."gdk_x11" ];
     "gdk-x11-3.0"                        = [ pkgs."gtk3" ];
     "gio-2.0"                            = [ pkgs."glib" ];
-    "glew"                               = [ pkgs."glew" ];
     "glib-2.0"                           = [ pkgs."glib" ];
     "GL"                                 = [ pkgs."libGL" ];
     "GLU"                                = [ pkgs."libGLU" pkgs."libGL" ];
