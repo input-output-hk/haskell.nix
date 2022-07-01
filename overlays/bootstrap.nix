@@ -200,11 +200,7 @@ in {
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ++ final.lib.optionals final.targetPlatform.isWindows
-                  (   fromUntil "8.10.4" "9.3" ./patches/ghc/ghc-8.10-z-drive-fix.patch
-                   ++ fromUntil "8.10.1" "9.0" ./patches/ghc/ghc-8.10-windres-arg-fix.diff # Backported fix needed for newer nixpkgs.  See https://gitlab.haskell.org/ghc/ghc/-/commit/3302f42a57a9e26423e30221e455de5a173cd6c5
-                   ++ fromUntil "9.0.1"  "9.2" ./patches/ghc/ghc-9.0-windres-arg-fix.diff
-                   ++ fromUntil "9.2.1"  "9.4" ./patches/ghc/ghc-9.2-windres-arg-fix.diff
-                  )
+                  (fromUntil "8.10.4" "9.3"    ./patches/ghc/ghc-8.10-z-drive-fix.patch)
                 ++ final.lib.optional (versionAtLeast "8.6.5") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
