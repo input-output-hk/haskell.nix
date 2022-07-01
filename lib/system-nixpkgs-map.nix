@@ -31,6 +31,7 @@ in
   pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
+  GLEW = [ glew ];
   GLU = [ libGLU ];
   alut = [ freealut ];
   X11 = with xorg; [ libX11 ];
@@ -113,7 +114,6 @@ in
   GeoIP = [ geoip ];
   pulse-simple = [ libpulseaudio ];
   oath = [ liboauth ];
-  GLEW = [ glew ];
 }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
