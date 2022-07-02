@@ -117,6 +117,7 @@ in {
   # `reinstallableLibGhc` build more like the boot version.
   # See https://github.com/input-output-hk/haskell.nix/issues/1512
   packages.ghc.flags.ghci = true;
+  packages.ghc.flags.internal-interpreter = true;
   packages.ghci.flags.ghci = true;
   packages.ghci.flags.internal-interpreter = true;
 }
