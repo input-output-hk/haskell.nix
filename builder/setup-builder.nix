@@ -82,7 +82,6 @@ let
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
-        ./Setup --version || (echo Setup --version fails && exit 1)
         runHook postBuild
       '';
 
@@ -90,6 +89,7 @@ let
         runHook preInstall
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
+        $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
     }
