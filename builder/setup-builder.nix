@@ -82,6 +82,7 @@ let
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
+        ./Setup --version || (echo Setup --version fails && exit 1)
         runHook postBuild
       '';
 
