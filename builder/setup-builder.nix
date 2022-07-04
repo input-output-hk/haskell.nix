@@ -82,7 +82,7 @@ let
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
-        runHook preBuild
+        runHook postBuild
       '';
 
       installPhase = ''

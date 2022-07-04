@@ -25,6 +25,16 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
+    # TODO remove this when `dependent-sum-0.7.1.0` constraint on `some` has been updated.
+    # See https://github.com/haskell/haskell-language-server/issues/2969
+    # and https://github.com/obsidiansystems/dependent-sum/issues/71
+    haskell-language-server = {
+      cabalProject = ''
+        packages: .
+        constraints: dependent-sum >=0.7.1.0
+      '';
+    };
+
     lsp-test = {
       cabalProject = ''
         packages: .

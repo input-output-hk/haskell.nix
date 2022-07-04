@@ -13,7 +13,9 @@ let self =
 , autoreconfHook
 , bash
 
-, libiconv ? null, ncurses
+, libiconv ? null
+
+, ncurses # TODO remove this once the cross compilers all work without
 
 , installDeps
 
@@ -41,8 +43,9 @@ let self =
 
 , enableDWARF ? false
 
-, # Whether to build terminfo.  Musl fails to build terminfo as ncurses seems to be linked to glibc
-  enableTerminfo ? !stdenv.targetPlatform.isWindows && !stdenv.targetPlatform.isMusl
+, enableTerminfo ?
+    # Terminfo does not work on older ghc cross arm and windows compilers
+     (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
 
 , # Wheter to build in NUMA support
   enableNUMA ? true
@@ -144,11 +147,13 @@ let
   '';
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional enableTerminfo [ ncurses ncurses.dev ]
+  libDeps = platform: lib.optional enableTerminfo [ targetPackages.ncurses targetPackages.ncurses.dev ]
     ++ [targetLibffi]
     ++ lib.optional (!enableIntegerSimple) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
-    ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl;
+    ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
+    # Even with terminfo disabled some older ghc cross arm and windows compilers do not build unless `ncurses` is found and they seem to want the buildPlatform version
+    ++ lib.optional (!enableTerminfo && haskell-nix.haskellLib.isCrossTarget && (stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) && builtins.compareVersions ghc-version "8.10" < 0) ncurses.dev;
 
   toolsForTarget =
     if hostPlatform == buildPlatform then
@@ -240,7 +245,7 @@ stdenv.mkDerivation (rec {
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-        "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
+        "--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
     ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
     ] ++ lib.optional (!enableIntegerSimple) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"

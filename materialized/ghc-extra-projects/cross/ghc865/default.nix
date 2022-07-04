@@ -7,7 +7,7 @@
         "network".revision = (((hackage."network")."2.8.0.1").revisions).default;
         "bytestring".revision = (((hackage."bytestring")."0.10.8.2").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
-        "terminfo".revision = (((hackage."terminfo")."0.4.1.5").revisions).default;
+        "terminfo".revision = (((hackage."terminfo")."0.4.1.2").revisions).default;
         "ghc-heap".revision = (((hackage."ghc-heap")."8.6.5").revisions).default;
         "ghc-prim".revision = (((hackage."ghc-prim")."0.5.3").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.6.5").revisions).default;
@@ -32,6 +32,7 @@
           "array" = "0.5.3.0";
           "bytestring" = "0.10.8.2";
           "filepath" = "1.4.2.1";
+          "terminfo" = "0.4.1.2";
           "ghc-heap" = "8.6.5";
           "ghc-prim" = "0.5.3";
           "ghc-boot-th" = "8.6.5";
