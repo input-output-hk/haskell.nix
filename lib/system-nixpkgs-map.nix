@@ -31,6 +31,7 @@ in
   pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
+  GLEW = [ glew ];
   GLU = [ libGLU ];
   alut = [ freealut ];
   X11 = with xorg; [ libX11 ];
