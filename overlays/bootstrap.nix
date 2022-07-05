@@ -93,7 +93,13 @@ in {
                 happy = final.haskell-nix.bootstrap.packages.happy-unchecked;
                 hscolour = final.haskell-nix.bootstrap.packages.hscolour-unchecked;
             };
-            sphinx = with final.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
+            # Using nixpkgs 22.05 version of sphinx is a temporary work around for
+            # https://github.com/NixOS/nixpkgs/issues/178954
+            # TODO remove this work around when we nex update nixpks-unstable
+            sphinx =
+              if final.lib.version == "22.11pre-git" && final.stdenv.hostPlatform.isDarwin && final.stdenv.hostPlatform.isAarch64
+                then (import prev.haskell-nix.sources.nixpkgs-2205 { inherit (prev) system; }).sphinx
+                else with final.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
             hsc2hs-align-conditionals-patch = final.fetchpatch {
                 url = "https://git.haskell.org/hsc2hs.git/patch/738f3666c878ee9e79c3d5e819ef8b3460288edf";
                 sha256 = "0plzsbfaq6vb1023lsarrjglwgr9chld4q3m99rcfzx0yx5mibp3";
