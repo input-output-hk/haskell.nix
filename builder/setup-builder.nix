@@ -118,6 +118,10 @@ let
         echo Check ./Setup
         ./Setup --version || (echo ./Setup --version fails && exit 1)
 
+        echo $out/bin/hello
+        install ./hello $out/bin/hello
+        $out/bin/hello
+
         echo Check $out/bin/Setup
         ls -l .
         ls -l $out/bin/Setup
