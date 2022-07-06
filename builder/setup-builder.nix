@@ -70,6 +70,7 @@ let
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
         runHook preBuild
+        ls -l
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
         fi
@@ -101,7 +102,12 @@ let
         EOF
         ghc hello.hs -threaded --make -o ./hello
         ./hello
-        
+
+        cat ${defaultSetupSrc} > hello2.hs
+        ghc hello2.hs -threaded ${if includeGhcPackage then "-package ghc " else ""
+            }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./hello2
+        ./hello2
+
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
