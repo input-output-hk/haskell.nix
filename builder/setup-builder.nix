@@ -93,6 +93,10 @@ let
 
       installPhase = ''
         runHook preInstall
+
+        echo Check ./Setup
+        ./Setup --version || (echo ./Setup --version fails && exit 1)
+
         mkdir -p $out/bin
         cp ./Setup $out/bin/Setup
 
@@ -114,9 +118,6 @@ let
 
         echo Check hello-from-build
         ./hello-from-build
-
-        echo Check ./Setup
-        ./Setup --version || (echo ./Setup --version fails && exit 1)
 
         echo Check $out/bin/hello
         install ./hello $out/bin/hello
