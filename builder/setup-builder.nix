@@ -94,7 +94,7 @@ let
       installPhase = ''
         runHook preInstall
         mkdir -p $out/bin
-        install ./Setup $out/bin/Setup
+        cp ./Setup $out/bin/Setup
 
         # Debug code to figure out what is going wrong on hydra
         ls -l $out/bin/Setup
