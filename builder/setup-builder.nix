@@ -75,6 +75,8 @@ let
         main = putStrLn "Compiled App Runs OK"
         EOF
         ls -l
+
+        mkdir -p $out/bin
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
         fi
@@ -82,73 +84,15 @@ let
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
-            ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./hello3
-            setup=$(pwd)/Setup
+                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o $out/bin/Setup
           fi
         done
-        [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
-        ghc hello.hs -threaded --make -o ./hello-from-build
+        [ -f $out/bin/Setup ] || (echo Failed to build Setup && exit 1)
         runHook postBuild
       '';
 
       installPhase = ''
         runHook preInstall
-
-        echo Check ./Setup
-        ./Setup --version || (echo ./Setup --version fails && exit 1)
-
-        mkdir -p $out/bin
-        cp ./Setup $out/bin/Setup
-
-        # Debug code to figure out what is going wrong on hydra
-        ls -l $out/bin/Setup
-        file $out/bin/Setup
-        ghc --version
-        ghc-pkg list
-
-        echo Check hello
-        ghc hello.hs -threaded --make -o ./hello
-        ./hello
-
-        echo Check hello2
-        cat ${defaultSetupSrc} > hello2.hs
-        ghc hello2.hs -threaded ${if includeGhcPackage then "-package ghc " else ""
-            }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./hello2
-        ./hello2 --version
-
-        echo Check hello-from-build
-        ./hello-from-build
-
-        echo Check $out/bin/hello
-        install ./hello $out/bin/hello
-        $out/bin/hello
-
-        echo Check $out/bin/hello4
-        cat ${defaultSetupSrc} > hello4.hs
-        ghc hello4.hs -threaded ${if includeGhcPackage then "-package ghc " else ""
-            }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o $out/bin/hello4
-        $out/bin/hello4 --version
-
-        echo Check $out/bin/hello2
-        install ./hello2 $out/bin/hello2
-        $out/bin/hello2 --version
-
-        echo Check $out/bin/hello3
-        install ./hello3 $out/bin/hello3
-        $out/bin/hello3 --version
-
-        echo install is
-        which install
-
-        ls -l .
-        ls -l $out/bin
-
-        echo 'diff <(xxd ./Setup) <(xxd $out/bin/Setup)'
-        diff <(xxd ./Setup) <(xxd $out/bin/Setup)
-
-        echo Check $out/bin/Setup
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
