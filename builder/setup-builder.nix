@@ -70,12 +70,6 @@ let
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
         runHook preBuild
-        cat << EOF > hello.hs
-        module Main where
-        main = putStrLn "Compiled App Runs OK"
-        EOF
-        ls -l
-
         mkdir -p $out/bin
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
