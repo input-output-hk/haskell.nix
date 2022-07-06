@@ -118,13 +118,20 @@ let
         echo Check ./Setup
         ./Setup --version || (echo ./Setup --version fails && exit 1)
 
-        echo $out/bin/hello
+        echo Check $out/bin/hello
         install ./hello $out/bin/hello
         $out/bin/hello
 
+        echo Check $out/bin/hello2
+        install ./hello $out/bin/hello2
+        $out/bin/hello2
+
+        echo diff ./Setup $out/bin/Setup
+        diff ./Setup $out/bin/Setup
+
         echo Check $out/bin/Setup
         ls -l .
-        ls -l $out/bin/Setup
+        ls -l $out/bin
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
