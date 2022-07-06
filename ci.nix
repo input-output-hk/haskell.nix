@@ -24,7 +24,7 @@
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
+    {
       ghc865 = false;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (

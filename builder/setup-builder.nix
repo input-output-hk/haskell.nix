@@ -90,6 +90,10 @@ let
         cp ./Setup $out/bin/Setup
         diff ./Setup $out/bin/Setup
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
+
+        echo IT WORKED! But stopping here so we can run more tests.
+        exit 1
+
         runHook postInstall
       '';
     }
