@@ -1083,7 +1083,7 @@ in {
                 module Main where
                 main = putStrLn "Compiled App Runs OK"
                 EOF
-                $out/bin/ghc hello.hs
+                $out/bin/ghc hello.hs -threaded --make -o ./hello
                 ./hello
               '';
             }) // {

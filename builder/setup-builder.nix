@@ -89,6 +89,19 @@ let
         runHook preInstall
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
+
+        # Debug code to figure out what is going wrong on hydra
+        ls -l $out/bin/Setup
+        file $out/bin/Setup
+        ghc --version
+        ghc-pkg list
+        cat << EOF > hello.hs
+        module Main where
+        main = putStrLn "Compiled App Runs OK"
+        EOF
+        ghc hello.hs -threaded --make -o ./hello
+        ./hello
+        
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
