@@ -83,6 +83,8 @@ let
             echo Compiling package $f
             ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
                 }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
+            ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
+                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./hello3
             setup=$(pwd)/Setup
           fi
         done
@@ -124,18 +126,23 @@ let
         $out/bin/hello
 
         echo Check $out/bin/hello2
-        install ./hello $out/bin/hello2
-        $out/bin/hello2
+        install ./hello2 $out/bin/hello2
+        $out/bin/hello2 --version
+
+        echo Check $out/bin/hello3
+        install ./hello3 $out/bin/hello3
+        $out/bin/hello3 --version
 
         echo install is
         which install
+
+        ls -l .
+        ls -l $out/bin
 
         echo 'diff <(xxd ./Setup) <(xxd $out/bin/Setup)'
         diff <(xxd ./Setup) <(xxd $out/bin/Setup)
 
         echo Check $out/bin/Setup
-        ls -l .
-        ls -l $out/bin
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
