@@ -70,6 +70,10 @@ let
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
         runHook preBuild
+        cat << EOF > hello.hs
+        module Main where
+        main = putStrLn "Compiled App Runs OK"
+        EOF
         ls -l
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
@@ -83,6 +87,7 @@ let
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
+        ghc hello.hs -threaded --make -o ./hello-from-build
         runHook postBuild
       '';
 
@@ -98,10 +103,6 @@ let
         ghc-pkg list
 
         echo Check hello
-        cat << EOF > hello.hs
-        module Main where
-        main = putStrLn "Compiled App Runs OK"
-        EOF
         ghc hello.hs -threaded --make -o ./hello
         ./hello
 
@@ -110,6 +111,12 @@ let
         ghc hello2.hs -threaded ${if includeGhcPackage then "-package ghc " else ""
             }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./hello2
         ./hello2 --version
+
+        echo Check hello-from-build
+        ./hello-from-build
+
+        echo Check ./Setup
+        ./Setup --version || (echo ./Setup --version fails && exit 1)
 
         echo Check $out/bin/Setup
         ls -l .
