@@ -96,6 +96,8 @@ let
         file $out/bin/Setup
         ghc --version
         ghc-pkg list
+
+        echo Check hello
         cat << EOF > hello.hs
         module Main where
         main = putStrLn "Compiled App Runs OK"
@@ -103,11 +105,15 @@ let
         ghc hello.hs -threaded --make -o ./hello
         ./hello
 
+        echo Check hello2
         cat ${defaultSetupSrc} > hello2.hs
         ghc hello2.hs -threaded ${if includeGhcPackage then "-package ghc " else ""
             }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./hello2
-        ./hello2
+        ./hello2 --version
 
+        echo Check $out/bin/Setup
+        ls -l .
+        ls -l $out/bin/Setup
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
