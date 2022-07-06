@@ -125,6 +125,12 @@ let
         install ./hello $out/bin/hello
         $out/bin/hello
 
+        echo Check $out/bin/hello4
+        cat ${defaultSetupSrc} > hello4.hs
+        ghc hello4.hs -threaded ${if includeGhcPackage then "-package ghc " else ""
+            }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o $out/bin/hello4
+        $out/bin/hello4 --version
+
         echo Check $out/bin/hello2
         install ./hello2 $out/bin/hello2
         $out/bin/hello2 --version
