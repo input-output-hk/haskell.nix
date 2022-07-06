@@ -47,7 +47,7 @@ let
       buildInputs = component.libs
         ++ component.frameworks
         ++ builtins.concatLists component.pkgconfig;
-      nativeBuildInputs = [ghc] ++ executableToolDepends;
+      nativeBuildInputs = [ghc pkgs.xxd pkgs.which] ++ executableToolDepends;
 
       passthru = {
         inherit (package) identifier;
@@ -126,8 +126,11 @@ let
         install ./hello $out/bin/hello2
         $out/bin/hello2
 
-        echo diff ./Setup $out/bin/Setup
-        diff ./Setup $out/bin/Setup
+        echo install is
+        which install
+
+        echo 'diff <(xxd ./Setup) <(xxd $out/bin/Setup)'
+        diff <(xxd ./Setup) <(xxd $out/bin/Setup)
 
         echo Check $out/bin/Setup
         ls -l .
