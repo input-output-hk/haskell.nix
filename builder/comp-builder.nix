@@ -356,6 +356,14 @@ let
       description = package.synopsis or "";
       license = haskellLib.cabalToNixpkgsLicense package.license;
       platforms = if platforms == null then lib.platforms.all else platforms;
+    } // lib.optionalAttrs (haskellLib.isExecutableType componentId) {
+      # Set main executable name for executable components, so that `nix run` in
+      # nix flakes will work correctly. When not set, `nix run` would (typically
+      # erroneously) deduce the executable name from the derivation name and
+      # attempt to run, for example,
+      # `/nix/store/...-project-exe-app-0.1.0.0/bin/project-exe-app` instead of
+      # `/nix/store/...-project-exe-app-0.1.0.0/bin/app`.
+      mainProgram = exeName;
     };
 
     propagatedBuildInputs =
