@@ -47,7 +47,7 @@ let
       buildInputs = component.libs
         ++ component.frameworks
         ++ builtins.concatLists component.pkgconfig;
-      nativeBuildInputs = [ghc pkgs.xxd pkgs.which] ++ executableToolDepends;
+      nativeBuildInputs = [ghc] ++ executableToolDepends;
 
       passthru = {
         inherit (package) identifier;
@@ -70,7 +70,6 @@ let
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
         runHook preBuild
-        mkdir -p $out/bin
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
         fi
@@ -78,15 +77,18 @@ let
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o $out/bin/Setup
+                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
           fi
         done
-        [ -f $out/bin/Setup ] || (echo Failed to build Setup && exit 1)
+        [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
         runHook postBuild
       '';
 
       installPhase = ''
         runHook preInstall
+        mkdir -p $out/bin
+        cp ./Setup $out/bin/Setup
+        diff ./Setup $out/bin/Setup
         $out/bin/Setup --version || (echo Setup --version fails && exit 1)
         runHook postInstall
       '';
