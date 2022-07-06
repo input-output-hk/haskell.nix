@@ -1074,7 +1074,18 @@ in {
         # where a boot compiler is expected.
         compiler = builtins.mapAttrs (_: v:
             v.overrideAttrs (drv: {
-              postInstall = (drv.postInstall or "") + installDeps "";
+              postInstall = (drv.postInstall or "") + installDeps ""
+                # Check that the compiler works as in some cases we have had issues
+                # where the executables built by cached versions of this derivation
+                # fail to run on macOS.
+                + ''
+                cat << EOF > hello.hs
+                module Main where
+                main = putStrLn "Compiled App Runs OK"
+                EOF
+                $out/bin/ghc hello.hs
+                ./hello
+              '';
             }) // {
               useLLVM = false;
               isHaskellNixBootCompiler = true;
