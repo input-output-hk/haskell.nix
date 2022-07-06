@@ -73,23 +73,23 @@ let
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
         fi
+        mkdir -p $out/bin
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
+                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o $out/bin/Setup
           fi
         done
-        [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
+        [ -f $out/bin/Setup ] || (echo Failed to build Setup && exit 1)
         runHook postBuild
       '';
 
       installPhase = ''
         runHook preInstall
-        mkdir -p $out/bin
-        cp ./Setup $out/bin/Setup
-        diff ./Setup $out/bin/Setup
-        $out/bin/Setup --version || (echo Setup --version fails && exit 1)
+        cp $out/bin/Setup ./Setup
+        diff $out/bin/Setup ./Setup
+        ./Setup --version || (echo Setup --version fails && exit 1)
 
         echo IT WORKED! But stopping here so we can run more tests.
         exit 1
