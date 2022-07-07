@@ -69,15 +69,6 @@ in { haskell-nix = prev.haskell-nix // {
       })];
     };
 
-    ormolu = {
-      modules = [
-        ({ lib, ... }: {
-          options.nonReinstallablePkgs =
-            lib.mkOption { apply = lib.remove "Cabal"; };
-        })
-      ];
-    };
-
   }."${name}" or {};
 
 }; }
