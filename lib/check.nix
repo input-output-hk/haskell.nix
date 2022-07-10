@@ -4,6 +4,14 @@ drv:
 let
   component = drv.config;
 
+  subdir =
+    if drv?source
+      then
+        drv.srcSubDir or ""
+      else
+        # srcOnly returns just the subdir, so we're already in it.
+        "";
+
 # This derivation can be used to execute test component.
 # The $out of the derivation is a file containing the resulting
 # stdout output.
@@ -30,8 +38,8 @@ in stdenv.mkDerivation ({
     mkdir $out
     ${
       # Change to the source sub directory if there is one.
-      lib.optionalString (drv.srcSubDir or "" != "") ''
-        cd ${lib.removePrefix "/" drv.srcSubDir}
+      lib.optionalString (subdir != "") ''
+        cd ${lib.removePrefix "/" subdir}
       ''
     }
 
