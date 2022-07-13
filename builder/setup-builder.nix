@@ -78,22 +78,17 @@ let
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o $out/bin/Setup
+                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
           fi
         done
-        [ -f $out/bin/Setup ] || (echo Failed to build Setup && exit 1)
+        [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
         runHook postBuild
       '';
 
       installPhase = ''
         runHook preInstall
-        cp $out/bin/Setup ./Setup
-        diff $out/bin/Setup ./Setup
-        ./Setup --version || (echo Setup --version fails && exit 1)
-
-        echo IT WORKED! But stopping here so we can run more tests.
-        exit 1
-
+        mkdir -p $out/bin
+        install ./Setup $out/bin/Setup
         runHook postInstall
       '';
     }
