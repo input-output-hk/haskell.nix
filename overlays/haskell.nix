@@ -276,9 +276,7 @@ final: prev: {
 
         # Function to call stackToNix
         callStackToNix = import ../lib/call-stack-to-nix.nix {
-            pkgs = final.evalPackages.pkgs;
-            inherit (final.evalPackages.pkgs) runCommand;
-            inherit (final.evalPackages.haskell-nix) mkCacheFile materialize haskellLib;
+            pkgs = final;
         };
 
         # given a source location call `cabal-to-nix` (from nix-tools) on it
@@ -383,8 +381,7 @@ final: prev: {
           '';
 
         genStackCache = import ../lib/stack-cache-generator.nix {
-            inherit (final.evalPackages) pkgs;
-            inherit (final.evalPackages.haskell-nix) haskellLib;
+            pkgs = final;
         };
 
         mkCacheModule = cache:
@@ -428,11 +425,9 @@ final: prev: {
         # Resulting nix files are added to nix-plan subdirectory.
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
-            inherit (final.buildPackages.haskell-nix) haskellLib materialize;
+            inherit (final.buildPackages.haskell-nix) haskellLib;
             pkgs = final.buildPackages.pkgs;
-            inherit (final) evalPackages;
-            inherit (final.evalPackages.haskell-nix) dotCabal;
-            inherit (final.buildPackages.pkgs) runCommand symlinkJoin cacert;
+            inherit (final.buildPackages.pkgs) runCommand cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith

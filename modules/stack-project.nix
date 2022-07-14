@@ -42,7 +42,7 @@ with types;
     };
     nix-tools = mkOption {
       type = nullOr package;
-      default = pkgs.evalPackages.haskell-nix.internal-nix-tools;
+      default = null;
       description = "nix-tools to use when converting the `plan.json` to nix";
     };
 

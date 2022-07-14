@@ -1,6 +1,6 @@
 # Generate cache entries for dependencies of package defined in `src`
 
-{ pkgs, haskellLib }:
+{ pkgs }@defaults:
 { src
 , stackYaml    ? "stack.yaml"
 , sha256map    ? null
@@ -17,10 +17,18 @@
     then { location, tag, ...}: branchMap."${location}"."${tag}" or null
     else _: null
 , resolverSha256 ? null
-, nix-tools ? pkgs.haskell-nix.internal-nix-tools # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
+, nix-tools ? null
+, evalSystem ? null
 , ...
-}:
+}@args:
 let
+    pkgs = defaults.pkgs.haskell-nix.evalPackagesFor evalSystem;
+    nix-tools = if args.nix-tools != null
+      then args.nix-tools
+      else pkgs.haskell-nix.internal-nix-tools; # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
+    inherit (pkgs) runCommand;
+    inherit (pkgs.haskell-nix) haskellLib;
+
     # We only care about the stackYaml file.  If src is a local directory
     # we want to avoid recalculating the cache unless the stack.yaml file
     # changes.

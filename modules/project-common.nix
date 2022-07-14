@@ -24,6 +24,18 @@ with lib.types;
           shell = { tools.cabal = {}; crossPlatforms = p: [ p.ghcjs ]; }
       '';
     };
+    evalSystem = mkOption {
+      type = nullOr str;
+      default = null;
+      description = ''
+        Specifies the system on which `cabal configure` and `plan-to-nix` should run.
+        If not specified the `evalPackages` default will be used (builtins.currentSystem or
+        the `buildPackages` system).
+        This argument is useful when using pure flake evalution (where builtins.currentSystem does
+        not exist) when there are no builders present for the some or all of the flakes supported
+        systems (so `buildPackages` also fails).
+      '';
+    };
     hsPkgs = lib.mkOption {
       type = lib.types.unspecified;
     };
