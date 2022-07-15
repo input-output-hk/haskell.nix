@@ -70,18 +70,25 @@ in pkgs.runCommand (name + "-coverage-report")
       local -n tixFs=$2
       local outFile="$3"
 
-      local hpcSumCmd=("hpc" "sum" "--union" "--output=$outFile")
+      if (( "''${#tixFs[@]}" > 0 )); then
+        local hpcSumCmd=("hpc" "sum" "--union" "--output=$outFile")
 
-      for module in "''${includedModules[@]}"; do
-        hpcSumCmd+=("--include=$module")
-      done
+        for module in "''${includedModules[@]}"; do
+          hpcSumCmd+=("--include=$module")
+        done
 
-      for tixFile in "''${tixFs[@]}"; do
-        hpcSumCmd+=("$tixFile")
-      done
+        for tixFile in "''${tixFs[@]}"; do
+          hpcSumCmd+=("$tixFile")
+        done
 
-      echo "''${hpcSumCmd[@]}"
-      eval "''${hpcSumCmd[@]}"
+        echo "''${hpcSumCmd[@]}"
+        eval "''${hpcSumCmd[@]}"
+      else
+        # If there are no tix files we output an empty tix file so that we can
+        # markup an empty HTML coverage report. This is preferable to failing to
+        # output a HTML report.
+        echo 'Tix []' > $outFile
+      fi
     }
 
     function findModules() {
@@ -153,19 +160,17 @@ in pkgs.runCommand (name + "-coverage-report")
 
     # Sum tix files to create a tix file with all relevant tix
     # information and markup a HTML report from this info.
-    if (( "''${#tixFiles[@]}" > 0 )); then
-      local sumTixFile="$out/share/hpc/vanilla/tix/${name}/${name}.tix"
-      local markupOutDir="$out/share/hpc/vanilla/html/${name}"
+    local sumTixFile="$out/share/hpc/vanilla/tix/${name}/${name}.tix"
+    local markupOutDir="$out/share/hpc/vanilla/html/${name}"
 
-      # Sum all of our tix file, including modules from any local package
-      sumTix allMixModules tixFiles "$sumTixFile"
+    # Sum all of our tix file, including modules from any local package
+    sumTix allMixModules tixFiles "$sumTixFile"
 
-      # Markup a HTML report, included modules from only this package
-      markup srcDirs mixDirs pkgMixModules "$markupOutDir" "$sumTixFile"
+    # Markup a HTML report, included modules from only this package
+    markup srcDirs mixDirs pkgMixModules "$markupOutDir" "$sumTixFile"
 
-      # Provide a HTML zipfile and Hydra links
-      ( cd "$markupOutDir" ; zip -r $out/share/hpc/vanilla/${name}-html.zip . )
-      echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
-      echo "file zip $out/share/hpc/vanilla/${name}-html.zip" >> $out/nix-support/hydra-build-products
-    fi
+    # Provide a HTML zipfile and Hydra links
+    ( cd "$markupOutDir" ; zip -r $out/share/hpc/vanilla/${name}-html.zip . )
+    echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
+    echo "file zip $out/share/hpc/vanilla/${name}-html.zip" >> $out/nix-support/hydra-build-products
   ''
