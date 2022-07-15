@@ -10,19 +10,12 @@ coverageReports:
 let
   toBashArray = arr: "(" + (lib.concatStringsSep " " arr) + ")";
 
-  # Create table rows for a project coverage index page that look something like:
-  #
-  # | Package          |
-  # |------------------|
-  # | cardano-shell    |
-  # | cardano-launcher |
-  coverageTableRows = coverageReport:
+  # Create a list element for a project coverage index page.
+  coverageListElement = coverageReport:
       ''
-      <tr>
-        <td>
-          <a href="${coverageReport.passthru.name}/hpc_index.html">${coverageReport.passthru.name}</href>
-        </td>
-      </tr>
+      <li>
+        <a href="${coverageReport.passthru.name}/hpc_index.html">${coverageReport.passthru.name}</a>
+      </li>
       '';
 
   projectIndexHtml = pkgs.writeText "index.html" ''
@@ -31,16 +24,22 @@ let
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     </head>
     <body>
-      <table border="1" width="100%">
-        <tbody>
-          <tr>
-            <th>Report</th>
-          </tr>
-
-          ${with lib; concatStringsSep "\n" (map coverageTableRows coverageReports)}
-
-        </tbody>
-      </table>
+      <div>
+        <h2>Union Report</h2>
+        <p>The following report shows how each module is covered by any test in the project:</p>
+        <ul>
+          <li>
+            <a href="all/hpc_index.html">all</a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h2>Individual Reports</h2>
+        <p>The following reports show how each module is covered by tests in its own package:</p>
+        <ul>
+          ${with lib; concatStringsSep "\n" (map coverageListElement coverageReports)}
+        </ul>
+      </div>
     </body>
   </html>
   '';
