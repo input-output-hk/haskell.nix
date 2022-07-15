@@ -25,6 +25,9 @@ let
     </head>
     <body>
       <div>
+        WARNING: Modules with no coverage are not included in any of these reports, this is just how HPC works under the hood.
+      </div>
+      <div>
         <h2>Union Report</h2>
         <p>The following report shows how each module is covered by any test in the project:</p>
         <ul>
