@@ -14,8 +14,14 @@
     "R2205" = "nixpkgs-2205";
     "unstable" = "nixpkgs-unstable";
   };
+  haskellNix = import ./default.nix { inherit checkMaterialization; };
+  nixpkgsArgs = haskellNix.nixpkgsArgs // {
+    # Needed for dwarf tests
+    config = haskellNix.nixpkgsArgs.config // {
+      permittedInsecurePackages = [ "libdwarf-20210528" ];
+    };
+  };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
-    inherit (import ./default.nix { inherit checkMaterialization; }) nixpkgsArgs;
     inherit runTests;
   }) (
     # GHC version to cache and whether to run the tests against them.
@@ -74,7 +80,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
       # We need this for generic nixpkgs stuff at the right version
       genericPkgs = import pinnedNixpkgsSrc {};
-  in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compiler-nix-name: {nixpkgsArgs, runTests}:
+  in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compiler-nix-name: {runTests}:
     dimension "System" (systems nixpkgsName genericPkgs compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
