@@ -18,7 +18,7 @@
   nixpkgsArgs = haskellNix.nixpkgsArgs // {
     # Needed for dwarf tests
     config = haskellNix.nixpkgsArgs.config // {
-      permittedInsecurePackages = [ "libdwarf-20210528" ];
+      permittedInsecurePackages = [ "libdwarf-20210528" "dwarfdump-20181024" ];
     };
   };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
