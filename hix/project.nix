@@ -56,20 +56,20 @@ let
         nixpkgsArgs = config.haskellNix.nixpkgsArgs // {
           overlays = config.haskellNix.nixpkgsArgs.overlays ++ config.overlays;
         };
-        pkgs = import config.nixpkgs config.nixpkgsArgs;
-        project = config.pkgs.haskell-nix.project [
+        _module.args.pkgs = import config.nixpkgs config.nixpkgsArgs;
+        project = pkgs.haskell-nix.project [
             (import ../modules/hix-project.nix)
             userDefaults
             projectDefaults
             commandArgs'
-            {
+            ({config, ...}: {
               src =
                 if __pathExists (toString (src.origSrcSubDir or src) + "/.git")
-                  then config.pkgs.haskell-nix.haskellLib.cleanGit {
+                  then config.evalPackages.haskell-nix.haskellLib.cleanGit {
                     inherit src name;
                   }
                   else src;
-            }
+            })
           ];
       })
     ];

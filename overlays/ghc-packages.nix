@@ -1,13 +1,13 @@
 final: prev:
 let
-  callCabal2Nix = compiler-nix-name: name: src: final.evalPackages.stdenv.mkDerivation {
+  callCabal2Nix = compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
     nativeBuildInputs = [
       # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
       # infinite recursion (so using nix-tools-unchecked).
-      final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}
+      final.buildPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}
     ];
     phases = [ "unpackPhase" "buildPhase" ];
 
@@ -32,7 +32,7 @@ let
         name = name + ext;
         inherit path;
       }) files);
-    in final.evalPackages.runCommand "${name}${ext}" {} ''
+    in final.buildPackages.runCommand "${name}${ext}" {} ''
       cp -Lr ${links} $out
       chmod -R +w $out
     '';
@@ -117,14 +117,14 @@ in rec {
           let nix24srcFix = src: src // { filterPath = { path, ... }: path; };
           # Add in the generated files needed by ghc-boot
           in if subDir == "libraries/ghc-boot"
-            then nix24srcFix (final.evalPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.evalPackages.xorg.lndir]; } ''
+            then nix24srcFix (final.buildPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
               lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
             '')
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
-              src = nix24srcFix (final.evalPackages.runCommand "ghc-src" { nativeBuildInputs = [final.evalPackages.xorg.lndir]; } ''
+              src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
                 mkdir $out
                 lndir -silent ${ghc.passthru.configured-src} $out
                 if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then

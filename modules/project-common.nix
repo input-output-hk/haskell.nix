@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, config, pkgs, ... }:
 with lib;
 with lib.types;
 {
@@ -25,8 +25,8 @@ with lib.types;
       '';
     };
     evalSystem = mkOption {
-      type = nullOr str;
-      default = null;
+      type = str;
+      default = builtins.currentSystem or pkgs.buildPackages.system;
       description = ''
         Specifies the system on which `cabal configure` and `plan-to-nix` should run.
         If not specified the `evalPackages` default will be used (builtins.currentSystem or
@@ -35,6 +35,19 @@ with lib.types;
         not exist) when there are no builders present for the some or all of the flakes supported
         systems (so `buildPackages` also fails).
       '';
+    };
+    evalPackages = mkOption {
+      type = attrs;
+      default =
+        if pkgs.system == config.evalSystem
+          then pkgs
+        else if pkgs.buildPackages.system == config.evalSystem
+          then pkgs.buildPackages
+        else
+          import pkgs.path {
+            system = config.evalSystem;
+            overlays = pkgs.overlays;
+          };
     };
     hsPkgs = lib.mkOption {
       type = lib.types.unspecified;

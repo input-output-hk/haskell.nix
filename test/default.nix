@@ -53,7 +53,7 @@ let
         else val
       );
 
-  util = import ./util.nix { cabal-install = pkgs.evalPackages.haskell-nix.cabal-install.${compiler-nix-name}; };
+  util = import ./util.nix { cabal-install = pkgs.buildPackages.haskell-nix.cabal-install.${compiler-nix-name}; };
 
   # Map the values in an association list over the withIfdInputs function.
   #

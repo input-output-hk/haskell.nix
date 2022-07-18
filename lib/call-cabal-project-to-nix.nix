@@ -64,12 +64,11 @@ in
                             # would result in the "foo" subdirectory of
                             # any plutus-apps input being used for a
                             # package.
-, evalSystem ? null
+, evalPackages
 , ...
 }@args:
 
 let
-  evalPackages = pkgs.haskell-nix.evalPackagesFor evalSystem;
   inherit (evalPackages.haskell-nix) materialize dotCabal;
 
   # These defaults are hear rather than in modules/cabal-project.nix to make them
@@ -224,7 +223,7 @@ let
           # Download the source-repository-package commit and add it to a minimal git
           # repository that `cabal` will be able to access from a non fixed output derivation.
           location = evalPackages.runCommand "source-repository-package" {
-              nativeBuildInputs = [ evalPackages.rsync pkgs.evalPackages.gitMinimal ];
+              nativeBuildInputs = [ evalPackages.rsync evalPackages.gitMinimal ];
             } ''
             mkdir $out
             rsync -a --prune-empty-dirs "${fetched}/" "$out/"
@@ -245,7 +244,7 @@ let
 
       # Parse the `repository` blocks
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
+        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)

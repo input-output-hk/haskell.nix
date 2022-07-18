@@ -1,8 +1,8 @@
-{ stdenv, lib, testSrc, haskell-nix, evalPackages, buildPackages, compiler-nix-name, recurseIntoAttrs }:
+{ stdenv, lib, testSrc, haskell-nix, buildPackages, compiler-nix-name, recurseIntoAttrs }:
 let
   project = buildPackages.haskell-nix.project' {
     inherit compiler-nix-name;
-    src = evalPackages.fetchgit {
+    src = buildPackages.fetchgit {
       url = "https://github.com/haskell/haskell-language-server.git";
       fetchSubmodules = true;
       rev = "32cd57df639d67ac0cf29882839e00532fd30c84";

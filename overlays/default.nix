@@ -21,7 +21,6 @@ let
     nix-prefetch-git-minimal = import ./nix-prefetch-git-minimal.nix;
     gobject-introspection = import ./gobject-introspection.nix;
     hix = import ./hix.nix;
-    eval-packages = import ./eval-packages.nix combined;
     ghcjs = import ./ghcjs.nix;
   };
 
@@ -56,7 +55,6 @@ let
     ghcjs
     gobject-introspection
     hix
-    eval-packages
     hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
