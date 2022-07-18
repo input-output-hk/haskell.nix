@@ -1,7 +1,12 @@
 { haskellNix ? import ../default.nix { inherit checkMaterialization; }
 , pkgs ? import nixpkgs nixpkgsArgs
 , nixpkgs ? haskellNix.sources.nixpkgs-unstable
-, nixpkgsArgs ? haskellNix.nixpkgsArgs
+, nixpkgsArgs ? haskellNix.nixpkgsArgs // {
+    # Needed for dwarf tests
+    config = haskellNix.nixpkgsArgs.config // {
+      permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
+    };
+  }
 , ifdLevel ? 1000
 , compiler-nix-name
 , CADerivationsEnabled ? false
