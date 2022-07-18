@@ -6,7 +6,6 @@ let
     #ghcjs = import ./ghcjs-asterius-triple.nix;
     #python = import ./python.nix;
     haskell = import ./haskell.nix args;
-    hackage-quirks = import ./hackage-quirks.nix;
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
@@ -40,7 +39,6 @@ let
     })
     wine
     haskell
-    hackage-quirks
     bootstrap
     ghc
     ghc-packages

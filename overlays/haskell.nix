@@ -451,7 +451,7 @@ final: prev: {
         hackage-project = projectModule:
           cabalProject' ([
             (import ../modules/hackage-project.nix)
-            ] ++ final.haskell-nix.hackageQuirks
+            ] ++ (import ../modules/hackage-quirks.nix)
               ++ (if builtins.isList projectModule then projectModule else [projectModule]));
 
         # This function is like `cabalProject` but it makes the plan-nix available
