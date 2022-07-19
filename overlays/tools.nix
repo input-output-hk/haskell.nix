@@ -59,9 +59,8 @@ in { haskell-nix = prev.haskell-nix // {
 
   hackage-tool = projectModule:
     let
-      package = final.haskell-nix.hackage-package (
-        (if builtins.isList projectModule then projectModule else [projectModule])
-        ++ [
+      package = final.haskell-nix.hackage-package [
+          projectModule
           ({lib, ...}: {
             options.name = lib.mkOption {
               apply = n: final.haskell-nix.toolPackageName.${n} or n;
@@ -71,7 +70,7 @@ in { haskell-nix = prev.haskell-nix // {
               configureArgs = "--disable-benchmarks --disable-tests";
             };
           })
-        ]);
+        ];
       name = package.project.args.name;
       exeName = final.haskell-nix.packageToolName.${name} or name;
     in package.getComponent "exe:${exeName}";
