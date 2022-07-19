@@ -27,8 +27,13 @@ final: prev: {
   # To check for the issue run the following in `nixpkgs`:
   #   nix-diff $(nix-instantiate -A gitMinimal) $(nix-instantiate -A pkgsCross.mingwW64.buildPackages.gitMinimal)
   # These two derivations should really be the same and
-  # on nixpkgs-unstable and 22.05 they are now.
-  fetchgit = prev.buildPackages.fetchgit;
+  # on nixpkgs-unstable and 22.05 they are now, but it looks
+  # like that might be because the dependency on libredirect
+  # was changed.
+  # See https://github.com/NixOS/nixpkgs/pull/182143
+  libredirect = prev.libredirect.overrideAttrs (attrs: {
+    libName = "libredirect" + final.stdenv.hostPlatform.extensions.sharedLibrary;
+  });
 
   # Find uses of the non minimal git package by uncommenting this:
   # git = prev.intentional-error-here;
