@@ -7,6 +7,7 @@
       permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
     };
   }
+, evalPackages ? import pkgs.path nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name
 , CADerivationsEnabled ? false
@@ -144,13 +145,13 @@ let
     then filterNonIfdInputsValues attrs
     else attrs;
 
-  testSrcRoot = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
+  testSrcRoot = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
   testSrc = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRoot; inherit subDir; };
   # Use the following reproduce issues that may arise on hydra as a
   # result of building a snapshot not a git repo.
   # testSrcRoot = pkgs.copyPathToStore ./.;
   # testSrc = subDir: testSrcRoot + "/${subDir}";
-  testSrcRootWithGitDir = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
+  testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
   callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc; });
 
@@ -178,7 +179,7 @@ let
     stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir { inherit compiler-nix-name; };
     stack-remote-resolver = callTest ./stack-remote-resolver { inherit compiler-nix-name; };
     shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
-    setup-deps = import ./setup-deps { inherit pkgs compiler-nix-name; };
+    setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name; };
     callStackToNix = callTest ./call-stack-to-nix { inherit compiler-nix-name; };
     callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit compiler-nix-name; };
     cabal-source-repo = callTest ./cabal-source-repo { inherit compiler-nix-name; };

@@ -1,4 +1,4 @@
-{ pkgs, compiler-nix-name }:
+{ pkgs, evalPackages, compiler-nix-name }:
 
 with pkgs;
 with lib;
@@ -6,7 +6,7 @@ with lib;
 let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name;
-    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ../..; name = "setup-deps"; subDir = "test/setup-deps"; };
+    src = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../..; name = "setup-deps"; subDir = "test/setup-deps"; };
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
