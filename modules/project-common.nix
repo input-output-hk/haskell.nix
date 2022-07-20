@@ -28,7 +28,7 @@ with lib.types;
       type = str;
       default = builtins.currentSystem or pkgs.buildPackages.system;
       description = ''
-        Specifies the system on which `cabal configure` and `plan-to-nix` should run.
+        Specifies the system on which `cabal` and `nix-tools` should run.
         If not specified the `evalPackages` default will be used (builtins.currentSystem or
         the `buildPackages` system).
         This argument is useful when using pure flake evalution (where builtins.currentSystem does
@@ -48,6 +48,15 @@ with lib.types;
             system = config.evalSystem;
             overlays = pkgs.overlays;
           };
+      description = ''
+        Packages used to run `cabal` and `nix-tools`.
+        This will default to `pkgs` or `pkgs.buildPackages` if
+        they match the `evalSystem`.  If not the default will be:
+          import pkgs.path {
+            system = config.evalSystem;
+            overlays = pkgs.overlays;
+          };
+      '';
     };
     hsPkgs = lib.mkOption {
       type = lib.types.unspecified;

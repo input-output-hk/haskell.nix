@@ -24,6 +24,8 @@ in {
   };
   config = {
     # Avoid readDir and readFile IFD functions looking for these files in the hackage source
+    # `mkOverride 1100` means this will be used in preference to the mkOption default,
+    # but a `mkDefault` can still override this.
     cabalProject = lib.mkOverride 1100 ''
       packages: .
     '';
