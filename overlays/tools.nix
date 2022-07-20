@@ -57,10 +57,9 @@ in { haskell-nix = prev.haskell-nix // {
     cabal-install = "cabal";
   };
 
-  hackage-tool = projectModule:
+  hackage-tool = projectModules:
     let
-      package = final.haskell-nix.hackage-package [
-          projectModule
+      package = final.haskell-nix.hackage-package (projectModules ++ [
           ({lib, ...}: {
             options.name = lib.mkOption {
               apply = n: final.haskell-nix.toolPackageName.${n} or n;
@@ -70,7 +69,7 @@ in { haskell-nix = prev.haskell-nix // {
               configureArgs = "--disable-benchmarks --disable-tests";
             };
           })
-        ];
+        ]);
       name = package.project.args.name;
       exeName = final.haskell-nix.packageToolName.${name} or name;
     in package.getComponent "exe:${exeName}";
