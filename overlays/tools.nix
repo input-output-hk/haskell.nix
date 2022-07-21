@@ -80,6 +80,9 @@ in { haskell-nix = prev.haskell-nix // {
         ++ [{ inherit compiler-nix-name name; }]
       );
 
-  tools = compiler-nix-name:
-    lib.mapAttrs (final.haskell-nix.tool compiler-nix-name);
+  tools = evalPackages: compiler-nix-name:
+    lib.mapAttrs (name: versionOrMod:
+      final.haskell-nix.hackage-tool (
+           final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
+        ++ [{ inherit evalPackages compiler-nix-name name; }]));
 }; }

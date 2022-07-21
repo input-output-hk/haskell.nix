@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -13,6 +13,7 @@ let
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
       packages.bytestring-builder.doHaddock = false;
+      inherit evalPackages;
     }];
   };
 

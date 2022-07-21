@@ -213,7 +213,8 @@ in rec {
 
   # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
-    final.haskell-nix.cabalProject' {
+    final.haskell-nix.cabalProject' ({pkgs, ...}: {
+      evalPackages = pkgs.buildPackages;
       name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
       src = proj;
       inherit (proj) cabalProject;
@@ -227,7 +228,7 @@ in rec {
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
       modules = [{ reinstallableLibGhc = false; }];
-    })
+    }))
     ghc-extra-pkgs-cabal-projects;
 
   # The packages from the project for each ghc

@@ -459,7 +459,7 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, ... }@args:
+            { src, compiler-nix-name, evalPackages, ... }@args:
             let
               callProjectResults = callCabalProjectToNix args;
               plan-pkgs = importAndFilterProject {
@@ -474,6 +474,7 @@ final: prev: {
                   config = {
                     compiler.nix-name = compiler-nix-name;
                     hsPkgs = {};
+                    inherit evalPackages;
                   };
                 }
                 else mkCabalProjectPkgSet
@@ -483,7 +484,10 @@ final: prev: {
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
                         { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
-                    ++ [ { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; } ];
+                    ++ [ {
+                      compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
+                      evalPackages = final.lib.mkDefault evalPackages;
+                    } ];
                   extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
 
@@ -758,7 +762,7 @@ final: prev: {
 
         stackProject' =
           projectModule: haskellLib.evalProjectModule ../modules/stack-project.nix projectModule (
-            { src, ... }@args:
+            { src, evalPackages, ... }@args:
             let callProjectResults = callStackToNix (args
                   // final.lib.optionalAttrs (args.cache == null) { inherit cache; });
                 generatedCache = genStackCache args;
@@ -775,7 +779,8 @@ final: prev: {
                     ++ (args.modules or [])
                     ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
                     ++ final.lib.optional (args.compiler-nix-name != null)
-                        { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; };
+                        { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; }
+                    ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
                 };
 
                 project = addProjectAndPackageAttrs {

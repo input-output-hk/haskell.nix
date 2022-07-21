@@ -1,4 +1,4 @@
-{ stdenv, lib, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, buildPackages, sources }:
+{ stdenv, lib, fetchFromGitHub, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages, sources }:
 
 with lib;
 
@@ -9,7 +9,7 @@ let
   inherit (buildPackages.buildPackages) jq git;
 
   hpc-coveralls-exes = (buildPackages.haskell-nix.project' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = sources.hpc-coveralls;
   }).hsPkgs.hpc-coveralls.components.exes;
   

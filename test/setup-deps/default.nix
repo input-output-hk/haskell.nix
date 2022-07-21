@@ -1,11 +1,11 @@
-{ pkgs, evalPackages, compiler-nix-name }:
+{ pkgs, compiler-nix-name, evalPackages }:
 
 with pkgs;
 with lib;
 
 let
   project = haskell-nix.cabalProject' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../..; name = "setup-deps"; subDir = "test/setup-deps"; };
     modules = [{
       # Package has no exposed modules which causes

@@ -78,12 +78,11 @@
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
-      # We need this for generic nixpkgs stuff at the right version
-      genericPkgs = import pinnedNixpkgsSrc {};
-  in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compiler-nix-name: {runTests}:
-    dimension "System" (systems nixpkgsName genericPkgs compiler-nix-name) (systemName: system:
+      evalPackages = import pinnedNixpkgsSrc nixpkgsArgs;
+  in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
+    dimension "System" (systems nixpkgsName evalPackages compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
-          build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
+          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
           platformFilter = platformFilterGeneric pkgs system;
       in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
@@ -96,11 +95,11 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
           iserv-proxy = pkgs.ghc-extra-projects."${compiler-nix-name}".getComponent "iserv-proxy:exe:iserv-proxy";
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).getComponent "exe:hello";
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         });
       }
       //
-      dimension "Cross system" (crossSystems nixpkgsName genericPkgs compiler-nix-name system) (crossSystemName: crossSystem:
+      dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name system) (crossSystemName: crossSystem:
         # Cross builds
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
             build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };

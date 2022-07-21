@@ -26,7 +26,7 @@ with lib.types;
     };
     evalSystem = mkOption {
       type = str;
-      default = builtins.currentSystem or pkgs.buildPackages.system;
+      default = pkgs.buildPackages.system;
       description = ''
         Specifies the system on which `cabal` and `nix-tools` should run.
         If not specified the `evalPackages` default will be used (builtins.currentSystem or

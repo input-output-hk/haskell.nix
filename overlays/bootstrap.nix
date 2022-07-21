@@ -879,7 +879,8 @@ in {
     # always has `checkMaterialization = false` to avoid infinite
     # recursion.
     cabal-install-tool = {compiler-nix-name, ...}@args:
-      (final.haskell-nix.hackage-package ({
+      (final.haskell-nix.hackage-package ({pkgs, ...}: {
+        evalPackages = pkgs.buildPackages;
         name = "cabal-install";
         version = "3.6.2.0";
         index-state = final.haskell-nix.internalHackageIndexState;
@@ -894,7 +895,8 @@ in {
             then "ghc8107"
             else args.compiler-nix-name;
         project =
-          final.haskell-nix.cabalProject ({
+          final.haskell-nix.cabalProject ({pkgs, ...}: {
+            evalPackages = pkgs.buildPackages;
             name = "nix-tools";
             src = {
               outPath = final.haskell-nix.sources.nix-tools;
@@ -1095,7 +1097,8 @@ in {
             # building ghc itself (since GHC is a dependency
             # of the materialization check it would cause
             # infinite recursion).
-            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({
+            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({pkgs, ...}: {
+                evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
@@ -1104,7 +1107,8 @@ in {
             alex = bootstrap.packages.alex-tool {};
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
             happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy"
-              ({config, ...}: {
+              ({config, pkgs, ...}: {
+                evalPackages = pkgs.buildPackages;
                 inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
                 modules = [{ reinstallableLibGhc = false; }];
@@ -1117,7 +1121,8 @@ in {
             happy-old = bootstrap.packages.happy-tool { version = "1.19.11"; };
             happy-old-unchecked = bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
             hscolour-tool = args: (hackage-package
-              ({config, ...}: {
+              ({config, pkgs, ...}: {
+                evalPackages = pkgs.buildPackages;
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";
                 version = "1.24.4";

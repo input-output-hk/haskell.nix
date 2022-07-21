@@ -8,6 +8,7 @@ in
 { nixpkgs ? haskellNix.sources.nixpkgs-2111
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
+, evalPackages ? import nixpkgs nixpkgsArgs
 , nixpkgsForHydra ? haskellNix.sources.nixpkgs-2105
 , pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
@@ -19,12 +20,13 @@ let
   buildHaskell = pkgs.buildPackages.haskell-nix;
   tool = buildHaskell.tool;
 in rec {
-  tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
+  tests = import ./test/default.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
-      cabal-latest = tool compiler-nix-name "cabal" "latest";
+      cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
       hlint-latest = tool compiler-nix-name "hlint" {
+        inherit evalPackages;
         version = {
             "ghc865" = "3.2.8";
             "ghc882" = "3.3.6";
@@ -33,7 +35,7 @@ in rec {
           }.compiler-nix-name or "latest";
       };
     } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc921" "ghc922" "ghc923"]) {
-      hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
+      hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
     })
   );
 

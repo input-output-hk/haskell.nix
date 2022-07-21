@@ -1,6 +1,6 @@
 # Build a project enabling content addressed derivations for
 # only a subset of the components
-{ stdenv, pkgs, lib, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, CADerivationsEnabled }:
+{ stdenv, pkgs, lib, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, CADerivationsEnabled }:
 
 with lib;
 
@@ -15,13 +15,13 @@ let
 
   # each derivation is content addressed
   projectA = project' {
-    inherit compiler-nix-name src cabalProject;
+    inherit compiler-nix-name evalPackages src cabalProject;
     modules = [{ contentAddressed = true; }];
   };
 
   # each derivation but one (the executable) is content addressed
   projectB = project' {
-    inherit compiler-nix-name src cabalProject;
+    inherit compiler-nix-name evalPackages src cabalProject;
     modules = [{
       contentAddressed = true;
       packages.cabal-simple.components.exes.cabal-simple.contentAddressed = false;
