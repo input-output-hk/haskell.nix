@@ -87,7 +87,7 @@ in rec {
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs (
-      (pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      (pkgs.lib.optionalAttrs (pkgsForHydra.system == "x86_64-linux") {
         inherit (maintainer-scripts) check-hydra;
       })
     // (pkgs.lib.optionalAttrs (ifdLevel > 2) {
