@@ -9,7 +9,7 @@ in
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , nixpkgsForHydra ? haskellNix.sources.nixpkgs-2105
-, pkgsForHydra ? import nixpkgsForHydra nixpkgsArgs
+, pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 }:
