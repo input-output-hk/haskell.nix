@@ -50,7 +50,6 @@
     cabalProjectLocal = ''
       constraints: Cabal <3.2.1.0
     '';
-    modules = [{ reinstallableLibGhc = true; }];
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
   }
 , ...
