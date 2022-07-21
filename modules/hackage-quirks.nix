@@ -19,8 +19,8 @@ in [(
       modules = [
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
         (lib.optionalAttrs (config.version == "3.2.0.0"
-            && builtins.compareVersions pkgs.haskell-nix.compiler.${config.compiler-nix-name}.version "8.10.0.0" >= 0) {
-          packages.cabal-install.src = pkgs.haskell-nix.sources.cabal-32 + "/cabal-install";
+            && builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "8.10.0.0" >= 0) {
+          packages.cabal-install.src = pkgs.buildPackages.haskell-nix.sources.cabal-32 + "/cabal-install";
         })
       ];
     })]
