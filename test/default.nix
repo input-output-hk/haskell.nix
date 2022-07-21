@@ -159,7 +159,7 @@ let
   # An empty list means success.
   unitTests =
     let
-      tests = haskell-nix.callPackage ./unit.nix { inherit compiler-nix-name; };
+      tests = haskell-nix.callPackage ./unit.nix { inherit compiler-nix-name evalPackages; };
       testsFailedEcho = lib.concatMapStringsSep "\n" (t: "echo ${t.name} failed") tests;
       testsFinalLine = if builtins.length tests == 0 then "\ntouch $out" else "\nexit 1";
       testsScript = testsFailedEcho + testsFinalLine;
@@ -181,7 +181,7 @@ let
     shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
     setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name; };
     callStackToNix = callTest ./call-stack-to-nix { inherit compiler-nix-name; };
-    callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit compiler-nix-name; };
+    callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit compiler-nix-name evalPackages; };
     cabal-source-repo = callTest ./cabal-source-repo { inherit compiler-nix-name; };
     cabal-source-repo-comments = callTest ./cabal-source-repo-comments { inherit compiler-nix-name; };
     buildable = callTest ./buildable { inherit compiler-nix-name; };

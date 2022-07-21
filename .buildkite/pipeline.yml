@@ -44,3 +44,9 @@ steps:
       - nix build .#roots.x86_64-linux --option allow-import-from-derivation false
     agents:
       system: x86_64-linux
+
+  - label: 'Check that aval of hydra jobs works without using remote builders'
+    command:
+      - nix-instantiate release.nix -A required-unstable-ghc8107-x86_64-darwin-native --show-trace --builders ''
+    agents:
+      system: x86_64-linux
