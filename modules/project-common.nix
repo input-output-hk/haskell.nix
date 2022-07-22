@@ -39,9 +39,7 @@ with lib.types;
     evalPackages = mkOption {
       type = attrs;
       default =
-        if pkgs.system == config.evalSystem
-          then pkgs
-        else if pkgs.buildPackages.system == config.evalSystem
+        if pkgs.buildPackages.system == config.evalSystem
           then pkgs.buildPackages
         else
           import pkgs.path {
