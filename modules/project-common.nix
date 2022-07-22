@@ -29,11 +29,10 @@ with lib.types;
       default = pkgs.buildPackages.system;
       description = ''
         Specifies the system on which `cabal` and `nix-tools` should run.
-        If not specified the `evalPackages` default will be used (builtins.currentSystem or
-        the `buildPackages` system).
-        This argument is useful when using pure flake evalution (where builtins.currentSystem does
-        not exist) when there are no builders present for the some or all of the flakes supported
-        systems (so `buildPackages` also fails).
+        If not specified the `buildPackages` system will be used.
+        If there are no builders for the `buildPackages` system
+        specifying a system for which there are builders will
+        allow the evaluation of the haskell project to work.
       '';
     };
     evalPackages = mkOption {
@@ -48,8 +47,11 @@ with lib.types;
           };
       description = ''
         Packages used to run `cabal` and `nix-tools`.
-        This will default to `pkgs` or `pkgs.buildPackages` if
-        they match the `evalSystem`.  If not the default will be:
+        This will default to `pkgs.buildPackages` if it
+        matches the `evalSystem` (or if `evalSystem` was
+        not specified).
+        If a different `evalSystem` was requested, `evalPackages` will
+        default to be:
           import pkgs.path {
             system = config.evalSystem;
             overlays = pkgs.overlays;
