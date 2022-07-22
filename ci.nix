@@ -102,7 +102,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name system) (crossSystemName: crossSystem:
         # Cross builds
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
-            build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
+            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
             ghc = pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}";
