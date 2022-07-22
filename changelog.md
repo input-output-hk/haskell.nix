@@ -1,6 +1,32 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Jul 22, 2022
+* Removed reliance on `builtins.currentSystem`.  It was used it to provide
+  `pkgs.evalPackages` via an overlay that it used to run derivations
+  used in imports from derivation (IFDs).
+
+  These derivations are now run on `buildPackages` by default.
+
+  Passsing `evalPackages` to a project function will change where all the
+  derivations used in IFDs are run for that project (including shell tools):
+    evalPackages = import nixpkgs haskellNix.nixpkgsArgs;
+
+  Passing `evalSystem` instead will use create a suitable `nixpkgs` using `pkgs.path`
+  and `pkgs.overlay`:
+    evalSystem = "x86_64-linux";
+  or
+    evalSystem = builtins.currentSystem;
+
+  The `haskellLib.cleanGit` function is also affected by this change.  If you are cross
+  compiling and using `cleanGit` you should probably do something like:
+    pkgs = import nixpkgs haskellNix.nixpkgsArgs;
+    evalPackages = import nixpkgs (haskellNix.nixpkgsArgs // { system = evalSystem; });
+    p = pkgs.pkgsCross.mingwW64.haskell-nix.cabalProject {
+      inherit evalPackages;
+      src = evalPackages.haskell-nix.haskellLib.cleanGit { src = ./.; };
+    };
+
 ## Feb 16, 2022
 * Removed lookupSha256 argument from project functions.
   Pass a `sha256map` instead.
