@@ -547,8 +547,9 @@ final: prev: {
 
                       coverageReport = haskellLib.coverageReport (rec {
                         name = package.identifier.name + "-" + package.identifier.version;
-                        library = if components ? library then components.library else null;
+                        # Include the checks for a single package.
                         checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
+                        # Checks from that package may provide coverage information for any library in the project.
                         mixLibraries = final.lib.concatMap
                           (pkg: final.lib.optional (pkg.components ? library) pkg.components.library)
                             (final.lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs));
