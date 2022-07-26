@@ -36,6 +36,11 @@ let
       then builtins.trace ("Warning: ignoring materialized for " + name + " " + reason) x
       else x;
 
+  traceWhenChecking = message: x:
+    if checkMaterialization
+      then builtins.trace message x
+      else x;
+
   unchecked =
     let
       sha256message = "${name}: To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
@@ -50,10 +55,10 @@ let
     else if sha256 != null
       then
         # Let the user know how to materialize if they want to.
-        builtins.trace materializeMessage calculateUseHash
+        traceWhenChecking materializeMessage calculateUseHash
     else # materialized == null && sha256 == null
         # Let the user know how to calculate a sha256 or materialize if they want to.
-        builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
+        traceWhenChecking sha256message (traceWhenChecking materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
   checked =
