@@ -1,7 +1,7 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
-## Jul 22, 2022
+## Jul 27, 2022
 * Removed reliance on `builtins.currentSystem`.  It was used it to provide
   `pkgs.evalPackages` via an overlay that it used to run derivations
   used in imports from derivation (IFDs).
