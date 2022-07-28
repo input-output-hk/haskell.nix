@@ -10,8 +10,9 @@
       packages = final.shell.nativeBuildInputs
       # devshell does not use pkgs.mkShell / pkgs.stdenv.mkDerivation,
       # so we need to explicit required dependencies which
-      # are provided implicitely when using the normal shell:
-      ++ (with final.pkgs; [ binutils git gcc glibc gawk gnugrep bash coreutils pkg-config ]);
+      # are provided implicitely by stdenv when using the normal shell:
+      ++ final.shell.stdenv.defaultNativeBuildInputs
+      ++ final.shell.stdenv.extraNativeBuildInputs;
       env = lib.mapAttrsToList lib.nameValuePair {
         inherit (final.shell) CABAL_CONFIG NIX_GHC_LIBDIR;
       };
