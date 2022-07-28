@@ -12,6 +12,7 @@ pkgs:
     "asound"                             = [ pkgs."alsaLib" ];
     "atk"                                = [ pkgs."atk" ];
     "b2"                                 = [ pkgs."libb2" ];
+    "bcrypt"                             = [ pkgs."libxcrypt" ];
     "bdw-gc"                             = [ pkgs."boehmgc" ];
     "bz2"                                = [ pkgs."bzip2" ];
     "c++"                                = []; # What is that?
