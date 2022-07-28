@@ -1,8 +1,9 @@
-{ project', recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ project', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 let
   project = project' {
     src = testSrc "stack-local-resolver";
+    inherit evalPackages;
   };
   packages = project.hsPkgs;
 

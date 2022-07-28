@@ -59,7 +59,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, ... }@inputs:
     let compiler = "ghc923";
       config = import ./config.nix;
     in {
@@ -100,6 +100,12 @@
               inherit config overlays;
             };
             pkgs = import nixpkgs
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2105 = import nixpkgs-2105
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2111 = import nixpkgs-2111
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2205 = import nixpkgs-2205
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable
               (nixpkgsArgs // { localSystem = { inherit system; }; });

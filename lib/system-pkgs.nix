@@ -12,10 +12,5 @@ pkgs:
   # Base packages.
   pkgs
 
-  # fetchgit should always come from the evalPackages
-  # if it comes from the targetPackages we won't even
-  # be able to execute it.
-  // { fetchgit = pkgs.evalPackages.fetchgit; }
-
   # Apply the mapping.
   // import ./system-nixpkgs-map.nix pkgs

@@ -1,9 +1,10 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   projectArgs = {
+    inherit evalPackages;
     src = testSrc "coverage-no-libs";
     modules = [{
       # Package has no exposed modules which causes

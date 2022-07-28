@@ -1,4 +1,4 @@
-{ mkCabalProjectPkgSet, stdenv, lib, testSrc, compiler-nix-name }:
+{ mkCabalProjectPkgSet, stdenv, lib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -23,6 +23,8 @@ let
         # Check that the package option works
         packages.stm.doHaddock = false;
       }
+
+      { inherit evalPackages; }
     ];
   };
 

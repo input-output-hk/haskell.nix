@@ -1,4 +1,4 @@
-{ pkgs, lib, haskellLib, compiler-nix-name }:
+{ pkgs, evalPackages, lib, haskellLib, compiler-nix-name }:
 
 let
   emptyConfig = {
@@ -119,9 +119,9 @@ lib.runTests {
   };
 
   testParseRepositoryBlock = {
-      expr = __toJSON (haskellLib.parseRepositoryBlock "cabal.project" {} {}
-        pkgs.evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
-        pkgs.evalPackages.haskell-nix.nix-tools.${compiler-nix-name} ''
+      expr = __toJSON (haskellLib.parseRepositoryBlock evalPackages "cabal.project" {} {}
+        evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
+        evalPackages.haskell-nix.nix-tools.${compiler-nix-name} ''
           ghcjs-overlay
             url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32
             secure: True

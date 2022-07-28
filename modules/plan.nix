@@ -299,6 +299,13 @@ in {
       visible = false;
       internal = true;
     };
+
+    evalPackages = mkOption {
+      type = unspecified;
+      description = ''
+        The `evalPackages` that will be used when building `hoogle` and shell tools.
+      '';
+    };
   };
 
   config = let module = config.plan.pkg-def config.hackage.configs; in {

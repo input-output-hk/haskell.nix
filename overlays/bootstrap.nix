@@ -879,7 +879,8 @@ in {
     # always has `checkMaterialization = false` to avoid infinite
     # recursion.
     cabal-install-tool = {compiler-nix-name, ...}@args:
-      (final.haskell-nix.hackage-package ({
+      (final.haskell-nix.hackage-package ({pkgs, ...}: {
+        evalPackages = pkgs.buildPackages;
         name = "cabal-install";
         version = "3.6.2.0";
         index-state = final.haskell-nix.internalHackageIndexState;
@@ -894,8 +895,8 @@ in {
             then "ghc8107"
             else args.compiler-nix-name;
         project =
-          final.haskell-nix.cabalProject ({
-            caller = "nix-tools-set";
+          final.haskell-nix.cabalProject ({pkgs, ...}: {
+            evalPackages = pkgs.buildPackages;
             name = "nix-tools";
             src = {
               outPath = final.haskell-nix.sources.nix-tools;
@@ -1053,8 +1054,6 @@ in {
         # This compiler-nix-name will only be used to build nix-tools and cabal-install
         # when checking materialization of alex, happy and hscolour.
         compiler-nix-name = "ghc865";
-        nix-tools = final.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
-        cabal-install = final.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
         # The ghc boot compiler to use to compile alex, happy and hscolour
         ghc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
         ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
@@ -1098,7 +1097,8 @@ in {
             # building ghc itself (since GHC is a dependency
             # of the materialization check it would cause
             # infinite recursion).
-            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({
+            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({pkgs, ...}: {
+                evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
@@ -1106,23 +1106,31 @@ in {
             } // args);
             alex = bootstrap.packages.alex-tool {};
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
-            happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy" ({
-                inherit version ghcOverride nix-tools cabal-install index-state;
+            happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy"
+              ({config, pkgs, ...}: {
+                evalPackages = pkgs.buildPackages;
+                inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
                 modules = [{ reinstallableLibGhc = false; }];
-            } // args);
+                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
+              } // args);
             happy = bootstrap.packages.happy-tool {};
             happy-unchecked = bootstrap.packages.happy-tool { checkMaterialization = false; };
             # Older version needed when building ghc 8.6.5
             happy-old = bootstrap.packages.happy-tool { version = "1.19.11"; };
             happy-old-unchecked = bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
-            hscolour-tool = args: (hackage-package ({
+            hscolour-tool = args: (hackage-package
+              ({config, pkgs, ...}: {
+                evalPackages = pkgs.buildPackages;
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";
                 version = "1.24.4";
-                inherit ghcOverride nix-tools cabal-install index-state;
+                inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
                 modules = [{ reinstallableLibGhc = false; }];
+                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args)).getComponent "exe:HsColour";
             hscolour = bootstrap.packages.hscolour-tool {};
             hscolour-unchecked = bootstrap.packages.hscolour-tool { checkMaterialization = false; };

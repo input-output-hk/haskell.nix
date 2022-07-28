@@ -4,11 +4,8 @@
 with haskellLib;
 
 let
-  # Why `final.evalPackages.buildPackages.gitMinimal`?
-  # Why not just final.evalPackages.gitMinimal?
-  #
-  # A problem arises when `evalPackages` is `buildPackages`.i
-  # As may be the case in a flake.
+  # Why `final.buildPackages.buildPackages.gitMinimal`?
+  # Why not just final.buildPackages.gitMinimal?
   #
   # It turns out `git` depends on `gdb` in a round about way:
   #  git -> openssh -> libfido2 -> systemd -> python libxml -> Cython -> gdb
@@ -24,7 +21,7 @@ let
   #   * When `gdb` does not exist for `js`, so when cross
   #     compiling with ghcjs `final.buildPackages.git` fails
   #     to build at all.
-  inherit (pkgs.evalPackages.buildPackages) gitMinimal;
+  inherit (pkgs.buildPackages.buildPackages) gitMinimal;
 
 in {
   # Within the package components, these are the attribute names of
@@ -202,7 +199,7 @@ in {
   cleanGit = import ./clean-git.nix {
     inherit lib cleanSourceWith;
     git = gitMinimal;
-    inherit (pkgs.evalPackages.buildPackages) runCommand;
+    inherit (pkgs.buildPackages.buildPackages) runCommand;
   };
 
   # Some times it is handy to temporarily use a relative path between git
@@ -260,17 +257,19 @@ in {
     && stdenv.buildPlatform == stdenv.hostPlatform
     && stdenv.hostPlatform == stdenv.targetPlatform;
 
-  # Takes a version number or attr set of arguments (for cabalProject)
-  # and converts it to an attr set of arguments.  This allows
+  # Takes a version number, module or list of modules (for cabalProject)
+  # and converts it to an list of project modules.  This allows
   # the use of "1.0.0.0" or { version = "1.0.0.0"; ... }
-  versionOrArgsToArgs = versionOrArgs:
-    if lib.isAttrs versionOrArgs
-      then versionOrArgs
-      else { version = versionOrArgs; };
+  versionOrModToMods = versionOrMod:
+    if lib.isString versionOrMod
+      then [{ version = versionOrMod; }]
+    else if lib.isList versionOrMod
+      then versionOrMod
+    else [versionOrMod];
 
   # Find the resolver in the stack.yaml file and fetch it if a sha256 value is provided
   fetchResolver = import ./fetch-resolver.nix {
-    inherit (pkgs.evalPackages) pkgs;
+    inherit (pkgs.buildPackages) pkgs;
   };
 
   inherit (import ./cabal-project-parser.nix {

@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, testSrc, tool, compiler-nix-name }:
+{ stdenv, lib, testSrc, tool, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -8,7 +8,7 @@ let
   # See https://hackage.haskell.org/package/hackage-security-0.6.0.1
   version-used-at = index-state: ((tool compiler-nix-name "cabal" {
       version = "3.2.0.0";
-      inherit index-state;
+      inherit index-state evalPackages;
       cabalProject = ''
         packages: .
         allow-newer: cabal-install:base, hackage-security:*

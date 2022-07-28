@@ -1,11 +1,11 @@
-{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     cabalProjectLocal = lib.optionalString stdenv.hostPlatform.isGhcjs ''
       repository ghcjs-overlay
         url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32

@@ -1,6 +1,6 @@
-{ stdenv, testSrc, evalPackages, haskell-nix, compiler-nix-name, recurseIntoAttrs }:
+{ stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, recurseIntoAttrs }:
 let
-  inherit (haskell-nix.tool compiler-nix-name "haskell-language-server" {}) project;
+  inherit (haskell-nix.tool compiler-nix-name "haskell-language-server" { inherit evalPackages; }) project;
 in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;

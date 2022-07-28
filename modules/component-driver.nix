@@ -4,7 +4,7 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     compiler-nix-name = config.compiler.nix-name;
-    inherit (config) nonReinstallablePkgs hsPkgs compiler;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages;
   };
 
 in

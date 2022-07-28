@@ -39,13 +39,13 @@ final: prev: { haskell-nix = prev.haskell-nix // { hix = {
             (import ../modules/hix-project.nix)
             projectDefaults
             commandArgs'
-            {
+            ({config, ...}: {
               src =
                 if __pathExists (toString (src.origSrcSubDir or src) + "/.git")
-                  then final.haskell-nix.haskellLib.cleanGit {
+                  then config.evalPackages.haskell-nix.haskellLib.cleanGit {
                     inherit src name;
                   }
                   else src;
-            }
+            })
           ];
 }; }; }

@@ -1,4 +1,4 @@
-{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -13,7 +13,7 @@ let
   demo-src = ./external-package-demo-0.1.0.0.tar.gz;
 
   project = cabalProject' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "extra-hackage/external-package-user";
 
     extra-hackages = [ hackage ];
