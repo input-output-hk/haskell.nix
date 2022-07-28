@@ -166,6 +166,29 @@
               
                 <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
 that will impact users.</p>
+<h2 id="jul-27-2022">Jul 27, 2022<a class="headerlink" href="#jul-27-2022" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed reliance on <code>builtins.currentSystem</code>.  It was used it to provide
+  <code>pkgs.evalPackages</code> via an overlay that it used to run derivations
+  used in imports from derivation (IFDs).</li>
+</ul>
+<p>These derivations are now run on <code>buildPackages</code> by default.</p>
+<p>Passsing <code>evalPackages</code> to a project function will change where all the
+  derivations used in IFDs are run for that project (including shell tools):
+    evalPackages = import nixpkgs haskellNix.nixpkgsArgs;</p>
+<p>Passing <code>evalSystem</code> instead will use create a suitable <code>nixpkgs</code> using <code>pkgs.path</code>
+  and <code>pkgs.overlay</code>:
+    evalSystem = "x86_64-linux";
+  or
+    evalSystem = builtins.currentSystem;</p>
+<p>The <code>haskellLib.cleanGit</code> function is also affected by this change.  If you are cross
+  compiling and using <code>cleanGit</code> you should probably do something like:
+    pkgs = import nixpkgs haskellNix.nixpkgsArgs;
+    evalPackages = import nixpkgs (haskellNix.nixpkgsArgs // { system = evalSystem; });
+    p = pkgs.pkgsCross.mingwW64.haskell-nix.cabalProject {
+      inherit evalPackages;
+      src = evalPackages.haskell-nix.haskellLib.cleanGit { src = ./.; };
+    };</p>
 <h2 id="feb-16-2022">Feb 16, 2022<a class="headerlink" href="#feb-16-2022" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Removed lookupSha256 argument from project functions.
