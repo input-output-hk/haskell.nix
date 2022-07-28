@@ -1,4 +1,4 @@
-index-state: 2022-02-02T00:00:00Z
+index-state: 2022-07-25T00:00:00Z
 
 packages: .
 
@@ -9,7 +9,3 @@ source-repository-package
     location: https://github.com/michaelpj/hackage-db.git
     tag: f3b9240212b036391871e4ea09891e91efcea7a1
     --sha256: sha256-n0ATmkwtR68E2FuZK3QIQgZirVmWbd21vIQmzhGKsRw=
-
--- hnix requires hnix-store-core < 0.2, however hnix-store-core-0.1 breaks
--- plan construction.
-allow-newer: hnix-store-core

@@ -17,6 +17,9 @@ import Nix.Pretty (prettyNix)
 import Nix.Expr
 
 import           Data.Aeson
+import qualified Data.Aeson.Key                as Key
+import           Data.Aeson.KeyMap (KeyMap)
+import qualified Data.Aeson.KeyMap             as KeyMap
 import qualified Data.HashMap.Strict           as Map
 import qualified Data.Vector                   as V
 import           Lens.Micro
@@ -64,8 +67,8 @@ lts2plan compilerPackagesMap lts = Plan { packages, compilerVersion, compilerPac
       where vrToPkg v = Package v Nothing Map.empty
 
     -- turn flags into HashMap Text (HashMap Text Bool)
-    flags :: Map.HashMap Text (Map.HashMap Text Bool)
-    flags = lts ^. key "flags" . _Object <&> (\v -> Map.mapMaybe (^? _Bool) $ v ^. _Object)
+    flags :: KeyMap (KeyMap Bool)
+    flags = lts ^. key "flags" . _Object <&> (\v -> KeyMap.mapMaybe (^? _Bool) $ v ^. _Object)
     packages' = Map.fromList . V.toList $ lts ^. key "packages" . _Array <&> \v ->
       let (pkg, rev) = case (parsePackageIdentifier . Text.unpack $ v ^. key "hackage" . _String) of
                           Just p -> p
@@ -76,7 +79,8 @@ lts2plan compilerPackagesMap lts = Plan { packages, compilerVersion, compilerPac
         , packageRevision = case rev of
             Just (Left sha) -> Just $ Text.pack sha
             _               -> Nothing
-        , packageFlags = Map.mapKeys VarName $ Map.lookupDefault Map.empty name flags
+        , packageFlags = Map.fromList . fmap (\(k, val) -> (VarName (Key.toText k), val))
+            . KeyMap.toList . fromMaybe mempty $ KeyMap.lookup (Key.fromText name) flags
         })
 
     packages = packages' `Map.union` compilerPackages'

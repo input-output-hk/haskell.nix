@@ -7,6 +7,8 @@ module Plan2Nix
   ) where
 
 import           Data.Aeson
+import qualified Data.Aeson.Key                as Key
+import qualified Data.Aeson.KeyMap             as KeyMap
 import           Data.Char                                ( isDigit )
 import           Data.HashMap.Strict                      ( HashMap )
 import qualified Data.HashMap.Strict           as Map
@@ -198,13 +200,15 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
     (_, "global") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Nothing
       }
     (_, "inplace") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Nothing
       }
     -- Until we figure out how to force Cabal to reconfigure just about any package
@@ -226,13 +230,15 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
     ("local", "local") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Just . LocalPath . Text.unpack $ pkg ^. key "pkg-src" . key "path" . _String
       }
     (_, "source-repo") -> Just $ Package
       { packageVersion  = pkg ^. key "pkg-version" . _String
       , packageRevision = Nothing
-      , packageFlags    = Map.mapKeys VarName $ Map.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
       , packageSrc      = Just . flip DVCS [ Text.unpack $ fromMaybe "." $ pkg ^? key "pkg-src" . key "source-repo" . key "subdir" . _String ] $
           Git ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "location" . _String )
               ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "tag" . _String )
@@ -270,7 +276,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
                   -- If it does not exist then look for `component-name` instead.
                   maybe
                     [nixComponentAttr $ pkg ^. key "component-name" . _String]
-                    (map nixComponentAttr . Map.keys)
+                    (map (nixComponentAttr . Key.toText) . KeyMap.keys)
                     (pkg ^? key "components" . _Object))
       $ Vector.toList (plan ^. key "install-plan" . _Array)
 

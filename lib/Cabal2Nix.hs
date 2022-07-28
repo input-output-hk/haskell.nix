@@ -446,7 +446,7 @@ instance ToNixExpr (VersionRangeF VersionRange) where
   toNix (OrEarlierVersionF  ver) = (mkSym "compiler" @. "version") @. "le" @@ mkStr (fromString (show (pretty ver)))
   toNix (MajorBoundVersionF ver) = toNix (IntersectVersionRangesF (orLaterVersion ver) (earlierVersion (majorUpperBound ver)))
   toNix (IntersectVersionRangesF v1 v2) = toNix (projectVersionRange v1) $&& toNix (projectVersionRange v2)
-  toNix x = error $ "ToNixExpr VersionRange for `" ++ show x ++ "` not implemented!"
+  toNix (UnionVersionRangesF v1 v2) = toNix (projectVersionRange v1) $|| toNix (projectVersionRange v2)
 
 instance ToNixExpr a => ToNixExpr (Condition a) where
   toNix (Var a) = toNix a
