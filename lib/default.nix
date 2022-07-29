@@ -229,7 +229,7 @@ in {
 
   # Check a test component
   check = import ./check.nix {
-    inherit stdenv lib haskellLib srcOnly;
+    inherit stdenv lib haskellLib;
   };
 
   # Do coverage of a package
