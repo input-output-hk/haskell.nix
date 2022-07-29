@@ -139,6 +139,10 @@ let
   '' + lib.optionalString enableRelocatedStaticLibs ''
     GhcLibHcOpts += -fPIC
     GhcRtsHcOpts += -fPIC
+    GhcRtsCcOpts += -fPIC
+  '' + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64) ''
+    GhcLibHcOpts += -fexternal-dynamic-refs
+    GhcRtsHcOpts += -fexternal-dynamic-refs
   '' + lib.optionalString enableDWARF ''
     GhcLibHcOpts += -g3
     GhcRtsHcOpts += -g3
