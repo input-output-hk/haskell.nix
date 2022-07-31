@@ -22,5 +22,5 @@ in recurseIntoAttrs {
   build = project.hsPkgs.haskell-language-server.components.exes.haskell-language-server;
 
   # Haskell Language Server does not build for GHC 9 or 8.10.7 yet
-  meta.disabled = __elem compiler-nix-name ["ghc923" "ghc922" "ghc921" "ghc901" "ghc902" "ghc8107" "ghc810420210212" ];
+  meta.disabled = __elem compiler-nix-name ["ghc924" "ghc923" "ghc922" "ghc921" "ghc901" "ghc902" "ghc8107" "ghc810420210212" ];
 }

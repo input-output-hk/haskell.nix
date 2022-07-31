@@ -60,7 +60,7 @@
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, ... }@inputs:
-    let compiler = "ghc923";
+    let compiler = "ghc924";
       config = import ./config.nix;
     in {
       inherit config;
