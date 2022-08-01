@@ -152,7 +152,7 @@ in
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
-      ++ lib.attrValues (buildPackages.haskell-nix.tools evalPackages compiler.nix-name tools)
+      ++ lib.attrValues (buildPackages.haskell-nix.tools' evalPackages compiler.nix-name tools)
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
       # Includes `--with-compiler` in case the `cabal.project` file has `with-compiler:` in it.

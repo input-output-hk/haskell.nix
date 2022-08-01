@@ -496,8 +496,8 @@ final: prev: {
                   inherit pkg-set;
                   plan-nix = callProjectResults.projectNix;
                   inherit (callProjectResults) index-state;
-                  tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
-                  tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
+                  tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
+                  tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.cabalProject';
                   inherit projectModule buildProject args;
@@ -788,8 +788,8 @@ final: prev: {
                   inherit (pkg-set.config) hsPkgs;
                   inherit pkg-set;
                   stack-nix = callProjectResults.projectNix;
-                  tool = final.buildPackages.haskell-nix.tool pkg-set.config.compiler.nix-name;
-                  tools = final.buildPackages.haskell-nix.tools pkg-set.config.compiler.nix-name;
+                  tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
+                  tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
                   projectFunction = haskell-nix: haskell-nix.stackProject';
                   inherit projectModule buildProject args;
