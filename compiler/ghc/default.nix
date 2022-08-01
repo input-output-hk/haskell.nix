@@ -140,7 +140,7 @@ let
     GhcLibHcOpts += -fPIC
     GhcRtsHcOpts += -fPIC
     GhcRtsCcOpts += -fPIC
-  '' + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64) ''
+  '' + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows) ''
     GhcLibHcOpts += -fexternal-dynamic-refs
     GhcRtsHcOpts += -fexternal-dynamic-refs
   '' + lib.optionalString enableDWARF ''
