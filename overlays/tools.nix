@@ -77,12 +77,16 @@ in { haskell-nix = prev.haskell-nix // {
   tool = compiler-nix-name: name: versionOrMod:
       final.haskell-nix.hackage-tool (
            final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
-        ++ [{ inherit compiler-nix-name name; }]
+        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit compiler-nix-name name; })]
       );
 
-  tools = evalPackages: compiler-nix-name:
-    lib.mapAttrs (name: versionOrMod:
+  # tool with a default evalPackages to use.
+  tool' = evalPackages: compiler-nix-name: name: versionOrMod:
       final.haskell-nix.hackage-tool (
            final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
-        ++ [{ inherit evalPackages compiler-nix-name name; }]));
+        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit evalPackages compiler-nix-name name; })]
+      );
+
+  tools = compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool compiler-nix-name);
+  tools' = evalPackages: compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' evalPackages compiler-nix-name);
 }; }
