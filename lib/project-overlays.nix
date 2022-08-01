@@ -11,8 +11,8 @@
       # devshell does not use pkgs.mkShell / pkgs.stdenv.mkDerivation,
       # so we need to explicit required dependencies which
       # are provided implicitely by stdenv when using the normal shell:
-      ++ final.shell.stdenv.defaultNativeBuildInputs
-      ++ final.shell.stdenv.extraNativeBuildInputs;
+      ++ (lib.filter lib.isDerivation final.shell.stdenv.defaultNativeBuildInputs)
+      ++ [ final.pkgs.buildPackages.binutils ];
       env = lib.mapAttrsToList lib.nameValuePair {
         inherit (final.shell) CABAL_CONFIG NIX_GHC_LIBDIR;
       };
