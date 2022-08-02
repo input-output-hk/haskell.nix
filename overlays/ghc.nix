@@ -26,7 +26,7 @@ final: prev: with prev;
        && !lib.hasSuffix "Binary" name;
      overrideCompiler = name: compiler:
        ((compiler.override (ghcPkgOverrides name)).overrideAttrs ghcDrvOverrides) // {
-         dwarf = overrideCompiler compiler.dwarf;
+         dwarf = overrideCompiler name compiler.dwarf;
        };
    in
      lib.recursiveUpdate prev.haskell-nix {
