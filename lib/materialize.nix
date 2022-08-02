@@ -83,9 +83,12 @@ let
         fi
       '')
     + (
-      if materialized != null && !__pathExists materialized
+      let fixHint = if builtins.hasContext (toString materialized)
+          then "To fix run: ${updateMaterialized}"
+          else "To fix check you are in the right directory and run: ${generateMaterialized} ${__head (__match "/nix/store/[^/]*/(.*)" (toString materialized))}";
+      in if materialized != null && !__pathExists materialized
         then ''
-          echo "Materialized nix used for ${name} is missing. To fix run: ${updateMaterialized}" >> $ERR
+          echo "Materialized nix used for ${name} is missing. ${fixHint}" >> $ERR
           cat $ERR
           false
         ''
@@ -96,7 +99,7 @@ let
               else
               echo Changes to plan not reflected in materialized nix for ${name}
               diff -ru ${materialized} ${calculateNoHash} || true
-              echo "Materialized nix used for ${name} incorrect. To fix run: ${updateMaterialized}" >> $ERR
+              echo "Materialized nix used for ${name} incorrect. ${fixHint}" >> $ERR
             fi
           '')
         + ''

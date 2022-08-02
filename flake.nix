@@ -135,6 +135,8 @@
       # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
       roots = legacyPackagesUnstable.haskell-nix.roots compiler;
 
+      packages = ((self.internal.compat { inherit system; }).hix).apps;
+
       devShell = with self.legacyPackages.${system};
         mkShell {
           buildInputs = [
