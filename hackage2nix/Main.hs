@@ -1,18 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
 import           Cabal2Nix
+import           Cabal2Nix.Util                           ( quoted )
 import           Control.Applicative                      ( liftA2 )
 import           Control.Monad.Trans.State.Strict
 import           Crypto.Hash.SHA256                       ( hash )
-import           Data.Aeson
-import           Data.Aeson.Types                         ( Pair )
-import           Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Base16        as Base16
 import qualified Data.ByteString.Char8         as BS
-import qualified Data.ByteString.Lazy          as BL
 import           Data.Foldable                            ( toList
                                                           , for_
                                                           )
@@ -25,6 +23,7 @@ import qualified Data.Sequence                 as Seq
 import           Data.String                              ( IsString(fromString)
                                                           )
 import           Data.Text                                ( Text )
+import qualified Data.Text                     as T       ( pack )
 import           Data.Text.Encoding                       ( decodeUtf8 )
 import           Distribution.Hackage.DB                  ( hackageTarball )
 import qualified Distribution.Hackage.DB.Parsed
@@ -36,6 +35,14 @@ import           Distribution.Pretty                      ( prettyShow
                                                           )
 import           Distribution.Types.PackageName           ( PackageName )
 import           Distribution.Types.Version               ( Version )
+import           Nix                                      ( (@@)
+                                                          , mkSym
+                                                          , mkInt
+                                                          , mkStr
+                                                          , NExpr
+                                                          , ($=)
+                                                          , mkNonRecSet
+                                                          )
 import           Nix.Pretty                               ( prettyNix )
 import           System.Directory                         ( createDirectoryIfMissing
                                                           )
@@ -43,6 +50,15 @@ import           System.Environment                       ( getArgs )
 import           System.FilePath                          ( (</>)
                                                           , (<.>)
                                                           )
+import Data.Char (isUpper)
+
+-- Avoid issues with case insensitive file systems by escaping upper case
+-- characters with a leading _ character.
+escapeUpperCase :: String -> String
+escapeUpperCase = (>>= (\case
+    '_' -> "__"
+    c | isUpper c -> ['_', c]
+      | otherwise -> [c]))
 
 main :: IO ()
 main = do
@@ -53,23 +69,25 @@ main = do
 
   db    <- U.readTarball Nothing inp
 
-  let (defaultJson, cabalFiles) =
-        runState (fmap (object . toList . (Seq.sortOn fst)) $ foldMapWithKeyA package2json db) mempty
+  let (nixFiles, cabalFiles) =
+        runState (fmap (toList . (Seq.sortOn fst)) $ foldMapWithKeyA package2nix db) mempty
   createDirectoryIfMissing False out
-  BL.writeFile (out </> "default.nix") $
+  writeFile (out </> "default.nix") $
     "with builtins; mapAttrs (_: mapAttrs (_: data: rec {\n\
      \ inherit (data) sha256;\n\
-     \ revisions = (mapAttrs (rev: rdata: {\n\
-     \  inherit (rdata) revNum sha256;\n\
-     \  outPath = ./. + \"/hackage/${rdata.outPath}\";\n\
-     \ }) data.revisions) // {\n\
+     \ revisions = data.revisions // {\n\
      \  default = revisions.\"${data.revisions.default}\";\n\
      \ };\n\
-     \})) (fromJSON (readFile ./hackage.json))\n"
+     \})) {\n"
+     -- Import all the per package nix files
+     <> mconcat (map (\(pname, _) ->
+       "  " <> quoted pname <> " = import ./nix/" <> escapeUpperCase pname <> ".nix;\n") nixFiles)
+     <> "}\n"
 
-  BL.writeFile (out </> "hackage.json") $ encodePretty'
-    (defConfig {confCompare = compare, confIndent = Spaces 1})
-    defaultJson
+  createDirectoryIfMissing False (out </> "nix")
+  for_ nixFiles $ \(pname, nix) ->
+    writeFile (out </> "nix" </> escapeUpperCase pname <.> "nix") $ show $ prettyNix nix
+
   createDirectoryIfMissing False (out </> "hackage")
 
   for_ cabalFiles $ \(cabalFile, pname, path) -> do
@@ -93,32 +111,32 @@ foldMapWithKeyA f =
 fromPretty :: (Pretty a, IsString b) => a -> b
 fromPretty = fromString . prettyShow
 
-package2json :: PackageName -> U.PackageData -> GPDWriter (Seq Pair)
-package2json pname (U.PackageData { U.versions }) = do
-  versionBindings <- foldMapWithKeyA (version2json pname) versions
-  return $ Seq.singleton $ fromPretty pname .= (object . toList $ Seq.sortOn fst $ versionBindings)
+package2nix :: PackageName -> U.PackageData -> GPDWriter (Seq (String, NExpr))
+package2nix pname (U.PackageData { U.versions }) = do
+  versionBindings <- foldMapWithKeyA (version2nix pname) versions
+  return $ Seq.singleton (fromPretty pname, (mkNonRecSet . map (uncurry ($=)) . toList $ Seq.sortOn fst $ versionBindings))
 
-version2json
-  :: PackageName -> Version -> U.VersionData -> GPDWriter (Seq (Pair))
-version2json pname vnum (U.VersionData { U.cabalFileRevisions, U.metaFile }) =
+version2nix
+  :: PackageName -> Version -> U.VersionData -> GPDWriter (Seq (Text, NExpr))
+version2nix pname vnum (U.VersionData { U.cabalFileRevisions, U.metaFile }) =
   do
     revisionBindings <- sequenceA
       $ zipWith (revBindingJson pname vnum) cabalFileRevisions [0 ..]
     let hash = decodeUtf8 $ fromString $ P.parseMetaData pname vnum metaFile Map.! "sha256"
-    return $ Seq.singleton $ fromPretty vnum .= object
-      [ "sha256" .= hash
-      , "revisions" .= object
-        ( revisionBindings
-        ++ ["default" .= fst (last revisionBindings)]
+    return $ Seq.singleton (quoted (fromPretty vnum), mkNonRecSet
+      [ "sha256" $= mkStr hash
+      , "revisions" $= mkNonRecSet
+        ( map (uncurry ($=)) revisionBindings
+        ++ ["default" $= mkStr (fst (last revisionBindings))]
         )
-      ]
+      ])
 
 revBindingJson
   :: PackageName
   -> Version
   -> BS.ByteString
   -> Integer
-  -> GPDWriter (Key, Value)
+  -> GPDWriter (Text, NExpr)
 revBindingJson pname vnum cabalFile revNum = do
   let qualifiedName = mconcat $ intersperse
         "-"
@@ -130,8 +148,8 @@ revBindingJson pname vnum cabalFile revNum = do
       cabalHash   = Base16.encode $ hash cabalFile
   modify' $ mappend $ Seq.singleton
     (cabalFile, prettyPname ++ ".cabal", revPath)
-  return $ revName .= object
-    [ "outPath" .= (qualifiedName <> ".nix")
-    , "revNum" .= revNum
-    , "sha256" .= decodeUtf8 cabalHash
-    ]
+  return (revName, mkNonRecSet
+    [ "nix" $= mkSym "import" @@ mkSym (T.pack ("../hackage/" <> qualifiedName <> ".nix"))
+    , "revNum" $= mkInt revNum
+    , "sha256" $= mkStr (decodeUtf8 cabalHash)
+    ])
