@@ -11,7 +11,7 @@
     flake-utils = { url = "github:numtide/flake-utils"; };
     hydra.url = "hydra";
     hackage = {
-      url = "github:input-output-hk/hackage.nix/hkm/nixify";
+      url = "github:input-output-hk/hackage.nix";
       flake = false;
     };
     stackage = {
