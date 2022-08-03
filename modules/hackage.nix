@@ -45,7 +45,7 @@ let
                 inherit (version) sha256;
                 revision = rev.revNum;
                 revisionSha256 = rev.sha256;
-              } // import rev modArgs;
+              } // (rev.nix or (import rev)) modArgs;
               f = rev: acc: acc // {
                 # If there's a collision (e.g. a revision was
                 # reverted), pick the one with the smaller
