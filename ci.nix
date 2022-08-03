@@ -11,10 +11,17 @@
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
     "R2111" = "nixpkgs-2111";
+    "R2205" = "nixpkgs-2205";
     "unstable" = "nixpkgs-unstable";
   };
+  haskellNix = import ./default.nix { inherit checkMaterialization; };
+  nixpkgsArgs = haskellNix.nixpkgsArgs // {
+    # Needed for dwarf tests
+    config = haskellNix.nixpkgsArgs.config // {
+      permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
+    };
+  };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
-    inherit (import ./default.nix { inherit checkMaterialization; }) nixpkgsArgs;
     inherit runTests;
   }) (
     # GHC version to cache and whether to run the tests against them.
@@ -26,12 +33,15 @@
     nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
       ghc865 = false;
       ghc8107 = true;
+    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
+      ghc865 = false;
+      ghc8107 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
       ghc8107 = true;
       ghc902 = true;
-      ghc923 = true;
+      ghc924 = true;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
     nixpkgs.lib.filter (v:
@@ -52,14 +62,14 @@
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"]) 
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"])
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc923"]) 
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc924"])
        || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
@@ -68,12 +78,11 @@
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
-      # We need this for generic nixpkgs stuff at the right version
-      genericPkgs = import pinnedNixpkgsSrc {};
-  in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compiler-nix-name: {nixpkgsArgs, runTests}:
-    dimension "System" (systems nixpkgsName genericPkgs compiler-nix-name) (systemName: system:
+      evalPackages = import pinnedNixpkgsSrc nixpkgsArgs;
+  in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
+    dimension "System" (systems nixpkgsName evalPackages compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
-          build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
+          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
           platformFilter = platformFilterGeneric pkgs system;
       in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
@@ -86,14 +95,14 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
           iserv-proxy = pkgs.ghc-extra-projects."${compiler-nix-name}".getComponent "iserv-proxy:exe:iserv-proxy";
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).getComponent "exe:hello";
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         });
       }
       //
-      dimension "Cross system" (crossSystems nixpkgsName genericPkgs compiler-nix-name system) (crossSystemName: crossSystem:
+      dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name system) (crossSystemName: crossSystem:
         # Cross builds
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
-            build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
+            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
             ghc = pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}";

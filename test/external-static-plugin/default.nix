@@ -1,7 +1,7 @@
-{ cabalProject', testSrc, compiler-nix-name, recurseIntoAttrs, haskellLib }: let
+{ cabalProject', testSrc, compiler-nix-name, evalPackages, recurseIntoAttrs, haskellLib }: let
   project = cabalProject' {
     src = testSrc "external-static-plugin";
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     modules = [ {
       packages.prog.components.exes.prog.plugins = [ {
         inherit (project.hsPkgs.plugin.components) library;

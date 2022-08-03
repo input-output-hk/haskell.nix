@@ -1,29 +1,36 @@
-# This overlay adds hackageQuirks to provide suitable default
-# arguments for `haskell-nix.hackage-project` and the functions
+# These modules are used by `haskell-nix.hackage-project` and the functions
 # that use it (like `hackage-package`)
 #
-final: prev:
 let
-  inherit (final) lib;
-
-in { haskell-nix = prev.haskell-nix // {
-
-  hackageQuirks = { name, version }: {
+  # Easier than importing nixpkgs just for this
+  mapAttrsToList = f: attrs:
+    map (name: f name attrs.${name}) (__attrNames attrs);
+in [(
+  {config, lib, pkgs, ...}:
+    { _file = "haskell.nix/overlays/hackage-quirks.nix#cabal-install"; } //
     # FIXME: this is required to build cabal-install 3.2 with ghc 8.6,
     # but also for
     # https://github.com/input-output-hk/haskell.nix/issues/422
-    cabal-install = {
-      cabalProject = ''
+    lib.mkIf (config.name == "cabal-install") {
+      cabalProject = lib.mkDefault ''
         packages: .
         allow-newer: cabal-install:base, *:base, *:template-haskell
       '';
       modules = [
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
-        (lib.optionalAttrs (version == "3.2.0.0") {
-          packages.cabal-install.src = final.haskell-nix.sources.cabal-32 + "/cabal-install";
+        (lib.optionalAttrs (config.version == "3.2.0.0"
+            && builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "8.10.0.0" >= 0) {
+          packages.cabal-install.src = pkgs.buildPackages.haskell-nix.sources.cabal-32 + "/cabal-install";
         })
       ];
-    };
+    })]
+
+  # Map the following into modules that use `mkIf` to check the name of the
+  # hackage package in a way that is lazy enought not to cause infinite recursion
+  # issues.
+  ++ mapAttrsToList (n: v: {config, lib, ...}:
+    { _file = "haskell.nix/overlays/hackage-quirks.nix#${n}"; } //
+    lib.mkIf (n == config.name) v) {
 
     # TODO remove this when `dependent-sum-0.7.1.0` constraint on `some` has been updated.
     # See https://github.com/haskell/haskell-language-server/issues/2969
@@ -59,7 +66,7 @@ in { haskell-nix = prev.haskell-nix // {
           flags: +use-pkg-config
       '';
       modules = [(
-       {pkgs, ...}: final.lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+       {pkgs, lib, ...}: lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
          # The order of -lssl and -lcrypto is important here
          packages.postgrest.configureFlags = [
            "--ghc-option=-optl=-lssl"
@@ -78,6 +85,4 @@ in { haskell-nix = prev.haskell-nix // {
       ];
     };
 
-  }."${name}" or {};
-
-}; }
+  }

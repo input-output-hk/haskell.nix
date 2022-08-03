@@ -1,10 +1,11 @@
-{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   project = stackProject' {
     src = testSrc "project-flags";
+    inherit evalPackages;
   };
   packages = project.hsPkgs;
 

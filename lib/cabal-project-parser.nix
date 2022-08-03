@@ -122,7 +122,7 @@ let
   # This works because `cabal configure` does not include any of the `/nix/sore/`
   # paths in the `plan.json` (so materialized plan-nix will still work as expeced).
   # See tests/unit.nix for examples of input and output.
-  parseRepositoryBlock = cabalProjectFileName: sha256map: inputMap: cabal-install: nix-tools: block:
+  parseRepositoryBlock = evalPackages: cabalProjectFileName: sha256map: inputMap: cabal-install: nix-tools: block:
     let
       lines = pkgs.lib.splitString "\n" block;
       # The first line will contain the repository name.
@@ -138,7 +138,7 @@ let
       # The $HOME/.cabal/packages/${name} after running `cabal v2-update` to download the repository
       repoContents = if inputMap ? ${attrs.url}
         # If there is an input use it to make `file:` url and create a suitable `.cabal/packages/${name}` directory
-        then pkgs.evalPackages.runCommand name ({
+        then evalPackages.runCommand name ({
           nativeBuildInputs = [ cabal-install ];
           preferLocalBuild = true;
         }) ''
@@ -155,9 +155,9 @@ let
             cabal v2-update ${name}
             cp -r $HOME/.cabal/packages/${name} $out
         ''
-        else pkgs.evalPackages.runCommand name ({
-          nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
-          LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
+        else evalPackages.runCommand name ({
+          nativeBuildInputs = [ cabal-install evalPackages.curl nix-tools ];
+          LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
           preferLocalBuild = true;
         } // pkgs.lib.optionalAttrs (sha256 != null) {
@@ -175,15 +175,15 @@ let
               ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
             EOF
 
-            export SSL_CERT_FILE=${pkgs.evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
+            export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
             cabal v2-update ${name}
             cp -r $HOME/.cabal/packages/${name} $out
         '';
       # Output of hackage-to-nix
       hackage = import (
-        pkgs.evalPackages.runCommand ("hackage-to-nix-" + name) {
-          nativeBuildInputs = [ cabal-install pkgs.evalPackages.curl nix-tools ];
-          LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
+        evalPackages.runCommand ("hackage-to-nix-" + name) {
+          nativeBuildInputs = [ cabal-install evalPackages.curl nix-tools ];
+          LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
           preferLocalBuild = true;
         } ''
@@ -196,11 +196,11 @@ let
       };
     };
 
-  parseRepositories = cabalProjectFileName: sha256map: inputMap: cabal-install: nix-tools: projectFile:
+  parseRepositories = evalPackages: cabalProjectFileName: sha256map: inputMap: cabal-install: nix-tools: projectFile:
     let
       # This will leave the name of repository in the first line of each block
       blocks = pkgs.lib.splitString "\nrepository " ("\n" + projectFile);
-      repoBlocks = builtins.map (parseRepositoryBlock cabalProjectFileName sha256map inputMap cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
+      repoBlocks = builtins.map (parseRepositoryBlock evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools) (pkgs.lib.lists.drop 1 blocks);
     in {
       extra-hackages = pkgs.lib.lists.map (block: block.hackage) repoBlocks;
       repos = pkgs.lib.lists.foldl' (x: block: x // block.repo) {} repoBlocks;

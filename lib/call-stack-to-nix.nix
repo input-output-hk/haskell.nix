@@ -5,7 +5,6 @@
  *
  * see also `call-cabal-project-to-nix`!
  */
-{ runCommand, pkgs, mkCacheFile, materialize, haskellLib }:
 { name ? src.name or null # optional name for better error messages
 , src
 , stackYaml ? "stack.yaml"
@@ -15,21 +14,24 @@
 , resolverSha256 ? null
 , materialized ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
-, nix-tools ? pkgs.haskell-nix.internal-nix-tools # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
-, ... }:
+, nix-tools
+, evalPackages
+, ... }@args:
 let
+  inherit (evalPackages) runCommand;
+  inherit (evalPackages.haskell-nix) mkCacheFile materialize haskellLib;
   inherit (haskellLib.fetchResolver {
       inherit src stackYaml resolverSha256;
     }) resolver fetchedResolver;
 
   subDir' = src.origSubDir or "";
-  subDir = pkgs.lib.strings.removePrefix "/" subDir';
+  subDir = evalPackages.lib.strings.removePrefix "/" subDir';
   cleanedSource = (haskellLib.cleanSourceWith {
     name = if name != null then "${name}-root-cabal-files" else "source-root-cabal-files";
     src = src.origSrc or src;
     filter = path: type: (!(src ? filter) || src.filter path type) && (
       type == "directory" ||
-      pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ stackYaml ".cabal" "package.yaml" ]); });
+      evalPackages.lib.any (i: (evalPackages.lib.hasSuffix i path)) [ stackYaml ".cabal" "package.yaml" ]); });
 
   stackToNixArgs = builtins.concatStringsSep " " [
     "--full"
@@ -43,12 +45,12 @@ let
     sha256Arg = "stack-sha256";
     reasonNotSafe = null;
     this = "project.stack-nix" + (if name != null then " for ${name}" else "");
-  } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
+  } // evalPackages.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (runCommand (if name == null then "stack-to-nix-pkgs" else name + "-stack-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools pkgs.nix-prefetch-git pkgs.cacert pkgs.xorg.lndir ];
+    nativeBuildInputs = [ nix-tools evalPackages.nix-prefetch-git evalPackages.cacert evalPackages.xorg.lndir ];
     # Needed or stack-to-nix will die on unicode inputs
-    LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.stdenv.hostPlatform.libc == "glibc") "${pkgs.glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE = evalPackages.lib.optionalString (evalPackages.stdenv.hostPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
     preferLocalBuild = false;
@@ -64,10 +66,10 @@ let
       echo "cleaned source is empty. Did you forget to 'git add -A'?"; exit 1;
     fi
     lndir -silent "${cleanedSource}/." $SRC
-    ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
+    ${evalPackages.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${
     # If a resolver was fetched use the it instead of the original stack.yaml
-    pkgs.lib.optionalString (fetchedResolver != null)
+    evalPackages.lib.optionalString (fetchedResolver != null)
       # Replace the resolver path in the stack.yaml with the fetched version
       ''
       rm ${stackYaml}
@@ -75,7 +77,7 @@ let
       chmod +w ${stackYaml}
       substituteInPlace ${stackYaml} --replace "${resolver}" "${fetchedResolver}"
     ''}
-    ${pkgs.lib.optionalString (cache != null) ''
+    ${evalPackages.lib.optionalString (cache != null) ''
       cp ${mkCacheFile cache}/.stack-to-nix.cache* $out${subDir'}
     ''}
     (cd $out${subDir'} && stack-to-nix ${stackToNixArgs})

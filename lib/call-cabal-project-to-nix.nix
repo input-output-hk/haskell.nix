@@ -1,4 +1,4 @@
-{ dotCabal, pkgs, runCommand, evalPackages, symlinkJoin, cacert, index-state-hashes, haskellLib, materialize }@defaults:
+{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }@defaults:
 let readIfExists = src: fileName:
       let origSrcDir = src.origSrcSubDir or src;
       in
@@ -64,10 +64,13 @@ in
                             # would result in the "foo" subdirectory of
                             # any plutus-apps input being used for a
                             # package.
+, evalPackages
 , ...
 }@args:
 
 let
+  inherit (evalPackages.haskell-nix) materialize dotCabal;
+
   # These defaults are hear rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
   # Using null as the default also improves performance as they are not forced by the
@@ -219,8 +222,8 @@ let
         in {
           # Download the source-repository-package commit and add it to a minimal git
           # repository that `cabal` will be able to access from a non fixed output derivation.
-          location = pkgs.evalPackages.runCommand "source-repository-package" {
-              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.gitMinimal ];
+          location = evalPackages.runCommand "source-repository-package" {
+              nativeBuildInputs = [ evalPackages.rsync evalPackages.gitMinimal ];
             } ''
             mkdir $out
             rsync -a --prune-empty-dirs "${fetched}/" "$out/"
@@ -241,24 +244,24 @@ let
 
       # Parse the `repository` blocks
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
+        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
-      #   Here we want to use pkgs.evalPackages.fetchgit, so one can calculate
+      #   Here we want to use evalPackages.fetchgit, so one can calculate
       #   the build plan for any target without a remote builder
       # * at built time  (passed out)
       #   Here we want to use plain pkgs.fetchgit, which is what a builder
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposEval = builtins.map (fetchPackageRepo pkgs.evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos;
+      sourceReposEval = builtins.map (fetchPackageRepo evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos;
       sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
     in {
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${pkgs.evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
+        cp -f ${evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
       '' +
         pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
         chmod +w -R ./cabal.project
@@ -365,12 +368,12 @@ let
   '');
 
   # Dummy `ghc` that uses the captured output
-  dummy-ghc = pkgs.evalPackages.writeTextFile {
+  dummy-ghc = evalPackages.writeTextFile {
     name = "dummy-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc";
     text = ''
-      #!${pkgs.evalPackages.runtimeShell}
+      #!${evalPackages.runtimeShell}
       case "$*" in
         --version*)
           cat ${dummy-ghc-data}/ghc/version
@@ -408,12 +411,12 @@ let
   };
 
   # Dummy `ghc-pkg` that uses the captured output
-  dummy-ghc-pkg = pkgs.evalPackages.writeTextFile {
+  dummy-ghc-pkg = evalPackages.writeTextFile {
     name = "dummy-pkg-" + ghc.name;
     executable = true;
     destination = "/bin/${ghc.targetPrefix}ghc-pkg";
     text = ''
-      #!${pkgs.evalPackages.runtimeShell}
+      #!${evalPackages.runtimeShell}
       case "$*" in
         --version)
           cat ${dummy-ghc-data}/ghc-pkg/version
@@ -449,10 +452,10 @@ let
         else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
-  }) (pkgs.evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install pkgs.evalPackages.rsync pkgs.evalPackages.gitMinimal ];
+  }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ];
     # Needed or stack-to-nix will die on unicode inputs
-    LOCALE_ARCHIVE = pkgs.lib.optionalString (pkgs.evalPackages.stdenv.buildPlatform.libc == "glibc") "${pkgs.evalPackages.glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
     meta.platforms = pkgs.lib.platforms.all;
     preferLocalBuild = false;
@@ -474,11 +477,11 @@ let
         '';
       in {
         # These check for cabal configure failure
-        json = pkgs.evalPackages.runCommand (nameAndSuffix "plan-json") {} ''
+        json = evalPackages.runCommand (nameAndSuffix "plan-json") {} ''
           ${checkCabalConfigure}
           cp ${plan-nix.maybeJson} $out
         '';
-        freeze = pkgs.evalPackages.runCommand (nameAndSuffix "plan-freeze") {} ''
+        freeze = evalPackages.runCommand (nameAndSuffix "plan-freeze") {} ''
           ${checkCabalConfigure}
           cp ${plan-nix.maybeFreeze} $out
         '';
@@ -520,7 +523,7 @@ let
     ${pkgs.lib.optionalString (subDir != "") "cd ${subDir}"}
     ${fixedProject.makeFixedProjectFile}
     ${pkgs.lib.optionalString (cabalProjectFreeze != null) ''
-      cp ${pkgs.evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
+      cp ${evalPackages.writeText "cabal.project.freeze" cabalProjectFreeze} \
         cabal.project.freeze
       chmod +w cabal.project.freeze
     ''}

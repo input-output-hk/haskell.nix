@@ -1,8 +1,9 @@
-{ stackProject', recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stackProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 let
   project = stackProject' {
     src = testSrc "stack-source-repo";
+    inherit evalPackages;
   };
   packages = project.hsPkgs;
 

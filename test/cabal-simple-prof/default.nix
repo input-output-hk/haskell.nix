@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -16,7 +16,7 @@ let
   ];
 
   project = cabalProject' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-prof";
     inherit modules;
     cabalProject = ''
