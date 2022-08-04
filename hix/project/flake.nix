@@ -1,4 +1,6 @@
 {
+  # This is a boilerplate `flake.nix` file used by
+  # `hix develop`, `hix flake`, `hix build` and `hix run`.
   description = "Default hix flake";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";

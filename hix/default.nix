@@ -116,7 +116,7 @@ let
           cp $HIX_NIX nix/hix.nix
           echo '`nix/hix.nix` project configuation:'
         fi
-        cat nix/hix.nix
+        ${pkgs.bat}/bin/bat nix/hix.nix
         ;;
       repl)
         nix $cmd ${hixProject} ${args} "$@"
