@@ -692,8 +692,8 @@ final: prev: {
             # This flake function maps the build outputs to the flake `packages`,
             # `checks` and `apps` output attributes.
             flake = {
-                packages ? haskellLib.selectProjectPackages
-              , crossPlatforms ? p: []
+                packages ? rawProject.args.flake.packages
+              , crossPlatforms ? rawProject.args.flake.crossPlatforms
               }:
               let packageNames = project: builtins.attrNames (packages project.hsPkgs);
                   packagesForProject = prefix: project:
