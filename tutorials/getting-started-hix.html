@@ -163,171 +163,57 @@
             <div class="section">
               
                 <h1 id="getting-started-with-hix">Getting started with Hix<a class="headerlink" href="#getting-started-with-hix" title="Permanent link">&para;</a></h1>
-<p>The <code>hix</code> tools are wrappers for the various <code>nix</code> tools that
-use <code>haskell.nix</code> without the need to add any <code>.nix</code> files.</p>
-<p>This is useful for:</p>
-<ul>
-<li>
-<p>A quick way to try out haskell.nix for new users.</p>
-</li>
-<li>
-<p>Using haskell.nix to work on projects that do not have
-  <code>.nix</code> files.</p>
-</li>
-<li>
-<p>Testing to see if <code>haskell.nix</code> can build a project.</p>
-</li>
-<li>
-<p>Making <code>flake</code> and <code>non flake</code> configurations to check <code>haskell.nix</code>
-  treats them the same.</p>
-</li>
-</ul>
-<h2 id="installing-nix">Installing Nix<a class="headerlink" href="#installing-nix" title="Permanent link">&para;</a></h2>
-<p>To use Hix you will need to install <a href="https://nixos.org/download.html">Nix</a>.</p>
-<h2 id="setting-up-the-binary-cache">Setting up the binary cache<a class="headerlink" href="#setting-up-the-binary-cache" title="Permanent link">&para;</a></h2>
-<p>IMPORTANT: you <em>must</em> do this or you <em>will</em> build several copies of GHC!</p>
-<p>You can configure Nix to use our binary cache, which is pushed to by CI, so should contain the artifacts that you need.</p>
-<p>You need to add the following sections to <code>/etc/nix/nix.conf</code> or, if you are a trusted user, <code>~/.config/nix/nix.conf</code> (if you don't know what a "trusted user" is, you probably want to do the former).</p>
-<pre><code>trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
-substituters = [...] https://cache.iog.io [...]
+<p>Hix is a command line tool that provides an easy way to add haskell.nix
+support to existing haskell projects.</p>
+<p>You will need <code>nix</code> installed and in you <code>PATH</code> with nix in PATH with
+<code>experimental-features = [ "nix-command" "flakes" ];</code> configured.
+See https://nixos.wiki/wiki/Flakes for details.</p>
+<h2 id="using-hix-init-and-nix">Using <code>hix init</code> and <code>nix</code><a class="headerlink" href="#using-hix-init-and-nix" title="Permanent link">&para;</a></h2>
+<p>The <code>hix init</code> command adds a <code>flake.nix</code> and <code>nix/hix.nix</code> file.
+After that the project can be used with regular <code>nix</code> tools.</p>
+<p>For instance to run <code>cabal build</code> on the <code>hello</code> package from hackage:</p>
+<pre><code class="language-bash">cabal unpack hello
+cd hello-1.0.0.2
+nix run &quot;github:input-output-hk/haskell.nix#hix&quot; -- init
+nix develop
+cabal build
 </code></pre>
-<p>If you're running NixOS, you need to add/update the following in your <code>/etc/nixos/configuration.nix</code> files instead.</p>
-<pre><code># Binary Cache for Haskell.nix
-nix.settings.trusted-public-keys = [
-  &quot;hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=&quot;
-];
-nix.settings.substituters = [
-  &quot;https://cache.iog.io&quot;
-];
+<p>To view the contents of the flake run:</p>
+<pre><code>nix flake show
 </code></pre>
-<p>NixOS-21.11 and older use slightly different settings.</p>
-<pre><code># Binary Cache for Haskell.nix  
-nix.binaryCachePublicKeys = [
-  &quot;hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=&quot;
-];
-nix.binaryCaches = [
-  &quot;https://cache.iog.io&quot;
-];   
+<p>To build a component with nix:</p>
+<pre><code>nix build .#hello:exe:hello
 </code></pre>
-<p>This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding <a href="../troubleshooting.html#why-am-i-building-ghc">troubleshooting section</a>.</p>
+<p>To build and run a component:</p>
+<pre><code>nix run .#hello:exe:hello
+</code></pre>
 <h2 id="installing-hix">Installing Hix<a class="headerlink" href="#installing-hix" title="Permanent link">&para;</a></h2>
+<p>To use the other Hix features first install Hix with:</p>
 <pre><code>nix-env -iA hix -f https://github.com/input-output-hk/haskell.nix/tarball/master
 </code></pre>
-<h2 id="updating-hix-also-updates-hackage">Updating Hix (also updates hackage)<a class="headerlink" href="#updating-hix-also-updates-hackage" title="Permanent link">&para;</a></h2>
+<p>To update run to the latest version run:</p>
 <pre><code>hix update
 </code></pre>
-<p>This is also necessary to make the latest nightly snapshot of hackage
-avaiable to nix.</p>
-<h2 id="building-with-hix">Building with Hix<a class="headerlink" href="#building-with-hix" title="Permanent link">&para;</a></h2>
-<p>To run <code>cabal build</code> in a nix-shell with all the dependencies required:</p>
-<pre><code>cabal unpack hello
-cd hello-1.0.0.2
-hix-shell --run 'cabal build'
+<h2 id="using-hix-develop-hix-flake-hix-build-and-hix-run">Using <code>hix develop</code>, <code>hix flake</code>, <code>hix build</code> and <code>hix run</code><a class="headerlink" href="#using-hix-develop-hix-flake-hix-build-and-hix-run" title="Permanent link">&para;</a></h2>
+<p>These commands work the same as the <code>nix</code> versions
+without using the <code>flake.nix</code>.  Instead a boiler
+plate haskell.nix flake.nix file is added to
+<code>.hix-flake/flake.nix</code> and used from there.</p>
+<p>The is can be useful if the project already includes a
+<code>flake.nix</code> or if you do not intend to maintain one.</p>
+<p>Then all of these should work without the need to
+run <code>hix init</code>:</p>
+<pre><code>hix develop
+hix flake show
+hix build .#hello:exe:hello
+hix run .#hello:exe:hello
 </code></pre>
-<p>Build with nix:</p>
-<pre><code>hix-build -A hsPkgs.hello.components.exes.hello
-</code></pre>
-<p>Cross compile to JavaScript:</p>
-<pre><code>hix-build -A projectCross.ghcjs.hsPkgs.hello.components.exes.hello
-</code></pre>
-<h2 id="configuring-hix">Configuring Hix<a class="headerlink" href="#configuring-hix" title="Permanent link">&para;</a></h2>
-<p>The configuration arguments for <code>Hix</code> can be (from highest precedence to lowest):</p>
-<ul>
-<li>
-<p>Passed on the command line with <code>--arg</code> (or <code>--argstr</code> for string args).</p>
-</li>
-<li>
-<p>Placed in <code>nix/hix.nix</code> file in the project dir.</p>
-</li>
-<li>
-<p>Placed in <code>~/.config/hix/hix.conf</code></p>
-</li>
-</ul>
-<p>For example to build with GHC 8.10.7:</p>
-<pre><code>hix-shell --argstr compiler-nix-name ghc8107 --run 'cabal build'
-</code></pre>
-<p>or add a <code>nix/hix.nix</code> or <code>~/.config/hix/hix.conf</code> file:</p>
-<pre><code class="language-nix">{ compiler-nix-name = &quot;ghc8107&quot;; }
-</code></pre>
-<p>Here are just a few of the other configuration arguments you could use
-in the files or on the command line (they are all optional):</p>
-<pre><code class="language-nix">{ name = &quot;hello&quot;;                    # for better error messages and derivation names
-  nixpkgsPin = &quot;nixpkgs-unstable&quot;;   # or nixpkgs-2111 or nixpkgs-2105
-  nixpkgs = &lt;nixpkgs&gt;;               # use this instead of nixpkgsPin
-  subDir = &quot;some/sub/dir&quot;;           # sub dir containing the haskell project
-  projectFileName = &quot;stack.yaml&quot;;    # use this project file
-  tools.haskell-language-server = &quot;latest&quot;;
-  tools.hlint = &quot;latest&quot;;            # Include the latest hls and hlint in the shell
-  index-state = &quot;2021-02-22T00:00:00Z&quot;; # It is normally best to put this in `cabal.project` (not here)
-
-# PLUS MANY MORE!  Almost any argument you can pass to the project functions
-# or to `shellFor` can be used in as a Hix configuration argument.
-
-}
-</code></pre>
-<h2 id="adding-nix-support-with-niv">Adding Nix Support with Niv<a class="headerlink" href="#adding-nix-support-with-niv" title="Permanent link">&para;</a></h2>
-<p>If you have a <code>nix/hix.nix</code> file with suitable configuration that
-you want to make available to users with Nix (without having to
-install Hix).</p>
-<p><a href="https://github.com/nmattia/niv">Niv</a> is a command line tool for keeping track of Nix project dependencies.</p>
-<p>After installing niv you can initialize niv and pin the latest haskell.nix
-commit by running the following in the root directory of the project:</p>
-<pre><code>niv init
-niv add input-output-hk/haskell.nix -n haskellNix
-</code></pre>
-<p>Add <code>default.nix</code>:</p>
-<pre><code class="language-nix">(import (import nix/sources.nix).haskellNix {}).hix.project { src = ./.; }
-</code></pre>
-<p>If you want to also pin <code>nixpkgs</code> with Niv use:</p>
-<pre><code class="language-nix">let
-  sources = import nix/sources.nix;
-in
-  (import sources.haskellNix {}).hix.project {
-    inherit (sources) nixpkgs;
-    src = ./.;
-  }
-</code></pre>
-<p>Add <code>shell.nix</code>:</p>
-<pre><code class="language-nix">(import ./.).shell
-</code></pre>
-<p>When you want to update to the latest version of haskell.nix use:</p>
-<pre><code>niv update haskellNix
-</code></pre>
-<h2 id="adding-nix-flake-support">Adding Nix Flake Support<a class="headerlink" href="#adding-nix-flake-support" title="Permanent link">&para;</a></h2>
-<p>To add flake support that uses the <code>nix/hix.nix</code> configuration in your
-follow the <a href="getting-started.html">Getting started with flakes</a> guide, but
-use <code>haskell-nix.hix.project</code> instead of <code>haskell-nix.project'</code></p>
-<p>The <code>nixpkgs</code> used will need to be selected as a flake input (any selection
-made in <code>nix/hix.nix</code> will be ignored).</p>
-<p>Example <code>flake.nix</code> file:</p>
-<pre><code class="language-nix">{
-  description = &quot;A very basic flake&quot;;
-  inputs.haskellNix.url = &quot;github:input-output-hk/haskell.nix&quot;;
-  inputs.nixpkgs.follows = &quot;haskellNix/nixpkgs-unstable&quot;;
-  inputs.flake-utils.url = &quot;github:numtide/flake-utils&quot;;
-  outputs = { self, nixpkgs, flake-utils, haskellNix }:
-    flake-utils.lib.eachSystem [ &quot;x86_64-linux&quot; &quot;x86_64-darwin&quot; ] (system:
-    let
-      overlays = [ haskellNix.overlay
-        (final: prev: {
-          # This overlay adds our project to pkgs
-          helloProject =
-            final.haskell-nix.hix.project {
-              src = ./.;
-              # Other project options can be put in `nix/hix.nix`
-            };
-        })
-      ];
-      pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-      flake = pkgs.helloProject.flake {
-        # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
-        crossPlatforms = p: [p.ghcjs];
-      };
-    in flake // {
-      # Built by `nix build .`
-      defaultPackage = flake.packages.&quot;hello:exe:hello&quot;;
-    });
-}
+<h2 id="using-hix-shell-and-hix-build">Using <code>hix-shell</code> and <code>hix-build</code><a class="headerlink" href="#using-hix-shell-and-hix-build" title="Permanent link">&para;</a></h2>
+<p>These commands behave like <code>nix-build</code> and <code>hix-shell</code>
+would if a boiler plate <code>default.nix</code> and <code>shell.nix</code>
+we present.</p>
+<pre><code>hix-shell --run 'cabal build all'
+hix-build -A hsPkgs.hello.components.exes.hello
 </code></pre>
               
             </div>
