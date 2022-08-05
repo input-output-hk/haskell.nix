@@ -21,6 +21,7 @@ let
     gobject-introspection = import ./gobject-introspection.nix;
     hix = import ./hix.nix;
     ghcjs = import ./ghcjs.nix;
+    default-setup = import ./default-setup.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -54,6 +55,7 @@ let
     gobject-introspection
     hix
     hydra
+    default-setup
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
   ];
