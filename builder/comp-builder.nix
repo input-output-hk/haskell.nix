@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -162,7 +162,7 @@ let
       if configureAllComponents
         then ["--enable-tests" "--enable-benchmarks"]
         else ["${haskellLib.componentTarget componentId}"]
-    ) ++ [ "$(cat ${configFiles}/configure-flags)"
+    ) ++ [ "$(cat $configFiles/configure-flags)"
     ] ++ commonConfigureFlags);
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
@@ -337,9 +337,9 @@ let
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
-      inherit configFiles executableToolDepends exeName enableDWARF;
+      inherit executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
-      env = shellWrappers;
+      env = shellWrappers.drv;
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
       dwarf = self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
@@ -380,10 +380,10 @@ let
       ++ map haskellLib.dependToLib component.depends);
 
     nativeBuildInputs =
-      [shellWrappers buildPackages.removeReferencesTo]
+      [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends;
 
-    outputs = ["out" ]
+    outputs = ["out" "configFiles"]
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source")
       ++ (lib.optional writeHieFiles "hie");
@@ -403,6 +403,15 @@ let
       '') + commonAttrs.prePatch;
 
     configurePhase = ''
+      echo A ${name}
+      ${configFiles.script}
+      echo B ${name}
+      wrappedGhc=$(mktemp -d)
+      echo C ${name}
+      ${shellWrappers.script}
+      echo D ${name}
+      PATH=$wrappedGhc/bin:$PATH
+      echo E ${name}
       runHook preConfigure
       echo Configure flags:
       printf "%q " ${finalConfigureFlags}
@@ -462,7 +471,7 @@ let
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db $configFiles/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
 
         mkdir -p $out/exactDep
         touch $out/exactDep/configure-flags
@@ -578,10 +587,10 @@ let
       fi
     '';
 
-    shellHook = ''
-      export PATH="${shellWrappers}/bin:$PATH"
-      ${shellHookApplied}
-    '';
+    #shellHook = ''
+    #  export PATH="${shellWrappers.drv}/bin:$PATH"
+    #  ${shellHookApplied}
+    #'';
   }
   // haskellLib.optionalHooks {
     # These are the hooks that are not needed by haddock (see commonAttrs for the ones that
@@ -593,4 +602,4 @@ let
   // lib.optionalAttrs (hardeningDisable != [] || stdenv.hostPlatform.isMusl) {
     hardeningDisable = hardeningDisable ++ lib.optional stdenv.hostPlatform.isMusl "pie";
   });
-in drv; in self)
+in drv // { configFiles = drv.configFiles // configFiles; }; in self)

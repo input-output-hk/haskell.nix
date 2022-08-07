@@ -20,29 +20,21 @@ let
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
   inherit (configFiles) targetPrefix ghcCommand ghcCommandCaps packageCfgDir;
-  libDir         = "$out/${configFiles.libDir}";
-  docDir         = "$out/share/doc/ghc/html";
+  libDir         = "$wrappedGhc/${configFiles.libDir}";
+  docDir         = "$wrappedGhc/share/doc/ghc/html";
   # For musl we can use haddock from the buildGHC
   haddock        = if stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl
     then ghc.buildGHC
     else ghc;
 
-in runCommand "${componentName}-${ghc.name}-env" {
-  preferLocalBuild = true;
-  passthru = {
-    inherit (ghc) version meta;
-    inherit targetPrefix;
-    baseGhc = ghc;
-  };
-} (
-  ''
+  script = ''
     . ${makeWrapper}/nix-support/setup-hook
 
   ''
   # Start with a ghc and remove all of the package directories
   + ''
-    mkdir -p $out/bin
-    ${lndir}/bin/lndir -silent ${ghc} $out
+    mkdir -p $wrappedGhc/bin
+    ${lndir}/bin/lndir -silent ${ghc} $wrappedGhc
     rm -rf ${libDir}/*/
   ''
   # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
@@ -63,7 +55,7 @@ in runCommand "${componentName}-${ghc.name}-env" {
   ''
   # Replace the package database with the one from target package config.
   + ''
-    ln -s ${configFiles}/${packageCfgDir} $out/${packageCfgDir}
+    cp -r $configFiles/${packageCfgDir} $wrappedGhc/${packageCfgDir}
 
   ''
   # Set the GHC_PLUGINS environment variable according to the plugins for the component.
@@ -104,11 +96,11 @@ in runCommand "${componentName}-${ghc.name}-env" {
   + ''
     for prg in ${ghcCommand} ${ghcCommand}i ${ghcCommand}-${ghc.version} ${ghcCommand}i-${ghc.version}; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
-        rm -f $out/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $out/bin/$prg                           \
+        rm -f $wrappedGhc/bin/$prg
+        makeWrapper ${ghc}/bin/$prg $wrappedGhc/bin/$prg                           \
           --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'                   \
-          --set "NIX_${ghcCommandCaps}"        "$out/bin/${ghcCommand}"     \
-          --set "NIX_${ghcCommandCaps}PKG"     "$out/bin/${ghcCommand}-pkg" \
+          --set "NIX_${ghcCommandCaps}"        "$wrappedGhc/bin/${ghcCommand}"     \
+          --set "NIX_${ghcCommandCaps}PKG"     "$wrappedGhc/bin/${ghcCommand}-pkg" \
           --set "NIX_${ghcCommandCaps}_DOCDIR" "${docDir}"                  \
           --set "GHC_PLUGINS"                  "$GHC_PLUGINS"               \
           --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
@@ -117,11 +109,11 @@ in runCommand "${componentName}-${ghc.name}-env" {
 
     for prg in "${targetPrefix}runghc" "${targetPrefix}runhaskell"; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
-        rm -f $out/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $out/bin/$prg                           \
-          --add-flags "-f $out/bin/${ghcCommand}"                           \
-          --set "NIX_${ghcCommandCaps}"        "$out/bin/${ghcCommand}"     \
-          --set "NIX_${ghcCommandCaps}PKG"     "$out/bin/${ghcCommand}-pkg" \
+        rm -f $wrappedGhc/bin/$prg
+        makeWrapper ${ghc}/bin/$prg $wrappedGhc/bin/$prg                           \
+          --add-flags "-f $wrappedGhc/bin/${ghcCommand}"                           \
+          --set "NIX_${ghcCommandCaps}"        "$wrappedGhc/bin/${ghcCommand}"     \
+          --set "NIX_${ghcCommandCaps}PKG"     "$wrappedGhc/bin/${ghcCommand}-pkg" \
           --set "NIX_${ghcCommandCaps}_DOCDIR" "${docDir}"                  \
           --set "GHC_PLUGINS"                  "$GHC_PLUGINS"               \
           --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
@@ -132,8 +124,8 @@ in runCommand "${componentName}-${ghc.name}-env" {
   # Wrap haddock, if the base GHC provides it.
   + ''
     if [[ -x "${haddock}/bin/haddock" ]]; then
-      rm -f $out/bin/haddock
-      makeWrapper ${haddock}/bin/haddock $out/bin/haddock    \
+      rm -f $wrappedGhc/bin/haddock
+      makeWrapper ${haddock}/bin/haddock $wrappedGhc/bin/haddock    \
         --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'  \
         --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
     fi
@@ -144,11 +136,27 @@ in runCommand "${componentName}-${ghc.name}-env" {
   + ''
     for prg in ${ghcCommand}-pkg ${ghcCommand}-pkg-${ghc.version}; do
       if [[ -x "${ghc}/bin/$prg" ]]; then
-        rm -f $out/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $out/bin/$prg --add-flags "--global-package-db=$out/${packageCfgDir}"
+        rm -f $wrappedGhc/bin/$prg
+        makeWrapper ${ghc}/bin/$prg $wrappedGhc/bin/$prg --add-flags "--global-package-db=$wrappedGhc/${packageCfgDir}"
       fi
     done
 
     ${postInstall}
-  ''
-)
+  '';
+
+  drv = runCommand "${componentName}-${ghc.name}-env" {
+  preferLocalBuild = true;
+  passthru = {
+    inherit (ghc) version meta;
+  };
+  nativeBuildInputs = [ghc];
+} (''
+    configFiles=$(mktemp -d)
+    ${configFiles.script}
+    wrappedGhc=$out
+    ${script}
+'');
+in {
+  inherit script drv targetPrefix;
+  baseGhc = ghc;
+}

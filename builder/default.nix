@@ -3,7 +3,7 @@
 let
   # Builds a single component of a package.
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix {
-    inherit ghc haskellLib makeConfigFiles haddockBuilder ghcForComponent hsPkgs compiler;
+    inherit ghc haskellLib makeConfigFiles haddockBuilder ghcForComponent hsPkgs compiler nonReinstallablePkgs;
   };
 
   haddockBuilder = haskellLib.weakCallPackage pkgs ./haddock-builder.nix {
