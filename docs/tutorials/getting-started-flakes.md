@@ -12,6 +12,37 @@ project and its dependencies into Nix code.
 Assuming you have [Nix](https://nixos.org/download.html) installed, you can
 start setting up your project.
 
+## Using `flake init` and `nix`
+
+The `flake init` command create an example `hello` package from hackage
+containing an `flake.nix` and `nix/hix.nix` file. The project can be used with
+regular `nix` tools.
+
+```bash
+nix flake init --template haskell-nix#template --impure
+# `--impure` is required by `builtins.currentSystem`
+nix develop
+cabal build
+```
+
+To view the contents of the flake run:
+
+```
+nix flake show
+```
+
+To build a component with nix:
+
+```
+nix build .#hello:exe:hello
+```
+
+To build and run a component:
+
+```
+nix run .#hello:exe:hello
+```
+
 ## Setting up the binary cache
 
 IMPORTANT: you *must* do this or you *will* build several copies of GHC!
