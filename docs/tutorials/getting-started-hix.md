@@ -4,7 +4,7 @@ Hix is a command line tool that provides an easy way to add haskell.nix
 support to existing haskell projects.
 
 You will need `nix` installed and in you `PATH` with nix in PATH with
-`experimental-features = [ "nix-command" "flakes" ];` configured.
+`experimental-features = nix-command flakes` configured.
 See https://nixos.wiki/wiki/Flakes for details.
 
 ## Using `hix init` and `nix`
@@ -17,7 +17,7 @@ For instance to run `cabal build` on the `hello` package from hackage:
 ```bash
 cabal unpack hello
 cd hello-1.0.0.2
-nix run "github:input-output-hk/haskell.nix#hix" -- init
+nix run haskell.nix#hix -- init
 nix develop
 cabal build
 ```
