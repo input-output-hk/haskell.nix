@@ -13,15 +13,32 @@ with lib.types;
     src = mkOption {
       type = either path package;
     };
+    crossPlatforms = mkOption {
+      type = unspecified;
+      default = p: [];
+    };
     # Default shell arguments
     shell = mkOption {
-      # TODO make this a submodule
-      type = unspecified;
+      type = submodule [
+        (import ./shell.nix { projectConfig = config; })
+        { _module.args = { inherit (pkgs.haskell-nix) haskellLib; }; }
+      ];
       default = {};
       description = ''
         Arguments to use for the default shell `p.shell` (these are passed to p.shellFor).
         For instance to include `cabal` and `ghcjs` support use
           shell = { tools.cabal = {}; crossPlatforms = p: [ p.ghcjs ]; }
+      '';
+    };
+    # Default flake arguments
+    flake = mkOption {
+      type = submodule [
+        (import ./flake.nix { projectConfig = config; })
+        { _module.args = { inherit (pkgs.haskell-nix) haskellLib; }; }
+      ];
+      default = {};
+      description = ''
+        Default arguments to use for the `p.flake`.
       '';
     };
     evalSystem = mkOption {
