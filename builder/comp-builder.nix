@@ -371,19 +371,18 @@ let
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
       ++ builtins.concatLists pkgconfig
+      ++ configFiles.libDeps
       ++ lib.optionals (stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs
-        ++ map haskellLib.dependToLib component.depends);
+        (lib.flatten component.libs);
 
     buildInputs = lib.optionals (!stdenv.hostPlatform.isWindows)
-      (lib.flatten component.libs
-      ++ map haskellLib.dependToLib component.depends);
+        (lib.flatten component.libs);
 
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends;
 
-    outputs = ["out" "configFiles"]
+    outputs = ["out"]
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source")
       ++ (lib.optional writeHieFiles "hie");
@@ -403,15 +402,12 @@ let
       '') + commonAttrs.prePatch;
 
     configurePhase = ''
-      echo A ${name}
+      configFiles=$(mktemp -d)
       ${configFiles.script}
-      echo B ${name}
       wrappedGhc=$(mktemp -d)
-      echo C ${name}
       ${shellWrappers.script}
-      echo D ${name}
       PATH=$wrappedGhc/bin:$PATH
-      echo E ${name}
+
       runHook preConfigure
       echo Configure flags:
       printf "%q " ${finalConfigureFlags}
@@ -602,4 +598,4 @@ let
   // lib.optionalAttrs (hardeningDisable != [] || stdenv.hostPlatform.isMusl) {
     hardeningDisable = hardeningDisable ++ lib.optional stdenv.hostPlatform.isMusl "pie";
   });
-in drv // { configFiles = drv.configFiles // configFiles; }; in self)
+in drv; in self)

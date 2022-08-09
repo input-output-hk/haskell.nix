@@ -46,7 +46,9 @@ let
       src = cleanSrc'.root;
       buildInputs = component.libs
         ++ component.frameworks
-        ++ builtins.concatLists component.pkgconfig;
+        ++ builtins.concatLists component.pkgconfig
+        ++ configFiles.libDeps
+        ++ [ghc]; # Needs to be a build input so that the boot libraries are included
       nativeBuildInputs = [ghc] ++ executableToolDepends;
 
       passthru = {
@@ -69,6 +71,9 @@ let
 
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
+        configFiles=$(mktemp -d)
+        mkdir -p $configFiles
+        ${configFiles.script}
         runHook preBuild
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
@@ -77,7 +82,7 @@ let
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db ${configFiles.drv}/${configFiles.packageCfgDir} --make -o ./Setup
+                }-package-db $configFiles/${configFiles.packageCfgDir} --make -o ./Setup
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)

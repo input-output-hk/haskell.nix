@@ -65,6 +65,7 @@ in
                             # any plutus-apps input being used for a
                             # package.
 , evalPackages
+, supportHpack ? false      # Run hpack on package.yaml files with no .cabal file
 , ...
 }@args:
 
@@ -453,7 +454,10 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ];
+    nativeBuildInputs = [
+      nix-tools.project.hsPkgs.nix-tools.components.exes.plan-to-nix
+      dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ]
+      ++ pkgs.lib.optional supportHpack nix-tools.project.hsPkgs.hpack.components.exes.hpack;
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
@@ -510,12 +514,20 @@ let
         if [ -e "$cabalFile" ]; then
           echo Ignoring $hpackFile as $cabalFile exists
         else
+          ${
           # warning: this may not generate the proper cabal file.
           # hpack allows globbing, and turns that into module lists
-          # without the source available (we cleaneSourceWith'd it),
+          # without the source available (we cleanSourceWith'd it),
           # this may not produce the right result.
-          echo No .cabal file found, running hpack on $hpackFile
-          hpack $hpackFile
+          if supportHpack
+            then '' 
+              echo No .cabal file found, running hpack on $hpackFile
+              hpack $hpackFile
+            ''
+            else ''
+              echo WARNING $hpackFile has no .cabal file and `supportHpack` was not set.
+            ''
+          }
         fi
       done
       )

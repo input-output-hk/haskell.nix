@@ -37,7 +37,7 @@ let
       # version of Cabal bundled with GHC).
       cabalFromCabalInstall = final.buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
 
-     in  ghc // rec {
+     in ghc // rec {
       defaultSetup = final.lib.mapAttrs (_: useCabalFromCabalInstall: setup-builder ({
         name = "${ghc.targetPrefix}default-Setup";
         component = {

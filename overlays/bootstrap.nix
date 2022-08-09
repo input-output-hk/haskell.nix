@@ -980,7 +980,7 @@ in {
           final.buildPackages.buildPackages.gitMinimal
           final.buildPackages.buildPackages.nix-prefetch-git ];
     in
-      final.buildPackages.symlinkJoin {
+      (final.buildPackages.symlinkJoin {
         name = "nix-tools";
         paths = exes;
         buildInputs = [ final.buildPackages.makeWrapper ];
@@ -992,7 +992,7 @@ in {
             wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
           done
         '';
-      };
+      }) // { inherit project; };
 
     # Memoize the cabal-install and nix-tools derivations by adding:
     #   haskell-nix.cabal-install.ghcXXX

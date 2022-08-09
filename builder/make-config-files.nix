@@ -49,21 +49,11 @@ let
   libDir         = "lib/${ghcCommand}-${ghc.version}";
   packageCfgDir  = "${libDir}/package.conf.d";
 
-  # Filters out only library packages that for this GHC target
-  # TODO investigate why this is needed
-  # TODO find out why p ? configFiles helps (for instance for `R1909.aarch64-unknown-linux-gnu.tests.cabal-22.run.x86_64-linux`)
   libDeps = map chooseDrv (
     (if enableDWARF then (x: map (p: p.dwarf or p) x) else x: x)
     ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
-    (lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
-    (map getLibComponent component.depends)))
+    (map haskellLib.dependToLib component.depends))
   );
-  cfgFiles =
-    let xs = map
-      (p: "${p.configFiles}")
-      libDeps;
-    in lib.concatStringsSep "\" \"" xs;
-  libs = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
   script = ''
     ${target-pkg} init $configFiles/${packageCfgDir}
 
@@ -86,8 +76,8 @@ let
       done
     ''}
 
-    for l in "${cfgFiles}"; do
-      if [ -n "$l" ]; then
+    for l in "''${pkgsHostTarget[@]}"; do
+      if [ -d "$l/${packageCfgDir}" ]; then
         files=("$l/${packageCfgDir}/"*.conf)
         if (( ''${#files[@]} )); then
           cp -f "''${files[@]}" $configFiles/${packageCfgDir}
@@ -97,8 +87,8 @@ let
         fi
       fi
     done
-    for l in "${libs}"; do
-      if [ -n "$l" ]; then
+    for l in "''${pkgsHostTarget[@]}"; do
+      if [ -d "$l/package.conf.d" ]; then
         files=("$l/package.conf.d/"*.conf)
         if (( ''${#files[@]} )); then
           cp -f "''${files[@]}" $configFiles/${packageCfgDir}
@@ -133,11 +123,15 @@ let
       echo "allow-older: ${identifier.name}:*" >> $configFiles/cabal.config
     ''}
 
-    for p in ${lib.concatStringsSep " " libDeps}; do
-      cat $p/envDep >> $configFiles/ghc-environment
+    for p in $propagatedBuildInputs; do
+      if [ -e $p/envDep ]; then
+        cat $p/envDep >> $configFiles/ghc-environment
+      fi
       ${ lib.optionalString component.doExactConfig ''
-        cat $p/exactDep/configure-flags >> $configFiles/configure-flags
-        cat $p/exactDep/cabal.config >> $configFiles/cabal.config
+        if [ -d $p/exactDep ]; then
+          cat $p/exactDep/configure-flags >> $configFiles/configure-flags
+          cat $p/exactDep/cabal.config >> $configFiles/cabal.config
+        fi
       ''}
     done
     for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs')}; do
@@ -211,7 +205,7 @@ let
   '');
 in {
   inherit (ghc) targetPrefix;
-  inherit script drv ghcCommand ghcCommandCaps libDir packageCfgDir component;
+  inherit script libDeps drv ghcCommand ghcCommandCaps libDir packageCfgDir component;
   # Use ''${pkgroot} relative paths so that we can relocate the package database
   # along with referenced packages and still have it work on systems with
   # or without nix installed.
