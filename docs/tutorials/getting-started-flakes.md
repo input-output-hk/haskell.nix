@@ -92,7 +92,7 @@ Add `flake.nix`:
       ];
       pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
       flake = pkgs.helloProject.flake {
-        # This adds support for `nix build .#js-unknown-ghcjs-cabal:hello:exe:hello`
+        # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
         # crossPlatforms = p: [p.ghcjs];
       };
     in flake // {
