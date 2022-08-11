@@ -11,7 +11,9 @@ let
 
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
     echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $configFiles/configure-flags
-    echo "${field}: ${lib.concatStringsSep " " xs}" >> $configFiles/cabal.config
+    ${lib.concatStrings (map (x: ''
+      echo "${field}: ${x}" >> $configFiles/cabal.config
+    '') xs)}
   '';
 
   target-pkg = "${ghc.targetPrefix}ghc-pkg";
