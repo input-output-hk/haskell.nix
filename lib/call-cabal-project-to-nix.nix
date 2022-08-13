@@ -126,17 +126,13 @@ let
   # access to the store is restricted.  If origSrc was already in the store
   # you can pass the project in as a string.
   rawCabalProject =
-    if cabalProject != null
-      then cabalProject + (
-        if cabalProjectLocal != null
-          then ''
-
-            -- Added from cabalProjectLocal argument to cabalProject
-            ${cabalProjectLocal}
-          ''
-          else ""
-      )
-      else null;
+    if cabalProject == null && cabalProjectLocal == null
+      then null
+      else (
+        # like fmap
+        let f = g: x: if x == null then "" else g x; in
+        f (x: x) cabalProject + f (x: "\n-- Added from cabalProjectLocal argument to cabalProject\n${x}") cabalProjectLocal
+      );
 
   cabalProjectIndexState =
     if rawCabalProject != null
