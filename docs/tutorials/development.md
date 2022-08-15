@@ -175,7 +175,7 @@ Emacs to use it. The way I do it is:
 
 ## Using `nix repl`
 
-It's sometimes useful to load [Haskell.nix][] in the REPL to explore
+It's sometimes useful to load [Haskell.nix][] in the [REPL](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-repl.html) to explore
 attrsets and try examples.
 
 ```
@@ -190,19 +190,19 @@ rec {
 Load the example file:
 
 ```
-$ nix repl '<nixpkgs>' example.nix
-Welcome to Nix version 2.3pre6631_e58a7144. Type :? for help.
+$ nix repl
+Welcome to Nix 2.10.3. Type :? for help.
 
-Loading '<nixpkgs>'...
-Added 10403 variables.
+nix-repl> :l <nixpkgs>
+Added 16938 variables.
 
-Loading 'example.nix'...
+nix-repl> :l example.nix
 Added 2 variables.
 
 nix-repl> lib.take 5 pkgNames
-[ "ALUT" "ANum" "Allure" "Boolean" "BoundedChan" ]
+[ "AC-Angle" "ALUT" "ANum" "Agda" "Allure" ]
 
-nix-repl>
+nix-repl> :q
 ```
 
 Now that you have `nix-tools` and are able to import [Haskell.nix][],
