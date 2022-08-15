@@ -129,8 +129,11 @@ let
     done
 
     ${ # Note: we pass `clear` first to ensure that we never consult the implicit global package db.
-      flagsAndConfig "package-db" ["clear" "$out/${packageCfgDir}"]
+       # However in `cabal.config` `cabal` requires `global` to be first.
+      flagsAndConfig "package-db" ["clear"]
     }
+    echo "package-db: global" >> $out/cabal.config
+    ${ flagsAndConfig "package-db" ["$out/${packageCfgDir}"] }
 
     echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
 
