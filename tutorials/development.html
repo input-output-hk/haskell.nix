@@ -318,7 +318,7 @@ per-directory.</p>
 </li>
 </ol>
 <h2 id="using-nix-repl">Using <code>nix repl</code><a class="headerlink" href="#using-nix-repl" title="Permanent link">&para;</a></h2>
-<p>It's sometimes useful to load <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> in the REPL to explore
+<p>It's sometimes useful to load <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a> in the <a href="https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-repl.html">REPL</a> to explore
 attrsets and try examples.</p>
 <pre><code># example.nix
 { nixpkgs ? &lt;nixpkgs&gt; }:
@@ -328,19 +328,19 @@ rec {
 }
 </code></pre>
 <p>Load the example file:</p>
-<pre><code>$ nix repl '&lt;nixpkgs&gt;' example.nix
-Welcome to Nix version 2.3pre6631_e58a7144. Type :? for help.
+<pre><code>$ nix repl
+Welcome to Nix 2.10.3. Type :? for help.
 
-Loading '&lt;nixpkgs&gt;'...
-Added 10403 variables.
+nix-repl&gt; :l &lt;nixpkgs&gt;
+Added 16938 variables.
 
-Loading 'example.nix'...
+nix-repl&gt; :l example.nix
 Added 2 variables.
 
 nix-repl&gt; lib.take 5 pkgNames
-[ &quot;ALUT&quot; &quot;ANum&quot; &quot;Allure&quot; &quot;Boolean&quot; &quot;BoundedChan&quot; ]
+[ &quot;AC-Angle&quot; &quot;ALUT&quot; &quot;ANum&quot; &quot;Agda&quot; &quot;Allure&quot; ]
 
-nix-repl&gt;
+nix-repl&gt; :q
 </code></pre>
 <p>Now that you have <code>nix-tools</code> and are able to import <a href="https://github.com/input-output-hk/haskell.nix">Haskell.nix</a>,
 you can continue to the next chapter.</p>
