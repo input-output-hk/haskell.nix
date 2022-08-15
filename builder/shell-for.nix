@@ -124,7 +124,7 @@ let
     # hoogle.nix expects.
     docPackage = p: lib.getOutput "doc" p // {
       pname = p.identifier.name;
-      haddockDir = lib.const p.haddockDir;
+      haddockDir = p.haddockDir;
     };
   in hoogleLocal ({
     packages = map docPackage (haskellLib.flatLibDepends component);
@@ -149,7 +149,7 @@ in
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or [];
-    nativeBuildInputs = [ ghcEnv ]
+    nativeBuildInputs = [ ghcEnv.drv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
       ++ lib.attrValues (buildPackages.haskell-nix.tools' evalPackages compiler.nix-name tools)
@@ -178,7 +178,7 @@ in
 
     # This helps tools like `ghcide` (that use the ghc api) to find
     # the correct global package DB.
-    NIX_GHC_LIBDIR = ghcEnv + "/" + configFiles.libDir;
+    NIX_GHC_LIBDIR = ghcEnv.drv + "/" + configFiles.libDir;
 
     passthru = (mkDrvArgs.passthru or {}) // {
       ghc = ghcEnv;

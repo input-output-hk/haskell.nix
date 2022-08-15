@@ -149,9 +149,11 @@ let
   passthru = {
     inherit (ghc) version meta;
   };
+  propagatedBuildInputs = configFiles.libDeps;
   nativeBuildInputs = [ghc];
 } (''
-    configFiles=$(mktemp -d)
+    mkdir -p $out/configFiles
+    configFiles=$out/configFiles
     ${configFiles.script}
     wrappedGhc=$out
     ${script}

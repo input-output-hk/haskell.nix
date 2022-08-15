@@ -128,7 +128,7 @@ let
       echo "allow-older: ${identifier.name}:*" >> $configFiles/cabal.config
     ''}
 
-    for p in $propagatedBuildInputs; do
+    for p in "''${pkgsHostTarget[@]}"; do
       if [ -e $p/envDep ]; then
         cat $p/envDep >> $configFiles/ghc-environment
       fi
@@ -203,6 +203,7 @@ let
   '';  
   drv = runCommand "${ghc.targetPrefix}${fullName}-config" {
       nativeBuildInputs = [ghc];
+      propagatedBuildInputs = libDeps;
     } (''
     mkdir -p $out
     configFiles=$out

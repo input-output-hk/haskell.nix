@@ -499,6 +499,7 @@ let
               if id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
                 name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
                 echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+                echo "package-id $id" >> $out/envDep
                 ''
                 # Allow `package-name:sublib-name` to work in `build-depends`
                 # by adding the same `--dependency` again, but with the package

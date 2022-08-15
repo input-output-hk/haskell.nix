@@ -41,7 +41,7 @@ let
 
   setup = if package.buildType == "Simple"
     then ghc.defaultSetupFor package.identifier.name
-    else setup-builder {
+    else setup-builder ({
       component = components.setup // {
         depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
         extraSrcFiles = components.setup.extraSrcFiles ++ [ "Setup.hs" "Setup.lhs" ];
@@ -49,7 +49,9 @@ let
       };
       inherit package name src flags revision patches defaultSetupSrc;
       inherit (pkg) preUnpack postUnpack;
-    };
+    } // lib.optionalAttrs (package.buildType != "Custom") {
+      nonReinstallablePkgs = ["base" "Cabal"];
+    });
 
   buildComp = allComponent: componentId: component: comp-builder {
     inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches revision

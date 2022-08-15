@@ -82,7 +82,7 @@ let
           if [ -f $f ]; then
             echo Compiling package $f
             ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db $configFiles/${configFiles.packageCfgDir} --make -o ./Setup
+                }-package-env $configFiles/ghc-environment --make -o ./Setup
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
