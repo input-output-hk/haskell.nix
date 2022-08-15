@@ -6,7 +6,7 @@
 # to compute the same derivation multiple times.
 final: prev:
 let
-  nonReinstallablePkgs = [];
+  nonReinstallablePkgs = ["base" "Cabal"];
   haskellLib = final.haskell-nix.haskellLib;
   defaultSetupSrc =
     if final.stdenv.hostPlatform.isGhcjs
@@ -80,7 +80,7 @@ let
         # add a custom Cabal package to the dependencies.  That way custom
         # setups won't complain about e.g. binary from the Cabal dependencies
         # and binary from the global package-db.
-        nonReinstallablePkgs = [];
+        nonReinstallablePkgs = ["base"];
       })) {
         useCabalFromCabalInstall = true;
         useCabalFromGHC = false;
@@ -95,7 +95,7 @@ let
           ||
             # These are the dependencies of `Cabal`
             !builtins.elem packageName
-              ["nix-tools" "alex" "happy" "hscolour" "Cabal" "bytestring" "aeson" "time"
+              ["alex" "happy" "hscolour" "Cabal" "bytestring" "time"
                "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
                "containers" "binary" "mtl" "text" "process" "parsec"]
         then defaultSetup.useCabalFromCabalInstall

@@ -24,11 +24,11 @@ let
         fi
       done
 
-      mkdir -p $out/evalDeps
+      mkdir -p $out/envDeps
       for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
-        touch $out/evalDeps/$P
+        touch $out/envDeps/$P
         if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
-          echo "package-id $id" >> $out/evalDeps/$P
+          echo "package-id $id" >> $out/envDeps/$P
         fi
       done
     '';
