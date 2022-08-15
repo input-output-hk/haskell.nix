@@ -101,6 +101,9 @@ in pkgs.lib.evalModules {
 
     # Configuration that applies to all plans
     ./modules/configuration-nix.nix
+
+    # Configuration that applies to all projects
+    ./modules/project-common.nix
   ];
 };
 in f
