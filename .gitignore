@@ -6,6 +6,9 @@ docs/reference/modules.md
 result*
 /nt
 
+# https://github.com/nix-community/nix-direnv
+.direnv
+
 # Created by https://www.gitignore.io/api/haskell,emacs,vim
 
 ### Emacs ###
