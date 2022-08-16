@@ -70,11 +70,11 @@ let
         (map (p: "${p}/Library/Frameworks") component.frameworks);
     })}
 
-    ghc=${ghc}
+    unwrappedGhc=${ghc}
     ${ # Copy over the nonReinstallablePkgs from the global package db.
     ''
       for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
-        find $ghc/lib/${ghc.name}/package.conf.d -name $p'*.conf' -exec cp -f {} $configFiles/${packageCfgDir} \;
+        find $unwrappedGhc/lib/${ghc.name}/package.conf.d -name $p'*.conf' -exec cp -f {} $configFiles/${packageCfgDir} \;
       done
     ''}
 
@@ -140,15 +140,15 @@ let
       ''}
     done
     for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs')}; do
-      if [ -e $ghc/envDeps/$p ]; then
-        cat $ghc/envDeps/$p >> $configFiles/ghc-environment
+      if [ -e $unwrappedGhc/envDeps/$p ]; then
+        cat $unwrappedGhc/envDeps/$p >> $configFiles/ghc-environment
       fi
     done
   '' + lib.optionalString component.doExactConfig ''
     for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
-      if [ -e $ghc/exactDeps/$p ]; then
-        cat $ghc/exactDeps/$p/configure-flags >> $configFiles/configure-flags
-        cat $ghc/exactDeps/$p/cabal.config >> $configFiles/cabal.config
+      if [ -e $unwrappedGhc/exactDeps/$p ]; then
+        cat $unwrappedGhc/exactDeps/$p/configure-flags >> $configFiles/configure-flags
+        cat $unwrappedGhc/exactDeps/$p/cabal.config >> $configFiles/cabal.config
       fi
     done
   ''
