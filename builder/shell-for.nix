@@ -185,5 +185,5 @@ in
       configFiles = configFiles.drv;
     };
   } // lib.optionalAttrs exactDeps {
-    CABAL_CONFIG = "${configFiles.drv}/cabal.config";
+    CABAL_CONFIG = "${ghcEnv.drv}/configFiles/cabal.config";
   })
