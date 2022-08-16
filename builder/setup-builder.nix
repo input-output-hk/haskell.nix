@@ -57,7 +57,6 @@ let
         srcSubDir = cleanSrc'.subDir;
         srcSubDirPath = cleanSrc'.root + cleanSrc'.subDir;
         cleanSrc = cleanSrc';
-        inherit configFiles;
         dwarf = self (drvArgs // { enableDWARF = true; });
         smallAddressSpace = self (drvArgs // { smallAddressSpace = true; });
       };
@@ -69,9 +68,9 @@ let
         platforms = if component.platforms == null then lib.platforms.all else component.platforms;
       };
 
+      outputs = ["out" "configFiles"];
       phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
       buildPhase = ''
-        configFiles=$(mktemp -d)
         mkdir -p $configFiles
         ${configFiles.script}
         runHook preBuild

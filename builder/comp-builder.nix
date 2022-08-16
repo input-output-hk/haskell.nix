@@ -382,7 +382,7 @@ let
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends;
 
-    outputs = ["out"]
+    outputs = ["out" "configFiles" "ghc"]
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source")
       ++ (lib.optional writeHieFiles "hie");
@@ -402,9 +402,10 @@ let
       '') + commonAttrs.prePatch;
 
     configurePhase = ''
-      configFiles=$(mktemp -d)
+      mkdir -p $configFiles
+      mkdir -p $ghc
+      wrappedGhc=$ghc
       ${configFiles.script}
-      wrappedGhc=$(mktemp -d)
       ${shellWrappers.script}
       PATH=$wrappedGhc/bin:$PATH
 

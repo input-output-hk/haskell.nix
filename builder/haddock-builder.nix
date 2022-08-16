@@ -63,8 +63,6 @@ let
     name = fullName;
 
     passthru = {
-      configFiles = docsConfigFiles;
-
       # The directory containing the haddock documentation.
       haddockDir = lib.const (if doHaddock' then "${docdir drv.doc}/html" else null);
     };
@@ -72,7 +70,7 @@ let
     # `out` contains the `package.conf.d` files used for building the
     # haddock files.
     # `doc` contains just the haddock output files.
-    outputs = ["out"]
+    outputs = ["out" "configFiles" "ghc"]
     ++ lib.optional doHaddock' "doc";
 
     propagatedBuildInputs =
@@ -86,9 +84,10 @@ let
       ++ componentDrv.executableToolDepends;
 
     configurePhase = ''
-      configFiles=$(mktemp -d)
+      mkdir -p $configFiles
+      mkdir -p $ghc
+      wrappedGhc=$ghc
       ${docsConfigFiles.script}
-      wrappedGhc=$(mktemp -d)
       ${shellWrappers.script}
       PATH=$wrappedGhc/bin:$PATH
       runHook preConfigure
