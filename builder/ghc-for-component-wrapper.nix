@@ -147,6 +147,7 @@ let
   drv = runCommand "${componentName}-${ghc.name}-env" {
   preferLocalBuild = true;
   passthru = {
+    inherit targetPrefix;
     inherit (ghc) version meta;
   };
   propagatedBuildInputs = configFiles.libDeps;

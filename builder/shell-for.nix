@@ -181,7 +181,7 @@ in
     NIX_GHC_LIBDIR = ghcEnv.drv + "/" + configFiles.libDir;
 
     passthru = (mkDrvArgs.passthru or {}) // {
-      ghc = ghcEnv;
+      ghc = ghcEnv.drv;
       inherit configFiles;
     };
   } // lib.optionalAttrs exactDeps {
