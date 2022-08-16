@@ -204,6 +204,10 @@ let
   drv = runCommand "${ghc.targetPrefix}${fullName}-config" {
       nativeBuildInputs = [ghc];
       propagatedBuildInputs = libDeps;
+      passthru = {
+        inherit (ghc) targetPrefix;
+        inherit script libDeps ghcCommand ghcCommandCaps libDir packageCfgDir component;
+      };
     } (''
     mkdir -p $out
     configFiles=$out
