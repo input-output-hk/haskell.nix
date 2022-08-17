@@ -19,8 +19,6 @@ let
 
   fullName = "${name}-setup";
 
-  includeGhcPackage = lib.any (p: p.identifier.name == "ghc") component.depends;
-
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
     inherit fullName flags component enableDWARF nonReinstallablePkgs;
@@ -80,8 +78,7 @@ let
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f
-            ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-env $configFiles/ghc-environment --make -o ./Setup
+            ghc $f -threaded -package-env $configFiles/ghc-environment --make -o ./Setup
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
