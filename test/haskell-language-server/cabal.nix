@@ -6,4 +6,7 @@ in recurseIntoAttrs {
     inherit (project) plan-nix;
   };
   build = project.getComponent "haskell-language-server:exe:haskell-language-server";
+
+  # hls does not need to be cross compiled.
+  meta.disabled = stdenv.hostPlatform != stdenv.buildPlatform;
 }
