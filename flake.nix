@@ -6,6 +6,7 @@
     nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
     nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
     nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
+    nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-utils = { url = "github:numtide/flake-utils"; };
     hydra.url = "hydra";
@@ -58,8 +59,8 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, flake-utils, ... }@inputs:
-    let compiler = "ghc923";
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, ... }@inputs:
+    let compiler = "ghc924";
       config = import ./config.nix;
     in {
       inherit config;
@@ -100,6 +101,12 @@
             };
             pkgs = import nixpkgs
               (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2105 = import nixpkgs-2105
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2111 = import nixpkgs-2111
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2205 = import nixpkgs-2205
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             hix = import ./hix/default.nix { inherit pkgs; };
@@ -127,6 +134,8 @@
       })));
       # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
       roots = legacyPackagesUnstable.haskell-nix.roots compiler;
+
+      packages = ((self.internal.compat { inherit system; }).hix).apps;
 
       devShell = with self.legacyPackages.${system};
         mkShell {

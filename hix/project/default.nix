@@ -10,17 +10,17 @@
 let
   inherit ((lib.evalModules {
     modules = [
-      (import ../modules/project-common.nix)
-      (import ../modules/stack-project.nix)
-      (import ../modules/cabal-project.nix)
-      (import ../modules/project.nix)
-      (import ../modules/hix-project.nix)
+      (import ../../modules/project-common.nix)
+      (import ../../modules/stack-project.nix)
+      (import ../../modules/cabal-project.nix)
+      (import ../../modules/project.nix)
+      (import ../../modules/hix-project.nix)
       projectDefaults
       commandArgs'
       { _module.args.pkgs = {}; }
     ];
   }).config) name;
-  inherit (import ./.. {}) sources;
+  inherit (import ./../.. {}) sources;
   lib = import (sources.nixpkgs-unstable + "/lib");
   commandArgs' =
     builtins.listToAttrs (
@@ -41,35 +41,35 @@ let
   projectDefaults = importDefaults (toString (src.origSrcSubDir or src) + "/nix/hix.nix");
   inherit ((lib.evalModules {
     modules = [
-      (import ../modules/project-common.nix)
-      (import ../modules/stack-project.nix)
-      (import ../modules/cabal-project.nix)
-      (import ../modules/project.nix)
-      (import ../modules/hix-project.nix)
+      (import ../../modules/project-common.nix)
+      (import ../../modules/stack-project.nix)
+      (import ../../modules/cabal-project.nix)
+      (import ../../modules/project.nix)
+      (import ../../modules/hix-project.nix)
       userDefaults
       projectDefaults
       commandArgs'
       ({config, pkgs, ...}: {
-        haskellNix = import ./.. { inherit checkMaterialization; };
+        haskellNix = import ./../.. { inherit checkMaterialization; };
         nixpkgsPin = "nixpkgs-unstable";
         nixpkgs = config.haskellNix.sources.${config.nixpkgsPin};
         nixpkgsArgs = config.haskellNix.nixpkgsArgs // {
           overlays = config.haskellNix.nixpkgsArgs.overlays ++ config.overlays;
         };
-        pkgs = import config.nixpkgs config.nixpkgsArgs;
-        project = config.pkgs.haskell-nix.project [
-            (import ../modules/hix-project.nix)
+        _module.args.pkgs = import config.nixpkgs config.nixpkgsArgs;
+        project = pkgs.haskell-nix.project [
+            (import ../../modules/hix-project.nix)
             userDefaults
             projectDefaults
             commandArgs'
-            {
+            ({config, ...}: {
               src =
                 if __pathExists (toString (src.origSrcSubDir or src) + "/.git")
-                  then config.pkgs.haskell-nix.haskellLib.cleanGit {
+                  then config.evalPackages.haskell-nix.haskellLib.cleanGit {
                     inherit src name;
                   }
                   else src;
-            }
+            })
           ];
       })
     ];

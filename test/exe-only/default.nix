@@ -1,11 +1,11 @@
 # Test a package set
-{ stdenv, lib, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   project = haskell-nix.cabalProject' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "exe-only";
   };
 
@@ -36,7 +36,7 @@ in recurseIntoAttrs {
       '' else ''
         printf "checking that executable is dynamically linked to system libraries... " >& 2
       '' + optionalString stdenv.isLinux ''
-        ldd $exe | grep libpthread
+        ldd $exe | grep 'libc\.so'
       '' + optionalString stdenv.isDarwin ''
         otool -L $exe |grep .dylib
     '') + ''

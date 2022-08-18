@@ -31,6 +31,9 @@ let self =
 , # If enabled, GHC will be built with the GPL-free but slower integer-simple
   # library instead of the faster but GPLed integer-gmp library.
   enableIntegerSimple ? !(lib.any (lib.meta.platformMatch stdenv.hostPlatform) gmp.meta.platforms), gmp
+, # If enabled, GHC will be built with the GPL-free native backend of the
+  # bignum library that is nearly as fast as GMP
+  enableNativeBignum ? !((lib.any (lib.meta.platformMatch stdenv.hostPlatform) gmp.meta.platforms) || enableIntegerSimple)
 
 , # If enabled, use -fPIC when compiling static libs.
   enableRelocatedStaticLibs ? stdenv.targetPlatform != stdenv.hostPlatform && !stdenv.targetPlatform.isAarch32
@@ -71,13 +74,28 @@ let self =
 , extra-passthru ? {}
 }@args:
 
-assert !enableIntegerSimple -> gmp != null;
+assert !(enableIntegerSimple || enableNativeBignum) -> gmp != null;
+
+# Early check to make sure only one of these is enabled
+assert enableNativeBignum -> !enableIntegerSimple;
+assert enableIntegerSimple -> !enableNativeBignum;
 
 let
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
 
   inherit (bootPkgs) ghc;
+
+  ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
+
+  bignumSpec =
+    assert ghcHasNativeBignum -> !enableIntegerSimple;
+    assert !ghcHasNativeBignum -> !enableNativeBignum;
+    if ghcHasNativeBignum then ''
+      BIGNUM_BACKEND = ${if enableNativeBignum then "native" else "gmp"}
+    '' else ''
+      INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
+    '';
 
   # TODO check if this possible fix for segfaults works or not.
   targetLibffi =
@@ -106,7 +124,7 @@ let
     include mk/flavours/\$(BuildFlavour).mk
     endif
     DYNAMIC_GHC_PROGRAMS = ${if enableShared then "YES" else "NO"}
-    INTEGER_LIBRARY = ${if enableIntegerSimple then "integer-simple" else "integer-gmp"}
+  '' + bignumSpec + ''
     EXTRA_HADDOCK_OPTS += --quickjump --hyperlinked-source
   '' + lib.optionalString (targetPlatform != hostPlatform) ''
     CrossCompilePrefix = ${targetPrefix}
@@ -121,6 +139,10 @@ let
   '' + lib.optionalString enableRelocatedStaticLibs ''
     GhcLibHcOpts += -fPIC
     GhcRtsHcOpts += -fPIC
+    GhcRtsCcOpts += -fPIC
+  '' + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows) ''
+    GhcLibHcOpts += -fexternal-dynamic-refs
+    GhcRtsHcOpts += -fexternal-dynamic-refs
   '' + lib.optionalString enableDWARF ''
     GhcLibHcOpts += -g3
     GhcRtsHcOpts += -g3

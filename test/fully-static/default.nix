@@ -3,6 +3,8 @@
 , buildPackages
 , recurseIntoAttrs
 , testSrc
+, compiler-nix-name
+, evalPackages
 }:
 
 with lib;
@@ -14,6 +16,7 @@ let
 
   # IFD stack-to-nix
   project = { gpl ? true }: stackProject' {
+    inherit evalPackages;
     src = testSrc "fully-static";
     pkg-def-extras = [];
     modules = [
@@ -28,6 +31,8 @@ let
   packagesIntegerSimple = (project { gpl = false; }).hsPkgs;
 
 in recurseIntoAttrs {
+  meta.disabled = stdenv.hostPlatform.isGhcjs || compiler-nix-name != "ghc865";
+
   ifdInputs = {
     stack-nix-gmp = (project { gpl = true; }).stack-nix;
     stack-nix-simple = (project { gpl = false; }).stack-nix;

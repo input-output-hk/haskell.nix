@@ -11,7 +11,7 @@ let
   gcclibs = if pkgs.stdenv.hostPlatform.isWindows then [
     pkgs.windows.mcfgthreads
     # If we just use `pkgs.buildPackages.gcc.cc` here it breaks the `th-dlls` test. TODO figure out why exactly.
-    (pkgs.evalPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.evalPackages.xorg.lndir ]; } ''
+    (pkgs.buildPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.buildPackages.xorg.lndir ]; } ''
       mkdir $out
       lndir ${pkgs.buildPackages.gcc.cc} $out
     '')
@@ -129,6 +129,7 @@ in
      msvcrt = null; # this is the libc
      Crypt32 = null;
      mswsock = null;
+     bcrypt = null;
    }
 # -- os x
 # NB: these map almost 1:1 to the framework names

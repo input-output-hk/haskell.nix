@@ -24,16 +24,13 @@ final: prev:
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
 
-   binutils-unwrapped = prev.binutils-unwrapped.overrideAttrs (attrs: {
-     patches = attrs.patches ++ final.lib.optional (final.stdenv.targetPlatform.isWindows && attrs.version or "" == "2.31.1") (
-       final.fetchpatch {
-         name = "plugin-target-handling-patch";
-         url = "https://sourceware.org/git/?p=binutils-gdb.git;a=patch;h=999d6dff80fab12d22c2a8d91923db6bde7fb3e5";
-         excludes = ["bfd/ChangeLog"];
-         sha256 = "0a60w52wrf6qzchsiviprmcblq0q1fv1rbkx4gkk482dmvx4j0l6";
-       }
-     );
-   });
+   # GHC <9.4 does not work with binutils 2.38 from newer nixpkgs.
+   # GHC >=9.4 will use clang/llvm instead.
+   binutils-unwrapped =
+     if final.stdenv.targetPlatform.isWindows
+       then (import prev.haskell-nix.sources.nixpkgs-2111 { inherit (prev) system; })
+         .pkgsCross.mingwW64.buildPackages.binutils-unwrapped
+       else prev.binutils-unwrapped;
 
    haskell-nix = prev.haskell-nix // ({
      defaultModules = prev.haskell-nix.defaultModules ++ [

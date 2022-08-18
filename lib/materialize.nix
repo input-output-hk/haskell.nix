@@ -24,7 +24,7 @@
 }: derivation:
 
 let
-  inherit (derivation) name;
+  name = derivation.name + pkgs.lib.optionalString (derivation ? version) "-${derivation.version}";
 
   traceIgnoringSha256 = reason: x:
     if sha256 != null
@@ -36,10 +36,15 @@ let
       then builtins.trace ("Warning: ignoring materialized for " + name + " " + reason) x
       else x;
 
+  traceWhenChecking = message: x:
+    if checkMaterialization
+      then builtins.trace message x
+      else x;
+
   unchecked =
     let
-      sha256message = "To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
-      materializeMessage = "To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
+      sha256message = "${name}: To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
+      materializeMessage = "${name}: To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
@@ -50,10 +55,10 @@ let
     else if sha256 != null
       then
         # Let the user know how to materialize if they want to.
-        builtins.trace materializeMessage calculateUseHash
+        traceWhenChecking materializeMessage calculateUseHash
     else # materialized == null && sha256 == null
         # Let the user know how to calculate a sha256 or materialize if they want to.
-        builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
+        traceWhenChecking sha256message (traceWhenChecking materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
   checked =
@@ -78,9 +83,12 @@ let
         fi
       '')
     + (
-      if materialized != null && !__pathExists materialized
+      let fixHint = if builtins.hasContext (toString materialized)
+          then "To fix run: ${updateMaterialized}"
+          else "To fix check you are in the right directory and run: ${generateMaterialized} ${__head (__match "/nix/store/[^/]*/(.*)" (toString materialized))}";
+      in if materialized != null && !__pathExists materialized
         then ''
-          echo "Materialized nix used for ${name} is missing. To fix run: ${updateMaterialized}" >> $ERR
+          echo "Materialized nix used for ${name} is missing. ${fixHint}" >> $ERR
           cat $ERR
           false
         ''
@@ -91,7 +99,7 @@ let
               else
               echo Changes to plan not reflected in materialized nix for ${name}
               diff -ru ${materialized} ${calculateNoHash} || true
-              echo "Materialized nix used for ${name} incorrect. To fix run: ${updateMaterialized}" >> $ERR
+              echo "Materialized nix used for ${name} incorrect. ${fixHint}" >> $ERR
             fi
           '')
         + ''

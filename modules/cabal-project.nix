@@ -56,11 +56,6 @@ in {
       type = nullOr str;
       default = readIfExists config.src "${config.cabalProjectFileName}.freeze";
     };
-    caller = mkOption {
-      type = str;
-      default = "callCabalProjectToNix";
-      description = "Name of the calling function for better warning messages";
-    };
     ghc = mkOption {
       type = nullOr package;
       default = null;
