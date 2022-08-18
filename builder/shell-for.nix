@@ -78,9 +78,11 @@ let
     ++ lib.optionals packageSetupDeps (map (p: p.setup.config)
          (lib.filter (p: p.buildType != "Simple") selectedPackages));
 
-  name = if lib.length selectedPackages == 1
+  identifierName = if lib.length selectedPackages == 1
     then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
     else "ghc-shell-for-packages";
+
+  name = if (mkDrvArgs.name or null) == null then identifierName else mkDrvArgs.name;
 
   # We need to remove any dependencies which would bring in selected components (see above).
   packageInputs = removeSelectedInputs (lib.concatMap (cfg: cfg.depends) selectedConfigs)
@@ -104,14 +106,14 @@ let
     doExactConfig = false;
   };
   configFiles = makeConfigFiles {
-    fullName = args.name or name;
-    identifier.name = name;
+    fullName = name;
+    identifier.name = identifierName;
     inherit component enableDWARF;
     chooseDrv = p: if withHaddock && p ? haddock then p.haddock else p;
   };
   ghcEnv = ghcForComponent {
     inherit configFiles;
-    componentName = name;
+    componentName = identifierName;
     postInstall = lib.optionalString withHoogle' ''
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
@@ -145,7 +147,7 @@ let
   mkDrvArgs = builtins.removeAttrs args ["packages" "components" "additional" "withHoogle" "tools"];
 in
   mkShell (mkDrvArgs // {
-    name = if (mkDrvArgs.name or null) == null then name else mkDrvArgs.name;
+    inherit name;
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or [];
