@@ -85,13 +85,4 @@ in [
       })];
     };
 
-    ormolu = {
-      modules = [
-        ({ lib, ... }: {
-          options.nonReinstallablePkgs =
-            lib.mkOption { apply = lib.remove "Cabal"; };
-        })
-      ];
-    };
-
   }
