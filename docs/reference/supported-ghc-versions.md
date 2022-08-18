@@ -21,12 +21,12 @@ really should use an instance of Nixpkgs provided by `haskell.nix` itself.
 
 | Nixpkgs version  | Nixpkgs pinning    | GHC version | `compiler-nix-name`   | Tested in CI? |
 |------------------|--------------------|-------------|-----------------------|---------------|
-| 21.11            | `nixpkgs-2111`     | 8.6.5       | `ghc865`              | No            |
-| 21.11            | `nixpkgs-2111`     | 8.10.7      | `ghc8107`             | Yes           |
+| 22.05            | `nixpkgs-2205`     | 8.6.5       | `ghc865`              | No            |
+| 22.05            | `nixpkgs-2205`     | 8.10.7      | `ghc8107`             | No            |
 | unstable         | `nixpkgs-unstable` | 8.6.5       | `ghc865`              | No            |
 | unstable         | `nixpkgs-unstable` | 8.8.4       | `ghc884`              | No            |
 | unstable         | `nixpkgs-unstable` | 8.10.7      | `ghc8107`             | Yes           |
-| unstable         | `nixpkgs-unstable` | 9.0.2       | `ghc902`              | Yes           |
+| unstable         | `nixpkgs-unstable` | 9.0.2       | `ghc902`              | No            |
 | unstable         | `nixpkgs-unstable` | 9.2.4       | `ghc924`              | Yes           |
 
 See [ci.nix](https://github.com/input-output-hk/haskell.nix/blob/master/ci.nix)
