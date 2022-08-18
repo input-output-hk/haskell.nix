@@ -7,6 +7,6 @@ in recurseIntoAttrs {
   };
   build = project.getComponent "haskell-language-server:exe:haskell-language-server";
 
-  # Haskell Language Server in hackage does not build for GHC 9.2 yet
-  meta.disabled = __elem compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924"] || stdenv.hostPlatform != stdenv.buildPlatform;
+  # hls does not need to be cross compiled.
+  meta.disabled = stdenv.hostPlatform != stdenv.buildPlatform;
 }

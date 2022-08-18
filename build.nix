@@ -34,7 +34,6 @@ in rec {
             "ghc884" = "3.3.6";
           }.compiler-nix-name or "latest";
       };
-    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924"]) {
       hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
     })
   );
