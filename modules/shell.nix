@@ -1,6 +1,10 @@
 { projectConfig }:
 { lib, config, pkgs, haskellLib, ... }: {
   options = {
+    name = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+    };
     packages = lib.mkOption {
       type = lib.types.unspecified;
       default = ps: builtins.attrValues (haskellLib.selectLocalPackages ps);
@@ -40,6 +44,30 @@
     crossPlatforms = lib.mkOption {
       type = lib.types.unspecified;
       default = projectConfig.crossPlatforms;
+    };
+
+    # mkShell args
+    inputsFrom = lib.mkOption {
+      type = lib.types.listOf lib.types.unspecified;
+      default = [];
+    };
+    shellHook = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+    };
+
+    # mkDerivation args
+    buildInputs = lib.mkOption {
+      type = lib.types.listOf lib.types.unspecified;
+      default = [];
+    };
+    nativeBuildInputs = lib.mkOption {
+      type = lib.types.listOf lib.types.unspecified;
+      default = [];
+    };
+    passthru = lib.mkOption {
+      type = lib.types.attrsOf lib.types.unspecified;
+      default = {};
     };
   };
 }

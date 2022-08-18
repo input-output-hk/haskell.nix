@@ -145,7 +145,7 @@ let
   mkDrvArgs = builtins.removeAttrs args ["packages" "components" "additional" "withHoogle" "tools"];
 in
   mkShell (mkDrvArgs // {
-    name = mkDrvArgs.name or name;
+    name = if (mkDrvArgs.name or null) == null then name else mkDrvArgs.name;
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or [];
