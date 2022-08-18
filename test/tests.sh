@@ -20,16 +20,15 @@ printf "*** Cleaning package build directories..." >& 2
 rm -rvf */cabal.project.local */.ghc.environment* */dist */dist-newstyle */.stack-work
 echo >& 2
 
-alias nix="nix --accept-flake-config"
-
 printf "*** Running the nix-build tests...\n" >& 2
 nix build $NIX_BUILD_ARGS \
-   -I . -I .. \
-   --option restrict-eval true \
-   --option allowed-uris "https://github.com/NixOS https://github.com/input-output-hk" \
-   --no-link --keep-going -f default.nix \
-   --argstr compiler-nix-name $GHC \
-   --arg CADerivationsEnabled $NIX_CA_DERIVATIONS
+    --accept-flake-config \
+    -I . -I .. \
+    --option restrict-eval true \
+    --option allowed-uris "https://github.com/NixOS https://github.com/input-output-hk" \
+    --no-link --keep-going -f default.nix \
+    --argstr compiler-nix-name $GHC \
+    --arg CADerivationsEnabled $NIX_CA_DERIVATIONS
 echo >& 2
 
 printf "*** Running the unit tests... " >& 2
@@ -125,19 +124,43 @@ else
 fi
 
 printf "*** Checking the maintainer scripts...\n" >& 2
-nix build $NIX_BUILD_ARGS --no-link --keep-going -f ../build.nix --argstr compiler-nix-name $GHC maintainer-scripts
+nix build $NIX_BUILD_ARGS \
+    --accept-flake-config \
+    --no-link \
+    --keep-going \
+    -f ../build.nix \
+    --argstr compiler-nix-name $GHC \
+        maintainer-scripts
 echo >& 2
 
 printf "*** Checking that plan construction works with extra Hackages...\n" >& 2
-nix build $NIX_BUILD_ARGS --no-link \
-    -f ./default.nix --argstr compiler-nix-name $GHC \
+nix build $NIX_BUILD_ARGS \
+    --accept-flake-config \
+    --no-link \
+    -f ./default.nix \
+    --argstr compiler-nix-name $GHC \
     extra-hackage.run.project.plan-nix
 echo >& 2
 
 printf "*** Checking that package with extra Hackages can be build...\n" >& 2
-nix build $NIX_BUILD_ARGS --no-link \
-    -f ./default.nix --argstr compiler-nix-name $GHC \
+nix build $NIX_BUILD_ARGS \
+    --accept-flake-config \
+    --no-link \
+    -f ./default.nix \
+    --argstr compiler-nix-name $GHC \
     extra-hackage.run.project.hsPkgs.external-package-user.components.exes.external-package-user
+echo >& 2
+
+printf "*** End-2-end test of hix project initialization and flakes development shell ...\n" >& 2
+HASKELL_NIX=$(pwd)/..
+cd $(mktemp -d)
+nix-shell -p cabal-install --run "cabal update; cabal unpack hello"
+cd hello-*
+nix run $HASKELL_NIX#hix -- init
+nix develop \
+    --override-input haskellNix $HASKELL_NIX \
+    --accept-flake-config \
+    -c cabal build
 echo >& 2
 
 printf "\n*** Finished successfully\n" >& 2
