@@ -55,7 +55,7 @@ let
   ''
   # Replace the package database with the one from target package config.
   + ''
-    cp -r $configFiles/${packageCfgDir} $wrappedGhc/${packageCfgDir}
+    ln -s $configFiles/${packageCfgDir} $wrappedGhc/${packageCfgDir}
 
   ''
   # Set the GHC_PLUGINS environment variable according to the plugins for the component.

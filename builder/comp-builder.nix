@@ -585,10 +585,10 @@ let
       fi
     '';
 
-    #shellHook = ''
-    #  export PATH="${shellWrappers.drv}/bin:$PATH"
-    #  ${shellHookApplied}
-    #'';
+    shellHook = ''
+      export PATH=$ghc/bin:$PATH
+      ${shellHookApplied}
+    '';
   }
   // haskellLib.optionalHooks {
     # These are the hooks that are not needed by haddock (see commonAttrs for the ones that

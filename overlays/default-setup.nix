@@ -9,7 +9,7 @@ let
   nonReinstallablePkgs = ["base" "Cabal"];
   haskellLib = final.haskell-nix.haskellLib;
   defaultSetupSrc =
-    if final.stdenv.hostPlatform.isGhcjs
+    if final.stdenv.targetPlatform.isGhcjs
       then ../builder/Setup.ghcjs.hs
       else ../builder/Setup.hs;
   addDefaultSetup = compiler-nix-name: ghc:
