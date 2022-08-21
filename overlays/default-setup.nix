@@ -6,7 +6,10 @@
 # to compute the same derivation multiple times.
 final: prev:
 let
-  nonReinstallablePkgs = ["base" "Cabal"];
+  nonReinstallablePkgs =
+    if final.stdenv.targetPlatform.isGhcjs
+      then ["base" "Cabal" "filepath" "directory"]
+      else ["base" "Cabal"];
   haskellLib = final.haskell-nix.haskellLib;
   defaultSetupSrc =
     if final.stdenv.targetPlatform.isGhcjs
