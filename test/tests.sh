@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash -p bash jq nix gnused
+#! nix-shell -i "bash -x" -p bash jq nix gnused
 
 set -euo pipefail
 
