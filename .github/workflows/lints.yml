@@ -18,6 +18,8 @@ defaults:
 env:
   NIX_PATH: "nixpkgs=channel:nixos-unstable"
   REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # PR_NUMBER: ${{ github.event.number }}
 
 jobs:
   deadnix:
@@ -30,3 +32,19 @@ jobs:
           git diff >"${TMPFILE}"
           git stash -u && git stash drop
           nix-shell -p reviewdog --run "reviewdog -f=diff -f.diff.strip=1 -reporter=github-pr-review < \"${TMPFILE}\""
+
+  nixprof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - run: |
+          nix profile install github:Kha/nixprof
+          nixprof record nix develop .#ghc8107 --accept-flake-config
+          nixprof report -p
+          nixprof report -a
+          nixprof report -s
+          # FIXME: is that the right way to publish a report on GitHub?
+          # curl -s -H "Authorization: token $GITHUB_TOKEN" -X POST -d "{\"body\": \"$report\"}" "https://api.github.com/repos/input-output-hk/haskell.nix/issues/$PR_NUMBER/comments"
