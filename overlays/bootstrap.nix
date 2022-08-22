@@ -995,7 +995,7 @@ in {
       }) // {
         inherit project;
         exes = project.hsPkgs.nix-tools.components.exes // {
-          hpack = project.hsPkgs.hpack.component.exes.hpack;
+          hpack = project.hsPkgs.hpack.components.exes.hpack;
         };
       };
 
