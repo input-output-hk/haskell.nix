@@ -193,7 +193,7 @@ final: prev: {
                 name = "01-index.tar.gz-at-${at}";
                 url = "https://hackage.haskell.org/01-index.tar.gz";
                 downloadToTemp = true;
-                postFetch = "${nix-tools.project.hsPkgs.nix-tools.components.exes.truncate-index}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+                postFetch = "${nix-tools.exes.truncate-index}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
 
                 outputHashAlgo = "sha256";
                 outputHash = sha256;

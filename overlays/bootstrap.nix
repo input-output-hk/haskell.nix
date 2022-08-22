@@ -992,7 +992,12 @@ in {
             wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
           done
         '';
-      }) // { inherit project; };
+      }) // {
+        inherit project;
+        exes = project.hsPkgs.nix-tools.components.exes // {
+          hpack = project.hsPkgs.hpack.component.exes.hpack;
+        };
+      };
 
     # Memoize the cabal-install and nix-tools derivations by adding:
     #   haskell-nix.cabal-install.ghcXXX

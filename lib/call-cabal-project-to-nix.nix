@@ -455,9 +455,9 @@ let
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
     nativeBuildInputs = [
-      nix-tools.project.hsPkgs.nix-tools.components.exes.plan-to-nix
+      nix-tools.exes.plan-to-nix
       dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ]
-      ++ pkgs.lib.optional supportHpack nix-tools.project.hsPkgs.hpack.components.exes.hpack;
+      ++ pkgs.lib.optional supportHpack nix-tools.exes.hpack;
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
