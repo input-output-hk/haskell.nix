@@ -10,7 +10,6 @@
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
-    "R2111" = "nixpkgs-2111";
     "R2205" = "nixpkgs-2205";
     "unstable" = "nixpkgs-unstable";
   };
@@ -30,17 +29,14 @@
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
+    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
       ghc865 = false;
-      ghc8107 = true;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
-      ghc865 = false;
-      ghc8107 = true;
+      ghc8107 = false;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
       ghc8107 = true;
-      ghc902 = true;
+      ghc902 = false;
       ghc924 = true;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
