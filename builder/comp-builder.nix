@@ -411,6 +411,11 @@ let
       wrappedGhc=$ghc
       ${configFiles.script}
       ${shellWrappers.script}
+    ''
+    # Remove any ghc docs pages so nixpkgs does not include them in $out
+    # (this can result in unwanted dependencies on GHC)
+    + ''
+      rm -rf $wrappedGhc/share/doc $wrappedGhc/share/man $wrappedGhc/share/devhelp/books
       PATH=$wrappedGhc/bin:$PATH
 
       runHook preConfigure

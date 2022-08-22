@@ -34,23 +34,23 @@ let
   # Start with a ghc and remove all of the package directories
   + ''
     mkdir -p $wrappedGhc/bin
-    ${lndir}/bin/lndir -silent ${ghc} $wrappedGhc
+    ${lndir}/bin/lndir -silent $unwrappedGhc $wrappedGhc
     rm -rf ${libDir}/*/
   ''
   # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
   + ''
-    ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
+    ln -s $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
   ''
   # ... and the ghcjs shim's if they are available ...
   + ''
-    if [ -d ${ghc}/lib/${ghcCommand}-${ghc.version}/shims ]; then
-      ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/shims ${libDir}
+    if [ -d $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/shims ]; then
+      ln -s $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/shims ${libDir}
     fi
   ''
   # ... and node modules ...
   + ''
-    if [ -d ${ghc}/lib/${ghcCommand}-${ghc.version}/ghcjs-node ]; then
-      ln -s ${ghc}/lib/${ghcCommand}-${ghc.version}/ghcjs-node ${libDir}
+    if [ -d $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/ghcjs-node ]; then
+      ln -s $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/ghcjs-node ${libDir}
     fi
   ''
   # Replace the package database with the one from target package config.
@@ -69,9 +69,9 @@ let
     GHC_PLUGINS="["
     LIST_PREFIX=""
     ${builtins.concatStringsSep "\n" (map (plugin: ''
-      id=$(${ghc}/bin/ghc-pkg --package-db ${plugin.library}/package.conf.d field ${plugin.library.package.identifier.name} id --simple-output)
-      lib_dir=$(${ghc}/bin/ghc-pkg --package-db ${plugin.library}/package.conf.d field ${plugin.library.package.identifier.name} dynamic-library-dirs --simple-output)
-      lib_base=$(${ghc}/bin/ghc-pkg --package-db ${plugin.library}/package.conf.d field ${plugin.library.package.identifier.name} hs-libraries --simple-output)
+      id=$($unwrappedGhc/bin/ghc-pkg --package-db ${plugin.library}/package.conf.d field ${plugin.library.package.identifier.name} id --simple-output)
+      lib_dir=$($unwrappedGhc/bin/ghc-pkg --package-db ${plugin.library}/package.conf.d field ${plugin.library.package.identifier.name} dynamic-library-dirs --simple-output)
+      lib_base=$($unwrappedGhc/bin/ghc-pkg --package-db ${plugin.library}/package.conf.d field ${plugin.library.package.identifier.name} hs-libraries --simple-output)
       lib="$(echo ''${lib_dir}/lib''${lib_base}*)"
       GHC_PLUGINS="''${GHC_PLUGINS}''${LIST_PREFIX}(\"''${lib}\",\"''${id}\",\"${plugin.moduleName}\",["
       LIST_PREFIX=""
@@ -95,9 +95,9 @@ let
   # The NIX_ variables are used by the patched Paths_ghc module.
   + ''
     for prg in ${ghcCommand} ${ghcCommand}i ${ghcCommand}-${ghc.version} ${ghcCommand}i-${ghc.version}; do
-      if [[ -x "${ghc}/bin/$prg" ]]; then
+      if [[ -x "$unwrappedGhc/bin/$prg" ]]; then
         rm -f $wrappedGhc/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $wrappedGhc/bin/$prg                           \
+        makeWrapper $unwrappedGhc/bin/$prg $wrappedGhc/bin/$prg                           \
           --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'                   \
           --set "NIX_${ghcCommandCaps}"        "$wrappedGhc/bin/${ghcCommand}"     \
           --set "NIX_${ghcCommandCaps}PKG"     "$wrappedGhc/bin/${ghcCommand}-pkg" \
@@ -108,9 +108,9 @@ let
     done
 
     for prg in "${targetPrefix}runghc" "${targetPrefix}runhaskell"; do
-      if [[ -x "${ghc}/bin/$prg" ]]; then
+      if [[ -x "$unwrappedGhc/bin/$prg" ]]; then
         rm -f $wrappedGhc/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $wrappedGhc/bin/$prg                           \
+        makeWrapper $unwrappedGhc/bin/$prg $wrappedGhc/bin/$prg                           \
           --add-flags "-f $wrappedGhc/bin/${ghcCommand}"                           \
           --set "NIX_${ghcCommandCaps}"        "$wrappedGhc/bin/${ghcCommand}"     \
           --set "NIX_${ghcCommandCaps}PKG"     "$wrappedGhc/bin/${ghcCommand}-pkg" \
@@ -135,9 +135,9 @@ let
   # --global-package-db flag.
   + ''
     for prg in ${ghcCommand}-pkg ${ghcCommand}-pkg-${ghc.version}; do
-      if [[ -x "${ghc}/bin/$prg" ]]; then
+      if [[ -x "$unwrappedGhc/bin/$prg" ]]; then
         rm -f $wrappedGhc/bin/$prg
-        makeWrapper ${ghc}/bin/$prg $wrappedGhc/bin/$prg --add-flags "--global-package-db=$wrappedGhc/${packageCfgDir}"
+        makeWrapper $unwrappedGhc/bin/$prg $wrappedGhc/bin/$prg --add-flags "--global-package-db=$wrappedGhc/${packageCfgDir}"
       fi
     done
 
