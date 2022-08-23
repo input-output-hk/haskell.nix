@@ -95,12 +95,11 @@ let
   #
   # Also, we take care to keep duplicates out of the list, otherwise we may see
   # "Argument list too long" errors from bash when entering a shell.
-  addUnique = new: existing:
-    lib.lists.foldr (x: acc: if lib.lists.any (y: x == y) acc then acc else [x] ++ acc) existing new;
-  concatSystemInputs = inputsSoFar: c:
-    addUnique c.buildInputs (addUnique c.propagatedBuildInputs inputsSoFar);
-  systemInputs' = lib.lists.foldl concatSystemInputs [] selectedComponents;
-  systemInputs = removeSelectedInputs systemInputs';
+  uniqueInputs = inputList: builtins.listToAttrs (builtins.map (x: lib.nameValuePair (x.name) x) inputList);
+  unionComponentInputs = inputsSoFar: c:
+    inputsSoFar // uniqueInputs c.buildInputs // uniqueInputs c.propagatedBuildInputs;
+  systemInputs' = lib.lists.foldl unionComponentInputs {} selectedComponents;
+  systemInputs = removeSelectedInputs (builtins.attrValues systemInputs');
 
   nativeBuildInputs = removeSelectedInputs
     (lib.concatMap (c: c.executableToolDepends) selectedComponents);
