@@ -92,8 +92,16 @@ let
   # We need to remove any inputs which are selected components (see above).
   # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends` contain component
   # derivations, not packages, so we use `removeSelectedInputs`).
-  systemInputs = removeSelectedInputs (lib.concatMap
-    (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents);
+  #
+  # Also, we take care to keep duplicates out of the list, otherwise we may see
+  # "Argument list too long" errors from bash when entering a shell.
+  addUnique = new: existing:
+    lib.lists.foldr (x: acc: if lib.lists.any (y: x == y) acc then acc else [x] ++ acc) existing new;
+  concatSystemInputs = inputsSoFar: c:
+    addUnique c.buildInputs (addUnique c.propagatedBuildInputs inputsSoFar);
+  systemInputs' = lib.lists.foldl concatSystemInputs [] selectedComponents;
+  systemInputs = removeSelectedInputs systemInputs';
+
   nativeBuildInputs = removeSelectedInputs
     (lib.concatMap (c: c.executableToolDepends) selectedComponents);
 
