@@ -38,3 +38,15 @@ steps:
     command:
       - nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc8107 -o check-path-support.sh
       - ./check-path-support.sh
+
+  - label: 'Check that the haskell.nix roots do not require IFDs'
+    command:
+      - nix build .#roots.x86_64-linux --option allow-import-from-derivation false
+    agents:
+      system: x86_64-linux
+
+  - label: 'Check that evaluation of hydra jobs works without using remote builders'
+    command:
+      - nix-instantiate release.nix -A required-unstable-ghc8107-x86_64-darwin-native --show-trace --builders ''
+    agents:
+      system: x86_64-linux

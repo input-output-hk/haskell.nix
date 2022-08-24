@@ -2,16 +2,12 @@
   pkgs = hackage:
     {
       packages = {
-        "happy".revision = (((hackage."happy")."1.20.0").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "array".revision = (((hackage."array")."0.5.3.0").revisions).default;
         "network".revision = (((hackage."network")."2.8.0.1").revisions).default;
-        "alex".revision = (((hackage."alex")."3.2.6").revisions).default;
-        "alex".flags.small_base = true;
-        "mtl".revision = (((hackage."mtl")."2.2.2").revisions).default;
         "bytestring".revision = (((hackage."bytestring")."0.10.8.2").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
-        "terminfo".revision = (((hackage."terminfo")."0.4.1.5").revisions).default;
+        "terminfo".revision = (((hackage."terminfo")."0.4.1.2").revisions).default;
         "ghc-heap".revision = (((hackage."ghc-heap")."8.6.5").revisions).default;
         "ghc-prim".revision = (((hackage."ghc-prim")."0.5.3").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."8.6.5").revisions).default;
@@ -34,9 +30,9 @@
         packages = {
           "pretty" = "1.1.3.6";
           "array" = "0.5.3.0";
-          "mtl" = "2.2.2";
           "bytestring" = "0.10.8.2";
           "filepath" = "1.4.2.1";
+          "terminfo" = "0.4.1.2";
           "ghc-heap" = "8.6.5";
           "ghc-prim" = "0.5.3";
           "ghc-boot-th" = "8.6.5";
@@ -107,7 +103,6 @@
           "rts".components.library.planned = lib.mkOverride 900 true;
           "unix".components.library.planned = lib.mkOverride 900 true;
           "directory".components.library.planned = lib.mkOverride 900 true;
-          "happy".components.exes."happy".planned = lib.mkOverride 900 true;
           "iserv".components.exes."iserv".planned = lib.mkOverride 900 true;
           "time".components.library.planned = lib.mkOverride 900 true;
           "network".components.library.planned = lib.mkOverride 900 true;
@@ -115,11 +110,9 @@
           "process".components.library.planned = lib.mkOverride 900 true;
           "template-haskell".components.library.planned = lib.mkOverride 900 true;
           "ghci".components.library.planned = lib.mkOverride 900 true;
-          "alex".components.exes."alex".planned = lib.mkOverride 900 true;
           "ghc-boot".components.library.planned = lib.mkOverride 900 true;
           "hpc".components.library.planned = lib.mkOverride 900 true;
           "ghc-heap".components.library.planned = lib.mkOverride 900 true;
-          "mtl".components.library.planned = lib.mkOverride 900 true;
           "transformers".components.library.planned = lib.mkOverride 900 true;
           "libiserv".components.library.planned = lib.mkOverride 900 true;
           "deepseq".components.library.planned = lib.mkOverride 900 true;

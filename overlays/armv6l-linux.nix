@@ -8,7 +8,8 @@ final: prev:
           inherit (pkgs.stdenv) hostPlatform buildPlatform;
           inherit (pkgs) stdenv lib writeScriptBin;
           # qemu for linux
-          qemu = pkgs.buildPackages.qemu;
+          # Using `buildPackages.buildPackages` here fixes `python3Packages.pygobject3` issue.
+          qemu = pkgs.buildPackages.buildPackages.qemu;
 
 #          wine = pkgs.buildPackages.winePackages.minimal;
 #          inherit (pkgs.windows) mingw_w64_pthreads;

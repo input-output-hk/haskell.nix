@@ -8,9 +8,13 @@ let self =
 , preInstall ? component.preInstall , postInstall ? component.postInstall
 , cleanSrc ? haskellLib.cleanCabalComponent package component "setup" src
 , nonReinstallablePkgs ? defaults.nonReinstallablePkgs
+, smallAddressSpace ? false
 }@drvArgs:
 
 let
+  ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
+
   cleanSrc' = haskellLib.rootAndSubDir cleanSrc;
 
   fullName = "${name}-setup";
@@ -53,6 +57,7 @@ let
         cleanSrc = cleanSrc';
         inherit configFiles;
         dwarf = self (drvArgs // { enableDWARF = true; });
+        smallAddressSpace = self (drvArgs // { smallAddressSpace = true; });
       };
 
       meta = {
@@ -71,13 +76,12 @@ let
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f
-            ghc $f -threaded '' + (if includeGhcPackage then "-package ghc " else "")
-                + ''-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
-            setup=$(pwd)/Setup
+            ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
+                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
-        runHook preBuild
+        runHook postBuild
       '';
 
       installPhase = ''

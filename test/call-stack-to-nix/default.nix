@@ -1,15 +1,16 @@
-{ stdenv, lib, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, mkStackPkgSet, callStackToNix, importAndFilterProject, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   callProjectResults = callStackToNix {
     src = testSrc "stack-simple";
+    inherit evalPackages;
   };
   pkgSet = mkStackPkgSet {
     stack-pkgs = importAndFilterProject callProjectResults;
     pkg-def-extras = [];
-    modules = [];
+    modules = [{inherit evalPackages;}];
   };
   packages = pkgSet.config.hsPkgs;
 

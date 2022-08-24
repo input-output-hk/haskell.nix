@@ -1,6 +1,5 @@
 # Generate cache entries for dependencies of package defined in `src`
 
-{ pkgs, haskellLib }:
 { src
 , stackYaml    ? "stack.yaml"
 , sha256map    ? null
@@ -17,10 +16,14 @@
     then { location, tag, ...}: branchMap."${location}"."${tag}" or null
     else _: null
 , resolverSha256 ? null
-, nix-tools ? pkgs.haskell-nix.internal-nix-tools # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
+, nix-tools
+, evalPackages
 , ...
-}:
+}@args:
 let
+    inherit (evalPackages) runCommand;
+    inherit (evalPackages.haskell-nix) haskellLib;
+
     # We only care about the stackYaml file.  If src is a local directory
     # we want to avoid recalculating the cache unless the stack.yaml file
     # changes.
@@ -36,10 +39,10 @@ let
         let
           origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
           origSubDir = if src ? _isLibCleanSourceWithEx then src.origSubDir else "";
-          relPath = pkgs.lib.removePrefix (toString origSrc + origSubDir + "/") path;
+          relPath = evalPackages.lib.removePrefix (toString origSrc + origSubDir + "/") path;
 
           # checks if path1 is a parent directory for path2
-          isParent = path1: path2: pkgs.lib.hasPrefix "${path1}/" path2;
+          isParent = path1: path2: evalPackages.lib.hasPrefix "${path1}/" path2;
 
         in
           (relPath == stackYaml)
@@ -48,9 +51,9 @@ let
     };
 
     # All repos served via ssh or git protocols are usually private
-    private = url: pkgs.lib.substring 0 4 url != "http";
+    private = url: evalPackages.lib.substring 0 4 url != "http";
 
-    repos = builtins.fromJSON (builtins.readFile (pkgs.runCommand "stack-repos" {
+    repos = builtins.fromJSON (builtins.readFile (evalPackages.runCommand "stack-repos" {
         buildInputs = [ nix-tools ];
       } ''
         TMP=$(mktemp -d)
@@ -58,23 +61,23 @@ let
         cp -r "${maybeCleanedSource}/." $TMP
         chmod -R +w $TMP
         substituteInPlace ${stackYaml} --replace "# nix-sha256:" "nix-sha256:"
-        ${pkgs.lib.optionalString (fetchedResolver != null) ''
+        ${evalPackages.lib.optionalString (fetchedResolver != null) ''
           substituteInPlace ${stackYaml} --replace "${resolver}" "${fetchedResolver}"
         ''}
         stack-repos --stack-yaml ${stackYaml}
         cp repos.json $out
       ''));
 
-    cabalName = path: builtins.readFile (pkgs.runCommand "cabal-name" {
+    cabalName = path: builtins.readFile (evalPackages.runCommand "cabal-name" {
         buildInputs = [ nix-tools ];
       } ''
         cabal-name ${path} > $out
       '');
 
     hashPath = path:
-        builtins.readFile (pkgs.runCommand "hash-path" { preferLocalBuild = true; }
-            "echo -n $(${pkgs.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
-in with pkgs.lib;
+        builtins.readFile (evalPackages.runCommand "hash-path" { preferLocalBuild = true; }
+            "echo -n $(${evalPackages.nix}/bin/nix-hash --type sha256 --base32 ${path}) > $out");
+in with evalPackages.lib;
 concatMap (dep:
         let
             is-private = private dep.url;
@@ -88,13 +91,13 @@ concatMap (dep:
             };
             pkgsrc =
               if !is-private && sha256 != null
-                then pkgs.fetchgit {
+                then evalPackages.fetchgit {
                   inherit (dep) url rev;
                   inherit sha256;
                 }
                 else builtins.fetchGit ({
                   inherit (dep) url rev;
-                } // pkgs.lib.optionalAttrs (branch != null) { ref = branch; });
+                } // evalPackages.lib.optionalAttrs (branch != null) { ref = branch; });
         in map (subdir: {
                 name = cabalName "${pkgsrc}/${subdir}";
                 inherit (dep) url rev;

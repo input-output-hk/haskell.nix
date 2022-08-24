@@ -1,12 +1,11 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   modules = [
     {
-      reinstallableLibGhc = true;
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
       packages.cabal-sublib.doHaddock = false;
@@ -15,7 +14,7 @@ let
 
   # The ./pkgs.nix works for linux & darwin, but not for windows
   project = cabalProject' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-sublib";
     inherit modules;
     cabalProject = ''

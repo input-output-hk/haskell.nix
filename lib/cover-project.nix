@@ -8,19 +8,12 @@ project:
 coverageReports:
 
 let
-  # Create table rows for a project coverage index page that look something like:
-  #
-  # | Package          |
-  # |------------------|
-  # | cardano-shell    |
-  # | cardano-launcher |
-  coverageTableRows = coverageReport:
+  # Create a list element for a project coverage index page.
+  coverageListElement = coverageReport:
       ''
-      <tr>
-        <td>
-          <a href="${coverageReport.passthru.name}/hpc_index.html">${coverageReport.passthru.name}</href>
-        </td>
-      </tr>
+      <li>
+        <a href="${coverageReport.passthru.name}/hpc_index.html">${coverageReport.passthru.name}</a>
+      </li>
       '';
 
   projectIndexHtml = pkgs.writeText "index.html" ''
@@ -29,23 +22,32 @@ let
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     </head>
     <body>
-      <table border="1" width="100%">
-        <tbody>
-          <tr>
-            <th>Report</th>
-          </tr>
-
-          ${with lib; concatStringsSep "\n" (map coverageTableRows coverageReports)}
-
-        </tbody>
-      </table>
+      <div>
+        WARNING: Modules with no coverage are not included in any of these reports, this is just how HPC works under the hood.
+      </div>
+      <div>
+        <h2>Union Report</h2>
+        <p>The following report shows how each module is covered by any test in the project:</p>
+        <ul>
+          <li>
+            <a href="all/hpc_index.html">all</a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h2>Individual Reports</h2>
+        <p>The following reports show how the tests of each package cover modules in the project:</p>
+        <ul>
+          ${with lib; concatStringsSep "\n" (map coverageListElement coverageReports)}
+        </ul>
+      </div>
     </body>
   </html>
   '';
 
   ghc = project.pkg-set.config.ghc.package;
 
-  libs = lib.remove null (map (r: r.library) coverageReports);
+  libs = lib.unique (lib.concatMap (r: r.mixLibraries) coverageReports);
 
   writeArr = name: arr: pkgs.writeText name (lib.concatStringsSep "\n" arr);
 
@@ -57,6 +59,17 @@ let
 
   srcDirs = map (l: l.srcSubDirPath) libs;
   srcDirsFile = writeArr "srcdirs" srcDirs;
+
+  allCoverageReport = haskellLib.coverageReport {
+    name = "all";
+    checks = lib.flatten (lib.concatMap
+      (pkg: lib.optional (pkg ? checks) (lib.filter lib.isDerivation (lib.attrValues pkg.checks)))
+      (lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs)));
+    mixLibraries = lib.concatMap
+      (pkg: lib.optional (pkg.components ? library) pkg.components.library)
+      (lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs));
+    ghc = project.pkg-set.config.ghc.package;
+  };
 
 in pkgs.runCommand "project-coverage-report"
   ({ nativeBuildInputs = [ (ghc.buildGHC or ghc) pkgs.buildPackages.zip ];
@@ -115,29 +128,14 @@ in pkgs.runCommand "project-coverage-report"
       cp -R $report/share/hpc/vanilla/html/* $out/share/hpc/vanilla/html/
     '') coverageReports)}
 
-    if [ ''${#tixFiles[@]} -ne 0 ]; then
-      # Create tix file with test run information for all packages
-      tixFile="$out/share/hpc/vanilla/tix/all/all.tix"
-      hpcSumCmd=("hpc" "sum" "--union" "--output=$tixFile")
-      hpcSumCmd+=("''${tixFiles[@]}")
-      echo "''${hpcSumCmd[@]}"
-      eval "''${hpcSumCmd[@]}"
+    # Copy out "all" coverage report
+    cp -R ${allCoverageReport}/share/hpc/vanilla/tix/all $out/share/hpc/vanilla/tix
+    cp -R ${allCoverageReport}/share/hpc/vanilla/html/all $out/share/hpc/vanilla/html
 
-      # Markup a HTML coverage report for the entire project
-      cp ${projectIndexHtml} $out/share/hpc/vanilla/html/index.html
-      echo "report coverage-per-package $out/share/hpc/vanilla/html/index.html" >> $out/nix-support/hydra-build-products
+    # Markup a HTML coverage summary report for the entire project
+    cp ${projectIndexHtml} $out/share/hpc/vanilla/html/index.html
 
-      local markupOutDir="$out/share/hpc/vanilla/html/all"
-
-      mkdir $markupOutDir
-      mixModules="$PWD/mix-modules"
-      touch "$mixModules"
-      findModules "$mixModules" "$out/share/hpc/vanilla/mix/"
-
-      markup "$mixModules" "$markupOutDir" "$tixFile"
-
-      echo "report coverage $markupOutDir/hpc_index.html" >> $out/nix-support/hydra-build-products
-      ( cd $out/share/hpc/vanilla/html ; zip -r $out/share/hpc/vanilla/html.zip . )
-      echo "file zip $out/share/hpc/vanilla/html.zip" >> $out/nix-support/hydra-build-products
-    fi
+    echo "report coverage $out/share/hpc/vanilla/html/index.html" >> $out/nix-support/hydra-build-products
+    ( cd $out/share/hpc/vanilla/html ; zip -r $out/share/hpc/vanilla/html.zip . )
+    echo "file zip $out/share/hpc/vanilla/html.zip" >> $out/nix-support/hydra-build-products
   ''

@@ -6,7 +6,7 @@ let
   #   { "a.b.c.d" =
   #     rec { sha256 = $pkgVersionSha256;
   #           revisions =
-  #           { r0 = { outPath = ./hackage/...; revNum = 0; sha256 = $revisionSha256; };
+  #           { r0 = { nix = import ../hackage/...; revNum = 0; sha256 = $revisionSha256; };
   #             default = revisions.r0; };
   #         };
   #     };
@@ -24,7 +24,7 @@ let
   #   { "a.b.c.d" =
   #     rec { sha256 = $packageVersionSha256;
   #           revisions =
-  #           { r0 = { outPath = ./hackage/...;
+  #           { r0 = { nix = import ../hackage/...;
   #                    sha256 = $packageVersionSha256;
   #                    revision = $revNum;
   #                    revisionSha256 = $revisionSha256; };
@@ -45,7 +45,7 @@ let
                 inherit (version) sha256;
                 revision = rev.revNum;
                 revisionSha256 = rev.sha256;
-              } // import rev modArgs;
+              } // (x: (rev.nix or (import rev)) x) modArgs;
               f = rev: acc: acc // {
                 # If there's a collision (e.g. a revision was
                 # reverted), pick the one with the smaller

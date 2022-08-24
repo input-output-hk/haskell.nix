@@ -10,12 +10,17 @@
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
-    "R2105" = "nixpkgs-2105";
-    "R2111" = "nixpkgs-2111";
+    "R2205" = "nixpkgs-2205";
     "unstable" = "nixpkgs-unstable";
   };
+  haskellNix = import ./default.nix { inherit checkMaterialization; };
+  nixpkgsArgs = haskellNix.nixpkgsArgs // {
+    # Needed for dwarf tests
+    config = haskellNix.nixpkgsArgs.config // {
+      permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
+    };
+  };
   compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
-    inherit (import ./default.nix { inherit checkMaterialization; }) nixpkgsArgs;
     inherit runTests;
   }) (
     # GHC version to cache and whether to run the tests against them.
@@ -24,54 +29,43 @@
     # cabal-install and nix-tools plans.  When removing a ghc version
     # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
     # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2105") {
+    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
       ghc865 = false;
       ghc8107 = false;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2111") {
-      ghc865 = false;
-      ghc8107 = true;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
-      ghc8104 = false;
-      ghc8105 = false;
-      ghc8106 = false;
       ghc8107 = true;
-      ghc901 = false;
-      ghc902 = true;
-      ghc921 = false;
-      ghc922 = true;
-      ghc810420210212 = true;
+      ghc902 = false;
+      ghc924 = true;
     });
   systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
     nixpkgs.lib.filter (v:
-        # We have less x86_64-darwin build capacity so build fewer GhC versions and no R2105
+        # We have less x86_64-darwin build capacity so build fewer GhC versions
         (v != "x86_64-darwin" || (
-           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
-        && !__elem nixpkgsName ["R2105"]))
+           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
-        # aarch64-darwin requires ghc 8.10.7 and does not work on older nixpkgs
+        # aarch64-darwin requires ghc 8.10.7
         (v != "aarch64-darwin" || (
-           !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
-        && !__elem nixpkgsName ["R2105"]))
+           !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-linux requires ghc 8.8.4
         (v != "aarch64-linux" || (
-           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921"]
+           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
         ))) supportedSystems) (v: v);
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"]) 
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8107"])
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (system == "x86_64-linux" &&
-         nixpkgsName == "unstable" && (__elem compiler-nix-name ["ghc810420210212" "ghc8107" "ghc902" "ghc922"])) {
-    # Windows cross compilation is currently broken on macOS
+  } // lib.optionalAttrs (nixpkgsName == "unstable"
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc924"])
+       || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
@@ -80,12 +74,11 @@
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
-      # We need this for generic nixpkgs stuff at the right version
-      genericPkgs = import pinnedNixpkgsSrc {};
-  in dimension "GHC version" (compilerNixNames nixpkgsName genericPkgs) (compiler-nix-name: {nixpkgsArgs, runTests}:
-    dimension "System" (systems nixpkgsName genericPkgs compiler-nix-name) (systemName: system:
+      evalPackages = import pinnedNixpkgsSrc nixpkgsArgs;
+  in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
+    dimension "System" (systems nixpkgsName evalPackages compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
-          build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
+          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
           platformFilter = platformFilterGeneric pkgs system;
       in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
@@ -98,14 +91,14 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
           iserv-proxy = pkgs.ghc-extra-projects."${compiler-nix-name}".getComponent "iserv-proxy:exe:iserv-proxy";
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
-          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).getComponent "exe:hello";
+          hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         });
       }
       //
-      dimension "Cross system" (crossSystems nixpkgsName genericPkgs compiler-nix-name system) (crossSystemName: crossSystem:
+      dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name system) (crossSystemName: crossSystem:
         # Cross builds
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
-            build = import ./build.nix { inherit pkgs ifdLevel compiler-nix-name; };
+            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
             ghc = pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}";

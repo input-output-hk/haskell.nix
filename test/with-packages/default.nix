@@ -1,4 +1,4 @@
-{ stdenv, lib, util, mkPkgSet, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, mkPkgSet, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 with util;
@@ -21,6 +21,8 @@ let
       {
         packages.test-with-packages.components.library.doExactConfig = doExactConfig;
       }
+
+      { inherit evalPackages; }
     ];
   };
 

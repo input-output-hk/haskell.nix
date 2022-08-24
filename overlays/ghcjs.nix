@@ -22,7 +22,7 @@ final: prev:
           set -euo pipefail
           exe=$1
           shift
-          ${final.buildPackages.nodejs-12_x}/bin/node $exe $@
+          ${final.buildPackages.nodejs-18_x}/bin/node $exe $@
         '') + "/bin/node-wrapper")];
 
         # Apply the patches that came with `ghcjs`

@@ -1,12 +1,11 @@
 # Test a package set
-{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   modules = [
      {
-       reinstallableLibGhc = true;
        # Package has no exposed modules which causes
        #   haddock: No input file(s)
        packages.cabal-simple.doHaddock = false;
@@ -14,7 +13,7 @@ let
   ];
 
   project = project' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple";
     inherit modules;
     cabalProject = ''
@@ -31,7 +30,7 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = project.shellFor { tools = { cabal = "3.6.2.0"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]; };
+  test-shell = project.shellFor { tools = { cabal = "latest"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924"]; };
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
@@ -55,7 +54,7 @@ in recurseIntoAttrs {
         optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
           printf "checking that executable is dynamically linked to system libraries... " >& 2
         '' + optionalString stdenv.isLinux ''
-          ldd $exe | grep libpthread
+          ldd $exe | grep 'libc\.so'
         '' + optionalString stdenv.isDarwin ''
           otool -L $exe |grep .dylib
       '')) + ''

@@ -1,9 +1,13 @@
 final: prev: with prev;
   # sadly we need to patch GHC a bit.
-   let
-    ghcPkgOverrides = {
-        enableIntegerSimple = false;
-      };
+  let
+    # The new implementation appeared in GHC 9.0
+    hasNativeBignum = name: !lib.hasPrefix "ghc8" name;
+
+    ghcPkgOverrides = name: { enableIntegerSimple = false; } // lib.optionalAttrs (hasNativeBignum name) {
+      enableNativeBignum = false;
+    };
+
     ghcDrvOverrides = drv: {
         hardeningDisable = (drv.hardeningDisable or []) ++ [ "stackprotector" "format" ] ++ lib.optionals prev.stdenv.hostPlatform.isAarch32 [ "pic" "pie" ];
       };
@@ -20,13 +24,13 @@ final: prev: with prev;
        && !lib.hasPrefix "ghc82" name
        && !lib.hasPrefix "ghcjs" name
        && !lib.hasSuffix "Binary" name;
-     overrideCompiler = compiler:
-       ((compiler.override ghcPkgOverrides).overrideAttrs ghcDrvOverrides) // {
-         dwarf = overrideCompiler compiler.dwarf;
+     overrideCompiler = name: compiler:
+       ((compiler.override (ghcPkgOverrides name)).overrideAttrs ghcDrvOverrides) // {
+         dwarf = overrideCompiler name compiler.dwarf;
        };
    in
      lib.recursiveUpdate prev.haskell-nix {
-       compiler = lib.mapAttrs (_name: overrideCompiler)
+       compiler = lib.mapAttrs overrideCompiler
          (lib.filterAttrs (name: _value: needsPatches name) prev.haskell-nix.compiler);
      };
    }
