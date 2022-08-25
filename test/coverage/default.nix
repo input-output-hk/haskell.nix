@@ -19,7 +19,7 @@ let
 
   # We can easily select a different compiler when using cabal,
   # but for stack we would need a different resolver to be used..
-  cabalProj = (cabalProject' projectArgs // { inherit compiler-nix-name; });
+  cabalProj = (cabalProject' (projectArgs // { inherit compiler-nix-name; }));
   stackProj = (stackProject' projectArgs);
 
   exeExt = stdenv.hostPlatform.extensions.executable;
@@ -85,11 +85,11 @@ in recurseIntoAttrs ({
       ${concatStringsSep "\n" (map (project: ''
         pkga_basedir="${project.hsPkgs.pkga.coverageReport}/share/hpc/vanilla"
         findFileExistsNonEmpty "$pkga_basedir/mix/pkga-0.1.0.0/" "PkgA.mix"
-        dirExistsEmpty "$pkga_basedir/tix/pkga-0.1.0.0"
-        dirExistsEmpty "$pkga_basedir/html/pkga-0.1.0.0"
+        dirExists "$pkga_basedir/tix/pkga-0.1.0.0"
+        dirExists "$pkga_basedir/html/pkga-0.1.0.0"
   
         pkgb_basedir="${project.hsPkgs.pkgb.coverageReport}/share/hpc/vanilla"
-        testTix="$pkgb_basedir/tix/pkgb-0.1.0.0/tests${exeExt}/tests${exeExt}.tix"
+        testTix="$pkgb_basedir/tix/pkgb-test-tests-0.1.0.0-check/tests${exeExt}.tix"
         libTix="$pkgb_basedir/tix/pkgb-0.1.0.0/pkgb-0.1.0.0.tix"
         fileExistsNonEmpty "$testTix"
         fileExistsNonEmpty "$libTix"
@@ -116,9 +116,9 @@ in recurseIntoAttrs ({
         dirExists "$project_basedir/tix/pkga-0.1.0.0"
         dirExists "$project_basedir/tix/pkgb-0.1.0.0"
         fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0/pkgb-0.1.0.0.tix"
-        dirExists "$project_basedir/tix/pkgb-0.1.0.0/tests${exeExt}"
-        fileExistsNonEmpty "$project_basedir/tix/pkgb-0.1.0.0/tests${exeExt}/tests${exeExt}.tix"
-      '') (optional (compiler-nix-name == "ghc865") stackProj))}
+        dirExists "$project_basedir/tix/pkgb-test-tests-0.1.0.0-check"
+        fileExistsNonEmpty "$project_basedir/tix/pkgb-test-tests-0.1.0.0-check/tests${exeExt}.tix"
+      '') ([cabalProj] ++ optional (compiler-nix-name == "ghc865") stackProj))}
 
       touch $out
     '';
