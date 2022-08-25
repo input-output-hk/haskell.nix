@@ -24,14 +24,6 @@ let
         concatLists = builtins.concatLists resolverFind ;
       in "resolver: lts-16.31"; # builtins.trace resolverFind resolverFind;
 
-    # resolver =
-    #   let
-    #     rs = pkgs.lib.lists.concatLists (
-    #       pkgs.lib.lists.filter (l: l != null)
-    #         (builtins.trace "*(.*)" (builtins.map (l: builtins.match "^resolver: *(.*)" l))
-    #           (builtins.trace ( rawStackYaml)  (pkgs.lib.splitString "\n" rawStackYaml))));
-    #   in
-    #     builtins.trace ("get resolver") (pkgs.lib.lists.head ( (builtins.trace "rs" rs) ++ [ null ]));
 
     # If we found a resolver and we have a resolverSha256 then we should download it.
     fetchedResolver =
