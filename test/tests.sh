@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash -p bash jq nix gnused
+#! nix-shell -i "bash -x" -p bash jq nix gnused
 
 set -euo pipefail
 
@@ -10,7 +10,7 @@ NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
 cd $(dirname $0)
 
 if [ "$#" != "1" ]; then
-  echo "Please pass a compiler-nix-name to use.  For example: ./test/test.sh ghc884"
+  echo "Please pass a compiler-nix-name to use.  For example: ./test/tests.sh ghc884"
   exit 1
 fi
 
@@ -19,6 +19,17 @@ GHC=$1
 printf "*** Cleaning package build directories..." >& 2
 rm -rvf */cabal.project.local */.ghc.environment* */dist */dist-newstyle */.stack-work
 echo >& 2
+
+# This was needed is first place to make hix template / flake devShell examples
+# not require interactive user confirmation. Because the IOG nix cache settings
+# are defined in the `nixConfig` flake attribute.
+if [ ! -z ${CI+x} ]; then
+  printf "*** Set custom nix.conf for CI ..." >& 2
+  export XDG_CONFIG_HOME=$HOME/.config
+  mkdir -p $XDG_CONFIG_HOME/nix
+  cp ./nix.conf $XDG_CONFIG_HOME/nix
+  echo >& 2
+fi
 
 printf "*** Running the nix-build tests...\n" >& 2
 nix build $NIX_BUILD_ARGS \

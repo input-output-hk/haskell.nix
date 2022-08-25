@@ -121,6 +121,7 @@ in
      ole32 = null; rpcrt4 = null;
      winmm = null; userenv = null;
      kernel32 = null; ws2_32 = null;
+     opengl32 = null; glu32 = null;
      # this should be bundled with gcc.
      # if it's not we have more severe
      # issues anyway.
