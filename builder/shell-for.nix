@@ -95,11 +95,14 @@ let
   #
   # Also, we take care to keep duplicates out of the list, otherwise we may see
   # "Argument list too long" errors from bash when entering a shell.
-  uniqueInputs = inputList: builtins.listToAttrs (builtins.map (x: lib.nameValuePair (x.name) x) inputList);
-  unionComponentInputs = inputsSoFar: c:
-    inputsSoFar // uniqueInputs c.buildInputs // uniqueInputs c.propagatedBuildInputs;
-  systemInputs' = lib.lists.foldl unionComponentInputs {} selectedComponents;
-  systemInputs = removeSelectedInputs (builtins.attrValues systemInputs');
+  #
+  # Version of `lib.unique` that should be fast if the name attributes are unique
+  uniqueWithName = list:
+    lib.concatMap lib.unique (
+      builtins.attrValues (
+        builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") list));
+  allSystemInputs = lib.concatMap (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents;
+  systemInputs = removeSelectedInputs (uniqueWithName allSystemInputs);
 
   nativeBuildInputs = removeSelectedInputs
     (lib.concatMap (c: c.executableToolDepends) selectedComponents);
