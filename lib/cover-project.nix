@@ -79,34 +79,6 @@ in pkgs.runCommand "project-coverage-report"
     LOCALE_ARCHIVE = "${pkgs.buildPackages.glibcLocales}/lib/locale/locale-archive";
   })
   ''
-    function markup() {
-      local modulesFile=$1
-      local destDir=$2
-      local tixFile=$3
-
-      local hpcMarkupCmd=("hpc" "markup" "--destdir=$destDir")
-      hpcMarkupCmd+=("--srcdir=@${srcDirsFile}")
-      hpcMarkupCmd+=("--hpcdir=@${mixDirsFile}")
-      hpcMarkupCmd+=("--include=@$modulesFile")
-      hpcMarkupCmd+=("$tixFile")
-
-      echo "''${hpcMarkupCmd[@]}"
-      eval "''${hpcMarkupCmd[@]}"
-    }
-
-    function findModules() {
-      local modulesFile=$1
-      local searchDir=$2
-
-      pushd $searchDir
-      find ./ -type f \
-        -wholename "*.mix" -not -name "Paths*" \
-        -exec basename {} \; \
-        | sed "s/\.mix$//" \
-        >> "$modulesFile"
-      popd
-    }
-
     mkdir -p $out/nix-support
     mkdir -p $out/share/hpc/vanilla/tix/all
     mkdir -p $out/share/hpc/vanilla/mix/
@@ -118,12 +90,14 @@ in pkgs.runCommand "project-coverage-report"
       identifier="${coverageReport.name}"
       report=${coverageReport}
       tix="$report/share/hpc/vanilla/tix/$identifier/$identifier.tix"
-      if test -f "$tix"; then
+      if [ -f "$tix" ]; then
         tixFiles+=("$tix")
       fi
 
       # Copy mix, tix, and html information over from each report
-      cp -Rn $report/share/hpc/vanilla/mix/$identifier $out/share/hpc/vanilla/mix/
+      if [ -d "$report/share/hpc/vanilla/mix/$identifier" ]; then
+        cp -Rn $report/share/hpc/vanilla/mix/$identifier $out/share/hpc/vanilla/mix/
+      fi
       cp -R $report/share/hpc/vanilla/tix/* $out/share/hpc/vanilla/tix/
       cp -R $report/share/hpc/vanilla/html/* $out/share/hpc/vanilla/html/
     '') coverageReports)}
