@@ -41,7 +41,7 @@ steps:
 
   - label: 'Check that the haskell.nix roots do not require IFDs'
     command:
-      - nix build .#roots.x86_64-linux --option allow-import-from-derivation false
+      - yes | nix build .#roots.x86_64-linux --option allow-import-from-derivation false
     agents:
       system: x86_64-linux
 
