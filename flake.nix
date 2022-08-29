@@ -137,7 +137,7 @@
 
       packages = ((self.internal.compat { inherit system; }).hix).apps;
 
-      devShells.${system}.default = with self.legacyPackages.${system};
+      devShells.default = with self.legacyPackages.${system};
         mkShell {
           buildInputs = [
             nixUnstable
