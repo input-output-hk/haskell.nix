@@ -35,5 +35,7 @@ in
 
     cd ..
 
-    yes | nix --experimental-features 'nix-command flakes' flake lock --update-input ${name}
+    nix flack lock --accept-flake-config \
+                   --experimental-features 'nix-command flakes' \
+                   --update-input ${name}
   ''

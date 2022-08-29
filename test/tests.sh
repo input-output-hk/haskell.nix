@@ -20,16 +20,7 @@ printf "*** Cleaning package build directories..." >& 2
 rm -rvf */cabal.project.local */.ghc.environment* */dist */dist-newstyle */.stack-work
 echo >& 2
 
-# This was needed is first place to make hix template / flake devShell examples
-# not require interactive user confirmation. Because the IOG nix cache settings
-# are defined in the `nixConfig` flake attribute.
-if [ ! -z ${CI+x} ]; then
-  printf "*** Set custom nix.conf for CI ..." >& 2
-  export XDG_CONFIG_HOME=$HOME/.config
-  mkdir -p $XDG_CONFIG_HOME/nix
-  cp ./nix.conf $XDG_CONFIG_HOME/nix
-  echo >& 2
-fi
+alias nix="nix --accept-flake-config"
 
 printf "*** Running the nix-build tests...\n" >& 2
 nix build $NIX_BUILD_ARGS \
