@@ -180,15 +180,17 @@
               
                 <h2 id="how-to-update-nix-tools">How to update <a href="https://github.com/input-output-hk/nix-tools"><code>nix-tools</code></a><a class="headerlink" href="#how-to-update-nix-tools" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Use niv to update the sources.json:</li>
-</ol>
-<p><code>niv update nix-tools</code></p>
-<ol>
-<li>If <code>nix-tools.cabal</code> or <code>plan-to-nix</code> have changed, check the
+<li>
+<p>Use niv to update the sources.json:
+   <code>nix flake lock --update-input nix-tools</code></p>
+</li>
+<li>
+<p>If <code>nix-tools.cabal</code> or <code>plan-to-nix</code> have changed, check the
    materialized files for each of the compiler nix name in
-   <code>ls -d materialized/ghc*/nix-tools</code> with:</li>
+   <code>ls -d materialized/ghc*/nix-tools</code> with:
+   <code>nix-build scripts/check-compiler-materialization --argstr compiler-nix-name ghc884</code></p>
+</li>
 </ol>
-<p><code>nix-build scripts/check-compiler-materialization --argstr compiler-nix-name ghc884</code></p>
               
             </div>
           </div>
