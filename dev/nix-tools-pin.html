@@ -9,7 +9,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Nix tools pin - Alternative Haskell Infrastructure for Nixpkgs</title>
+  <title>How to update nix-tools - Alternative Haskell Infrastructure for Nixpkgs</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
 
   <link rel="stylesheet" href="../css/theme.css" />
@@ -18,7 +18,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Nix tools pin";
+    var mkdocs_page_name = "How to update nix-tools";
     var mkdocs_page_input_path = "dev/nix-tools-pin.md";
     var mkdocs_page_url = null;
   </script>
@@ -60,9 +60,11 @@
                 </ul>
                 <p class="caption"><span class="caption-text">Tutorials</span></p>
                 <ul>
-                    <li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started.html">Getting Started</a>
+                    <li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started.html">Getting started</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started-flakes.html">Getting started with Flakes</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started-hix.html">Getting started with Hix</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../tutorials/development.html">Creating a development environment</a>
                     </li>
@@ -79,6 +81,10 @@
                     <li class="toctree-l1"><a class="reference internal" href="../tutorials/cross-compilation.html">Cross-compiling your project</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../tutorials/coverage.html">Generating coverage information</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../tutorials/building-package-from-stackage-hackage.html">Build a specific package from Hackage or Stackage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../tutorials/ca-derivations.html">Content addressed derivations</a>
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Reference</span></p>
@@ -102,10 +108,14 @@
                     </li>
                 </ul>
                 <p class="caption"><span class="caption-text">Dev Notes</span></p>
-                <ul>
+                <ul class="current">
                     <li class="toctree-l1"><a class="reference internal" href="dev-architecture.html">Architecture</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="installing-nix-tools.html">Installing nix-tools</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="nix-tools-pin.html">How to update nix-tools</a>
+    <ul class="current">
+    </ul>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="manually-generating-nix-expressions.html">Manually generating Nix expressions</a>
                     </li>
@@ -120,6 +130,8 @@
                     <li class="toctree-l1"><a class="reference internal" href="adding-new-ghc.html">Adding a new GHC version</a>
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="coverage.html">Coverage</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="hix.html">Making changes to Hix</a>
                     </li>
                 </ul>
                 <ul>
@@ -146,8 +158,12 @@
     <li><a href="../index.html">Docs</a> &raquo;</li>
     
       
+        
+          <li>Dev Notes &raquo;</li>
+        
+      
     
-    <li>Nix tools pin</li>
+    <li>How to update nix-tools</li>
     <li class="wy-breadcrumbs-aside">
       
         <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/dev/nix-tools-pin.md"
@@ -178,6 +194,15 @@
           </div>
           <footer>
   
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="manually-generating-nix-expressions.html" class="btn btn-neutral float-right" title="Manually generating Nix expressions">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="installing-nix-tools.html" class="btn btn-neutral" title="Installing nix-tools"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
 
   <hr/>
 
@@ -204,6 +229,10 @@
         </span>
     
     
+      <span><a href="installing-nix-tools.html" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="manually-generating-nix-expressions.html" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
