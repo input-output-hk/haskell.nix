@@ -801,11 +801,10 @@ final: prev: {
 
         # `project'` and `project` automatically select between `cabalProject`
         # and `stackProject` (when possible) by looking for `stack.yaml` or
-        # `cabal.project` files.  If both exist we can pass in one of:
+        # `cabal.project` files.  If both exist it uses the `cabal.project` file.
+        # To override this pass in:
         #     `projectFileName = "stack.yaml;"`
-        #     `projectFileName = "cabal.project";`
-        # to let it know which to choose (or pick another name).  If the
-        # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
+        # If the selected file ends in a `.yaml` it is assumed to be for `stackProject`.
         # If neither `stack.yaml` nor `cabal.project` exist `cabalProject` is
         # used (as it will use a default `cabal.project`).
         project' = projectModule:
@@ -829,8 +828,8 @@ final: prev: {
                 then projectFileName  # Prefer the user selected project file name
                 else
                   if stackYamlExists && cabalProjectExists
-                    then throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
-                      + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`")
+                    then __trace ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist.  Using `cabal.project`. "
+                      + "set `projectFileName = \"stack.yaml\";` to override this.`") "cabal.project"
                     else
                       if stackYamlExists
                         then "stack.yaml"      # stack needs a stack.yaml

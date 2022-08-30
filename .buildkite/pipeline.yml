@@ -50,3 +50,9 @@ steps:
       - nix-instantiate release.nix -A required-unstable-ghc8107-x86_64-darwin-native --show-trace --builders ''
     agents:
       system: x86_64-linux
+
+  - label: 'Check hix -- run github:haskell/cabal/3.8#cabal-install:exe:cabal -- --version'
+    command:
+      - "HIX_DIR=$(mktemp -d) nix run .#hix --accept-flake-config -- run github:haskell/cabal/3.8#cabal-install:exe:cabal --accept-flake-config --override-input haskellNix . -- --version"
+    agents:
+      system: x86_64-linux
