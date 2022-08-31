@@ -83,7 +83,7 @@ let
         fi
       '')
     + (
-      let fixHint = if builtins.hasContext (toString materialized)
+      let fixHint = if !builtins.hasContext (toString materialized)
           then "To fix run: ${updateMaterialized}"
           else "To fix check you are in the right directory and run: ${generateMaterialized} ${__head (__match "/nix/store/[^/]*/(.*)" (toString materialized))}";
       in if materialized != null && !__pathExists materialized
