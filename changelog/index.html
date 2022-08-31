@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>ChangeLog - Alternative Haskell Infrastructure for Nixpkgs</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "ChangeLog";
+        var mkdocs_page_input_path = "changelog.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Alternative Haskell Infrastructure for Nixpkgs
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Introduction</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../motivation/">Motivation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Tutorials</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started/">Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started-flakes/">Getting started with Flakes</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/getting-started-hix/">Getting started with Hix</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/development/">Creating a development environment</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/clean-git/">Sourcing files only part of git repository using cleanGit</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/source-repository-hashes/">Handling git repositories in projects</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/pkg-map/">Mapping non-Haskell dependencies to Nixpkgs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/hackage-stackage/">Bumping Hackage and Stackage snapshots</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/materialization/">Materialization: Speeding up Nix evaluation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/cross-compilation/">Cross-compiling your project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/coverage/">Generating coverage information</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/building-package-from-stackage-hackage/">Build a specific package from Hackage or Stackage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../tutorials/ca-derivations/">Content addressed derivations</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/supported-ghc-versions/">Supported GHC versions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/commands/">Command-line tools</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/library/">Haskell.nix Library</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/modules/">Module options</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Templates / Abstraction</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../iohk-nix/">IOHKs nix library</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Dev Notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/dev-architecture/">Architecture</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/installing-nix-tools/">Installing nix-tools</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/nix-tools-pin/">How to update nix-tools</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/manually-generating-nix-expressions/">Manually generating Nix expressions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/maintainer-scripts/">Maintainer Scripts</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/nixpkgs-pin/">Nixpkgs Pin</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/removing-with-package-wrapper/">Removing withPackage wrapper</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/tests/">Test Suite</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/adding-new-ghc/">Adding a new GHC version</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/coverage/">Coverage</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dev/hix/">Making changes to Hix</a>
+                  </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">ChangeLog</a>
+    <ul class="current">
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Alternative Haskell Infrastructure for Nixpkgs</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li><li>ChangeLog</li>
+    <li class="wy-breadcrumbs-aside">
+        <a href="https://github.com/input-output-hk/haskell.nix/edit/master/docs/changelog.md"
+          class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <p>This file contains a summary of changes to Haskell.nix and <code>nix-tools</code>
+that will impact users.</p>
+<h2 id="jul-27-2022">Jul 27, 2022<a class="headerlink" href="#jul-27-2022" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed reliance on <code>builtins.currentSystem</code>.  It was used it to provide
+  <code>pkgs.evalPackages</code> via an overlay that it used to run derivations
+  used in imports from derivation (IFDs).</li>
+</ul>
+<p>These derivations are now run on <code>buildPackages</code> by default.</p>
+<p>Passsing <code>evalPackages</code> to a project function will change where all the
+  derivations used in IFDs are run for that project (including shell tools):
+    evalPackages = import nixpkgs haskellNix.nixpkgsArgs;</p>
+<p>Passing <code>evalSystem</code> instead will use create a suitable <code>nixpkgs</code> using <code>pkgs.path</code>
+  and <code>pkgs.overlay</code>:
+    evalSystem = "x86_64-linux";
+  or
+    evalSystem = builtins.currentSystem;</p>
+<p>The <code>haskellLib.cleanGit</code> function is also affected by this change.  If you are cross
+  compiling and using <code>cleanGit</code> you should probably do something like:
+    pkgs = import nixpkgs haskellNix.nixpkgsArgs;
+    evalPackages = import nixpkgs (haskellNix.nixpkgsArgs // { system = evalSystem; });
+    p = pkgs.pkgsCross.mingwW64.haskell-nix.cabalProject {
+      inherit evalPackages;
+      src = evalPackages.haskell-nix.haskellLib.cleanGit { src = ./.; };
+    };</p>
+<h2 id="feb-16-2022">Feb 16, 2022<a class="headerlink" href="#feb-16-2022" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed lookupSha256 argument from project functions.
+  Pass a <code>sha256map</code> instead.</li>
+<li>Added better support for <code>repository</code> in <code>cabal.project</code>.  These
+  blocks should now work without the need for passing <code>extra-hackages</code> and
+  <code>extra-hackage-tarballs</code>.</li>
+</ul>
+<h2 id="aug-6-2021">Aug 6, 2021<a class="headerlink" href="#aug-6-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Included dependencies of haskell.nix that were tracked in <code>nix/sources.json</code>
+  as flake inputs (<code>flake.lock</code> replaces <code>nix/sources.json</code>).</li>
+<li>Uses <code>flake-compat</code> to continue to provide a compatible interface for non
+  flake projects.</li>
+</ul>
+<h2 id="jul-23-2021">Jul 23, 2021<a class="headerlink" href="#jul-23-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>source-repository-package</code> references in <code>cabal.project</code> files are now
+  left as a <code>source-repository-package</code> when calculating the the <code>plan-nix</code> for
+  <code>cabalProject</code> based functions.
+  This makes haskell.nix match the behaviour of <code>cabal</code> better.
+  Materialized files for projects that use <code>source-repository-package</code>
+  references will need to be updated.</li>
+<li>Only planned components are included in a haskell.nix cabal project.
+  If cabal solver does not include the component in the <code>plan.json</code> file it
+  will not be present in <code>hsPkgs.pkg.components</code>.</li>
+<li>When the same package occurs more than once in a plan.json file
+  the latest version is picked by haskell.nix.</li>
+</ul>
+<h2 id="apr-8-2021">Apr 8, 2021<a class="headerlink" href="#apr-8-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Project arguments are now validated with the Nix module system.
+  If unexpected argments are passed to a project function this may now
+  result in an error.</li>
+</ul>
+<h2 id="feb-22-2021">Feb 22, 2021<a class="headerlink" href="#feb-22-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add <code>.dwarf</code> to build any component with DWARF dubug info on linux
+  (ghc &gt;=8.10.2).</li>
+<li>Pass <code>enableDWARF</code> to <code>shellFor</code> for to get a shell where all the
+  components are the <code>.dwarf</code> ones.</li>
+</ul>
+<h2 id="feb-18-2021">Feb 18, 2021<a class="headerlink" href="#feb-18-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>ghcOptions</code> has been moved from package and is now a list of strings.
+    old: packages.x.package.ghcOptions = "someGHCoption";
+    new: packages.x.ghcOptions = ["someGHCoption"];
+  To specify ghcOptions for all packages:
+    ghcOptions = ["someGHCoption"];
+  For a single component:
+    packages.x.compoents.library.ghcOptions = ["someGHCoption"];</li>
+</ul>
+<h2 id="feb-8-2021">Feb 8, 2021<a class="headerlink" href="#feb-8-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed older versions of haskell-language-server from custom-tools
+  (0.8.0 is in hackage so we can still get that version).</li>
+</ul>
+<h2 id="jan-14-2021">Jan 14, 2021<a class="headerlink" href="#jan-14-2021" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added support for cross package refs (with a project).  Relative
+  directory references between packages within a project should now
+  work.</li>
+<li>Added <code>includeSiblings</code> to <code>cleanSourceWith</code>.  When <code>true</code> it
+  prevents the <code>subDir</code> arg from causing filtering of other directories.</li>
+<li>Added <code>keepGitDir</code> to <code>cleanGit</code> to allow <code>.git</code> directory to be kept
+  (useful for components that use the <code>githash</code> package).</li>
+</ul>
+<h2 id="nov-26-2020">Nov 26, 2020<a class="headerlink" href="#nov-26-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Renamed <code>otherShells</code> arg for <code>shellFor</code> to `inputsFrom</li>
+</ul>
+<h2 id="nov-25-2020">Nov 25, 2020<a class="headerlink" href="#nov-25-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The <code>shellFor</code> <code>makeConfigFiles</code> <code>ghcWithHoogle</code> and <code>ghcWithPackages</code>
+  functions have been removed from <code>project.hsPkgs</code>.  Instead access
+  them from <code>project</code> itself (e.g. change <code>p.hsPkgs.shellFor</code> to <code>p.shellFor</code>).</li>
+<li>The reflex-platform like <code>project.shells.ghc</code> has been removed.
+  If needed, add something like <code>p // { shells.ghc = p.shellFor {} }</code>
+  to <code>shell.nix</code>.</li>
+</ul>
+<h2 id="nov-24-2020">Nov 24, 2020<a class="headerlink" href="#nov-24-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added <code>${targetPrefix}cabal</code> wrapper script for running cross
+  compilers in <code>shellFor</code>.</li>
+<li><code>otherShells</code> arg added to <code>shellFor</code>.</li>
+</ul>
+<h2 id="oct-31-2020">Oct 31, 2020<a class="headerlink" href="#oct-31-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Passing <code>tools.hoogle</code> to <code>shellFor</code> with a value suitable for <code>haskel-nix.tool</code> will
+  use the specified <code>hoogle</code> inside <code>shellFor</code>. This allows for materialization
+  of <code>hoogle</code>.</li>
+</ul>
+<h2 id="oct-28-2020">Oct 28, 2020<a class="headerlink" href="#oct-28-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Passing <code>compiler-nix-name</code> to project functions for <code>stack.yaml</code>
+  based projects now overrides the compiler used (was ignored before).</li>
+</ul>
+<h2 id="sep-8-2020">Sep 8, 2020<a class="headerlink" href="#sep-8-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added the ability to generate coverage reports for packages and
+  projects.</li>
+<li>Added the <code>doCoverage</code> module option that allows users to choose
+  packages to enable coverage for.</li>
+<li>Added a <code>doCoverage</code> flag to the component builder that outputs HPC
+  information when coverage is enabled.</li>
+<li>Added test for coverage.</li>
+</ul>
+<h2 id="july-21-2020">July 21, 2020<a class="headerlink" href="#july-21-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed <code>components.all</code>, use <code>symlinkJoin</code> on components.exes or
+ <code>shellFor</code> if you need a shell.</li>
+<li>Added <code>components</code> argument to <code>shellFor</code>.</li>
+</ul>
+<h2 id="july-21-2020_1">July 21, 2020<a class="headerlink" href="#july-21-2020_1" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added GHC 8.8.4 and replaced 8.8.3 in tests and as the ghc
+  used to build nix-tools for stack projects.</li>
+</ul>
+<h2 id="july-20-2020">July 20, 2020<a class="headerlink" href="#july-20-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Changed <code>haskell-nix.roots</code> and <code>p.roots</code> to single derivations.</li>
+</ul>
+<h2 id="july-8-2020">July 8, 2020<a class="headerlink" href="#july-8-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Removed <code>sources.nixpkgs-default</code>, use <code>sources.nixpkgs</code> instead.</li>
+<li>Removed <code>./nixpkgs</code> directory, use  <code>(import ./. {}).sources</code>
+  or <code>./nix/sources.nix</code> instead.</li>
+<li>Removes V1 interface for details on how to fix old code see:
+    https://github.com/input-output-hk/haskell.nix/issues/709</li>
+<li>Removed defaultCompilerNixName.</li>
+<li>cabalProject, cabalProject', hackage-project and hackage-package
+  now require a <code>compiler-nix-name</code> argument.</li>
+<li><code>haskell-nix.tool</code> and <code>.tools</code> now require a <code>compiler-nix-name</code> argument.
+  New functions <code>p.tool</code> and <code>p.tools</code> (where p is a project) do not.
+  Like <code>shellFor { tools = ... }</code> they will use the compiler nix name
+  from the project (including stack projects where it is derived from
+  the resolver).</li>
+<li><code>haskell-nix.alex</code> and <code>haskell-nix.happy</code> have been removed. Use
+  <code>p.tool "alex" "3.2.5"</code> or <code>shellFor { tools = { alex = "3.2.5"; } }</code>.</li>
+<li><code>haskell-nix.nix-tools</code> -&gt; <code>haskell-nix.nix-tools.ghc883</code> (it includes
+  the hpack exe now).</li>
+<li><code>haskell-nix.cabal-install</code> -&gt;
+  <code>p.tool "cabal" "3.2.0.0"</code> or <code>shellFor { tools = { cabal = "3.2.0.0"; } }</code></li>
+<li><code>haskell-nix.haskellNixRoots</code> -&gt; <code>haskell-nix.roots ghc883</code> or <code>p.roots</code></li>
+</ul>
+<h2 id="june-25-2020">June 25, 2020<a class="headerlink" href="#june-25-2020" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Haddock docs are now built in their own derivation when needed (not as part
+  of the component build).
+  They should build automatically when something (such as <code>shellFor</code>) attempts
+  to accesses the <code>.doc</code> attribute of component.</li>
+</ul>
+<h2 id="december-27-2019">December 27, 2019<a class="headerlink" href="#december-27-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix overlays/bootstrap.nix to provide LLVM 6, not LLVM 5, to ghc-8.6.X compilers.</li>
+</ul>
+<h2 id="november-18-2019">November 18, 2019<a class="headerlink" href="#november-18-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Changed the <code>cleanSourceHaskell</code> to accept an attrset of <code>src</code> and
+    (optional) <code>name</code> parameters. This allows you to keep the source
+    derivation name constant, so that your builds are always
+    cached. Usage of <code>cleanSourceHaskell</code> will need to be updated.</li>
+</ul>
+<h2 id="october-12-2019">October 12, 2019<a class="headerlink" href="#october-12-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://input-output-hk.github.io/haskell.nix/reference/library/#shellfor"><code>shellFor</code></a> no longer sets <code>CABAL_CONFIG</code> by default.
+   This avoids surprising users, but means that Cabal may select a plan which is different to your Haskell.nix package set.
+   If you would like the old behaviour, use <code>shellFor { exactDeps = true; }</code>.</li>
+</ul>
+<h2 id="august-9-2019">August 9, 2019<a class="headerlink" href="#august-9-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add the <a href="https://input-output-hk.github.io/haskell.nix/reference/library/#haskellLib"><code>haskellLib.collectComponents</code></a> function.</li>
+</ul>
+<h2 id="june-21-2019">June 21, 2019<a class="headerlink" href="#june-21-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add <code>ghcWithPackages</code> and <code>ghcWithHoogle</code> to hsPkgs (<a href="https://input-output-hk.github.io/haskell.nix/reference/library/#package-set-functions">documentation</a>.</li>
+<li>Benchmark components can now build successfully.</li>
+<li>Reduced the closure bloat of nix-tools, and added closure size limit to CI.</li>
+<li>Added more reference documentation and set up auto-generated
+   documentation for <a href="https://input-output-hk.github.io/haskell.nix/reference/modules/">Module Options</a>.</li>
+<li>Miscellaneous bug fixes.</li>
+</ul>
+<h2 id="june-7-2019">June 7, 2019<a class="headerlink" href="#june-7-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Several additions to the <a href="https://input-output-hk.github.io/haskell.nix/">documentation</a>.<ul>
+<li>More information about getting nix-tools, Haskell.nix, pinning.</li>
+<li>Updates the stack-to-nix and cabal-to-nix guides.</li>
+<li>Adds a section on development environments.</li>
+<li>Adds a little information about cross compilation.</li>
+<li>Adds a (partially complete) reference section (command line manuals, library reference).</li>
+<li>Symlinks the changelog into the documentation pages.</li>
+</ul>
+</li>
+</ul>
+<h2 id="may-29-2019">May 29, 2019<a class="headerlink" href="#may-29-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added <code>shellFor</code> function to package set.</li>
+</ul>
+<h2 id="may-28-2019">May 28, 2019<a class="headerlink" href="#may-28-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added <code>snaphots</code> and <code>haskellPackages</code> attributes to the
+    Haskell.nix top-level.</li>
+</ul>
+<h2 id="may-22-2019">May 22, 2019<a class="headerlink" href="#may-22-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add the <code>cleanSourceHaskell</code> utility function to the Haskell.nix
+    top-level.</li>
+</ul>
+<h2 id="may-21-2019">May 21, 2019<a class="headerlink" href="#may-21-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add the <code>callCabalProjectToNix</code> function, which uses "import from
+    derivation" (IFD) so that nix-tools doesn't need to be run
+    manually.</li>
+<li>The <code>hackage.nix</code> update process has changed, so that Cabal index
+    state hashes are also included in the generated repo.</li>
+</ul>
+<h2 id="may-20-2019">May 20, 2019<a class="headerlink" href="#may-20-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Remove Travis CI in favour of Buildkite.</li>
+</ul>
+<h2 id="may-17-2019">May 17, 2019<a class="headerlink" href="#may-17-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add the <code>callStackToNix</code> function, which uses "import from
+    derivation" (IFD) so that <code>stack-to-nix</code> doesn't need to be run
+    manually.</li>
+</ul>
+<h2 id="mar-15-2019">Mar 15, 2019<a class="headerlink" href="#mar-15-2019" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><code>overlays</code> was renamed to <code>extras</code> in
+    <a href="https://github.com/input-output-hk/haskell.nix/pull/79">#79</a>
+    to prevent confusion between the notion of Nix overlays.</p>
+<p>Therefore <code>plan-pkgs</code> and <code>stack-pkgs</code> as generated by <code>plan-to-nix</code> and <code>stack-to-nix</code> will
+expose <code>extras</code> instead of <code>overlay</code>. Similarly <code>mkStackPkgSet</code>, <code>mkPkgSet</code> and <code>mkCabalProjectPkgSet</code>
+take a <code>pkg-def-extras</code> instead of <code>pkg-def-overlay</code> argument.  If you are using <code>iohk-nix</code>, the
+<code>iohk-overlay</code> was parameter was renamed to <code>iohk-extras</code>.</p>
+</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../dev/hix/" class="btn btn-neutral float-left" title="Making changes to Hix"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/input-output-hk/haskell.nix" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../dev/hix/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
