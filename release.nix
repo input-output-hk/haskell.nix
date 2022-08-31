@@ -2,6 +2,7 @@
 # on a machine with e.g. no way to build the Darwin IFDs you need!
 { supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
 , ifdLevel ? 3
+, include ? (compiler-nix-name: true)
 , checkMaterialization ? false }:
 
 let
@@ -16,7 +17,7 @@ let
   lib = genericPkgs.lib;
   ci = import ./ci.nix { inherit supportedSystems ifdLevel checkMaterialization; restrictEval = true; };
   allJobs = stripAttrsForHydra (filterDerivations ci);
-  latestJobs = {
+  latestJobs = lib.optionalAttrs (include "ghc8107") {
     # All the jobs are included in the `requiredJobs`, but the ones
     # added here will also included without aggregation, making it easier
     # to find a failing test.  Keep in mind though that adding too many
@@ -32,7 +33,7 @@ let
         let nixpkgsJobs = allJobs.${nixpkgsVer};
         in lib.concatMap (compiler-nix-name:
           let ghcJobs = nixpkgsJobs.${compiler-nix-name};
-          in builtins.concatMap (platform:
+          in lib.optionals (include compiler-nix-name) (builtins.concatMap (platform:
             let platformJobs = ghcJobs.${platform};
             in builtins.map (crossPlatform: {
               name = "required-${nixpkgsVer}-${compiler-nix-name}-${platform}-${crossPlatform}";
@@ -42,7 +43,7 @@ let
                 constituents = lib.collect (d: lib.isDerivation d) platformJobs.${crossPlatform};
               };
            }) (names platformJobs)
-         ) (names ghcJobs)
+         ) (names ghcJobs))
         ) (names nixpkgsJobs)
       ) (names allJobs));
 in traceNames "job " (latestJobs // requiredJobs // {
