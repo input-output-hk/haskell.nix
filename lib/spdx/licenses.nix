@@ -1,9 +1,17 @@
 pkgs:
 with builtins; let
+  spdxJson = pkgs.buildPackages.spdx-license-list-data.json or pkgs.buildPackages.spdx-license-list-data;
+  materialized' = ../../materialized + "/spdx-${spdxJson.version}";
   licensesJSON = fromJSON (replaceStrings
       [ "\\u0026" "\\u0027" "\\u003d" ]
       [ "&" "'" "=" ]
-      (readFile "${pkgs.evalPackages.spdx-license-list-data.json or pkgs.evalPackages.spdx-license-list-data}/json/licenses.json")
+      (readFile "${pkgs.buildPackages.haskell-nix.materialize {
+        materialized = if pathExists materialized' then materialized' else null;
+      } (pkgs.buildPackages.runCommand "spdx-json" { inherit (spdxJson) version; } ''
+          mkdir $out
+          cp ${spdxJson}/json/licenses.json $out
+        '')
+      }/licenses.json")
     );
   dropFour = s: substring 0 (stringLength s - 4) s;
   toSpdx = lic: with lic;

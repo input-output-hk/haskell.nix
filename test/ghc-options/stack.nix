@@ -1,9 +1,10 @@
-{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, stackProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   project = stackProject' {
+    inherit evalPackages;
     src = testSrc "ghc-options";
   };
   packages = project.hsPkgs;
@@ -11,7 +12,11 @@ let
   # Get the names of all packages. This is a test to see
   # whether there is a broken "$locals" package present.
   hasIdentifier = p: p != null && p ? identifier;
-  packageNames = mapAttrsToList (name: p: p.identifier.name) (filterAttrs (name: hasIdentifier) packages);
+  packageNames = mapAttrsToList (name: p:
+    # TODO work out why these are `ghcide` and `hnix` are here in the first place
+    # it might be because we have patches in `modules/configuration.nix`
+    lib.optionalString (!__elem name ["ghcide" "hnix"]) p.identifier.name)
+      (filterAttrs (name: hasIdentifier) packages);
 
 in recurseIntoAttrs {
   # This test is somehow broken for ghcjs

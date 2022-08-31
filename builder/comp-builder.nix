@@ -50,6 +50,7 @@ let self =
 , writeHieFiles ? component.writeHieFiles
 
 , ghcOptions ? component.ghcOptions
+, contentAddressed ? component.contentAddressed
 
 # Options for Haddock generation
 , doHaddock ? component.doHaddock  # Enable haddock and hoogle generation
@@ -99,9 +100,10 @@ let
     && !stdenv.hostPlatform.isMusl
     && builtins.compareVersions defaults.ghc.version "8.10.2" >= 0;
 
-  ghc = if enableDWARF then defaults.ghc.dwarf else
-        if smallAddressSpace then defaults.ghc.smallAddressSpace else defaults.ghc;
-  setup = if enableDWARF then drvArgs.setup.dwarf else drvArgs.setup;
+  ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
+  setup = (if enableDWARF then (x: x.dwarf) else (x: x)) (
+        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) drvArgs.setup);
 
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
@@ -315,7 +317,13 @@ let
     componentDrv = drv;
   };
 
-  drv = stdenv.mkDerivation (commonAttrs // {
+  contentAddressedAttrs = lib.optionalAttrs contentAddressed {
+    __contentAddressed = true;
+    outputHashMode = "recursive";
+    outputHashAlgo = "sha256";
+  };
+                    
+  drv = stdenv.mkDerivation (commonAttrs // contentAddressedAttrs // {
     pname = nameOnly;
     inherit (package.identifier) version;
 
@@ -348,6 +356,14 @@ let
       description = package.synopsis or "";
       license = haskellLib.cabalToNixpkgsLicense package.license;
       platforms = if platforms == null then lib.platforms.all else platforms;
+    } // lib.optionalAttrs (haskellLib.isExecutableType componentId) {
+      # Set main executable name for executable components, so that `nix run` in
+      # nix flakes will work correctly. When not set, `nix run` would (typically
+      # erroneously) deduce the executable name from the derivation name and
+      # attempt to run, for example,
+      # `/nix/store/...-project-exe-app-0.1.0.0/bin/project-exe-app` instead of
+      # `/nix/store/...-project-exe-app-0.1.0.0/bin/app`.
+      mainProgram = exeName;
     };
 
     propagatedBuildInputs =
@@ -404,7 +420,17 @@ let
       (lib.optionalString stdenv.hostPlatform.isWindows ''
         export pkgsHostTargetAsString="''${pkgsHostTarget[@]}"
       '') +
-      (if stdenv.hostPlatform.isGhcjs then ''
+      # The following could be refactored but would lead to many rebuilds
+
+      # In case of content addressed components we need avoid parallel building (passing -j1)
+      # in order to have a deterministic output and therefore avoid potential situations
+      # where the binary cache becomes useless
+      # See also https://gitlab.haskell.org/ghc/ghc/-/issues/12935
+      (if contentAddressed then ''
+        runHook preBuild
+        $SETUP_HS build ${haskellLib.componentTarget componentId} -j1 ${lib.concatStringsSep " " setupBuildFlags}
+        runHook postBuild
+      '' else if stdenv.hostPlatform.isGhcjs then ''
         runHook preBuild
         # https://gitlab.haskell.org/ghc/ghc/issues/9221
         $SETUP_HS build ${haskellLib.componentTarget componentId} ${lib.concatStringsSep " " setupBuildFlags}

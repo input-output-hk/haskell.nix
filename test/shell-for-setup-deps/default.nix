@@ -1,10 +1,10 @@
-{ stdenv, lib, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
+{ stdenv, lib, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   project = cabalProject' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "shell-for-setup-deps";
     modules = [{
       # Package has no exposed modules which causes
@@ -14,7 +14,7 @@ let
   };
 
   env = project.shellFor {
-    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"];
+    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924"];
   };
 
 in recurseIntoAttrs ({

@@ -6,6 +6,7 @@
     nixpkgs-2003 = { url = "github:NixOS/nixpkgs/nixpkgs-20.03-darwin"; };
     nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
     nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
+    nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-utils = { url = "github:numtide/flake-utils"; };
     hydra.url = "hydra";
@@ -58,8 +59,8 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, flake-utils, ... }@inputs:
-    let compiler = "ghc884";
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, ... }@inputs:
+    let compiler = "ghc924";
       config = import ./config.nix;
     in {
       inherit config;
@@ -100,6 +101,12 @@
             };
             pkgs = import nixpkgs
               (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2105 = import nixpkgs-2105
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2111 = import nixpkgs-2111
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2205 = import nixpkgs-2205
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             hix = import ./hix/default.nix { inherit pkgs; };
@@ -111,7 +118,7 @@
       # supported by haskell.nix, e.g. with remote builders, in order to check this flake.
       # If you want to run the tests for just your platform, run `./test/tests.sh` or
       # `nix-build -A checks.$PLATFORM`
-    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: {
+    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: rec {
       legacyPackages = (self.internal.compat { inherit system; }).pkgs;
       legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
 
@@ -125,8 +132,12 @@
         compiler-nix-name = compiler;
         pkgs = haskellNix.pkgs;
       })));
+      # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
+      roots = legacyPackagesUnstable.haskell-nix.roots compiler;
 
-      devShell = with self.legacyPackages.${system};
+      packages = ((self.internal.compat { inherit system; }).hix).apps;
+
+      devShells.default = with self.legacyPackages.${system};
         mkShell {
           buildInputs = [
             nixUnstable
@@ -136,4 +147,14 @@
           ];
         };
     });
+
+  # --- Flake Local Nix Configuration ----------------------------
+  nixConfig = {
+    # This sets the flake to use the IOG nix cache.
+    # Nix should ask for permission before using it,
+    # but remove it here if you do not want it to.
+    extra-substituters = ["https://cache.iog.io"];
+    extra-trusted-public-keys = ["hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="];
+    allow-import-from-derivation = "true";
+  };
 }

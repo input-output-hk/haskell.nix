@@ -1,13 +1,12 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
 let
   project = project' {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls";
-    modules = [{ reinstallableLibGhc = true; }];
   };
 
   packages = project.hsPkgs;
@@ -21,4 +20,5 @@ in recurseIntoAttrs {
 
   build = packages.th-dlls.components.library;
   build-profiled = packages.th-dlls.components.library.profiled;
+  just-template-haskell = packages.th-dlls.components.exes.just-template-haskell;
 }

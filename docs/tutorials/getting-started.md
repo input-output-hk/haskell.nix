@@ -14,7 +14,7 @@ IMPORTANT: you *must* do this or you *will* build several copies of GHC!
 
 You can configure Nix to use our binary cache, which is pushed to by CI, so should contain the artifacts that you need.
 
-You need to add the following sections to `/etc/nix/nix.conf` or, if you are a trusted user, `~/.config/nix/nix.conf` (if you don't know what a "trusted user" is, you probably want to do the former).
+You need to add the following sections to `/etc/nix/nix.conf` or, if you are a trusted user, `~/.config/nix/nix.conf` (if you don't know what a "trusted user" is, you probably want to do the former). `[...]` denote any existing entries.
 
 ```
 trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
@@ -110,7 +110,7 @@ in pkgs.haskell-nix.project {
     src = ./.;
   };
   # Specify the GHC version to use.
-  compiler-nix-name = "ghc8102"; # Not required for `stack.yaml` based projects.
+  compiler-nix-name = "ghc8107"; # Not required for `stack.yaml` based projects.
 }
 ```
 

@@ -57,50 +57,36 @@ in { haskell-nix = prev.haskell-nix // {
     cabal-install = "cabal";
   };
 
-  hackage-tool = { name, ... }@args':
+  hackage-tool = projectModules:
     let
-      args = { caller = "hackage-tool"; } // args';
-    in
-      (final.haskell-nix.hackage-package
-        ( # Disable benchmarks and tests by default (since we only want the exe component)
-          { configureArgs = "--disable-benchmarks --disable-tests"; }
-          // args
-          // { name = final.haskell-nix.toolPackageName.${name} or name; }))
-          .getComponent "exe:${final.haskell-nix.packageToolName.${name} or name}";
+      package = final.haskell-nix.hackage-package (projectModules ++ [
+          ({lib, ...}: {
+            options.name = lib.mkOption {
+              apply = n: final.haskell-nix.toolPackageName.${n} or n;
+            };
+            config = {
+              # Disable benchmarks and tests by default (since we only want the exe component)
+              configureArgs = "--disable-benchmarks --disable-tests";
+            };
+          })
+        ]);
+      name = package.project.args.name;
+      exeName = final.haskell-nix.packageToolName.${name} or name;
+    in package.getComponent "exe:${exeName}";
 
-  tool = compiler-nix-name: name: versionOrArgs:
-    let
-      args' = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
-      args = { inherit compiler-nix-name; } // args';
-    in
-      (if final.haskell-nix.custom-tools ? "${name}"
-          && final.haskell-nix.custom-tools."${name}" ? "${args.version}"
-        then final.haskell-nix.custom-tools."${name}"."${args.version}"
-        else final.haskell-nix.hackage-tool) (args // { inherit name; });
+  tool = compiler-nix-name: name: versionOrMod:
+      final.haskell-nix.hackage-tool (
+           final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
+        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit compiler-nix-name name; })]
+      );
+
+  # tool with a default evalPackages to use.
+  tool' = evalPackages: compiler-nix-name: name: versionOrMod:
+      final.haskell-nix.hackage-tool (
+           final.haskell-nix.haskellLib.versionOrModToMods versionOrMod
+        ++ [(lib.mapAttrs (_: lib.mkOverride 1100) { inherit evalPackages compiler-nix-name name; })]
+      );
 
   tools = compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool compiler-nix-name);
-
-  # Like `tools` but allows default ghc to be specified
-  toolsForGhc = ghcOverride: toolSet:
-    final.haskell-nix.tools (
-      lib.mapAttrs (name: versionOrArgs:
-        let args = final.haskell-nix.haskellLib.versionOrArgsToArgs versionOrArgs;
-        in
-          # Add default ghc if not specified in the args
-          (lib.optionalAttrs (!(args ? "compiler-nix-name" || args ? "ghc"))
-            { inherit ghcOverride; }
-          ) // args
-      ) toolSet
-    );
-
-  # Tools not in hackage yet
-  # When adding custom tools here, consider adding them
-  # to the `tools` attribute defined in `build.nix` to make
-  # sure they are cached.
-  custom-tools = {
-    # Currently everything we want is in hackage.
-    # Before adding anything here consider uploading to hackage instead.
-    # If that is not possible look at the git history of this file to see examples
-    # of how to add a custom-tool.
-  };
+  tools' = evalPackages: compiler-nix-name: lib.mapAttrs (final.haskell-nix.tool' evalPackages compiler-nix-name);
 }; }

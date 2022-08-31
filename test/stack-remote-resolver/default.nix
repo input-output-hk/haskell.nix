@@ -1,9 +1,10 @@
-{ project', recurseIntoAttrs, testSrc, compiler-nix-name }:
+{ project', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 let
   project = project' {
     src = testSrc "stack-remote-resolver";
     resolverSha256 = "1rldkqqsxd8zxybrkqhc25bcxinhz212kz45jcz8jinfihc91jl7";
+    inherit evalPackages;
   };
   packages = project.hsPkgs;
 

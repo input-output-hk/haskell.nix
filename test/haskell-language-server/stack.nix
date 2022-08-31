@@ -1,8 +1,8 @@
-{ stdenv, lib, testSrc, haskell-nix, evalPackages, buildPackages, compiler-nix-name, recurseIntoAttrs }:
+{ stdenv, lib, testSrc, haskell-nix, buildPackages, compiler-nix-name, evalPackages, recurseIntoAttrs }:
 let
   project = buildPackages.haskell-nix.project' {
-    inherit compiler-nix-name;
-    src = evalPackages.fetchgit {
+    inherit compiler-nix-name evalPackages;
+    src = buildPackages.fetchgit {
       url = "https://github.com/haskell/haskell-language-server.git";
       fetchSubmodules = true;
       rev = "32cd57df639d67ac0cf29882839e00532fd30c84";
@@ -22,5 +22,5 @@ in recurseIntoAttrs {
   build = project.hsPkgs.haskell-language-server.components.exes.haskell-language-server;
 
   # Haskell Language Server does not build for GHC 9 or 8.10.7 yet
-  meta.disabled = __elem compiler-nix-name ["ghc922" "ghc921" "ghc901" "ghc902" "ghc8107" "ghc810420210212" ];
+  meta.disabled = __elem compiler-nix-name ["ghc924" "ghc923" "ghc922" "ghc921" "ghc901" "ghc902" "ghc8107" "ghc810420210212" ];
 }

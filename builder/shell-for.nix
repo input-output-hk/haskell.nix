@@ -1,4 +1,4 @@
-{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, compiler }:
+{ lib, stdenv, mkShell, glibcLocales, pkgconfig, ghcForComponent, makeConfigFiles, hsPkgs, hoogleLocal, haskellLib, buildPackages, evalPackages, compiler }:
 
 { # `packages` function selects packages that will be worked on in the shell itself.
   # These packages will not be built by `shellFor`, but their
@@ -71,13 +71,18 @@ let
   removeSelectedInputs =
     lib.filter (input: !(isSelectedComponent input));
 
-  # The configs of all the selected components
+  # The configs of all the selected components.
+  # This excludes the `setup` dependencies of `Simple` packages, because
+  # `cabal-install` does not build a `Setup` executable for `Simple` packages.
   selectedConfigs = map (c: c.config) selectedComponents
-    ++ lib.optionals packageSetupDeps (map (p: p.setup.config) selectedPackages);
+    ++ lib.optionals packageSetupDeps (map (p: p.setup.config)
+         (lib.filter (p: p.buildType != "Simple") selectedPackages));
 
-  name = if lib.length selectedPackages == 1
+  identifierName = if lib.length selectedPackages == 1
     then "ghc-shell-for-${(lib.head selectedPackages).identifier.name}"
     else "ghc-shell-for-packages";
+
+  name = if (mkDrvArgs.name or null) == null then identifierName else mkDrvArgs.name;
 
   # We need to remove any dependencies which would bring in selected components (see above).
   packageInputs = removeSelectedInputs (lib.concatMap (cfg: cfg.depends) selectedConfigs)
@@ -87,8 +92,18 @@ let
   # We need to remove any inputs which are selected components (see above).
   # `buildInputs`, `propagatedBuildInputs`, and `executableToolDepends` contain component
   # derivations, not packages, so we use `removeSelectedInputs`).
-  systemInputs = removeSelectedInputs (lib.concatMap
-    (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents);
+  #
+  # Also, we take care to keep duplicates out of the list, otherwise we may see
+  # "Argument list too long" errors from bash when entering a shell.
+  #
+  # Version of `lib.unique` that should be fast if the name attributes are unique
+  uniqueWithName = list:
+    lib.concatMap lib.unique (
+      builtins.attrValues (
+        builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") list));
+  allSystemInputs = lib.concatMap (c: c.buildInputs ++ c.propagatedBuildInputs) selectedComponents;
+  systemInputs = removeSelectedInputs (uniqueWithName allSystemInputs);
+
   nativeBuildInputs = removeSelectedInputs
     (lib.concatMap (c: c.executableToolDepends) selectedComponents);
 
@@ -101,14 +116,14 @@ let
     doExactConfig = false;
   };
   configFiles = makeConfigFiles {
-    fullName = args.name or name;
-    identifier.name = name;
+    fullName = name;
+    identifier.name = identifierName;
     inherit component enableDWARF;
     chooseDrv = p: if withHaddock && p ? haddock then p.haddock else p;
   };
   ghcEnv = ghcForComponent {
     inherit configFiles;
-    componentName = name;
+    componentName = identifierName;
     postInstall = lib.optionalString withHoogle' ''
       ln -s ${hoogleIndex}/bin/hoogle $out/bin
     '';
@@ -130,21 +145,26 @@ let
     # inherit (hsPkgs) hoogle;
   } // (
     lib.optionalAttrs (args ? tools && args.tools ? hoogle) {
-      hoogle = buildPackages.haskell-nix.tool compiler.nix-name "hoogle" args.tools.hoogle;
+      hoogle = buildPackages.haskell-nix.hackage-tool (
+        haskellLib.versionOrModToMods args.tools.hoogle ++ [{
+          name = "hoogle";
+          compiler-nix-name = compiler.nix-name;
+          inherit evalPackages;
+        }]);
     }
   ));
 
   mkDrvArgs = builtins.removeAttrs args ["packages" "components" "additional" "withHoogle" "tools"];
 in
   mkShell (mkDrvArgs // {
-    name = mkDrvArgs.name or name;
+    inherit name;
 
     buildInputs = systemInputs
       ++ mkDrvArgs.buildInputs or [];
     nativeBuildInputs = [ ghcEnv ]
       ++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
-      ++ lib.attrValues (buildPackages.haskell-nix.tools compiler.nix-name tools)
+      ++ lib.attrValues (buildPackages.haskell-nix.tools' evalPackages compiler.nix-name tools)
       # If this shell is a cross compilation shell include
       # wrapper script for running cabal build with appropriate args.
       # Includes `--with-compiler` in case the `cabal.project` file has `with-compiler:` in it.

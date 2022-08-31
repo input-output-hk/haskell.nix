@@ -1,9 +1,16 @@
-{ haskellNix ? import ../default.nix { }
+{ haskellNix ? import ../default.nix { inherit checkMaterialization; }
 , pkgs ? import nixpkgs nixpkgsArgs
 , nixpkgs ? haskellNix.sources.nixpkgs-unstable
-, nixpkgsArgs ? haskellNix.nixpkgsArgs
+, nixpkgsArgs ? haskellNix.nixpkgsArgs // {
+    # Needed for dwarf tests
+    config = haskellNix.nixpkgsArgs.config // {
+      permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
+    };
+  }
+, evalPackages ? import pkgs.path nixpkgsArgs
 , ifdLevel ? 1000
 , compiler-nix-name
+, CADerivationsEnabled ? false
 , checkMaterialization ? false
 }:
 
@@ -47,7 +54,7 @@ let
         else val
       );
 
-  util = import ./util.nix { cabal-install = pkgs.evalPackages.haskell-nix.cabal-install.${compiler-nix-name}; };
+  util = import ./util.nix { cabal-install = pkgs.buildPackages.haskell-nix.cabal-install.${compiler-nix-name}; };
 
   # Map the values in an association list over the withIfdInputs function.
   #
@@ -138,21 +145,21 @@ let
     then filterNonIfdInputsValues attrs
     else attrs;
 
-  testSrcRoot = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
+  testSrcRoot = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; };
   testSrc = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRoot; inherit subDir; };
   # Use the following reproduce issues that may arise on hydra as a
   # result of building a snapshot not a git repo.
   # testSrcRoot = pkgs.copyPathToStore ./.;
   # testSrc = subDir: testSrcRoot + "/${subDir}";
-  testSrcRootWithGitDir = haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
+  testSrcRootWithGitDir = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../.; subDir = "test"; includeSiblings = true; keepGitDir = true; };
   testSrcWithGitDir = subDir: haskell-nix.haskellLib.cleanSourceWith { src = testSrcRootWithGitDir; inherit subDir; includeSiblings = true; };
-  callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc; });
+  callTest = x: args: haskell-nix.callPackage x (args // { inherit testSrc compiler-nix-name evalPackages; });
 
   # Run unit tests with: nix-instantiate --eval --strict -A unit.tests
   # An empty list means success.
   unitTests =
     let
-      tests = haskell-nix.callPackage ./unit.nix { inherit compiler-nix-name; };
+      tests = haskell-nix.callPackage ./unit.nix { inherit compiler-nix-name evalPackages; };
       testsFailedEcho = lib.concatMapStringsSep "\n" (t: "echo ${t.name} failed") tests;
       testsFinalLine = if builtins.length tests == 0 then "\ntouch $out" else "\nexit 1";
       testsScript = testsFailedEcho + testsFinalLine;
@@ -161,51 +168,53 @@ let
 
   # All tests.
   allTests = {
-    cabal-simple = callTest ./cabal-simple { inherit util compiler-nix-name; };
-    cabal-simple-debug = callTest ./cabal-simple-debug { inherit util compiler-nix-name; };
-    cabal-simple-prof = callTest ./cabal-simple-prof { inherit util compiler-nix-name; };
-    cabal-sublib = callTest ./cabal-sublib { inherit util compiler-nix-name; };
-    with-packages = callTest ./with-packages { inherit util compiler-nix-name; };
-    builder-haddock = callTest ./builder-haddock { inherit compiler-nix-name; };
-    stack-simple = callTest ./stack-simple { inherit compiler-nix-name; };
-    stack-local-resolver = callTest ./stack-local-resolver { inherit compiler-nix-name; };
-    stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir { inherit compiler-nix-name; };
-    stack-remote-resolver = callTest ./stack-remote-resolver { inherit compiler-nix-name; };
-    shell-for-setup-deps = callTest ./shell-for-setup-deps { inherit compiler-nix-name; };
-    setup-deps = import ./setup-deps { inherit pkgs compiler-nix-name; };
-    callStackToNix = callTest ./call-stack-to-nix { inherit compiler-nix-name; };
-    callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit compiler-nix-name; };
-    cabal-source-repo = callTest ./cabal-source-repo { inherit compiler-nix-name; };
-    cabal-source-repo-comments = callTest ./cabal-source-repo-comments { inherit compiler-nix-name; };
-    buildable = callTest ./buildable { inherit compiler-nix-name; };
-    project-flags-cabal = callTest ./project-flags/cabal.nix { inherit compiler-nix-name; };
-    project-flags-stack = callTest ./project-flags/stack.nix { inherit compiler-nix-name; };
-    ghc-options-cabal = callTest ./ghc-options/cabal.nix { inherit compiler-nix-name; };
-    ghc-options-stack = callTest ./ghc-options/stack.nix { inherit compiler-nix-name; };
-    exe-only = callTest ./exe-only { inherit util compiler-nix-name; };
-    stack-source-repo = callTest ./stack-source-repo { inherit compiler-nix-name; };
-    cabal-doctests = callTest ./cabal-doctests { inherit util compiler-nix-name; };
-    extra-hackage = callTest ./extra-hackage { inherit compiler-nix-name; };
-    ghcjs-overlay = callTest ./ghcjs-overlay { inherit compiler-nix-name; };
-    hls-cabal = callTest ./haskell-language-server/cabal.nix { inherit compiler-nix-name; };
-    hls-stack = callTest ./haskell-language-server/stack.nix { inherit compiler-nix-name; };
-    cabal-hpack = callTest ./cabal-hpack { inherit util compiler-nix-name; };
-    index-state = callTest ./index-state { inherit compiler-nix-name; };
-    sha256map = callTest ./sha256map { inherit compiler-nix-name; };
+    cabal-simple = callTest ./cabal-simple { inherit util; };
+    cabal-simple-debug = callTest ./cabal-simple-debug { inherit util; };
+    cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
+    cabal-sublib = callTest ./cabal-sublib { inherit util; };
+    with-packages = callTest ./with-packages { inherit util; };
+    builder-haddock = callTest ./builder-haddock {};
+    stack-simple = callTest ./stack-simple {};
+    stack-local-resolver = callTest ./stack-local-resolver {};
+    stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir {};
+    stack-remote-resolver = callTest ./stack-remote-resolver {};
+    shell-for-setup-deps = callTest ./shell-for-setup-deps {};
+    setup-deps = import ./setup-deps { inherit pkgs evalPackages compiler-nix-name; };
+    callStackToNix = callTest ./call-stack-to-nix {};
+    callCabalProjectToNix = callTest ./call-cabal-project-to-nix { inherit evalPackages; };
+    cabal-source-repo = callTest ./cabal-source-repo {};
+    cabal-source-repo-comments = callTest ./cabal-source-repo-comments {};
+    buildable = callTest ./buildable {};
+    project-flags-cabal = callTest ./project-flags/cabal.nix {};
+    project-flags-stack = callTest ./project-flags/stack.nix {};
+    ghc-options-cabal = callTest ./ghc-options/cabal.nix {};
+    ghc-options-stack = callTest ./ghc-options/stack.nix {};
+    exe-only = callTest ./exe-only { inherit util; };
+    stack-source-repo = callTest ./stack-source-repo {};
+    cabal-doctests = callTest ./cabal-doctests { inherit util; };
+    extra-hackage = callTest ./extra-hackage {};
+    ghcjs-overlay = callTest ./ghcjs-overlay {};
+    hls-cabal = callTest ./haskell-language-server/cabal.nix {};
+    hls-stack = callTest ./haskell-language-server/stack.nix {};
+    cabal-hpack = callTest ./cabal-hpack { inherit util; };
+    index-state = callTest ./index-state {};
+    sha256map = callTest ./sha256map {};
     # fully-static = callTest ./fully-static { inherit (pkgs) buildPackages; };
-    shell-for = callTest ./shell-for { inherit compiler-nix-name; };
-    cabal-22 = callTest ./cabal-22 { inherit util compiler-nix-name; };
-    coverage = callTest ./coverage { inherit compiler-nix-name; };
-    coverage-golden = callTest ./coverage-golden { inherit compiler-nix-name;};
-    coverage-no-libs = callTest ./coverage-no-libs { inherit compiler-nix-name; };
-    snapshots = callTest ./snapshots { inherit compiler-nix-name; };
-    sublib-docs = callTest ./sublib-docs { inherit util compiler-nix-name; };
-    githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name; testSrc = testSrcWithGitDir; };
-    c-ffi = callTest ./c-ffi { inherit util compiler-nix-name; };
-    th-dlls = callTest ./th-dlls { inherit util compiler-nix-name; };
-    external-static-plugin = callTest ./external-static-plugin { inherit compiler-nix-name; };
-    exe-dlls = callTest ./exe-dlls { inherit util compiler-nix-name; };
-    exe-lib-dlls = callTest ./exe-lib-dlls { inherit util compiler-nix-name; };
+    shell-for = callTest ./shell-for {};
+    cabal-22 = callTest ./cabal-22 { inherit util; };
+    coverage = callTest ./coverage {};
+    coverage-golden = callTest ./coverage-golden { inherit;};
+    coverage-no-libs = callTest ./coverage-no-libs {};
+    snapshots = callTest ./snapshots {};
+    sublib-docs = callTest ./sublib-docs { inherit util; };
+    githash = haskell-nix.callPackage ./githash { inherit compiler-nix-name evalPackages; testSrc = testSrcWithGitDir; };
+    c-ffi = callTest ./c-ffi { inherit util; };
+    th-dlls = callTest ./th-dlls { inherit util; };
+    external-static-plugin = callTest ./external-static-plugin {};
+    exe-dlls = callTest ./exe-dlls { inherit util; };
+    exe-lib-dlls = callTest ./exe-lib-dlls { inherit util; };
+    ca-derivations = callTest ./ca-derivations { inherit CADerivationsEnabled; };
+    ca-derivations-include = callTest ./ca-derivations-include { inherit CADerivationsEnabled; };
 
     unit = unitTests;
   };

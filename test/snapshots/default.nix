@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name }:
+{ stdenv, lib, haskellPackages, snapshots, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
