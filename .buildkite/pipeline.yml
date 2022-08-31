@@ -74,13 +74,39 @@ steps:
     agents:
       system: x86_64-linux
 
-  - label: 'Check that jobset will evaluate in Hydra'
+  - label: 'Check that jobset will evaluate in Hydra at ifdLevel 0 and 1'
     command:
       - nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
-      - ./check-hydra.sh 0
-      - ./check-hydra.sh 1
-      - ./check-hydra.sh 2
-      - ./check-hydra.sh 3
+      - ./check-hydra.sh --arg ifdLevel 0
+      - ./check-hydra.sh --arg ifdLevel 1
+    agents:
+      system: x86_64-linux
+
+  - label: 'Check that jobset will evaluate in Hydra at ifdLevel 2'
+    command:
+      - nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
+      - ./check-hydra.sh --arg ifdLevel 2
+    agents:
+      system: x86_64-linux
+
+  - label: 'Check that jobset will evaluate in Hydra at ifdLevel 3 and ghc 8.10'
+    command:
+      - nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
+      - "./check-hydra.sh --arg ifdLevel 3 --arg include 'x: __substring 0 6 x == \"ghc810\"'"
+    agents:
+      system: x86_64-linux
+
+  - label: 'Check that jobset will evaluate in Hydra at ifdLevel 3 and ghc 9.2'
+    command:
+      - nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
+      - "./check-hydra.sh --arg ifdLevel 3 --arg include 'x: __substring 0 5 x == \"ghc92\"'"
+    agents:
+      system: x86_64-linux
+
+  - label: 'Check that jobset will evaluate in Hydra at ifdLevel 3 and not (ghc 8.10 or ghc 9.2)'
+    command:
+      - nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
+      - "./check-hydra.sh --arg ifdLevel 3 --arg include 'x: !(__substring 0 6 x == \"ghc810\" || __substring 0 5 x == \"ghc92\")'"
     agents:
       system: x86_64-linux
 

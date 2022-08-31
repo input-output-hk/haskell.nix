@@ -13,7 +13,6 @@ site_name: Alternative Haskell Infrastructure for Nixpkgs
 theme: readthedocs
 site_url: null
 repo_url: https://github.com/input-output-hk/haskell.nix
-permalink: true
 markdown_extensions:
   - admonition
   - footnotes
@@ -21,9 +20,7 @@ markdown_extensions:
   - toc:
       permalink: true
 
-# this is called `nav` in more recent mkdocs versions. Mine
-# right now is 0.17.5
-pages:
+nav:
   - 'Introduction': index.md
   - 'Motivation': motivation.md
   - 'Architecture': architecture.md
