@@ -9,5 +9,5 @@ writeScript "check-path-supprot.sh" ''
 
   export PATH="${makeBinPath [ coreutils gnutar gzip nix gitMinimal ]}"
 
-  nix-build -E '((import ./. {}).pkgs.haskell-nix.cabalProject { inherit compiler-nix-name; src = ./test/cabal-simple; }).cabal-simple.components.library'
+  nix-build -E '((import ./. {}).pkgs.haskell-nix.cabalProject { compiler-nix-name = "${compiler-nix-name}"; src = ./test/cabal-simple; }).cabal-simple.components.library'
 ''
