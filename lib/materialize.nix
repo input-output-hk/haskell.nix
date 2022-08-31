@@ -83,9 +83,18 @@ let
         fi
       '')
     + (
-      let fixHint = if builtins.hasContext (toString materialized)
-          then "To fix run: ${updateMaterialized}"
-          else "To fix check you are in the right directory and run: ${generateMaterialized} ${__head (__match "/nix/store/[^/]*/(.*)" (toString materialized))}";
+      let
+        # When the materialized location is already in the store updateMaterialized
+        # will not work, but generateMaterialized will.  We can use this regex to get
+        # a good idea of what directory might be (relative to some unknown parent).
+        # In the regex `[^/]*/?` skips the name of the /nix/store sub directory.
+        matches = __match "${builtins.storeDir}/[^/]*/?(.*)" (toString materialized);
+        fixHint =
+          if matches == null
+            then "To fix run: ${updateMaterialized}" # Not in store so updateMaterialized may work
+          else if __head matches == ""
+            then "To fix run: ${generateMaterialized} <materialized files location>"
+          else "To fix check you are in the right directory and run: ${generateMaterialized} ${__head matches}";
       in if materialized != null && !__pathExists materialized
         then ''
           echo "Materialized nix used for ${name} is missing. ${fixHint}" >> $ERR
