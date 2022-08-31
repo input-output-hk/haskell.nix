@@ -27,7 +27,9 @@ let
       dump-path|eval|log|path-info|search|show-derivation|sign-paths|verify|why-depends)
         nix $cmd -f ${hixProject} ${args} "$@"
         ;;
-      flake|build|develop|run)
+      flake|build|develop|run|profile)
+        # Put the flake files for remote URLs in $HOME/.hix by default
+        HIX_DIR="''${HIX_DIR:-$HOME/.hix}"
         while(($#)); do
           arg=$1
           case $arg in
@@ -45,22 +47,26 @@ let
               ;;
             github:*#*)
               SRC="''${arg%%#*}"
-              args+=("path:${hixProject}#''${arg#*#}" --override-input src "$SRC")
-              is_github=true
+              FLAKE=$HIX_DIR/$SRC
+              args+=("path:$FLAKE#''${arg#*#}" --override-input src "$SRC")
+              has_input_src=true
               ;;
             github:*)
               SRC="$arg"
-              args+=("path:${hixProject}" --override-input src "$SRC")
-              is_github=true
+              FLAKE=$HIX_DIR/$SRC
+              args+=("path:$FLAKE" --override-input src "$SRC")
+              has_input_src=true
               ;;
             *#*)
               SRC="''${arg%%#*}"
-              args+=("path:$SRC/.hix-flake#''${arg#*#}" --override-input src "$SRC")
+              FLAKE=$SRC/.hix-flake
+              args+=("path:$FLAKE#''${arg#*#}" --override-input src "$SRC")
               has_input_src=true
               ;;
             .*)
               SRC="$arg"
-              args+=("path:$SRC/.hix-flake" --override-input src "$SRC")
+              FLAKE=$SRC/.hix-flake
+              args+=("path:$FLAKE" --override-input src "$SRC")
               has_input_src=true
               ;;
             *)
@@ -69,27 +75,24 @@ let
           esac
           shift
         done
-        if [ "$is_github" != true ]; then
-          if [ "$has_input_src" != true ]; then
-            SRC=.
-            args+=("path:$SRC/.hix-flake" --override-input src "$SRC")
+        if [ "$has_input_src" != true ]; then
+          SRC=.
+          FLAKE=$SRC/.hix-flake
+          args+=("path:$FLAKE" --override-input src "$SRC")
+        fi
+        # Make a temporary flake if we have not already
+        mkdir -p $FLAKE
+        HIX_FLAKE="$(mktemp -d)/flake.nix"
+        sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixProject}/flake.nix > $HIX_FLAKE
+        if ! cmp $HIX_FLAKE $FLAKE/flake.nix &>/dev/null; then
+            if [ -e $FLAKE/flake.lock ]; then
+            echo "Updating $FLAKE/flake.nix and deleting old $FLAKE/flake.lock"
+            rm $FLAKE/flake.lock
+          else
+            echo "Updating $FLAKE/flake.nix" 
           fi
-          # Make a temporary flake if we have not already
-          if [ ! -d $SRC/.hix-flake ]; then
-            mkdir $SRC/.hix-flake
-          fi
-          HIX_FLAKE="$(mktemp -d)/flake.nix"
-          sed 's|EVAL_SYSTEM|${pkgs.stdenv.hostPlatform.system}|' < ${hixProject}/flake.nix > $HIX_FLAKE
-          if ! cmp $HIX_FLAKE $SRC/.hix-flake/flake.nix &>/dev/null; then
-            if [ -e $SRC/.hix-flake/flake.lock ]; then
-              echo "Updating $SRC/.hix-flake/flake.nix and deleting old $SRC/.hix-flake/flake.lock"
-              rm $SRC/.hix-flake/flake.lock
-            else
-              echo "Updating $SRC/.hix-flake/flake.nix" 
-            fi
-            cp $HIX_FLAKE $SRC/.hix-flake/flake.nix
-            chmod +w $SRC/.hix-flake/flake.nix
-          fi
+          cp $HIX_FLAKE $FLAKE/flake.nix
+          chmod +w $FLAKE/flake.nix
         fi
         nix $cmd "''${args[@]}"
         ;;
