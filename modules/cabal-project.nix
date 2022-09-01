@@ -45,15 +45,15 @@ in {
       default = "cabal.project";
     };
     cabalProject = mkOption {
-      type = nullOr str;
+      type = nullOr lines;
       default = readIfExists config.src config.cabalProjectFileName;
     };
     cabalProjectLocal = mkOption {
-      type = nullOr str;
+      type = nullOr lines;
       default = readIfExists config.src "${config.cabalProjectFileName}.local";
     };
     cabalProjectFreeze = mkOption {
-      type = nullOr str;
+      type = nullOr lines;
       default = readIfExists config.src "${config.cabalProjectFileName}.freeze";
     };
     ghc = mkOption {
