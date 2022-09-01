@@ -126,6 +126,8 @@ let
   # access to the store is restricted.  If origSrc was already in the store
   # you can pass the project in as a string.
   rawCabalProject =
+    # Even if `cabal.project` doesn't exist, `cabal.project.local` is still used by cabal.
+    # We tested this: https://github.com/input-output-hk/haskell.nix/pull/1588
     if cabalProject == null && cabalProjectLocal == null
       then null
       else (
