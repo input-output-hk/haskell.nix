@@ -900,14 +900,12 @@ in {
     # always has `checkMaterialization = false` to avoid infinite
     # recursion.
     cabal-install-tool = {compiler-nix-name, ...}@args:
-      (final.haskell-nix.hackage-package ({pkgs, ...}: {
+      (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
-        name = "cabal-install";
         version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
-        configureArgs = "--disable-benchmarks --disable-tests";
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
-      } // args)).getComponent "exe:cabal";
+      } // args));
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
         # Until all the dependencies build with 9.0.1 we will have to avoid
