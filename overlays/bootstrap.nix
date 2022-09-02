@@ -903,8 +903,9 @@ in {
       (final.haskell-nix.hackage-package ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
         name = "cabal-install";
-        version = "3.6.2.0";
+        version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
+        configureArgs = "--disable-benchmarks --disable-tests";
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args)).getComponent "exe:cabal";
     nix-tools-set = { compiler-nix-name, ... }@args:

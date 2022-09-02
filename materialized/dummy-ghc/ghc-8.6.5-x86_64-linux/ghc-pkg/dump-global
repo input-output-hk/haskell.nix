@@ -1001,7 +1001,7 @@ maintainer: glasgow-haskell-users@haskell.org
 exposed: True
 hs-libraries: HSrts
 extra-libraries:
-    m rt dl ffi numa pthread
+    m rt dl ffi numa
 includes:
     Stg.h
 ld-options: "-Wl,-u,base_GHCziTopHandler_runIO_closure"
@@ -1348,8 +1348,6 @@ hidden-modules: System.Posix.Directory.Common
                 System.Posix.IO.Common System.Posix.Process.Common
                 System.Posix.Terminal.Common
 hs-libraries: HSunix-2.7.2.2
-extra-libraries:
-    rt util dl pthread
 includes:
     HsUnix.h execvpe.h
 depends:
