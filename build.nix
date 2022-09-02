@@ -5,11 +5,12 @@
 let
   haskellNix = (import ./default.nix {});
 in
-{ nixpkgs ? haskellNix.sources.nixpkgs-2111
+{ nixpkgs ? haskellNix.sources.nixpkgs-2205
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
+, evalPackages ? import nixpkgs nixpkgsArgs
 , nixpkgsForHydra ? haskellNix.sources.nixpkgs-2105
-, pkgsForHydra ? import nixpkgsForHydra nixpkgsArgs
+, pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 }:
@@ -19,14 +20,21 @@ let
   buildHaskell = pkgs.buildPackages.haskell-nix;
   tool = buildHaskell.tool;
 in rec {
-  tests = import ./test/default.nix { inherit pkgs ifdLevel compiler-nix-name; };
+  tests = import ./test/default.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
-      cabal-latest = tool compiler-nix-name "cabal" "latest";
-    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"]) {
-      hls-latest = tool compiler-nix-name "haskell-language-server" "latest";
-      hlint-latest = tool compiler-nix-name "hlint" (if compiler-nix-name == "ghc865" then "3.2.7" else "latest");
+      cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
+      hlint-latest = tool compiler-nix-name "hlint" {
+        inherit evalPackages;
+        version = {
+            "ghc865" = "3.2.8";
+            "ghc882" = "3.3.6";
+            "ghc883" = "3.3.6";
+            "ghc884" = "3.3.6";
+          }.compiler-nix-name or "latest";
+      };
+      hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
     })
   );
 
@@ -68,17 +76,21 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {
-      # TODO remove this when nixpkgs-2205 is released and used for `pkgs`
-      # check-path-support fails unless we have nix 2.4 or newer.
-      inherit (import haskellNix.sources.nixpkgs-unstable {}) nix;
+    # Forcing nixpkgs-unstable here because this test makes a script
+    # that when run will build `aeson` (used by `tests/cabal-simple`)
+    # and we currently do not build that on hydra for nixpkgs-2205 (used by `pkgs`).
+    # Using nixpkgs-unstable should allow buildkite to find what it needs
+    # in the hydra cache when it runs the script.
+    check-path-support = (import haskellNix.sources.nixpkgs-unstable nixpkgsArgs)
+        .buildPackages.callPackage ./scripts/check-path-support.nix {
+      inherit compiler-nix-name;
     };
   };
 
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs (
-      (pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      (pkgs.lib.optionalAttrs (pkgsForHydra.system == "x86_64-linux") {
         inherit (maintainer-scripts) check-hydra;
       })
     // (pkgs.lib.optionalAttrs (ifdLevel > 2) {

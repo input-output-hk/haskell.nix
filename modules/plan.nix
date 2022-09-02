@@ -155,7 +155,7 @@ let
 
     enableSeparateDataOutput = mkOption {
       type = bool;
-      default = (def.enableSeparateDataOutput or false);
+      default = (def.enableSeparateDataOutput or true);
     };
 
     enableProfiling = mkOption {
@@ -244,6 +244,14 @@ let
       type = listOfFilteringNulls str;
       default = def.ghcOptions or [];
     };
+    contentAddressed = mkOption {
+      type = bool;
+      default = (def.contentAddressed or false);
+      description = ''
+        Build content addressed derivation, requires Nix to have experimental feature
+        `ca-derivations` enabled.
+      '';
+    };
     planned = mkOption {
       description = "Set to true by `plan-to-nix` for any component that was included in the `plan.json` file.";  
       # This is here so that (rather than in componentOptions) so it can be set project wide for stack projects
@@ -290,6 +298,13 @@ in {
       type = unspecified;
       visible = false;
       internal = true;
+    };
+
+    evalPackages = mkOption {
+      type = unspecified;
+      description = ''
+        The `evalPackages` that will be used when building `hoogle` and shell tools.
+      '';
     };
   };
 

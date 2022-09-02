@@ -24,7 +24,7 @@
 }: derivation:
 
 let
-  inherit (derivation) name;
+  name = derivation.name + pkgs.lib.optionalString (derivation ? version) "-${derivation.version}";
 
   traceIgnoringSha256 = reason: x:
     if sha256 != null
@@ -36,10 +36,15 @@ let
       then builtins.trace ("Warning: ignoring materialized for " + name + " " + reason) x
       else x;
 
+  traceWhenChecking = message: x:
+    if checkMaterialization
+      then builtins.trace message x
+      else x;
+
   unchecked =
     let
-      sha256message = "To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
-      materializeMessage = "To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
+      sha256message = "${name}: To make ${this} a fixed-output derivation but not materialized, set `${sha256Arg}` to the output of the 'calculateMaterializedSha' script in 'passthru'.";
+      materializeMessage = "${name}: To materialize ${this} entirely, pass a writable path as the `materialized` argument and run the 'updateMaterialized' script in 'passthru'.";
     in if reasonNotSafe != null
       then
         # Warn the user if they tried to pin stuff down when it is not safe
@@ -50,10 +55,10 @@ let
     else if sha256 != null
       then
         # Let the user know how to materialize if they want to.
-        builtins.trace materializeMessage calculateUseHash
+        traceWhenChecking materializeMessage calculateUseHash
     else # materialized == null && sha256 == null
         # Let the user know how to calculate a sha256 or materialize if they want to.
-        builtins.trace sha256message (builtins.trace materializeMessage calculateNoHash);
+        traceWhenChecking sha256message (traceWhenChecking materializeMessage calculateNoHash);
 
   # Build fully and check the hash and materialized versions
   checked =
@@ -78,9 +83,21 @@ let
         fi
       '')
     + (
-      if materialized != null && !__pathExists materialized
+      let
+        # When the materialized location is already in the store updateMaterialized
+        # will not work, but generateMaterialized will.  We can use this regex to get
+        # a good idea of what directory might be (relative to some unknown parent).
+        # In the regex `[^/]*/?` skips the name of the /nix/store sub directory.
+        matches = __match "${builtins.storeDir}/[^/]*/?(.*)" (toString materialized);
+        fixHint =
+          if matches == null
+            then "To fix run: ${updateMaterialized}" # Not in store so updateMaterialized may work
+          else if __head matches == ""
+            then "To fix run: ${generateMaterialized} <materialized files location>"
+          else "To fix check you are in the right directory and run: ${generateMaterialized} ${__head matches}";
+      in if materialized != null && !__pathExists materialized
         then ''
-          echo "Materialized nix used for ${name} is missing. To fix run: ${updateMaterialized}" >> $ERR
+          echo "Materialized nix used for ${name} is missing. ${fixHint}" >> $ERR
           cat $ERR
           false
         ''
@@ -91,7 +108,7 @@ let
               else
               echo Changes to plan not reflected in materialized nix for ${name}
               diff -ru ${materialized} ${calculateNoHash} || true
-              echo "Materialized nix used for ${name} incorrect. To fix run: ${updateMaterialized}" >> $ERR
+              echo "Materialized nix used for ${name} incorrect. ${fixHint}" >> $ERR
             fi
           '')
         + ''
@@ -123,11 +140,7 @@ let
   calculateUseMaterialized =
     assert materialized != null;
     assert __pathExists materialized;
-    runCommand name (pkgs.lib.optionalAttrs (sha256 == null) hashArgs) ''
-      cp -Lr ${materialized} $out
-      # Make sure output files can be removed from the sandbox
-      chmod -R +w $out
-    '';
+    { outPath = materialized; inherit name; };
   calculateMaterializedSha =
     writeShellScript "calculateSha" ''${nix}/bin/nix-hash --base32 --type sha256 ${calculateNoHash}'';
 

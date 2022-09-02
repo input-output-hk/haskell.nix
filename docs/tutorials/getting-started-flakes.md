@@ -22,7 +22,31 @@ You need to add the following sections to `/etc/nix/nix.conf` or, if you are a t
 
 ```
 trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
-substituters = [...] https://hydra.iohk.io [...]
+substituters = [...] https://cache.iog.io [...]
+```
+
+If you're running NixOS, you need to add/update the following in your `/etc/nixos/configuration.nix` files instead.
+
+```
+# Binary Cache for Haskell.nix
+nix.settings.trusted-public-keys = [
+  "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+];
+nix.settings.substituters = [
+  "https://cache.iog.io"
+];
+```
+
+NixOS-21.11 and older use slightly different settings.
+
+```
+# Binary Cache for Haskell.nix  
+nix.binaryCachePublicKeys = [
+  "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+];
+nix.binaryCaches = [
+  "https://cache.iog.io"
+];   
 ```
 
 This can be tricky to get setup properly. If you're still having trouble getting cache hits, consult the corresponding [troubleshooting section](../troubleshooting.md#why-am-i-building-ghc).
@@ -68,12 +92,12 @@ Add `flake.nix`:
       ];
       pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
       flake = pkgs.helloProject.flake {
-        # This adds support for `nix build .#js-unknown-ghcjs-cabal:hello:exe:hello`
+        # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
         # crossPlatforms = p: [p.ghcjs];
       };
     in flake // {
       # Built by `nix build .`
-      defaultPackage = flake.packages."hello:exe:hello";
+      packages.${system}.default = flake.packages."hello:exe:hello";
     });
 }
 ```

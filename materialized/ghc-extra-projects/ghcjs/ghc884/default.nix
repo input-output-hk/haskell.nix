@@ -22,7 +22,7 @@
         "deepseq".revision = (((hackage."deepseq")."1.4.4.0").revisions).default;
         "unix".revision = (((hackage."unix")."2.7.2.2").revisions).default;
         "integer-gmp".revision = (((hackage."integer-gmp")."1.0.2.0").revisions).default;
-        "binary".revision = (((hackage."binary")."0.8.9.0").revisions).default;
+        "binary".revision = (((hackage."binary")."0.8.9.1").revisions).default;
         "containers".revision = (((hackage."containers")."0.5.11.0").revisions).default;
         };
       compiler = {

@@ -1,13 +1,13 @@
 final: prev:
 let
-  callCabal2Nix = compiler-nix-name: name: src: final.evalPackages.stdenv.mkDerivation {
+  callCabal2Nix = compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
     nativeBuildInputs = [
       # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
       # infinite recursion (so using nix-tools-unchecked).
-      final.evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}
+      final.buildPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}
     ];
     phases = [ "unpackPhase" "buildPhase" ];
 
@@ -32,7 +32,7 @@ let
         name = name + ext;
         inherit path;
       }) files);
-    in final.evalPackages.runCommand "${name}${ext}" {} ''
+    in final.buildPackages.runCommand "${name}${ext}" {} ''
       cp -Lr ${links} $out
       chmod -R +w $out
     '';
@@ -88,7 +88,7 @@ let
       then "windows"
       else if final.stdenv.hostPlatform.isGhcjs
         then "ghcjs"
-        else if final.stdenv.buildPlatform != final.stdenv.hostPlatform
+        else if final.haskell-nix.haskellLib.isCrossHost
           then "cross"
           else "default";
 
@@ -117,14 +117,14 @@ in rec {
           let nix24srcFix = src: src // { filterPath = { path, ... }: path; };
           # Add in the generated files needed by ghc-boot
           in if subDir == "libraries/ghc-boot"
-            then nix24srcFix (final.evalPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.evalPackages.xorg.lndir]; } ''
+            then nix24srcFix (final.buildPackages.runCommand "ghc-boot-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
               lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
             '')
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
-              src = nix24srcFix (final.evalPackages.runCommand "ghc-src" { nativeBuildInputs = [final.evalPackages.xorg.lndir]; } ''
+              src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
                 mkdir $out
                 lndir -silent ${ghc.passthru.configured-src} $out
                 if [[ -f ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
@@ -185,7 +185,17 @@ in rec {
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
         (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq" ])) (ghc-extra-pkgs ghc.version));
-    in final.stdenv.mkDerivation {
+      cabalProject = ''
+        packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
+        allow-newer: iserv-proxy:bytestring, network:bytestring
+        -- need this for libiserv as it doesn't build against 3.0 yet.
+        constraints: network < 3.0,
+                     ghc +ghci,
+                     ghci +ghci,
+                     ghci +internal-interpreter,
+                     libiserv +network
+      '';
+    in (final.stdenv.mkDerivation {
       name = "ghc-extra-pkgs-cabal-project-${ghcName}";
       phases = [ "buildPhase" ];
       # Copy each cabal file from the configured ghc source and
@@ -198,31 +208,27 @@ in rec {
           # and will break memoization (we will need to add them back)
           sed -i 's|/nix/store/.*-libffi.*/include||' $out/${dir}/*.cabal
         '') package-locs)}
-        cat >$out/cabal.project <<EOF
-        packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
-        allow-newer: iserv-proxy:bytestring, network:bytestring
-        -- need this for libiserv as it doesn't build against 3.0 yet.
-        constraints: network < 3.0,
-                     ghc +ghci,
-                     ghci +ghci,
-                     ghci +internal-interpreter,
-                     libiserv +network
-        EOF
       '';
-    }) final.buildPackages.haskell-nix.compiler;
+    }) // { inherit cabalProject; }) final.buildPackages.haskell-nix.compiler;
 
   # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
-    final.haskell-nix.cabalProject' {
+    final.haskell-nix.cabalProject' ({pkgs, ...}: {
+      evalPackages = pkgs.buildPackages;
       name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
       src = proj;
+      inherit (proj) cabalProject;
+      # Avoid readDir and readFile IFD functions looking for these files
+      cabalProjectLocal = null;
+      cabalProjectFreeze = null;
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized = ../materialized/ghc-extra-projects
                        + "/${ghc-extra-projects-type}/${ghcName}";
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
-    })
+      modules = [{ reinstallableLibGhc = false; }];
+    }))
     ghc-extra-pkgs-cabal-projects;
 
   # The packages from the project for each ghc

@@ -39,7 +39,7 @@
   if (builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0)
   then pkgs.haskell-nix.tool compiler-nix-name "cabal" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
-    version = "3.6.2.0";
+    version = "3.8.1.0";
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
   }
   else pkgs.haskell-nix.tool compiler-nix-name "cabal" {
@@ -48,9 +48,8 @@
     # Cabal 3.2.1.0 no longer supports he mix of `cabal-version`,
     # lack of `custom-setup` and `v1-install` used by ghcjs boot.
     cabalProjectLocal = ''
-      constraints: Cabal <3.2.1.0
+      constraints: Cabal <3.2.1.0, Cabal-syntax <0
     '';
-    modules = [{ reinstallableLibGhc = true; }];
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
   }
 , ...
@@ -76,9 +75,11 @@ let
 
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
-            # pin nodejs to the 12 series for now, as strings can only be half the length in node 14+
-            # see https://github.com/nodejs/node/issues/33960, this can break large TH splices for now.
-            nodejs-12_x
+            # We used to pin nodejs to the 12 series, as strings can only be half the length in node 14+
+            # see https://github.com/nodejs/node/issues/33960
+            # Large TH splices are likely broken.
+            # TODO reinstate the pin of find a work around for ghcjs to send TH splice in chunks.
+            nodejs-18_x
             makeWrapper
             xorg.lndir
             gmp

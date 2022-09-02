@@ -35,14 +35,9 @@ with types;
       default = null;
       description = "If true the nix files will be generated used to check plan-sha256 and material";
     };
-    caller = mkOption {
-      type = str;
-      default = "callCabalProjectToNix";
-      description = "Name of the calling function for better warning messages";
-    };
     nix-tools = mkOption {
-      type = nullOr package;
-      default = pkgs.evalPackages.haskell-nix.internal-nix-tools;
+      type = package;
+      default = config.evalPackages.haskell-nix.internal-nix-tools; # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
       description = "nix-tools to use when converting the `plan.json` to nix";
     };
 

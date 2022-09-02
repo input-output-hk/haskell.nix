@@ -11,7 +11,7 @@ let
   gcclibs = if pkgs.stdenv.hostPlatform.isWindows then [
     pkgs.windows.mcfgthreads
     # If we just use `pkgs.buildPackages.gcc.cc` here it breaks the `th-dlls` test. TODO figure out why exactly.
-    (pkgs.evalPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.evalPackages.xorg.lndir ]; } ''
+    (pkgs.buildPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.buildPackages.xorg.lndir ]; } ''
       mkdir $out
       lndir ${pkgs.buildPackages.gcc.cc} $out
     '')
@@ -27,9 +27,11 @@ in
   gcc = gcclibs;
   ssl = [ openssl ];
   z = [ zlib ];
+  m = []; # Included with ghc
   pcap = [ libpcap ];
   pthread = null; # available by default
   GL = [ libGL ];
+  GLEW = [ glew ];
   GLU = [ libGLU ];
   alut = [ freealut ];
   X11 = with xorg; [ libX11 ];
@@ -49,6 +51,7 @@ in
   util = [ utillinux ];
   magic = [ file ];
   pq = [ postgresql ];
+  libpq = [ postgresql ];
   iconv = [ libiconv ];
   lapack = [ liblapack ];
   boost_atomic = [ boost ];
@@ -101,6 +104,16 @@ in
   gfortran = [ gfortran.cc.lib ];
   ssh2 = [ libssh2 ];
   gpiod = [ libgpiod ];
+  png = [ libpng ];
+  jpeg = [ libjpeg ];
+  freenect_sync = [ freenect ];
+  FLAC = [ flac ];
+  mp3lame = [ lame ];
+  tag_c = [ taglib ];
+  jwt = [ libjwt ];
+  GeoIP = [ geoip ];
+  pulse-simple = [ libpulseaudio ];
+  oath = [ liboauth ];
 }
 # -- windows
 // { advapi32 = null; gdi32 = null; imm32 = null; msimg32 = null;
@@ -108,6 +121,7 @@ in
      ole32 = null; rpcrt4 = null;
      winmm = null; userenv = null;
      kernel32 = null; ws2_32 = null;
+     opengl32 = null; glu32 = null;
      # this should be bundled with gcc.
      # if it's not we have more severe
      # issues anyway.
@@ -116,6 +130,7 @@ in
      msvcrt = null; # this is the libc
      Crypt32 = null;
      mswsock = null;
+     bcrypt = null;
    }
 # -- os x
 # NB: these map almost 1:1 to the framework names

@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, testSrc, tool, compiler-nix-name }:
+{ stdenv, lib, testSrc, tool, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -8,7 +8,7 @@ let
   # See https://hackage.haskell.org/package/hackage-security-0.6.0.1
   version-used-at = index-state: ((tool compiler-nix-name "cabal" {
       version = "3.2.0.0";
-      inherit index-state;
+      inherit index-state evalPackages;
       cabalProject = ''
         packages: .
         allow-newer: cabal-install:base, hackage-security:*
@@ -40,7 +40,7 @@ in
     # This test will need to be updated to use newer hackage index-state for it
     # to work with GHC 9 and above.
     # Does not work for GHCJS
-    meta.disabled = stdenv.hostPlatform.isGhcjs || __elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922"];
+    meta.disabled = stdenv.hostPlatform.isGhcjs || __elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924"];
     
 
     passthru = {

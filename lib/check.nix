@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib, srcOnly }:
+{ stdenv, lib, haskellLib }:
 drv:
 
 let
@@ -7,12 +7,24 @@ let
 # This derivation can be used to execute test component.
 # The $out of the derivation is a file containing the resulting
 # stdout output.
-in stdenv.mkDerivation ({
+in stdenv.mkDerivation ((
+  if drv ? source
+    then {
+      src = drv.source;
+      patchPhase =
+        # This `cd` is normally done in the `prePatch` of the drv
+        lib.optionalString (drv.srcSubDir != "") ''
+          cd ${lib.removePrefix "/" drv.srcSubDir}
+        '';
+    }
+    else
+      # This makes the derivation work a bit like `srcOnly`,
+      # using the original derivation, but replacing the `buildPhase`.
+      (drv.drvAttrs or drv) // {
+        outputs = [ "out" ];
+        separateDebugInfo = false;
+      }) // {
   name = (drv.name + "-check");
-
-  # Using `srcOnly` (rather than getting the `src` via a `drv.passthru`)
-  # should correctly apply the patches from `drv` (if any).
-  src = drv.source or (srcOnly drv);
 
   passthru = {
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env exeName;
@@ -22,19 +34,12 @@ in stdenv.mkDerivation ({
 
   inherit (component) doCheck doCrossCheck;
 
-  phases = ["unpackPhase" "buildPhase"];
+  phases = ["unpackPhase" "patchPhase" "buildPhase"];
 
   # If doCheck or doCrossCheck are false we may still build this
   # component and we want it to quietly succeed.
   buildPhase = ''
     mkdir $out
-    ${
-      # Change to the source sub directory if there is one.
-      lib.optionalString (drv.srcSubDir or "" != "") ''
-        cd ${lib.removePrefix "/" drv.srcSubDir}
-      ''
-    }
-
     runHook preCheck
 
     ${toString component.testWrapper} ${drv}/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out/test-stdout

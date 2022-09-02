@@ -1,4 +1,4 @@
-{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name, recurseIntoAttrs } : recurseIntoAttrs {
+{ pkgs, lib, stdenv, haskell-nix, testSrc, zlib, compiler-nix-name, evalPackages, recurseIntoAttrs } : recurseIntoAttrs {
   # The version of pandoc used in this test does not build with ghcjs or ghc 8.10
   meta.disabled = stdenv.hostPlatform.isGhcjs
       || builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "8.10" >= 0;
@@ -6,7 +6,7 @@
     # A dependency is broken on windows, just run this on unix.
     platforms = lib.platforms.unix;
   } ((haskell-nix.hackage-package {
-    inherit compiler-nix-name;
+    inherit compiler-nix-name evalPackages;
     name         = "pandoc";
     version      = "2.9.2.1";
     # Function that returns a sha256 string by looking up the location

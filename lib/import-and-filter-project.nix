@@ -33,7 +33,7 @@ in project // {
                     isProject = false;
                     packageSrc = pkgs.lib.lists.elemAt sourceRepos (toInt oldPkg.src.url);
                   }
-                else if !hasPrefix (toString projectNix) (toString oldPkg.src.content)
+                else if !hasPrefix "${projectNix}" (toString oldPkg.src.content)
                   then {
                     # Source location does not match project prefix
                     isProject = false;
@@ -44,7 +44,7 @@ in project // {
                     isProject = true;
                     packageSrc = haskellLib.appendSubDir {
                       src = srcRoot;
-                      subDir = removePrefix "/" (removePrefix (toString projectNix)
+                      subDir = removePrefix "/" (removePrefix "${projectNix}"
                                                               (toString oldPkg.src.content));
                       includeSiblings = true; # Filtering sibling dirs of the package dir is done in the
                                               # component builder so that relative paths can be used to

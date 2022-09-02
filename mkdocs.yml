@@ -13,7 +13,6 @@ site_name: Alternative Haskell Infrastructure for Nixpkgs
 theme: readthedocs
 site_url: null
 repo_url: https://github.com/input-output-hk/haskell.nix
-permalink: true
 markdown_extensions:
   - admonition
   - footnotes
@@ -21,15 +20,14 @@ markdown_extensions:
   - toc:
       permalink: true
 
-# this is called `nav` in more recent mkdocs versions. Mine
-# right now is 0.17.5
-pages:
+nav:
   - 'Introduction': index.md
   - 'Motivation': motivation.md
   - 'Architecture': architecture.md
   - 'Tutorials':
-    - 'Getting Started': tutorials/getting-started.md
+    - 'Getting started': tutorials/getting-started.md
     - 'Getting started with Flakes': tutorials/getting-started-flakes.md
+    - 'Getting started with Hix': tutorials/getting-started-hix.md
     - 'Creating a development environment': tutorials/development.md
     - 'Sourcing files only part of git repository using cleanGit': tutorials/clean-git.md
     - 'Handling git repositories in projects': tutorials/source-repository-hashes.md
@@ -38,6 +36,8 @@ pages:
     - 'Materialization: Speeding up Nix evaluation': tutorials/materialization.md
     - 'Cross-compiling your project': tutorials/cross-compilation.md
     - 'Generating coverage information': tutorials/coverage.md
+    - 'Build a specific package from Hackage or Stackage': tutorials/building-package-from-stackage-hackage.md
+    - 'Content addressed derivations': tutorials/ca-derivations.md
   - 'Reference':
     - 'Supported GHC versions': reference/supported-ghc-versions.md
     - 'Command-line tools': reference/commands.md
@@ -49,6 +49,7 @@ pages:
   - 'Dev Notes':
     - 'Architecture': dev/dev-architecture.md
     - 'Installing nix-tools': dev/installing-nix-tools.md
+    - 'How to update nix-tools': dev/nix-tools-pin.md
     - 'Manually generating Nix expressions': dev/manually-generating-nix-expressions.md
     - 'Maintainer Scripts': dev/maintainer-scripts.md
     - 'Nixpkgs Pin': dev/nixpkgs-pin.md
@@ -56,4 +57,5 @@ pages:
     - 'Test Suite': dev/tests.md
     - 'Adding a new GHC version': dev/adding-new-ghc.md
     - 'Coverage': dev/coverage.md
+    - 'Making changes to Hix': dev/hix.md
   - 'ChangeLog': changelog.md

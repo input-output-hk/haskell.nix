@@ -1,4 +1,4 @@
-{ stdenv, lib, pkgs, mkStackPkgSet, haskellLib, testSrc, compiler-nix-name }:
+{ stdenv, lib, pkgs, mkStackPkgSet, haskellLib, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -8,7 +8,7 @@ let
   pkgSet = mkStackPkgSet {
     stack-pkgs = import ./pkgs.nix;
     pkg-def-extras = [];
-    modules = [];
+    modules = [{inherit evalPackages;}];
   };
 
   packages = pkgSet.config.hsPkgs;
