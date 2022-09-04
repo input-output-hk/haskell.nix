@@ -66,6 +66,7 @@ in
                             # any plutus-apps input being used for a
                             # package.
 , evalPackages
+, pkgconfSelector ? (_: [])
 , ...
 }@args:
 
@@ -166,6 +167,8 @@ let
       in builtins.trace ("No index state specified" + (if name == null then "" else " for " + name) + ", using the latest index state that we know about (${latest-index-state})!") latest-index-state;
 
   index-state-pinned = index-state != null || cabalProjectIndexState != null;
+
+  pkgconfPkgs = import ./pkgconf-nixpkgs-map.nix pkgs;
 
 in
   assert (if index-state-found == null
@@ -463,7 +466,8 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.pkgconfig ];
+    buildInputs = pkgconfSelector pkgconfPkgs;
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
