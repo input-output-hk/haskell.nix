@@ -250,8 +250,8 @@ let
       extraSourceRepo = source:
         let
           src =
-            pkgs.evalPackages.runCommand "extra-source-repository-package" {
-              nativeBuildInputs = [ pkgs.evalPackages.rsync pkgs.evalPackages.git ];
+            evalPackages.runCommand "extra-source-repository-package" {
+              nativeBuildInputs = [ evalPackages.rsync evalPackages.git ];
             } ''
               mkdir $out
               cd $out
