@@ -37,7 +37,6 @@
           "bytestring" = "0.11.3.0";
           "filepath" = "1.4.2.2";
           "stm" = "2.5.0.2";
-          "terminfo" = "0.4.1.5";
           "ghc-heap" = "9.2.2";
           "ghc-prim" = "0.8.0";
           "ghc-boot-th" = "9.2.2";

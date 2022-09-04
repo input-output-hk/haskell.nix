@@ -7,6 +7,7 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-dlls";
+    pkgconfSelector = p: [p.libsodium];
   };
 
   packages = project.hsPkgs;

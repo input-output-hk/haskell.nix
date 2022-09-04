@@ -42,8 +42,8 @@ in {
   packages.Cabal.patches = [
     (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff)
     (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff)
-    (fromUntil "3.6.0.0" "3.7" ../overlays/patches/Cabal/Cabal-3.6.0.0-drop-pkg-db-check.diff)
-    (fromUntil "3.6.0.0" "3.7" ../overlays/patches/Cabal/Cabal-3.6.0.0-no-final-checks.diff)
+    (fromUntil "3.6.0.0" "3.9" ../overlays/patches/Cabal/Cabal-3.6.0.0-drop-pkg-db-check.diff)
+    (fromUntil "3.6.0.0" "3.9" ../overlays/patches/Cabal/Cabal-3.6.0.0-no-final-checks.diff)
   ];
 
   # These two patches are:
