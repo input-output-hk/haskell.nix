@@ -98,7 +98,7 @@ let
           ||
             # These are the dependencies of `Cabal`
             !builtins.elem packageName
-              ["alex" "happy" "hscolour" "Cabal" "bytestring" "time"
+              ["alex" "happy" "hscolour" "Cabal" "Cabal-syntax" "bytestring" "time"
                "filepath" "base-compat-batteries" "base-compat" "unix" "directory" "transformers"
                "containers" "binary" "mtl" "text" "process" "parsec"]
         then defaultSetup.useCabalFromCabalInstall
