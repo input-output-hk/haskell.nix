@@ -1,5 +1,6 @@
 { pkgs, runCommand, cacert, index-state-hashes, haskellLib }@defaults:
 let readIfExists = src: fileName:
+      # Using origSrcSubDir bypasses any cleanSourceWith.
       let origSrcDir = src.origSrcSubDir or src;
       in
         if builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
@@ -122,26 +123,38 @@ let
       type == "directory" ||
       pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); };
 
-  # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
-  # access to the store is restricted.  If origSrc was already in the store
-  # you can pass the project in as a string.
-  rawCabalProject =
-    if cabalProject != null
-      then cabalProject + (
-        if cabalProjectLocal != null
-          then ''
+  # When there is no `cabal.project` file `cabal-install` behaves as if there was
+  # one containing `packages: ./*.cabal`.  Even if there is a `cabal.project.local`
+  # containing some other `packages:`, it still includes `./*.cabal`.
+  #
+  # We could write to `cabal.project.local` instead of `cabal.project` when
+  # `cabalProject == null`.  However then `cabal-install` will look in parent
+  # directories for a `cabal.project` file. That would complicate reasoning about
+  # the relative directories of packages.
+  #
+  # Instead we treat `cabalProject == null` as if it was `packages: ./*.cabal`.
+  #
+  # See: https://github.com/input-output-hk/haskell.nix/pull/1588
+  #      https://github.com/input-output-hk/haskell.nix/pull/1639
+  #
+  rawCabalProject = ''
+    ${
+      if cabalProject == null
+        then ''
+          -- Included to match the implicit project used by `cabal-install`
+          packages: ./*.cabal
+        ''
+        else cabalProject
+    }
+    ${
+      pkgs.lib.optionalString (cabalProjectLocal != null) ''
+        -- Added from `cabalProjectLocal` argument to the `cabalProject` function
+        ${cabalProjectLocal}
+      ''
+    }
+  '';
 
-            -- Added from cabalProjectLocal argument to cabalProject
-            ${cabalProjectLocal}
-          ''
-          else ""
-      )
-      else null;
-
-  cabalProjectIndexState =
-    if rawCabalProject != null
-    then pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject
-    else null;
+  cabalProjectIndexState = pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject;
 
   index-state-found =
     if index-state != null
@@ -294,10 +307,7 @@ let
           );
     };
 
-  fixedProject =
-    if rawCabalProject == null
-      then { sourceRepos = []; repos = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
-      else replaceSourceRepos rawCabalProject;
+  fixedProject = replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
   # * For hydra to assemble a list of jobs from `components.tests` it must
