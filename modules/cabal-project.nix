@@ -130,7 +130,7 @@ in {
       type = nullOr (listOf unspecified);
       default = [];
     };
-    pkgconfSelector = mkOption {
+    pkgconfigSelector = mkOption {
       type = unspecified;
       default = (_: []);
     };

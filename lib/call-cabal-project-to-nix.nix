@@ -66,7 +66,7 @@ in
                             # any plutus-apps input being used for a
                             # package.
 , evalPackages
-, pkgconfSelector ? (_: [])
+, pkgconfigSelector ? (_: [])
 , ...
 }@args:
 
@@ -467,7 +467,9 @@ let
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
     nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.pkgconfig ];
-    buildInputs = pkgconfSelector pkgconfPkgs;
+    # We only need the `.dev` derivation (if there is one), since it will have
+    # the pkgconfig files needed by cabal.
+    buildInputs = map pkgs.lib.getDev (builtins.concatLists (pkgconfigSelector pkgconfPkgs));
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
