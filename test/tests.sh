@@ -9,10 +9,10 @@ NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
 
 cd $(dirname $0)
 
-if   [ "$#" < "1" ]; then
+if   [[ "$#" -lt 1 ]]; then
   echo "Please pass a compiler-nix-name to use.  For example: ./test/tests.sh ghc884"
   exit 1
-elif [ "$#" > "1" ]; then
+elif [[ "$#" -gt 1 ]]; then
   TESTS="$2"
 else
   TESTS="all"
