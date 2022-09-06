@@ -134,9 +134,18 @@ in {
       type = nullOr (listOf unspecified);
       default = [];
     };
-    pkgconfSelector = mkOption {
+    pkgconfigSelector = mkOption {
       type = unspecified;
       default = (_: []);
+      description = ''
+        Choose the pkg-config packages that should be made available to
+        cabal configure.  Use the pkg-config names.  For instance if the
+        project uses `gi-gtk` pass:
+        ```
+        pkgconfigSelector = p: [ p."gtk+-3.0" p."gobject-introspection-1.0" ];
+        ```
+        The dependencies of gtk will be included automatically.
+      '';
     };
   };
 }

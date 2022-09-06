@@ -21,6 +21,7 @@ let
     gobject-introspection = import ./gobject-introspection.nix;
     hix = import ./hix.nix;
     ghcjs = import ./ghcjs.nix;
+    cabalPkgConfig = import ./cabal-pkg-config.nix;
     default-setup = import ./default-setup.nix;
   };
 
@@ -52,6 +53,7 @@ let
     emscripten
     nix-prefetch-git-minimal
     ghcjs
+    cabalPkgConfig
     gobject-introspection
     hix
     hydra

@@ -239,7 +239,7 @@ let
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c]) build-tools) ++
-    lib.optional (pkgconfig != []) buildPackages.pkgconfig;
+    lib.optional (pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
   # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.

@@ -66,7 +66,7 @@ in
                             # any plutus-apps input being used for a
                             # package.
 , evalPackages
-, pkgconfSelector ? (_: [])
+, pkgconfigSelector ? (_: [])
 , supportHpack ? false      # Run hpack on package.yaml files with no .cabal file
 , ...
 }@args:
@@ -471,7 +471,9 @@ let
       nix-tools.exes.plan-to-nix
       dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.pkgconfig ]
       ++ pkgs.lib.optional supportHpack nix-tools.exes.hpack;
-    buildInputs = pkgconfSelector pkgconfPkgs;
+    # We only need the `.dev` derivation (if there is one), since it will have
+    # the pkgconfig files needed by cabal.
+    buildInputs = map pkgs.lib.getDev (builtins.concatLists (pkgconfigSelector pkgconfPkgs));
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
