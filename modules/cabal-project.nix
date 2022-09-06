@@ -90,7 +90,7 @@ in {
       '';
     };
     sha256map = mkOption {
-      type = nullOr (attrsOf (attrsOf str));
+      type = nullOr (attrsOf (either str (attrsOf str)));
       default = null;
       description = ''
         An alternative to adding `--sha256` comments into the
