@@ -1,6 +1,36 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Sep 6, 2022
+* A `pkgconfigSelector` must now be passed to cabal projects that have
+  `pkgconfig-depends`.  Use the pkg-config names.  For instance if the
+  project uses `gi-gtk` pass:
+  ```
+  pkgconfigSelector = p: [ p."gtk+-3.0" p."gobject-introspection-1.0" ];
+  ```
+  The dependencies of gtk will be included automatically.
+
+  Why?
+
+  Cabal 3.8 fixes a bug https://github.com/haskell/cabal/issues/6771
+  that haskell.nix relied on (probably wrongly), to create a plan
+  for a haskell project without knowing the pkg-config versions
+  available ahead of time.
+
+  This was probably a bad idea.
+
+  We could try to provide every pkg-config derivation in nixpkgs to
+  the derivation that generates the cabal plan. Unfortunately:
+  * That would introduce a massive dependency tree to the plan-nix
+    dervaition.
+  * Some of those packages may not build.
+
+  The `pkgconfigSelector` allows haskell.nix to filter out only the
+  packages we need from the available map (`lib/pkgconf-nixpkgs-map.nix`).
+
+  It should be thought of as the haskell.nix equivalent of installing
+  your pkg-config dependencies before running `cabal build`.
+
 ## Jul 27, 2022
 * Removed reliance on `builtins.currentSystem`.  It was used it to provide
   `pkgs.evalPackages` via an overlay that it used to run derivations
