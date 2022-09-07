@@ -370,7 +370,7 @@ let
          frameworks # Frameworks will be needed at link time
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
-      ++ builtins.concatLists pkgconfig
+      ++ map pkgs.lib.getDev (builtins.concatLists pkgconfig)
       ++ lib.optionals (stdenv.hostPlatform.isWindows)
         (lib.flatten component.libs
         ++ map haskellLib.dependToLib component.depends);

@@ -1,5 +1,43 @@
 final: prev:
 {
+  # This is a wrapper for `cabal configure` use only.  It returns
+  # package names and versions based on lib/pkgconf-nixpkgs-map.nix.
+  # It works because cabal calls `--list-all` then passes all the
+  # packages returned by that to `--modversion`.
+  # If that ever changes we will need to update this wrapper!
+  allPkgConfigWrapper =
+    let
+      pkgconfigPkgs =
+        final.lib.filterAttrs (name: p: __length p > 0 && (__head p) ? version)
+          (import ../lib/pkgconf-nixpkgs-map.nix final);
+    in prev.pkgconfig.overrideAttrs (attrs: {
+      installPhase = attrs.installPhase + ''
+        mv $out/bin/${attrs.targetPrefix}${attrs.baseBinName} \
+          $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped
+
+        cat <<EOF >$out/bin/${attrs.targetPrefix}${attrs.baseBinName}      
+        #!${final.stdenv.shell}
+        if [[ "\$1" == "--list-all" ]]; then
+          OUTPUT=\$(mktemp)
+          ERROR=\$(mktemp)
+          ${final.pkgs.lib.concatStrings (map (name: ''
+            echo '${name} ${name}'
+          '') (__attrNames pkgconfigPkgs))
+          }
+        elif [[ "\$1" == "--modversion" ]]; then
+          OUTPUT=\$(mktemp)
+          ERROR=\$(mktemp)
+          ${final.pkgs.lib.concatStrings (map (p: ''
+            echo '${(builtins.head p).version}'
+          '') (__attrValues pkgconfigPkgs))
+          }
+        else
+          $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped "\$@"
+        fi
+        EOF
+        chmod +x $out/bin/${attrs.targetPrefix}${attrs.baseBinName}
+      '';
+  });
   # cabal 3.8 asks pkg-config for linker options for both
   # dynamic and static linking.
   # For some derivations (glib for instance) pkg-config can
