@@ -459,7 +459,7 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, evalPackages, ... }@args:
+            { src, compiler-nix-name, evalPackages, inputMap, ... }@args:
             let
               callProjectResults = callCabalProjectToNix args;
               plan-pkgs = importAndFilterProject {
@@ -487,6 +487,7 @@ final: prev: {
                     ++ [ {
                       compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
+                      inputMap = final.lib.mkDefault inputMap;
                     } ];
                   extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };

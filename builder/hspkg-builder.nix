@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, setup-builder }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, setup-builder, inputMap }:
 
 config:
 { flags
@@ -30,12 +30,23 @@ let
       "ghc902/filepath-1.4.2.1" = "/libraries/filepath";
     }."${compiler-nix-name}/${name}" or null;
   src = if bundledSrc == null then pkg.src else ghc.configured-src + bundledSrc;
+  baseUrlMatch = __match "(.*)/package/[^/]*" pkg.src.url;
   cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
-    fetchurl {
-      name = "${name}-${toString revision}.cabal";
-      url = "https://hackage.haskell.org/package/${name}/revision/${toString revision}.cabal";
-      sha256 = revisionSha256;
-    };
+    if pkgs.lib.hasPrefix "mirror://hackage/" pkg.src.url
+      then fetchurl {
+        name = "${name}-${toString revision}.cabal";
+        url = "https://hackage.haskell.org/package/${name}/revision/${toString revision}.cabal";
+        sha256 = revisionSha256;
+      }
+    else if baseUrlMatch != null
+      then builtins.path {
+        path = inputMap.${__head baseUrlMatch}
+            or (throw "Unable to find inputMap entry for repository '${__head baseUrlMatch}' while looking for '${package.identifier.name}' revision.")
+          + "/index/${package.identifier.name}/${package.identifier.version}/${package.identifier.name}.cabal";
+        sha256 = revisionSha256;
+        recursive = false;
+      }
+    else throw "Unexpected url '${pkg.src.url}' format while looking for '${package.identifier.name}' revision";
 
   defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
