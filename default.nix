@@ -1,10 +1,11 @@
 {...}@args:
 
 let
+  pin = (__fromJSON (__readFile ./flake.lock)).nodes.nixpkgs-2205.locked;
   nixpkgsSrc =
     builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/549d82bdd40f760a438c3c3497c1c61160f3de55.tar.gz";
-      sha256 = "1rk9rh2ssp6zwqbnxa2cyncwjky9igkj90qdgbhzshwwxp89y6ai";
+      url = "https://github.com/NixOS/nixpkgs/archive/${pin.rev}.tar.gz";
+      sha256 = pin.narHash;
     };
   pkgs = args.pkgs or (import nixpkgsSrc {});
   flake-compat =
