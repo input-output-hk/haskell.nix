@@ -39,6 +39,8 @@ fi
 
 if [ "$TESTS" == "unit-tests" ] || [ "$TESTS" == "all" ]; then
   printf "*** Running the unit tests... " >& 2
+  # Running nix build first avoids `error: path '/nix/store/X-hackage-to-nix-ghcjs-overlay.drv' is not valid`
+  nix-build ./default.nix --argstr compiler-nix-name $GHC -A unit.tests
   res=$(nix-instantiate --eval --json --strict ./default.nix --argstr compiler-nix-name $GHC -A unit.tests)
   num_failed=$(jq length <<< "$res")
   if [ $num_failed -eq 0 ]; then
