@@ -20,21 +20,21 @@ final: prev:
         if [[ "\$1" == "--list-all" ]]; then
           OUTPUT=\$(mktemp)
           ERROR=\$(mktemp)
-          cat <<EOF
-          ${final.pkgs.lib.concatStrings (map (name: ''
-            ${name}
-          '') (__attrNames pkgconfigPkgs))
-          }
-          EOF
+        cat <<EOF2
+        ${final.pkgs.lib.concatStrings (map (name: ''
+          ${name}
+        '') (__attrNames pkgconfigPkgs))
+         }
+        EOF2
         elif [[ "\$1" == "--modversion" ]]; then
           OUTPUT=\$(mktemp)
           ERROR=\$(mktemp)
-          cat <<EOF
-          ${final.pkgs.lib.concatStrings (map (p: ''
-            ${(builtins.head p).version}
-          '') (__attrValues pkgconfigPkgs))
-          }
-          EOF
+        cat <<EOF2
+        ${final.pkgs.lib.concatStrings (map (p: ''
+          ${(builtins.head p).version}
+        '') (__attrValues pkgconfigPkgs))
+        }
+        EOF2
         else
           $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped "\$@"
         fi
