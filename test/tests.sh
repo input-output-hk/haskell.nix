@@ -7,6 +7,8 @@ set -euo pipefail
 NIX_CA_DERIVATIONS=$(jq -e '."experimental-features".value|any(. == 0)' <<< $(nix show-config --json)) || true
 NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
 
+nix --version
+
 cd $(dirname $0)
 
 if   [[ "$#" -lt 1 ]]; then
