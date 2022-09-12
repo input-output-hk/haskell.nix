@@ -754,6 +754,7 @@ final: prev: {
                 # Used by:
                 #   `nix develop`
                 devShells.default = project.shell;
+                devShell = project.shell; # For older nix versions. TODO remove
               };
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
           });
