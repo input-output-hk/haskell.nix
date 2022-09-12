@@ -86,16 +86,15 @@
     "flake-compat": {
       "flake": false,
       "locked": {
-        "lastModified": 1632802058,
-        "narHash": "sha256-7IySNHriQjzOZ88DDk6VDPf1GoUaOrOeUdukY62o52o=",
-        "owner": "hamishmack",
+        "lastModified": 1635892615,
+        "narHash": "sha256-harGbMZr4hzat2BWBU+Y5OYXlu+fVz7E4WeQzHi5o8A=",
+        "owner": "input-output-hk",
         "repo": "flake-compat",
-        "rev": "5523c47f13259b981c49b26e28499724a5125fd8",
+        "rev": "eca47d3377946315596da653862d341ee5341318",
         "type": "github"
       },
       "original": {
-        "owner": "hamishmack",
-        "ref": "hkm/pkgs-fetch",
+        "owner": "input-output-hk",
         "repo": "flake-compat",
         "type": "github"
       }

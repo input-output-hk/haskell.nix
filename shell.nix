@@ -1,1 +1,1 @@
-(import ./default.nix {}).devShell.${builtins.currentSystem}
+(import ./default.nix {}).devShells.${builtins.currentSystem}
