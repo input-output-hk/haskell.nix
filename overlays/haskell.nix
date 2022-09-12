@@ -745,7 +745,7 @@ final: prev: {
                 #   `nix build .#pkg-name:test:test-name`
                 packages = attrsForAllProjects packagesForProject;
                 # Used by:
-                #   `nix check .#pkg-name:test:test-name`
+                #   `nix flake check`
                 checks = attrsForAllProjects checksForProject;
                 # Used by:
                 #   `nix run .#pkg-name:exe:exe-name`
@@ -753,7 +753,7 @@ final: prev: {
                 apps = attrsForAllProjects appsForProject;
                 # Used by:
                 #   `nix develop`
-                devShell = project.shell;
+                devShells.default = project.shell;
               };
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
           });

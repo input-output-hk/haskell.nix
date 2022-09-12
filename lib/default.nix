@@ -343,4 +343,30 @@ in {
   projectOverlays = import ./project-overlays.nix {
     inherit lib haskellLib;
   };
+
+  # Use by `addWithPrefix` to add a prefix to every attribute
+  prefixAttrs = prefix: x:
+    __listToAttrs (map (n:{
+      name = prefix + n;
+      value = x.${n};
+    }) (__attrNames x));
+
+  # Handy function for combining flakes for example if you
+  # want to extend your flake to build with a new version
+  # of GHC you could use:
+  #
+  # project924 = project.appendModule ({pkgs, ...}: {
+  #   compiler-nix-name = pkgs.lib.mkForce "ghc924";
+  # });
+  #
+  # flake = pkgs.haskell-nix.haskellLib.addWithPrefix
+  #   (project.flake {}) "ghc924:" (project924.flake {})
+  #
+  addWithPrefix = a: prefix: b:
+    __listToAttrs (map (name: {
+      inherit name;
+      value =
+        (a.${name} or {})
+        // prefixAttrs prefix (b.${name} or {});
+    }) (__attrNames (a // b)));
 }
