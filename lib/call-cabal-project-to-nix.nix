@@ -167,6 +167,8 @@ let
 
   index-state-pinned = index-state != null || cabalProjectIndexState != null;
 
+  pkgconfPkgs = import ./pkgconf-nixpkgs-map.nix pkgs;
+
 in
   assert (if index-state-found == null
     then throw "No index state passed and none found in ${cabalProjectFileName}" else true);
@@ -329,14 +331,14 @@ let
   # when `checkMaterialization` is set.
   dummy-ghc-data =
     let
-      materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
+      materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}"
+        + pkgs.lib.optionalString (builtins.compareVersions ghc.version "8.10" < 0 && ghc.targetPrefix == "" && builtins.compareVersions pkgs.lib.version "22.05" < 0) "-old";
     in pkgs.haskell-nix.materialize ({
       sha256 = null;
       sha256Arg = "sha256";
       materialized = if __pathExists materialized
         then materialized
-        else __trace ("WARNING: No materialized dummy-ghc-data for "
-            + "${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}.")
+        else __trace "WARNING: No materialized dummy-ghc-data.  mkdir ${toString materialized}"
           null;
       reasonNotSafe = null;
     } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
@@ -463,7 +465,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";

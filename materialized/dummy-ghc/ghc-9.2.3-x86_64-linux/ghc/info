@@ -9,7 +9,7 @@
  ,("Haskell CPP flags","-E -undef -traditional")
  ,("ld command","ld")
  ,("ld flags","")
- ,("ld supports compact unwind","YES")
+ ,("ld supports compact unwind","NO")
  ,("ld supports build-id","YES")
  ,("ld supports filelist","NO")
  ,("ld is GNU ld","YES")

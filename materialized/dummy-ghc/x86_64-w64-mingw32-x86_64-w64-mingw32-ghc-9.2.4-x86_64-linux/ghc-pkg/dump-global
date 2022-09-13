@@ -699,11 +699,14 @@ exposed-modules:
     GHC.Num.Backend GHC.Num.Backend.Native GHC.Num.Backend.Selected
     GHC.Num.BigNat GHC.Num.Integer GHC.Num.Natural GHC.Num.Primitives
     GHC.Num.WordArray
+hidden-modules:       GHC.Num.Backend.GMP
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-bignum-1.2
+extra-libraries:      gmp
+include-dirs:
 depends:              ghc-prim-0.8.0
 haddock-interfaces:
 haddock-html:
