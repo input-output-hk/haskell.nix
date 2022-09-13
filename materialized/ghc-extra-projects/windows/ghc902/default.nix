@@ -13,13 +13,13 @@
         "ghc-prim".revision = (((hackage."ghc-prim")."0.7.0").revisions).default;
         "ghc-boot-th".revision = (((hackage."ghc-boot-th")."9.0.2").revisions).default;
         "base".revision = (((hackage."base")."4.15.1.0").revisions).default;
-        "time".revision = (((hackage."time")."1.11.1.2").revisions).default;
+        "time".revision = (((hackage."time")."1.12.2").revisions).default;
         "Win32".revision = (((hackage."Win32")."2.8.3.0").revisions).default;
-        "process".revision = (((hackage."process")."1.6.13.2").revisions).default;
+        "process".revision = (((hackage."process")."1.6.15.0").revisions).default;
         "hsc2hs".revision = (((hackage."hsc2hs")."0.68.8").revisions).default;
         "hsc2hs".flags.in-ghc-tree = false;
         "ghc-bignum".revision = (((hackage."ghc-bignum")."1.1").revisions).default;
-        "directory".revision = (((hackage."directory")."1.3.7.0").revisions).default;
+        "directory".revision = (((hackage."directory")."1.3.7.1").revisions).default;
         "exceptions".revision = (((hackage."exceptions")."0.10.4").revisions).default;
         "rts".revision = (((hackage."rts")."1.0.2").revisions).default;
         "transformers".revision = (((hackage."transformers")."0.5.6.2").revisions).default;

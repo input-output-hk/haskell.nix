@@ -210,38 +210,85 @@ final: prev: {
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
+              # Dummy version of ghc to work around https://github.com/haskell/cabal/issues/8352
+              dummy-ghc = final.writeTextFile {
+                name = "dummy-ghc";
+                executable = true;
+                destination = "/bin/ghc";
+                text = ''
+                  #!${final.runtimeShell}
+                  case "$*" in
+                    --version*)
+                      echo 'The Glorious Glasgow Haskell Compilation System, version 8.10.7'
+                      ;;
+                    --numeric-version*)
+                      echo '8.10.7'
+                      ;;
+                    --supported-languages*)
+                      echo Haskell2010
+                      ;;
+                    --info*)
+                      echo '[]'
+                      ;;
+                    *)
+                      echo "Unknown argument '$*'" >&2
+                      exit 1
+                      ;;
+                  esac
+                  exit 0
+                '';
+              };
+              dummy-ghc-pkg = final.writeTextFile {
+                name = "dummy-ghc";
+                executable = true;
+                destination = "/bin/ghc-pkg";
+                text = ''
+                  #!${final.runtimeShell}
+                  case "$*" in
+                    --version*)
+                      echo 'GHC package manager version 8.10.7'
+                      ;;
+                    *)
+                      echo "Unknown argument '$*'" >&2
+                      exit 1
+                      ;;
+                  esac
+                  exit 0
+                '';
+              };
               # This is very big, and cheap to build: prefer building it locally
-              tarballRepos = final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; preferLocalBuild = true; } ''
+              tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
+                nativeBuildInputs = [ cabal-install dummy-ghc dummy-ghc-pkg ];
+              } ''
+                set -xe
+
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
-                ${final.lib.concatStrings (
-                  final.lib.mapAttrsToList (name: index:
-                ''
                 repository ${name}
                   url: file:${mkLocalHackageRepo { inherit name index; }}
                   secure: True
                   root-keys:
                   key-threshold: 0
 
-                '') allTarballs
-                )}
                 EOF
 
                 # All repositories must be mkdir'ed before calling new-update on any repo,
                 # otherwise it fails.
-                ${final.lib.concatStrings (map (name: ''
-                  mkdir -p $out/.cabal/packages/${name}
-                '') (builtins.attrNames allTarballs))}
+                mkdir -p $out/.cabal/packages/${name}
 
-                ${final.lib.concatStrings (map (name: ''
-                  HOME=$out cabal new-update ${name}
-                '') (builtins.attrNames allTarballs))}
+                HOME=$out cabal new-update ${name}
               '';
+              f = name: index:
+                let x = tarballRepoFor name index; in
+                ''
+                  ln -s ${x}/.cabal/packages/${name} $out/.cabal/packages/${name}
+                  cat ${x}/.cabal/config >> $out/.cabal/config
+                '';
             in
               # Add the extra-hackage-repos where we have all the files needed.
               final.runCommand dotCabalName { nativeBuildInputs = [ final.xorg.lndir ]; } ''
-                mkdir $out
-                lndir ${tarballRepos} $out
+                mkdir -p $out/.cabal/packages
+                ${builtins.concatStringsSep "\n" (final.lib.mapAttrsToList f allTarballs)}
 
                 ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
                   mkdir -p $out/.cabal/packages/${name}
@@ -255,7 +302,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2021-11-05T00:00:00Z";
+        internalHackageIndexState = "2022-08-29T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
