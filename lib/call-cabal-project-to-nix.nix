@@ -228,7 +228,7 @@ let
                   then throw "${inputMap.${repoData.url}.rev} may not match ${repoData.ref} for ${repoData.url} use \"${repoData.url}/${repoData.ref}\" as the inputMap key if ${repoData.ref} is a branch or tag that points to ${inputMap.${repoData.url}.rev}."
                   else inputMap.${repoData.url})
             else if repoData.sha256 != null
-              then fetchgit repoData
+            then fetchgit { inherit (repoData) url sha256 rev; }
             else
               let drv = builtins.fetchGit { inherit (repoData) url ref; };
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
