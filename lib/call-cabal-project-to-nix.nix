@@ -1,5 +1,6 @@
 { pkgs, runCommand, cacert, index-state-hashes, haskellLib }@defaults:
 let readIfExists = src: fileName:
+      # Using origSrcSubDir bypasses any cleanSourceWith.
       let origSrcDir = src.origSrcSubDir or src;
       in
         if builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
@@ -122,26 +123,38 @@ let
       type == "directory" ||
       pkgs.lib.any (i: (pkgs.lib.hasSuffix i path)) [ ".cabal" "package.yaml" ]); };
 
-  # Using origSrcSubDir bypasses any cleanSourceWith so that it will work when
-  # access to the store is restricted.  If origSrc was already in the store
-  # you can pass the project in as a string.
-  rawCabalProject =
-    if cabalProject != null
-      then cabalProject + (
-        if cabalProjectLocal != null
-          then ''
+  # When there is no `cabal.project` file `cabal-install` behaves as if there was
+  # one containing `packages: ./*.cabal`.  Even if there is a `cabal.project.local`
+  # containing some other `packages:`, it still includes `./*.cabal`.
+  #
+  # We could write to `cabal.project.local` instead of `cabal.project` when
+  # `cabalProject == null`.  However then `cabal-install` will look in parent
+  # directories for a `cabal.project` file. That would complicate reasoning about
+  # the relative directories of packages.
+  #
+  # Instead we treat `cabalProject == null` as if it was `packages: ./*.cabal`.
+  #
+  # See: https://github.com/input-output-hk/haskell.nix/pull/1588
+  #      https://github.com/input-output-hk/haskell.nix/pull/1639
+  #
+  rawCabalProject = ''
+    ${
+      if cabalProject == null
+        then ''
+          -- Included to match the implicit project used by `cabal-install`
+          packages: ./*.cabal
+        ''
+        else cabalProject
+    }
+    ${
+      pkgs.lib.optionalString (cabalProjectLocal != null) ''
+        -- Added from `cabalProjectLocal` argument to the `cabalProject` function
+        ${cabalProjectLocal}
+      ''
+    }
+  '';
 
-            -- Added from cabalProjectLocal argument to cabalProject
-            ${cabalProjectLocal}
-          ''
-          else ""
-      )
-      else null;
-
-  cabalProjectIndexState =
-    if rawCabalProject != null
-    then pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject
-    else null;
+  cabalProjectIndexState = pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject;
 
   index-state-found =
     if index-state != null
@@ -153,6 +166,8 @@ let
       in builtins.trace ("No index state specified" + (if name == null then "" else " for " + name) + ", using the latest index state that we know about (${latest-index-state})!") latest-index-state;
 
   index-state-pinned = index-state != null || cabalProjectIndexState != null;
+
+  pkgconfPkgs = import ./pkgconf-nixpkgs-map.nix pkgs;
 
 in
   assert (if index-state-found == null
@@ -294,10 +309,7 @@ let
           );
     };
 
-  fixedProject =
-    if rawCabalProject == null
-      then { sourceRepos = []; repos = {}; extra-hackages = []; makeFixedProjectFile = ""; replaceLocations = ""; }
-      else replaceSourceRepos rawCabalProject;
+  fixedProject = replaceSourceRepos rawCabalProject;
 
   # The use of the actual GHC can cause significant problems:
   # * For hydra to assemble a list of jobs from `components.tests` it must
@@ -319,14 +331,14 @@ let
   # when `checkMaterialization` is set.
   dummy-ghc-data =
     let
-      materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}";
+      materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}"
+        + pkgs.lib.optionalString (builtins.compareVersions ghc.version "8.10" < 0 && ghc.targetPrefix == "" && builtins.compareVersions pkgs.lib.version "22.05" < 0) "-old";
     in pkgs.haskell-nix.materialize ({
       sha256 = null;
       sha256Arg = "sha256";
       materialized = if __pathExists materialized
         then materialized
-        else __trace ("WARNING: No materialized dummy-ghc-data for "
-            + "${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}.")
+        else __trace "WARNING: No materialized dummy-ghc-data.  mkdir ${toString materialized}"
           null;
       reasonNotSafe = null;
     } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
@@ -453,7 +465,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";

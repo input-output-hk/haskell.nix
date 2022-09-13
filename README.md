@@ -9,8 +9,8 @@ its dependencies into Nix code.
 ## Documentation
 
 - [Introduction](https://input-output-hk.github.io/haskell.nix/index.html)
-- [Getting Started](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started.html)
-- [Troubleshooting](https://input-output-hk.github.io/haskell.nix/troubleshooting.html)
+- [Getting Started](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started)
+- [Troubleshooting](https://input-output-hk.github.io/haskell.nix/troubleshooting)
 - Explore the documentation from there to find further topics.
 
 ## Help! Something isn't working
@@ -18,8 +18,8 @@ its dependencies into Nix code.
 The #1 problem that people have when using `haskell.nix` is that they find themselves building GHC.
 This should not happen, but you *must* follow the `haskell.nix` setup instructions properly to avoid it.
 If you find this happening to you, please check that you have followed the 
-[getting started instructions](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started.html#setting-up-the-binary-cache) and
-consult the corresponding [troubleshooting section](https://input-output-hk.github.io/haskell.nix/troubleshooting.html#why-am-i-building-ghc).
+[getting started instructions](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started#setting-up-the-binary-cache) and
+consult the corresponding [troubleshooting section](https://input-output-hk.github.io/haskell.nix/troubleshooting#why-am-i-building-ghc).
 
 The troubleshooting documentation also contains some help for other common issues.
 Please give it a read before asking on IRC or opening an issue.

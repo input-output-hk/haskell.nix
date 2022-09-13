@@ -210,8 +210,54 @@ final: prev: {
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
+              # Dummy version of ghc to work around https://github.com/haskell/cabal/issues/8352
+              dummy-ghc = final.writeTextFile {
+                name = "dummy-ghc";
+                executable = true;
+                destination = "/bin/ghc";
+                text = ''
+                  #!${final.runtimeShell}
+                  case "$*" in
+                    --version*)
+                      echo 'The Glorious Glasgow Haskell Compilation System, version 8.10.7'
+                      ;;
+                    --numeric-version*)
+                      echo '8.10.7'
+                      ;;
+                    --supported-languages*)
+                      echo Haskell2010
+                      ;;
+                    --info*)
+                      echo '[]'
+                      ;;
+                    *)
+                      echo "Unknown argument '$*'" >&2
+                      exit 1
+                      ;;
+                  esac
+                  exit 0
+                '';
+              };
+              dummy-ghc-pkg = final.writeTextFile {
+                name = "dummy-ghc";
+                executable = true;
+                destination = "/bin/ghc-pkg";
+                text = ''
+                  #!${final.runtimeShell}
+                  case "$*" in
+                    --version*)
+                      echo 'GHC package manager version 8.10.7'
+                      ;;
+                    *)
+                      echo "Unknown argument '$*'" >&2
+                      exit 1
+                      ;;
+                  esac
+                  exit 0
+                '';
+              };
               # This is very big, and cheap to build: prefer building it locally
-              tarballRepos = final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; preferLocalBuild = true; } ''
+              tarballRepos = final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install dummy-ghc dummy-ghc-pkg ]; preferLocalBuild = true; } ''
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
                 ${final.lib.concatStrings (
@@ -255,7 +301,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2021-11-05T00:00:00Z";
+        internalHackageIndexState = "2022-08-29T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -801,11 +847,10 @@ final: prev: {
 
         # `project'` and `project` automatically select between `cabalProject`
         # and `stackProject` (when possible) by looking for `stack.yaml` or
-        # `cabal.project` files.  If both exist we can pass in one of:
+        # `cabal.project` files.  If both exist it uses the `cabal.project` file.
+        # To override this pass in:
         #     `projectFileName = "stack.yaml;"`
-        #     `projectFileName = "cabal.project";`
-        # to let it know which to choose (or pick another name).  If the
-        # selected file ends in a `.yaml` it is assumed to be for `stackProject`.
+        # If the selected file ends in a `.yaml` it is assumed to be for `stackProject`.
         # If neither `stack.yaml` nor `cabal.project` exist `cabalProject` is
         # used (as it will use a default `cabal.project`).
         project' = projectModule:
@@ -829,8 +874,8 @@ final: prev: {
                 then projectFileName  # Prefer the user selected project file name
                 else
                   if stackYamlExists && cabalProjectExists
-                    then throw ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist "
-                      + "set `projectFileName = \"stack.yaml\";` or `projectFileName = \"cabal.project\";`")
+                    then __trace ("haskell-nix.project : both `stack.yaml` and `cabal.project` files exist.  Using `cabal.project`. "
+                      + "set `projectFileName = \"stack.yaml\";` to override this.`") "cabal.project"
                     else
                       if stackYamlExists
                         then "stack.yaml"      # stack needs a stack.yaml
