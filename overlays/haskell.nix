@@ -210,9 +210,55 @@ final: prev: {
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
+              # Dummy version of ghc to work around https://github.com/haskell/cabal/issues/8352
+              dummy-ghc = final.writeTextFile {
+                name = "dummy-ghc";
+                executable = true;
+                destination = "/bin/ghc";
+                text = ''
+                  #!${final.runtimeShell}
+                  case "$*" in
+                    --version*)
+                      echo 'The Glorious Glasgow Haskell Compilation System, version 8.10.7'
+                      ;;
+                    --numeric-version*)
+                      echo '8.10.7'
+                      ;;
+                    --supported-languages*)
+                      echo Haskell2010
+                      ;;
+                    --info*)
+                      echo '[]'
+                      ;;
+                    *)
+                      echo "Unknown argument '$*'" >&2
+                      exit 1
+                      ;;
+                  esac
+                  exit 0
+                '';
+              };
+              dummy-ghc-pkg = final.writeTextFile {
+                name = "dummy-ghc";
+                executable = true;
+                destination = "/bin/ghc-pkg";
+                text = ''
+                  #!${final.runtimeShell}
+                  case "$*" in
+                    --version*)
+                      echo 'GHC package manager version 8.10.7'
+                      ;;
+                    *)
+                      echo "Unknown argument '$*'" >&2
+                      exit 1
+                      ;;
+                  esac
+                  exit 0
+                '';
+              };
               # This is very big, and cheap to build: prefer building it locally
               tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
-                nativeBuildInputs = [ cabal-install ];
+                nativeBuildInputs = [ cabal-install dummy-ghc dummy-ghc-pkg ];
               } ''
                 set -xe
 
@@ -256,7 +302,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2021-11-05T00:00:00Z";
+        internalHackageIndexState = "2022-08-29T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
