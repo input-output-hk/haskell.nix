@@ -77,7 +77,7 @@ let
   extractSourceRepoPackageData = cabalProjectFileName: sha256map: repo:
     let
       refOrRev =
-        if builtins.match "[0-9a-f](40)" repo.tag
+        if builtins.match "[0-9a-f](40)" repo.tag != null
           then "rev"
           else "ref";
     in {
