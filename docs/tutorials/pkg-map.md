@@ -29,6 +29,23 @@ nixpkgs.overlays = [
 ];
 ```
 
+The user can map package(s) in Nixpkgs to a `pkgconfig-depends` name by
+overlaying the `haskell-nix.extraPkgconfigMappings` attribute:
+
+```nix
+nixpkgs.overlays = [
+  (self: super: {
+    haskell-nix = super.haskell-nix // {
+      extraPkgconfigMappings = super.haskell-nix.extraPkgconfigMappings // {
+          # String pkgconfig-depends names are mapped to lists of Nixpkgs
+          # package names
+          "SDL_gpu" = [ "SDL_gpu" ];
+      };
+    };
+  })
+];
+```
+
 ### Replace libraries of components
 
 If a component is missing a dependency it can be added via modules. For example:
@@ -59,7 +76,7 @@ the Haskell.nix sources, so that it's solved for all users.
   — for `build-tool-depends`, `frameworks`, `extra-libraries`, etc.
 
   Each name can be mapped to:
-  1. A single package from nixkpgs.
+  1. A single package from nixpkgs.
   2. `null` — eliminates the dependency
   3. A list of packages — sometimes needed for dependencies such as `X11`.
 
