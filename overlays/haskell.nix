@@ -258,7 +258,6 @@ final: prev: {
                   exit 0
                 '';
               };
-              # This is very big, and cheap to build: prefer building it locally
               tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
                 nativeBuildInputs = [ cabal-install dummy-ghc dummy-ghc-pkg ];
               } ''
