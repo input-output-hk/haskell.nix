@@ -735,75 +735,101 @@ final: prev: {
                   "Invalid package component name ${componentName}.  Expected package:ctype:component (where ctype is one of lib, flib, exe, test, or bench)";
                 (getPackage (builtins.elemAt m 0)).getComponent "${builtins.elemAt m 1}:${builtins.elemAt m 2}";
 
-            # Helper function that can be used to make a Nix Flake out of a project
-            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
-            # for an example flake.nix file.
-            # This flake function maps the build outputs to the flake `packages`,
-            # `checks` and `apps` output attributes.
-            flake = {
-                packages ? rawProject.args.flake.packages
-              , crossPlatforms ? rawProject.args.flake.crossPlatforms
-              }:
-              let packageNames = project: builtins.attrNames (packages project.hsPkgs);
-                  packagesForProject = prefix: project:
-                    final.lib.concatMap (packageName:
-                      let package = project.hsPkgs.${packageName};
-                      in final.lib.optional (package.components ? library)
-                            { name = "${prefix}${packageName}:lib:${packageName}"; value = package.components.library; }
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:lib:${n}"; value = v; })
-                          (package.components.sublibs)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:exe:${n}"; value = v; })
-                          (package.components.exes)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:test:${n}"; value = v; })
-                          (package.components.tests)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:bench:${n}"; value = v; })
-                          (package.components.benchmarks)
-                    ) (packageNames project);
-                  checksForProject = prefix: project:
-                    final.lib.concatMap (packageName:
-                      let package = project.hsPkgs.${packageName};
-                      in final.lib.mapAttrsToList (n: v:
-                          { name = "${prefix}${packageName}:test:${n}"; value = v; })
-                        (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
-                    ) (packageNames project);
-                  appsForProject =  prefix: project:
-                    final.lib.concatMap (packageName:
-                      let package = project.hsPkgs.${packageName};
-                      in final.lib.mapAttrsToList (n: v:
-                            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-                          (package.components.exes)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-                          (package.components.tests)
-                    ) (packageNames project);
-                attrsForAllProjects = f: builtins.listToAttrs (
-                    f "" project
-                  ++ final.lib.concatMap (project:
-                       f (project.pkgs.stdenv.hostPlatform.config + ":") project)
-                     (crossPlatforms project.projectCross)
-                  );
+            rawFlake =
+              let
+                packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
               in {
                 # Used by:
                 #   `nix build .#pkg-name:lib:pkg-name`
                 #   `nix build .#pkg-name:lib:sublib-name`
                 #   `nix build .#pkg-name:exe:exe-name`
                 #   `nix build .#pkg-name:test:test-name`
-                packages = attrsForAllProjects packagesForProject;
+                packages = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.optional (package.components ? library)
+                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:lib:${n}"; value = v; })
+                        (package.components.sublibs)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = v; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = v; })
+                        (package.components.tests)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:bench:${n}"; value = v; })
+                        (package.components.benchmarks)
+                  ) (packageNames project));
                 # Used by:
-                #   `nix check .#pkg-name:test:test-name`
-                checks = attrsForAllProjects checksForProject;
-                # Used by:
+                #   `nix flake check`
+                checks = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                        { name = "${packageName}:test:${n}"; value = v; })
+                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
+                  ) (packageNames project));
                 #   `nix run .#pkg-name:exe:exe-name`
                 #   `nix run .#pkg-name:test:test-name`
-                apps = attrsForAllProjects appsForProject;
-                # Used by:
-                #   `nix develop`
+                apps = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.tests)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.benchmarks)
+                  ) (packageNames project));
+                # Used by hydra:
+                hydraJobs.checks = rawFlake.checks;
+                hydraJobs.coverage =
+                  let
+                    coverageProject = project.appendModule [
+                      project.args.flake.coverage
+                      {
+                        modules = [{
+                          packages = final.lib.genAttrs (packageNames project)
+                            (_: { doCoverage = final.lib.mkDefault true; });
+                        }];
+                      }
+                    ];
+                  in  builtins.listToAttrs (final.lib.concatMap (packageName: [{
+                      name = packageName;
+                      value = coverageProject.hsPkgs.${packageName}.coverageReport;
+                    }]) (packageNames coverageProject));
+                devShells.default = project.shell;
                 devShell = project.shell;
               };
+            # Helper function that can be used to make a Nix Flake out of a project
+            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
+            # for an example flake.nix file.
+            # This flake function maps the build outputs to the flake `packages`,
+            # `checks` and `apps` output attributes.
+            flake' =
+              let
+                combinePrefix = a: b: if a == "default" then b else "${a}:${b}";
+                forAllCrossCompilers = prefix: project: (
+                    [{ ${prefix} = project.rawFlake; }]
+                  ++ (map (project: {
+                       ${combinePrefix prefix project.pkgs.stdenv.hostPlatform.config} = project.rawFlake;
+                      })
+                     (project.args.flake.crossPlatforms project.projectCross)
+                  ));
+                forAllVariants =
+                    forAllCrossCompilers "default" project
+                  ++ final.lib.concatLists (final.lib.mapAttrsToList
+                    (name: projectModule: forAllCrossCompilers name (project.appendModule projectModule))
+                     project.args.flake.variants);
+              in haskellLib.combineFlakes ":" (builtins.foldl' (a: b: a // b) {} forAllVariants);
+            flake = args: (project.appendModule { flake = args; }).flake';
+
+            inherit (rawProject) args;
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
           });
 
