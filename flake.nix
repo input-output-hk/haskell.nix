@@ -46,10 +46,6 @@
       url = "github:sevanspowell/hpc-coveralls";
       flake = false;
     };
-    nix-tools = {
-      url = "github:input-output-hk/nix-tools";
-      flake = false;
-    };
     old-ghc-nix = {
       url = "github:angerman/old-ghc-nix/master";
       flake = false;
