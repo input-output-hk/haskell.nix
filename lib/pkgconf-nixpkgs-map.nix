@@ -5583,7 +5583,7 @@ pkgs:
     "zzipfseeko" = [ "zziplib" ];
     "zziplib" = [ "zziplib" ];
     "zzipmmapped" = [ "zziplib" ];
-}) //
+} // pkgs.haskell-nix.extraPkgconfigMappings) //
   lookupAttrsIn pkgs.xorg {
     # Adding xlibsWrapper since it was used here beofre.
     # Putting libX11 first though so it can be used to get the version

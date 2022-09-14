@@ -11,6 +11,8 @@ final: prev: {
         # overlays.
         defaultModules = [];
 
+        # TODO: doc etc
+        extraPkgconfigMappings = {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
         # Or `nix-shell -p nixUnstable --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
