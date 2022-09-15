@@ -205,6 +205,55 @@ final: prev: {
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
+        # Dummy version of ghc to work around https://github.com/haskell/cabal/issues/8352
+        cabal-issue-8352-workaround = [
+          (final.writeTextFile {
+            name = "dummy-ghc";
+            executable = true;
+            destination = "/bin/ghc";
+            text = ''
+              #!${final.runtimeShell}
+              case "$*" in
+                --version*)
+                  echo 'The Glorious Glasgow Haskell Compilation System, version 8.10.7'
+                  ;;
+                --numeric-version*)
+                  echo '8.10.7'
+                  ;;
+                --supported-languages*)
+                  echo Haskell2010
+                  ;;
+                --info*)
+                  echo '[]'
+                  ;;
+                *)
+                  echo "Unknown argument '$*'" >&2
+                  exit 1
+                  ;;
+              esac
+              exit 0
+            '';
+          })
+          (final.writeTextFile {
+            name = "dummy-ghc";
+            executable = true;
+            destination = "/bin/ghc-pkg";
+            text = ''
+              #!${final.runtimeShell}
+              case "$*" in
+                --version*)
+                  echo 'GHC package manager version 8.10.7'
+                  ;;
+                *)
+                  echo "Unknown argument '$*'" >&2
+                  exit 1
+                  ;;
+              esac
+              exit 0
+            '';
+          })
+        ];
+
         dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
             let
               allTarballs = hackageTarball args // extra-hackage-tarballs;
@@ -212,54 +261,8 @@ final: prev: {
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
-              # Dummy version of ghc to work around https://github.com/haskell/cabal/issues/8352
-              dummy-ghc = final.writeTextFile {
-                name = "dummy-ghc";
-                executable = true;
-                destination = "/bin/ghc";
-                text = ''
-                  #!${final.runtimeShell}
-                  case "$*" in
-                    --version*)
-                      echo 'The Glorious Glasgow Haskell Compilation System, version 8.10.7'
-                      ;;
-                    --numeric-version*)
-                      echo '8.10.7'
-                      ;;
-                    --supported-languages*)
-                      echo Haskell2010
-                      ;;
-                    --info*)
-                      echo '[]'
-                      ;;
-                    *)
-                      echo "Unknown argument '$*'" >&2
-                      exit 1
-                      ;;
-                  esac
-                  exit 0
-                '';
-              };
-              dummy-ghc-pkg = final.writeTextFile {
-                name = "dummy-ghc";
-                executable = true;
-                destination = "/bin/ghc-pkg";
-                text = ''
-                  #!${final.runtimeShell}
-                  case "$*" in
-                    --version*)
-                      echo 'GHC package manager version 8.10.7'
-                      ;;
-                    *)
-                      echo "Unknown argument '$*'" >&2
-                      exit 1
-                      ;;
-                  esac
-                  exit 0
-                '';
-              };
               tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
-                nativeBuildInputs = [ cabal-install dummy-ghc dummy-ghc-pkg ];
+                nativeBuildInputs = [ cabal-install cabal-issue-8352-workaround ];
               } ''
                 set -xe
 
