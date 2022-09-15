@@ -16,7 +16,7 @@ in
 
     set -euo pipefail
 
-    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools cabal-install cabal-issue-8352-workaround nixFlakes ] ++ optional stdenv.isLinux glibc)}"
+    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools cabal-install nixFlakes ] ++ cabal-issue-8352-workaround ++ optional stdenv.isLinux glibc)}"
 
     ${script}
 

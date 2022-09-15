@@ -262,7 +262,7 @@ final: prev: {
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
               tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
-                nativeBuildInputs = [ cabal-install cabal-issue-8352-workaround ];
+                nativeBuildInputs = [ cabal-install ] ++ cabal-issue-8352-workaround;
               } ''
                 set -xe
 
