@@ -228,10 +228,10 @@ let
                   then throw "${inputMap.${repoData.url}.rev} may not match ${repoData.ref} for ${repoData.url} use \"${repoData.url}/${repoData.ref}\" as the inputMap key if ${repoData.ref} is a branch or tag that points to ${inputMap.${repoData.url}.rev}."
                   else inputMap.${repoData.url})
             else if repoData.sha256 != null
-              then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
+            then fetchgit { inherit (repoData) url sha256; rev = repoData.rev or repoData.ref; }
             else
-              let drv = builtins.fetchGit { inherit (repoData) url ref; };
-              in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
+              let drv = builtins.fetchGit { inherit (repoData) url ; rev = repoData.rev or repoData.ref; ref = repoData.ref or null; };
+              in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ref=${repoData.ref or "(unspecified)"} rev=${repoData.rev or "(unspecified)"} download may fail in restricted mode (hydra)"
                 (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a sha256map argument"
                  drv);
         in {
