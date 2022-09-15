@@ -49,7 +49,7 @@ in rec {
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
       cabal-install = haskell.internal-cabal-install;
-      inherit (haskell) update-index-state-hashes;
+      inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
@@ -57,6 +57,7 @@ in rec {
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
       cabal-install = haskell.internal-cabal-install;
+      inherit (haskell) cabal-issue-8352-workaround;
     };
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
