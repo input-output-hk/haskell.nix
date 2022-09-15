@@ -74,9 +74,15 @@ let
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
   # will be trated like a field and returned here
   # (used in call-cabal-project-to-nix.nix to create a fixed-output derivation)
-  extractSourceRepoPackageData = cabalProjectFileName: sha256map: repo: {
+  extractSourceRepoPackageData = cabalProjectFileName: sha256map: repo:
+    let
+      refOrRev =
+        if builtins.match "[0-9a-f](40)" repo.tag != null
+          then "rev"
+          else "ref";
+    in {
     url = repo.location;
-    ref = repo.tag;
+    "${refOrRev}" = repo.tag;
     sha256 = repo."--sha256" or (
       if sha256map != null
         then sha256map."${repo.location}"."${repo.tag}"
