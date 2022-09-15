@@ -1,6 +1,6 @@
 index-state: 2022-07-25T00:00:00Z
 
-packages: .
+packages: ./nix-tools
 
 allow-newer: hackage-db:Cabal, hpack:Cabal
 

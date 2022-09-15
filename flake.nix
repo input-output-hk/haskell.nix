@@ -46,6 +46,7 @@
       url = "github:sevanspowell/hpc-coveralls";
       flake = false;
     };
+    nix-tools = { url = "path:./nix-tools"; };
     old-ghc-nix = {
       url = "github:angerman/old-ghc-nix/master";
       flake = false;
@@ -140,7 +141,6 @@
             nixUnstable
             cabal-install
             haskell-nix.compiler.${compiler}
-            haskell-nix.nix-tools.${compiler}
           ];
         };
     });

@@ -918,7 +918,7 @@ in {
           final.haskell-nix.cabalProject ({pkgs, ...}: {
             evalPackages = pkgs.buildPackages;
             name = "nix-tools";
-            src = ../nix-tools;
+            src = ./..;
             # This is a handy way to use a local git clone of nix-tools when developing
             # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
             cabalProjectLocal = ''

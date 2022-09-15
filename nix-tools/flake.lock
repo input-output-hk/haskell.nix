@@ -101,6 +101,21 @@
     },
     "flake-utils": {
       "locked": {
+        "lastModified": 1659877975,
+        "narHash": "sha256-zllb8aq3YO3h8B/U0/J1WBgAL8EX5yWf5pMj3G0NAmc=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "c0e246b9b83f637f4681389ecabcb2681b4f3af0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_2": {
+      "locked": {
         "lastModified": 1644229661,
         "narHash": "sha256-1YdnJAsNy69bpcjuoKdOYQX0YxZBiCYZo4Twxerqv7k=",
         "owner": "numtide",
@@ -147,6 +162,45 @@
         "type": "github"
       }
     },
+    "haskellNix": {
+      "inputs": {
+        "HTTP": "HTTP",
+        "cabal-32": "cabal-32",
+        "cabal-34": "cabal-34",
+        "cabal-36": "cabal-36",
+        "cardano-shell": "cardano-shell",
+        "flake-compat": "flake-compat",
+        "flake-utils": "flake-utils_2",
+        "ghc-8.6.5-iohk": "ghc-8.6.5-iohk",
+        "hackage": "hackage",
+        "hpc-coveralls": "hpc-coveralls",
+        "hydra": "hydra",
+        "nixpkgs": [
+          "haskellNix",
+          "nixpkgs-unstable"
+        ],
+        "nixpkgs-2003": "nixpkgs-2003",
+        "nixpkgs-2105": "nixpkgs-2105",
+        "nixpkgs-2111": "nixpkgs-2111",
+        "nixpkgs-2205": "nixpkgs-2205",
+        "nixpkgs-unstable": "nixpkgs-unstable",
+        "old-ghc-nix": "old-ghc-nix",
+        "stackage": "stackage"
+      },
+      "locked": {
+        "lastModified": 1663222323,
+        "narHash": "sha256-MB79wFfJtjJlZWN5vqsA5UdC1He2AkFB52uAnC3bkl4=",
+        "owner": "input-output-hk",
+        "repo": "haskell.nix",
+        "rev": "05c20120f548a24c53d6e0856abab8aff83add8b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "repo": "haskell.nix",
+        "type": "github"
+      }
+    },
     "hpc-coveralls": {
       "flake": false,
       "locked": {
@@ -167,6 +221,7 @@
       "inputs": {
         "nix": "nix",
         "nixpkgs": [
+          "haskellNix",
           "hydra",
           "nix",
           "nixpkgs"
@@ -220,19 +275,6 @@
         "ref": "2.6.0",
         "repo": "nix",
         "type": "github"
-      }
-    },
-    "nix-tools": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1,
-        "narHash": "sha256-pqNsBhQkO/nT991ASoSXsn07P7lNqpTP0wIV85wft30=",
-        "path": "./nix-tools",
-        "type": "path"
-      },
-      "original": {
-        "path": "./nix-tools",
-        "type": "path"
       }
     },
     "nixpkgs": {
@@ -364,28 +406,12 @@
     },
     "root": {
       "inputs": {
-        "HTTP": "HTTP",
-        "cabal-32": "cabal-32",
-        "cabal-34": "cabal-34",
-        "cabal-36": "cabal-36",
-        "cardano-shell": "cardano-shell",
-        "flake-compat": "flake-compat",
         "flake-utils": "flake-utils",
-        "ghc-8.6.5-iohk": "ghc-8.6.5-iohk",
-        "hackage": "hackage",
-        "hpc-coveralls": "hpc-coveralls",
-        "hydra": "hydra",
-        "nix-tools": "nix-tools",
+        "haskellNix": "haskellNix",
         "nixpkgs": [
+          "haskellNix",
           "nixpkgs-unstable"
-        ],
-        "nixpkgs-2003": "nixpkgs-2003",
-        "nixpkgs-2105": "nixpkgs-2105",
-        "nixpkgs-2111": "nixpkgs-2111",
-        "nixpkgs-2205": "nixpkgs-2205",
-        "nixpkgs-unstable": "nixpkgs-unstable",
-        "old-ghc-nix": "old-ghc-nix",
-        "stackage": "stackage"
+        ]
       }
     },
     "stackage": {
