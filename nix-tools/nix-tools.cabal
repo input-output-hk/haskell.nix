@@ -207,7 +207,6 @@ executable install-plan
   main-is:             InstallPlan.hs
   build-depends:       base
                      , bytestring
-                     , directory
                      , filepath
                      , Cabal         >= 3.8
                      , Cabal-syntax  >= 3.8
