@@ -134,15 +134,24 @@
 
       packages = ((self.internal.compat { inherit system; }).hix).apps;
 
-      devShells.default = with self.legacyPackages.${system};
-        mkShell {
-          buildInputs = [
-            nixUnstable
-            cabal-install
-            haskell-nix.compiler.${compiler}
-            haskell-nix.nix-tools.${compiler}
-          ];
-        };
+      devShells = with self.legacyPackages.${system}; {
+        default =
+          mkShell {
+            buildInputs = [
+              nixUnstable
+              cabal-install
+              haskell-nix.compiler.${compiler}
+              haskell-nix.nix-tools.${compiler}
+            ];
+          };
+      } // __mapAttrs (compiler-nix-name: compiler:
+          mkShell {
+            buildInputs = [
+              compiler
+              haskell-nix.cabal-install.${compiler-nix-name}
+            ];
+          }
+      ) haskell-nix.compiler;
     });
 
   # --- Flake Local Nix Configuration ----------------------------
