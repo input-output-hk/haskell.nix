@@ -7,14 +7,14 @@ let
   hello = pkgs.haskell-nix.materialize { materialized = null; } (pkgs.runCommand "hello" {} ''
       echo ${n}
       echo EVENT start hello
-      sleep 2
+      sleep 5
       echo EVENT end hello
       echo hello > $out
     '');
   world = pkgs.haskell-nix.materialize { materialized = null; } (pkgs.runCommand "world" {} ''
       echo ${n}
       echo EVENT start world
-      sleep 3
+      sleep 15
       echo EVENT end world
       echo world > $out
     '');
