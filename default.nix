@@ -12,7 +12,7 @@ let
   pkgs = args.pkgs or (import nixpkgsSrc {});
   flake-compat =
     pkgs.fetchzip {
-      url = "https://github.com/edolstra/flake-compat/archive/{flakeCompatPin.rev}.tar.gz";
+      url = "https://github.com/input-output-hk/flake-compat/archive/${flakeCompatPin.rev}.tar.gz";
       sha256 = flakeCompatPin.narHash;
     };
   self = import flake-compat {

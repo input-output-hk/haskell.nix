@@ -74,9 +74,15 @@ let
   #   --shar256: 003lm3pm0000hbfmii7xcdd9v20000flxf7gdl2pyxia7p014i8z
   # will be trated like a field and returned here
   # (used in call-cabal-project-to-nix.nix to create a fixed-output derivation)
-  extractSourceRepoPackageData = cabalProjectFileName: sha256map: repo: {
+  extractSourceRepoPackageData = cabalProjectFileName: sha256map: repo:
+    let
+      refOrRev =
+        if builtins.match "[0-9a-f](40)" repo.tag != null
+          then "rev"
+          else "ref";
+    in {
     url = repo.location;
-    ref = repo.tag;
+    "${refOrRev}" = repo.tag;
     sha256 = repo."--sha256" or (
       if sha256map != null
         then sha256map."${repo.location}"."${repo.tag}"
@@ -139,7 +145,7 @@ let
       repoContents = if inputMap ? ${attrs.url}
         # If there is an input use it to make `file:` url and create a suitable `.cabal/packages/${name}` directory
         then evalPackages.runCommand name ({
-          nativeBuildInputs = [ cabal-install ];
+          nativeBuildInputs = [ cabal-install ] ++ evalPackages.haskell-nix.cabal-issue-8352-workaround;
           preferLocalBuild = true;
         }) ''
             HOME=$(mktemp -d)
@@ -156,7 +162,7 @@ let
             cp -r $HOME/.cabal/packages/${name} $out
         ''
         else evalPackages.runCommand name ({
-          nativeBuildInputs = [ cabal-install evalPackages.curl nix-tools ];
+          nativeBuildInputs = [ cabal-install evalPackages.curl nix-tools ] ++ evalPackages.haskell-nix.cabal-issue-8352-workaround;
           LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
           LANG = "en_US.UTF-8";
           preferLocalBuild = true;

@@ -201,7 +201,7 @@
         "these".flags.assoc = true;
         "split".revision = (((hackage."split")."0.2.3.4").revisions).default;
         "base-orphans".revision = (((hackage."base-orphans")."0.8.6").revisions).default;
-        "saltine".revision = (((hackage."saltine")."0.2.0.1").revisions).default;
+        "saltine".revision = (((hackage."saltine")."0.0.1.0").revisions).default;
         "time-compat".revision = (((hackage."time-compat")."1.9.6.1").revisions).default;
         "time-compat".flags.old-locale = false;
         "primitive".revision = (((hackage."primitive")."0.7.3.0").revisions).default;

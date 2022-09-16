@@ -18,7 +18,7 @@
         "ed25519".flags.test-doctests = true;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
         "base64-bytestring".revision = (((hackage."base64-bytestring")."1.2.1.0").revisions).default;
-        "network".revision = (((hackage."network")."3.1.2.5").revisions).default;
+        "network".revision = (((hackage."network")."3.1.2.7").revisions).default;
         "network".flags.devel = false;
         "resolv".revision = (((hackage."resolv")."0.1.2.0").revisions).default;
         "echo".revision = (((hackage."echo")."0.1.4").revisions).default;
@@ -33,14 +33,14 @@
         "bytestring".revision = (((hackage."bytestring")."0.10.10.1").revisions).default;
         "lukko".revision = (((hackage."lukko")."0.1.1.3").revisions).default;
         "lukko".flags.ofd-locking = true;
-        "zlib".revision = (((hackage."zlib")."0.6.2.3").revisions).default;
+        "zlib".revision = (((hackage."zlib")."0.6.3.0").revisions).default;
         "zlib".flags.non-blocking-ffi = false;
         "zlib".flags.bundled-c-zlib = false;
         "zlib".flags.pkg-config = false;
         "tar".revision = (((hackage."tar")."0.5.1.1").revisions).default;
         "tar".flags.old-bytestring = false;
         "tar".flags.old-time = false;
-        "th-compat".revision = (((hackage."th-compat")."0.1.3").revisions).default;
+        "th-compat".revision = (((hackage."th-compat")."0.1.4").revisions).default;
         "filepath".revision = (((hackage."filepath")."1.4.2.1").revisions).default;
         "stm".revision = (((hackage."stm")."2.5.0.0").revisions).default;
         "ghc-prim".revision = (((hackage."ghc-prim")."0.5.3").revisions).default;
@@ -50,7 +50,7 @@
         "async".revision = (((hackage."async")."2.2.4").revisions).default;
         "async".flags.bench = false;
         "random".revision = (((hackage."random")."1.1").revisions).default;
-        "hackage-security".revision = (((hackage."hackage-security")."0.6.0.1").revisions).default;
+        "hackage-security".revision = (((hackage."hackage-security")."0.6.1.0").revisions).default;
         "hackage-security".flags.base48 = true;
         "hackage-security".flags.lukko = true;
         "hackage-security".flags.use-network-uri = true;

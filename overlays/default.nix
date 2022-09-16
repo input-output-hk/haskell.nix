@@ -21,6 +21,7 @@ let
     gobject-introspection = import ./gobject-introspection.nix;
     hix = import ./hix.nix;
     ghcjs = import ./ghcjs.nix;
+    cabalPkgConfig = import ./cabal-pkg-config.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -51,6 +52,7 @@ let
     emscripten
     nix-prefetch-git-minimal
     ghcjs
+    cabalPkgConfig
     gobject-introspection
     hix
     hydra

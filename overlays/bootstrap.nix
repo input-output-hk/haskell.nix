@@ -900,13 +900,12 @@ in {
     # always has `checkMaterialization = false` to avoid infinite
     # recursion.
     cabal-install-tool = {compiler-nix-name, ...}@args:
-      (final.haskell-nix.hackage-package ({pkgs, ...}: {
+      (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
-        name = "cabal-install";
-        version = "3.6.2.0";
+        version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
-      } // args)).getComponent "exe:cabal";
+      } // args));
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
         # Until all the dependencies build with 9.0.1 we will have to avoid
@@ -919,14 +918,7 @@ in {
           final.haskell-nix.cabalProject ({pkgs, ...}: {
             evalPackages = pkgs.buildPackages;
             name = "nix-tools";
-            src = {
-              outPath = final.haskell-nix.sources.nix-tools;
-              # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
-              # Disable filtering keeps pre ond post nix 2.4 behaviour the same.  This means that
-              # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
-              # that `tools` in the shell will be built the same.
-              filterPath = { path, ... }: path;
-            };
+            src = ../nix-tools;
             # This is a handy way to use a local git clone of nix-tools when developing
             # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
             cabalProjectLocal = ''
