@@ -964,7 +964,7 @@ in {
             "truncate-index"
             "stack-repos"
             "cabal-name"
-            "install-plan"
+            "make-install-plan"
           ]) ++ [
             (project.getComponent "hpack:exe:hpack")
           ];

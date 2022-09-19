@@ -202,15 +202,14 @@ executable cabal-name
   hs-source-dirs:      cabal-name
   default-language:    Haskell2010
 
-executable install-plan
+executable make-install-plan
   ghc-options:         -Wall
-  main-is:             InstallPlan.hs
+  main-is:             MakeInstallPlan.hs
   build-depends:       base
                      , bytestring
                      , filepath
                      , Cabal         >= 3.8
                      , Cabal-syntax  >= 3.8
                      , cabal-install >= 3.8
-                     , optparse-applicative
-  hs-source-dirs:      install-plan
+  hs-source-dirs:      make-install-plan
   default-language:    Haskell2010

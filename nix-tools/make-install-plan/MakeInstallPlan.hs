@@ -1,18 +1,18 @@
-{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-import Control.Monad (join)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Foldable (for_)
 import Distribution.Client.Config (getCabalDir)
 import Distribution.Client.DistDirLayout
   ( CabalDirLayout,
-    DistDirLayout (distProjectCacheFile),
+    DistDirLayout (..),
     defaultDistDirLayout,
     mkCabalDirLayout,
   )
+import Distribution.Client.GlobalFlags
 import Distribution.Client.HttpUtils (configureTransport)
 import qualified Distribution.Client.InstallPlan as InstallPlan
+import Distribution.Client.NixStyleOptions (NixStyleFlags (..), defaultNixStyleFlags, nixStyleOptions)
 import Distribution.Client.ProjectConfig
 import Distribution.Client.ProjectPlanOutput (writePlanExternalRepresentation)
 import Distribution.Client.ProjectPlanning
@@ -25,42 +25,53 @@ import Distribution.Client.ProjectPlanning
     rebuildInstallPlan,
     rebuildProjectConfig,
   )
+import Distribution.Client.Setup
 import Distribution.Compat.Directory (makeAbsolute)
 import Distribution.Package (pkgName)
-import Distribution.Parsec (eitherParsec)
 import Distribution.Pretty (prettyShow)
+import Distribution.Simple.Command
 import Distribution.Simple.Flag
 import qualified Distribution.Simple.Utils as Cabal
 import Distribution.Verbosity (Verbosity, moreVerbose)
 import qualified Distribution.Verbosity as Verbosity
-import Options.Applicative
+import System.Environment (getArgs)
 import System.FilePath
 
 main :: IO ()
-main =
-  join $
-    execParser $
-      info
-        (optionsParser <**> helper)
-        (fullDesc <> progDesc "Extracts a cabal install plan")
-  where
-    optionsParser = do
-      verbosity <-
-        option
-          (eitherReader eitherParsec)
-          ( long "verbosity"
-              <> metavar "VERBOSITY"
-              <> value Verbosity.normal
-              <> help "Verbosity"
-          )
-      inputDir <- optional (argument str (metavar "INPUT-DIR"))
-      outputDir <- argument str (metavar "OUTPUT-DIR" <> value "./out")
-      pure $ doMain verbosity inputDir outputDir
+main = do
+  args <- getArgs
+  case commandParseArgs cmdUI True args of
+    CommandHelp help -> putStrLn (help "something")
+    CommandList opts -> putStrLn $ "commandList" ++ show opts
+    CommandErrors errs -> putStrLn $ "commandErrors: " ++ show errs
+    CommandReadyToGo (mkflags, _commandParse) ->
+      let globalFlags = defaultGlobalFlags
+          flags@NixStyleFlags {configFlags} = mkflags (commandDefaultFlags cmdUI)
+          verbosity = fromFlagOrDefault Verbosity.normal (configVerbosity configFlags)
+          cliConfig = commandLineFlagsToProjectConfig globalFlags flags mempty
+       in installPlanAction verbosity cliConfig
 
-doMain :: Verbosity -> Maybe FilePath -> [Char] -> IO ()
-doMain verbosity inputDir outputDir = do
-  Right projectRoot <- findProjectRoot inputDir Nothing
-  let distDirLayout = defaultDistDirLayout projectRoot (Just outputDir)
+cmdUI :: CommandUI (NixStyleFlags ())
+cmdUI =
+  CommandUI
+    { commandName = "",
+      commandSynopsis = "Makes an install-plan",
+      commandUsage = ("Usage: " ++),
+      commandDescription = Nothing,
+      commandNotes = Nothing,
+      commandDefaultFlags = defaultNixStyleFlags (),
+      commandOptions = nixStyleOptions (const [])
+    }
+
+installPlanAction :: Verbosity -> ProjectConfig -> IO ()
+installPlanAction verbosity cliConfig = do
+  let ProjectConfigShared {projectConfigDistDir, projectConfigProjectFile} = projectConfigShared cliConfig
+  let mProjectFile = flagToMaybe projectConfigProjectFile
+  let mdistDirectory = flagToMaybe projectConfigDistDir
+
+  Right projectRoot <- findProjectRoot Nothing mProjectFile
+
+  let distDirLayout = defaultDistDirLayout projectRoot mdistDirectory
 
   httpTransport <- configureTransport verbosity mempty mempty
 
@@ -71,7 +82,7 @@ doMain verbosity inputDir outputDir = do
       (moreVerbose verbosity)
       httpTransport
       distDirLayout
-      mempty
+      cliConfig
 
   cabalDirLayout <- cabalDirLayoutFromProjectConfig projectConfig
 
@@ -83,18 +94,16 @@ doMain verbosity inputDir outputDir = do
   (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, _tis, _at) <-
     rebuildInstallPlan verbosity distDirLayout cabalDirLayout projectConfig localPackages
 
-  putStrLn $ "Writing detailed plan to " ++ outputDir
-
-  Cabal.notice verbosity $ "Writing plan.json to" ++ distProjectCacheFile distDirLayout "plan.json"
+  Cabal.notice verbosity $ "Writing plan.json to " ++ distProjectCacheFile distDirLayout "plan.json"
   writePlanExternalRepresentation distDirLayout elaboratedPlan elaboratedSharedConfig
 
-  let cabalFreezeFile = outputDir </> "cabal.project.freeze"
-  Cabal.notice verbosity $ "Wrote freeze file: " ++ cabalFreezeFile
+  let cabalFreezeFile = distProjectFile distDirLayout "freeze"
+  Cabal.notice verbosity $ "Wrote freeze file to " ++ cabalFreezeFile
   writeProjectConfigFile cabalFreezeFile projectConfig
 
-  let cabalFilesDir = outputDir </> "cabal-files"
+  let cabalFilesDir = distDirectory distDirLayout </> "cabal-files"
   Cabal.createDirectoryIfMissingVerbose verbosity True cabalFilesDir
-  Cabal.notice verbosity $ "Writing cabal files to" ++ cabalFilesDir
+  Cabal.notice verbosity $ "Writing cabal files to " ++ cabalFilesDir
 
   let ecps = [ecp | InstallPlan.Configured ecp <- InstallPlan.toList elaboratedPlan, not $ elabLocalToProject ecp]
 
@@ -115,7 +124,6 @@ cabalDirLayoutFromProjectConfig
       projectConfigShared = ProjectConfigShared {projectConfigStoreDir}
     } = do
     cabalDir <- getCabalDir
-
     let mlogsDir = flagToMaybe projectConfigLogsDir
     mstoreDir <- sequenceA $ makeAbsolute <$> flagToMaybe projectConfigStoreDir
     return $ mkCabalDirLayout cabalDir mstoreDir mlogsDir

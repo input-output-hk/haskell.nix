@@ -230,7 +230,7 @@
           hsSourceDirs = [ "cabal-name" ];
           mainPath = [ "Main.hs" ];
           };
-        "install-plan" = {
+        "make-install-plan" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
@@ -238,11 +238,10 @@
             (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
             (hsPkgs."Cabal-syntax" or (errorHandler.buildDepError "Cabal-syntax"))
             (hsPkgs."cabal-install" or (errorHandler.buildDepError "cabal-install"))
-            (hsPkgs."optparse-applicative" or (errorHandler.buildDepError "optparse-applicative"))
             ];
           buildable = true;
-          hsSourceDirs = [ "install-plan" ];
-          mainPath = [ "InstallPlan.hs" ];
+          hsSourceDirs = [ "make-install-plan" ];
+          mainPath = [ "MakeInstallPlan.hs" ];
           };
         };
       };

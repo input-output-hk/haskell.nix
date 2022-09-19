@@ -463,8 +463,8 @@
           "asn1-types".components.library.planned = lib.mkOverride 900 true;
           "hashing".components.library.planned = lib.mkOverride 900 true;
           "bitvec".components.library.planned = lib.mkOverride 900 true;
+          "nix-tools".components.exes."make-install-plan".planned = lib.mkOverride 900 true;
           "lifted-base".components.library.planned = lib.mkOverride 900 true;
-          "nix-tools".components.exes."install-plan".planned = lib.mkOverride 900 true;
           "unliftio-core".components.library.planned = lib.mkOverride 900 true;
           "yaml".components.library.planned = lib.mkOverride 900 true;
           "indexed-traversable".components.library.planned = lib.mkOverride 900 true;
