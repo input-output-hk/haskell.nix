@@ -267,7 +267,8 @@ stdenv.mkDerivation (rec {
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-        "--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
+        # FIXME The host ncurses is required for cross-compilation on Darwin x86-64 to RPi (though not required on Linux x86-64 to RPi).
+        "--with-curses-includes=${ncurses.dev}/include" "--with-curses-libraries=${ncurses.out}/lib"
     ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
     ] ++ lib.optional (!enableIntegerSimple) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
