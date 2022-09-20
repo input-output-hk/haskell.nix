@@ -343,4 +343,54 @@ in {
   projectOverlays = import ./project-overlays.nix {
     inherit lib haskellLib;
   };
+  
+  # Use by `prefixFlake` to add a prefix to every attribute
+  prefixAttrs = prefix: x:
+    __listToAttrs (map (n:{
+      name = prefix + n;
+      value = x.${n};
+    }) (__attrNames x));
+
+  # Used by `combineFlakes` to add the prefix to each flake
+  prefixFlake = prefix: sep: flake:
+    if prefix == "default"
+      then flake
+      else
+        __mapAttrs (_: prefixAttrs (prefix + sep)) flake //
+        lib.optionalAttrs (flake ? devShell) {
+          # We can't add the prefix to this
+          inherit (flake) devShell;
+        } // lib.optionalAttrs (flake ? devShells) {
+          devShells = __listToAttrs (map (n: {
+            # We don't want ":default" on the end of the non
+            # default dev shells
+            name = if n == "default"
+              then prefix
+              else prefix + sep + n;
+            value = flake.devShells.${n};
+          }) (__attrNames flake.devShells));
+        } // lib.optionalAttrs (flake ? hydraJobs) {
+          hydraJobs.${lib.removeSuffix ":" prefix} = flake.hydraJobs;
+        };
+
+  # Used by `combineFlakes` to combine flakes together
+  addFlakes = a: b:
+    __listToAttrs (map (name: {
+      inherit name;
+      value =
+        # This favours the first item (`a`) in the case of duplicates
+        # so that `combineFlakes` will use the first flake in the
+        # list for `devShell`.
+        if name == "devShell"
+          then a.devShell or b.devShell # `devShell` is a derivation
+        else
+          (b.${name} or {}) // (a.${name} or {});
+    }) (__attrNames (a // b)));
+
+  # This function can combine a list of flakes allong with
+  # suitable prefix values into a single flake.
+  # Since thre is no way to add a prefix to `devShell`, the first
+  # one in the list will be used.
+  combineFlakes = sep: prefixAndFlakes: builtins.foldl' addFlakes {}
+    (lib.mapAttrsToList (prefix: flake: prefixFlake prefix sep flake) prefixAndFlakes);
 }
