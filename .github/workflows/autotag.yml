@@ -1,16 +1,16 @@
+name: "Add version tag"
 on:
   push:
     branches:
-    - master
-
+      - master
 jobs:
   tag:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version:
-        - 12
+          - 12
     steps:
-    - uses: phish108/autotag-action@1.1.52
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: phish108/autotag-action@1.1.52
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
