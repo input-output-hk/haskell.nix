@@ -153,3 +153,7 @@ steps:
     agents:
       system: x86_64-linux
 
+  - label: 'nix-tools build'
+    command: cd ./nix-tools && .buildkite/nix-tools-build.sh
+    agents:
+      system: x86_64-linux
