@@ -32,6 +32,13 @@ in rec {
             "ghc882" = "3.3.6";
             "ghc883" = "3.3.6";
             "ghc884" = "3.3.6";
+            "ghc8101" = "3.4.1";
+            "ghc8102" = "3.4.1";
+            "ghc8103" = "3.4.1";
+            "ghc8104" = "3.4.1";
+            "ghc8105" = "3.4.1";
+            "ghc8106" = "3.4.1";
+            "ghc8107" = "3.4.1";
           }.compiler-nix-name or "latest";
       };
       hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
