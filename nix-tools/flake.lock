@@ -175,6 +175,7 @@
         "hackage": "hackage",
         "hpc-coveralls": "hpc-coveralls",
         "hydra": "hydra",
+        "nix-tools": "nix-tools",
         "nixpkgs": [
           "haskellNix",
           "nixpkgs-unstable"
@@ -188,11 +189,11 @@
         "stackage": "stackage"
       },
       "locked": {
-        "lastModified": 1663809447,
-        "narHash": "sha256-P0lrcUhJB4DJcRrwIs/RZmJjtrBLwIq5My+NnBYyTF4=",
+        "lastModified": 1663927102,
+        "narHash": "sha256-+lsX/hlD6jJYiLD1OD+b26Xlhm0VNLdOgGQ8SKi3Xxw=",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "a2cbbba6be37fc1597920ad7f0fa04b2ca2f31c2",
+        "rev": "acf063a75aead55a79b69639de26dd5c921030e0",
         "type": "github"
       },
       "original": {
@@ -275,6 +276,19 @@
         "ref": "2.6.0",
         "repo": "nix",
         "type": "github"
+      }
+    },
+    "nix-tools": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1,
+        "narHash": "sha256-pqNsBhQkO/nT991ASoSXsn07P7lNqpTP0wIV85wft30=",
+        "path": "./nix-tools",
+        "type": "path"
+      },
+      "original": {
+        "path": "./nix-tools",
+        "type": "path"
       }
     },
     "nixpkgs": {
