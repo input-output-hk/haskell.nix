@@ -1,6 +1,6 @@
 {
   # This is a template created by `hix init`
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/1674-use-nix-flakes-rather-than-niv-to-pin-dependencies";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
   outputs = { self, nixpkgs, flake-utils, haskellNix }:
