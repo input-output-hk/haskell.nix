@@ -5,26 +5,28 @@
   inputs.flake-utils.url = "github:numtide/flake-utils";
   outputs = { self, nixpkgs, flake-utils, haskellNix }:
     let
-      supportedSystems = [
-        "x86_64-linux"
-        "x86_64-darwin"
-        "aarch64-linux"
-        "aarch64-darwin"
-      ];
+      ci = (builtins.fromTOML (__readFile ./ci.toml)).dimensions;
     in
-      flake-utils.lib.eachSystem supportedSystems (system:
+      flake-utils.lib.eachSystem ci.os (system:
       let
+        compilers = builtins.filter
+          (x: !__elem "${system}.${x}" ci.disable)
+          (ci.compiler);
         overlays = [ haskellNix.overlay
           (final: prev: {
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;
-                evalSystem = "x86_64-linux";
+                evalSystem = "x86_64-darwin";
+                compiler-nix-name = __head compilers;
               };
           })
         ];
         pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-        flake = pkgs.hixProject.flake {};
+        flake = pkgs.hixProject.flake {
+          variants = pkgs.lib.genAttrs (__tail compilers)
+            (x: { compiler-nix-name = pkgs.lib.mkForce x; });
+        };
       in flake // {
         legacyPackages = pkgs;
       });

@@ -790,6 +790,10 @@ final: prev: {
                   ) (packageNames project));
                 # Used by hydra:
                 hydraJobs.checks = rawFlake.checks;
+                # Build the plan and check it if materialized
+                hydraJobs.plan-nix = (project.appendModule { checkMaterialization = true; }).plan-nix;
+                # Build tools and cache tools needed for the project
+                hydraJobs.roots = project.roots;
                 hydraJobs.coverage =
                   let
                     coverageProject = project.appendModule [
