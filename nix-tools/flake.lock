@@ -189,15 +189,16 @@
         "stackage": "stackage"
       },
       "locked": {
-        "lastModified": 1663927102,
-        "narHash": "sha256-+lsX/hlD6jJYiLD1OD+b26Xlhm0VNLdOgGQ8SKi3Xxw=",
+        "lastModified": 1663927672,
+        "narHash": "sha256-mAONsFFU6HVewGVel3tlSkWcZyp0ou2hBzkFfgC6HPQ=",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "acf063a75aead55a79b69639de26dd5c921030e0",
+        "rev": "c1ce891c74b49b3c3a07fcd8e707525b8e4407d4",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "1674-use-nix-flakes-rather-than-niv-to-pin-dependencies",
         "repo": "haskell.nix",
         "type": "github"
       }
