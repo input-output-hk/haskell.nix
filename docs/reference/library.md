@@ -15,7 +15,7 @@ test things.
 The result of `mkPkgSet`. This is an application of the NixOS module
 system.
 
-```
+```nix
 {
   options = { ... };
   config = {
@@ -64,7 +64,7 @@ In [Haskell.nix][], a _Haskell package_ is a derivation which has a
 package `Setup.hs` script, and isn't very interesting. To actually use
 the package, look within the components structure.
 
-```
+```nix
 components = {
   library = COMPONENT;
   exes = { NAME = COMPONENT; };
@@ -304,7 +304,7 @@ The result is an attrset with the following values:
 
 ## cleanSourceHaskell
 
-```
+```nix
 cleanSourceHaskell = { src, name ? null }: ...
 ```
 
@@ -318,7 +318,7 @@ remains constant regardless of how it was fetched.
 
 Example:
 
-```
+```nix
 src = pkgs.haskell-nix.cleanSourceHaskell {
   src = ./.;
   name = "myproject-src";
@@ -327,7 +327,7 @@ src = pkgs.haskell-nix.cleanSourceHaskell {
 
 ## haskellSourceFilter
 
-```
+```nix
 haskellSourceFilter = name: type: ...
 ```
 
@@ -355,7 +355,7 @@ want to run the tests as well as build them).
 `collectComponents'` is an alias of `collectComponents` without
 predicate for filtering.
 
-```
+```nix
 collectComponents =
     group: packageSel: haskellPackages: ...
 collectComponents' = group: collectComponents (_: true)
@@ -422,7 +422,7 @@ Create a `nix-shell` [development
 environment](../tutorials/development.md) for developing one or more
 packages with `ghci` or `cabal v2-build` (but not Stack).
 
-```
+```nix
 shellFor =
     { packages, withHoogle ? true, exactDeps ? false, ...}: ...
 ```
@@ -442,13 +442,13 @@ shellFor =
 
 **Return value**: a derivation
 
-!!! warning
-
-    `exactDeps = true` will set the `CABAL_CONFIG` environment variable
-    to disable remote package servers. This is a
-    [known limitation](../dev/removing-with-package-wrapper.md)
-    which we would like to solve. Use `exactDeps = false` if this is a
-    problem.
+> ⚠️ **Warning:**
+>
+> `exactDeps = true` will set the `CABAL_CONFIG` environment variable
+> to disable remote package servers. This is a
+> [known limitation](../dev/removing-with-package-wrapper.md)
+> which we would like to solve. Use `exactDeps = false` if this is a
+> problem.
 
 
 ## ghcWithPackages
@@ -463,7 +463,7 @@ packages selected from this package set.
 
 **Example**:
 
-```
+```nix
 haskell.haskellPackages.ghcWithPackages (ps: with ps; [ lens conduit ])
 ```
 

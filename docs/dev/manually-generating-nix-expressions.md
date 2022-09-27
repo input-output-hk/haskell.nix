@@ -19,62 +19,19 @@ Let us assume for now that we have already generated a `pkgs.nix`
 expression (see the links bellow). The following file then produces a package set:
 
 ```nix
-# default.nix
-let
-  # Import the Haskell.nix library,
-  pkgs = import <nixpkgs> (import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {}).nixpkgsArgs;
-
-  # Import the file you will create in the stack-to-nix or cabal-to-nix step.
-  my-pkgs = import ./pkgs.nix;
-
-  # Stack projects use this:
-  pkgSet = pkgs.haskell-nix.mkStackPkgSet {
-    stack-pkgs = my-pkgs;
-    pkg-def-extras = [
-      # these extras will provide additional packages
-      # ontop of the package set.  E.g. extra-deps
-      # for stack packages. or local packages for
-      # cabal.projects
-    ];
-    modules = [
-      # specific package overrides would go here
-      # example:
-      #  packages.cbors.package.ghcOptions = "-Werror";
-      #  packages.cbors.patches = [ ./one.patch ];
-      #  packages.cbors.flags.optimize-gmp = false;
-      # It may be better to set flags in stack.yaml instead
-      # (`stack-to-nix` will include them as defaults).
-    ];
-  };
-
-  # Cabal projects use this:
-  pkgSet = pkgs.haskell-nix.mkCabalProjectPkgSet {
-    plan-pkgs = my-pkgs;
-    pkg-def-extras = [];
-    modules = [
-      # specific package overrides would go here
-      # example:
-      #  packages.cbors.package.ghcOptions = "-Werror";
-      #  packages.cbors.patches = [ ./one.patch ];
-      #  packages.cbors.flags.optimize-gmp = false;
-      # It may be better to set flags in `cabal.project` instead
-      # (`plan-to-nix` will include them as defaults).
-    ];
-  };
-
-in pkgSet.config.hsPkgs // { _config = pkgSet.config; }
+{{#include manually-generating-nix-expressions/default.nix}}
 ```
 
 With this setup you can then start building the components of
 interest:
 
-```bash
+```shell
 nix build -f default.nix $pkg.components.library
 ```
 
 to build the library for `$pkg` or
 
-```bash
+```shell
 nix build -f default.nix $pkg.components.exes.$exe
 ```
 
@@ -85,7 +42,7 @@ to build a specific executable. The same holds for test suites and benchmarks.
 With [nix-tools installed](./installing-nix-tools.md), we can simply run the
 following command on a stack project:
 
-```bash
+```shell
 stack-to-nix --output . --stack-yaml stack.yaml
 ```
 
@@ -121,14 +78,15 @@ about how to choose a specific compiler version.
 
 [compiler]: https://nixos.org/nixpkgs/manual/#how-to-install-a-compiler
 
-!!! note "Cabal version"
-    The minimum Cabal version is 2.4. This version is available
-    in the NixOS 19.03 release.
+> **Note:** Cabal version
+>
+> The minimum Cabal version is 2.4. This version is available
+> in the NixOS 19.03 release.
 
 For this example, we will run a `nix-shell` with the default GHC
 version for Nixpkgs.
 
-```bash
+```shell
 nix-shell -p haskellPackages.cabal-install haskellPackages.ghc \
     --run "cabal new-configure"
 ```
@@ -136,11 +94,12 @@ nix-shell -p haskellPackages.cabal-install haskellPackages.ghc \
 If all goes well, you should now have the file
 `dist-newstyle/cache/plan.json`.
 
-!!! tip "Specifying the GHC version"
-    To use a specific compiler version, replace `haskellPackages.ghc`
-    with something like `haskell-nix.compiler.ghc865`. The given compiler
-    must exist in your Nixpkgs version, of course. See also the
-    [Nixpkgs Manual][compiler].
+> **Tip:** Specifying the GHC version
+>
+> To use a specific compiler version, replace `haskellPackages.ghc`
+> with something like `haskell-nix.compiler.ghc865`. The given compiler
+> must exist in your Nixpkgs version, of course. See also the
+> [Nixpkgs Manual][compiler].
 
 ### Using `plan-to-nix`
 
@@ -148,7 +107,7 @@ With [nix-tools installed](./installing-nix-tools.md), we can then run the
 following command on a Cabal project and its build plan. Omit the
 `--cabal-project` option if you don't have a project file.
 
-```bash
+```shell
 # convert the plan.json file into a pkgs.nix file
 plan-to-nix --output . \
     --plan-json dist-newstyle/cache/plan.json

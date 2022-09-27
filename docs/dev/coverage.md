@@ -52,7 +52,7 @@ reports (as detailed in the [coverage tutorial](../tutorials/coverage.md#custom)
 
 The coverage information generated will look something like this:
 
-```bash
+```shell
 /nix/store/...-my-project-0.1.0.0-coverage-report/
 └── share
     └── hpc
@@ -105,7 +105,7 @@ The coverage information generated will look something like this:
 The coverage information for an entire project will look something
 like this:
 
-```bash
+```shell
 /nix/store/...-coverage-report
 └── share
     └── hpc
