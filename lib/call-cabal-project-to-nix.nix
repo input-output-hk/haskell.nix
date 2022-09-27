@@ -569,6 +569,7 @@ let
           # the `with-compiler:` in the `cabal.project` file.
           ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
+        --with-pkg-config=${ghc.targetPrefix}pkg-config \
         --enable-tests \
         --enable-benchmarks \
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
