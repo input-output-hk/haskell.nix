@@ -11,6 +11,8 @@ final: prev: {
         # overlays.
         defaultModules = [];
 
+        # TODO: doc etc
+        extraPkgconfigMappings = {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
         # Or `nix-shell -p nixUnstable --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
@@ -203,6 +205,55 @@ final: prev: {
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
+        # Dummy version of ghc to work around https://github.com/haskell/cabal/issues/8352
+        cabal-issue-8352-workaround = [
+          (final.writeTextFile {
+            name = "dummy-ghc";
+            executable = true;
+            destination = "/bin/ghc";
+            text = ''
+              #!${final.runtimeShell}
+              case "$*" in
+                --version*)
+                  echo 'The Glorious Glasgow Haskell Compilation System, version 8.10.7'
+                  ;;
+                --numeric-version*)
+                  echo '8.10.7'
+                  ;;
+                --supported-languages*)
+                  echo Haskell2010
+                  ;;
+                --info*)
+                  echo '[]'
+                  ;;
+                *)
+                  echo "Unknown argument '$*'" >&2
+                  exit 1
+                  ;;
+              esac
+              exit 0
+            '';
+          })
+          (final.writeTextFile {
+            name = "dummy-ghc";
+            executable = true;
+            destination = "/bin/ghc-pkg";
+            text = ''
+              #!${final.runtimeShell}
+              case "$*" in
+                --version*)
+                  echo 'GHC package manager version 8.10.7'
+                  ;;
+                *)
+                  echo "Unknown argument '$*'" >&2
+                  exit 1
+                  ;;
+              esac
+              exit 0
+            '';
+          })
+        ];
+
         dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
             let
               allTarballs = hackageTarball args // extra-hackage-tarballs;
@@ -210,38 +261,38 @@ final: prev: {
               # Main Hackage index-state is embedded in its name and thus will propagate to
               # dotCabalName anyway.
               dotCabalName = "dot-cabal-" + allNames;
-              # This is very big, and cheap to build: prefer building it locally
-              tarballRepos = final.runCommand dotCabalName { nativeBuildInputs = [ cabal-install ]; preferLocalBuild = true; } ''
+              tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
+                nativeBuildInputs = [ cabal-install ] ++ cabal-issue-8352-workaround;
+              } ''
+                set -xe
+
                 mkdir -p $out/.cabal
                 cat <<EOF > $out/.cabal/config
-                ${final.lib.concatStrings (
-                  final.lib.mapAttrsToList (name: index:
-                ''
                 repository ${name}
                   url: file:${mkLocalHackageRepo { inherit name index; }}
                   secure: True
                   root-keys:
                   key-threshold: 0
 
-                '') allTarballs
-                )}
                 EOF
 
                 # All repositories must be mkdir'ed before calling new-update on any repo,
                 # otherwise it fails.
-                ${final.lib.concatStrings (map (name: ''
-                  mkdir -p $out/.cabal/packages/${name}
-                '') (builtins.attrNames allTarballs))}
+                mkdir -p $out/.cabal/packages/${name}
 
-                ${final.lib.concatStrings (map (name: ''
-                  HOME=$out cabal new-update ${name}
-                '') (builtins.attrNames allTarballs))}
+                HOME=$out cabal new-update ${name}
               '';
+              f = name: index:
+                let x = tarballRepoFor name index; in
+                ''
+                  ln -s ${x}/.cabal/packages/${name} $out/.cabal/packages/${name}
+                  cat ${x}/.cabal/config >> $out/.cabal/config
+                '';
             in
               # Add the extra-hackage-repos where we have all the files needed.
               final.runCommand dotCabalName { nativeBuildInputs = [ final.xorg.lndir ]; } ''
-                mkdir $out
-                lndir ${tarballRepos} $out
+                mkdir -p $out/.cabal/packages
+                ${builtins.concatStringsSep "\n" (final.lib.mapAttrsToList f allTarballs)}
 
                 ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
                   mkdir -p $out/.cabal/packages/${name}
@@ -255,7 +306,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2021-11-05T00:00:00Z";
+        internalHackageIndexState = "2022-08-29T00:00:00Z";
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -686,75 +737,105 @@ final: prev: {
                   "Invalid package component name ${componentName}.  Expected package:ctype:component (where ctype is one of lib, flib, exe, test, or bench)";
                 (getPackage (builtins.elemAt m 0)).getComponent "${builtins.elemAt m 1}:${builtins.elemAt m 2}";
 
-            # Helper function that can be used to make a Nix Flake out of a project
-            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
-            # for an example flake.nix file.
-            # This flake function maps the build outputs to the flake `packages`,
-            # `checks` and `apps` output attributes.
-            flake = {
-                packages ? rawProject.args.flake.packages
-              , crossPlatforms ? rawProject.args.flake.crossPlatforms
-              }:
-              let packageNames = project: builtins.attrNames (packages project.hsPkgs);
-                  packagesForProject = prefix: project:
-                    final.lib.concatMap (packageName:
-                      let package = project.hsPkgs.${packageName};
-                      in final.lib.optional (package.components ? library)
-                            { name = "${prefix}${packageName}:lib:${packageName}"; value = package.components.library; }
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:lib:${n}"; value = v; })
-                          (package.components.sublibs)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:exe:${n}"; value = v; })
-                          (package.components.exes)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:test:${n}"; value = v; })
-                          (package.components.tests)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${prefix}${packageName}:bench:${n}"; value = v; })
-                          (package.components.benchmarks)
-                    ) (packageNames project);
-                  checksForProject = prefix: project:
-                    final.lib.concatMap (packageName:
-                      let package = project.hsPkgs.${packageName};
-                      in final.lib.mapAttrsToList (n: v:
-                          { name = "${prefix}${packageName}:test:${n}"; value = v; })
-                        (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
-                    ) (packageNames project);
-                  appsForProject =  prefix: project:
-                    final.lib.concatMap (packageName:
-                      let package = project.hsPkgs.${packageName};
-                      in final.lib.mapAttrsToList (n: v:
-                            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-                          (package.components.exes)
-                        ++ final.lib.mapAttrsToList (n: v:
-                            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-                          (package.components.tests)
-                    ) (packageNames project);
-                attrsForAllProjects = f: builtins.listToAttrs (
-                    f "" project
-                  ++ final.lib.concatMap (project:
-                       f (project.pkgs.stdenv.hostPlatform.config + ":") project)
-                     (crossPlatforms project.projectCross)
-                  );
+            rawFlake =
+              let
+                packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
               in {
                 # Used by:
                 #   `nix build .#pkg-name:lib:pkg-name`
                 #   `nix build .#pkg-name:lib:sublib-name`
                 #   `nix build .#pkg-name:exe:exe-name`
                 #   `nix build .#pkg-name:test:test-name`
-                packages = attrsForAllProjects packagesForProject;
+                packages = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.optional (package.components ? library)
+                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:lib:${n}"; value = v; })
+                        (package.components.sublibs)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = v; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = v; })
+                        (package.components.tests)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:bench:${n}"; value = v; })
+                        (package.components.benchmarks)
+                  ) (packageNames project));
                 # Used by:
-                #   `nix check .#pkg-name:test:test-name`
-                checks = attrsForAllProjects checksForProject;
-                # Used by:
+                #   `nix flake check`
+                checks = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                        { name = "${packageName}:test:${n}"; value = v; })
+                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
+                  ) (packageNames project));
                 #   `nix run .#pkg-name:exe:exe-name`
                 #   `nix run .#pkg-name:test:test-name`
-                apps = attrsForAllProjects appsForProject;
-                # Used by:
-                #   `nix develop`
+                apps = builtins.listToAttrs (
+                  final.lib.concatMap (packageName:
+                    let package = project.hsPkgs.${packageName};
+                    in final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.exes)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.tests)
+                      ++ final.lib.mapAttrsToList (n: v:
+                          { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
+                        (package.components.benchmarks)
+                  ) (packageNames project));
+                # Used by hydra:
+                hydraJobs.checks = rawFlake.checks;
+                # Build the plan and check it if materialized
+                hydraJobs.plan-nix = (project.appendModule { checkMaterialization = true; }).plan-nix;
+                # Build tools and cache tools needed for the project
+                hydraJobs.roots = project.roots;
+                hydraJobs.coverage =
+                  let
+                    coverageProject = project.appendModule [
+                      project.args.flake.coverage
+                      {
+                        modules = [{
+                          packages = final.lib.genAttrs (packageNames project)
+                            (_: { doCoverage = final.lib.mkDefault true; });
+                        }];
+                      }
+                    ];
+                  in  builtins.listToAttrs (final.lib.concatMap (packageName: [{
+                      name = packageName;
+                      value = coverageProject.hsPkgs.${packageName}.coverageReport;
+                    }]) (packageNames coverageProject));
+                devShells.default = project.shell;
                 devShell = project.shell;
               };
+            # Helper function that can be used to make a Nix Flake out of a project
+            # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
+            # for an example flake.nix file.
+            # This flake function maps the build outputs to the flake `packages`,
+            # `checks` and `apps` output attributes.
+            flake' =
+              let
+                combinePrefix = a: b: if a == "default" then b else "${a}:${b}";
+                forAllCrossCompilers = prefix: project: (
+                    [{ ${prefix} = project.rawFlake; }]
+                  ++ (map (project: {
+                       ${combinePrefix prefix project.pkgs.stdenv.hostPlatform.config} = project.rawFlake;
+                      })
+                     (project.args.flake.crossPlatforms project.projectCross)
+                  ));
+                forAllVariants =
+                    forAllCrossCompilers "default" project
+                  ++ final.lib.concatLists (final.lib.mapAttrsToList
+                    (name: projectModule: forAllCrossCompilers name (project.appendModule projectModule))
+                     project.args.flake.variants);
+              in haskellLib.combineFlakes ":" (builtins.foldl' (a: b: a // b) {} forAllVariants);
+            flake = args: (project.appendModule { flake = args; }).flake';
+
+            inherit (rawProject) args;
             inherit (rawProject.hsPkgs) makeConfigFiles ghcWithHoogle ghcWithPackages;
           });
 

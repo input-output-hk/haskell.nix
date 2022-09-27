@@ -22,8 +22,7 @@ let
 
 in recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
-  # TODO projectCoverageReport is broken in master for this example.
-  meta.disabled = true || stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {
     name = "coverage-test";
 

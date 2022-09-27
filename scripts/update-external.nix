@@ -1,6 +1,6 @@
 { stdenv, lib, writeScript, glibc, coreutils, git, openssh
 , nix-tools, cabal-install, nixFlakes
-, bash, curl, findutils, gawk }:
+, bash, curl, findutils, gawk, cabal-issue-8352-workaround }:
 
 { name, script }:
 
@@ -16,7 +16,7 @@ in
 
     set -euo pipefail
 
-    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools cabal-install nixFlakes ] ++ optional stdenv.isLinux glibc)}"
+    export PATH="${makeBinPath ([ coreutils curl findutils gawk bash git openssh nix-tools cabal-install nixFlakes ] ++ cabal-issue-8352-workaround ++ optional stdenv.isLinux glibc)}"
 
     ${script}
 
@@ -35,7 +35,7 @@ in
 
     cd ..
 
-    nix flack lock --accept-flake-config \
+    nix flake lock --accept-flake-config \
                    --experimental-features 'nix-command flakes' \
                    --update-input ${name}
   ''

@@ -22,7 +22,7 @@ let
   singleMarkdown = name: value: ''
     ## ${name}
 
-    ${lib.optionalString (value.description != null) value.description}
+    ${lib.optionalString (value.description != null) (value.description.text or value.description)}
 
     **Type**: ${value.type}
 

@@ -1,13 +1,6 @@
 { lib, config, pkgs, haskellLib, ... }:
 let
-  inherit (config) name revision;
-  # Lookup latest version in hackage
-  version = if config.version == "latest"
-    then builtins.head (
-      builtins.sort
-        (a: b: builtins.compareVersions a b > 0)
-        (builtins.attrNames pkgs.haskell-nix.hackage.${config.name}))
-    else config.version;
+  inherit (config) name version revision;
 in {
   _file = "haskell.nix/modules/hackage-project.nix";
   options = {
@@ -15,6 +8,14 @@ in {
       type = lib.types.str;
       default = "latest";
       description = ''Version of the hackage package to use (defaults to "latest")'';
+      apply = v: if v == "latest"
+        # Lookup latest version in hackage.  Doing this in `apply` means others
+        # can see the actual version in `config.version` (instead of "latest").
+        then builtins.head (
+          builtins.sort
+            (a: b: builtins.compareVersions a b > 0)
+            (builtins.attrNames pkgs.haskell-nix.hackage.${config.name}))
+        else v;
     };
     revision = lib.mkOption {
       type = lib.types.str;
