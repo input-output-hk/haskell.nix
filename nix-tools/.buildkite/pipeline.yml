@@ -1,5 +1,0 @@
-steps:
-  - label: 'Build'
-    command: ./.buildkite/build.sh
-    agents:
-      system: x86_64-linux
