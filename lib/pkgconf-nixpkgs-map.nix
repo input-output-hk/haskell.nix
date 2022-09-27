@@ -4299,7 +4299,7 @@ pkgs:
 #    "python3-embed" = [ "pythonInterpreters" ];
 #    "python3" = [ "pythonInterpreters" ];
 #    "python" = [ "pythonInterpreters" ];
-    "qca2" = [ "qca2" ];
+#    "qca2" = [ "qca2" ];
     "qhullcpp" = [ "qhull" ];
     "qhull_r" = [ "qhull" ];
     "qhullstatic" = [ "qhull" ];
