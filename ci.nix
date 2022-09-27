@@ -31,12 +31,12 @@
     # Update supported-ghc-versions.md to reflect any changes made here.
     nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
       ghc865 = false;
-      ghc810420210212 = false;
+      ghc810420210212 = false; # TODO remove when plutus no longer uses this.
       ghc8107 = false;
     } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
       ghc865 = false;
       ghc884 = false; # Native version is used to boot 9.0.1
-      ghc810420210212 = false;
+      ghc810420210212 = false; # TODO remove when plutus no longer uses this.
       ghc8107 = true;
       ghc902 = false;
       ghc924 = true;
