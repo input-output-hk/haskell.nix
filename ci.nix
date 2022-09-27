@@ -45,7 +45,7 @@
     nixpkgs.lib.filter (v:
         # We have less x86_64-darwin build capacity so build fewer GhC versions
         (v != "x86_64-darwin" || (
-           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
+           !__elem compiler-nix-name ["ghc8104" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-darwin requires ghc 8.10.7
         (v != "aarch64-darwin" || (
