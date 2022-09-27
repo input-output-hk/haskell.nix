@@ -220,8 +220,8 @@ let
       fetchPackageRepo = fetchgit: repoData:
         let
           fetched =
-            if inputMap ? "${repoData.url}/${repoData.ref}"
-              then inputMap."${repoData.url}/${repoData.ref}"
+            if inputMap ? "${repoData.url}/${repoData.rev or repoData.ref}"
+              then inputMap."${repoData.url}/${repoData.rev or repoData.ref}"
             else if inputMap ? ${repoData.url}
               then
                 (if inputMap.${repoData.url}.rev != repoData.ref
