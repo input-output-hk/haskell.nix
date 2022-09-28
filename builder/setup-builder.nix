@@ -1,4 +1,4 @@
-{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles, pkgconfig }@defaults:
+{ pkgs, stdenv, lib, buildPackages, haskellLib, ghc, nonReinstallablePkgs, hsPkgs, makeSetupConfigFiles }@defaults:
 
 let self =
 { component, package, name, src, enableDWARF ? false, flags ? {}, revision ? null, patches ? [], defaultSetupSrc
@@ -38,7 +38,7 @@ let
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c]) component.build-tools) ++
-    lib.optional (component.pkgconfig != []) pkgconfig;
+    lib.optional (component.pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
 
   drv =
     stdenv.mkDerivation ({
