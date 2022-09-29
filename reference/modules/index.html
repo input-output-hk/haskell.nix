@@ -1498,82 +1498,40 @@ subdirectory using <code>scripts/update-docs.nix</code></p>
 <h1 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h1>
 <h2 id="_moduleargs">_module.args<a class="headerlink" href="#_moduleargs" title="Permanent link">&para;</a></h2>
 <p>Additional arguments passed to each module in addition to ones
-like <literal>lib</literal>, <literal>config</literal>,
-and <literal>pkgs</literal>, <literal>modulesPath</literal>.
-</para>
-<para>
-This option is also available to all submodules. Submodules do not
+like <code>lib</code>, <code>config</code>,
+and <code>pkgs</code>, <code>modulesPath</code>.</p>
+<p>This option is also available to all submodules. Submodules do not
 inherit args from their parent module, nor do they provide args to
 their parent module or sibling submodules. The sole exception to
-this is the argument <literal>name</literal> which is provided by
+this is the argument <code>name</code> which is provided by
 parent modules to a submodule and contains the attribute name
 the submodule is bound to, or a unique generated name if it is
-not bound to an attribute.
-</para>
-<para>
-Some arguments are already passed by default, of which the
-following <emphasis>cannot</emphasis> be changed with this option:
-<itemizedlist>
- <listitem>
-  <para>
-   <varname>lib</varname>: The nixpkgs library.
-  </para>
- </listitem>
- <listitem>
-  <para>
-   <varname>config</varname>: The results of all options after merging the values from all modules together.
-  </para>
- </listitem>
- <listitem>
-  <para>
-   <varname>options</varname>: The options declared in all modules.
-  </para>
- </listitem>
- <listitem>
-  <para>
-   <varname>specialArgs</varname>: The <literal>specialArgs</literal> argument passed to <literal>evalModules</literal>.
-  </para>
- </listitem>
- <listitem>
-  <para>
-   All attributes of <varname>specialArgs</varname>
-  </para>
-  <para>
-   Whereas option values can generally depend on other option values
-   thanks to laziness, this does not apply to <literal>imports</literal>, which
-   must be computed statically before anything else.
-  </para>
-  <para>
-   For this reason, callers of the module system can provide <literal>specialArgs</literal>
-   which are available during import resolution.
-  </para>
-  <para>
-   For NixOS, <literal>specialArgs</literal> includes
-   <varname>modulesPath</varname>, which allows you to import
-   extra modules from the nixpkgs package tree without having to
-   somehow make the module aware of the location of the
-   <literal>nixpkgs</literal> or NixOS directories.
-<programlisting>
-{ modulesPath, ... }: {
-  imports = [
-    (modulesPath + "/profiles/minimal.nix")
-  ];
-}
-</programlisting>
-  </para>
- </listitem>
-</itemizedlist>
-</para>
-<para>
-For NixOS, the default value for this option includes at least this argument:
-<itemizedlist>
- <listitem>
-  <para>
-   <varname>pkgs</varname>: The nixpkgs package set according to
-   the <option>nixpkgs.pkgs</option> option.
-  </para>
- </listitem>
-</itemizedlist></p>
+not bound to an attribute.</p>
+<p>Some arguments are already passed by default, of which the
+following <em>cannot</em> be changed with this option:
+- {var}<code>lib</code>: The nixpkgs library.
+- {var}<code>config</code>: The results of all options after merging the values from all modules together.
+- {var}<code>options</code>: The options declared in all modules.
+- {var}<code>specialArgs</code>: The <code>specialArgs</code> argument passed to <code>evalModules</code>.
+- All attributes of {var}<code>specialArgs</code></p>
+<p>Whereas option values can generally depend on other option values
+  thanks to laziness, this does not apply to <code>imports</code>, which
+  must be computed statically before anything else.</p>
+<p>For this reason, callers of the module system can provide <code>specialArgs</code>
+  which are available during import resolution.</p>
+<p>For NixOS, <code>specialArgs</code> includes
+  {var}<code>modulesPath</code>, which allows you to import
+  extra modules from the nixpkgs package tree without having to
+  somehow make the module aware of the location of the
+  <code>nixpkgs</code> or NixOS directories.
+  <code>{ modulesPath, ... }: {
+    imports = [
+      (modulesPath + "/profiles/minimal.nix")
+    ];
+  }</code></p>
+<p>For NixOS, the default value for this option includes at least this argument:
+- {var}<code>pkgs</code>: The nixpkgs package set according to
+  the {option}<code>nixpkgs.pkgs</code> option.</p>
 <p><strong>Type</strong>: lazy attribute set of raw value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
@@ -1586,11 +1544,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="cabalcompiler">cabal.compiler<a class="headerlink" href="#cabalcompiler" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="cabalsystem">cabal.system<a class="headerlink" href="#cabalsystem" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="compilernix-name">compiler.nix-name<a class="headerlink" href="#compilernix-name" title="Permanent link">&para;</a></h2>
@@ -1696,12 +1654,12 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="errorhandler">errorHandler<a class="headerlink" href="#errorhandler" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="evalpackages">evalPackages<a class="headerlink" href="#evalpackages" title="Permanent link">&para;</a></h2>
 <p>The <code>evalPackages</code> that will be used when building <code>hoogle</code> and shell tools.</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="ghcpackage">ghc.package<a class="headerlink" href="#ghcpackage" title="Permanent link">&para;</a></h2>
@@ -1713,11 +1671,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="hackageconfigs">hackage.configs<a class="headerlink" href="#hackageconfigs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="hackagedb">hackage.db<a class="headerlink" href="#hackagedb" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="hardeningdisable">hardeningDisable<a class="headerlink" href="#hardeningdisable" title="Permanent link">&para;</a></h2>
@@ -1725,7 +1683,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="hspkgs">hsPkgs<a class="headerlink" href="#hspkgs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="keepsource">keepSource<a class="headerlink" href="#keepsource" title="Permanent link">&para;</a></h2>
@@ -1738,7 +1696,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packages">packages<a class="headerlink" href="#packages" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: attribute set of submodule</p>
+<p><strong>Type</strong>: attribute set of (submodule)</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponent">packages.<name>.allComponent<a class="headerlink" href="#packagesallcomponent" title="Permanent link">&para;</a></h2>
@@ -1747,11 +1705,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentasmsources">packages.<name>.allComponent.asmSources<a class="headerlink" href="#packagesallcomponentasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentbuild-tools">packages.<name>.allComponent.build-tools<a class="headerlink" href="#packagesallcomponentbuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentbuildable">packages.<name>.allComponent.buildable<a class="headerlink" href="#packagesallcomponentbuildable" title="Permanent link">&para;</a></h2>
@@ -1759,11 +1717,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentcsources">packages.<name>.allComponent.cSources<a class="headerlink" href="#packagesallcomponentcsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentcmmsources">packages.<name>.allComponent.cmmSources<a class="headerlink" href="#packagesallcomponentcmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentconfigureallcomponents">packages.<name>.allComponent.configureAllComponents<a class="headerlink" href="#packagesallcomponentconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -1782,11 +1740,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentcxxsources">packages.<name>.allComponent.cxxSources<a class="headerlink" href="#packagesallcomponentcxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentdepends">packages.<name>.allComponent.depends<a class="headerlink" href="#packagesallcomponentdepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentdocheck">packages.<name>.allComponent.doCheck<a class="headerlink" href="#packagesallcomponentdocheck" title="Permanent link">&para;</a></h2>
@@ -1865,7 +1823,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentextrasrcfiles">packages.<name>.allComponent.extraSrcFiles<a class="headerlink" href="#packagesallcomponentextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentframeworks">packages.<name>.allComponent.frameworks<a class="headerlink" href="#packagesallcomponentframeworks" title="Permanent link">&para;</a></h2>
@@ -1881,19 +1839,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponenthssourcedirs">packages.<name>.allComponent.hsSourceDirs<a class="headerlink" href="#packagesallcomponenthssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentincludedirs">packages.<name>.allComponent.includeDirs<a class="headerlink" href="#packagesallcomponentincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentincludes">packages.<name>.allComponent.includes<a class="headerlink" href="#packagesallcomponentincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentjssources">packages.<name>.allComponent.jsSources<a class="headerlink" href="#packagesallcomponentjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentkeepsource">packages.<name>.allComponent.keepSource<a class="headerlink" href="#packagesallcomponentkeepsource" title="Permanent link">&para;</a></h2>
@@ -1902,15 +1860,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentlibs">packages.<name>.allComponent.libs<a class="headerlink" href="#packagesallcomponentlibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentmainpath">packages.<name>.allComponent.mainPath<a class="headerlink" href="#packagesallcomponentmainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentmodules">packages.<name>.allComponent.modules<a class="headerlink" href="#packagesallcomponentmodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentpkgconfig">packages.<name>.allComponent.pkgconfig<a class="headerlink" href="#packagesallcomponentpkgconfig" title="Permanent link">&para;</a></h2>
@@ -1923,11 +1881,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentplatforms">packages.<name>.allComponent.platforms<a class="headerlink" href="#packagesallcomponentplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentplugins">packages.<name>.allComponent.plugins<a class="headerlink" href="#packagesallcomponentplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentpluginsargs">packages.<name>.allComponent.plugins.*.args<a class="headerlink" href="#packagesallcomponentpluginsargs" title="Permanent link">&para;</a></h2>
@@ -1935,7 +1893,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentpluginslibrary">packages.<name>.allComponent.plugins.*.library<a class="headerlink" href="#packagesallcomponentpluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentpluginsmodulename">packages.<name>.allComponent.plugins.*.moduleName<a class="headerlink" href="#packagesallcomponentpluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -2008,7 +1966,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponentshellhook">packages.<name>.allComponent.shellHook<a class="headerlink" href="#packagesallcomponentshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesallcomponenttestflags">packages.<name>.allComponent.testFlags<a class="headerlink" href="#packagesallcomponenttestflags" title="Permanent link">&para;</a></h2>
@@ -2035,15 +1993,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarks">packages.<name>.components.benchmarks<a class="headerlink" href="#packagescomponentsbenchmarks" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: attribute set of submodule</p>
+<p><strong>Type</strong>: attribute set of (submodule)</p>
 <p><strong>Default</strong>: {}</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksasmsources">packages.<name>.components.benchmarks.<name>.asmSources<a class="headerlink" href="#packagescomponentsbenchmarksasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksbuild-tools">packages.<name>.components.benchmarks.<name>.build-tools<a class="headerlink" href="#packagescomponentsbenchmarksbuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksbuildable">packages.<name>.components.benchmarks.<name>.buildable<a class="headerlink" href="#packagescomponentsbenchmarksbuildable" title="Permanent link">&para;</a></h2>
@@ -2051,11 +2009,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkscsources">packages.<name>.components.benchmarks.<name>.cSources<a class="headerlink" href="#packagescomponentsbenchmarkscsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkscmmsources">packages.<name>.components.benchmarks.<name>.cmmSources<a class="headerlink" href="#packagescomponentsbenchmarkscmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksconfigureallcomponents">packages.<name>.components.benchmarks.<name>.configureAllComponents<a class="headerlink" href="#packagescomponentsbenchmarksconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -2074,11 +2032,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkscxxsources">packages.<name>.components.benchmarks.<name>.cxxSources<a class="headerlink" href="#packagescomponentsbenchmarkscxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksdepends">packages.<name>.components.benchmarks.<name>.depends<a class="headerlink" href="#packagescomponentsbenchmarksdepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksdocheck">packages.<name>.components.benchmarks.<name>.doCheck<a class="headerlink" href="#packagescomponentsbenchmarksdocheck" title="Permanent link">&para;</a></h2>
@@ -2157,7 +2115,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksextrasrcfiles">packages.<name>.components.benchmarks.<name>.extraSrcFiles<a class="headerlink" href="#packagescomponentsbenchmarksextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksframeworks">packages.<name>.components.benchmarks.<name>.frameworks<a class="headerlink" href="#packagescomponentsbenchmarksframeworks" title="Permanent link">&para;</a></h2>
@@ -2173,19 +2131,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkshssourcedirs">packages.<name>.components.benchmarks.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentsbenchmarkshssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksincludedirs">packages.<name>.components.benchmarks.<name>.includeDirs<a class="headerlink" href="#packagescomponentsbenchmarksincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksincludes">packages.<name>.components.benchmarks.<name>.includes<a class="headerlink" href="#packagescomponentsbenchmarksincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksjssources">packages.<name>.components.benchmarks.<name>.jsSources<a class="headerlink" href="#packagescomponentsbenchmarksjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkskeepsource">packages.<name>.components.benchmarks.<name>.keepSource<a class="headerlink" href="#packagescomponentsbenchmarkskeepsource" title="Permanent link">&para;</a></h2>
@@ -2194,15 +2152,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkslibs">packages.<name>.components.benchmarks.<name>.libs<a class="headerlink" href="#packagescomponentsbenchmarkslibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksmainpath">packages.<name>.components.benchmarks.<name>.mainPath<a class="headerlink" href="#packagescomponentsbenchmarksmainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksmodules">packages.<name>.components.benchmarks.<name>.modules<a class="headerlink" href="#packagescomponentsbenchmarksmodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkspkgconfig">packages.<name>.components.benchmarks.<name>.pkgconfig<a class="headerlink" href="#packagescomponentsbenchmarkspkgconfig" title="Permanent link">&para;</a></h2>
@@ -2215,11 +2173,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksplatforms">packages.<name>.components.benchmarks.<name>.platforms<a class="headerlink" href="#packagescomponentsbenchmarksplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksplugins">packages.<name>.components.benchmarks.<name>.plugins<a class="headerlink" href="#packagescomponentsbenchmarksplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkspluginsargs">packages.<name>.components.benchmarks.<name>.plugins.*.args<a class="headerlink" href="#packagescomponentsbenchmarkspluginsargs" title="Permanent link">&para;</a></h2>
@@ -2227,7 +2185,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkspluginslibrary">packages.<name>.components.benchmarks.<name>.plugins.*.library<a class="headerlink" href="#packagescomponentsbenchmarkspluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkspluginsmodulename">packages.<name>.components.benchmarks.<name>.plugins.*.moduleName<a class="headerlink" href="#packagescomponentsbenchmarkspluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -2300,7 +2258,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarksshellhook">packages.<name>.components.benchmarks.<name>.shellHook<a class="headerlink" href="#packagescomponentsbenchmarksshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsbenchmarkstestflags">packages.<name>.components.benchmarks.<name>.testFlags<a class="headerlink" href="#packagescomponentsbenchmarkstestflags" title="Permanent link">&para;</a></h2>
@@ -2319,15 +2277,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexes">packages.<name>.components.exes<a class="headerlink" href="#packagescomponentsexes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: attribute set of submodule</p>
+<p><strong>Type</strong>: attribute set of (submodule)</p>
 <p><strong>Default</strong>: {}</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesasmsources">packages.<name>.components.exes.<name>.asmSources<a class="headerlink" href="#packagescomponentsexesasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesbuild-tools">packages.<name>.components.exes.<name>.build-tools<a class="headerlink" href="#packagescomponentsexesbuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesbuildable">packages.<name>.components.exes.<name>.buildable<a class="headerlink" href="#packagescomponentsexesbuildable" title="Permanent link">&para;</a></h2>
@@ -2335,11 +2293,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexescsources">packages.<name>.components.exes.<name>.cSources<a class="headerlink" href="#packagescomponentsexescsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexescmmsources">packages.<name>.components.exes.<name>.cmmSources<a class="headerlink" href="#packagescomponentsexescmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesconfigureallcomponents">packages.<name>.components.exes.<name>.configureAllComponents<a class="headerlink" href="#packagescomponentsexesconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -2358,11 +2316,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexescxxsources">packages.<name>.components.exes.<name>.cxxSources<a class="headerlink" href="#packagescomponentsexescxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesdepends">packages.<name>.components.exes.<name>.depends<a class="headerlink" href="#packagescomponentsexesdepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesdocheck">packages.<name>.components.exes.<name>.doCheck<a class="headerlink" href="#packagescomponentsexesdocheck" title="Permanent link">&para;</a></h2>
@@ -2441,7 +2399,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesextrasrcfiles">packages.<name>.components.exes.<name>.extraSrcFiles<a class="headerlink" href="#packagescomponentsexesextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesframeworks">packages.<name>.components.exes.<name>.frameworks<a class="headerlink" href="#packagescomponentsexesframeworks" title="Permanent link">&para;</a></h2>
@@ -2457,19 +2415,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexeshssourcedirs">packages.<name>.components.exes.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentsexeshssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesincludedirs">packages.<name>.components.exes.<name>.includeDirs<a class="headerlink" href="#packagescomponentsexesincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesincludes">packages.<name>.components.exes.<name>.includes<a class="headerlink" href="#packagescomponentsexesincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesjssources">packages.<name>.components.exes.<name>.jsSources<a class="headerlink" href="#packagescomponentsexesjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexeskeepsource">packages.<name>.components.exes.<name>.keepSource<a class="headerlink" href="#packagescomponentsexeskeepsource" title="Permanent link">&para;</a></h2>
@@ -2478,15 +2436,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexeslibs">packages.<name>.components.exes.<name>.libs<a class="headerlink" href="#packagescomponentsexeslibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesmainpath">packages.<name>.components.exes.<name>.mainPath<a class="headerlink" href="#packagescomponentsexesmainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesmodules">packages.<name>.components.exes.<name>.modules<a class="headerlink" href="#packagescomponentsexesmodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexespkgconfig">packages.<name>.components.exes.<name>.pkgconfig<a class="headerlink" href="#packagescomponentsexespkgconfig" title="Permanent link">&para;</a></h2>
@@ -2499,11 +2457,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesplatforms">packages.<name>.components.exes.<name>.platforms<a class="headerlink" href="#packagescomponentsexesplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesplugins">packages.<name>.components.exes.<name>.plugins<a class="headerlink" href="#packagescomponentsexesplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexespluginsargs">packages.<name>.components.exes.<name>.plugins.*.args<a class="headerlink" href="#packagescomponentsexespluginsargs" title="Permanent link">&para;</a></h2>
@@ -2511,7 +2469,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexespluginslibrary">packages.<name>.components.exes.<name>.plugins.*.library<a class="headerlink" href="#packagescomponentsexespluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexespluginsmodulename">packages.<name>.components.exes.<name>.plugins.*.moduleName<a class="headerlink" href="#packagescomponentsexespluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -2584,7 +2542,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexesshellhook">packages.<name>.components.exes.<name>.shellHook<a class="headerlink" href="#packagescomponentsexesshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsexestestflags">packages.<name>.components.exes.<name>.testFlags<a class="headerlink" href="#packagescomponentsexestestflags" title="Permanent link">&para;</a></h2>
@@ -2603,15 +2561,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibs">packages.<name>.components.foreignlibs<a class="headerlink" href="#packagescomponentsforeignlibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: attribute set of submodule</p>
+<p><strong>Type</strong>: attribute set of (submodule)</p>
 <p><strong>Default</strong>: {}</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsasmsources">packages.<name>.components.foreignlibs.<name>.asmSources<a class="headerlink" href="#packagescomponentsforeignlibsasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsbuild-tools">packages.<name>.components.foreignlibs.<name>.build-tools<a class="headerlink" href="#packagescomponentsforeignlibsbuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsbuildable">packages.<name>.components.foreignlibs.<name>.buildable<a class="headerlink" href="#packagescomponentsforeignlibsbuildable" title="Permanent link">&para;</a></h2>
@@ -2619,11 +2577,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibscsources">packages.<name>.components.foreignlibs.<name>.cSources<a class="headerlink" href="#packagescomponentsforeignlibscsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibscmmsources">packages.<name>.components.foreignlibs.<name>.cmmSources<a class="headerlink" href="#packagescomponentsforeignlibscmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsconfigureallcomponents">packages.<name>.components.foreignlibs.<name>.configureAllComponents<a class="headerlink" href="#packagescomponentsforeignlibsconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -2642,11 +2600,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibscxxsources">packages.<name>.components.foreignlibs.<name>.cxxSources<a class="headerlink" href="#packagescomponentsforeignlibscxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsdepends">packages.<name>.components.foreignlibs.<name>.depends<a class="headerlink" href="#packagescomponentsforeignlibsdepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsdocheck">packages.<name>.components.foreignlibs.<name>.doCheck<a class="headerlink" href="#packagescomponentsforeignlibsdocheck" title="Permanent link">&para;</a></h2>
@@ -2725,7 +2683,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsextrasrcfiles">packages.<name>.components.foreignlibs.<name>.extraSrcFiles<a class="headerlink" href="#packagescomponentsforeignlibsextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsframeworks">packages.<name>.components.foreignlibs.<name>.frameworks<a class="headerlink" href="#packagescomponentsforeignlibsframeworks" title="Permanent link">&para;</a></h2>
@@ -2741,19 +2699,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibshssourcedirs">packages.<name>.components.foreignlibs.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentsforeignlibshssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsincludedirs">packages.<name>.components.foreignlibs.<name>.includeDirs<a class="headerlink" href="#packagescomponentsforeignlibsincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsincludes">packages.<name>.components.foreignlibs.<name>.includes<a class="headerlink" href="#packagescomponentsforeignlibsincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsjssources">packages.<name>.components.foreignlibs.<name>.jsSources<a class="headerlink" href="#packagescomponentsforeignlibsjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibskeepsource">packages.<name>.components.foreignlibs.<name>.keepSource<a class="headerlink" href="#packagescomponentsforeignlibskeepsource" title="Permanent link">&para;</a></h2>
@@ -2762,15 +2720,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibslibs">packages.<name>.components.foreignlibs.<name>.libs<a class="headerlink" href="#packagescomponentsforeignlibslibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsmainpath">packages.<name>.components.foreignlibs.<name>.mainPath<a class="headerlink" href="#packagescomponentsforeignlibsmainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsmodules">packages.<name>.components.foreignlibs.<name>.modules<a class="headerlink" href="#packagescomponentsforeignlibsmodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibspkgconfig">packages.<name>.components.foreignlibs.<name>.pkgconfig<a class="headerlink" href="#packagescomponentsforeignlibspkgconfig" title="Permanent link">&para;</a></h2>
@@ -2783,11 +2741,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsplatforms">packages.<name>.components.foreignlibs.<name>.platforms<a class="headerlink" href="#packagescomponentsforeignlibsplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsplugins">packages.<name>.components.foreignlibs.<name>.plugins<a class="headerlink" href="#packagescomponentsforeignlibsplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibspluginsargs">packages.<name>.components.foreignlibs.<name>.plugins.*.args<a class="headerlink" href="#packagescomponentsforeignlibspluginsargs" title="Permanent link">&para;</a></h2>
@@ -2795,7 +2753,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibspluginslibrary">packages.<name>.components.foreignlibs.<name>.plugins.*.library<a class="headerlink" href="#packagescomponentsforeignlibspluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibspluginsmodulename">packages.<name>.components.foreignlibs.<name>.plugins.*.moduleName<a class="headerlink" href="#packagescomponentsforeignlibspluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -2868,7 +2826,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibsshellhook">packages.<name>.components.foreignlibs.<name>.shellHook<a class="headerlink" href="#packagescomponentsforeignlibsshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsforeignlibstestflags">packages.<name>.components.foreignlibs.<name>.testFlags<a class="headerlink" href="#packagescomponentsforeignlibstestflags" title="Permanent link">&para;</a></h2>
@@ -2887,15 +2845,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrary">packages.<name>.components.library<a class="headerlink" href="#packagescomponentslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or submodule</p>
+<p><strong>Type</strong>: null or (submodule)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryasmsources">packages.<name>.components.library.asmSources<a class="headerlink" href="#packagescomponentslibraryasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarybuild-tools">packages.<name>.components.library.build-tools<a class="headerlink" href="#packagescomponentslibrarybuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarybuildable">packages.<name>.components.library.buildable<a class="headerlink" href="#packagescomponentslibrarybuildable" title="Permanent link">&para;</a></h2>
@@ -2903,11 +2861,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarycsources">packages.<name>.components.library.cSources<a class="headerlink" href="#packagescomponentslibrarycsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarycmmsources">packages.<name>.components.library.cmmSources<a class="headerlink" href="#packagescomponentslibrarycmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryconfigureallcomponents">packages.<name>.components.library.configureAllComponents<a class="headerlink" href="#packagescomponentslibraryconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -2926,11 +2884,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarycxxsources">packages.<name>.components.library.cxxSources<a class="headerlink" href="#packagescomponentslibrarycxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarydepends">packages.<name>.components.library.depends<a class="headerlink" href="#packagescomponentslibrarydepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarydocheck">packages.<name>.components.library.doCheck<a class="headerlink" href="#packagescomponentslibrarydocheck" title="Permanent link">&para;</a></h2>
@@ -3009,7 +2967,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryextrasrcfiles">packages.<name>.components.library.extraSrcFiles<a class="headerlink" href="#packagescomponentslibraryextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryframeworks">packages.<name>.components.library.frameworks<a class="headerlink" href="#packagescomponentslibraryframeworks" title="Permanent link">&para;</a></h2>
@@ -3025,19 +2983,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryhssourcedirs">packages.<name>.components.library.hsSourceDirs<a class="headerlink" href="#packagescomponentslibraryhssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryincludedirs">packages.<name>.components.library.includeDirs<a class="headerlink" href="#packagescomponentslibraryincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryincludes">packages.<name>.components.library.includes<a class="headerlink" href="#packagescomponentslibraryincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryjssources">packages.<name>.components.library.jsSources<a class="headerlink" href="#packagescomponentslibraryjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarykeepsource">packages.<name>.components.library.keepSource<a class="headerlink" href="#packagescomponentslibrarykeepsource" title="Permanent link">&para;</a></h2>
@@ -3046,15 +3004,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarylibs">packages.<name>.components.library.libs<a class="headerlink" href="#packagescomponentslibrarylibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarymainpath">packages.<name>.components.library.mainPath<a class="headerlink" href="#packagescomponentslibrarymainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarymodules">packages.<name>.components.library.modules<a class="headerlink" href="#packagescomponentslibrarymodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarypkgconfig">packages.<name>.components.library.pkgconfig<a class="headerlink" href="#packagescomponentslibrarypkgconfig" title="Permanent link">&para;</a></h2>
@@ -3067,11 +3025,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryplatforms">packages.<name>.components.library.platforms<a class="headerlink" href="#packagescomponentslibraryplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryplugins">packages.<name>.components.library.plugins<a class="headerlink" href="#packagescomponentslibraryplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarypluginsargs">packages.<name>.components.library.plugins.*.args<a class="headerlink" href="#packagescomponentslibrarypluginsargs" title="Permanent link">&para;</a></h2>
@@ -3079,7 +3037,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarypluginslibrary">packages.<name>.components.library.plugins.*.library<a class="headerlink" href="#packagescomponentslibrarypluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarypluginsmodulename">packages.<name>.components.library.plugins.*.moduleName<a class="headerlink" href="#packagescomponentslibrarypluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -3152,7 +3110,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibraryshellhook">packages.<name>.components.library.shellHook<a class="headerlink" href="#packagescomponentslibraryshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentslibrarytestflags">packages.<name>.components.library.testFlags<a class="headerlink" href="#packagescomponentslibrarytestflags" title="Permanent link">&para;</a></h2>
@@ -3171,15 +3129,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetup">packages.<name>.components.setup<a class="headerlink" href="#packagescomponentssetup" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or submodule</p>
+<p><strong>Type</strong>: null or (submodule)</p>
 <p><strong>Default</strong>: {"asmSources":[],"cSources":[],"cmmSources":[],"cxxSources":[],"depends":[],"doExactConfig":false,"extraSrcFiles":["Setup.hs","Setup.lhs"],"frameworks":[],"hsSourceDirs":["setup-src"],"includeDirs":[],"jsSources":[],"libs":[],"platforms":null}</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupasmsources">packages.<name>.components.setup.asmSources<a class="headerlink" href="#packagescomponentssetupasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupbuild-tools">packages.<name>.components.setup.build-tools<a class="headerlink" href="#packagescomponentssetupbuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupbuildable">packages.<name>.components.setup.buildable<a class="headerlink" href="#packagescomponentssetupbuildable" title="Permanent link">&para;</a></h2>
@@ -3187,11 +3145,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupcsources">packages.<name>.components.setup.cSources<a class="headerlink" href="#packagescomponentssetupcsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupcmmsources">packages.<name>.components.setup.cmmSources<a class="headerlink" href="#packagescomponentssetupcmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupconfigureallcomponents">packages.<name>.components.setup.configureAllComponents<a class="headerlink" href="#packagescomponentssetupconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -3210,11 +3168,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupcxxsources">packages.<name>.components.setup.cxxSources<a class="headerlink" href="#packagescomponentssetupcxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupdepends">packages.<name>.components.setup.depends<a class="headerlink" href="#packagescomponentssetupdepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupdocheck">packages.<name>.components.setup.doCheck<a class="headerlink" href="#packagescomponentssetupdocheck" title="Permanent link">&para;</a></h2>
@@ -3293,7 +3251,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupextrasrcfiles">packages.<name>.components.setup.extraSrcFiles<a class="headerlink" href="#packagescomponentssetupextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupframeworks">packages.<name>.components.setup.frameworks<a class="headerlink" href="#packagescomponentssetupframeworks" title="Permanent link">&para;</a></h2>
@@ -3309,19 +3267,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuphssourcedirs">packages.<name>.components.setup.hsSourceDirs<a class="headerlink" href="#packagescomponentssetuphssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupincludedirs">packages.<name>.components.setup.includeDirs<a class="headerlink" href="#packagescomponentssetupincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupincludes">packages.<name>.components.setup.includes<a class="headerlink" href="#packagescomponentssetupincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupjssources">packages.<name>.components.setup.jsSources<a class="headerlink" href="#packagescomponentssetupjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupkeepsource">packages.<name>.components.setup.keepSource<a class="headerlink" href="#packagescomponentssetupkeepsource" title="Permanent link">&para;</a></h2>
@@ -3330,15 +3288,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuplibs">packages.<name>.components.setup.libs<a class="headerlink" href="#packagescomponentssetuplibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupmainpath">packages.<name>.components.setup.mainPath<a class="headerlink" href="#packagescomponentssetupmainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupmodules">packages.<name>.components.setup.modules<a class="headerlink" href="#packagescomponentssetupmodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuppkgconfig">packages.<name>.components.setup.pkgconfig<a class="headerlink" href="#packagescomponentssetuppkgconfig" title="Permanent link">&para;</a></h2>
@@ -3351,11 +3309,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupplatforms">packages.<name>.components.setup.platforms<a class="headerlink" href="#packagescomponentssetupplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupplugins">packages.<name>.components.setup.plugins<a class="headerlink" href="#packagescomponentssetupplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuppluginsargs">packages.<name>.components.setup.plugins.*.args<a class="headerlink" href="#packagescomponentssetuppluginsargs" title="Permanent link">&para;</a></h2>
@@ -3363,7 +3321,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuppluginslibrary">packages.<name>.components.setup.plugins.*.library<a class="headerlink" href="#packagescomponentssetuppluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuppluginsmodulename">packages.<name>.components.setup.plugins.*.moduleName<a class="headerlink" href="#packagescomponentssetuppluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -3436,7 +3394,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetupshellhook">packages.<name>.components.setup.shellHook<a class="headerlink" href="#packagescomponentssetupshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssetuptestflags">packages.<name>.components.setup.testFlags<a class="headerlink" href="#packagescomponentssetuptestflags" title="Permanent link">&para;</a></h2>
@@ -3455,15 +3413,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibs">packages.<name>.components.sublibs<a class="headerlink" href="#packagescomponentssublibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: attribute set of submodule</p>
+<p><strong>Type</strong>: attribute set of (submodule)</p>
 <p><strong>Default</strong>: {}</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsasmsources">packages.<name>.components.sublibs.<name>.asmSources<a class="headerlink" href="#packagescomponentssublibsasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsbuild-tools">packages.<name>.components.sublibs.<name>.build-tools<a class="headerlink" href="#packagescomponentssublibsbuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsbuildable">packages.<name>.components.sublibs.<name>.buildable<a class="headerlink" href="#packagescomponentssublibsbuildable" title="Permanent link">&para;</a></h2>
@@ -3471,11 +3429,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibscsources">packages.<name>.components.sublibs.<name>.cSources<a class="headerlink" href="#packagescomponentssublibscsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibscmmsources">packages.<name>.components.sublibs.<name>.cmmSources<a class="headerlink" href="#packagescomponentssublibscmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsconfigureallcomponents">packages.<name>.components.sublibs.<name>.configureAllComponents<a class="headerlink" href="#packagescomponentssublibsconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -3494,11 +3452,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibscxxsources">packages.<name>.components.sublibs.<name>.cxxSources<a class="headerlink" href="#packagescomponentssublibscxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsdepends">packages.<name>.components.sublibs.<name>.depends<a class="headerlink" href="#packagescomponentssublibsdepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsdocheck">packages.<name>.components.sublibs.<name>.doCheck<a class="headerlink" href="#packagescomponentssublibsdocheck" title="Permanent link">&para;</a></h2>
@@ -3577,7 +3535,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsextrasrcfiles">packages.<name>.components.sublibs.<name>.extraSrcFiles<a class="headerlink" href="#packagescomponentssublibsextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsframeworks">packages.<name>.components.sublibs.<name>.frameworks<a class="headerlink" href="#packagescomponentssublibsframeworks" title="Permanent link">&para;</a></h2>
@@ -3593,19 +3551,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibshssourcedirs">packages.<name>.components.sublibs.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentssublibshssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsincludedirs">packages.<name>.components.sublibs.<name>.includeDirs<a class="headerlink" href="#packagescomponentssublibsincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsincludes">packages.<name>.components.sublibs.<name>.includes<a class="headerlink" href="#packagescomponentssublibsincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsjssources">packages.<name>.components.sublibs.<name>.jsSources<a class="headerlink" href="#packagescomponentssublibsjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibskeepsource">packages.<name>.components.sublibs.<name>.keepSource<a class="headerlink" href="#packagescomponentssublibskeepsource" title="Permanent link">&para;</a></h2>
@@ -3614,15 +3572,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibslibs">packages.<name>.components.sublibs.<name>.libs<a class="headerlink" href="#packagescomponentssublibslibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsmainpath">packages.<name>.components.sublibs.<name>.mainPath<a class="headerlink" href="#packagescomponentssublibsmainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsmodules">packages.<name>.components.sublibs.<name>.modules<a class="headerlink" href="#packagescomponentssublibsmodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibspkgconfig">packages.<name>.components.sublibs.<name>.pkgconfig<a class="headerlink" href="#packagescomponentssublibspkgconfig" title="Permanent link">&para;</a></h2>
@@ -3635,11 +3593,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsplatforms">packages.<name>.components.sublibs.<name>.platforms<a class="headerlink" href="#packagescomponentssublibsplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsplugins">packages.<name>.components.sublibs.<name>.plugins<a class="headerlink" href="#packagescomponentssublibsplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibspluginsargs">packages.<name>.components.sublibs.<name>.plugins.*.args<a class="headerlink" href="#packagescomponentssublibspluginsargs" title="Permanent link">&para;</a></h2>
@@ -3647,7 +3605,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibspluginslibrary">packages.<name>.components.sublibs.<name>.plugins.*.library<a class="headerlink" href="#packagescomponentssublibspluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibspluginsmodulename">packages.<name>.components.sublibs.<name>.plugins.*.moduleName<a class="headerlink" href="#packagescomponentssublibspluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -3720,7 +3678,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibsshellhook">packages.<name>.components.sublibs.<name>.shellHook<a class="headerlink" href="#packagescomponentssublibsshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentssublibstestflags">packages.<name>.components.sublibs.<name>.testFlags<a class="headerlink" href="#packagescomponentssublibstestflags" title="Permanent link">&para;</a></h2>
@@ -3739,15 +3697,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstests">packages.<name>.components.tests<a class="headerlink" href="#packagescomponentstests" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: attribute set of submodule</p>
+<p><strong>Type</strong>: attribute set of (submodule)</p>
 <p><strong>Default</strong>: {}</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsasmsources">packages.<name>.components.tests.<name>.asmSources<a class="headerlink" href="#packagescomponentstestsasmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsbuild-tools">packages.<name>.components.tests.<name>.build-tools<a class="headerlink" href="#packagescomponentstestsbuild-tools" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsbuildable">packages.<name>.components.tests.<name>.buildable<a class="headerlink" href="#packagescomponentstestsbuildable" title="Permanent link">&para;</a></h2>
@@ -3755,11 +3713,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestscsources">packages.<name>.components.tests.<name>.cSources<a class="headerlink" href="#packagescomponentstestscsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestscmmsources">packages.<name>.components.tests.<name>.cmmSources<a class="headerlink" href="#packagescomponentstestscmmsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsconfigureallcomponents">packages.<name>.components.tests.<name>.configureAllComponents<a class="headerlink" href="#packagescomponentstestsconfigureallcomponents" title="Permanent link">&para;</a></h2>
@@ -3778,11 +3736,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestscxxsources">packages.<name>.components.tests.<name>.cxxSources<a class="headerlink" href="#packagescomponentstestscxxsources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsdepends">packages.<name>.components.tests.<name>.depends<a class="headerlink" href="#packagescomponentstestsdepends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsdocheck">packages.<name>.components.tests.<name>.doCheck<a class="headerlink" href="#packagescomponentstestsdocheck" title="Permanent link">&para;</a></h2>
@@ -3861,7 +3819,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: true</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsextrasrcfiles">packages.<name>.components.tests.<name>.extraSrcFiles<a class="headerlink" href="#packagescomponentstestsextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsframeworks">packages.<name>.components.tests.<name>.frameworks<a class="headerlink" href="#packagescomponentstestsframeworks" title="Permanent link">&para;</a></h2>
@@ -3877,19 +3835,19 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestshssourcedirs">packages.<name>.components.tests.<name>.hsSourceDirs<a class="headerlink" href="#packagescomponentstestshssourcedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: ["."]</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsincludedirs">packages.<name>.components.tests.<name>.includeDirs<a class="headerlink" href="#packagescomponentstestsincludedirs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsincludes">packages.<name>.components.tests.<name>.includes<a class="headerlink" href="#packagescomponentstestsincludes" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsjssources">packages.<name>.components.tests.<name>.jsSources<a class="headerlink" href="#packagescomponentstestsjssources" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestskeepsource">packages.<name>.components.tests.<name>.keepSource<a class="headerlink" href="#packagescomponentstestskeepsource" title="Permanent link">&para;</a></h2>
@@ -3898,15 +3856,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestslibs">packages.<name>.components.tests.<name>.libs<a class="headerlink" href="#packagescomponentstestslibs" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of null or package or list of package</p>
+<p><strong>Type</strong>: list of (null or package or list of package)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsmainpath">packages.<name>.components.tests.<name>.mainPath<a class="headerlink" href="#packagescomponentstestsmainpath" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsmodules">packages.<name>.components.tests.<name>.modules<a class="headerlink" href="#packagescomponentstestsmodules" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestspkgconfig">packages.<name>.components.tests.<name>.pkgconfig<a class="headerlink" href="#packagescomponentstestspkgconfig" title="Permanent link">&para;</a></h2>
@@ -3919,11 +3877,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: false</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsplatforms">packages.<name>.components.tests.<name>.platforms<a class="headerlink" href="#packagescomponentstestsplatforms" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: null or list of unspecified</p>
+<p><strong>Type</strong>: null or (list of unspecified value)</p>
 <p><strong>Default</strong>: null</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsplugins">packages.<name>.components.tests.<name>.plugins<a class="headerlink" href="#packagescomponentstestsplugins" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of submodule</p>
+<p><strong>Type</strong>: list of (submodule)</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestspluginsargs">packages.<name>.components.tests.<name>.plugins.*.args<a class="headerlink" href="#packagescomponentstestspluginsargs" title="Permanent link">&para;</a></h2>
@@ -3931,7 +3889,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestspluginslibrary">packages.<name>.components.tests.<name>.plugins.*.library<a class="headerlink" href="#packagescomponentstestspluginslibrary" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestspluginsmodulename">packages.<name>.components.tests.<name>.plugins.*.moduleName<a class="headerlink" href="#packagescomponentstestspluginsmodulename" title="Permanent link">&para;</a></h2>
@@ -4004,7 +3962,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentstestsshellhook">packages.<name>.components.tests.<name>.shellHook<a class="headerlink" href="#packagescomponentstestsshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagescomponentsteststestflags">packages.<name>.components.tests.<name>.testFlags<a class="headerlink" href="#packagescomponentsteststestflags" title="Permanent link">&para;</a></h2>
@@ -4158,7 +4116,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagedatafiles">packages.<name>.package.dataFiles<a class="headerlink" href="#packagespackagedatafiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagedescription">packages.<name>.package.description<a class="headerlink" href="#packagespackagedescription" title="Permanent link">&para;</a></h2>
@@ -4170,15 +4128,15 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>Default</strong>: "MinimalDetails"</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackageextradocfiles">packages.<name>.package.extraDocFiles<a class="headerlink" href="#packagespackageextradocfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackageextrasrcfiles">packages.<name>.package.extraSrcFiles<a class="headerlink" href="#packagespackageextrasrcfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackageextratmpfiles">packages.<name>.package.extraTmpFiles<a class="headerlink" href="#packagespackageextratmpfiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagehomepage">packages.<name>.package.homepage<a class="headerlink" href="#packagespackagehomepage" title="Permanent link">&para;</a></h2>
@@ -4206,7 +4164,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagelicensefiles">packages.<name>.package.licenseFiles<a class="headerlink" href="#packagespackagelicensefiles" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagemaintainer">packages.<name>.package.maintainer<a class="headerlink" href="#packagespackagemaintainer" title="Permanent link">&para;</a></h2>
@@ -4214,7 +4172,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagesetup-depends">packages.<name>.package.setup-depends<a class="headerlink" href="#packagespackagesetup-depends" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespackagespecversion">packages.<name>.package.specVersion<a class="headerlink" href="#packagespackagespecversion" title="Permanent link">&para;</a></h2>
@@ -4230,7 +4188,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Default</strong></p>
 <p><strong>No Example</strong></p>
 <h2 id="packagespatches">packages.<name>.patches<a class="headerlink" href="#packagespatches" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: list of unspecified or path</p>
+<p><strong>Type</strong>: list of (unspecified value or (path))</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagesplanned">packages.<name>.planned<a class="headerlink" href="#packagesplanned" title="Permanent link">&para;</a></h2>
@@ -4316,11 +4274,11 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="packagesshellhook">packages.<name>.shellHook<a class="headerlink" href="#packagesshellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagessrc">packages.<name>.src<a class="headerlink" href="#packagessrc" title="Permanent link">&para;</a></h2>
-<p><strong>Type</strong>: path or package</p>
+<p><strong>Type</strong>: (path) or package</p>
 <p><strong>Default</strong>: "pkgs.fetchurl { url = \"mirror://hackage/${config.name}.tar.gz\"; inherit (config) sha256; };"</p>
 <p><strong>No Example</strong></p>
 <h2 id="packagestestflags">packages.<name>.testFlags<a class="headerlink" href="#packagestestflags" title="Permanent link">&para;</a></h2>
@@ -4402,7 +4360,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="setup-depends">setup-depends<a class="headerlink" href="#setup-depends" title="Permanent link">&para;</a></h2>
 <p>pkgs to globally provide to Setup.hs builds</p>
-<p><strong>Type</strong>: list of unspecified</p>
+<p><strong>Type</strong>: list of unspecified value</p>
 <p><strong>Default</strong>: []</p>
 <p><strong>No Example</strong></p>
 <h2 id="setupbuildflags">setupBuildFlags<a class="headerlink" href="#setupbuildflags" title="Permanent link">&para;</a></h2>
@@ -4419,7 +4377,7 @@ For NixOS, the default value for this option includes at least this argument:
 <p><strong>No Example</strong></p>
 <h2 id="shellhook">shellHook<a class="headerlink" href="#shellhook" title="Permanent link">&para;</a></h2>
 <p>Hook to run when entering a shell</p>
-<p><strong>Type</strong>: unspecified</p>
+<p><strong>Type</strong>: unspecified value</p>
 <p><strong>Default</strong>: ""</p>
 <p><strong>No Example</strong></p>
 <h2 id="testflags">testFlags<a class="headerlink" href="#testflags" title="Permanent link">&para;</a></h2>
