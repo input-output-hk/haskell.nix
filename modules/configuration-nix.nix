@@ -91,7 +91,7 @@ in {
 
   packages.discount.components.library.libs = pkgs.lib.mkForce [ pkgs.discount ];
 
-  packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [ pkgs.llvm ];
+  packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [ pkgs.llvmPackages_12.llvm ];
 
   packages.BNFC.components.tests.doctests.build-tools = [
     config.hsPkgs.buildPackages.alex
