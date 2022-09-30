@@ -562,8 +562,14 @@ let
         fi
         rm -rf dist-tmp-dir
       ''
-    ) + (lib.optionalString (keepSource && haskellLib.isLibrary componentId) ''
-        remove-references-to -t $out ${name}.conf
+    ) + (
+      # Avoid circular refernces that crop up by removing references to $out
+      # from the current directory ($source).
+      # So far we have seen these in:
+      # * The `${name}.conf` of a library component.
+      # * The `hie` files for the Paths_ module (when building the stack exe).
+      lib.optionalString keepSource ''
+        find . -type f -exec remove-references-to -t $out '{}' +
     '') + (lib.optionalString (haskellLib.isTest componentId) ''
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');
