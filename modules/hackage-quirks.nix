@@ -105,4 +105,15 @@ in [
       })];
     };
 
+    stack = {
+      modules = [{
+        # Stack has a custom setup that expects both the library and stack executable
+        # to be configured at the same time.  Unfortunately this does mean that
+        # the library component is rebuilt unecessarily in the exe component derivation.
+        packages.stack.components.exes.stack.configureAllComponents = true;
+        # But we don't want to configure the tests as they have dependencies that
+        # are not included in the `exes` dependencies.
+        packages.stack.components.exes.stack.configureFlags = ["--disable-tests"];
+      }];
+    };
   }
