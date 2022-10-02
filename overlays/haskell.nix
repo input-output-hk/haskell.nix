@@ -740,6 +740,7 @@ final: prev: {
             rawFlake =
               let
                 packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
+                checkedProject = project.appendModule { checkMaterialization = true; };
               in {
                 # Used by:
                 #   `nix build .#pkg-name:lib:pkg-name`
@@ -790,8 +791,13 @@ final: prev: {
                   ) (packageNames project));
                 # Used by hydra:
                 hydraJobs.checks = rawFlake.checks;
-                # Build the plan and check it if materialized
-                hydraJobs.plan-nix = (project.appendModule { checkMaterialization = true; }).plan-nix;
+              } // final.lib.optionalAttrs (checkedProject ? plan-nix) {
+                # Build the plan-nix and check it if materialized
+                hydraJobs.plan-nix = checkedProject.plan-nix;
+              } // final.lib.optionalAttrs (checkedProject ? stack-nix) {
+                # Build the stack-nix and check it if materialized
+                hydraJobs.stack-nix = checkedProject.stack-nix;
+              } // {
                 # Build tools and cache tools needed for the project
                 hydraJobs.roots = project.roots;
                 hydraJobs.coverage =
