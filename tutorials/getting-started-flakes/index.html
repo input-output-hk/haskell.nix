@@ -246,7 +246,7 @@ projects.</p>
       };
     in flake // {
       # Built by `nix build .`
-      packages.${system}.default = flake.packages.&quot;hello:exe:hello&quot;;
+      packages.default = flake.packages.&quot;hello:exe:hello&quot;;
     });
 }
 </code></pre>
