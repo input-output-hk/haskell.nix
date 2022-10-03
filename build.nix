@@ -5,7 +5,7 @@
 let
   haskellNix = (import ./default.nix {});
 in
-{ nixpkgs ? haskellNix.sources.nixpkgs-2205
+{ nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , evalPackages ? import nixpkgs nixpkgsArgs
@@ -32,7 +32,14 @@ in rec {
             "ghc882" = "3.3.6";
             "ghc883" = "3.3.6";
             "ghc884" = "3.3.6";
-          }.compiler-nix-name or "latest";
+            "ghc8101" = "3.4.1";
+            "ghc8102" = "3.4.1";
+            "ghc8103" = "3.4.1";
+            "ghc8104" = "3.4.1";
+            "ghc8105" = "3.4.1";
+            "ghc8106" = "3.4.1";
+            "ghc8107" = "3.4.1";
+          }.${compiler-nix-name} or "latest";
       };
       hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
     })
@@ -49,7 +56,7 @@ in rec {
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
       cabal-install = haskell.internal-cabal-install;
-      inherit (haskell) update-index-state-hashes;
+      inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
@@ -57,6 +64,7 @@ in rec {
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
       nix-tools = haskell.internal-nix-tools;
       cabal-install = haskell.internal-cabal-install;
+      inherit (haskell) cabal-issue-8352-workaround;
     };
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {

@@ -45,15 +45,15 @@ in {
       default = "cabal.project";
     };
     cabalProject = mkOption {
-      type = nullOr str;
+      type = nullOr lines;
       default = readIfExists config.src config.cabalProjectFileName;
     };
     cabalProjectLocal = mkOption {
-      type = nullOr str;
+      type = nullOr lines;
       default = readIfExists config.src "${config.cabalProjectFileName}.local";
     };
     cabalProjectFreeze = mkOption {
-      type = nullOr str;
+      type = nullOr lines;
       default = readIfExists config.src "${config.cabalProjectFileName}.freeze";
     };
     ghc = mkOption {
@@ -79,7 +79,7 @@ in {
       description = "cabal-install to use when running `cabal configure`";
     };
     configureArgs = mkOption {
-      type = nullOr str;
+      type = nullOr (separatedString " ");
       default = "";
       description = ''
         Extra arguments to pass to `cabal v2-configure`.
@@ -90,7 +90,7 @@ in {
       '';
     };
     sha256map = mkOption {
-      type = nullOr unspecified;
+      type = nullOr (attrsOf (either str (attrsOf str)));
       default = null;
       description = ''
         An alternative to adding `--sha256` comments into the

@@ -129,6 +129,10 @@ steps:
     command:
       - nix-build build.nix -A maintainer-scripts.check-materialization-concurrency -o check-materialization-concurrency.sh
       - ./check-materialization-concurrency.sh
+    retry:
+      automatic:
+        - exit_status: "*"
+          limit: 10
 
   - label: 'Make sure non store paths like can be used as src'
     command:
@@ -153,3 +157,7 @@ steps:
     agents:
       system: x86_64-linux
 
+  - label: 'nix-tools build'
+    command: cd ./nix-tools && .buildkite/nix-tools-build.sh
+    agents:
+      system: x86_64-linux

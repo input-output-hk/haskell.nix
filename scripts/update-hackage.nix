@@ -1,7 +1,7 @@
 { stdenv, lib, writeScript, coreutils, glibc, git, openssh
 , nix-tools, cabal-install, nixFlakes
 , gawk, bash, curl, findutils
-, update-index-state-hashes }@args:
+, update-index-state-hashes, cabal-issue-8352-workaround }@args:
 
 import ./update-external.nix
 (removeAttrs args ["update-index-state-hashes"]) {

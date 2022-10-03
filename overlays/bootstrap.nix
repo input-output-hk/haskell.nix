@@ -915,48 +915,9 @@ in {
             then "ghc8107"
             else args.compiler-nix-name;
         project =
-          final.haskell-nix.cabalProject ({pkgs, ...}: {
-            evalPackages = pkgs.buildPackages;
-            name = "nix-tools";
-            src = {
-              outPath = final.haskell-nix.sources.nix-tools;
-              # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
-              # Disable filtering keeps pre ond post nix 2.4 behaviour the same.  This means that
-              # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
-              # that `tools` in the shell will be built the same.
-              filterPath = { path, ... }: path;
-            };
-            # This is a handy way to use a local git clone of nix-tools when developing
-            # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
-            cabalProjectLocal = ''
-              allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
-            '';
-            materialized = ../materialized + "/${compiler-nix-name}/nix-tools";
-            modules = [
-              # Work around issue when using older ghc on new MacOS versions.  The
-              # old process library used by these versions of ghc uses `fork` in a
-              # way that can sometimes while evaluating template haskell.
-              ({pkgs, ...}: final.lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin
-                  && __elem args.compiler-nix-name [ "ghc865" "ghc881" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" ]
-                ) { packages.hnix.components.library.ghcOptions = [ "-j1" ]; }
-              )
-              {
-                packages.transformers-compat.components.library.doExactConfig = true;
-                packages.time-compat.components.library.doExactConfig = true;
-                packages.time-locale-compat.components.library.doExactConfig = true;
-                # Make Cabal reinstallable
-                reinstallableLibGhc = false;
-                nonReinstallablePkgs =
-                  [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                    "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-                    "ghc-boot"
-                    "ghc" "Win32" "array" "binary" "bytestring" "containers"
-                    "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
-                    "hpc"
-                    "mtl" "parsec" "process" "text" "time" "transformers"
-                    "unix" "xhtml"
-                  ];
-            }];
+          final.haskell-nix.hix.project ({
+            evalPackages = final.buildPackages;
+            src = ../nix-tools;
           } // args // { inherit compiler-nix-name; });
         exes =
           let

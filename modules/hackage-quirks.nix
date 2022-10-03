@@ -51,6 +51,11 @@ in [
         packages: .
         constraints: dependent-sum >=0.7.1.0
       ''
+      # TODO remove once these two plugins have been updated in hackage
+      + lib.optionalString (config.version == "1.8.0.0") ''
+        package haskell-language-server
+          flags: -qualifyimportednames -stylishhaskell${lib.optionalString (config.compiler-nix-name != "ghc902") " -hlint"}
+      ''
       # TODO Remove this flag once the hls-haddock-comments-plugin is updated in hackage to work with ghc 9.2
       + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924"]) ''
         package haskell-language-server
@@ -100,4 +105,15 @@ in [
       })];
     };
 
+    stack = {
+      modules = [{
+        # Stack has a custom setup that expects both the library and stack executable
+        # to be configured at the same time.  Unfortunately this does mean that
+        # the library component is rebuilt unecessarily in the exe component derivation.
+        packages.stack.components.exes.stack.configureAllComponents = true;
+        # But we don't want to configure the tests as they have dependencies that
+        # are not included in the `exes` dependencies.
+        packages.stack.components.exes.stack.configureFlags = ["--disable-tests"];
+      }];
+    };
   }

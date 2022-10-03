@@ -9,9 +9,14 @@ prev.lib.optionalAttrs (!prev.stdenv.hostPlatform.isDarwin) {
             name = "wine-5.4";
             version = "5.4";
             src = prev.fetchurl {
-            url = "https://dl.winehq.org/wine/source/5.x/wine-5.4.tar.xz";
-            sha256 = "sha256-Sz4rD/pUFfGZVA5gUcKMOXb86R6lv7LPSgmcJXMXBSw="; };
+              url = "https://dl.winehq.org/wine/source/5.x/wine-5.4.tar.xz";
+              sha256 = "sha256-Sz4rD/pUFfGZVA5gUcKMOXb86R6lv7LPSgmcJXMXBSw=";
+            };
             patches = [];
-            });
-        };
+            # Turning off the tests as there is a problem with the `schedsvc` test.
+            # With recent nixpkgs both the IDL files generate `_c.c` files with
+            # `handle_t rpc_handle` and that results in a linker error (duplicate symbols).
+            configureFlags = oldAttrs.configureFlags or [] ++ ["--disable-tests"];
+        });
+    };
 }

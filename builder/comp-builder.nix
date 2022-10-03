@@ -370,7 +370,7 @@ let
          frameworks # Frameworks will be needed at link time
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
-      ++ builtins.concatLists pkgconfig
+      ++ map pkgs.lib.getDev (builtins.concatLists pkgconfig)
       # These only need to be propagated for library components (otherwise they
       # will be in `buildInputs`)
       ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps
@@ -469,11 +469,13 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
-      $SETUP_HS copy ${lib.concatStringsSep " " (
-        setupInstallFlags
-        ++ lib.optional configureAllComponents
-              (haskellLib.componentTarget componentId)
-      )}
+      ${ # `Setup copy` does not install tests and benchmarks.
+        lib.optionalString (!haskellLib.isTest componentId && !haskellLib.isBenchmark componentId) ''
+          $SETUP_HS copy ${lib.concatStringsSep " " (
+            setupInstallFlags
+            ++ lib.optional configureAllComponents
+                  (haskellLib.componentTarget componentId)
+          )}''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -528,7 +530,7 @@ let
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
           ${if stdenv.hostPlatform.isGhcjs then ''
-            cat <(echo \#!${lib.getBin buildPackages.nodejs-12_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+            cat <(echo \#!${lib.getBin buildPackages.nodejs-18_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
           '' else ''
              cp -r ${testExecutable} $(dirname $out/bin/${exeName})
@@ -578,8 +580,14 @@ let
         fi
         rm -rf dist-tmp-dir
       ''
-    ) + (lib.optionalString (keepSource && haskellLib.isLibrary componentId) ''
-        remove-references-to -t $out ${name}.conf
+    ) + (
+      # Avoid circular refernces that crop up by removing references to $out
+      # from the current directory ($source).
+      # So far we have seen these in:
+      # * The `${name}.conf` of a library component.
+      # * The `hie` files for the Paths_ module (when building the stack exe).
+      lib.optionalString keepSource ''
+        find . -type f -exec remove-references-to -t $out '{}' +
     '') + (lib.optionalString (haskellLib.isTest componentId) ''
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');

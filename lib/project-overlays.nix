@@ -13,9 +13,12 @@
       # are provided implicitely by stdenv when using the normal shell:
       ++ (lib.filter lib.isDerivation final.shell.stdenv.defaultNativeBuildInputs)
       ++ lib.optional final.shell.stdenv.targetPlatform.isGnu final.pkgs.buildPackages.binutils;
-      env = lib.mapAttrsToList lib.nameValuePair {
-        inherit (final.shell) CABAL_CONFIG NIX_GHC_LIBDIR;
-      };
+      env = lib.mapAttrsToList lib.nameValuePair ({
+        inherit (final.shell) NIX_GHC_LIBDIR;
+      # CABAL_CONFIG is only set if the shell was built with exactDeps=true
+      } // lib.optionalAttrs (final.shell ? CABAL_CONFIG) {
+        inherit (final.shell) CABAL_CONFIG;
+      });
     };
   };
 
