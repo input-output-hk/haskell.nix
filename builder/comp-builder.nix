@@ -454,11 +454,13 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
-      $SETUP_HS copy ${lib.concatStringsSep " " (
-        setupInstallFlags
-        ++ lib.optional configureAllComponents
-              (haskellLib.componentTarget componentId)
-      )}
+      ${ # `Setup copy` does not install tests and benchmarks.
+        lib.optionalString (!haskellLib.isTest componentId && !haskellLib.isBenchmark componentId) ''
+          $SETUP_HS copy ${lib.concatStringsSep " " (
+            setupInstallFlags
+            ++ lib.optional configureAllComponents
+                  (haskellLib.componentTarget componentId)
+          )}''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -512,7 +514,7 @@ let
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
           ${if stdenv.hostPlatform.isGhcjs then ''
-            cat <(echo \#!${lib.getBin buildPackages.nodejs-12_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+            cat <(echo \#!${lib.getBin buildPackages.nodejs-18_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
           '' else ''
              cp -r ${testExecutable} $(dirname $out/bin/${exeName})
