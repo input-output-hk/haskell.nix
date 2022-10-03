@@ -454,11 +454,13 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
-      $SETUP_HS copy ${lib.concatStringsSep " " (
-        setupInstallFlags
-        ++ lib.optional configureAllComponents
-              (haskellLib.componentTarget componentId)
-      )}
+      ${ # `Setup copy` does not install tests and benchmarks.
+        lib.optionalString (!haskellLib.isTest componentId && !haskellLib.isBenchmark componentId) ''
+          $SETUP_HS copy ${lib.concatStringsSep " " (
+            setupInstallFlags
+            ++ lib.optional configureAllComponents
+                  (haskellLib.componentTarget componentId)
+          )}''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d

@@ -1,0 +1,8 @@
+cabal-version: 1.24
+name: test-only
+version: 1
+build-type: Simple
+test-suite my-test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  build-depends: base
