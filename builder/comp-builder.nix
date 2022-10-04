@@ -235,10 +235,16 @@ let
         "--ghc-options=-j1"
     );
 
+  # the build-tools version might be depending on the version of the package, similarly to patches
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) build-tools) ++
+      else [c]) 
+      (builtins.filter (x: !(isNull x))
+      (map 
+        (p: if builtins.isFunction p
+          then p { inherit  (package.identifier) version; inherit revision; }
+          else p) build-tools))) ++
     lib.optional (pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
