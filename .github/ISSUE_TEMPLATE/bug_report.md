@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+This template is a guide only, feel free add or omit sections as appropriate.
+
 **Describe the bug**
 
 A clear and concise description of what the bug is, including:
