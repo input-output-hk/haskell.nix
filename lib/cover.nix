@@ -16,8 +16,6 @@
 }:
 
 let
-  toBashArray = arr: "(" + (lib.concatStringsSep " " arr) + ")";
-
   mixDir = l: "${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}";
   mixDirs = map mixDir mixLibraries;
 
@@ -39,130 +37,35 @@ in pkgs.runCommand (name + "-coverage-report")
     LOCALE_ARCHIVE = "${pkgs.buildPackages.glibcLocales}/lib/locale/locale-archive";
   })
   ''
-    function markup() {
-      local -n srcDs=$1
-      local -n mixDs=$2
-      local -n includedModules=$3
-      local destDir=$4
-      local tixFile=$5
-
-      local hpcMarkupCmd=("hpc" "markup" "--destdir=$destDir")
-      for srcDir in "''${srcDs[@]}"; do
-        hpcMarkupCmd+=("--srcdir=$srcDir")
-      done
-
-      for mixDir in "''${mixDs[@]}"; do
-        hpcMarkupCmd+=("--hpcdir=$mixDir")
-      done
-
-      for module in "''${includedModules[@]}"; do
-        hpcMarkupCmd+=("--include=$module")
-      done
-
-      hpcMarkupCmd+=("$tixFile")
-
-      echo "''${hpcMarkupCmd[@]}"
-      eval "''${hpcMarkupCmd[@]}"
-    }
-
-    function sumTix() {
-      local -n includedModules=$1
-      local -n tixFs=$2
-      local outFile="$3"
-
-      if (( "''${#tixFs[@]}" > 0 )); then
-        local hpcSumCmd=("hpc" "sum" "--union" "--output=$outFile")
-
-        for module in "''${includedModules[@]}"; do
-          hpcSumCmd+=("--include=$module")
-        done
-
-        for tixFile in "''${tixFs[@]}"; do
-          hpcSumCmd+=("$tixFile")
-        done
-
-        echo "''${hpcSumCmd[@]}"
-        eval "''${hpcSumCmd[@]}"
-      else
-        # If there are no tix files we output an empty tix file so that we can
-        # markup an empty HTML coverage report. This is preferable to failing to
-        # output a HTML report.
-        echo 'Tix []' > $outFile
-      fi
-    }
-
-    function findModules() {
-      local -n result=$1
-      local -n searchDirs=$2
-      local pattern=$3
-
-      for dir in "''${searchDirs[@]}"; do
-        pushd $dir
-        local temp=()
-        mapfile -d $'\0' temp < <(find ./ -type f \
-          -wholename "$pattern" -not -name "Paths*" \
-          -exec basename {} \; \
-          | sed "s/\.mix$//" \
-          | tr "\n" "\0")
-        result+=("''${temp[@]}")
-        popd
-      done
-    }
-
     mkdir -p $out/nix-support
     mkdir -p $out/share/hpc/vanilla/mix/
     mkdir -p $out/share/hpc/vanilla/tix/${name}
     mkdir -p $out/share/hpc/vanilla/html/${name}
 
-    local srcDirs=${toBashArray srcDirs}
-    local mixDirs=${toBashArray mixDirs}
+    local srcDirArgs=$(mktemp)
+    ${lib.concatStringsSep "\n" (map (srcDir: ''
+        echo --srcdir=${srcDir} >> $srcDirArgs
+      '') srcDirs)
+    }
+    local mixDirArgs=$(mktemp)
+    ${ # Copy out mix files used for this report
+      lib.concatStrings (map (mixDir: ''
+        local dir=${mixDir}
+        echo --hpcdir=$dir >> $mixDirArgs
+        if [ -d $dir ]; then
+          cp -R "$dir" $out/share/hpc/vanilla/mix/
+        fi
+      '') mixDirs)
+    }
+    local includeArgs=$(mktemp)
+    find $out/share/hpc/vanilla/mix/ -type f \
+      -wholename "*.mix" -not -name "Paths*" \
+      -exec basename {} \; \
+      | sed "s/\.mix$//" \
+      | sed "s/^.*$/--include=\0/" \
+      >> $includeArgs
 
-    # Copy out mix files used for this report
-    for dir in "''${mixDirs[@]}"; do
-      if [ -d "$dir" ]; then
-        cp -R "$dir" $out/share/hpc/vanilla/mix/
-      fi
-    done
-
-    local mixModules=()
-    # Mix modules for all packages in "mixLibraries"
-    findModules mixModules mixDirs "*.mix"
-
-    # We need to make a distinction between library "exposed-modules" and
-    # "other-modules" used in test suites:
-    #  - "exposed-modules" are addressed as "$library-$version-$hash/module"
-    #  - "other-modules" are addressed as "module"
-    #
-    # This complicates the code required to find the mix modules. For a given mix directory:
-    #
-    # mix
-    # └── ntp-client-0.0.1
-    #     └── ntp-client-0.0.1-gYjRsBHUCaHX7ENcjHnw5
-    #         ├── Network.NTP.Client.mix
-    #         ├── Network.NTP.Client.Packet.mix
-    #         └── Network.NTP.Client.Query.mix
-    #
-    # Iff ntp-client uses "other-modules" in a test suite, both:
-    #   - "mix/ntp-client-0.0.1", and
-    #   - "mix/ntp-client-0.0.1/ntp-client-0.0.1-gYjRsBHUCaHX7ENcjHnw5"
-    # need to be provided to hpc as search directories.
-    #
-    # I'd prefer to just exclude "other-modules", but I can't think of an easy
-    # way to do that in bash.
-    #
-    # Here we expand the search dirs and modify the mix dirs accordingly:
-    for dir in "''${mixDirs[@]}"; do
-      local otherModulesSearchDirs=()
-      # Simply consider any directory with a mix file as a search directory.
-      mapfile -d $'\0' otherModulesSearchDirs < <(find $dir -type f \
-        -wholename "*.mix" \
-        -exec dirname {} \; \
-        | uniq \
-        | tr "\n" "\0")
-      mixDirs+=("''${otherModulesSearchDirs[@]}")
-    done
-
-    local tixFiles=()
+    local tixFiles=$(mktemp -d)/tixFiles
     ${lib.concatStringsSep "\n" (builtins.map (check: ''
       if [ -d "${check}/share/hpc/vanilla/tix" ]; then
         pushd ${check}/share/hpc/vanilla/tix
@@ -175,11 +78,19 @@ in pkgs.runCommand (name + "-coverage-report")
         cp "$tixFile" "$newTixFile"
 
         # Add the tix file to our list
-        tixFiles+=("$newTixFile")
+        echo $newTixFile >> $tixFiles
 
         # Create a coverage report for *just that check* affecting any of the
         # "mixLibraries"
-        markup srcDirs mixDirs mixModules "$out/share/hpc/vanilla/html/${check.name}/" "$newTixFile"
+        local responseFile=$(mktemp)
+        echo markup > $responseFile
+        echo '--destdir'=$out/share/hpc/vanilla/html/${check.name}/ >> $responseFile
+        cat $srcDirArgs $mixDirArgs $includeArgs >> $responseFile
+        echo $newTixFile >> $responseFile
+
+        echo hpc response file:
+        cat $responseFile
+        hpc @$responseFile
 
         popd
       fi
@@ -192,10 +103,33 @@ in pkgs.runCommand (name + "-coverage-report")
     local markupOutDir="$out/share/hpc/vanilla/html/${name}"
 
     # Sum all of our tix files
-    sumTix mixModules tixFiles "$sumTixFile"
+    if [ -e $tixFiles ]; then
+      local responseFile=$(mktemp)
+      echo sum > $responseFile
+      echo '--union' >> $responseFile
+      echo '--output'=$sumTixFile >> $responseFile
+      cat $includeArgs >> $responseFile
+      cat $tixFiles >> $responseFile
+
+      echo hpc response file:
+      cat $responseFile
+      hpc @$responseFile
+    else
+      # If there are no tix files we output an empty tix file so that we can
+      # markup an empty HTML coverage report. This is preferable to failing to
+      # output a HTML report.
+      echo 'Tix []' > $sumTixFile
+    fi
 
     # Markup a HTML report
-    markup srcDirs mixDirs mixModules "$markupOutDir" "$sumTixFile"
+    local responseFile=$(mktemp)
+    echo markup > $responseFile
+    echo '--destdir'=$markupOutDir >> $responseFile
+    cat $srcDirArgs $mixDirArgs $includeArgs >> $responseFile
+    echo $sumTixFile >> $responseFile
+    echo hpc response file:
+    cat $responseFile
+    hpc @$responseFile
 
     # Provide a HTML zipfile and Hydra links
     ( cd "$markupOutDir" ; zip -r $out/share/hpc/vanilla/${name}-html.zip . )

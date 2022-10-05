@@ -167,6 +167,8 @@ let
 
   index-state-pinned = index-state != null || cabalProjectIndexState != null;
 
+  pkgconfPkgs = import ./pkgconf-nixpkgs-map.nix pkgs;
+
 in
   assert (if index-state-found == null
     then throw "No index state passed and none found in ${cabalProjectFileName}" else true);
@@ -226,10 +228,10 @@ let
                   then throw "${inputMap.${repoData.url}.rev} may not match ${repoData.ref} for ${repoData.url} use \"${repoData.url}/${repoData.ref}\" as the inputMap key if ${repoData.ref} is a branch or tag that points to ${inputMap.${repoData.url}.rev}."
                   else inputMap.${repoData.url})
             else if repoData.sha256 != null
-              then fetchgit { inherit (repoData) url sha256; rev = repoData.ref; }
+            then fetchgit { inherit (repoData) url sha256; rev = repoData.rev or repoData.ref; }
             else
-              let drv = builtins.fetchGit { inherit (repoData) url ref; };
-              in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ${repoData.ref} download may fail in restricted mode (hydra)"
+              let drv = builtins.fetchGit { inherit (repoData) url ; rev = repoData.rev or repoData.ref; ref = repoData.ref or null; };
+              in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ref=${repoData.ref or "(unspecified)"} rev=${repoData.rev or "(unspecified)"} download may fail in restricted mode (hydra)"
                 (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a sha256map argument"
                  drv);
         in {
@@ -463,7 +465,7 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal ];
+    nativeBuildInputs = [ nix-tools dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
