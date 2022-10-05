@@ -220,8 +220,8 @@ let
       fetchPackageRepo = fetchgit: repoData:
         let
           fetched =
-            if inputMap ? "${repoData.url}/${repoData.ref}"
-              then inputMap."${repoData.url}/${repoData.ref}"
+            if inputMap ? "${repoData.url}/${repoData.rev or repoData.ref}"
+              then inputMap."${repoData.url}/${repoData.rev or repoData.ref}"
             else if inputMap ? ${repoData.url}
               then
                 (if inputMap.${repoData.url}.rev != repoData.ref
@@ -230,7 +230,11 @@ let
             else if repoData.sha256 != null
             then fetchgit { inherit (repoData) url sha256; rev = repoData.rev or repoData.ref; }
             else
-              let drv = builtins.fetchGit { inherit (repoData) url ; rev = repoData.rev or repoData.ref; ref = repoData.ref or null; };
+              let drv = builtins.fetchGit
+                { inherit (repoData) url ; ref = repoData.ref or null; }
+                # fetchGit does not accept "null" as rev, so when it's null
+                # we have to omit the argument completely.
+                // pkgs.lib.optionalAttrs (repoData ? rev) { inherit (repoData) rev; };
               in __trace "WARNING: No sha256 found for source-repository-package ${repoData.url} ref=${repoData.ref or "(unspecified)"} rev=${repoData.rev or "(unspecified)"} download may fail in restricted mode (hydra)"
                 (__trace "Consider adding `--sha256: ${hashPath drv}` to the ${cabalProjectFileName} file or passing in a sha256map argument"
                  drv);

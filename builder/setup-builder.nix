@@ -34,11 +34,18 @@ let
       ;
   };
 
-  executableToolDepends =
+  # the build-tools version might be depending on the version of the package, similarly to patches
+  executableToolDepends = 
+    let inherit (component) pkgconfig build-tools; in
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) component.build-tools) ++
-    lib.optional (component.pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
+      else [c]) 
+      (builtins.filter (x: !(isNull x))
+      (map 
+        (p: if builtins.isFunction p
+          then p { inherit  (package.identifier) version; inherit revision; }
+          else p) build-tools))) ++
+    lib.optional (pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
 
   drv =
     stdenv.mkDerivation ({

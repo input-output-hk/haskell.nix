@@ -215,6 +215,7 @@ let
     exe-lib-dlls = callTest ./exe-lib-dlls { inherit util; };
     ca-derivations = callTest ./ca-derivations { inherit CADerivationsEnabled; };
     ca-derivations-include = callTest ./ca-derivations-include { inherit CADerivationsEnabled; };
+    test-only = callTest ./test-only { inherit util; };
 
     unit = unitTests;
   };

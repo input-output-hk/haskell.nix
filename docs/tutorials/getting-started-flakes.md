@@ -97,7 +97,7 @@ Add `flake.nix`:
       };
     in flake // {
       # Built by `nix build .`
-      packages.${system}.default = flake.packages."hello:exe:hello";
+      packages.default = flake.packages."hello:exe:hello";
     });
 }
 ```

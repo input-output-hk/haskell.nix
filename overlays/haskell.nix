@@ -740,6 +740,7 @@ final: prev: {
             rawFlake =
               let
                 packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
+                checkedProject = project.appendModule { checkMaterialization = true; };
               in {
                 # Used by:
                 #   `nix build .#pkg-name:lib:pkg-name`
@@ -789,26 +790,33 @@ final: prev: {
                         (package.components.benchmarks)
                   ) (packageNames project));
                 # Used by hydra:
-                hydraJobs.checks = rawFlake.checks;
-                # Build the plan and check it if materialized
-                hydraJobs.plan-nix = (project.appendModule { checkMaterialization = true; }).plan-nix;
-                # Build tools and cache tools needed for the project
-                hydraJobs.roots = project.roots;
-                hydraJobs.coverage =
-                  let
-                    coverageProject = project.appendModule [
-                      project.args.flake.coverage
-                      {
-                        modules = [{
-                          packages = final.lib.genAttrs (packageNames project)
-                            (_: { doCoverage = final.lib.mkDefault true; });
-                        }];
-                      }
-                    ];
-                  in  builtins.listToAttrs (final.lib.concatMap (packageName: [{
-                      name = packageName;
-                      value = coverageProject.hsPkgs.${packageName}.coverageReport;
-                    }]) (packageNames coverageProject));
+                hydraJobs = {
+                    checks = rawFlake.checks;
+                  } // final.lib.optionalAttrs (checkedProject ? plan-nix) {
+                    # Build the plan-nix and check it if materialized
+                    plan-nix = checkedProject.plan-nix;
+                  } // final.lib.optionalAttrs (checkedProject ? stack-nix) {
+                    # Build the stack-nix and check it if materialized
+                    stack-nix = checkedProject.stack-nix;
+                  } // {
+                    # Build tools and cache tools needed for the project
+                    hydraJobs.roots = project.roots;
+                    hydraJobs.coverage =
+                      let
+                        coverageProject = project.appendModule [
+                          project.args.flake.coverage
+                          {
+                            modules = [{
+                              packages = final.lib.genAttrs (packageNames project)
+                                (_: { doCoverage = final.lib.mkDefault true; });
+                            }];
+                          }
+                        ];
+                      in  builtins.listToAttrs (final.lib.concatMap (packageName: [{
+                          name = packageName;
+                          value = coverageProject.hsPkgs.${packageName}.coverageReport;
+                        }]) (packageNames coverageProject));
+                  };
                 devShells.default = project.shell;
                 devShell = project.shell;
               };
