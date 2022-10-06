@@ -56,7 +56,7 @@ with lib.types;
       type = attrs;
       default =
         if pkgs.buildPackages.system == config.evalSystem
-          then pkgs.buildPackages
+          then pkgs.pkgsBuildBuild
         else
           import pkgs.path {
             system = config.evalSystem;
