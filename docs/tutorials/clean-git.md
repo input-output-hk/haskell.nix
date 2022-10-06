@@ -26,11 +26,11 @@ are ways to fix this with a module:
 
 Use `extraSrcFiles` to add dirs the test needs (this will not result
 in a change to the `.cabal` file the test will still be built the same).
-```
+```nix
 components.tests.test.extraSrcFiles = [ "subdir-needed-by-test" ];
 ```
 Or alternatively, override the source with a suitable filter function.
-```
+```nix
 components.tests.test.src = haskell-nix.haskellLib.cleanSourceWith {
     inherit src;
     subdir = "path-to-package";
@@ -74,7 +74,7 @@ packages:
 
 Then in `repoA/default.nix` we can use:
 
-```
+```nix
 haskell-nix.project {
   src = haskell-nix.haskellLib.cleanSourceWith {
     src = haskell-nix.haskellLib.cleanGits {
