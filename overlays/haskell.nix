@@ -800,8 +800,8 @@ final: prev: {
                     stack-nix = checkedProject.stack-nix;
                   } // {
                     # Build tools and cache tools needed for the project
-                    hydraJobs.roots = project.roots;
-                    hydraJobs.coverage =
+                    roots = project.roots;
+                    coverage =
                       let
                         coverageProject = project.appendModule [
                           project.args.flake.coverage
