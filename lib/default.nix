@@ -370,7 +370,7 @@ in {
             value = flake.devShells.${n};
           }) (__attrNames flake.devShells));
         } // lib.optionalAttrs (flake ? hydraJobs) {
-          hydraJobs = prefixAttrs (prefix + sep) flake.hydraJobs;
+          hydraJobs.${lib.removeSuffix ":" prefix} = flake.hydraJobs;
         };
 
   # Used by `combineFlakes` to combine flakes together
@@ -414,6 +414,27 @@ in {
               { name = "${packageName}:test:${n}"; value = v; })
             (lib.filterAttrs (_: v: lib.isDerivation v) (package.checks))
         ) (packageNames project));
+      ciJobs = {
+          # Run all the tests
+          inherit checks;
+          # Build tools and cache tools needed for the project
+          inherit (project) roots;
+          # Also build and cache any tools in the `devShell`
+          devShell = project.shell;
+          # Run HPC on the tests
+          coverage = builtins.listToAttrs (lib.concatMap (packageName: [{
+            name = packageName;
+            value = coverageProject.hsPkgs.${packageName}.coverageReport;
+          }]) (packageNames coverageProject));
+        }
+        # Build the plan-nix and check it if materialized
+        // lib.optionalAttrs (checkedProject ? plan-nix) {
+          plan-nix = checkedProject.plan-nix;
+        }
+        # Build the stack-nix and check it if materialized
+        // lib.optionalAttrs (checkedProject ? stack-nix) {
+          stack-nix = checkedProject.stack-nix;
+        };
     in {
       # Used by:
       #   `nix build .#pkg-name:lib:pkg-name`
@@ -456,33 +477,11 @@ in {
                 { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
               (package.components.benchmarks)
         ) (packageNames project));
-      # Used by hydra and cicero:
-      hydraJobs =
-        prefixAttrs "checks:" checks
-
-        # Build the plan-nix and check it if materialized
-        // lib.optionalAttrs (checkedProject ? plan-nix) {
-          plan-nix = checkedProject.plan-nix;
-        }
-
-        # Build the stack-nix and check it if materialized
-        // lib.optionalAttrs (checkedProject ? stack-nix) {
-          stack-nix = checkedProject.stack-nix;
-        }
-
-        // {
-          # Build tools and cache tools needed for the project
-          inherit (project) roots;
-          # Also build and cache any tools in the `devShell`
-          devShell = project.shell;
-        }
-
-        # Run HPC on the tests
-        // builtins.listToAttrs (lib.concatMap (packageName: [{
-          name = "coverage:" + packageName;
-          value = coverageProject.hsPkgs.${packageName}.coverageReport;
-        }]) (packageNames coverageProject))
-        ;
+      # Used by hydra.
+      hydraJobs = ciJobs;
+      # Like `hydraJobs` but with system first so that it the IFDs will not have
+      # to form systems we are not testing.
+      inherit ciJobs;
       devShells.default = project.shell;
       devShell = project.shell;
     };
