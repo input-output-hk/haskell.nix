@@ -370,7 +370,7 @@ in {
             value = flake.devShells.${n};
           }) (__attrNames flake.devShells));
         } // lib.optionalAttrs (flake ? hydraJobs) {
-          hydraJobs.${lib.removeSuffix ":" prefix} = flake.hydraJobs;
+          hydraJobs = prefixAttrs (prefix + sep) flake.hydraJobs;
         };
 
   # Used by `combineFlakes` to combine flakes together
@@ -393,4 +393,97 @@ in {
   # one in the list will be used.
   combineFlakes = sep: prefixAndFlakes: builtins.foldl' addFlakes {}
     (lib.mapAttrsToList (prefix: flake: prefixFlake prefix sep flake) prefixAndFlakes);
+
+  mkFlake = project: packages: coverageProjectModule:
+    let
+      packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
+      checkedProject = project.appendModule { checkMaterialization = true; };
+      coverageProject = project.appendModule [
+        coverageProjectModule
+        {
+          modules = [{
+            packages = lib.genAttrs (packageNames project)
+              (_: { doCoverage = lib.mkDefault true; });
+          }];
+        }
+      ];
+      checks = builtins.listToAttrs (
+        lib.concatMap (packageName:
+          let package = project.hsPkgs.${packageName};
+          in lib.mapAttrsToList (n: v:
+              { name = "${packageName}:test:${n}"; value = v; })
+            (lib.filterAttrs (_: v: lib.isDerivation v) (package.checks))
+        ) (packageNames project));
+    in {
+      # Used by:
+      #   `nix build .#pkg-name:lib:pkg-name`
+      #   `nix build .#pkg-name:lib:sublib-name`
+      #   `nix build .#pkg-name:exe:exe-name`
+      #   `nix build .#pkg-name:test:test-name`
+      packages = builtins.listToAttrs (
+        lib.concatMap (packageName:
+          let package = project.hsPkgs.${packageName};
+          in lib.optional (package.components ? library)
+                { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+            ++ lib.mapAttrsToList (n: v:
+                { name = "${packageName}:lib:${n}"; value = v; })
+              (package.components.sublibs)
+            ++ lib.mapAttrsToList (n: v:
+                { name = "${packageName}:exe:${n}"; value = v; })
+              (package.components.exes)
+            ++ lib.mapAttrsToList (n: v:
+                { name = "${packageName}:test:${n}"; value = v; })
+              (package.components.tests)
+            ++ lib.mapAttrsToList (n: v:
+                { name = "${packageName}:bench:${n}"; value = v; })
+              (package.components.benchmarks)
+        ) (packageNames project));
+      # Used by:
+      #   `nix flake check`
+      inherit checks;
+      #   `nix run .#pkg-name:exe:exe-name`
+      #   `nix run .#pkg-name:test:test-name`
+      apps = builtins.listToAttrs (
+        lib.concatMap (packageName:
+          let package = project.hsPkgs.${packageName};
+          in lib.mapAttrsToList (n: v:
+                { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+              (package.components.exes)
+            ++ lib.mapAttrsToList (n: v:
+                { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+              (package.components.tests)
+            ++ lib.mapAttrsToList (n: v:
+                { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
+              (package.components.benchmarks)
+        ) (packageNames project));
+      # Used by hydra and cicero:
+      hydraJobs =
+        prefixAttrs "checks:" checks
+
+        # Build the plan-nix and check it if materialized
+        // lib.optionalAttrs (checkedProject ? plan-nix) {
+          plan-nix = checkedProject.plan-nix;
+        }
+
+        # Build the stack-nix and check it if materialized
+        // lib.optionalAttrs (checkedProject ? stack-nix) {
+          stack-nix = checkedProject.stack-nix;
+        }
+
+        // {
+          # Build tools and cache tools needed for the project
+          inherit (project) roots;
+          # Also build and cache any tools in the `devShell`
+          devShell = project.shell;
+        }
+
+        # Run HPC on the tests
+        // builtins.listToAttrs (lib.concatMap (packageName: [{
+          name = "coverage:" + packageName;
+          value = coverageProject.hsPkgs.${packageName}.coverageReport;
+        }]) (packageNames coverageProject))
+        ;
+      devShells.default = project.shell;
+      devShell = project.shell;
+    };
 }
