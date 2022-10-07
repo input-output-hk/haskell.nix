@@ -19,7 +19,7 @@ containing an `flake.nix` and `nix/hix.nix` file. The project can be used with
 regular `nix` tools.
 
 ```bash
-nix flake init --template haskell-nix#template --impure
+nix flake init --template templates#haskell-nix --impure
 # `--impure` is required by `builtins.currentSystem`
 nix develop
 cabal build
