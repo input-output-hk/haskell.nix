@@ -39,7 +39,7 @@ in rec {
             "ghc8104" = "3.4.1";
             "ghc8105" = "3.4.1";
             "ghc8106" = "3.4.1";
-            "ghc8107" = "3.4.1";
+            "ghc8107" = "latest";  # TODO put this back once we see how well the error is reported by hydra
           }.${compiler-nix-name} or "latest";
       };
       hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
