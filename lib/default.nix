@@ -420,7 +420,7 @@ in {
       builtins.listToAttrs (lib.concatMap (packageName: [{
         name = packageName;
         value = coverageProject.hsPkgs.${packageName}.coverageReport;
-      }]) (packageNames coverageProject)); 
+      }]) (packageNames coverageProject));
 
   mkFlakePackages = haskellPackages: builtins.listToAttrs (
     lib.concatLists (lib.mapAttrsToList (packageName: package:
@@ -453,6 +453,27 @@ in {
           (package.components.benchmarks)
     ) haskellPackages));
 
+  mkFlakeCiJobs = project: {
+          checks
+        , coverage
+        , devShells
+        , checkedProject
+    }: {
+      # Run all the tests and code coverage
+      # Also build and cache any tools in the `devShells`
+      inherit checks coverage devShells;
+      # Build tools and cache tools needed for the project
+      inherit (project) roots;
+    }
+    # Build the plan-nix and check it if materialized
+    // lib.optionalAttrs (checkedProject ? plan-nix) {
+      plan-nix = checkedProject.plan-nix;
+    }
+    # Build the stack-nix and check it if materialized
+    // lib.optionalAttrs (checkedProject ? stack-nix) {
+      stack-nix = checkedProject.stack-nix;
+    };
+
   mkFlake = project: {
           selectPackages ? haskellLib.selectProjectPackages
         , haskellPackages ? selectPackages project.hsPkgs
@@ -464,21 +485,7 @@ in {
         , devShell ? project.shell
         , devShells ? { default = devShell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
-        , ciJobs ? {
-              # Run all the tests and code coverage
-              # Also build and cache any tools in the `devShells`
-              inherit checks coverage devShells;
-              # Build tools and cache tools needed for the project
-              inherit (project) roots;
-            }
-            # Build the plan-nix and check it if materialized
-            // lib.optionalAttrs (checkedProject ? plan-nix) {
-              plan-nix = checkedProject.plan-nix;
-            }
-            # Build the stack-nix and check it if materialized
-            // lib.optionalAttrs (checkedProject ? stack-nix) {
-              stack-nix = checkedProject.stack-nix;
-            }
+        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage devShells checkedProject; }
         , hydraJobs ? ciJobs
       }: {
       inherit
