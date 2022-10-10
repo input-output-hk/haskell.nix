@@ -26,7 +26,7 @@
         ```
       '';
     };
-    coverage = lib.mkOption {
+    coverageProjectModule = lib.mkOption {
       type = lib.types.unspecified;
       default = {};
       description = ''

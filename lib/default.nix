@@ -188,6 +188,16 @@ in {
   # Useful for pre-filtered package-set.
   collectChecks' = collectChecks (_: true);
 
+  # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
+  flattenChecks = allChecks: builtins.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList (packageName: checks:
+      # Avoid `recurseForDerivations` issues
+      lib.optionals (lib.isAttrs checks) (
+        lib.mapAttrsToList (n: v:
+          { name = "${packageName}:test:${n}"; value = v; })
+        (lib.filterAttrs (_: v: lib.isDerivation v) checks))
+    ) allChecks));
+
   # Replacement for lib.cleanSourceWith that has a subDir argument.
   inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith;
 
@@ -394,10 +404,9 @@ in {
   combineFlakes = sep: prefixAndFlakes: builtins.foldl' addFlakes {}
     (lib.mapAttrsToList (prefix: flake: prefixFlake prefix sep flake) prefixAndFlakes);
 
-  mkFlake = project: packages: coverageProjectModule:
+  projectCoverageCiJobs = project: packages: coverageProjectModule:
     let
-      packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
-      checkedProject = project.appendModule { checkMaterialization = true; };
+      packageNames = project: builtins.attrNames (packages project.hsPkgs);
       coverageProject = project.appendModule [
         coverageProjectModule
         {
@@ -407,82 +416,95 @@ in {
           }];
         }
       ];
-      checks = builtins.listToAttrs (
-        lib.concatMap (packageName:
-          let package = project.hsPkgs.${packageName};
-          in lib.mapAttrsToList (n: v:
-              { name = "${packageName}:test:${n}"; value = v; })
-            (lib.filterAttrs (_: v: lib.isDerivation v) (package.checks))
-        ) (packageNames project));
-      ciJobs = {
-          # Run all the tests
-          inherit checks;
-          # Build tools and cache tools needed for the project
-          inherit (project) roots;
-          # Also build and cache any tools in the `devShell`
-          devShell = project.shell;
-          # Run HPC on the tests
-          coverage = builtins.listToAttrs (lib.concatMap (packageName: [{
-            name = packageName;
-            value = coverageProject.hsPkgs.${packageName}.coverageReport;
-          }]) (packageNames coverageProject));
-        }
-        # Build the plan-nix and check it if materialized
-        // lib.optionalAttrs (checkedProject ? plan-nix) {
-          plan-nix = checkedProject.plan-nix;
-        }
-        # Build the stack-nix and check it if materialized
-        // lib.optionalAttrs (checkedProject ? stack-nix) {
-          stack-nix = checkedProject.stack-nix;
-        };
-    in {
-      # Used by:
-      #   `nix build .#pkg-name:lib:pkg-name`
-      #   `nix build .#pkg-name:lib:sublib-name`
-      #   `nix build .#pkg-name:exe:exe-name`
-      #   `nix build .#pkg-name:test:test-name`
-      packages = builtins.listToAttrs (
-        lib.concatMap (packageName:
-          let package = project.hsPkgs.${packageName};
-          in lib.optional (package.components ? library)
-                { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-            ++ lib.mapAttrsToList (n: v:
-                { name = "${packageName}:lib:${n}"; value = v; })
-              (package.components.sublibs)
-            ++ lib.mapAttrsToList (n: v:
-                { name = "${packageName}:exe:${n}"; value = v; })
-              (package.components.exes)
-            ++ lib.mapAttrsToList (n: v:
-                { name = "${packageName}:test:${n}"; value = v; })
-              (package.components.tests)
-            ++ lib.mapAttrsToList (n: v:
-                { name = "${packageName}:bench:${n}"; value = v; })
-              (package.components.benchmarks)
-        ) (packageNames project));
-      # Used by:
-      #   `nix flake check`
-      inherit checks;
-      #   `nix run .#pkg-name:exe:exe-name`
-      #   `nix run .#pkg-name:test:test-name`
-      apps = builtins.listToAttrs (
-        lib.concatMap (packageName:
-          let package = project.hsPkgs.${packageName};
-          in lib.mapAttrsToList (n: v:
-                { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-              (package.components.exes)
-            ++ lib.mapAttrsToList (n: v:
-                { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-              (package.components.tests)
-            ++ lib.mapAttrsToList (n: v:
-                { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
-              (package.components.benchmarks)
-        ) (packageNames project));
-      # Used by hydra.
-      hydraJobs = ciJobs;
-      # Like `hydraJobs` but with system first so that it the IFDs will not have
-      # to form systems we are not testing.
-      inherit ciJobs;
-      devShells.default = project.shell;
-      devShell = project.shell;
-    };
+    in
+      builtins.listToAttrs (lib.concatMap (packageName: [{
+        name = packageName;
+        value = coverageProject.hsPkgs.${packageName}.coverageReport;
+      }]) (packageNames coverageProject)); 
+
+  mkFlakePackages = haskellPackages: builtins.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList (packageName: package:
+        lib.optional (package.components ? library)
+            { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:lib:${n}"; value = v; })
+          (package.components.sublibs)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:exe:${n}"; value = v; })
+          (package.components.exes)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:test:${n}"; value = v; })
+          (package.components.tests)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:bench:${n}"; value = v; })
+          (package.components.benchmarks)
+    ) haskellPackages));
+
+  mkFlakeApps = haskellPackages: builtins.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList (packageName: package:
+      lib.mapAttrsToList (n: v:
+            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+          (package.components.exes)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+          (package.components.tests)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
+          (package.components.benchmarks)
+    ) haskellPackages));
+
+  mkFlake = project: {
+          selectPackages ? haskellLib.selectProjectPackages
+        , haskellPackages ? selectPackages project.hsPkgs
+        , packages ? mkFlakePackages haskellPackages
+        , apps ? mkFlakeApps haskellPackages
+        , coverageProjectModule ? {}
+        , checks ? flattenChecks (collectChecks' haskellPackages)
+        , coverage ? projectCoverageCiJobs project selectPackages coverageProjectModule
+        , devShell ? project.shell
+        , devShells ? { default = devShell; }
+        , checkedProject ? project.appendModule { checkMaterialization = true; }
+        , ciJobs ? {
+              # Run all the tests and code coverage
+              # Also build and cache any tools in the `devShells`
+              inherit checks coverage devShells;
+              # Build tools and cache tools needed for the project
+              inherit (project) roots;
+            }
+            # Build the plan-nix and check it if materialized
+            // lib.optionalAttrs (checkedProject ? plan-nix) {
+              plan-nix = checkedProject.plan-nix;
+            }
+            # Build the stack-nix and check it if materialized
+            // lib.optionalAttrs (checkedProject ? stack-nix) {
+              stack-nix = checkedProject.stack-nix;
+            }
+        , hydraJobs ? ciJobs
+      }: {
+      inherit
+          # Used by:
+          #   `nix build .#pkg-name:lib:pkg-name`
+          #   `nix build .#pkg-name:lib:sublib-name`
+          #   `nix build .#pkg-name:exe:exe-name`
+          #   `nix build .#pkg-name:test:test-name`
+          packages
+          # Used by:
+          #   `nix flake check`
+          checks
+          #   `nix run .#pkg-name:exe:exe-name`
+          #   `nix run .#pkg-name:test:test-name`
+          apps
+          # Used by hydra.
+          hydraJobs
+          # Like `hydraJobs` but with `${system}` first so that it the IFDs will not have
+          # to run for systems we are not testing (placement of `${system}` is done
+          # by `flake-utils.eachSystem` and it treats `hydraJobs` differently from
+          # the other flake attributes).
+          # See https://github.com/numtide/flake-utils/blob/04c1b180862888302ddfb2e3ad9eaa63afc60cf8/default.nix#L131-L134
+          ciJobs
+          # Used by:
+          #   `nix develop`
+          devShells
+          devShell; # TODO remove devShell once everyone has nix that supports `devShells.default`
+      };
 }
