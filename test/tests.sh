@@ -195,8 +195,8 @@ if [ "$TESTS" == "hix" ] || [ "$TESTS" == "all" ]; then
   nix-shell -p cabal-install --run "cabal update; cabal unpack hello"
   cd hello-*
   nix run $HASKELL_NIX#hix -- init
+  nix flake lock --override-input haskellNix $HASKELL_NIX
   nix develop \
-      --override-input haskellNix $HASKELL_NIX \
       --accept-flake-config \
       -c cabal build
   echo >& 2
