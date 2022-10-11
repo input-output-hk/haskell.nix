@@ -381,6 +381,8 @@ in {
           }) (__attrNames flake.devShells));
         } // lib.optionalAttrs (flake ? hydraJobs) {
           hydraJobs.${lib.removeSuffix ":" prefix} = flake.hydraJobs;
+        } // lib.optionalAttrs (flake ? ciJobs) {
+          ciJobs.${lib.removeSuffix ":" prefix} = flake.ciJobs;
         };
 
   # Used by `combineFlakes` to combine flakes together
@@ -453,6 +455,13 @@ in {
           (package.components.benchmarks)
     ) haskellPackages));
 
+  removeRecurseForDerivations = x:
+    let clean = builtins.removeAttrs x ["recurseForDerivations"];
+    in
+      if x.recurseForDerivations or false
+        then builtins.mapAttrs (_: removeRecurseForDerivations) clean
+        else clean;
+
   mkFlakeCiJobs = project: {
           checks
         , coverage
@@ -461,7 +470,8 @@ in {
     }: {
       # Run all the tests and code coverage
       # Also build and cache any tools in the `devShells`
-      inherit checks coverage devShells;
+      checks = removeRecurseForDerivations checks;
+      inherit coverage devShells;
       # Build tools and cache tools needed for the project
       inherit (project) roots;
     }
@@ -480,12 +490,13 @@ in {
         , packages ? mkFlakePackages haskellPackages
         , apps ? mkFlakeApps haskellPackages
         , coverageProjectModule ? {}
-        , checks ? flattenChecks (collectChecks' haskellPackages)
+        , rawChecks ? collectChecks' haskellPackages
+        , checks ? flattenChecks rawChecks
         , coverage ? projectCoverageCiJobs project selectPackages coverageProjectModule
         , devShell ? project.shell
         , devShells ? { default = devShell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
-        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage devShells checkedProject; }
+        , ciJobs ? mkFlakeCiJobs project { checks = rawChecks; inherit coverage devShells checkedProject; }
         , hydraJobs ? ciJobs
       }: {
       inherit

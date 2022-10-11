@@ -744,7 +744,7 @@ final: prev: {
             # `checks` and `apps` output attributes.
             flake' =
               let
-                combinePrefix = a: b: if a == "default" then b else "${a}:${b}";
+                combinePrefix = a: b: if a == "default" then b else "${a}-${b}";
                 flakeArgs = {
                   selectPackages = project.args.flake.packages;
                   inherit (project.args.flake) coverageProjectModule;
