@@ -21,7 +21,7 @@ experimental-features = ca-derivations
 ```
 
 Or if you use NixOS:
-```
+```nix
 nix.extraOptions = ''
     experimental-features = ca-derivations
 '';
@@ -30,7 +30,7 @@ nix.extraOptions = ''
 ## Enable CA derivations in your project
 At this point you can pass a new module to `project'` that tells `haskell.nix` to build every component in the project as CA derivation.
 
-```
+```nix
 haskell-nix.project' {
 	# ...
 	

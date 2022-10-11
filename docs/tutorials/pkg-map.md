@@ -63,6 +63,7 @@ the Haskell.nix sources, so that it's solved for all users.
   2. `null` — eliminates the dependency
   3. A list of packages — sometimes needed for dependencies such as `X11`.
 
-!!! tip "Open a PR"
-    Please go ahead and open a [pull request](https://github.com/input-output-hk/haskell.nix/pulls)
-    to improve the package mappings.
+> **Tip:** Open a PR
+>
+> Please go ahead and open a [pull request](https://github.com/input-output-hk/haskell.nix/pulls)
+> to improve the package mappings.

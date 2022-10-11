@@ -17,7 +17,7 @@
 with pkgs;
 
 let
-  inherit (import ../ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
+  inherit (import ../ci-lib.nix { inherit pkgs; }) filterAttrsOnlyRecursive;
   isDisabled = d: d.meta.disabled or false;
 
   # Set recurseForDerivations for both children and grand-children values in
@@ -203,7 +203,7 @@ let
     shell-for = callTest ./shell-for {};
     cabal-22 = callTest ./cabal-22 { inherit util; };
     coverage = callTest ./coverage {};
-    coverage-golden = callTest ./coverage-golden { inherit;};
+    coverage-golden = callTest ./coverage-golden {};
     coverage-no-libs = callTest ./coverage-no-libs {};
     snapshots = callTest ./snapshots {};
     sublib-docs = callTest ./sublib-docs { inherit util; };
@@ -215,7 +215,7 @@ let
     exe-lib-dlls = callTest ./exe-lib-dlls { inherit util; };
     ca-derivations = callTest ./ca-derivations { inherit CADerivationsEnabled; };
     ca-derivations-include = callTest ./ca-derivations-include { inherit CADerivationsEnabled; };
-
+    test-only = callTest ./test-only { inherit util; };
     unit = unitTests;
   };
 

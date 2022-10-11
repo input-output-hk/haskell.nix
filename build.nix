@@ -5,7 +5,7 @@
 let
   haskellNix = (import ./default.nix {});
 in
-{ nixpkgs ? haskellNix.sources.nixpkgs-2205
+{ nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , evalPackages ? import nixpkgs nixpkgsArgs
@@ -25,6 +25,7 @@ in rec {
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
+      stack = tool compiler-nix-name "stack" { version = "2.9.1"; inherit evalPackages; };
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;
         version = {

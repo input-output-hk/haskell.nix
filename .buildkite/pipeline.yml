@@ -74,6 +74,11 @@ steps:
     agents:
       system: x86_64-linux
 
+  - label: 'Test examples in documentation ...'
+    command: "./test/tests.sh ghc8107 docs"
+    agents:
+      system: x86_64-linux
+
   - label: 'Check that jobset will evaluate in Hydra at ifdLevel 0 and 1'
     command:
       - nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -129,6 +134,10 @@ steps:
     command:
       - nix-build build.nix -A maintainer-scripts.check-materialization-concurrency -o check-materialization-concurrency.sh
       - ./check-materialization-concurrency.sh
+    retry:
+      automatic:
+        - exit_status: "*"
+          limit: 10
 
   - label: 'Make sure non store paths like can be used as src'
     command:
