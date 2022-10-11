@@ -490,13 +490,12 @@ in {
         , packages ? mkFlakePackages haskellPackages
         , apps ? mkFlakeApps haskellPackages
         , coverageProjectModule ? {}
-        , rawChecks ? collectChecks' haskellPackages
-        , checks ? flattenChecks rawChecks
+        , checks ? flattenChecks (collectChecks' haskellPackages)
         , coverage ? projectCoverageCiJobs project selectPackages coverageProjectModule
         , devShell ? project.shell
         , devShells ? { default = devShell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
-        , ciJobs ? mkFlakeCiJobs project { checks = rawChecks; inherit coverage devShells checkedProject; }
+        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage devShells checkedProject; }
         , hydraJobs ? ciJobs
       }: {
       inherit
