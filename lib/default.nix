@@ -396,10 +396,16 @@ in {
   combineFlakes = sep: prefixAndFlakes: builtins.foldl' addFlakes {}
     (lib.mapAttrsToList (prefix: flake: prefixFlake prefix sep flake) prefixAndFlakes);
 
-  # Make the CI jobs for running code coverage.  This turns on `doCoverage`
-  # for the `packages` selected and also applies `coverageProjectModule`.
-  # `coverageProjectModule` useful for modifying the project settings when
-  # running code coverage (just pass `{}` if you do not need to modify anything).
+  # Make the CI jobs for running code coverage.
+  # `project` is the base project without code coverage enabled.
+  # `packages` is a selector function that indicates what packages
+  # we should run code coverage on (pass haskellLib.selectProjectPackages
+  # to run it on the packages).
+  # `coverageProjectModule` is applied to `project` and is useful for
+  # modifying the project settings when running code coverage (just
+  # pass `{}` if you do not need to modify anything).
+  # By default the `doCoverage` flag will be set for the packages
+  # selected by `packages`.
   projectCoverageCiJobs = project: packages: coverageProjectModule:
     let
       packageNames = project: builtins.attrNames (packages project.hsPkgs);
