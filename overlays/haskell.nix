@@ -737,89 +737,6 @@ final: prev: {
                   "Invalid package component name ${componentName}.  Expected package:ctype:component (where ctype is one of lib, flib, exe, test, or bench)";
                 (getPackage (builtins.elemAt m 0)).getComponent "${builtins.elemAt m 1}:${builtins.elemAt m 2}";
 
-            rawFlake =
-              let
-                packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
-                checkedProject = project.appendModule { checkMaterialization = true; };
-              in {
-                # Used by:
-                #   `nix build .#pkg-name:lib:pkg-name`
-                #   `nix build .#pkg-name:lib:sublib-name`
-                #   `nix build .#pkg-name:exe:exe-name`
-                #   `nix build .#pkg-name:test:test-name`
-                packages = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.optional (package.components ? library)
-                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:lib:${n}"; value = v; })
-                        (package.components.sublibs)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = v; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = v; })
-                        (package.components.tests)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:bench:${n}"; value = v; })
-                        (package.components.benchmarks)
-                  ) (packageNames project));
-                # Used by:
-                #   `nix flake check`
-                checks = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                        { name = "${packageName}:test:${n}"; value = v; })
-                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
-                  ) (packageNames project));
-                #   `nix run .#pkg-name:exe:exe-name`
-                #   `nix run .#pkg-name:test:test-name`
-                apps = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.tests)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.benchmarks)
-                  ) (packageNames project));
-                # Used by hydra:
-                hydraJobs = {
-                    checks = rawFlake.checks;
-                  } // final.lib.optionalAttrs (checkedProject ? plan-nix) {
-                    # Build the plan-nix and check it if materialized
-                    plan-nix = checkedProject.plan-nix;
-                  } // final.lib.optionalAttrs (checkedProject ? stack-nix) {
-                    # Build the stack-nix and check it if materialized
-                    stack-nix = checkedProject.stack-nix;
-                  } // {
-                    # Build tools and cache tools needed for the project
-                    roots = project.roots;
-                    coverage =
-                      let
-                        coverageProject = project.appendModule [
-                          project.args.flake.coverage
-                          {
-                            modules = [{
-                              packages = final.lib.genAttrs (packageNames project)
-                                (_: { doCoverage = final.lib.mkDefault true; });
-                            }];
-                          }
-                        ];
-                      in  builtins.listToAttrs (final.lib.concatMap (packageName: [{
-                          name = packageName;
-                          value = coverageProject.hsPkgs.${packageName}.coverageReport;
-                        }]) (packageNames coverageProject));
-                  };
-                devShells.default = project.shell;
-                devShell = project.shell;
-              };
             # Helper function that can be used to make a Nix Flake out of a project
             # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
             # for an example flake.nix file.
@@ -827,11 +744,18 @@ final: prev: {
             # `checks` and `apps` output attributes.
             flake' =
               let
-                combinePrefix = a: b: if a == "default" then b else "${a}:${b}";
+                combinePrefix = a: b: if a == "default" then b else "${a}-${b}";
+                mkFlake = project: haskellLib.mkFlake project rec {
+                  selectPackages = project.args.flake.packages;
+                  coverage = final.lib.optionalAttrs project.args.flake.doCoverage
+                    (haskellLib.projectCoverageCiJobs
+                      project selectPackages project.args.flake.coverageProjectModule);
+                };
                 forAllCrossCompilers = prefix: project: (
-                    [{ ${prefix} = project.rawFlake; }]
+                    [{ ${prefix} = mkFlake project; }]
                   ++ (map (project: {
-                       ${combinePrefix prefix project.pkgs.stdenv.hostPlatform.config} = project.rawFlake;
+                       ${combinePrefix prefix project.pkgs.stdenv.hostPlatform.config} =
+                         mkFlake project;
                       })
                      (project.args.flake.crossPlatforms project.projectCross)
                   ));
