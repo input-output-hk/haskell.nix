@@ -188,16 +188,6 @@ in {
   # Useful for pre-filtered package-set.
   collectChecks' = collectChecks (_: true);
 
-  # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
-  flattenChecks = allChecks: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: checks:
-      # Avoid `recurseForDerivations` issues
-      lib.optionals (lib.isAttrs checks) (
-        lib.mapAttrsToList (n: v:
-          { name = "${packageName}:test:${n}"; value = v; })
-        (lib.filterAttrs (_: v: lib.isDerivation v) checks))
-    ) allChecks));
-
   # Replacement for lib.cleanSourceWith that has a subDir argument.
   inherit (import ./clean-source-with.nix { inherit lib; }) cleanSourceWith;
 
@@ -406,6 +396,10 @@ in {
   combineFlakes = sep: prefixAndFlakes: builtins.foldl' addFlakes {}
     (lib.mapAttrsToList (prefix: flake: prefixFlake prefix sep flake) prefixAndFlakes);
 
+  # Make the CI jobs for running code coverage.  This turns on `doCoverage`
+  # for the `packages` selected and also applies `coverageProjectModule`.
+  # `coverageProjectModule` useful for modifying the project settings when
+  # running code coverage (just pass `{}` if you do not need to modify anything).
   projectCoverageCiJobs = project: packages: coverageProjectModule:
     let
       packageNames = project: builtins.attrNames (packages project.hsPkgs);
@@ -424,6 +418,7 @@ in {
         value = coverageProject.hsPkgs.${packageName}.coverageReport;
       }]) (packageNames coverageProject));
 
+  # Flake package names that are flat and match the cabal component names.
   mkFlakePackages = haskellPackages: builtins.listToAttrs (
     lib.concatLists (lib.mapAttrsToList (packageName: package:
         lib.optional (package.components ? library)
@@ -442,6 +437,7 @@ in {
           (package.components.benchmarks)
     ) haskellPackages));
 
+  # Flake package names that are flat and match the cabal component names.
   mkFlakeApps = haskellPackages: builtins.listToAttrs (
     lib.concatLists (lib.mapAttrsToList (packageName: package:
       lib.mapAttrsToList (n: v:
@@ -455,6 +451,16 @@ in {
           (package.components.benchmarks)
     ) haskellPackages));
 
+  # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
+  mkFlakeChecks = allChecks: builtins.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList (packageName: checks:
+      # Avoid `recurseForDerivations` issues
+      lib.optionals (lib.isAttrs checks) (
+        lib.mapAttrsToList (n: v:
+          { name = "${packageName}:test:${n}"; value = v; })
+        (lib.filterAttrs (_: v: lib.isDerivation v) checks))
+    ) allChecks));
+
   removeRecurseForDerivations = x:
     let clean = builtins.removeAttrs x ["recurseForDerivations"];
     in
@@ -463,15 +469,20 @@ in {
         else clean;
 
   mkFlakeCiJobs = project: {
-          checks
+          packages
+        , checks
         , coverage
         , devShells
         , checkedProject
     }: {
       # Run all the tests and code coverage
-      # Also build and cache any tools in the `devShells`
       checks = removeRecurseForDerivations checks;
-      inherit coverage devShells;
+      inherit
+        coverage
+        # Make sure all the packages build
+        packages
+        # Build and cache any tools in the `devShells`
+        devShells;
       # Build tools and cache tools needed for the project
       inherit (project) roots;
     }
@@ -489,13 +500,12 @@ in {
         , haskellPackages ? selectPackages project.hsPkgs
         , packages ? mkFlakePackages haskellPackages
         , apps ? mkFlakeApps haskellPackages
-        , coverageProjectModule ? {}
-        , checks ? flattenChecks (collectChecks' haskellPackages)
-        , coverage ? projectCoverageCiJobs project selectPackages coverageProjectModule
+        , checks ? mkFlakeChecks (collectChecks' haskellPackages)
+        , coverage ? {}
         , devShell ? project.shell
         , devShells ? { default = devShell; }
         , checkedProject ? project.appendModule { checkMaterialization = true; }
-        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage devShells checkedProject; }
+        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage packages devShells checkedProject; }
         , hydraJobs ? ciJobs
       }: {
       inherit

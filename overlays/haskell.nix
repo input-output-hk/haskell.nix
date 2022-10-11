@@ -745,15 +745,17 @@ final: prev: {
             flake' =
               let
                 combinePrefix = a: b: if a == "default" then b else "${a}-${b}";
-                flakeArgs = {
+                mkFlake = project: haskellLib.mkFlake project rec {
                   selectPackages = project.args.flake.packages;
-                  inherit (project.args.flake) coverageProjectModule;
+                  coverage = final.lib.optionalAttrs project.args.flake.doCoverage
+                    (haskellLib.projectCoverageCiJobs
+                      project selectPackages project.args.flake.coverageProjectModule);
                 };
                 forAllCrossCompilers = prefix: project: (
-                    [{ ${prefix} = haskellLib.mkFlake project flakeArgs; }]
+                    [{ ${prefix} = mkFlake project; }]
                   ++ (map (project: {
                        ${combinePrefix prefix project.pkgs.stdenv.hostPlatform.config} =
-                         haskellLib.mkFlake project flakeArgs;
+                         mkFlake project;
                       })
                      (project.args.flake.crossPlatforms project.projectCross)
                   ));
