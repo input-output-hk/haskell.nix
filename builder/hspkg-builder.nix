@@ -29,7 +29,15 @@ let
       "ghc902/stm-2.5.0.0" = "/libraries/stm";
       "ghc902/filepath-1.4.2.1" = "/libraries/filepath";
     }."${compiler-nix-name}/${name}" or null;
-  src = if bundledSrc == null then pkg.src else ghc.configured-src + bundledSrc;
+  baseUrlMatch = __match "(.*)/package/([^/]*)" pkg.src.url;
+  src =
+    if bundledSrc != null
+      then ghc.configured-src + bundledSrc
+    else if pkgs.lib.hasPrefix "mirror://hackage/" pkg.src.url
+      then pkg.src
+    else if baseUrlMatch != null && inputMap ? ${__head baseUrlMatch}
+      then inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
+    else pkg.src;
   cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
     fetchurl {
       name = "${name}-${toString revision}.cabal";
