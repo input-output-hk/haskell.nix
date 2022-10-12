@@ -7,16 +7,16 @@
   devshell = final: prev: {
     devshell = let
     in {
-      packages = final.shell.nativeBuildInputs
-      # Cannot add the whole final.shell.buildInputs list because many collide with each other when fused.
-      # So we only add what is really used (by pkg-config):
-      ++ map (p: p.dev or p) (lib.concatLists (lib.concatMap (p: p.components.library.pkgconfig or [] ++ p.components.setup.pkgconfig or [] ++ lib.concatMap (c: lib.concatMap (a: a.pkgconfig) (lib.attrValues c)) (lib.attrValues (removeAttrs p.components ["library" "setup"])))
-        (lib.attrValues final.pkg-set.config.packages)))
+      packages = (lib.filter lib.isDerivation (final.shell.nativeBuildInputs
       # devshell does not use pkgs.mkShell / pkgs.stdenv.mkDerivation,
       # so we need to explicit required dependencies which
       # are provided implicitely by stdenv when using the normal shell:
-      ++ (lib.filter lib.isDerivation final.shell.stdenv.defaultNativeBuildInputs)
-      ++ lib.optional final.shell.stdenv.targetPlatform.isGnu final.pkgs.buildPackages.binutils;
+      ++ final.shell.stdenv.defaultNativeBuildInputs))
+      ++ lib.optional final.shell.stdenv.targetPlatform.isGnu final.pkgs.buildPackages.binutils
+      # Cannot add the whole final.shell.buildInputs list because many collide with each other when fused.
+      # So we only add what is really used (by pkg-config):
+      ++ map (p: p.dev or p) (lib.concatLists (lib.concatMap (p: p.components.library.pkgconfig or [] ++ p.components.setup.pkgconfig or [] ++ lib.concatMap (c: lib.concatMap (a: a.pkgconfig) (lib.attrValues c)) (lib.attrValues (removeAttrs p.components ["library" "setup"])))
+        (lib.attrValues final.pkg-set.config.packages)));
       # We need to expose all the necessary env variables:
       env = [
         {
