@@ -33,9 +33,7 @@ let
   src =
     if bundledSrc != null
       then ghc.configured-src + bundledSrc
-    else if pkgs.lib.hasPrefix "mirror://hackage/" pkg.src.url
-      then pkg.src
-    else if baseUrlMatch != null && inputMap ? ${__head baseUrlMatch}
+    else if pkg.src ? url && baseUrlMatch != null && inputMap ? ${__head baseUrlMatch}
       then inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
     else pkg.src;
   cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
