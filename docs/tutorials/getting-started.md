@@ -23,7 +23,7 @@ substituters = [...] https://cache.iog.io [...]
 
 If you're running NixOS, you need to add/update the following in your `/etc/nixos/configuration.nix` files instead.
 
-```
+```nix
 # Binary Cache for Haskell.nix
 nix.settings.trusted-public-keys = [
   "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
@@ -35,7 +35,7 @@ nix.settings.substituters = [
 
 NixOS-21.11 and older use slightly different settings.
 
-```
+```nix
 # Binary Cache for Haskell.nix  
 nix.binaryCachePublicKeys = [
   "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
@@ -63,14 +63,14 @@ document instead of this one.
 After installing niv you can initialize niv and pin the latest haskell.nix
 commit by running the following in the root directory of the project:
 
-```
+```shell
 niv init
 niv add input-output-hk/haskell.nix -n haskellNix
 ```
 
 Then when you want to update to the latest version of haskellNix use:
 
-```
+```shell
 niv update haskellNix
 ```
 
@@ -82,41 +82,13 @@ projects.
 Add `default.nix`:
 
 ```nix
-let
-  # Read in the Niv sources
-  sources = import ./nix/sources.nix {};
-  # If ./nix/sources.nix file is not found run:
-  #   niv init
-  #   niv add input-output-hk/haskell.nix -n haskellNix
-
-  # Fetch the haskell.nix commit we have pinned with Niv
-  haskellNix = import sources.haskellNix {};
-  # If haskellNix is not found run:
-  #   niv add input-output-hk/haskell.nix -n haskellNix
-
-  # Import nixpkgs and pass the haskell.nix provided nixpkgsArgs
-  pkgs = import
-    # haskell.nix provides access to the nixpkgs pins which are used by our CI,
-    # hence you will be more likely to get cache hits when using these.
-    # But you can also just use your own, e.g. '<nixpkgs>'.
-    haskellNix.sources.nixpkgs-unstable
-    # These arguments passed to nixpkgs, include some patches and also
-    # the haskell.nix functionality itself as an overlay.
-    haskellNix.nixpkgsArgs;
-in pkgs.haskell-nix.project {
-  # 'cleanGit' cleans a source directory based on the files known by git
-  src = pkgs.haskell-nix.haskellLib.cleanGit {
-    name = "haskell-nix-project";
-    src = ./.;
-  };
-  # Specify the GHC version to use.
-  compiler-nix-name = "ghc8107"; # Not required for `stack.yaml` based projects.
-}
+{{#include getting-started/default.nix}}
 ```
 
-!!! note "git dependencies"
-    If you have git dependencies in your project, you'll need
-    to [calculate sha256 hashes for them](./source-repository-hashes.md).
+> **Note:** Git dependencies
+>
+> If you have git dependencies in your project, you'll need
+> to [calculate sha256 hashes for them](./source-repository-hashes.md).
 
 ### Working with a project
 
@@ -145,13 +117,7 @@ nix-build -A projectCross.mingwW64.hsPkgs.your-package-name.components.exes.your
 To open a shell for use with `cabal`, `hlint` and `haskell-language-server` add `shell.nix`:
 
 ```nix
-(import ./default.nix).shellFor {
-  tools = {
-    cabal = "3.2.0.0";
-    hlint = "latest";
-    haskell-language-server = "latest";
-  };
-}
+{{#include getting-started/shell.nix}}
 ```
 
 Then run:

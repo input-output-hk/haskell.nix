@@ -235,10 +235,16 @@ let
         "--ghc-options=-j1"
     );
 
+  # the build-tools version might be depending on the version of the package, similarly to patches
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) build-tools) ++
+      else [c]) 
+      (builtins.filter (x: !(isNull x))
+      (map 
+        (p: if builtins.isFunction p
+          then p { inherit  (package.identifier) version; inherit revision; }
+          else p) build-tools))) ++
     lib.optional (pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
@@ -454,11 +460,13 @@ let
         target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
       in ''
       runHook preInstall
-      $SETUP_HS copy ${lib.concatStringsSep " " (
-        setupInstallFlags
-        ++ lib.optional configureAllComponents
-              (haskellLib.componentTarget componentId)
-      )}
+      ${ # `Setup copy` does not install tests and benchmarks.
+        lib.optionalString (!haskellLib.isTest componentId && !haskellLib.isBenchmark componentId) ''
+          $SETUP_HS copy ${lib.concatStringsSep " " (
+            setupInstallFlags
+            ++ lib.optional configureAllComponents
+                  (haskellLib.componentTarget componentId)
+          )}''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -512,7 +520,7 @@ let
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
           ${if stdenv.hostPlatform.isGhcjs then ''
-            cat <(echo \#!${lib.getBin buildPackages.nodejs-12_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+            cat <(echo \#!${lib.getBin buildPackages.nodejs-18_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
           '' else ''
              cp -r ${testExecutable} $(dirname $out/bin/${exeName})
@@ -562,8 +570,14 @@ let
         fi
         rm -rf dist-tmp-dir
       ''
-    ) + (lib.optionalString (keepSource && haskellLib.isLibrary componentId) ''
-        remove-references-to -t $out ${name}.conf
+    ) + (
+      # Avoid circular refernces that crop up by removing references to $out
+      # from the current directory ($source).
+      # So far we have seen these in:
+      # * The `${name}.conf` of a library component.
+      # * The `hie` files for the Paths_ module (when building the stack exe).
+      lib.optionalString keepSource ''
+        find . -type f -exec remove-references-to -t $out '{}' +
     '') + (lib.optionalString (haskellLib.isTest componentId) ''
       echo The test ${package.identifier.name}.components.tests.${componentId.cname} was built.  To run the test build ${package.identifier.name}.checks.${componentId.cname}.
     '');

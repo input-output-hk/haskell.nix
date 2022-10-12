@@ -371,6 +371,8 @@ in {
           }) (__attrNames flake.devShells));
         } // lib.optionalAttrs (flake ? hydraJobs) {
           hydraJobs.${lib.removeSuffix ":" prefix} = flake.hydraJobs;
+        } // lib.optionalAttrs (flake ? ciJobs) {
+          ciJobs.${lib.removeSuffix ":" prefix} = flake.ciJobs;
         };
 
   # Used by `combineFlakes` to combine flakes together
@@ -393,4 +395,149 @@ in {
   # one in the list will be used.
   combineFlakes = sep: prefixAndFlakes: builtins.foldl' addFlakes {}
     (lib.mapAttrsToList (prefix: flake: prefixFlake prefix sep flake) prefixAndFlakes);
+
+  # Make the CI jobs for running code coverage.
+  # `project` is the base project without code coverage enabled.
+  # `packages` is a selector function that indicates what packages
+  # we should run code coverage on (pass haskellLib.selectProjectPackages
+  # to run it on the packages).
+  # `coverageProjectModule` is applied to `project` and is useful for
+  # modifying the project settings when running code coverage (just
+  # pass `{}` if you do not need to modify anything).
+  # By default the `doCoverage` flag will be set for the packages
+  # selected by `packages`.
+  projectCoverageCiJobs = project: packages: coverageProjectModule:
+    let
+      packageNames = project: builtins.attrNames (packages project.hsPkgs);
+      coverageProject = project.appendModule [
+        coverageProjectModule
+        {
+          modules = [{
+            packages = lib.genAttrs (packageNames project)
+              (_: { doCoverage = lib.mkDefault true; });
+          }];
+        }
+      ];
+    in
+      builtins.listToAttrs (lib.concatMap (packageName: [{
+        name = packageName;
+        value = coverageProject.hsPkgs.${packageName}.coverageReport;
+      }]) (packageNames coverageProject));
+
+  # Flake package names that are flat and match the cabal component names.
+  mkFlakePackages = haskellPackages: builtins.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList (packageName: package:
+        lib.optional (package.components ? library)
+            { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:lib:${n}"; value = v; })
+          (package.components.sublibs)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:exe:${n}"; value = v; })
+          (package.components.exes)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:test:${n}"; value = v; })
+          (package.components.tests)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:bench:${n}"; value = v; })
+          (package.components.benchmarks)
+    ) haskellPackages));
+
+  # Flake package names that are flat and match the cabal component names.
+  mkFlakeApps = haskellPackages: builtins.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList (packageName: package:
+      lib.mapAttrsToList (n: v:
+            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
+          (package.components.exes)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
+          (package.components.tests)
+        ++ lib.mapAttrsToList (n: v:
+            { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
+          (package.components.benchmarks)
+    ) haskellPackages));
+
+  # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
+  mkFlakeChecks = allChecks: builtins.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList (packageName: checks:
+      # Avoid `recurseForDerivations` issues
+      lib.optionals (lib.isAttrs checks) (
+        lib.mapAttrsToList (n: v:
+          { name = "${packageName}:test:${n}"; value = v; })
+        (lib.filterAttrs (_: v: lib.isDerivation v) checks))
+    ) allChecks));
+
+  removeRecurseForDerivations = x:
+    let clean = builtins.removeAttrs x ["recurseForDerivations"];
+    in
+      if x.recurseForDerivations or false
+        then builtins.mapAttrs (_: removeRecurseForDerivations) clean
+        else clean;
+
+  mkFlakeCiJobs = project: {
+          packages
+        , checks
+        , coverage
+        , devShells
+        , checkedProject
+    }: {
+      # Run all the tests and code coverage
+      checks = removeRecurseForDerivations checks;
+      inherit
+        coverage
+        # Make sure all the packages build
+        packages
+        # Build and cache any tools in the `devShells`
+        devShells;
+      # Build tools and cache tools needed for the project
+      inherit (project) roots;
+    }
+    # Build the plan-nix and check it if materialized
+    // lib.optionalAttrs (checkedProject ? plan-nix) {
+      plan-nix = checkedProject.plan-nix;
+    }
+    # Build the stack-nix and check it if materialized
+    // lib.optionalAttrs (checkedProject ? stack-nix) {
+      stack-nix = checkedProject.stack-nix;
+    };
+
+  mkFlake = project: {
+          selectPackages ? haskellLib.selectProjectPackages
+        , haskellPackages ? selectPackages project.hsPkgs
+        , packages ? mkFlakePackages haskellPackages
+        , apps ? mkFlakeApps haskellPackages
+        , checks ? mkFlakeChecks (collectChecks' haskellPackages)
+        , coverage ? {}
+        , devShell ? project.shell
+        , devShells ? { default = devShell; }
+        , checkedProject ? project.appendModule { checkMaterialization = true; }
+        , ciJobs ? mkFlakeCiJobs project { inherit checks coverage packages devShells checkedProject; }
+        , hydraJobs ? ciJobs
+      }: {
+      inherit
+          # Used by:
+          #   `nix build .#pkg-name:lib:pkg-name`
+          #   `nix build .#pkg-name:lib:sublib-name`
+          #   `nix build .#pkg-name:exe:exe-name`
+          #   `nix build .#pkg-name:test:test-name`
+          packages
+          # Used by:
+          #   `nix flake check`
+          checks
+          #   `nix run .#pkg-name:exe:exe-name`
+          #   `nix run .#pkg-name:test:test-name`
+          apps
+          # Used by hydra.
+          hydraJobs
+          # Like `hydraJobs` but with `${system}` first so that it the IFDs will not have
+          # to run for systems we are not testing (placement of `${system}` is done
+          # by `flake-utils.eachSystem` and it treats `hydraJobs` differently from
+          # the other flake attributes).
+          # See https://github.com/numtide/flake-utils/blob/04c1b180862888302ddfb2e3ad9eaa63afc60cf8/default.nix#L131-L134
+          ciJobs
+          # Used by:
+          #   `nix develop`
+          devShells
+          devShell; # TODO remove devShell once everyone has nix that supports `devShells.default`
+      };
 }

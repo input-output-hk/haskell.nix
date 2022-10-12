@@ -26,12 +26,21 @@
         ```
       '';
     };
-    coverage = lib.mkOption {
+    doCoverage = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Specifies if the flake `ciJobs` and `hydraJobs` should include code
+        coverage reports.
+      '';
+    };
+    coverageProjectModule = lib.mkOption {
       type = lib.types.unspecified;
       default = {};
       description = ''
         Project module for use when generating coverage reports.
-        The project packages will have `doCoverage` by default.
+        The project packages will have `packages.X.doCoverage`
+        turned on by default.
       '';
     };
   };

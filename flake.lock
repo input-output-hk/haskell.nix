@@ -134,11 +134,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1664328027,
-        "narHash": "sha256-NN+QKB/Md8BydBMZMHAOvpj5zd3zp5CCX943amAoKtU=",
+        "lastModified": 1665537357,
+        "narHash": "sha256-NKNSp3lkyHUd4pBWwaWqaZK0+8HAgPSogXU4KlQGFDU=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "d02895e4563bc4e7e29522c81b112eca31df43c8",
+        "rev": "eb4ca59916051b969971d02f3312337deb410d6d",
         "type": "github"
       },
       "original": {
@@ -220,19 +220,6 @@
         "ref": "2.6.0",
         "repo": "nix",
         "type": "github"
-      }
-    },
-    "nix-tools": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1,
-        "narHash": "sha256-pqNsBhQkO/nT991ASoSXsn07P7lNqpTP0wIV85wft30=",
-        "path": "./nix-tools",
-        "type": "path"
-      },
-      "original": {
-        "path": "./nix-tools",
-        "type": "path"
       }
     },
     "nixpkgs": {
@@ -375,7 +362,6 @@
         "hackage": "hackage",
         "hpc-coveralls": "hpc-coveralls",
         "hydra": "hydra",
-        "nix-tools": "nix-tools",
         "nixpkgs": [
           "nixpkgs-unstable"
         ],
@@ -391,11 +377,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1664328211,
-        "narHash": "sha256-Rpui5O5gVGq00U/mSd2Z3oXR2Lp45SPmpIf6/QD30+Y=",
+        "lastModified": 1665537461,
+        "narHash": "sha256-60tLFJ0poKp3IIPMvIDx3yzmjwrX7CngypfCQqV+oXE=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "0df88480fbb8a7e7c808a323f54b672fd2e7d528",
+        "rev": "fbf47f75f32aedcdd97143ec59c578f403fae35f",
         "type": "github"
       },
       "original": {
