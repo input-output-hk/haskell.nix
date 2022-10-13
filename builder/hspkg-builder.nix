@@ -31,8 +31,14 @@ let
     }."${compiler-nix-name}/${name}" or null;
   baseUrlMatch =
     let
-      srcUrl = pkg.src.url or (__head (pkg.src.urls or [] ++ [""]));
-    in __match "(.*)/package/([^/]*)" srcUrl;
+      # All the urls that should contain the source
+      srcUrls = lib.optional (pkg.src ? url) pkg.src.url ++ pkg.src.urls or [];
+    in __head (
+        # Look for one that matches the expected pattern
+        builtins.filter (x: x != null) (
+          map (__match "(.*)/package/([^/]*)") srcUrls)
+        # Return null if none do
+        ++ [null]);
   src =
     if bundledSrc != null
       then ghc.configured-src + bundledSrc
