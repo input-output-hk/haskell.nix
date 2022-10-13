@@ -29,11 +29,14 @@ let
       "ghc902/stm-2.5.0.0" = "/libraries/stm";
       "ghc902/filepath-1.4.2.1" = "/libraries/filepath";
     }."${compiler-nix-name}/${name}" or null;
-  baseUrlMatch = __match "(.*)/package/([^/]*)" pkg.src.url;
+  baseUrlMatch =
+    let
+      srcUrl = pkg.src.url or (__head (pkg.src.urls or [] ++ [""]));
+    in __match "(.*)/package/([^/]*)" srcUrl;
   src =
     if bundledSrc != null
       then ghc.configured-src + bundledSrc
-    else if pkg.src ? url && baseUrlMatch != null && inputMap ? ${__head baseUrlMatch}
+    else if baseUrlMatch != null && inputMap ? ${__head baseUrlMatch}
       then inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
     else pkg.src;
   cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
