@@ -43,7 +43,10 @@ let
     if bundledSrc != null
       then ghc.configured-src + bundledSrc
     else if baseUrlMatch != null && inputMap ? ${__head baseUrlMatch}
-      then inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
+      then
+        # Use the copy of the package that is in the inputMap for this
+        # repository.
+        inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
     else pkg.src;
   cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
     fetchurl {
