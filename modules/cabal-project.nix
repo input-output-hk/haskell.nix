@@ -106,6 +106,9 @@ in {
       description = ''
         Specifies the contents of urls in the cabal.project file.
         The `.rev` attribute is checked against the `tag` for `source-repository-packages`.
+        For `revision` blocks the `inputMap.<url>` will be used and
+        they `.tar.gz` for the `packages` used will also be looked up
+        in the `inputMap`.
       '';
     };
     extra-hackage-tarballs = mkOption {
