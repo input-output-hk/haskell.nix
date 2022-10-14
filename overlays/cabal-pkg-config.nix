@@ -32,14 +32,9 @@ final: prev:
       # Try getting the `.version` attribute or failing that look in the
       # `.name`.  Some packages like `icu` have the correct version in
       # `.name` but no `.version`.
-      getVersion = p:
-        let versionInNameMatch = builtins.match ".*-([0-9.]*)" (p.name or "");
-        in p.version or (
-          if versionInNameMatch == null
-            then null
-            else __head versionInNameMatch);
+      getVersion = p: p.version or (builtins.parseDrvName (p.name or "")).version;
       pkgconfigPkgs =
-        final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != null)
+        final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
     in prev.pkgconfig.overrideAttrs (attrs: {
       installPhase = attrs.installPhase + ''
