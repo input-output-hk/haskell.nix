@@ -223,10 +223,15 @@ instance FromJSON Dependency where
               _ -> fail $ "invalid package index: " ++ show pi
           parseLocalPath = withText "Local Path" $
             return . LocalPath . dropTrailingSlash . T.unpack
+          parseSubdirs o = do
+            subdir' <- o .:? "subdir"
+            let subdir = fmap (\d -> [d]) subdir'
+            subdirs <- o .:? "subdirs"
+            return (subdir <|> subdirs)
           parseDVCS = withObject "DVCS" $ \o -> DVCS
             <$> (o .: "location" <|> parseJSON p)
             <*> o .:? "nix-sha256" .!= Nothing
-            <*> o .:? "subdirs" .!= ["."]
+            <*> parseSubdirs o .!= ["."]
 
           -- drop trailing slashes. Nix doesn't like them much;
           -- stack doesn't seem to care.
