@@ -192,6 +192,7 @@ if [ "$TESTS" == "hix" ] || [ "$TESTS" == "all" ]; then
   printf "*** End-2-end test of hix project initialization and flakes development shell ...\n" >& 2
   HASKELL_NIX=$(pwd)/..
   cd $(mktemp -d)
+  mkdir "from-source" && pushd "from-source"
   nix-shell -p cabal-install --run "cabal update; cabal unpack hello"
   cd hello-*
   nix run $HASKELL_NIX#hix -- init
@@ -199,6 +200,17 @@ if [ "$TESTS" == "hix" ] || [ "$TESTS" == "all" ]; then
   nix develop \
       --accept-flake-config \
       -c cabal build
+  popd
+  mkdir "from-template" && pushd "from-template"
+  nix-shell -p cabal-install --run "cabal update; cabal unpack hello"
+  cd hello-*
+  nix flake init --template templates#haskell-nix --impure
+  nix develop \
+      --override-input haskellNix $HASKELL_NIX \
+      --accept-flake-config \
+      -c cabal build
+  popd
+  cd "$HASKELL_NIX/test"
   echo >& 2
 fi
 
