@@ -144,6 +144,24 @@ or <a href="https://docs.haskellstack.org/en/stable/README/#quick-start-guide">S
 project and its dependencies into Nix code.</p>
 <p>Assuming you have <a href="https://nixos.org/download.html">Nix</a> installed, you can
 start setting up your project.</p>
+<h2 id="using-flake-init-and-nix"><a class="header" href="#using-flake-init-and-nix">Using <code>flake init</code> and <code>nix</code></a></h2>
+<p>The <code>flake init</code> command create an example <code>hello</code> package from hackage
+containing an <code>flake.nix</code> and <code>nix/hix.nix</code> file. The project can be used with
+regular <code>nix</code> tools.</p>
+<pre><code class="language-bash">nix flake init --template templates#haskell-nix --impure
+# `--impure` is required by `builtins.currentSystem`
+nix develop
+cabal build
+</code></pre>
+<p>To view the contents of the flake run:</p>
+<pre><code>nix flake show
+</code></pre>
+<p>To build a component with nix:</p>
+<pre><code>nix build .#hello:exe:hello
+</code></pre>
+<p>To build and run a component:</p>
+<pre><code>nix run .#hello:exe:hello
+</code></pre>
 <h2 id="setting-up-the-binary-cache"><a class="header" href="#setting-up-the-binary-cache">Setting up the binary cache</a></h2>
 <p>IMPORTANT: you <em>must</em> do this or you <em>will</em> build several copies of GHC!</p>
 <p>You can configure Nix to use our binary cache, which is pushed to by CI, so should contain the artifacts that you need.</p>
