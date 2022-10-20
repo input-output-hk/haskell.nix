@@ -1,6 +1,6 @@
 {
   # Generic nixpkgs, use *only* for lib functions that are stable across versions
-  pkgs ? (import ./. {}).pkgs,
+  pkgs, # ? (import ./. {}).pkgs,
   lib ? pkgs.lib
 }: rec {
   inherit (import ./dimension.nix) dimension;

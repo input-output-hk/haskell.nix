@@ -134,6 +134,37 @@
 
       packages = ((self.internal.compat { inherit system; }).hix).apps;
 
+      ciJobs =
+        let
+          inherit (legacyPackages) lib;
+          inherit (import ./ci-lib.nix { pkgs = legacyPackagesUnstable; }) stripAttrsForHydra filterDerivations;
+          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
+          allJobs = stripAttrsForHydra (filterDerivations ci);
+          names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
+              (builtins.attrNames x);
+          requiredJobs =
+            builtins.listToAttrs (
+              lib.concatMap (nixpkgsVer:
+                let nixpkgsJobs = allJobs.${nixpkgsVer};
+                in lib.concatMap (compiler-nix-name:
+                  let ghcJobs = nixpkgsJobs.${compiler-nix-name};
+                  in (
+                    builtins.map (crossPlatform: {
+                      name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                      value = legacyPackages.releaseTools.aggregate {
+                        name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                        meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
+                        constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${crossPlatform};
+                      };
+                   }) (names ghcJobs))
+                ) (names nixpkgsJobs)
+              ) (names allJobs));
+        in {
+          latest = allJobs.unstable.ghc8107.native or {};
+        } // requiredJobs;
+
+      hydraJobs = ciJobs;
+
       devShells = with self.legacyPackages.${system}; {
         default =
           mkShell {

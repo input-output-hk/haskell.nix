@@ -1,11 +1,12 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
-, ifdLevel ? 3
+{ ifdLevel ? 3
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false
-, pkgs ? (import ./. {}).pkgs }:
+, compat
+, system
+, pkgs ? (compat { inherit system; }).pkgs }:
  let
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (pkgs.haskell-nix) sources;
@@ -13,7 +14,7 @@
     "R2205" = "nixpkgs-2205";
     "unstable" = "nixpkgs-unstable";
   };
-  haskellNix = import ./default.nix { inherit checkMaterialization; };
+  haskellNix = compat { inherit checkMaterialization system; };
   nixpkgsArgs = haskellNix.nixpkgsArgs // {
     # Needed for dwarf tests
     config = haskellNix.nixpkgsArgs.config // {
@@ -52,8 +53,8 @@
         # aarch64-linux requires ghc 8.8.4
         (v != "aarch64-linux" || (
            !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
-        ))) supportedSystems) (v: v);
-  crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
+        ))) [ system ]) (v: v);
+  crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
@@ -76,9 +77,8 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
       evalPackages = import pinnedNixpkgsSrc nixpkgsArgs;
   in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
-    dimension "System" (systems nixpkgsName evalPackages compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
-          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
+          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name compat system; };
           platformFilter = platformFilterGeneric pkgs system;
       in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
@@ -95,10 +95,10 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         });
       }
       //
-      dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name system) (crossSystemName: crossSystem:
+      dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name) (crossSystemName: crossSystem:
         # Cross builds
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
-            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
+            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name compat system; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
             ghc = pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}";
@@ -119,4 +119,3 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       ))
     )
   )
-)
