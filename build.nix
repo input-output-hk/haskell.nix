@@ -10,9 +10,7 @@
 , pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
-, compat
-, system
-, haskellNix ? compat { inherit system; }
+, haskellNix ? (import ./default.nix {})
 }:
 
 let
