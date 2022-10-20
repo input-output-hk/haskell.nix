@@ -21,39 +21,40 @@
       permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
     };
   };
-  compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
-    inherit runTests;
-  }) (
-    # GHC version to cache and whether to run the tests against them.
-    # This list of GHC versions should include everything for which we
-    # have a ./materialized/ghcXXX directory containing the materialized
-    # cabal-install and nix-tools plans.  When removing a ghc version
-    # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
-    # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
-      ghc865 = false;
-      ghc8107 = false;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-      ghc865 = false;
-      ghc884 = false; # Native version is used to boot 9.0.1
-      ghc8107 = true;
-      ghc902 = false;
-      ghc924 = true;
-    });
-  systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
-    nixpkgs.lib.filter (v:
+  compilerNixNames = nixpkgsName: nixpkgs:
+    # Include only the GHC versions that are supported by haskell.nix
+    nixpkgs.lib.filterAttrs (compiler-nix-name: _:
         # We have less x86_64-darwin build capacity so build fewer GhC versions
-        (v != "x86_64-darwin" || (
+        (system != "x86_64-darwin" || (
            !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-darwin requires ghc 8.10.7
-        (v != "aarch64-darwin" || (
+        (system != "aarch64-darwin" || (
            !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-linux requires ghc 8.8.4
-        (v != "aarch64-linux" || (
+        (system != "aarch64-linux" || (
            !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
-        ))) [ system ]) (v: v);
+        )))
+    (builtins.mapAttrs (compiler-nix-name: runTests: {
+      inherit runTests;
+    }) (
+      # GHC version to cache and whether to run the tests against them.
+      # This list of GHC versions should include everything for which we
+      # have a ./materialized/ghcXXX directory containing the materialized
+      # cabal-install and nix-tools plans.  When removing a ghc version
+      # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
+      # Update supported-ghc-versions.md to reflect any changes made here.
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
+        ghc865 = false;
+        ghc8107 = false;
+      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
+        ghc865 = false;
+        ghc884 = false; # Native version is used to boot 9.0.1
+        ghc8107 = true;
+        ghc902 = false;
+        ghc924 = true;
+      }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
