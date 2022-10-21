@@ -1765,6 +1765,7 @@ will be passed to it:</p>
 <tr><td><code>ghcWithHoogle</code></td><td>Function</td><td><a href="reference/library.html#ghcwithhoogle"><code>ghcWithHoogle</code></a></td></tr>
 <tr><td><code>ghcWithPackages</code></td><td>Function</td><td><a href="reference/library.html#ghcwithpackages"><code>ghcWithPackages</code></a></td></tr>
 <tr><td><code>projectCross</code></td><td>Attrset</td><td>Like <code>pkgs.pkgsCross.&lt;system&gt;</code> from nixpkgs <code>p.projectCross.&lt;system&gt;</code> returns the project results for cross compilation (where system is a member of nixpkgs lib.systems.examples).  So <code>p.projectCross.ghcjs.hsPkgs</code> is the same as <code>hsPkgs</code> but compiled with ghcjs</td></tr>
+<tr><td><code>projectVariants</code></td><td>Attrset</td><td>Attribute set of variant for the project, mapped from <code>flake.variants</code> config values</td></tr>
 <tr><td><code>appendModule</code></td><td>Function</td><td>Re-eval the project with an extra module (or module list).</td></tr>
 <tr><td><code>extend</code> and <code>appendOverlays</code></td><td>Function</td><td>Modify a project, or add attributes, through overlays: <code>p.extend(final: prev: { })</code>. The overlays are carried-over <code>projectCross</code> and <code>appendModule</code> invocations.</td></tr>
 </tbody></table>
