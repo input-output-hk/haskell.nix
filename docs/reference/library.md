@@ -166,6 +166,7 @@ Then feeding its result into [mkCabalProjectPkgSet](#mkcabalprojectpkgset) passi
 | `ghcWithHoogle`   | Function                                         | [`ghcWithHoogle`](#ghcwithhoogle)                                           |
 | `ghcWithPackages` | Function                                         | [`ghcWithPackages`](#ghcwithpackages)                                       |
 | `projectCross`    | Attrset                                          | Like `pkgs.pkgsCross.<system>` from nixpkgs `p.projectCross.<system>` returns the project results for cross compilation (where system is a member of nixpkgs lib.systems.examples).  So `p.projectCross.ghcjs.hsPkgs` is the same as `hsPkgs` but compiled with ghcjs |
+| `projectVariants`    | Attrset                                          | Attribute set of variant for the project, mapped from `flake.variants` config values |
 | `appendModule`    | Function                                          |  Re-eval the project with an extra module (or module list). |
 | `extend` and `appendOverlays` | Function                                          |  Modify a project, or add attributes, through overlays: `p.extend(final: prev: { })`. The overlays are carried-over `projectCross` and `appendModule` invocations. |
 
