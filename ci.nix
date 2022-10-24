@@ -6,6 +6,7 @@
 , checkMaterialization ? false
 , compat
 , system
+, evalSystem ? "x86_64-linux"
 , pkgs ? (compat { inherit system; }).pkgs }:
  let
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
@@ -76,7 +77,7 @@
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
-      evalPackages = import pinnedNixpkgsSrc nixpkgsArgs;
+      evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
   in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };

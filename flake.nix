@@ -10,6 +10,10 @@
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat"; flake = false; };
     flake-utils = { url = "github:numtide/flake-utils"; };
+    tullia = {
+      url = "github:input-output-hk/tullia";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -56,7 +60,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, tullia, ... }@inputs:
     let compiler = "ghc924";
       config = import ./config.nix;
     in {
@@ -121,14 +125,14 @@
 
       # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
       # (and maybe other tests) import projects that use builtins.currentSystem
-      checks = builtins.listToAttrs (map (pkg: {
-        name = pkg.name;
-        value = pkg;
-      }) (nixpkgs.lib.collect nixpkgs.lib.isDerivation (import ./test rec {
-        haskellNix = self.internal.compat { inherit system; };
-        compiler-nix-name = compiler;
-        pkgs = haskellNix.pkgs;
-      })));
+#      checks = builtins.listToAttrs (map (pkg: {
+#        name = pkg.name;
+#        value = pkg;
+#      }) (nixpkgs.lib.collect nixpkgs.lib.isDerivation (import ./test rec {
+#        haskellNix = self.internal.compat { inherit system; };
+#        compiler-nix-name = compiler;
+#        pkgs = haskellNix.pkgs;
+#      })));
       # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
       roots = legacyPackagesUnstable.haskell-nix.roots compiler;
 
@@ -190,7 +194,7 @@
             "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
             "ghc901"
             "ghc921" "ghc922" "ghc923"]);
-    });
+    } // tullia.fromSimple system (import ./tullia.nix self system));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
