@@ -1,5 +1,4 @@
 self: system:
-
 let
   ciInputName = "GitHub event";
 in rec {
