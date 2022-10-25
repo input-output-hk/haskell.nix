@@ -921,6 +921,20 @@ package alias. For example:</p>
   })
 ];
 </code></pre>
+<p>The user can map package(s) in Nixpkgs to a <code>pkgconfig-depends</code> name by
+overlaying the <code>haskell-nix.extraPkgconfigMappings</code> attribute:</p>
+<pre><code class="language-nix">nixpkgs.overlays = [
+  (self: super: {
+    haskell-nix = super.haskell-nix // {
+      extraPkgconfigMappings = super.haskell-nix.extraPkgconfigMappings // {
+          # String pkgconfig-depends names are mapped to lists of Nixpkgs
+          # package names
+          &quot;SDL_gpu&quot; = [ &quot;SDL_gpu&quot; ];
+      };
+    };
+  })
+];
+</code></pre>
 <h3 id="replace-libraries-of-components"><a class="header" href="#replace-libraries-of-components">Replace libraries of components</a></h3>
 <p>If a component is missing a dependency it can be added via modules. For example:</p>
 <pre><code class="language-nix">project = pkgs.haskell-nix.project' {
@@ -947,7 +961,7 @@ the Haskell.nix sources, so that it's solved for all users.</p>
 — for <code>build-tool-depends</code>, <code>frameworks</code>, <code>extra-libraries</code>, etc.</p>
 <p>Each name can be mapped to:</p>
 <ol>
-<li>A single package from nixkpgs.</li>
+<li>A single package from nixpkgs.</li>
 <li><code>null</code> — eliminates the dependency</li>
 <li>A list of packages — sometimes needed for dependencies such as <code>X11</code>.</li>
 </ol>
