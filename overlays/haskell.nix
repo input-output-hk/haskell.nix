@@ -11,7 +11,7 @@ final: prev: {
         # overlays.
         defaultModules = [];
 
-        # TODO: doc etc
+        # Additional user-provided mappings to augment ./../lib/pkgconf-nixpkgs-map.nix
         extraPkgconfigMappings = {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
@@ -624,6 +624,10 @@ final: prev: {
                 .extend project.__overlay__
               ) final.pkgsCross) // { recurseForDerivations = false; };
 
+            # attribute set of variant (with an extra module applied) for the project,
+            # mapped from `flake.variants` config values.
+            projectVariants = final.lib.mapAttrs (_: project.appendModule) project.args.flake.variants;
+
             # re-eval this project with an extra module (or module list).
             appendModule = extraProjectModule: (rawProject.projectFunction final.haskell-nix
               ((if builtins.isList rawProject.projectModule
@@ -763,8 +767,8 @@ final: prev: {
                 forAllVariants =
                     forAllCrossCompilers "default" project
                   ++ final.lib.concatLists (final.lib.mapAttrsToList
-                    (name: projectModule: forAllCrossCompilers name (project.appendModule projectModule))
-                     project.args.flake.variants);
+                    (name: projectVariant: forAllCrossCompilers name projectVariant)
+                     project.projectVariants);
               in haskellLib.combineFlakes ":" (builtins.foldl' (a: b: a // b) {} forAllVariants);
             flake = args: (project.appendModule { flake = args; }).flake';
 

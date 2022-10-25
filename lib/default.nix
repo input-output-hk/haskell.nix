@@ -343,7 +343,7 @@ in {
   projectOverlays = import ./project-overlays.nix {
     inherit lib haskellLib;
   };
-  
+
   # Use by `prefixFlake` to add a prefix to every attribute
   prefixAttrs = prefix: x:
     __listToAttrs (map (n:{
@@ -540,4 +540,28 @@ in {
           devShells
           devShell; # TODO remove devShell once everyone has nix that supports `devShells.default`
       };
+
+  # Adapt a standard project shell (`project.shell` or `haskell-nix.shellFor`)
+  # into a devshell module (https://github.com/numtide/devshell)
+  # that should provide the same environnement.
+  devshellFor = shell: {
+    packages = lib.filter lib.isDerivation (shell.nativeBuildInputs
+    # devshell does not use pkgs.mkShell / pkgs.stdenv.mkDerivation,
+    # so we need to explicit required dependencies which
+    # are provided implicitely by stdenv when using the normal shell:
+    ++ shell.stdenv.defaultNativeBuildInputs)
+    ++ [shell.stdenv.cc.bintools];
+    # We need to expose all the necessary env variables:
+    env = [
+      {
+        name = "PKG_CONFIG_PATH";
+        value = lib.makeSearchPath "lib/pkgconfig" shell.buildInputs;
+      }
+    ] ++ lib.mapAttrsToList lib.nameValuePair ({
+      inherit (shell) NIX_GHC_LIBDIR;
+    # CABAL_CONFIG is only set if the shell was built with exactDeps=true
+    } // lib.optionalAttrs (shell ? CABAL_CONFIG) {
+      inherit (shell) CABAL_CONFIG;
+    });
+  };
 }
