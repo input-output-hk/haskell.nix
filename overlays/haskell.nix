@@ -11,7 +11,7 @@ final: prev: {
         # overlays.
         defaultModules = [];
 
-        # TODO: doc etc
+        # Additional user-provided mappings to augment ./../lib/pkgconf-nixpkgs-map.nix
         extraPkgconfigMappings = {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
