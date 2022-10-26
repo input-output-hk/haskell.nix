@@ -51,8 +51,8 @@ index f1c0db7c92..fa3bb41292 100644
  
 -   result = mmap(map_addr, size, prot,
 -                 MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
-+   result = mmap_next(map_addr, size, prot,
-+                      MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
++   result = mmap_next(map_addr, size, prot, MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
++   if(map_addr != NULL && ((uintptr_t)result > (uintptr_t)map_addr)) map_addr = result;
  
     if (result == MAP_FAILED) {
         sysErrorBelch("mmap %" FMT_Word " bytes at %p",(W_)size,map_addr);
