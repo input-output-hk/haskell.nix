@@ -30,7 +30,7 @@ index f1c0db7c92..fa3bb41292 100644
 +  // we are going to look for up to pageSize * 1024 * 1024 (4GB) from the
 +  // address.
 +  size_t pageSize = getPageSize();
-+  static int i = (uintptr_t)addr & (pageSize-1) ? 1 : 0; for(; i < 1024*1024; i++) {
++  for(int i = (uintptr_t)addr & (pageSize-1) ? 1 : 0; i < 1024*1024; i++) {
 +    void *target = (void*)(((uintptr_t)addr & ~(pageSize-1))+(i*pageSize));
 +    void *mem = mmap(target, length, prot, flags, fd, offset);
 +    if(mem == NULL) return mem;
