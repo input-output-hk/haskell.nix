@@ -6,7 +6,7 @@
 , checkMaterialization ? false
 , compat
 , system
-, evalSystem ? "x86_64-linux"
+, evalSystem ? builtins.currentSystem or "x86_64-linux"
 , pkgs ? (compat { inherit system; }).pkgs }:
  let
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
