@@ -219,6 +219,7 @@ in {
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
+                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
