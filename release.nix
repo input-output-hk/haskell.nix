@@ -3,7 +3,15 @@
 {
   supportedSystems ? ["x86_64-linux" "x86_64-darwin"]
 , include ? (compiler-nix-name: true)
-}: let
+}:
+let
+  traceNames = prefix: builtins.mapAttrs (n: v:
+    if builtins.isAttrs v
+      then if v ? type && v.type == "derivation"
+        then __trace (prefix + n) v
+        else traceNames (prefix + n + ".") v
+      else v);
+
   defaultNix = import ./. {};
 
   inherit (defaultNix) pkgs;
@@ -20,10 +28,23 @@
 
   jobs = lib.getAttrs supportedSystems (filterCiJobs defaultNix.ciJobs);
 
+  windows-secp256k1 =
+    let
+      pkgs = (import ./. {}).pkgs-unstable; 
+      makeBinDist = drv: pkgs.runCommand drv.name {
+        nativeBuildInputs = [ pkgs.zip ];
+      } ''
+        mkdir -p $out/nix-support
+        cp -r ${drv}/* .
+        chmod -R +w .
+        zip -r $out/${drv.name}.zip .
+        echo "file binary-dist $out/${drv.name}.zip" > $out/nix-support/hydra-build-products
+      '';
+    in makeBinDist pkgs.pkgsCross.mingwW64.secp256k1;
   required = defaultNix.pkgs.releaseTools.aggregate {
     name = "github-required";
     meta.description = "All jobs required to pass CI";
     constituents = lib.collect lib.isDerivation jobs;
   };
 in
-  jobs // { inherit required; }
+  traceNames "job " (jobs // { inherit windows-secp256k1 required; })
