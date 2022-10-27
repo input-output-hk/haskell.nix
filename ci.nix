@@ -1,12 +1,12 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 3
+{ ifdLevel ? 2
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false
 , compat
 , system
-, evalSystem ? "x86_64-linux"
+, evalSystem ? builtins.currentSystem or "x86_64-linux"
 , pkgs ? (compat { inherit system; }).pkgs }:
  let
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
