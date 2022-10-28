@@ -23,8 +23,8 @@ let
         let ghcMatch = __match ".*-(ghc[0-9]*)-.*" n;
         in
           lib.optionalAttrs (
-            (n == "latest" && include "ghc8107")
-            || (ghcMatch != null && include (__head ghcMatch))) jobs) system));
+            n != "latest"
+            && (ghcMatch != null && include (__head ghcMatch))) jobs) system));
 
   jobs = lib.getAttrs supportedSystems (filterCiJobs defaultNix.ciJobs);
 
