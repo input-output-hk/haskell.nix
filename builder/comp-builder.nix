@@ -461,12 +461,28 @@ let
       in ''
       runHook preInstall
       ${ # `Setup copy` does not install tests and benchmarks.
-        lib.optionalString (!haskellLib.isTest componentId && !haskellLib.isBenchmark componentId) ''
-          $SETUP_HS copy ${lib.concatStringsSep " " (
-            setupInstallFlags
-            ++ lib.optional configureAllComponents
-                  (haskellLib.componentTarget componentId)
-          )}''}
+        if !haskellLib.isTest componentId && !haskellLib.isBenchmark componentId
+          then ''
+            $SETUP_HS copy ${lib.concatStringsSep " " (
+              setupInstallFlags
+              ++ lib.optional configureAllComponents
+                    (haskellLib.componentTarget componentId)
+            )}''
+          else
+            # However if there are exes or libraries it does copy the datadir.
+            # So run it, but expect it might complain there was nothing to do.
+            ''
+            SETUP_OUTPUT=$(mktemp)
+            if $SETUP_HS copy ${lib.concatStringsSep " " (
+              setupInstallFlags
+              ++ lib.optional configureAllComponents
+                    (haskellLib.componentTarget componentId)
+              )} 2>&1 | tee $SETUP_OUTPUT; then
+              echo Setup copy success
+            else
+              cat $SETUP_OUTPUT | grep 'Error: Setup: No executables and no library found\. Nothing to do\.'
+            fi
+            ''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
