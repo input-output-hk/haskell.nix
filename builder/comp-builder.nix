@@ -480,6 +480,9 @@ let
               )} 2>&1 | tee $SETUP_OUTPUT; then
               echo Setup copy success
             else
+              # we assume that if the SETUP_HS command fails and the following line was found in the error
+              # log, that it was the only error. Hence if we do _not_ find the line, grep will fail and this derivation
+              # will be marked as failure.
               cat $SETUP_OUTPUT | grep 'Error: Setup: No executables and no library found\. Nothing to do\.'
             fi
             ''}
