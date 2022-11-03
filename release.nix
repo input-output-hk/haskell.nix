@@ -47,4 +47,4 @@ let
     constituents = lib.collect lib.isDerivation jobs;
   };
 in
-  traceNames "job " ({ inherit jobs windows-secp256k1 required; })
+  traceNames "job " ({ inherit jobs windows-secp256k1; })
