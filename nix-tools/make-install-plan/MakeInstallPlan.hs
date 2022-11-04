@@ -2,41 +2,24 @@
 
 import qualified Data.ByteString.Lazy as BSL
 import Data.Foldable (for_)
-import Distribution.Client.Config (getCabalDir)
-import Distribution.Client.DistDirLayout
-  ( CabalDirLayout,
-    DistDirLayout (..),
-    defaultDistDirLayout,
-    mkCabalDirLayout,
-  )
+import Distribution.Client.DistDirLayout (DistDirLayout (..))
 import Distribution.Client.GlobalFlags
-import Distribution.Client.HttpUtils (configureTransport)
 import qualified Distribution.Client.InstallPlan as InstallPlan
 import Distribution.Client.NixStyleOptions (NixStyleFlags (..), defaultNixStyleFlags, nixStyleOptions)
 import Distribution.Client.ProjectConfig
+import Distribution.Client.ProjectOrchestration
 import Distribution.Client.ProjectPlanOutput (writePlanExternalRepresentation)
-import Distribution.Client.ProjectPlanning
-  ( ElaboratedConfiguredPackage
-      ( ElaboratedConfiguredPackage,
-        elabLocalToProject,
-        elabPkgDescriptionOverride,
-        elabPkgSourceId
-      ),
-    rebuildInstallPlan,
-    rebuildProjectConfig,
-  )
+import Distribution.Client.ProjectPlanning (ElaboratedConfiguredPackage (..), rebuildInstallPlan)
 import Distribution.Client.Setup
-import Distribution.Compat.Directory (makeAbsolute)
 import Distribution.Package (pkgName)
 import Distribution.Pretty (prettyShow)
 import Distribution.Simple.Command
 import Distribution.Simple.Flag
 import qualified Distribution.Simple.Utils as Cabal
-import Distribution.Verbosity (Verbosity, moreVerbose)
+import Distribution.Verbosity (Verbosity)
 import qualified Distribution.Verbosity as Verbosity
 import System.Environment (getArgs)
 import System.FilePath
-import Distribution.Client.ProjectOrchestration
 
 main :: IO ()
 main = do
@@ -66,9 +49,8 @@ cmdUI =
 
 installPlanAction :: Verbosity -> ProjectConfig -> IO ()
 installPlanAction verbosity cliConfig = do
-
-  ProjectBaseContext {distDirLayout, cabalDirLayout, projectConfig, localPackages}
-    <- establishProjectBaseContext verbosity cliConfig OtherCommand
+  ProjectBaseContext {distDirLayout, cabalDirLayout, projectConfig, localPackages} <-
+    establishProjectBaseContext verbosity cliConfig OtherCommand
 
   -- Two variants of the install plan are returned: with and without
   -- packages from the store. That is, the "improved" plan where source
