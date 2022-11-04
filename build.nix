@@ -2,9 +2,6 @@
 #
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
-let
-  haskellNix = (import ./default.nix {});
-in
 { nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
@@ -13,6 +10,7 @@ in
 , pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
+, haskellNix ? (import ./default.nix {})
 }:
 
 let

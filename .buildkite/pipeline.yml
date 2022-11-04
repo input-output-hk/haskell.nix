@@ -152,7 +152,7 @@ steps:
 
   - label: 'Check that evaluation of hydra jobs works without using remote builders'
     command:
-      - nix-instantiate release.nix -A required-unstable-ghc8107-x86_64-darwin-native --show-trace --builders ''
+      - nix-instantiate release.nix -A x86_64-darwin.required-unstable-ghc8107-native --show-trace --builders ''
     agents:
       system: x86_64-linux
 
