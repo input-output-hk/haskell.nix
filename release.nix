@@ -41,15 +41,17 @@ let
         echo "file binary-dist $out/${drv.name}.zip" > $out/nix-support/hydra-build-products
       '';
     in makeBinDist pkgs.pkgsCross.mingwW64.secp256k1;
+  # This job causes in eval if we include everything.
+  # For now just including some darwin checks (since thos are not done on cicero)
   required = defaultNix.pkgs.releaseTools.aggregate {
     name = "github-required";
     meta.description = "All jobs required to pass CI";
-    constituents = lib.collect lib.isDerivation {
-      # linux-ghc8107 = jobs.x86_64-linux.required-unstable-ghc8107-native;
-      darwin-ghc8107  = jobs.x86_64-darwin.required-unstable-ghc8107-native;
-      # linux-ghc924  = jobs.x86_64-linux.required-unstable-ghc924-native;
-      darwin-ghc924   = jobs.x86_64-darwin.required-unstable-ghc924-native;
-    };
+    constituents = lib.collect lib.isDerivation (
+      lib.optionalAttrs (jobs ? x86_64-darwin) {
+        darwin-ghc8107  = jobs.x86_64-darwin.required-unstable-ghc8107-native;
+        darwin-ghc924   = jobs.x86_64-darwin.required-unstable-ghc924-native;
+      }
+    );
   };
 in
   traceNames "job " (jobs // { inherit windows-secp256k1 required; })
