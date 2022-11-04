@@ -36,6 +36,7 @@ import Distribution.Verbosity (Verbosity, moreVerbose)
 import qualified Distribution.Verbosity as Verbosity
 import System.Environment (getArgs)
 import System.FilePath
+import Distribution.Client.ProjectOrchestration
 
 main :: IO ()
 main = do
@@ -65,26 +66,9 @@ cmdUI =
 
 installPlanAction :: Verbosity -> ProjectConfig -> IO ()
 installPlanAction verbosity cliConfig = do
-  let ProjectConfigShared {projectConfigDistDir, projectConfigProjectFile} = projectConfigShared cliConfig
-  let mProjectFile = flagToMaybe projectConfigProjectFile
-  let mdistDirectory = flagToMaybe projectConfigDistDir
 
-  Right projectRoot <- findProjectRoot Nothing mProjectFile
-
-  let distDirLayout = defaultDistDirLayout projectRoot mdistDirectory
-
-  httpTransport <- configureTransport verbosity mempty mempty
-
-  (projectConfig, localPackages) <-
-    rebuildProjectConfig
-      -- more verbose here to list the project files which have affected
-      -- the project configuration with no extra options
-      (moreVerbose verbosity)
-      httpTransport
-      distDirLayout
-      cliConfig
-
-  cabalDirLayout <- cabalDirLayoutFromProjectConfig projectConfig
+  ProjectBaseContext {distDirLayout, cabalDirLayout, projectConfig, localPackages}
+    <- establishProjectBaseContext verbosity cliConfig OtherCommand
 
   -- Two variants of the install plan are returned: with and without
   -- packages from the store. That is, the "improved" plan where source
@@ -116,14 +100,3 @@ installPlanAction verbosity cliConfig = do
         for_ elabPkgDescriptionOverride $ \pkgTxt -> do
           Cabal.info verbosity $ "Writing cabal file for " ++ prettyShow elabPkgSourceId ++ " to " ++ pkgFile
           BSL.writeFile pkgFile pkgTxt
-
-cabalDirLayoutFromProjectConfig :: ProjectConfig -> IO CabalDirLayout
-cabalDirLayoutFromProjectConfig
-  ProjectConfig
-    { projectConfigBuildOnly = ProjectConfigBuildOnly {projectConfigLogsDir},
-      projectConfigShared = ProjectConfigShared {projectConfigStoreDir}
-    } = do
-    cabalDir <- getCabalDir
-    let mlogsDir = flagToMaybe projectConfigLogsDir
-    mstoreDir <- sequenceA $ makeAbsolute <$> flagToMaybe projectConfigStoreDir
-    return $ mkCabalDirLayout cabalDir mstoreDir mlogsDir
