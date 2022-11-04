@@ -10,6 +10,10 @@
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat"; flake = false; };
     flake-utils = { url = "github:numtide/flake-utils"; };
+    tullia = {
+      url = "github:input-output-hk/tullia";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -56,7 +60,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, tullia, ... }@inputs:
     let compiler = "ghc924";
       config = import ./config.nix;
     in {
@@ -134,6 +138,37 @@
 
       packages = ((self.internal.compat { inherit system; }).hix).apps;
 
+      ciJobs =
+        let
+          inherit (legacyPackages) lib;
+          inherit (import ./ci-lib.nix { pkgs = legacyPackagesUnstable; }) stripAttrsForHydra filterDerivations;
+          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
+          allJobs = stripAttrsForHydra (filterDerivations ci);
+          names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
+              (builtins.attrNames x);
+          requiredJobs =
+            builtins.listToAttrs (
+              lib.concatMap (nixpkgsVer:
+                let nixpkgsJobs = allJobs.${nixpkgsVer};
+                in lib.concatMap (compiler-nix-name:
+                  let ghcJobs = nixpkgsJobs.${compiler-nix-name};
+                  in (
+                    builtins.map (crossPlatform: {
+                      name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                      value = legacyPackages.releaseTools.aggregate {
+                        name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                        meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
+                        constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${crossPlatform};
+                      };
+                   }) (names ghcJobs))
+                ) (names nixpkgsJobs)
+              ) (names allJobs));
+        in {
+          latest = allJobs.unstable.ghc8107.native or {};
+        } // requiredJobs;
+
+      hydraJobs = ciJobs;
+
       devShells = with self.legacyPackages.${system}; {
         default =
           mkShell {
@@ -141,7 +176,6 @@
               nixUnstable
               cabal-install
               haskell-nix.compiler.${compiler}
-              haskell-nix.nix-tools.${compiler}
             ];
           };
       } // __mapAttrs (compiler-nix-name: compiler:
@@ -160,7 +194,7 @@
             "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
             "ghc901"
             "ghc921" "ghc922" "ghc923"]);
-    });
+    } // tullia.fromSimple system (import ./tullia.nix self system));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

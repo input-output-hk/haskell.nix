@@ -107,11 +107,14 @@ if [ "$TESTS" == "multi-target" ] || [ "$TESTS" == "all" ]; then
   echo >& 2
 fi
 
+# These tests still use manually generated `pkgs`.  They were left that way
+# so that we would still be testing that workflow.
+SHELL_FOR_GHC="ghc8107"
 if [ "$TESTS" == "shellFor-single-package" ] || [ "$TESTS" == "all" ]; then
   printf "*** Checking shellFor works for a cabal project, multiple packages...\n" >& 2
   nix-shell $NIX_BUILD_ARGS \
       --pure ./default.nix \
-      --argstr compiler-nix-name $GHC \
+      --argstr compiler-nix-name $SHELL_FOR_GHC \
       -A shell-for.env \
       --run 'cd shell-for && cabal new-build all'
   echo >& 2
@@ -121,7 +124,7 @@ if [ "$TESTS" == "shellFor-multiple-package" ] || [ "$TESTS" == "all" ]; then
   printf "*** Checking shellFor works for a cabal project, single package...\n" >& 2
   nix-shell $NIX_BUILD_ARGS \
       --pure ./default.nix \
-      --argstr compiler-nix-name $GHC \
+      --argstr compiler-nix-name $SHELL_FOR_GHC \
       -A shell-for.envPkga \
       --run 'cd shell-for && cabal new-build --project=single.project all'
   echo >& 2
@@ -131,7 +134,7 @@ if [ "$TESTS" == "shellFor-hoogle" ] || [ "$TESTS" == "all" ]; then
   printf "*** Checking shellFor has a working hoogle index...\n" >& 2
   nix-shell $NIX_BUILD_ARGS \
       --pure ./default.nix \
-      --argstr compiler-nix-name $GHC \
+      --argstr compiler-nix-name $SHELL_FOR_GHC \
       -A shell-for.env \
       --run 'hoogle ConduitT | grep Data.Conduit'
   echo >& 2
@@ -139,9 +142,9 @@ fi
 
 if [ "$TESTS" == "shellFor-not-depends" ] || [ "$TESTS" == "all" ]; then
   printf "*** Checking shellFor does not depend on given packages...\n" >& 2
-  drva=$(nix-instantiate ./default.nix --argstr compiler-nix-name $GHC -A shell-for.env)
+  drva=$(nix-instantiate ./default.nix --argstr compiler-nix-name $SHELL_FOR_GHC -A shell-for.env)
   echo "-- hello" >> shell-for/pkga/PkgA.hs
-  drvb=$(nix-instantiate ./default.nix --argstr compiler-nix-name $GHC -A shell-for.env)
+  drvb=$(nix-instantiate ./default.nix --argstr compiler-nix-name $SHELL_FOR_GHC -A shell-for.env)
   sed -i -e '/-- hello/d' shell-for/pkga/PkgA.hs
   if [ "$drva" != "$drvb" ]; then
       printf "FAIL\nShell derivations\n$drva\n$drvb\n are not identical.\n" >& 2
@@ -197,6 +200,13 @@ if [ "$TESTS" == "hix" ] || [ "$TESTS" == "all" ]; then
       --accept-flake-config \
       -c cabal build
   echo >& 2
+fi
+
+if [ "$TESTS" == "docs" ] || [ "$TESTS" == "all" ]; then
+  printf "*** Test examples in documentation ...\n" >& 2
+  pushd ../docs/
+  ./tests.sh
+  popd
 fi
 
 printf "\n*** Finished successfully\n" >& 2

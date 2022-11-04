@@ -16,7 +16,7 @@ Check the LLVM version that should be used in the
 
 In the haskell.nix repo run:
 
-```
+```shell
 mkdir materialized/ghc884
 nix-build scripts/check-compiler-materialization --argstr compiler-nix-name ghc884
 ```

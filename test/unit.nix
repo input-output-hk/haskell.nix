@@ -29,7 +29,7 @@ let
 
   testRepoData = {
     url = "https://github.com/input-output-hk/haskell.nix.git";
-    ref = "487eea1c249537d34c27f6143dff2b9d5586c657";
+    rev = "487eea1c249537d34c27f6143dff2b9d5586c657";
     sha256 = "077j5j3j86qy1wnabjlrg4dmqy1fv037dyq3xb8ch4ickpxxs123";
   };
 in

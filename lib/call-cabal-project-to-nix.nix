@@ -533,7 +533,6 @@ let
     # file into account.  Then it "writes out a freeze file which
     # records all of the versions and flags that are picked" (from cabal docs).
     echo "Using index-state ${index-state-found}"
-
     HOME=${
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include

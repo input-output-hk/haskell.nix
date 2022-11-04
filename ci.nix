@@ -1,11 +1,13 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ supportedSystems ? [ "x86_64-linux" "x86_64-darwin" ]
-, ifdLevel ? 3
+{ ifdLevel ? 3
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false
-, pkgs ? (import ./. {}).pkgs }:
+, compat
+, system
+, evalSystem ? builtins.currentSystem or "x86_64-linux"
+, pkgs ? (compat { inherit system; }).pkgs }:
  let
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
   inherit (pkgs.haskell-nix) sources;
@@ -13,47 +15,48 @@
     "R2205" = "nixpkgs-2205";
     "unstable" = "nixpkgs-unstable";
   };
-  haskellNix = import ./default.nix { inherit checkMaterialization; };
+  haskellNix = compat { inherit checkMaterialization system; };
   nixpkgsArgs = haskellNix.nixpkgsArgs // {
     # Needed for dwarf tests
     config = haskellNix.nixpkgsArgs.config // {
       permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
     };
   };
-  compilerNixNames = nixpkgsName: nixpkgs: builtins.mapAttrs (compiler-nix-name: runTests: {
-    inherit runTests;
-  }) (
-    # GHC version to cache and whether to run the tests against them.
-    # This list of GHC versions should include everything for which we
-    # have a ./materialized/ghcXXX directory containing the materialized
-    # cabal-install and nix-tools plans.  When removing a ghc version
-    # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
-    # Update supported-ghc-versions.md to reflect any changes made here.
-    nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
-      ghc865 = false;
-      ghc8107 = false;
-    } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-      ghc865 = false;
-      ghc884 = false; # Native version is used to boot 9.0.1
-      ghc8107 = true;
-      ghc902 = false;
-      ghc924 = true;
-    });
-  systems = nixpkgsName: nixpkgs: compiler-nix-name: nixpkgs.lib.genAttrs (
-    nixpkgs.lib.filter (v:
+  compilerNixNames = nixpkgsName: nixpkgs:
+    # Include only the GHC versions that are supported by haskell.nix
+    nixpkgs.lib.filterAttrs (compiler-nix-name: _:
         # We have less x86_64-darwin build capacity so build fewer GhC versions
-        (v != "x86_64-darwin" || (
+        (system != "x86_64-darwin" || (
            !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-darwin requires ghc 8.10.7
-        (v != "aarch64-darwin" || (
+        (system != "aarch64-darwin" || (
            !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-linux requires ghc 8.8.4
-        (v != "aarch64-linux" || (
+        (system != "aarch64-linux" || (
            !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
-        ))) supportedSystems) (v: v);
-  crossSystems = nixpkgsName: nixpkgs: compiler-nix-name: system:
+        )))
+    (builtins.mapAttrs (compiler-nix-name: runTests: {
+      inherit runTests;
+    }) (
+      # GHC version to cache and whether to run the tests against them.
+      # This list of GHC versions should include everything for which we
+      # have a ./materialized/ghcXXX directory containing the materialized
+      # cabal-install and nix-tools plans.  When removing a ghc version
+      # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
+      # Update supported-ghc-versions.md to reflect any changes made here.
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
+        ghc865 = false;
+        ghc8107 = false;
+      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
+        ghc865 = false;
+        ghc884 = false; # Native version is used to boot 9.0.1
+        ghc8107 = true;
+        ghc902 = false;
+        ghc924 = true;
+      }));
+  crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
@@ -74,11 +77,10 @@
 in
 dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
   let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
-      evalPackages = import pinnedNixpkgsSrc nixpkgsArgs;
+      evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
   in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
-    dimension "System" (systems nixpkgsName evalPackages compiler-nix-name) (systemName: system:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
-          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
+          build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
           platformFilter = platformFilterGeneric pkgs system;
       in filterAttrsOnlyRecursive (_: v: platformFilter v && !(isDisabled v)) ({
         # Native builds
@@ -95,10 +97,10 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         });
       }
       //
-      dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name system) (crossSystemName: crossSystem:
+      dimension "Cross system" (crossSystems nixpkgsName evalPackages compiler-nix-name) (crossSystemName: crossSystem:
         # Cross builds
         let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system crossSystem; });
-            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
+            build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
             ghc = pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}";
@@ -119,4 +121,3 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
       ))
     )
   )
-)

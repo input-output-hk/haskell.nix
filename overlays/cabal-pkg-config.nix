@@ -29,8 +29,12 @@ final: prev:
   # overrides here.
   allPkgConfigWrapper =
     let
+      # Try getting the `.version` attribute or failing that look in the
+      # `.name`.  Some packages like `icu` have the correct version in
+      # `.name` but no `.version`.
+      getVersion = p: p.version or (builtins.parseDrvName (p.name or "")).version;
       pkgconfigPkgs =
-        final.lib.filterAttrs (name: p: __length p > 0 && (__head p) ? version)
+        final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
     in prev.pkgconfig.overrideAttrs (attrs: {
       installPhase = attrs.installPhase + ''
@@ -53,7 +57,7 @@ final: prev:
           ERROR=\$(mktemp)
         cat <<EOF2
         ${final.pkgs.lib.concatStrings (map (p: ''
-          ${(builtins.head p).version}
+          ${getVersion (builtins.head p)}
         '') (__attrValues pkgconfigPkgs))
         }
         EOF2

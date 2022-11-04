@@ -91,7 +91,18 @@ in {
 
   packages.discount.components.library.libs = pkgs.lib.mkForce [ pkgs.discount ];
 
-  packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [ pkgs.llvm ];
+  packages.llvm-hs.components.library.build-tools = pkgs.lib.mkForce [ 
+    (fromUntil "5.0.0" "6" pkgs.llvmPackages_5.llvm)
+    (fromUntil "6.0.0" "7" pkgs.llvmPackages_6.llvm)
+    (fromUntil "7.0.0" "8" pkgs.llvmPackages_7.llvm)
+    (fromUntil "8.0.0" "9" pkgs.llvmPackages_8.llvm)
+    (fromUntil "9.0.0" "12" pkgs.llvmPackages_9.llvm)
+    (fromUntil "12.0.0" "15" pkgs.llvmPackages_12.llvm)
+    # NOTE: we currently don't have a llvm versoin > 12 that has a tag 
+    #       in nixpkgs, so we probably can't build `llvm-hs > 12`, there 
+    #       is however a head version of llvm in nixpkgs, which we might 
+    #       be able to use if that case were to occur
+  ];
 
   packages.BNFC.components.tests.doctests.build-tools = [
     config.hsPkgs.buildPackages.alex
@@ -115,6 +126,10 @@ in {
 
   packages.closed.components.tests.readme.build-tools = [
     config.hsPkgs.buildPackages.markdown-unlit
+  ];
+
+  packages.pcap.components.library.libs = [
+    pkgs.libpcap
   ];
 
   # Build ghci and ghc with internal interpreter support to make the

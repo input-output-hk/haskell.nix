@@ -4,7 +4,7 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     compiler-nix-name = config.compiler.nix-name;
-    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages inputMap;
   };
 
 in
@@ -88,6 +88,11 @@ in
     ++ lib.optionals (
       __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924"]) [
       "ghc-bignum" ];
+
+  options.inputMap = lib.mkOption {
+    type = lib.types.attrsOf lib.types.unspecified;
+    default = {};
+  };
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;
