@@ -138,8 +138,8 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
   bind pkg Nothing =
     [revBinding pkg mkNull]
   bind pkg (Just Package { packageFlags, packageHasDescriptionOverride = True }) =
-    revBinding pkg
-      (mkSym "import" @@ mkPath False ("." </> "cabal-files" </> T.unpack pkg <.> "nix"))
+      bindPath (VarName pkg :| ["revision"])  (mkSym "import" @@ mkPath False ("." </> "cabal-files" </> T.unpack pkg <.> "nix"))
+    : bindPath (VarName pkg :| ["cabalFile"]) (mkSym "builtins" @. "readFile" @@ mkPath False ("." </> "cabal-files" </> T.unpack pkg <.> "cabal"))
     : flagBindings
 
     where
