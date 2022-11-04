@@ -44,7 +44,12 @@ let
   required = defaultNix.pkgs.releaseTools.aggregate {
     name = "github-required";
     meta.description = "All jobs required to pass CI";
-    constituents = lib.collect lib.isDerivation jobs;
+    constituents = lib.collect lib.isDerivation {
+      # linux-ghc8107 = jobs.x86_64-linux.required-unstable-ghc8107-native;
+      darwin-ghc8107  = jobs.x86_64-darwin.required-unstable-ghc8107-native;
+      # linux-ghc924  = jobs.x86_64-linux.required-unstable-ghc924-native;
+      darwin-ghc924   = jobs.x86_64-darwin.required-unstable-ghc924-native;
+    };
   };
 in
-  traceNames "job " (jobs // { inherit windows-secp256k1; })
+  traceNames "job " (jobs // { inherit windows-secp256k1 required; })
