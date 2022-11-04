@@ -17,8 +17,8 @@ import Data.String (fromString)
 import Cabal2Nix
 import Cabal2Nix.Util
 
-import Data.Text.Prettyprint.Doc (Doc)
-import Data.Text.Prettyprint.Doc.Render.Text (hPutDoc)
+import Prettyprinter (Doc)
+import Prettyprinter.Render.Text (hPutDoc)
 import System.IO
 import Distribution.Nixpkgs.Fetch
 import Control.Monad.IO.Class

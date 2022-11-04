@@ -17,7 +17,6 @@ import qualified Data.HashSet                  as Set
 import           Data.Maybe                               ( mapMaybe
                                                           , isJust
                                                           , fromMaybe
-                                                          , maybeToList
                                                           )
 import           Data.List.NonEmpty                       ( NonEmpty (..) )
 import qualified Data.Text                     as Text
@@ -27,12 +26,10 @@ import           Lens.Micro
 import           Lens.Micro.Aeson
 import           Nix.Expr
 import           Nix.Pretty                               ( prettyNix )
-import           System.Environment                       ( getArgs )
 
-import Data.Text.Prettyprint.Doc (Doc)
-import Data.Text.Prettyprint.Doc.Render.Text (hPutDoc)
+import Prettyprinter (Doc)
+import Prettyprinter.Render.Text (hPutDoc)
 
-import Distribution.Types.PackageId (PackageIdentifier(..))
 import Distribution.Nixpkgs.Fetch (DerivationSource(..), Source(..), Hash(..), fetch)
 import Distribution.Simple.Utils (shortRelativePath)
 import Distribution.Types.Version (Version)
@@ -41,7 +38,7 @@ import Distribution.Parsec (simpleParsec)
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (unless, forM)
-import Extra (unlessM)
+import Control.Monad.Extra (unlessM)
 
 import Cabal2Nix hiding (Git)
 import qualified Cabal2Nix as C2N
