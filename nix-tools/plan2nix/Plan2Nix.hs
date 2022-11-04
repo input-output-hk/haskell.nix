@@ -55,6 +55,7 @@ import System.FilePath ((<.>), (</>), takeDirectory, dropFileName)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getCurrentDirectory)
 import System.IO (IOMode(..), openFile, hClose)
 import Data.String (fromString)
+import qualified Data.Text as T
 
 
 doPlan2Nix :: Args -> IO ()
@@ -80,23 +81,22 @@ writeDoc file doc =
      hClose handle
 
 plan2nix :: Args -> Plan -> IO NExpr
-plan2nix args (Plan { packages, extras, components, compilerVersion, compilerPackages }) = do
+plan2nix args Plan { packages, extras, components, compilerVersion, compilerPackages } = do
   -- TODO: this is an aweful hack and expects plan-to-nix to be
   -- called from the toplevel project directory.
   cwd <- getCurrentDirectory
   extrasNix <- fmap (mkNonRecSet  . concat) . forM (Map.toList extras) $ \case
-    (name, Just (Package v r flags (Just (LocalPath folder)))) ->
+    (_name, Just (Package _vers _flags (Just (LocalPath folder)) False)) ->
       do cabalFiles <- findCabalFiles folder
          forM cabalFiles $ \cabalFile ->
            let pkg = cabalFilePkgName cabalFile
                nix = ".plan.nix" </> pkg <.> "nix"
                nixFile = argOutputDir args </> nix
-               src = Just . C2N.Path $ relPath </> ".." </> (shortRelativePath cwd folder)
+               src = Just . C2N.Path $ relPath </> ".." </> shortRelativePath cwd folder
            in do createDirectoryIfMissing True (takeDirectory nixFile)
-                 writeDoc nixFile =<<
-                   prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
+                 writeDoc nixFile . prettyNix =<< cabal2nix True (argDetailLevel args) src cabalFile
                  return $ fromString pkg $= mkPath False nix
-    (name, Just (Package v r flags (Just (DVCS (Git url rev) subdirs)))) ->
+    (_name, Just (Package _vers _flags (Just (DVCS (Git url rev) subdirs)) False)) ->
       fmap concat . forM subdirs $ \subdir ->
       do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
          case cacheHits of
@@ -109,22 +109,24 @@ plan2nix args (Plan { packages, extras, components, compilerVersion, compilerPac
              forM hits $ \( pkg, nix ) -> do
                return $ fromString pkg $= mkPath False nix
     _ -> return []
+
   let flags = concatMap (\case
-          (name, Just (Package _v _r f _)) -> flags2nix name f
+          (name, Just (Package _vers f _hasDescriptionOverride _)) -> flags2nix name f
           _ -> []) $ Map.toList extras
+
       -- Set the `planned` option for all components in the plan.
       planned = map (\name -> name <> ".planned" $=
         ("lib" @. "mkOverride" @@ mkInt 900 @@ mkBool True)) $ Set.toList components
 
   return $ mkNonRecSet [
-    "pkgs" $= ("hackage" ==> mkNonRecSet (
-      [ "packages" $= (mkNonRecSet $ uncurry bind =<< Map.toList quotedPackages)
+    "pkgs" $= ("hackage" ==> mkNonRecSet
+      [ "packages" $= mkNonRecSet (Map.toList packages >>= \(name, pkg) -> bind name pkg)
       , "compiler" $= mkNonRecSet
         [ "version" $= mkStr compilerVersion
         , "nix-name" $= mkStr ("ghc" <> Text.filter (/= '.') compilerVersion)
-        , "packages" $= mkNonRecSet (fmap (uncurry bind') $ Map.toList $ mapKeys quoted compilerPackages)
+        , "packages" $= mkNonRecSet [ pkgName $= maybe mkNull mkStr ver | (pkgName, ver) <- Map.toList compilerPackages ]
         ]
-      ]))
+      ])
     , "extras" $= ("hackage" ==> mkNonRecSet [ "packages" $= extrasNix ])
     , "modules" $= mkList [
         mkParamset [("lib", Nothing)] True ==> mkNonRecSet [ "packages" $= mkNonRecSet flags ]
@@ -132,21 +134,31 @@ plan2nix args (Plan { packages, extras, components, compilerVersion, compilerPac
       ]
     ]
  where
-  quotedPackages = mapKeys quoted packages
   bind :: Text -> Maybe Package -> [Binding NExpr]
-  bind pkg (Just (Package { packageVersion, packageRevision, packageFlags })) =
+  bind pkg Nothing =
+    [revBinding pkg mkNull]
+  bind pkg (Just Package { packageFlags, packageHasDescriptionOverride = True }) =
+    revBinding pkg
+      (mkSym "import" @@ mkPath False ("." </> "cabal-files" </> T.unpack pkg <.> "nix"))
+    : flagBindings
+
+    where
+      flagBindings = Map.foldrWithKey
+        (\fname val acc -> bindPath (VarName pkg :| ["flags", fname]) (mkBool val) : acc)
+        []
+        packageFlags
+
+  bind pkg (Just Package { packageVersion, packageFlags, packageHasDescriptionOverride = False }) =
     let verExpr      = (mkSym "hackage" @. pkg) @. quoted packageVersion
-        revExpr      = (verExpr @. "revisions") @. maybe "default" quoted packageRevision
+        revExpr      = (verExpr @. "revisions") @. "default"
         flagBindings = Map.foldrWithKey
           (\fname val acc -> bindPath (VarName pkg :| ["flags", fname]) (mkBool val) : acc)
           []
           packageFlags
     in  revBinding pkg revExpr : flagBindings
-  bind pkg Nothing = [revBinding pkg mkNull]
+
   revBinding :: Text -> NExpr -> Binding NExpr
   revBinding pkg revExpr = bindPath (VarName pkg :| ["revision"]) revExpr
-  bind' pkg ver = pkg $= maybe mkNull mkStr ver
-  mapKeys f = Map.fromList . fmap (\(k, v) -> (f k, v)) . Map.toList
 
   relPath = shortRelativePath (argOutputDir args) (dropFileName (argCabalProject args))
   cabalFromPath
@@ -168,8 +180,7 @@ plan2nix args (Plan { packages, extras, components, compilerVersion, compilerPac
                           else Just subdir
                 src = Just $ C2N.Git url rev (Just sha256) subdir'
             createDirectoryIfMissing True (takeDirectory nixFile)
-            writeDoc nixFile =<<
-              prettyNix <$> cabal2nix True (argDetailLevel args) src cabalFile
+            writeDoc nixFile . prettyNix =<< cabal2nix True (argDetailLevel args) src cabalFile
             liftIO $ appendCache (argCacheFile args) url rev subdir sha256 pkg nix
             return $ fromString pkg $= mkPath False nix
 
@@ -188,59 +199,69 @@ flags2nix pkgName pkgFlags =
 value2plan :: Value -> Plan
 value2plan plan = Plan { packages, components, extras, compilerVersion, compilerPackages }
  where
-  packages = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "type" . _String
-                                              , pkg ^. key "style" . _String) of
-    -- source-repo packages will be included in `extras`.  We do not need them
-    -- in `packages` as well (this could lead to attribute not found errors looking
-    -- for them in hackage).
-    (_, _) | pkg ^. key "pkg-src" . key "type" . _String == "source-repo" -> Nothing
-    (_, "global") -> Just $ Package
-      { packageVersion  = pkg ^. key "pkg-version" . _String
-      , packageRevision = Nothing
-      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
-          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
-      , packageSrc      = Nothing
-      }
-    (_, "inplace") -> Just $ Package
-      { packageVersion  = pkg ^. key "pkg-version" . _String
-      , packageRevision = Nothing
-      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
-          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
-      , packageSrc      = Nothing
-      }
-    -- Until we figure out how to force Cabal to reconfigure just about any package
-    -- this here might be needed, so that we get the pre-existing packages as well.
-    -- Or we would have to plug in our very custom minimal pkg-db as well.
-    --
-    -- The issue is that cabal claims anything in the package db as pre-existing and
-    -- wants to reuse it if possible.
-    ("pre-existing",_) -> Just $ Package
-      { packageVersion  = pkg ^. key "pkg-version" . _String
-      , packageRevision = Nothing
-      , packageFlags    = Map.empty
-      , packageSrc      = Nothing
-      }
-    _ -> Nothing
+  packages =
+    fmap Just $
+      filterInstallPlan $ \pkg ->
+        case ( pkg ^. key "type" . _String , pkg ^. key "style" . _String) of
+          -- source-repo packages will be included in `extras`.  We do not need them
+          -- in `packages` as well (this could lead to attribute not found errors looking
+          -- for them in hackage).
+          (_, _) | pkg ^. key "pkg-src" . key "type" . _String == "source-repo" -> Nothing
 
-  extras = fmap Just $ filterInstallPlan $ \pkg -> case ( pkg ^. key "style" . _String
-                                                        , pkg ^. key "pkg-src" . key "type" . _String) of
-    ("local", "local") -> Just $ Package
-      { packageVersion  = pkg ^. key "pkg-version" . _String
-      , packageRevision = Nothing
-      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
-          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
-      , packageSrc      = Just . LocalPath . Text.unpack $ pkg ^. key "pkg-src" . key "path" . _String
-      }
-    (_, "source-repo") -> Just $ Package
-      { packageVersion  = pkg ^. key "pkg-version" . _String
-      , packageRevision = Nothing
-      , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
-          . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
-      , packageSrc      = Just . flip DVCS [ Text.unpack $ fromMaybe "." $ pkg ^? key "pkg-src" . key "source-repo" . key "subdir" . _String ] $
-          Git ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "location" . _String )
-              ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "tag" . _String )
-      }
-    _ -> Nothing
+          (_, "global") -> Just $ Package
+            { packageVersion  = pkg ^. key "pkg-version" . _String
+            , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+                . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+            , packageSrc      = Nothing
+            , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256")
+            }
+
+          (_, "inplace") -> Just $ Package
+            { packageVersion  = pkg ^. key "pkg-version" . _String
+            , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+                . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+            , packageSrc      = Nothing
+            , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256")
+            }
+
+          -- Until we figure out how to force Cabal to reconfigure just about any package
+          -- this here might be needed, so that we get the pre-existing packages as well.
+          -- Or we would have to plug in our very custom minimal pkg-db as well.
+          --
+          -- The issue is that cabal claims anything in the package db as pre-existing and
+          -- wants to reuse it if possible.
+          ("pre-existing",_) -> Just $ Package
+            { packageVersion  = pkg ^. key "pkg-version" . _String
+            , packageFlags    = Map.empty
+            , packageSrc      = Nothing
+            , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256") -- likely this is always false
+            }
+
+          _ -> Nothing
+
+  extras =
+    fmap Just $
+      filterInstallPlan $ \pkg ->
+        case ( pkg ^. key "style" . _String , pkg ^. key "pkg-src" . key "type" . _String) of
+          ("local", "local") -> Just $ Package
+            { packageVersion  = pkg ^. key "pkg-version" . _String
+            , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+                . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+            , packageSrc      = Just . LocalPath . Text.unpack $ pkg ^. key "pkg-src" . key "path" . _String
+            , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256") -- likely this is always false
+            }
+
+          (_, "source-repo") -> Just $ Package
+            { packageVersion  = pkg ^. key "pkg-version" . _String
+            , packageFlags    = Map.fromList . fmap (\(k, v) -> (VarName (Key.toText k), v))
+                . KeyMap.toList $ KeyMap.mapMaybe (^? _Bool) $ pkg ^. key "flags" . _Object
+            , packageSrc      = Just . flip DVCS [ Text.unpack $ fromMaybe "." $ pkg ^? key "pkg-src" . key "source-repo" . key "subdir" . _String ] $
+                Git ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "location" . _String )
+                    ( Text.unpack $ pkg ^. key "pkg-src" . key "source-repo" . key "tag" . _String )
+            , packageHasDescriptionOverride = isJust (pkg ^? key "pkg-cabal-sha256") -- likely this is always false
+            }
+
+          _ -> Nothing
 
   compilerVersion  = Text.dropWhile (not . isDigit) $ plan ^. key "compiler-id" . _String
   compilerPackages = fmap Just $ filterInstallPlan $ \pkg -> if isJust (pkg ^? key "style" . _String)
@@ -295,7 +316,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
   componentPrefixToHaskellNix x = error ("unknown component prefix " <> x)
 
 defaultNixContents :: String
-defaultNixContents = unlines $
+defaultNixContents = unlines
   [ "{ haskellNixSrc ? builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz"
   , ", haskellNix ? import haskellNixSrc {}"
   , ", nixpkgs ? haskellNix.sources.nixpkgs }:"
