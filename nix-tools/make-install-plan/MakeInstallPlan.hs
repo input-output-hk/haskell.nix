@@ -3,7 +3,9 @@
 import qualified Cabal2Nix
 import qualified Data.ByteString.Lazy as BSL
 import Data.Foldable (for_)
+import Distribution.Client.DistDirLayout (DistDirLayout (distDirectory, distProjectCacheFile, distProjectFile))
 import Distribution.Client.GlobalFlags
+import Distribution.Client.HashValue (HashValue, showHashValue)
 import qualified Distribution.Client.InstallPlan as InstallPlan
 import Distribution.Client.NixStyleOptions (NixStyleFlags (..), defaultNixStyleFlags, nixStyleOptions)
 import Distribution.Client.ProjectConfig
@@ -11,11 +13,15 @@ import Distribution.Client.ProjectOrchestration
 import Distribution.Client.ProjectPlanOutput (writePlanExternalRepresentation)
 import Distribution.Client.ProjectPlanning (ElaboratedConfiguredPackage (..), rebuildInstallPlan)
 import Distribution.Client.Setup
+import Distribution.Client.Types.PackageLocation (PackageLocation (..))
+import Distribution.Client.Types.Repo (LocalRepo (..), RemoteRepo (..), Repo (..))
+import Distribution.Client.Types.SourceRepo (SourceRepositoryPackage (..))
 import Distribution.Package (pkgName)
 import Distribution.Pretty (prettyShow)
 import Distribution.Simple.Command
 import Distribution.Simple.Flag
 import qualified Distribution.Simple.Utils as Cabal
+import Distribution.Types.SourceRepo (KnownRepoType (Git), RepoType (..))
 import Distribution.Verbosity (Verbosity)
 import qualified Distribution.Verbosity as Verbosity
 import Nix.Pretty (prettyNix)
@@ -24,8 +30,6 @@ import Prettyprinter.Render.Text (hPutDoc)
 import System.Environment (getArgs)
 import System.FilePath
 import System.IO (IOMode (WriteMode), hClose, openFile)
-import Distribution.Client.DistDirLayout (DistDirLayout(distProjectCacheFile))
-import System.Directory (renameFile)
 
 main :: IO ()
 main = do
@@ -66,22 +70,17 @@ installPlanAction verbosity cliConfig = do
   (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, _tis, _at) <-
     rebuildInstallPlan verbosity distDirLayout cabalDirLayout projectConfig localPackages
 
-  let outputDir = "make-install-plan-out"
-  Cabal.createDirectoryIfMissingVerbose verbosity True outputDir
-
   -- Write plan.json
-  let planJsonPath = outputDir </> "plan.json"
-  Cabal.notice verbosity $ "Writing plan.json to " ++ planJsonPath
+  Cabal.notice verbosity $ "Writing plan.json to " ++ distProjectCacheFile distDirLayout "plan.json"
   writePlanExternalRepresentation distDirLayout elaboratedPlan elaboratedSharedConfig
-  renameFile (distProjectCacheFile distDirLayout "plan.json") planJsonPath
 
-  -- write cabal.freeze
-  let cabalFreezeFile = outputDir </> "cabal.project.freeze"
+  -- Write cabal.freeze
+  let cabalFreezeFile = distProjectFile distDirLayout "freeze"
   Cabal.notice verbosity $ "Wrote freeze file to " ++ cabalFreezeFile
   writeProjectConfigFile cabalFreezeFile projectConfig
 
-  -- write cabal files and their nix version
-  let cabalFilesDir = outputDir </> "cabal-files"
+  -- Write cabal files and their nix version
+  let cabalFilesDir = distDirectory distDirLayout </> "cabal-files"
   Cabal.createDirectoryIfMissingVerbose verbosity True cabalFilesDir
   Cabal.notice verbosity $ "Writing cabal files to " ++ cabalFilesDir
 
@@ -90,6 +89,8 @@ installPlanAction verbosity cliConfig = do
   for_ ecps $
     \ElaboratedConfiguredPackage
        { elabPkgSourceId,
+         elabPkgSourceLocation,
+         elabPkgSourceHash,
          elabPkgDescriptionOverride
        } -> do
         let pkgFile = cabalFilesDir </> prettyShow (pkgName elabPkgSourceId) <.> "cabal"
@@ -100,8 +101,25 @@ installPlanAction verbosity cliConfig = do
             Cabal.info verbosity $ "Writing cabal file for " ++ prettyShow elabPkgSourceId ++ " to " ++ pkgFile
             BSL.writeFile pkgFile pkgTxt
             -- nix
-            Cabal2Nix.cabal2nix False Cabal2Nix.MinimalDetails (Just (Cabal2Nix.Path pkgFile)) (Cabal2Nix.OnDisk pkgFile)
+            let src = packageLocation2Src elabPkgSourceLocation elabPkgSourceHash
+            Cabal2Nix.cabal2nix False Cabal2Nix.MinimalDetails (Just src) (Cabal2Nix.OnDisk pkgFile)
             >>= writeDoc nixFile . prettyNix
+
+packageLocation2Src :: PackageLocation local -> Maybe HashValue -> Cabal2Nix.Src
+packageLocation2Src pkgSrcLoc pkgSrcHash = case pkgSrcLoc of
+  LocalUnpackedPackage path -> Cabal2Nix.Path path
+  LocalTarballPackage path -> Cabal2Nix.Path path
+  RemoteTarballPackage uri _local -> Cabal2Nix.Repo (show uri) mSrcHash
+  RepoTarballPackage repo packageId _local -> case repo of
+    (RepoLocalNoIndex lr _local) -> Cabal2Nix.Path (localRepoPath lr)
+    (RepoRemote rr _local) -> Cabal2Nix.Repo (show (remoteRepoURI rr) </> "package" </> prettyShow packageId) mSrcHash
+    (RepoSecure rr _local) -> Cabal2Nix.Repo (show (remoteRepoURI rr) </> "package" </> prettyShow packageId) mSrcHash
+  RemoteSourceRepoPackage sourceRepoMaybe _local -> case sourceRepoMaybe of
+    (SourceRepositoryPackage (KnownRepoType Git) location (Just tag) branch subdir []) ->
+      Cabal2Nix.Git location tag branch subdir
+    _otherCases -> error $ "Repository " <> show sourceRepoMaybe <> " not supported"
+  where
+    mSrcHash = showHashValue <$> pkgSrcHash
 
 writeDoc :: FilePath -> Doc ann -> IO ()
 writeDoc file doc = do

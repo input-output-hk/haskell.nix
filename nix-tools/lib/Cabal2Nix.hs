@@ -48,7 +48,7 @@ import Cabal2Nix.Util (quoted, selectOr)
 
 data Src
   = Path FilePath
-  | PrivateHackage String
+  | Repo String (Maybe String)
   | Git String String (Maybe String) (Maybe String)
   deriving Show
 
@@ -220,11 +220,13 @@ toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
 
 srcToNix :: PackageIdentifier -> Src -> NExpr
 srcToNix _ (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
-srcToNix pi' (PrivateHackage url)
-  = mkNonRecSet $
+srcToNix pi' (Repo url mHash)
+  = mkNonRecSet
     [ "src" $= applyMkDefault (mkSym pkgs @. "fetchurl" @@ mkNonRecSet
       [ "url" $= mkStr (fromString . show $ mkPrivateHackageUrl url pi')
-      , "sha256" $= (mkSym "config" @. "sha256")
+      , "sha256" $= case mHash of
+                      Nothing -> mkSym "config" @. "sha256"
+                      Just hash -> mkStr (fromString hash)
       ])
     ]
 srcToNix _ (Git url rev mbSha256 mbPath)

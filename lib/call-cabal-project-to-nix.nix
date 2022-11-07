@@ -70,7 +70,7 @@ in
 }@args:
 
 let
-  inherit (evalPackages.haskell-nix) materialize dotCabal;
+  inherit (evalPackages.haskell-nix) materialize mkLocalHackageRepo;
 
   # These defaults are hear rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
@@ -456,6 +456,44 @@ let
     '';
   };
 
+  fakeCurl = inputMap:
+    let inputMapFile = evalPackages.writeTextFile {
+          name = "fakeCurlInputMap";
+          text = ''
+          ${builtins.concatStringsSep "\n" (pkgs.lib.mapAttrsToList f inputMap)}
+          '';
+        };
+        f = name: index: "http://${name}\tfile://${index}";
+    in
+      evalPackages.writeShellApplication {
+        name = "curl";
+        text = ''
+          declare -a ARGS
+          ARGS=("''${@}")
+          while read -r uri path; do
+            ARGS=("''${ARGS[@]/$uri/$path}")
+          done <${inputMapFile}
+          ${pkgs.curl}/bin/curl "''${ARGS[@]}" >/dev/null
+          echo 200
+        '';
+      };
+
+  hackageRepo = { index-state, sha256 }:
+    assert sha256 != null;
+    let at = builtins.replaceStrings [ ":" ] [ "" ] index-state;
+    in mkLocalHackageRepo {
+      name = "hackage.haskell.org";
+      index = pkgs.fetchurl {
+        name = "01-index.tar.gz-at-${at}";
+        url = "https://hackage.haskell.org/01-index.tar.gz";
+        downloadToTemp = true;
+        postFetch =
+          "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+        outputHashAlgo = "sha256";
+        outputHash = sha256;
+      };
+    };
+
   plan-nix = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
@@ -484,6 +522,8 @@ let
       "freeze"  # The `cabal.project.freeze` file created by `cabal v2-freeze`
     ];
   } ''
+    set -x
+
     tmp=$(mktemp -d)
     cd $tmp
     # if cleanedSource is empty, this means it's a new
@@ -527,24 +567,34 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
+    export HOME=$(mktemp -d)
+
+    mkdir $HOME/.cabal
+    cat >$HOME/.cabal/config <<EOF
+    repository hackage.haskell.org
+      url: http://hackage.haskell.org/
+      secure: True
+      root-keys: aaa -- DO NOT ASK ME
+      key-threshold: 0
+    EOF
+    cat $HOME/.cabal/config
+
+    PATH=${
+      fakeCurl {
+        "hackage.haskell.org" = hackageRepo { index-state = cached-index-state; sha256 = index-sha256-found; };
+      }
+    }/bin:$PATH \
+    cabal update -v \
+        -w ${ghc.targetPrefix}ghc \
+        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
+
     # Using `cabal v2-freeze` will configure the project (since
     # it is not configured yet), taking the existing `cabal.project.freeze`
     # file into account.  Then it "writes out a freeze file which
     # records all of the versions and flags that are picked" (from cabal docs).
     echo "Using index-state ${index-state-found}"
 
-    HOME=${
-      # This creates `.cabal` directory that is as it would have
-      # been at the time `cached-index-state`.  We may include
-      # some packages that will be excluded by `index-state-found`
-      # which is used by cabal (cached-index-state >= index-state-found).
-      dotCabal {
-        inherit cabal-install nix-tools extra-hackage-tarballs;
-        extra-hackage-repos = fixedProject.repos;
-        index-state = cached-index-state;
-        sha256 = index-sha256-found;
-      }
-    } make-install-plan ${
+    make-install-plan ${
           # Setting the desired `index-state` here in case it is not
           # in the cabal.project file. This will further restrict the
           # packages used by the solver (cached-index-state >= index-state-found).
@@ -601,11 +651,6 @@ let
     # Make the revised cabal files available (after the delete step avove)
     echo "Moving cabal files from $tmp${subDir'}/dist-newstyle/cabal-files to $out${subDir'}/cabal-files"
     mv $tmp${subDir'}/dist-newstyle/cabal-files $out${subDir'}/cabal-files
-
-    # Transform each cabal file to nix
-    for n in $out${subDir'}/cabal-files/*.cabal; do
-      cabal-to-nix $n > ''${n%.cabal}.nix
-    done
 
     # Remove empty dirs
     find $out -type d -empty -delete
