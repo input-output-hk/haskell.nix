@@ -43,11 +43,11 @@ with lib.types;
     };
     evalSystem = mkOption {
       type = str;
-      default = pkgs.buildPackages.system;
+      default = pkgs.pkgsBuildBuild.system;
       description = ''
         Specifies the system on which `cabal` and `nix-tools` should run.
-        If not specified the `buildPackages` system will be used.
-        If there are no builders for the `buildPackages` system
+        If not specified the `pkgsBuildBuild` system will be used.
+        If there are no builders for the `pkgsBuildBuild` system
         specifying a system for which there are builders will
         allow the evaluation of the haskell project to work.
       '';
@@ -55,8 +55,8 @@ with lib.types;
     evalPackages = mkOption {
       type = attrs;
       default =
-        if pkgs.buildPackages.system == config.evalSystem
-          then pkgs.buildPackages
+        if pkgs.pkgsBuildBuild.system == config.evalSystem
+          then pkgs.pkgsBuildBuild
         else
           import pkgs.path {
             system = config.evalSystem;
@@ -64,7 +64,7 @@ with lib.types;
           };
       description = ''
         Packages used to run `cabal` and `nix-tools`.
-        This will default to `pkgs.buildPackages` if it
+        This will default to `pkgs.pkgsBuildBuild` if it
         matches the `evalSystem` (or if `evalSystem` was
         not specified).
         If a different `evalSystem` was requested, `evalPackages` will

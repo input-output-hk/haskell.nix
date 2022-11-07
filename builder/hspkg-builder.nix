@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, setup-builder }:
+{ pkgs, buildPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, runCommand, comp-builder, setup-builder, inputMap }:
 
 config:
 { flags
@@ -29,7 +29,25 @@ let
       "ghc902/stm-2.5.0.0" = "/libraries/stm";
       "ghc902/filepath-1.4.2.1" = "/libraries/filepath";
     }."${compiler-nix-name}/${name}" or null;
-  src = if bundledSrc == null then pkg.src else ghc.configured-src + bundledSrc;
+  baseUrlMatch =
+    let
+      # All the urls that should contain the source
+      srcUrls = lib.optional (pkg.src ? url) pkg.src.url ++ pkg.src.urls or [];
+    in __head (
+        # Look for one that matches the expected pattern
+        builtins.filter (x: x != null) (
+          map (__match "(.*)/package/([^/]*)") srcUrls)
+        # Return null if none do
+        ++ [null]);
+  src =
+    if bundledSrc != null
+      then ghc.configured-src + bundledSrc
+    else if baseUrlMatch != null && inputMap ? ${__head baseUrlMatch}
+      then
+        # Use the copy of the package that is in the inputMap for this
+        # repository.
+        inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
+    else pkg.src;
   cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
     fetchurl {
       name = "${name}-${toString revision}.cabal";

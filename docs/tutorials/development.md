@@ -14,15 +14,15 @@ These examples assume that you have created your package set as
 described in [Creating Nix builds for your projects](getting-started.md) and
 it exists in a file called `default.nix`.
 
-!!! note
-
-    Old-style `cabal build` and `stack` builds are not (yet)
-    supported. For example, `stack` will (by design) download and
-    rebuild all dependencies, even though they are available in the
-    shell. However, if you have a Stack project, you can generate the
-    package set with Haskell.nix, then use `cabal new‑build` to work
-    on it.  Starting Cabal 3.0 `cabal build` will work out of the box, as
-    new style builds are the default.
+> **Note:**
+>
+> Old-style `cabal build` and `stack` builds are not (yet)
+> supported. For example, `stack` will (by design) download and
+> rebuild all dependencies, even though they are available in the
+> shell. However, if you have a Stack project, you can generate the
+> package set with Haskell.nix, then use `cabal new‑build` to work
+> on it.  Starting Cabal 3.0 `cabal build` will work out of the box, as
+> new style builds are the default.
 
 ## How to get a development shell
 
@@ -33,45 +33,7 @@ contains the _dependencies_ of your packages, but not the packages
 themselves. This is what the [`shellFor`][shellFor] function does.
 
 ```nix
-# shell.nix
-let
-  project = import ./default.nix;
-in
-  project.shellFor {
-    # ALL of these arguments are optional.
-
-    # List of packages from the project you want to work on in
-    # the shell (default is all the projects local packages).
-    packages = ps: with ps; [
-      pkga
-      pkgb
-    ];
-
-    # Builds a Hoogle documentation index of all dependencies,
-    # and provides a "hoogle" command to search the index.
-    withHoogle = true;
-
-    # Some common tools can be added with the `tools` argument
-    tools = {
-      cabal = "3.2.0.0";
-      hlint = "latest"; # Selects the latest version in the hackage.nix snapshot
-      haskell-language-server = "latest";
-    };
-    # See overlays/tools.nix for more details
-
-    # Some you may need to get some other way.
-    buildInputs = [ (import <nixpkgs> {}).git ];
-
-    # Sellect cross compilers to include.
-    crossPlatforms = ps: with ps; [
-      ghcjs      # Adds support for `js-unknown-ghcjs-cabal build` in the shell
-      # mingwW64 # Adds support for `x86_64-W64-mingw32-cabal build` in the shell
-    ];
-
-    # Prevents cabal from choosing alternate plans, so that
-    # *all* dependencies are provided by Nix.
-    exactDeps = true;
-  }
+{{#include development/shell.nix}}
 ```
 
 See also: [Haskell.nix Library Reference: `shellFor`][shellFor]
@@ -83,14 +45,7 @@ See also: [Haskell.nix Library Reference: `shellFor`][shellFor]
 If you need a local Hoogle for all the dependencies of your project create this file
 
 ```nix
-# shell-hoogle.nix
-let
-  project = import ./default.nix {};
-in
-  project.shellFor {
-      packages = ps: [ps.my-package];
-      withHoogle = true;
-  }
+{{#include development/shell-hoogle.nix}}
 ```
 
 and run `nix-shell shell-hoogle.nix --run "hoogle server --local"`.
@@ -105,14 +60,7 @@ operates on a Haskell.nix package set, and accepts an argument that
 selects packages from the larger package set.
 
 ```nix
-# shell.nix
-let
-  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
-  haskell = nixpkgs.haskell-nix;
-in
-  haskell.haskellPackages.ghcWithPackages (ps: with ps;
-    [ lens conduit conduit-extra ])
+{{#include development/shell-package.nix}}
 ```
 
 If you need a Hoogle documentation index, use `ghcWithHoogle` in place
@@ -125,12 +73,7 @@ it to build packages from a given snapshot, without setting up a full
 project.
 
 ```nix
-let
-  haskellNix = import (builtins.fetchTarball https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz) {};
-  nixpkgs = import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs;
-  haskell = nixpkgs.haskell-nix;
-in
-  haskell.snapshots."lts-13.18".alex.components.exes.alex
+{{#include development/shell-stackage.nix}}
 ```
 
 There are Haskell.nix package sets for every Stackage snaphot under
@@ -142,11 +85,12 @@ a recent LTS Haskell version.
 You can use `ghcWithPackages` on any of these package sets to quickly
 get a shell with some packages.
 
-!!! warning
-    The build will not work if your Nixpkgs does not contain the version
-    of GHC specified in the snapshot. Nixpkgs only carries the
-    latest version of each recent release series, so many snapshots
-    can't be built.
+> ⚠️ **Warning:**
+>
+> The build will not work if your Nixpkgs does not contain the version
+> of GHC specified in the snapshot. Nixpkgs only carries the
+> latest version of each recent release series, so many snapshots
+> can't be built.
 
 
 ## Emacs IDE support

@@ -3108,7 +3108,7 @@ pkgs:
     "librevenge-0.0" = [ "librevenge" ];
     "librevenge-generators-0.0" = [ "librevenge" ];
     "librevenge-stream-0.0" = [ "librevenge" ];
-    "librevisa" = [ "librevisa" ];
+#    "librevisa" = [ "librevisa" ];
     "rime" = [ "librime" ];
     "libroxml" = [ "libroxml" ];
     "librsb" = [ "librsb" ];

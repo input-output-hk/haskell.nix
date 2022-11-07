@@ -202,4 +202,11 @@ if [ "$TESTS" == "hix" ] || [ "$TESTS" == "all" ]; then
   echo >& 2
 fi
 
+if [ "$TESTS" == "docs" ] || [ "$TESTS" == "all" ]; then
+  printf "*** Test examples in documentation ...\n" >& 2
+  pushd ../docs/
+  ./tests.sh
+  popd
+fi
+
 printf "\n*** Finished successfully\n" >& 2
