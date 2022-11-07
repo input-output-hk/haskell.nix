@@ -51,8 +51,8 @@
         "filepath".revision = (((hackage."filepath")."1.4.2.2").revisions).default;
         "stm".revision = (((hackage."stm")."2.5.0.2").revisions).default;
         "ghc-prim".revision = (((hackage."ghc-prim")."0.8.0").revisions).default;
-        "ghc-boot-th".revision = (((hackage."ghc-boot-th")."9.2.4").revisions).default;
-        "base".revision = (((hackage."base")."4.16.3.0").revisions).default;
+        "ghc-boot-th".revision = (((hackage."ghc-boot-th")."9.2.5").revisions).default;
+        "base".revision = (((hackage."base")."4.16.4.0").revisions).default;
         "time".revision = (((hackage."time")."1.11.1.1").revisions).default;
         "async".revision = (((hackage."async")."2.2.4").revisions).default;
         "async".flags.bench = false;
@@ -87,8 +87,8 @@
         "containers".revision = (((hackage."containers")."0.6.5.1").revisions).default;
         };
       compiler = {
-        version = "9.2.4";
-        nix-name = "ghc924";
+        version = "9.2.5";
+        nix-name = "ghc925";
         packages = {
           "pretty" = "1.1.3.6";
           "text" = "1.2.5.0";
@@ -99,9 +99,10 @@
           "filepath" = "1.4.2.2";
           "stm" = "2.5.0.2";
           "ghc-prim" = "0.8.0";
-          "ghc-boot-th" = "9.2.4";
-          "base" = "4.16.3.0";
+          "ghc-boot-th" = "9.2.5";
+          "base" = "4.16.4.0";
           "time" = "1.11.1.1";
+          "process" = "1.6.16.0";
           "ghc-bignum" = "1.2";
           "directory" = "1.3.6.2";
           "exceptions" = "0.10.4";

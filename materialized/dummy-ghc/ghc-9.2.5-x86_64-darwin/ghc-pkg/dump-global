@@ -174,72 +174,11 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSCabal-3.6.3.0
 depends:
-    Win32-2.12.0.1 array-0.5.4.0 base-4.16.3.0 binary-0.8.9.0
-    bytestring-0.11.3.1 containers-0.6.5.1 deepseq-1.4.6.1
-    directory-1.3.6.2 filepath-1.4.2.2 mtl-2.2.2 parsec-3.1.15.0
-    pretty-1.1.3.6 process-1.6.13.2 text-1.2.5.0 time-1.11.1.1
-    transformers-0.5.6.2
-haddock-interfaces:
-haddock-html:
----
-name:                 Win32
-version:              2.12.0.1
-visibility:           public
-id:                   Win32-2.12.0.1
-key:                  Win32-2.12.0.1
-license:              BSD-3-Clause
-copyright:
-    Alastair Reid, 1999-2003; shelarcy, 2012-2013; Tamar Christina, 2016-2020
-maintainer:           Haskell Libraries <libraries@haskell.org>
-author:               Alastair Reid, shelarcy, Tamar Christina
-homepage:             https://github.com/haskell/win32
-synopsis:             A binding to Windows Win32 API.
-description:
-    This library contains direct bindings to the Windows Win32 APIs for Haskell.
-category:             System, Graphics
-exposed:              True
-exposed-modules:
-    Graphics.Win32 Graphics.Win32.Control Graphics.Win32.Dialogue
-    Graphics.Win32.GDI Graphics.Win32.GDI.AlphaBlend
-    Graphics.Win32.GDI.Bitmap Graphics.Win32.GDI.Brush
-    Graphics.Win32.GDI.Clip Graphics.Win32.GDI.Font
-    Graphics.Win32.GDI.Graphics2D Graphics.Win32.GDI.HDC
-    Graphics.Win32.GDI.Palette Graphics.Win32.GDI.Path
-    Graphics.Win32.GDI.Pen Graphics.Win32.GDI.Region
-    Graphics.Win32.GDI.Types Graphics.Win32.Icon Graphics.Win32.Key
-    Graphics.Win32.LayeredWindow Graphics.Win32.Menu
-    Graphics.Win32.Message Graphics.Win32.Misc Graphics.Win32.Resource
-    Graphics.Win32.Window Graphics.Win32.Window.AnimateWindow
-    Graphics.Win32.Window.ForegroundWindow Graphics.Win32.Window.HotKey
-    Graphics.Win32.Window.IMM Graphics.Win32.Window.PostMessage
-    Media.Win32 System.Win32 System.Win32.Automation
-    System.Win32.Automation.Input System.Win32.Automation.Input.Key
-    System.Win32.Automation.Input.Mouse System.Win32.Console
-    System.Win32.Console.CtrlHandler System.Win32.Console.HWND
-    System.Win32.Console.Title System.Win32.DLL System.Win32.DebugApi
-    System.Win32.Encoding System.Win32.Event
-    System.Win32.Exception.Unsupported System.Win32.File
-    System.Win32.FileMapping System.Win32.HardLink System.Win32.Info
-    System.Win32.Info.Computer System.Win32.Info.Version
-    System.Win32.Mem System.Win32.MinTTY System.Win32.NLS
-    System.Win32.Path System.Win32.Process System.Win32.Registry
-    System.Win32.Security System.Win32.Shell System.Win32.SimpleMAPI
-    System.Win32.String System.Win32.SymbolicLink System.Win32.Thread
-    System.Win32.Time System.Win32.Types System.Win32.Utils
-    System.Win32.Word
-import-dirs:
-library-dirs:
-dynamic-library-dirs:
-data-dir:
-hs-libraries:         HSWin32-2.12.0.1
-extra-libraries:
-    user32 gdi32 winmm advapi32 shell32 shfolder shlwapi msimg32 imm32
-include-dirs:
-includes:
-    alphablend.h diatemp.h dumpBMP.h ellipse.h errors.h HsGDI.h
-    HsWin32.h Win32Aux.h win32debug.h windows_cconv.h WndProc.h
-    alignment.h
-depends:              base-4.16.3.0 filepath-1.4.2.2
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
+    containers-0.6.5.1 deepseq-1.4.6.1 directory-1.3.6.2
+    filepath-1.4.2.2 mtl-2.2.2 parsec-3.1.15.0 pretty-1.1.3.6
+    process-1.6.16.0 text-1.2.5.0 time-1.11.1.1 transformers-0.5.6.2
+    unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -270,15 +209,15 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSarray-0.5.4.0
-depends:              base-4.16.3.0
+depends:              base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
 name:                 base
-version:              4.16.3.0
+version:              4.16.4.0
 visibility:           public
-id:                   base-4.16.3.0
-key:                  base-4.16.3.0
+id:                   base-4.16.4.0
+key:                  base-4.16.4.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Basic libraries
@@ -320,31 +259,24 @@ exposed-modules:
     Foreign.Marshal.Utils, Foreign.Ptr, Foreign.Safe,
     Foreign.StablePtr, Foreign.Storable, GHC.Arr, GHC.Base, GHC.Bits,
     GHC.ByteOrder, GHC.Char, GHC.Clock, GHC.Conc, GHC.Conc.IO,
-    GHC.Conc.POSIX, GHC.Conc.POSIX.Const, GHC.Conc.Signal,
-    GHC.Conc.Sync, GHC.Conc.WinIO, GHC.Conc.Windows,
-    GHC.ConsoleHandler, GHC.Constants, GHC.Desugar, GHC.Enum,
-    GHC.Environment, GHC.Err, GHC.Event.TimeOut, GHC.Event.Windows,
-    GHC.Event.Windows.Clock, GHC.Event.Windows.ConsoleEvent,
-    GHC.Event.Windows.FFI, GHC.Event.Windows.ManagedThreadPool,
-    GHC.Event.Windows.Thread, GHC.Exception, GHC.Exception.Type,
+    GHC.Conc.Signal, GHC.Conc.Sync, GHC.ConsoleHandler, GHC.Constants,
+    GHC.Desugar, GHC.Enum, GHC.Environment, GHC.Err, GHC.Event,
+    GHC.Event.TimeOut, GHC.Exception, GHC.Exception.Type,
     GHC.ExecutionStack, GHC.ExecutionStack.Internal, GHC.Exts,
     GHC.Fingerprint, GHC.Fingerprint.Type, GHC.Float,
     GHC.Float.ConversionUtils, GHC.Float.RealFracMethods, GHC.Foreign,
     GHC.ForeignPtr, GHC.GHCi, GHC.GHCi.Helpers, GHC.Generics, GHC.IO,
     GHC.IO.Buffer, GHC.IO.BufferedIO, GHC.IO.Device, GHC.IO.Encoding,
-    GHC.IO.Encoding.CodePage, GHC.IO.Encoding.CodePage.API,
-    GHC.IO.Encoding.CodePage.Table, GHC.IO.Encoding.Failure,
+    GHC.IO.Encoding.CodePage, GHC.IO.Encoding.Failure,
     GHC.IO.Encoding.Iconv, GHC.IO.Encoding.Latin1,
     GHC.IO.Encoding.Types, GHC.IO.Encoding.UTF16,
     GHC.IO.Encoding.UTF32, GHC.IO.Encoding.UTF8, GHC.IO.Exception,
     GHC.IO.FD, GHC.IO.Handle, GHC.IO.Handle.FD,
     GHC.IO.Handle.Internals, GHC.IO.Handle.Lock, GHC.IO.Handle.Text,
-    GHC.IO.Handle.Types, GHC.IO.Handle.Windows, GHC.IO.IOMode,
-    GHC.IO.StdHandles, GHC.IO.SubSystem, GHC.IO.Unsafe,
-    GHC.IO.Windows.Encoding, GHC.IO.Windows.Handle,
-    GHC.IO.Windows.Paths, GHC.IOArray, GHC.IOPort, GHC.IORef, GHC.Int,
-    GHC.Integer, GHC.Integer.Logarithms, GHC.Ix, GHC.List, GHC.MVar,
-    GHC.Maybe, GHC.Natural, GHC.Num,
+    GHC.IO.Handle.Types, GHC.IO.IOMode, GHC.IO.StdHandles,
+    GHC.IO.SubSystem, GHC.IO.Unsafe, GHC.IOArray, GHC.IOPort,
+    GHC.IORef, GHC.Int, GHC.Integer, GHC.Integer.Logarithms, GHC.Ix,
+    GHC.List, GHC.MVar, GHC.Maybe, GHC.Natural, GHC.Num,
     GHC.Num.BigNat from ghc-bignum-1.2:GHC.Num.BigNat,
     GHC.Num.Integer from ghc-bignum-1.2:GHC.Num.Integer,
     GHC.Num.Natural from ghc-bignum-1.2:GHC.Num.Natural, GHC.OldList,
@@ -354,8 +286,8 @@ exposed-modules:
     GHC.Stack.CCS, GHC.Stack.Types, GHC.StaticPtr, GHC.Stats,
     GHC.Storable, GHC.TopHandler, GHC.TypeLits, GHC.TypeLits.Internal,
     GHC.TypeNats, GHC.TypeNats.Internal, GHC.Unicode, GHC.Weak,
-    GHC.Windows, GHC.Word, Numeric, Numeric.Natural, Prelude,
-    System.CPUTime, System.Console.GetOpt, System.Environment,
+    GHC.Word, Numeric, Numeric.Natural, Prelude, System.CPUTime,
+    System.Console.GetOpt, System.Environment,
     System.Environment.Blank, System.Exit, System.IO, System.IO.Error,
     System.IO.Unsafe, System.Info, System.Mem, System.Mem.StableName,
     System.Mem.Weak, System.Posix.Internals, System.Posix.Types,
@@ -373,15 +305,17 @@ hidden-modules:
     GHC.Event.Internal GHC.Event.Internal.Types GHC.Event.IntTable
     GHC.Event.IntVar GHC.Event.PSQ GHC.Event.Unique
     System.Environment.ExecutablePath System.CPUTime.Utils
-    System.CPUTime.Windows
+    GHC.Event.Control GHC.Event.EPoll GHC.Event.KQueue
+    GHC.Event.Manager GHC.Event.Poll GHC.Event.Thread
+    GHC.Event.TimerManager System.CPUTime.Posix.ClockGetTime
+    System.CPUTime.Posix.Times System.CPUTime.Posix.RUsage
+    System.CPUTime.Unsupported
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSbase-4.16.3.0
-extra-libraries:
-    wsock32 user32 shell32 msvcrt mingw32 mingwex ws2_32 shlwapi ole32
-    rpcrt4 ntdll
+hs-libraries:         HSbase-4.16.4.0
+extra-libraries:      iconv
 include-dirs:
 includes:             HsBase.h
 depends:              ghc-bignum-1.2 ghc-prim-0.8.0 rts
@@ -423,7 +357,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSbinary-0.8.9.0
 depends:
-    array-0.5.4.0 base-4.16.3.0 bytestring-0.11.3.1 containers-0.6.5.1
+    array-0.5.4.0 base-4.16.4.0 bytestring-0.11.3.1 containers-0.6.5.1
 haddock-interfaces:
 haddock-html:
 ---
@@ -501,11 +435,10 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSbytestring-0.11.3.1
-extra-libraries:      gcc
 include-dirs:
 includes:             fpstring.h
 depends:
-    base-4.16.3.0 deepseq-1.4.6.1 ghc-prim-0.8.0
+    base-4.16.4.0 deepseq-1.4.6.1 ghc-prim-0.8.0
     template-haskell-2.18.0.0
 haddock-interfaces:
 haddock-html:
@@ -554,7 +487,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HScontainers-0.6.5.1
-depends:              array-0.5.4.0 base-4.16.3.0 deepseq-1.4.6.1
+depends:              array-0.5.4.0 base-4.16.4.0 deepseq-1.4.6.1
 haddock-interfaces:
 haddock-html:
 ---
@@ -588,7 +521,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSdeepseq-1.4.6.1
-depends:              array-0.5.4.0 base-4.16.3.0
+depends:              array-0.5.4.0 base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -618,7 +551,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSdirectory-1.3.6.2
 depends:
-    Win32-2.12.0.1 base-4.16.3.0 filepath-1.4.2.2 time-1.11.1.1
+    base-4.16.4.0 filepath-1.4.2.2 time-1.11.1.1 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -646,7 +579,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSexceptions-0.10.4
 depends:
-    base-4.16.3.0 mtl-2.2.2 stm-2.5.0.2 template-haskell-2.18.0.0
+    base-4.16.4.0 mtl-2.2.2 stm-2.5.0.2 template-haskell-2.18.0.0
     transformers-0.5.6.2
 haddock-interfaces:
 haddock-html:
@@ -677,7 +610,253 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSfilepath-1.4.2.2
-depends:              base-4.16.3.0
+depends:              base-4.16.4.0
+haddock-interfaces:
+haddock-html:
+---
+name:                 ghc
+version:              9.2.5
+visibility:           public
+id:                   ghc-9.2.5
+key:                  ghc-9.2.5
+license:              BSD-3-Clause
+maintainer:           glasgow-haskell-users@haskell.org
+author:               The GHC Team
+homepage:             http://www.haskell.org/ghc/
+synopsis:             The GHC API
+description:
+    GHC's functionality can be useful for more things than just
+    compiling Haskell programs. Important use cases are programs
+    that analyse (and perhaps transform) Haskell code. Others
+    include loading Haskell code dynamically in a GHCi-like manner.
+    For this reason, a lot of GHC's functionality is made available
+    through this package.
+    See <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler>
+    for more information.
+category:             Development
+exposed-modules:
+    GHC, GHC.Builtin.Names, GHC.Builtin.Names.TH, GHC.Builtin.PrimOps,
+    GHC.Builtin.Types, GHC.Builtin.Types.Literals,
+    GHC.Builtin.Types.Prim, GHC.Builtin.Uniques, GHC.Builtin.Utils,
+    GHC.ByteCode.Asm, GHC.ByteCode.InfoTable, GHC.ByteCode.Instr,
+    GHC.ByteCode.Linker, GHC.ByteCode.Types, GHC.Cmm, GHC.Cmm.BlockId,
+    GHC.Cmm.CLabel, GHC.Cmm.CallConv, GHC.Cmm.CommonBlockElim,
+    GHC.Cmm.ContFlowOpt, GHC.Cmm.Dataflow, GHC.Cmm.Dataflow.Block,
+    GHC.Cmm.Dataflow.Collections, GHC.Cmm.Dataflow.Graph,
+    GHC.Cmm.Dataflow.Label, GHC.Cmm.DebugBlock, GHC.Cmm.Expr,
+    GHC.Cmm.Graph, GHC.Cmm.Info, GHC.Cmm.Info.Build, GHC.Cmm.LRegSet,
+    GHC.Cmm.LayoutStack, GHC.Cmm.Lexer, GHC.Cmm.Lint, GHC.Cmm.Liveness,
+    GHC.Cmm.MachOp, GHC.Cmm.Node, GHC.Cmm.Opt, GHC.Cmm.Parser,
+    GHC.Cmm.Parser.Monad, GHC.Cmm.Pipeline, GHC.Cmm.Ppr,
+    GHC.Cmm.Ppr.Decl, GHC.Cmm.Ppr.Expr, GHC.Cmm.ProcPoint,
+    GHC.Cmm.Sink, GHC.Cmm.Switch, GHC.Cmm.Switch.Implement,
+    GHC.Cmm.Type, GHC.Cmm.Utils, GHC.CmmToAsm, GHC.CmmToAsm.AArch64,
+    GHC.CmmToAsm.AArch64.CodeGen, GHC.CmmToAsm.AArch64.Cond,
+    GHC.CmmToAsm.AArch64.Instr, GHC.CmmToAsm.AArch64.Ppr,
+    GHC.CmmToAsm.AArch64.RegInfo, GHC.CmmToAsm.AArch64.Regs,
+    GHC.CmmToAsm.BlockLayout, GHC.CmmToAsm.CFG,
+    GHC.CmmToAsm.CFG.Dominators, GHC.CmmToAsm.CFG.Weight,
+    GHC.CmmToAsm.CPrim, GHC.CmmToAsm.Config, GHC.CmmToAsm.Dwarf,
+    GHC.CmmToAsm.Dwarf.Constants, GHC.CmmToAsm.Dwarf.Types,
+    GHC.CmmToAsm.Format, GHC.CmmToAsm.Instr, GHC.CmmToAsm.Monad,
+    GHC.CmmToAsm.PIC, GHC.CmmToAsm.PPC, GHC.CmmToAsm.PPC.CodeGen,
+    GHC.CmmToAsm.PPC.Cond, GHC.CmmToAsm.PPC.Instr,
+    GHC.CmmToAsm.PPC.Ppr, GHC.CmmToAsm.PPC.RegInfo,
+    GHC.CmmToAsm.PPC.Regs, GHC.CmmToAsm.Ppr, GHC.CmmToAsm.Reg.Graph,
+    GHC.CmmToAsm.Reg.Graph.Base, GHC.CmmToAsm.Reg.Graph.Coalesce,
+    GHC.CmmToAsm.Reg.Graph.Spill, GHC.CmmToAsm.Reg.Graph.SpillClean,
+    GHC.CmmToAsm.Reg.Graph.SpillCost, GHC.CmmToAsm.Reg.Graph.Stats,
+    GHC.CmmToAsm.Reg.Graph.TrivColorable, GHC.CmmToAsm.Reg.Graph.X86,
+    GHC.CmmToAsm.Reg.Linear, GHC.CmmToAsm.Reg.Linear.AArch64,
+    GHC.CmmToAsm.Reg.Linear.Base, GHC.CmmToAsm.Reg.Linear.FreeRegs,
+    GHC.CmmToAsm.Reg.Linear.JoinToTargets, GHC.CmmToAsm.Reg.Linear.PPC,
+    GHC.CmmToAsm.Reg.Linear.SPARC, GHC.CmmToAsm.Reg.Linear.StackMap,
+    GHC.CmmToAsm.Reg.Linear.State, GHC.CmmToAsm.Reg.Linear.Stats,
+    GHC.CmmToAsm.Reg.Linear.X86, GHC.CmmToAsm.Reg.Linear.X86_64,
+    GHC.CmmToAsm.Reg.Liveness, GHC.CmmToAsm.Reg.Target,
+    GHC.CmmToAsm.Reg.Utils, GHC.CmmToAsm.SPARC,
+    GHC.CmmToAsm.SPARC.AddrMode, GHC.CmmToAsm.SPARC.Base,
+    GHC.CmmToAsm.SPARC.CodeGen, GHC.CmmToAsm.SPARC.CodeGen.Amode,
+    GHC.CmmToAsm.SPARC.CodeGen.Base,
+    GHC.CmmToAsm.SPARC.CodeGen.CondCode,
+    GHC.CmmToAsm.SPARC.CodeGen.Expand,
+    GHC.CmmToAsm.SPARC.CodeGen.Gen32, GHC.CmmToAsm.SPARC.CodeGen.Gen64,
+    GHC.CmmToAsm.SPARC.CodeGen.Sanity, GHC.CmmToAsm.SPARC.Cond,
+    GHC.CmmToAsm.SPARC.Imm, GHC.CmmToAsm.SPARC.Instr,
+    GHC.CmmToAsm.SPARC.Ppr, GHC.CmmToAsm.SPARC.Regs,
+    GHC.CmmToAsm.SPARC.ShortcutJump, GHC.CmmToAsm.SPARC.Stack,
+    GHC.CmmToAsm.Types, GHC.CmmToAsm.Utils, GHC.CmmToAsm.X86,
+    GHC.CmmToAsm.X86.CodeGen, GHC.CmmToAsm.X86.Cond,
+    GHC.CmmToAsm.X86.Instr, GHC.CmmToAsm.X86.Ppr,
+    GHC.CmmToAsm.X86.RegInfo, GHC.CmmToAsm.X86.Regs, GHC.CmmToC,
+    GHC.CmmToLlvm, GHC.CmmToLlvm.Base, GHC.CmmToLlvm.CodeGen,
+    GHC.CmmToLlvm.Data, GHC.CmmToLlvm.Mangler, GHC.CmmToLlvm.Ppr,
+    GHC.CmmToLlvm.Regs, GHC.Core, GHC.Core.Class, GHC.Core.Coercion,
+    GHC.Core.Coercion.Axiom, GHC.Core.Coercion.Opt, GHC.Core.ConLike,
+    GHC.Core.DataCon, GHC.Core.FVs, GHC.Core.FamInstEnv,
+    GHC.Core.InstEnv, GHC.Core.Lint, GHC.Core.Make, GHC.Core.Map.Expr,
+    GHC.Core.Map.Type, GHC.Core.Multiplicity, GHC.Core.Opt.Arity,
+    GHC.Core.Opt.CSE, GHC.Core.Opt.CallArity, GHC.Core.Opt.CallerCC,
+    GHC.Core.Opt.ConstantFold, GHC.Core.Opt.CprAnal,
+    GHC.Core.Opt.DmdAnal, GHC.Core.Opt.Exitify, GHC.Core.Opt.FloatIn,
+    GHC.Core.Opt.FloatOut, GHC.Core.Opt.LiberateCase,
+    GHC.Core.Opt.Monad, GHC.Core.Opt.OccurAnal, GHC.Core.Opt.Pipeline,
+    GHC.Core.Opt.SetLevels, GHC.Core.Opt.Simplify,
+    GHC.Core.Opt.Simplify.Env, GHC.Core.Opt.Simplify.Monad,
+    GHC.Core.Opt.Simplify.Utils, GHC.Core.Opt.SpecConstr,
+    GHC.Core.Opt.Specialise, GHC.Core.Opt.StaticArgs,
+    GHC.Core.Opt.WorkWrap, GHC.Core.Opt.WorkWrap.Utils,
+    GHC.Core.PatSyn, GHC.Core.Ppr, GHC.Core.Predicate, GHC.Core.Rules,
+    GHC.Core.Seq, GHC.Core.SimpleOpt, GHC.Core.Stats, GHC.Core.Subst,
+    GHC.Core.Tidy, GHC.Core.TyCo.FVs, GHC.Core.TyCo.Ppr,
+    GHC.Core.TyCo.Rep, GHC.Core.TyCo.Subst, GHC.Core.TyCo.Tidy,
+    GHC.Core.TyCon, GHC.Core.TyCon.Env, GHC.Core.TyCon.RecWalk,
+    GHC.Core.TyCon.Set, GHC.Core.Type, GHC.Core.Unfold,
+    GHC.Core.Unfold.Make, GHC.Core.Unify, GHC.Core.UsageEnv,
+    GHC.Core.Utils, GHC.CoreToIface, GHC.CoreToStg, GHC.CoreToStg.Prep,
+    GHC.Data.Bag, GHC.Data.Bitmap, GHC.Data.BooleanFormula,
+    GHC.Data.EnumSet, GHC.Data.FastMutInt, GHC.Data.FastString,
+    GHC.Data.FastString.Env, GHC.Data.FiniteMap, GHC.Data.Graph.Base,
+    GHC.Data.Graph.Color, GHC.Data.Graph.Directed, GHC.Data.Graph.Ops,
+    GHC.Data.Graph.Ppr, GHC.Data.Graph.UnVar, GHC.Data.IOEnv,
+    GHC.Data.List.SetOps, GHC.Data.Maybe, GHC.Data.OrdList,
+    GHC.Data.Pair, GHC.Data.Stream, GHC.Data.StringBuffer,
+    GHC.Data.TrieMap, GHC.Data.UnionFind, GHC.Driver.Backend,
+    GHC.Driver.Backpack, GHC.Driver.Backpack.Syntax,
+    GHC.Driver.CmdLine, GHC.Driver.CodeOutput, GHC.Driver.Config,
+    GHC.Driver.Env, GHC.Driver.Env.Types, GHC.Driver.Errors,
+    GHC.Driver.Flags, GHC.Driver.Hooks, GHC.Driver.Main,
+    GHC.Driver.Make, GHC.Driver.MakeFile, GHC.Driver.Monad,
+    GHC.Driver.Phases, GHC.Driver.Pipeline, GHC.Driver.Pipeline.Monad,
+    GHC.Driver.Plugins, GHC.Driver.Ppr, GHC.Driver.Session, GHC.Hs,
+    GHC.Hs.Binds, GHC.Hs.Decls, GHC.Hs.Doc, GHC.Hs.Dump, GHC.Hs.Expr,
+    GHC.Hs.Extension, GHC.Hs.ImpExp, GHC.Hs.Instances, GHC.Hs.Lit,
+    GHC.Hs.Pat, GHC.Hs.Stats, GHC.Hs.Type, GHC.Hs.Utils, GHC.HsToCore,
+    GHC.HsToCore.Arrows, GHC.HsToCore.Binds, GHC.HsToCore.Coverage,
+    GHC.HsToCore.Docs, GHC.HsToCore.Expr, GHC.HsToCore.Foreign.Call,
+    GHC.HsToCore.Foreign.Decl, GHC.HsToCore.GuardedRHSs,
+    GHC.HsToCore.ListComp, GHC.HsToCore.Match,
+    GHC.HsToCore.Match.Constructor, GHC.HsToCore.Match.Literal,
+    GHC.HsToCore.Monad, GHC.HsToCore.Pmc, GHC.HsToCore.Pmc.Check,
+    GHC.HsToCore.Pmc.Desugar, GHC.HsToCore.Pmc.Ppr,
+    GHC.HsToCore.Pmc.Solver, GHC.HsToCore.Pmc.Solver.Types,
+    GHC.HsToCore.Pmc.Types, GHC.HsToCore.Pmc.Utils, GHC.HsToCore.Quote,
+    GHC.HsToCore.Types, GHC.HsToCore.Usage, GHC.HsToCore.Utils,
+    GHC.Iface.Binary, GHC.Iface.Env, GHC.Iface.Ext.Ast,
+    GHC.Iface.Ext.Binary, GHC.Iface.Ext.Debug, GHC.Iface.Ext.Fields,
+    GHC.Iface.Ext.Types, GHC.Iface.Ext.Utils, GHC.Iface.Load,
+    GHC.Iface.Make, GHC.Iface.Recomp, GHC.Iface.Recomp.Binary,
+    GHC.Iface.Recomp.Flags, GHC.Iface.Rename, GHC.Iface.Syntax,
+    GHC.Iface.Tidy, GHC.Iface.Tidy.StaticPtrTable, GHC.Iface.Type,
+    GHC.IfaceToCore, GHC.Linker, GHC.Linker.Dynamic,
+    GHC.Linker.ExtraObj, GHC.Linker.Loader, GHC.Linker.MacOS,
+    GHC.Linker.Static, GHC.Linker.Types, GHC.Linker.Unit,
+    GHC.Linker.Windows, GHC.Llvm, GHC.Llvm.MetaData, GHC.Llvm.Ppr,
+    GHC.Llvm.Syntax, GHC.Llvm.Types, GHC.Parser, GHC.Parser.Annotation,
+    GHC.Parser.CharClass, GHC.Parser.Errors, GHC.Parser.Errors.Ppr,
+    GHC.Parser.Header, GHC.Parser.Lexer, GHC.Parser.PostProcess,
+    GHC.Parser.PostProcess.Haddock, GHC.Parser.Types, GHC.Parser.Utils,
+    GHC.Platform, GHC.Platform.AArch64, GHC.Platform.ARM,
+    GHC.Platform.ArchOS from ghc-boot-9.2.5:GHC.Platform.ArchOS,
+    GHC.Platform.Constants,
+    GHC.Platform.Host from ghc-boot-9.2.5:GHC.Platform.Host,
+    GHC.Platform.NoRegs, GHC.Platform.PPC, GHC.Platform.Profile,
+    GHC.Platform.RISCV64, GHC.Platform.Reg, GHC.Platform.Reg.Class,
+    GHC.Platform.Regs, GHC.Platform.S390X, GHC.Platform.SPARC,
+    GHC.Platform.Ways, GHC.Platform.X86, GHC.Platform.X86_64,
+    GHC.Plugins, GHC.Prelude, GHC.Rename.Bind, GHC.Rename.Env,
+    GHC.Rename.Expr, GHC.Rename.Fixity, GHC.Rename.HsType,
+    GHC.Rename.Module, GHC.Rename.Names, GHC.Rename.Pat,
+    GHC.Rename.Splice, GHC.Rename.Unbound, GHC.Rename.Utils,
+    GHC.Runtime.Context, GHC.Runtime.Debugger, GHC.Runtime.Eval,
+    GHC.Runtime.Eval.Types, GHC.Runtime.Heap.Inspect,
+    GHC.Runtime.Heap.Layout, GHC.Runtime.Interpreter,
+    GHC.Runtime.Interpreter.Types, GHC.Runtime.Loader, GHC.Settings,
+    GHC.Settings.Config, GHC.Settings.Constants, GHC.Settings.IO,
+    GHC.Stg.CSE, GHC.Stg.Debug, GHC.Stg.DepAnal, GHC.Stg.FVs,
+    GHC.Stg.Lift, GHC.Stg.Lift.Analysis, GHC.Stg.Lift.Monad,
+    GHC.Stg.Lint, GHC.Stg.Pipeline, GHC.Stg.Stats, GHC.Stg.Subst,
+    GHC.Stg.Syntax, GHC.Stg.Unarise, GHC.StgToByteCode, GHC.StgToCmm,
+    GHC.StgToCmm.ArgRep, GHC.StgToCmm.Bind, GHC.StgToCmm.CgUtils,
+    GHC.StgToCmm.Closure, GHC.StgToCmm.DataCon, GHC.StgToCmm.Env,
+    GHC.StgToCmm.Expr, GHC.StgToCmm.ExtCode, GHC.StgToCmm.Foreign,
+    GHC.StgToCmm.Heap, GHC.StgToCmm.Hpc, GHC.StgToCmm.Layout,
+    GHC.StgToCmm.Lit, GHC.StgToCmm.Monad, GHC.StgToCmm.Prim,
+    GHC.StgToCmm.Prof, GHC.StgToCmm.Ticky, GHC.StgToCmm.Types,
+    GHC.StgToCmm.Utils, GHC.SysTools, GHC.SysTools.Ar,
+    GHC.SysTools.BaseDir, GHC.SysTools.Elf, GHC.SysTools.Info,
+    GHC.SysTools.Process, GHC.SysTools.Tasks, GHC.SysTools.Terminal,
+    GHC.Tc.Deriv, GHC.Tc.Deriv.Functor, GHC.Tc.Deriv.Generate,
+    GHC.Tc.Deriv.Generics, GHC.Tc.Deriv.Infer, GHC.Tc.Deriv.Utils,
+    GHC.Tc.Errors, GHC.Tc.Errors.Hole, GHC.Tc.Errors.Hole.FitTypes,
+    GHC.Tc.Gen.Annotation, GHC.Tc.Gen.App, GHC.Tc.Gen.Arrow,
+    GHC.Tc.Gen.Bind, GHC.Tc.Gen.Default, GHC.Tc.Gen.Export,
+    GHC.Tc.Gen.Expr, GHC.Tc.Gen.Foreign, GHC.Tc.Gen.Head,
+    GHC.Tc.Gen.HsType, GHC.Tc.Gen.Match, GHC.Tc.Gen.Pat,
+    GHC.Tc.Gen.Rule, GHC.Tc.Gen.Sig, GHC.Tc.Gen.Splice,
+    GHC.Tc.Instance.Class, GHC.Tc.Instance.Family,
+    GHC.Tc.Instance.FunDeps, GHC.Tc.Instance.Typeable, GHC.Tc.Module,
+    GHC.Tc.Plugin, GHC.Tc.Solver, GHC.Tc.Solver.Canonical,
+    GHC.Tc.Solver.Interact, GHC.Tc.Solver.Monad, GHC.Tc.Solver.Rewrite,
+    GHC.Tc.TyCl, GHC.Tc.TyCl.Build, GHC.Tc.TyCl.Class,
+    GHC.Tc.TyCl.Instance, GHC.Tc.TyCl.PatSyn, GHC.Tc.TyCl.Utils,
+    GHC.Tc.Types, GHC.Tc.Types.Constraint, GHC.Tc.Types.EvTerm,
+    GHC.Tc.Types.Evidence, GHC.Tc.Types.Origin, GHC.Tc.Utils.Backpack,
+    GHC.Tc.Utils.Env, GHC.Tc.Utils.Instantiate, GHC.Tc.Utils.Monad,
+    GHC.Tc.Utils.TcMType, GHC.Tc.Utils.TcType, GHC.Tc.Utils.Unify,
+    GHC.Tc.Utils.Zonk, GHC.Tc.Validity, GHC.ThToHs,
+    GHC.Types.Annotations, GHC.Types.Avail, GHC.Types.Basic,
+    GHC.Types.CompleteMatch, GHC.Types.CostCentre,
+    GHC.Types.CostCentre.State, GHC.Types.Cpr, GHC.Types.Demand,
+    GHC.Types.Error, GHC.Types.FieldLabel, GHC.Types.Fixity,
+    GHC.Types.Fixity.Env, GHC.Types.ForeignCall,
+    GHC.Types.ForeignStubs, GHC.Types.HpcInfo, GHC.Types.IPE,
+    GHC.Types.Id, GHC.Types.Id.Info, GHC.Types.Id.Make,
+    GHC.Types.Literal, GHC.Types.Meta, GHC.Types.Name,
+    GHC.Types.Name.Cache, GHC.Types.Name.Env,
+    GHC.Types.Name.Occurrence, GHC.Types.Name.Ppr,
+    GHC.Types.Name.Reader, GHC.Types.Name.Set, GHC.Types.Name.Shape,
+    GHC.Types.RepType, GHC.Types.SafeHaskell, GHC.Types.SourceError,
+    GHC.Types.SourceFile, GHC.Types.SourceText, GHC.Types.SrcLoc,
+    GHC.Types.Target, GHC.Types.Tickish, GHC.Types.TyThing,
+    GHC.Types.TyThing.Ppr, GHC.Types.TypeEnv, GHC.Types.Unique,
+    GHC.Types.Unique.DFM, GHC.Types.Unique.DSet, GHC.Types.Unique.FM,
+    GHC.Types.Unique.Map, GHC.Types.Unique.SDFM, GHC.Types.Unique.Set,
+    GHC.Types.Unique.Supply, GHC.Types.Var, GHC.Types.Var.Env,
+    GHC.Types.Var.Set, GHC.Unit, GHC.Unit.Env, GHC.Unit.External,
+    GHC.Unit.Finder, GHC.Unit.Finder.Types, GHC.Unit.Home,
+    GHC.Unit.Home.ModInfo, GHC.Unit.Info, GHC.Unit.Module,
+    GHC.Unit.Module.Deps, GHC.Unit.Module.Env, GHC.Unit.Module.Graph,
+    GHC.Unit.Module.Imported, GHC.Unit.Module.Location,
+    GHC.Unit.Module.ModDetails, GHC.Unit.Module.ModGuts,
+    GHC.Unit.Module.ModIface, GHC.Unit.Module.ModSummary,
+    GHC.Unit.Module.Name, GHC.Unit.Module.Status,
+    GHC.Unit.Module.Warnings, GHC.Unit.Parser, GHC.Unit.Ppr,
+    GHC.Unit.State, GHC.Unit.Types, GHC.Utils.Asm, GHC.Utils.Binary,
+    GHC.Utils.Binary.Typeable, GHC.Utils.BufHandle,
+    GHC.Utils.CliOption, GHC.Utils.Error, GHC.Utils.Exception,
+    GHC.Utils.FV, GHC.Utils.Fingerprint, GHC.Utils.GlobalVars,
+    GHC.Utils.IO.Unsafe, GHC.Utils.Json, GHC.Utils.Lexeme,
+    GHC.Utils.Logger, GHC.Utils.Misc, GHC.Utils.Monad,
+    GHC.Utils.Monad.State, GHC.Utils.Outputable, GHC.Utils.Panic,
+    GHC.Utils.Panic.Plain, GHC.Utils.Ppr, GHC.Utils.Ppr.Colour,
+    GHC.Utils.TmpFs, Language.Haskell.Syntax,
+    Language.Haskell.Syntax.Binds, Language.Haskell.Syntax.Decls,
+    Language.Haskell.Syntax.Expr, Language.Haskell.Syntax.Extension,
+    Language.Haskell.Syntax.Lit, Language.Haskell.Syntax.Pat,
+    Language.Haskell.Syntax.Type
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSghc-9.2.5
+include-dirs:
+depends:
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
+    containers-0.6.5.1 deepseq-1.4.6.1 directory-1.3.6.2
+    exceptions-0.10.4 filepath-1.4.2.2 ghc-boot-9.2.5 ghc-heap-9.2.5
+    ghci-9.2.5 hpc-0.6.1.0 process-1.6.16.0 template-haskell-2.18.0.0
+    terminfo-0.4.1.5 time-1.11.1.1 transformers-0.5.6.2 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -712,10 +891,10 @@ haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc-boot
-version:              9.2.4
+version:              9.2.5
 visibility:           public
-id:                   ghc-boot-9.2.4
-key:                  ghc-boot-9.2.4
+id:                   ghc-boot-9.2.5
+key:                  ghc-boot-9.2.5
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:             Shared functionality between GHC and its boot libraries
@@ -737,10 +916,10 @@ exposed:              True
 exposed-modules:
     GHC.BaseDir, GHC.Data.ShortText, GHC.Data.SizedSeq,
     GHC.ForeignSrcLang,
-    GHC.ForeignSrcLang.Type from ghc-boot-th-9.2.4:GHC.ForeignSrcLang.Type,
+    GHC.ForeignSrcLang.Type from ghc-boot-th-9.2.5:GHC.ForeignSrcLang.Type,
     GHC.HandleEncoding, GHC.LanguageExtensions,
-    GHC.LanguageExtensions.Type from ghc-boot-th-9.2.4:GHC.LanguageExtensions.Type,
-    GHC.Lexeme from ghc-boot-th-9.2.4:GHC.Lexeme, GHC.Platform.ArchOS,
+    GHC.LanguageExtensions.Type from ghc-boot-th-9.2.5:GHC.LanguageExtensions.Type,
+    GHC.Lexeme from ghc-boot-th-9.2.5:GHC.Lexeme, GHC.Platform.ArchOS,
     GHC.Platform.Host, GHC.Serialized, GHC.Settings.Utils,
     GHC.UniqueSubdir, GHC.Unit.Database, GHC.Utils.Encoding,
     GHC.Version
@@ -748,19 +927,19 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-boot-9.2.4
+hs-libraries:         HSghc-boot-9.2.5
 depends:
-    base-4.16.3.0 binary-0.8.9.0 bytestring-0.11.3.1 containers-0.6.5.1
+    base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1 containers-0.6.5.1
     deepseq-1.4.6.1 directory-1.3.6.2 filepath-1.4.2.2
-    ghc-boot-th-9.2.4
+    ghc-boot-th-9.2.5 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc-boot-th
-version:              9.2.4
+version:              9.2.5
 visibility:           public
-id:                   ghc-boot-th-9.2.4
-key:                  ghc-boot-th-9.2.4
+id:                   ghc-boot-th-9.2.5
+key:                  ghc-boot-th-9.2.5
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:
@@ -780,8 +959,8 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-boot-th-9.2.4
-depends:              base-4.16.3.0
+hs-libraries:         HSghc-boot-th-9.2.5
+depends:              base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -814,15 +993,15 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-compact-0.1.0.0
-depends:              base-4.16.3.0 bytestring-0.11.3.1 ghc-prim-0.8.0
+depends:              base-4.16.4.0 bytestring-0.11.3.1 ghc-prim-0.8.0
 haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc-heap
-version:              9.2.4
+version:              9.2.5
 visibility:           public
-id:                   ghc-heap-9.2.4
-key:                  ghc-heap-9.2.4
+id:                   ghc-heap-9.2.5
+key:                  ghc-heap-9.2.5
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Functions for walking GHC's heap
@@ -845,8 +1024,8 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-heap-9.2.4
-depends:              base-4.16.3.0 containers-0.6.5.1 ghc-prim-0.8.0 rts
+hs-libraries:         HSghc-heap-9.2.5
+depends:              base-4.16.4.0 containers-0.6.5.1 ghc-prim-0.8.0 rts
 haddock-interfaces:
 haddock-html:
 ---
@@ -871,16 +1050,15 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-prim-0.8.0
-extra-libraries:      user32 mingw32 mingwex
 depends:              rts
 haddock-interfaces:
 haddock-html:
 ---
 name:                 ghci
-version:              9.2.4
+version:              9.2.5
 visibility:           public
-id:                   ghci-9.2.4
-key:                  ghci-9.2.4
+id:                   ghci-9.2.5
+key:                  ghci-9.2.5
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:             The library supporting GHC's interactive interpreter
@@ -899,12 +1077,12 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghci-9.2.4
+hs-libraries:         HSghci-9.2.5
 depends:
-    array-0.5.4.0 base-4.16.3.0 binary-0.8.9.0 bytestring-0.11.3.1
-    containers-0.6.5.1 deepseq-1.4.6.1 filepath-1.4.2.2 ghc-boot-9.2.4
-    ghc-heap-9.2.4 ghc-prim-0.8.0 rts template-haskell-2.18.0.0
-    transformers-0.5.6.2
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
+    containers-0.6.5.1 deepseq-1.4.6.1 filepath-1.4.2.2 ghc-boot-9.2.5
+    ghc-heap-9.2.5 ghc-prim-0.8.0 rts template-haskell-2.18.0.0
+    transformers-0.5.6.2 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -946,19 +1124,20 @@ hidden-modules:
     System.Console.Haskeline.Prefs System.Console.Haskeline.Recover
     System.Console.Haskeline.RunCommand System.Console.Haskeline.Term
     System.Console.Haskeline.Command.Undo System.Console.Haskeline.Vi
-    System.Console.Haskeline.Backend.Win32
-    System.Console.Haskeline.Backend.Win32.Echo
+    System.Console.Haskeline.Backend.Posix
+    System.Console.Haskeline.Backend.Posix.Encoder
+    System.Console.Haskeline.Backend.DumbTerm
+    System.Console.Haskeline.Backend.Terminfo
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HShaskeline-0.8.2
-include-dirs:
-includes:             win_console.h windows_cconv.h
 depends:
-    Win32-2.12.0.1 base-4.16.3.0 bytestring-0.11.3.1 containers-0.6.5.1
+    base-4.16.4.0 bytestring-0.11.3.1 containers-0.6.5.1
     directory-1.3.6.2 exceptions-0.10.4 filepath-1.4.2.2
-    process-1.6.13.2 stm-2.5.0.2 transformers-0.5.6.2
+    process-1.6.16.0 stm-2.5.0.2 terminfo-0.4.1.5 transformers-0.5.6.2
+    unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -985,7 +1164,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HShpc-0.6.1.0
 depends:
-    base-4.16.3.0 containers-0.6.5.1 deepseq-1.4.6.1 directory-1.3.6.2
+    base-4.16.4.0 containers-0.6.5.1 deepseq-1.4.6.1 directory-1.3.6.2
     filepath-1.4.2.2 time-1.11.1.1
 haddock-interfaces:
 haddock-html:
@@ -1014,15 +1193,15 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSinteger-gmp-1.1
-depends:              base-4.16.3.0 ghc-bignum-1.2 ghc-prim-0.8.0
+depends:              base-4.16.4.0 ghc-bignum-1.2 ghc-prim-0.8.0
 haddock-interfaces:
 haddock-html:
 ---
 name:                 libiserv
-version:              9.2.4
+version:              9.2.5
 visibility:           public
-id:                   libiserv-9.2.4
-key:                  libiserv-9.2.4
+id:                   libiserv-9.2.5
+key:                  libiserv-9.2.5
 license:              BSD-3-Clause
 copyright:            XXX
 maintainer:           XXX
@@ -1038,10 +1217,10 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSlibiserv-9.2.4
+hs-libraries:         HSlibiserv-9.2.5
 depends:
-    base-4.16.3.0 binary-0.8.9.0 bytestring-0.11.3.1 containers-0.6.5.1
-    deepseq-1.4.6.1 ghci-9.2.4
+    base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1 containers-0.6.5.1
+    deepseq-1.4.6.1 ghci-9.2.5 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -1079,7 +1258,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSmtl-2.2.2
-depends:              base-4.16.3.0 transformers-0.5.6.2
+depends:              base-4.16.4.0 transformers-0.5.6.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -1130,7 +1309,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSparsec-3.1.15.0
 depends:
-    base-4.16.3.0 bytestring-0.11.3.1 mtl-2.2.2 text-1.2.5.0
+    base-4.16.4.0 bytestring-0.11.3.1 mtl-2.2.2 text-1.2.5.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -1163,15 +1342,15 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSpretty-1.1.3.6
-depends:              base-4.16.3.0 deepseq-1.4.6.1 ghc-prim-0.8.0
+depends:              base-4.16.4.0 deepseq-1.4.6.1 ghc-prim-0.8.0
 haddock-interfaces:
 haddock-html:
 ---
 name:                 process
-version:              1.6.13.2
+version:              1.6.16.0
 visibility:           public
-id:                   process-1.6.13.2
-key:                  process-1.6.13.2
+id:                   process-1.6.16.0
+key:                  process-1.6.16.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Process libraries
@@ -1185,18 +1364,17 @@ description:
 category:             System
 exposed:              True
 exposed-modules:      System.Cmd System.Process System.Process.Internals
-hidden-modules:       System.Process.Common System.Process.Windows
+hidden-modules:       System.Process.Common System.Process.Posix
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSprocess-1.6.13.2
-extra-libraries:      kernel32 ole32 rpcrt4
+hs-libraries:         HSprocess-1.6.16.0
 include-dirs:
 includes:             runProcess.h
 depends:
-    Win32-2.12.0.1 base-4.16.3.0 deepseq-1.4.6.1 directory-1.3.6.2
-    filepath-1.4.2.2
+    base-4.16.4.0 deepseq-1.4.6.1 directory-1.3.6.2 filepath-1.4.2.2
+    unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -1232,7 +1410,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSstm-2.5.0.2
-depends:              array-0.5.4.0 base-4.16.3.0
+depends:              array-0.5.4.0 base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -1264,7 +1442,40 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HStemplate-haskell-2.18.0.0
 depends:
-    base-4.16.3.0 ghc-boot-th-9.2.4 ghc-prim-0.8.0 pretty-1.1.3.6
+    base-4.16.4.0 ghc-boot-th-9.2.5 ghc-prim-0.8.0 pretty-1.1.3.6
+haddock-interfaces:
+haddock-html:
+---
+name:                 terminfo
+version:              0.4.1.5
+visibility:           public
+id:                   terminfo-0.4.1.5
+key:                  terminfo-0.4.1.5
+license:              BSD-3-Clause
+copyright:            (c) Judah Jacobson
+maintainer:           Judah Jacobson <judah.jacobson@gmail.com>
+author:               Judah Jacobson
+stability:            Stable
+homepage:             https://github.com/judah/terminfo
+synopsis:             Haskell bindings to the terminfo library.
+description:
+    This library provides an interface to the terminfo database (via bindings to the
+    curses library).  <http://en.wikipedia.org/wiki/Terminfo Terminfo> allows POSIX
+    systems to interact with a variety of terminals using a standard set of capabilities.
+category:             User Interfaces
+exposed:              True
+exposed-modules:
+    System.Console.Terminfo System.Console.Terminfo.Base
+    System.Console.Terminfo.Color System.Console.Terminfo.Cursor
+    System.Console.Terminfo.Edit System.Console.Terminfo.Effects
+    System.Console.Terminfo.Keys
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSterminfo-0.4.1.5
+extra-libraries:      tinfo
+depends:              base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -1346,7 +1557,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HStext-1.2.5.0
 depends:
-    array-0.5.4.0 base-4.16.3.0 binary-0.8.9.0 bytestring-0.11.3.1
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
     deepseq-1.4.6.1 ghc-prim-0.8.0 template-haskell-2.18.0.0
 haddock-interfaces:
 haddock-html:
@@ -1399,7 +1610,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HStime-1.11.1.1
 include-dirs:
-depends:              Win32-2.12.0.1 base-4.16.3.0 deepseq-1.4.6.1
+depends:              base-4.16.4.0 deepseq-1.4.6.1
 haddock-interfaces:
 haddock-html:
 ---
@@ -1451,7 +1662,94 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HStransformers-0.5.6.2
-depends:              base-4.16.3.0
+depends:              base-4.16.4.0
+haddock-interfaces:
+haddock-html:
+---
+name:                 unix
+version:              2.7.2.2
+visibility:           public
+id:                   unix-2.7.2.2
+key:                  unix-2.7.2.2
+license:              BSD-3-Clause
+maintainer:           libraries@haskell.org
+homepage:             https://github.com/haskell/unix
+synopsis:             POSIX functionality
+description:
+    This package gives you access to the set of operating system
+    services standardised by
+    <http://pubs.opengroup.org/onlinepubs/9699919799/ POSIX.1-2008>
+    (or the IEEE Portable Operating System Interface for Computing
+    Environments - IEEE Std. 1003.1).
+    The package is not supported under Windows.
+category:             System
+exposed:              True
+exposed-modules:
+    System.Posix System.Posix.ByteString
+    System.Posix.ByteString.FilePath System.Posix.Directory
+    System.Posix.Directory.ByteString System.Posix.DynamicLinker
+    System.Posix.DynamicLinker.ByteString
+    System.Posix.DynamicLinker.Module
+    System.Posix.DynamicLinker.Module.ByteString
+    System.Posix.DynamicLinker.Prim System.Posix.Env
+    System.Posix.Env.ByteString System.Posix.Error System.Posix.Fcntl
+    System.Posix.Files System.Posix.Files.ByteString System.Posix.IO
+    System.Posix.IO.ByteString System.Posix.Process
+    System.Posix.Process.ByteString System.Posix.Process.Internals
+    System.Posix.Resource System.Posix.Semaphore System.Posix.SharedMem
+    System.Posix.Signals System.Posix.Signals.Exts System.Posix.Temp
+    System.Posix.Temp.ByteString System.Posix.Terminal
+    System.Posix.Terminal.ByteString System.Posix.Time
+    System.Posix.Unistd System.Posix.User
+hidden-modules:
+    System.Posix.Directory.Common System.Posix.DynamicLinker.Common
+    System.Posix.Files.Common System.Posix.IO.Common
+    System.Posix.Process.Common System.Posix.Terminal.Common
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSunix-2.7.2.2
+include-dirs:
+includes:             HsUnix.h execvpe.h
+depends:              base-4.16.4.0 bytestring-0.11.3.1 time-1.11.1.1
+haddock-interfaces:
+haddock-html:
+---
+name:                 xhtml
+version:              3000.2.2.1
+visibility:           public
+id:                   xhtml-3000.2.2.1
+key:                  xhtml-3000.2.2.1
+license:              BSD-3-Clause
+copyright:
+    Bjorn Bringert 2004-2006, Andy Gill and the Oregon
+    Graduate Institute of Science and Technology, 1999-2001
+maintainer:           Chris Dornan <chris@chrisdornan.com>
+author:               Bjorn Bringert
+stability:            Stable
+homepage:             https://github.com/haskell/xhtml
+synopsis:             An XHTML combinator library
+description:
+    This package provides combinators for producing
+    XHTML 1.0, including the Strict, Transitional and
+    Frameset variants.
+category:             Web, XML, Pretty Printer
+exposed:              True
+exposed-modules:
+    Text.XHtml Text.XHtml.Debug Text.XHtml.Frameset Text.XHtml.Strict
+    Text.XHtml.Table Text.XHtml.Transitional
+hidden-modules:
+    Text.XHtml.Strict.Attributes Text.XHtml.Strict.Elements
+    Text.XHtml.Frameset.Attributes Text.XHtml.Frameset.Elements
+    Text.XHtml.Transitional.Attributes Text.XHtml.Transitional.Elements
+    Text.XHtml.BlockTable Text.XHtml.Extras Text.XHtml.Internals
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSxhtml-3000.2.2.1
+depends:              base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -1465,72 +1763,72 @@ maintainer:      glasgow-haskell-users@haskell.org
 exposed:         True
 library-dirs:
 hs-libraries:    HSrts
-extra-libraries: m ffi wsock32 gdi32 winmm dbghelp psapi
+extra-libraries: m dl ffi
 include-dirs:
 includes:        Stg.h
 ld-options:
-    "-Wl,-u,base_GHCziTopHandler_runIO_closure"
-    "-Wl,-u,base_GHCziTopHandler_runNonIO_closure"
-    "-Wl,-u,ghczmprim_GHCziTuple_Z0T_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_True_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_False_closure"
-    "-Wl,-u,base_GHCziPack_unpackCString_closure"
-    "-Wl,-u,base_GHCziWeak_runFinalizzerBatch_closure"
-    "-Wl,-u,base_GHCziIOziException_stackOverflow_closure"
-    "-Wl,-u,base_GHCziIOziException_heapOverflow_closure"
-    "-Wl,-u,base_GHCziIOziException_allocationLimitExceeded_closure"
-    "-Wl,-u,base_GHCziIOziException_blockedIndefinitelyOnMVar_closure"
-    "-Wl,-u,base_GHCziIOziException_blockedIndefinitelyOnSTM_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactFunction_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactPinned_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactMutable_closure"
-    "-Wl,-u,base_GHCziIOPort_doubleReadException_closure"
-    "-Wl,-u,base_ControlziExceptionziBase_nonTermination_closure"
-    "-Wl,-u,base_ControlziExceptionziBase_nestedAtomically_closure"
-    "-Wl,-u,base_GHCziEventziThread_blockedOnBadFD_closure"
-    "-Wl,-u,base_GHCziExceptionziType_divZZeroException_closure"
-    "-Wl,-u,base_GHCziExceptionziType_underflowException_closure"
-    "-Wl,-u,base_GHCziExceptionziType_overflowException_closure"
-    "-Wl,-u,base_GHCziConcziSync_runSparks_closure"
-    "-Wl,-u,base_GHCziConcziIO_ensureIOManagerIsRunning_closure"
-    "-Wl,-u,base_GHCziConcziIO_interruptIOManager_closure"
-    "-Wl,-u,base_GHCziConcziIO_ioManagerCapabilitiesChanged_closure"
-    "-Wl,-u,base_GHCziConcziSignal_runHandlersPtr_closure"
-    "-Wl,-u,base_GHCziEventziWindows_processRemoteCompletion_closure"
-    "-Wl,-u,base_GHCziTopHandler_flushStdHandles_closure"
-    "-Wl,-u,base_GHCziTopHandler_runMainIO_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_Czh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Izh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Fzh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Dzh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Wzh_con_info"
-    "-Wl,-u,base_GHCziPtr_Ptr_con_info"
-    "-Wl,-u,base_GHCziPtr_FunPtr_con_info"
-    "-Wl,-u,base_GHCziInt_I8zh_con_info"
-    "-Wl,-u,base_GHCziInt_I16zh_con_info"
-    "-Wl,-u,base_GHCziInt_I32zh_con_info"
-    "-Wl,-u,base_GHCziInt_I64zh_con_info"
-    "-Wl,-u,base_GHCziWord_W8zh_con_info"
-    "-Wl,-u,base_GHCziWord_W16zh_con_info"
-    "-Wl,-u,base_GHCziWord_W32zh_con_info"
-    "-Wl,-u,base_GHCziWord_W64zh_con_info"
-    "-Wl,-u,base_GHCziStable_StablePtr_con_info"
-    "-Wl,-u,hs_atomic_add8" "-Wl,-u,hs_atomic_add16"
-    "-Wl,-u,hs_atomic_add32" "-Wl,-u,hs_atomic_add64"
-    "-Wl,-u,hs_atomic_sub8" "-Wl,-u,hs_atomic_sub16"
-    "-Wl,-u,hs_atomic_sub32" "-Wl,-u,hs_atomic_sub64"
-    "-Wl,-u,hs_atomic_and8" "-Wl,-u,hs_atomic_and16"
-    "-Wl,-u,hs_atomic_and32" "-Wl,-u,hs_atomic_and64"
-    "-Wl,-u,hs_atomic_nand8" "-Wl,-u,hs_atomic_nand16"
-    "-Wl,-u,hs_atomic_nand32" "-Wl,-u,hs_atomic_nand64"
-    "-Wl,-u,hs_atomic_or8" "-Wl,-u,hs_atomic_or16"
-    "-Wl,-u,hs_atomic_or32" "-Wl,-u,hs_atomic_or64"
-    "-Wl,-u,hs_atomic_xor8" "-Wl,-u,hs_atomic_xor16"
-    "-Wl,-u,hs_atomic_xor32" "-Wl,-u,hs_atomic_xor64"
-    "-Wl,-u,hs_cmpxchg8" "-Wl,-u,hs_cmpxchg16" "-Wl,-u,hs_cmpxchg32"
-    "-Wl,-u,hs_cmpxchg64" "-Wl,-u,hs_xchg8" "-Wl,-u,hs_xchg16"
-    "-Wl,-u,hs_xchg32" "-Wl,-u,hs_xchg64" "-Wl,-u,hs_atomicread8"
-    "-Wl,-u,hs_atomicread16" "-Wl,-u,hs_atomicread32"
-    "-Wl,-u,hs_atomicread64" "-Wl,-u,hs_atomicwrite8"
-    "-Wl,-u,hs_atomicwrite16" "-Wl,-u,hs_atomicwrite32"
-    "-Wl,-u,hs_atomicwrite64"
+    "-Wl,-u,_base_GHCziTopHandler_runIO_closure"
+    "-Wl,-u,_base_GHCziTopHandler_runNonIO_closure"
+    "-Wl,-u,_ghczmprim_GHCziTuple_Z0T_closure"
+    "-Wl,-u,_ghczmprim_GHCziTypes_True_closure"
+    "-Wl,-u,_ghczmprim_GHCziTypes_False_closure"
+    "-Wl,-u,_base_GHCziPack_unpackCString_closure"
+    "-Wl,-u,_base_GHCziWeak_runFinalizzerBatch_closure"
+    "-Wl,-u,_base_GHCziIOziException_stackOverflow_closure"
+    "-Wl,-u,_base_GHCziIOziException_heapOverflow_closure"
+    "-Wl,-u,_base_GHCziIOziException_allocationLimitExceeded_closure"
+    "-Wl,-u,_base_GHCziIOziException_blockedIndefinitelyOnMVar_closure"
+    "-Wl,-u,_base_GHCziIOziException_blockedIndefinitelyOnSTM_closure"
+    "-Wl,-u,_base_GHCziIOziException_cannotCompactFunction_closure"
+    "-Wl,-u,_base_GHCziIOziException_cannotCompactPinned_closure"
+    "-Wl,-u,_base_GHCziIOziException_cannotCompactMutable_closure"
+    "-Wl,-u,_base_GHCziIOPort_doubleReadException_closure"
+    "-Wl,-u,_base_ControlziExceptionziBase_nonTermination_closure"
+    "-Wl,-u,_base_ControlziExceptionziBase_nestedAtomically_closure"
+    "-Wl,-u,_base_GHCziEventziThread_blockedOnBadFD_closure"
+    "-Wl,-u,_base_GHCziExceptionziType_divZZeroException_closure"
+    "-Wl,-u,_base_GHCziExceptionziType_underflowException_closure"
+    "-Wl,-u,_base_GHCziExceptionziType_overflowException_closure"
+    "-Wl,-u,_base_GHCziConcziSync_runSparks_closure"
+    "-Wl,-u,_base_GHCziConcziIO_ensureIOManagerIsRunning_closure"
+    "-Wl,-u,_base_GHCziConcziIO_interruptIOManager_closure"
+    "-Wl,-u,_base_GHCziConcziIO_ioManagerCapabilitiesChanged_closure"
+    "-Wl,-u,_base_GHCziConcziSignal_runHandlersPtr_closure"
+    "-Wl,-u,_base_GHCziTopHandler_flushStdHandles_closure"
+    "-Wl,-u,_base_GHCziTopHandler_runMainIO_closure"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Czh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Izh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Fzh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Dzh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Wzh_con_info"
+    "-Wl,-u,_base_GHCziPtr_Ptr_con_info"
+    "-Wl,-u,_base_GHCziPtr_FunPtr_con_info"
+    "-Wl,-u,_base_GHCziInt_I8zh_con_info"
+    "-Wl,-u,_base_GHCziInt_I16zh_con_info"
+    "-Wl,-u,_base_GHCziInt_I32zh_con_info"
+    "-Wl,-u,_base_GHCziInt_I64zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W8zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W16zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W32zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W64zh_con_info"
+    "-Wl,-u,_base_GHCziStable_StablePtr_con_info"
+    "-Wl,-u,_hs_atomic_add8" "-Wl,-u,_hs_atomic_add16"
+    "-Wl,-u,_hs_atomic_add32" "-Wl,-u,_hs_atomic_add64"
+    "-Wl,-u,_hs_atomic_sub8" "-Wl,-u,_hs_atomic_sub16"
+    "-Wl,-u,_hs_atomic_sub32" "-Wl,-u,_hs_atomic_sub64"
+    "-Wl,-u,_hs_atomic_and8" "-Wl,-u,_hs_atomic_and16"
+    "-Wl,-u,_hs_atomic_and32" "-Wl,-u,_hs_atomic_and64"
+    "-Wl,-u,_hs_atomic_nand8" "-Wl,-u,_hs_atomic_nand16"
+    "-Wl,-u,_hs_atomic_nand32" "-Wl,-u,_hs_atomic_nand64"
+    "-Wl,-u,_hs_atomic_or8" "-Wl,-u,_hs_atomic_or16"
+    "-Wl,-u,_hs_atomic_or32" "-Wl,-u,_hs_atomic_or64"
+    "-Wl,-u,_hs_atomic_xor8" "-Wl,-u,_hs_atomic_xor16"
+    "-Wl,-u,_hs_atomic_xor32" "-Wl,-u,_hs_atomic_xor64"
+    "-Wl,-u,_hs_cmpxchg8" "-Wl,-u,_hs_cmpxchg16" "-Wl,-u,_hs_cmpxchg32"
+    "-Wl,-u,_hs_cmpxchg64" "-Wl,-u,_hs_xchg8" "-Wl,-u,_hs_xchg16"
+    "-Wl,-u,_hs_xchg32" "-Wl,-u,_hs_xchg64" "-Wl,-u,_hs_atomicread8"
+    "-Wl,-u,_hs_atomicread16" "-Wl,-u,_hs_atomicread32"
+    "-Wl,-u,_hs_atomicread64" "-Wl,-u,_hs_atomicwrite8"
+    "-Wl,-u,_hs_atomicwrite16" "-Wl,-u,_hs_atomicwrite32"
+    "-Wl,-u,_hs_atomicwrite64" "-Wl,-search_paths_first"
+    "-Wl,-U,___darwin_check_fd_set_overflow"
