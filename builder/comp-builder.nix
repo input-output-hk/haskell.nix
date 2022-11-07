@@ -239,9 +239,9 @@ let
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c])
+      else [c]) 
       (builtins.filter (x: !(isNull x))
-      (map
+      (map 
         (p: if builtins.isFunction p
           then p { inherit  (package.identifier) version; inherit revision; }
           else p) build-tools))) ++
@@ -328,7 +328,7 @@ let
     outputHashMode = "recursive";
     outputHashAlgo = "sha256";
   };
-
+                    
   drv = stdenv.mkDerivation (commonAttrs // contentAddressedAttrs // {
     pname = nameOnly;
     inherit (package.identifier) version;
