@@ -233,14 +233,35 @@
         "make-install-plan" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."aeson" or (errorHandler.buildDepError "aeson"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
-            (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
-            (hsPkgs."Cabal-syntax" or (errorHandler.buildDepError "Cabal-syntax"))
             (hsPkgs."cabal-install" or (errorHandler.buildDepError "cabal-install"))
+            (hsPkgs."Cabal-syntax" or (errorHandler.buildDepError "Cabal-syntax"))
+            (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
+            (hsPkgs."extra" or (errorHandler.buildDepError "extra"))
+            (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
+            (hsPkgs."hnix" or (errorHandler.buildDepError "hnix"))
+            (hsPkgs."hpack" or (errorHandler.buildDepError "hpack"))
+            (hsPkgs."microlens" or (errorHandler.buildDepError "microlens"))
+            (hsPkgs."microlens-aeson" or (errorHandler.buildDepError "microlens-aeson"))
+            (hsPkgs."nix-tools" or (errorHandler.buildDepError "nix-tools"))
+            (hsPkgs."optparse-applicative" or (errorHandler.buildDepError "optparse-applicative"))
+            (hsPkgs."prettyprinter" or (errorHandler.buildDepError "prettyprinter"))
+            (hsPkgs."text" or (errorHandler.buildDepError "text"))
+            (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
+            (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
+            (hsPkgs."vector" or (errorHandler.buildDepError "vector"))
             ];
           buildable = true;
-          hsSourceDirs = [ "make-install-plan" ];
+          modules = [
+            "Plan2Nix"
+            "Plan2Nix/CLI"
+            "Plan2Nix/Cache"
+            "Plan2Nix/Plan"
+            "Plan2Nix/Project"
+            ];
+          hsSourceDirs = [ "make-install-plan" "plan2nix" ];
           mainPath = [ "MakeInstallPlan.hs" ];
           };
         };
