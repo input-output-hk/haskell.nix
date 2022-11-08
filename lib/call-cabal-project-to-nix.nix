@@ -463,7 +463,7 @@ let
           ${builtins.concatStringsSep "\n" (pkgs.lib.mapAttrsToList f inputMap)}
           '';
         };
-        f = name: index: "http://${name}\tfile://${index}";
+        f = name: index: "${name}\tfile://${index}";
     in
       evalPackages.writeShellApplication {
         name = "curl";
@@ -567,22 +567,21 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
-    export HOME=$(mktemp -d)
+    export CABAL_DIR=$(mktemp -d)
 
-    mkdir $HOME/.cabal
-    cat >$HOME/.cabal/config <<EOF
+    cat >$CABAL_DIR/config <<EOF
     repository hackage.haskell.org
       url: http://hackage.haskell.org/
       secure: True
-      root-keys: aaa -- DO NOT ASK ME
+      root-keys: aaa
       key-threshold: 0
     EOF
-    cat $HOME/.cabal/config
+    cat $CABAL_DIR/config
 
     PATH=${
-      fakeCurl {
-        "hackage.haskell.org" = hackageRepo { index-state = cached-index-state; sha256 = index-sha256-found; };
-      }
+      fakeCurl ({
+        "http://hackage.haskell.org" = hackageRepo { index-state = cached-index-state; sha256 = index-sha256-found; };
+      } // inputMap)
     }/bin:$PATH \
     cabal update -v \
         -w ${ghc.targetPrefix}ghc \
