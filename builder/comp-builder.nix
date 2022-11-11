@@ -240,9 +240,12 @@ let
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
-      else [c]) 
-      (builtins.filter (x: !(isNull x))
-      (map 
+      else [c])
+      (builtins.filter (x: !(isNull x)
+        # We always exclude hsc2hs from build-tools because it is unecessary as it is provided by ghc
+        # and hsc2hs from ghc is first in PATH so the one from build-tools is never used.
+        && x.identifier.name or "" != "hsc2hs")
+      (map
         (p: if builtins.isFunction p
           then p { inherit  (package.identifier) version; inherit revision; }
           else p) build-tools))) ++
@@ -329,7 +332,7 @@ let
     outputHashMode = "recursive";
     outputHashAlgo = "sha256";
   };
-                    
+
   drv = stdenv.mkDerivation (commonAttrs // contentAddressedAttrs // {
     pname = nameOnly;
     inherit (package.identifier) version;
@@ -462,12 +465,31 @@ let
       in ''
       runHook preInstall
       ${ # `Setup copy` does not install tests and benchmarks.
-        lib.optionalString (!haskellLib.isTest componentId && !haskellLib.isBenchmark componentId) ''
-          $SETUP_HS copy ${lib.concatStringsSep " " (
-            setupInstallFlags
-            ++ lib.optional configureAllComponents
-                  (haskellLib.componentTarget componentId)
-          )}''}
+        if !haskellLib.isTest componentId && !haskellLib.isBenchmark componentId
+          then ''
+            $SETUP_HS copy ${lib.concatStringsSep " " (
+              setupInstallFlags
+              ++ lib.optional configureAllComponents
+                    (haskellLib.componentTarget componentId)
+            )}''
+          else
+            # However if there are exes or libraries it does copy the datadir.
+            # So run it, but expect it might complain there was nothing to do.
+            ''
+            SETUP_ERR=$(mktemp)
+            if $SETUP_HS copy ${lib.concatStringsSep " " (
+              setupInstallFlags
+              ++ lib.optional configureAllComponents
+                    (haskellLib.componentTarget componentId)
+              )} 2> >(tee $SETUP_ERR >&2); then
+              echo Setup copy success
+            else
+              # we assume that if the SETUP_HS command fails and the following line was found in the error
+              # log, that it was the only error. Hence if we do _not_ find the line, grep will fail and this derivation
+              # will be marked as failure.
+              cat $SETUP_ERR | grep 'Error: Setup: No executables and no library found\. Nothing to do\.'
+            fi
+            ''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
@@ -520,6 +542,7 @@ let
         mkdir -p $out/bin
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
+          ${lib.optionalString stdenv.buildPlatform.isLinux "sync"}
           ${if stdenv.hostPlatform.isGhcjs then ''
             cat <(echo \#!${lib.getBin buildPackages.nodejs-18_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
