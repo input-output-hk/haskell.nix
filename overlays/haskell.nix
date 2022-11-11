@@ -254,52 +254,6 @@ final: prev: {
           })
         ];
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
-            let
-              allTarballs = hackageTarball args // extra-hackage-tarballs;
-              allNames = final.lib.concatStringsSep "-" (builtins.attrNames allTarballs);
-              # Main Hackage index-state is embedded in its name and thus will propagate to
-              # dotCabalName anyway.
-              dotCabalName = "dot-cabal-" + allNames;
-              tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
-                nativeBuildInputs = [ cabal-install ] ++ cabal-issue-8352-workaround;
-              } ''
-                set -xe
-
-                mkdir -p $out/.cabal
-                cat <<EOF > $out/.cabal/config
-                repository ${name}
-                  url: file:${mkLocalHackageRepo { inherit name index; }}
-                  secure: True
-                  root-keys:
-                  key-threshold: 0
-
-                EOF
-
-                # All repositories must be mkdir'ed before calling new-update on any repo,
-                # otherwise it fails.
-                mkdir -p $out/.cabal/packages/${name}
-
-                HOME=$out cabal new-update ${name}
-              '';
-              f = name: index:
-                let x = tarballRepoFor name index; in
-                ''
-                  ln -s ${x}/.cabal/packages/${name} $out/.cabal/packages/${name}
-                  cat ${x}/.cabal/config >> $out/.cabal/config
-                '';
-            in
-              # Add the extra-hackage-repos where we have all the files needed.
-              final.runCommand dotCabalName { nativeBuildInputs = [ final.xorg.lndir ]; } ''
-                mkdir -p $out/.cabal/packages
-                ${builtins.concatStringsSep "\n" (final.lib.mapAttrsToList f allTarballs)}
-
-                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
-                  mkdir -p $out/.cabal/packages/${name}
-                  lndir ${repo} $out/.cabal/packages/${name}
-                '') extra-hackage-repos)}
-            '';
-
         # Some of features of haskell.nix rely on using a hackage index
         # to calculate a build plan.  To maintain stability for caching and
         # to allow the outputs to be materialized we pin this value here.
@@ -540,7 +494,6 @@ final: prev: {
                       evalPackages = final.lib.mkDefault evalPackages;
                       inputMap = final.lib.mkDefault inputMap;
                     } ];
-                  extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
 
               project = addProjectAndPackageAttrs rec {

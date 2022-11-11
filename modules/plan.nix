@@ -253,7 +253,7 @@ let
       '';
     };
     planned = mkOption {
-      description = "Set to true by `plan-to-nix` for any component that was included in the `plan.json` file.";  
+      description = "Set to true by `plan-to-nix` for any component that was included in the `plan.json` file.";
       # This is here so that (rather than in componentOptions) so it can be set project wide for stack projects
       type = bool;
       default = def.planned or false;
@@ -316,7 +316,9 @@ in {
               then (abort "${name} has no revision!")
               else revision (modArgs // { hsPkgs = hsPkgs // (mapAttrs (l: _: hsPkgs.${name}.components.sublibs.${l}) (m.components.sublibs or {})); });
       in
-        m // { flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or {}); }
+        m // { flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or {});
+               cabalFile = revArgs.cabalFile or null;
+             }
     ) (lib.filterAttrs (n: v: v == null || v.revision != null ) module.packages);
   };
 }

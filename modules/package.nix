@@ -129,6 +129,9 @@ in {
     flags = mkOption {
       type = attrsOf bool;
     };
+    cabalFile = mkOption {
+      type = nullOr path;
+    };
     package = {
       specVersion = mkOption {
         type = str;

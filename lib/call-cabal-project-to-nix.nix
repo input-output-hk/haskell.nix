@@ -261,10 +261,6 @@ let
       sourceRepoPackageResult = pkgs.haskell-nix.haskellLib.parseSourceRepositoryPackages
         cabalProjectFileName sha256map source-repo-override projectFile;
 
-      # Parse the `repository` blocks
-      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
-
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
       #   Here we want to use evalPackages.fetchgit, so one can calculate
@@ -278,7 +274,6 @@ let
       sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
     in {
       sourceRepos = sourceReposBuild;
-      inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
         cp -f ${evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
       '' +
@@ -522,7 +517,7 @@ let
       "freeze"  # The `cabal.project.freeze` file created by `cabal v2-freeze`
     ];
   } ''
-    set -x
+    set -e
 
     tmp=$(mktemp -d)
     cd $tmp
@@ -578,19 +573,17 @@ let
     EOF
     cat $CABAL_DIR/config
 
+    echo "Installing fake curl"
     PATH=${
       fakeCurl ({
         "http://hackage.haskell.org" = hackageRepo { index-state = cached-index-state; sha256 = index-sha256-found; };
       } // inputMap)
-    }/bin:$PATH \
-    cabal update -v \
-        -w ${ghc.targetPrefix}ghc \
-        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg \
+    }/bin:$PATH
 
-    # Using `cabal v2-freeze` will configure the project (since
-    # it is not configured yet), taking the existing `cabal.project.freeze`
-    # file into account.  Then it "writes out a freeze file which
-    # records all of the versions and flags that are picked" (from cabal docs).
+    cabal update \
+        -w ${ghc.targetPrefix}ghc \
+        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
+
     echo "Using index-state ${index-state-found}"
 
     make-install-plan ${
@@ -661,5 +654,5 @@ in {
   projectNix = plan-nix;
   index-state = index-state-found;
   inherit src;
-  inherit (fixedProject) sourceRepos extra-hackages;
+  inherit (fixedProject) sourceRepos;
 }
