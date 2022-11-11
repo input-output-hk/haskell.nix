@@ -239,7 +239,10 @@ let
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c])
-      (builtins.filter (x: !(isNull x))
+      (builtins.filter (x: !(isNull x)
+        # We always exclude hsc2hs from build-tools because it is unecessary as it is provided by ghc
+        # and hsc2hs from ghc is first in PATH so the one from build-tools is never used.
+        && x.identifier.name or "" != "hsc2hs")
       (map
         (p: if builtins.isFunction p
           then p { inherit  (package.identifier) version; }
