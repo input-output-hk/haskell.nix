@@ -23,7 +23,7 @@
         "resolv".revision = (((hackage."resolv")."0.1.2.0").revisions).default;
         "echo".revision = (((hackage."echo")."0.1.4").revisions).default;
         "echo".flags.example = false;
-        "Cabal".revision = (((hackage."Cabal")."3.2.0.0").revisions).default;
+        "Cabal".revision = (((hackage."Cabal")."3.2.1.0").revisions).default;
         "Cabal".flags.bundled-binary-generic = false;
         "cryptohash-sha256".revision = (((hackage."cryptohash-sha256")."0.11.102.1").revisions).default;
         "cryptohash-sha256".flags.exe = false;
