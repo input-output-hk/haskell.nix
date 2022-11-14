@@ -580,6 +580,7 @@ let
       } // inputMap)
     }/bin:$PATH
 
+    # cabal update needs a compiler, see https://github.com/haskell/cabal/issues/8352
     cabal update \
         -w ${ghc.targetPrefix}ghc \
         --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
