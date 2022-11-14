@@ -60,6 +60,11 @@ in [
       + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924"]) ''
         package haskell-language-server
           flags: -haddockcomments
+      ''
+      # Exclude `retrie` that does not actually work with older versions of GHC.
+      # TODO Remove this once https://github.com/facebookincubator/retrie/pull/51 is fixed somehow
+      + lib.optionalString (__elem config.compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107" "ghc901" "ghc902"]) ''
+        constraints: retrie <1.2.1
       '');
     }
   )
