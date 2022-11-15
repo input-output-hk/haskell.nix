@@ -350,7 +350,7 @@ in pkgs.haskell-nix.project {
     src = ./.;
   };
   # Specify the GHC version to use.
-  compiler-nix-name = &quot;ghc924&quot;; # Not required for `stack.yaml` based projects.
+  compiler-nix-name = &quot;ghc925&quot;; # Not required for `stack.yaml` based projects.
 }
 </code></pre>
 <blockquote>
@@ -481,7 +481,7 @@ projects.</p>
           helloProject =
             final.haskell-nix.project' {
               src = ./.;
-              compiler-nix-name = &quot;ghc924&quot;;
+              compiler-nix-name = &quot;ghc925&quot;;
               # This is used by `nix develop .` to open a shell for use with
               # `cabal`, `hlint` and `haskell-language-server`
               shell.tools = {
