@@ -69,8 +69,9 @@ let
       libiserv     = "libraries/libiserv";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
-      iserv-proxy  = "utils/iserv-proxy";
       Win32        = "libraries/Win32";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.4" >= 0) {
+      iserv-proxy  = "utils/iserv-proxy";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
       # Not sure why, but this is missing from older ghcjs versions
       remote-iserv = "utils/remote-iserv";

@@ -189,19 +189,20 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
-  useHadrian = ghc-version == "9.2.2";
+  useHadrian = builtins.compareVersions ghc-version "9.4" >= 0;
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
-      src = haskell-nix.haskellLib.cleanSourceWith {
+      src = if isCrossTarget then ../../../ghc/hadrian else haskell-nix.haskellLib.cleanSourceWith {
         src = buildPackages.srcOnly { name = "hadrian-src"; inherit src; };
         subDir = "hadrian";
       };
     }).hsPkgs.hadrian.components.exes) hadrian;
 
   hadrianArgs = "--flavour=${
-        if (ghcFlavour != "") then ghcFlavour else "default"
-        + lib.optionalString (!enableShared) "+no_dynamic_ghc"
+        "default"
+          + lib.optionalString (!enableShared) "+no_dynamic_ghc"
+          + lib.optionalString useLLVM "+llvm"
       } --docs=no-sphinx -j";
 
 in
@@ -232,7 +233,10 @@ stdenv.mkDerivation (rec {
         # GHC is a bit confused on its cross terminology, as these would normally be
         # the *host* tools.
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
-        export CXX="${targetCC}/bin/${targetCC.targetPrefix}cxx"
+        ${
+          if builtins.compareVersions ghc-version "9.4" < 0
+            then ''export CXX="${targetCC}/bin/${targetCC.targetPrefix}cxx"''
+            else ''export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"''}
         # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
         export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
@@ -275,7 +279,7 @@ stdenv.mkDerivation (rec {
     '' + lib.optionalString (ghc-version-date != null) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version-date}' > VERSION_DATE
-    '' + lib.optionalString (builtins.compareVersions ghc-version "9.2.3" >= 0) ''
+    '' + lib.optionalString (builtins.compareVersions ghc-version "9.2.3" >= 0 && builtins.compareVersions ghc-version "9.4" < 0) ''
         ./boot
     '';
 
@@ -567,7 +571,7 @@ stdenv.mkDerivation (rec {
   '';
 } // lib.optionalAttrs useHadrian {
   buildPhase = ''
-    ${hadrian}/bin/hadrian ${hadrianArgs}
+    ${hadrian}/bin/hadrian ${__trace hadrianArgs hadrianArgs}
   '';
   installPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs} install --prefix=$out
