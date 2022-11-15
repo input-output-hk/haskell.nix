@@ -1,8 +1,8 @@
 diff --git a/rts/Linker.c b/rts/Linker.c
-index f1c0db7c92..fa3bb41292 100644
+index 55d1e3d186..d31d6c169a 100644
 --- a/rts/Linker.c
 +++ b/rts/Linker.c
-@@ -1004,6 +1004,42 @@ resolveSymbolAddr (pathchar* buffer, int size,
+@@ -1037,6 +1037,55 @@ resolveSymbolAddr (pathchar* buffer, int size,
  }
  
  #if RTS_LINKER_USE_MMAP
@@ -24,18 +24,31 @@ index f1c0db7c92..fa3bb41292 100644
 +   via the first argument).
 +   -------------------------------------------------------------------------- */
 +
++static void *__page_buf = NULL;
++static uint32_t __offset = 0;
++
 +void*
 +mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
 +  if(addr == NULL) return mmap(addr, length, prot, flags, fd, offset);
++  uint32_t __max = 0x40000000; // 1 GB
++  if(__page_buf != NULL) {
++    if(__offset + length > __max) barf("Exceeded mmap_next buffer of 1G\n");
++    void * ret = __page_buf[__offset];
++    __offset += roundUpToPage(length);
++    return ret;
++  }
 +  // we are going to look for up to pageSize * 1024 * 1024 (4GB) from the
 +  // address.
 +  size_t pageSize = getPageSize();
 +  for(int i = (uintptr_t)addr & (pageSize-1) ? 1 : 0; i < 1024*1024; i++) {
 +    void *target = (void*)(((uintptr_t)addr & ~(pageSize-1))+(i*pageSize));
-+    void *mem = mmap(target, length, prot, flags, fd, offset);
++    void *mem = mmap(target, __max, prot, flags, fd, offset);
 +    if(mem == NULL) return mem;
-+    if(mem == target) return mem;
-+    munmap(mem, length);
++    if(mem == target) {
++        __page_buf = mem;
++        return mmap_next(addr, length, prot, flags, fd, offset);
++    }
++    munmap(mem, __max);
 +    IF_DEBUG(linker && (i % 1024 == 0),
 +      debugBelch("mmap_next failed to find suitable space in %p - %p\n", addr, target));
 +  }
@@ -45,14 +58,14 @@ index f1c0db7c92..fa3bb41292 100644
  //
  // Returns NULL on failure.
  //
-@@ -1035,8 +1071,8 @@ mmap_again:
+@@ -1068,8 +1117,8 @@ mmap_again:
              debugBelch("mmapForLinker: \tflags      %#0x\n",
                         MAP_PRIVATE | tryMap32Bit | fixed | flags));
  
 -   result = mmap(map_addr, size, prot,
 -                 MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
-+   result = mmap_next(map_addr, size, prot, MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
-+   if(map_addr != NULL && ((uintptr_t)result > (uintptr_t)map_addr)) map_addr = result;
++   result = mmap_next(map_addr, size, prot,
++                      MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
  
     if (result == MAP_FAILED) {
         sysErrorBelch("mmap %" FMT_Word " bytes at %p",(W_)size,map_addr);
