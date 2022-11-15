@@ -6,10 +6,12 @@ To build the latest `nix-tools` and store the result at `./nt`, run:
 nix build -f https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz pkgs.haskell-nix.nix-tools.ghc884 --out-link nt
 ```
 
-If you would like to then install `nix-tools` into your profile, run:
+If you would like to then install `nix-tools` into your profile, run an install
+command:
 
 ```shell
 nix-env -i ./nt
+nix profile install ./nt
 ```
 
 ## Optional: Installing via [Haskell.nix][] source
