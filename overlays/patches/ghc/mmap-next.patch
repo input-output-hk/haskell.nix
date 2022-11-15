@@ -33,7 +33,7 @@ index 55d1e3d186..d31d6c169a 100644
 +  uint32_t __max = 0x40000000; // 1 GB
 +  if(__page_buf != NULL) {
 +    if(__offset + length > __max) barf("Exceeded mmap_next buffer of 1G\n");
-+    void * ret = __page_buf[__offset];
++    void * ret = (void*)((uintptr_t)__page_buf + __offset);
 +    __offset += roundUpToPage(length);
 +    return ret;
 +  }
