@@ -28,7 +28,7 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   { name = "${prefix}-boot";          value = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
   { name = "${prefix}-hello";         value = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (!__elem system ["aarch64-darwin" "aarch64-linux"]
-         && !__elem compiler-nix-name ["ghc881" "ghc882" "ghc883"]) [
+         && !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883"]) [
   { name = "${prefix}-windows";       value = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${prefix}-hello-windows"; value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux") [
