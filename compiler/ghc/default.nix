@@ -193,7 +193,7 @@ let
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
-      src = if isCrossTarget then ../../../ghc/hadrian else haskell-nix.haskellLib.cleanSourceWith {
+      src = haskell-nix.haskellLib.cleanSourceWith {
         src = buildPackages.srcOnly { name = "hadrian-src"; inherit src; };
         subDir = "hadrian";
       };
