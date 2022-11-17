@@ -1,8 +1,8 @@
 diff --git a/rts/Linker.c b/rts/Linker.c
-index 55d1e3d186..26c224c76c 100644
+index 55d1e3d186..9b973eab53 100644
 --- a/rts/Linker.c
 +++ b/rts/Linker.c
-@@ -1037,6 +1037,109 @@ resolveSymbolAddr (pathchar* buffer, int size,
+@@ -1037,11 +1037,125 @@ resolveSymbolAddr (pathchar* buffer, int size,
  }
  
  #if RTS_LINKER_USE_MMAP
@@ -29,6 +29,11 @@ index 55d1e3d186..26c224c76c 100644
 +  void *addr;
 +  size_t length;
 +  void *next_addr;
++
++  // meta data
++  size_t count;
++  size_t total_length;
++
 +  struct _info *next;
 +} info;
 +
@@ -49,6 +54,10 @@ index 55d1e3d186..26c224c76c 100644
 +  i->addr = addr;
 +  i->length = length;
 +  i->next_addr = addr;
++
++  i->count = 0;
++  i->total_length = 0;
++
 +  i->next = NULL;
 +  return i;
 +}
@@ -74,7 +83,7 @@ index 55d1e3d186..26c224c76c 100644
 +}
 +
 +void printInfo(info *cur) {
-+  printf("%p %8zu %p\n", cur->addr, cur->length, cur->next_addr);
++  printf("%p %8zu %p; n = %zu; total = %zu\n", cur->addr, cur->length, cur->next_addr, cur->count, cur->total_length);
 +}
 +void printInfos() {
 +  printf("Infos:\n");
@@ -84,10 +93,10 @@ index 55d1e3d186..26c224c76c 100644
 +}
 +
 +void*
-+mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
++mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset, char *name) {
 +  if(addr == NULL) return mmap(addr, length, prot, flags, fd, offset);
 +  size_t length_ = roundUpToPage(length);
-+  info *bucket = lookupOrCreateInfo(addr, length);
++  info *bucket = lookupOrCreateInfo(addr, length_);
 +  // we are going to look for up to pageSize * 1024 * 1024 (4GB) from the
 +  // address.
 +  size_t pageSize = getPageSize();
@@ -98,6 +107,8 @@ index 55d1e3d186..26c224c76c 100644
 +    if(mem == MAP_FAILED) { return mem; }
 +    if(mem == target) {
 +        bucket->next_addr = mem;
++        bucket->count += 1;
++        bucket->total_length += length;
 +        return mem;
 +    }
 +    munmap(mem, length);
@@ -112,26 +123,106 @@ index 55d1e3d186..26c224c76c 100644
  //
  // Returns NULL on failure.
  //
-@@ -1068,8 +1171,8 @@ mmap_again:
+ void *
+-mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset)
++mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset, bool near, char * name)
+ {
+    void *map_addr = NULL;
+    void *result;
+@@ -1068,8 +1182,12 @@ mmap_again:
              debugBelch("mmapForLinker: \tflags      %#0x\n",
                         MAP_PRIVATE | tryMap32Bit | fixed | flags));
  
 -   result = mmap(map_addr, size, prot,
 -                 MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
-+   result = mmap_next(map_addr, size, prot,
-+                      MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
++   if(near) {
++    result = mmap_next(map_addr, size, prot,
++                      MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset, name);
++   } else {
++     result = mmap(map_addr, size, prot, MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
++   }
  
     if (result == MAP_FAILED) {
         sysErrorBelch("mmap %" FMT_Word " bytes at %p",(W_)size,map_addr);
+@@ -1161,7 +1279,7 @@ mmap_again:
+ void *
+ mmapAnonForLinker (size_t bytes)
+ {
+-  return mmapForLinker (bytes, PROT_READ|PROT_WRITE, MAP_ANONYMOUS, -1, 0);
++  return mmapForLinker (bytes, PROT_READ|PROT_WRITE, MAP_ANONYMOUS, -1, 0, true, "mapAnonForLinker");
+ }
+ 
+ 
+@@ -1491,10 +1609,10 @@ preloadObjectFile (pathchar *path)
+     * See also the misalignment logic for darwin below.
+     */
+ #if defined(darwin_HOST_OS)
+-   image = mmapForLinker(fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
++   image = mmapForLinker(fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0, false, path);
+ #else
+    image = mmapForLinker(fileSize, PROT_READ|PROT_WRITE|PROT_EXEC,
+-                MAP_PRIVATE, fd, 0);
++                MAP_PRIVATE, fd, 0, false, path);
+ #endif
+ 
+    if (image == MAP_FAILED) {
 diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
-index f326a840b5..ef7918588d 100644
+index f326a840b5..a422bb0067 100644
 --- a/rts/LinkerInternals.h
 +++ b/rts/LinkerInternals.h
 @@ -14,6 +14,7 @@
  
  #if RTS_LINKER_USE_MMAP
  #include <sys/mman.h>
-+void* mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
++void* mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset, char *name);
  #endif
  
  #include "BeginPrivate.h"
+@@ -314,7 +315,7 @@ void freeObjectCode (ObjectCode *oc);
+ SymbolAddr* loadSymbol(SymbolName *lbl, RtsSymbolInfo *pinfo);
+ 
+ void *mmapAnonForLinker (size_t bytes);
+-void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset);
++void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset, bool near, char * name));
+ void mmapForLinkerMarkExecutable (void *start, size_t len);
+ 
+ void addProddableBlock ( ObjectCode* oc, void* start, int size );
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index fdfe87a4e5..35e1f4f7cc 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -638,7 +638,7 @@ mapObjectFileSection (int fd, Elf_Word offset, Elf_Word size,
+ 
+     pageOffset = roundDownToPage(offset);
+     pageSize = roundUpToPage(offset-pageOffset+size);
+-    p = mmapForLinker(pageSize, PROT_READ | PROT_WRITE, 0, fd, pageOffset);
++    p = mmapForLinker(pageSize, PROT_READ | PROT_WRITE, 0, fd, pageOffset, true, "mapObjectFileSection");
+     if (p == NULL) return NULL;
+     *mapped_size = pageSize;
+     *mapped_offset = pageOffset;
+diff --git a/rts/linker/MachO.c b/rts/linker/MachO.c
+index 00b0dce04c..87c8b1c258 100644
+--- a/rts/linker/MachO.c
++++ b/rts/linker/MachO.c
+@@ -1200,7 +1200,7 @@ ocGetNames_MachO(ObjectCode* oc)
+                 unsigned nstubs = numberOfStubsForSection(oc, sec_idx);
+                 unsigned stub_space = STUB_SIZE * nstubs;
+ 
+-                void * mem = mmapForLinker(section->size+stub_space, PROT_READ | PROT_WRITE, MAP_ANON, -1, 0);
++                void * mem = mmapForLinker(section->size+stub_space, PROT_READ | PROT_WRITE, MAP_ANON, -1, 0, true, "PLT Stub");
+ 
+                 if( mem == MAP_FAILED ) {
+                     sysErrorBelch("failed to mmap allocated memory to load section %d. "
+diff --git a/rts/sm/Storage.c b/rts/sm/Storage.c
+index 72fabe309f..884a05f6a3 100644
+--- a/rts/sm/Storage.c
++++ b/rts/sm/Storage.c
+@@ -1776,7 +1776,7 @@ void freeExec (void *addr)
+ 
+ #if RTS_LINKER_USE_MMAP
+ AdjustorWritable allocateWrite(W_ bytes) {
+-    return mmapForLinker(bytes, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, -1, 0);
++    return mmapForLinker(bytes, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, -1, 0, true, "adjustor");
+ }
+ 
+ void markExec(W_ bytes, AdjustorWritable writ) {
