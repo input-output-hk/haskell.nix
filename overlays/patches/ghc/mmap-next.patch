@@ -1,5 +1,5 @@
 diff --git a/rts/Linker.c b/rts/Linker.c
-index 55d1e3d186..9b973eab53 100644
+index 55d1e3d186..9d43360713 100644
 --- a/rts/Linker.c
 +++ b/rts/Linker.c
 @@ -1037,11 +1037,125 @@ resolveSymbolAddr (pathchar* buffer, int size,
@@ -116,7 +116,7 @@ index 55d1e3d186..9b973eab53 100644
 +      debugBelch("mmap_next failed to find suitable space in %p - %p\n", addr, target));
 +  }
 +  printInfos();
-+  barf("Failed to mmap_next for %p and size %zu\n", addr, length);
++  barf("Failed to mmap_next for %p and size %zu for %s\n", addr, length, name);
 +  return NULL;
 +}
 +
