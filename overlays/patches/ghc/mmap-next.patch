@@ -167,7 +167,7 @@ index 55d1e3d186..9d43360713 100644
  
     if (image == MAP_FAILED) {
 diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
-index f326a840b5..a422bb0067 100644
+index f326a840b5..88d200d7c2 100644
 --- a/rts/LinkerInternals.h
 +++ b/rts/LinkerInternals.h
 @@ -14,6 +14,7 @@
@@ -183,7 +183,7 @@ index f326a840b5..a422bb0067 100644
  
  void *mmapAnonForLinker (size_t bytes);
 -void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset);
-+void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset, bool near, char * name));
++void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset, bool near, char * name);
  void mmapForLinkerMarkExecutable (void *start, size_t len);
  
  void addProddableBlock ( ObjectCode* oc, void* start, int size );
