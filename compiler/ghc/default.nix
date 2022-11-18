@@ -207,7 +207,7 @@ let
         "default"
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
-      } --docs=no-sphinx -j";
+      } --docs=no-sphinx -j -V";
 
 in
 stdenv.mkDerivation (rec {
@@ -249,6 +249,9 @@ stdenv.mkDerivation (rec {
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
+    '' + lib.optionalString (!targetPlatform.isWindows) ''
+        export DllWrap="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}dllwrap"
+        export Windres="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}windres"
     '' + ''
         echo -n "${buildMK}" > mk/build.mk
         sed -i -e 's|-isysroot /Developer/SDKs/MacOSX10.5.sdk||' configure
@@ -577,9 +580,16 @@ stdenv.mkDerivation (rec {
   buildPhase = ''
     ${hadrian}/bin/hadrian ${__trace hadrianArgs hadrianArgs}
   '';
-  installPhase = ''
-    ${hadrian}/bin/hadrian ${hadrianArgs} install --prefix=$out
-    runHook postInstall
-  '';
+  installPhase =
+    if haskell-nix.haskellLib.isCrossTarget
+      then ''
+        cp -r _build/stage1/bin $out
+        cp -r _build/stage1/lib $out
+        runHook postInstall
+      ''
+      else ''
+        ${hadrian}/bin/hadrian ${hadrianArgs} install --prefix=$out
+        runHook postInstall
+      '';
 });
 in self
