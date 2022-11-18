@@ -54,7 +54,7 @@ in [
       # TODO remove once these two plugins have been updated in hackage
       + lib.optionalString (config.version == "1.8.0.0") ''
         package haskell-language-server
-          flags: -qualifyimportednames -stylishhaskell${lib.optionalString (config.compiler-nix-name != "ghc902") " -hlint"}
+          flags: -qualifyimportednames -stylishhaskell
       ''
       # TODO Remove this flag once the hls-haddock-comments-plugin is updated in hackage to work with ghc 9.2
       + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925"]) ''
