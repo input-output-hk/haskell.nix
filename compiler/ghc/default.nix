@@ -583,6 +583,7 @@ stdenv.mkDerivation (rec {
   installPhase =
     if haskell-nix.haskellLib.isCrossTarget
       then ''
+        mkdir $out
         cp -r _build/stage1/bin $out
         cp -r _build/stage1/lib $out
         runHook postInstall
