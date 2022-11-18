@@ -1,5 +1,5 @@
 diff --git a/rts/Linker.c b/rts/Linker.c
-index 55d1e3d186..d4afd44e46 100644
+index 55d1e3d186..9c5d02c56b 100644
 --- a/rts/Linker.c
 +++ b/rts/Linker.c
 @@ -1037,11 +1037,125 @@ resolveSymbolAddr (pathchar* buffer, int size,
@@ -100,7 +100,7 @@ index 55d1e3d186..d4afd44e46 100644
 +  // we are going to look for up to pageSize * 1024 * 1024 (4GB) from the
 +  // address.
 +  size_t pageSize = getPageSize();
-+  for(int i = (uintptr_t)addr & (pageSize-1) ? 1 : 0; i < 1024*1024; i++) {
++  for(int i = (uintptr_t)addr & (pageSize-1) ? 1 : 0; i < 16*1024*1024; i++) {
 +
 +    void *target = (void*)(((uintptr_t)(bucket->next_addr) & ~(pageSize-1))+(i*pageSize));
 +    void *mem = mmap(target, length, prot, flags, fd, offset);
@@ -149,10 +149,10 @@ index 55d1e3d186..d4afd44e46 100644
   */
  void *
 -mmapAnonForLinker (size_t bytes)
-+mmapAnonForLinker (size_t bytes, bool near)
++mmapAnonForLinker (size_t bytes, bool near, char *name)
  {
 -  return mmapForLinker (bytes, PROT_READ|PROT_WRITE, MAP_ANONYMOUS, -1, 0);
-+  return mmapForLinker (bytes, PROT_READ|PROT_WRITE, MAP_ANONYMOUS, -1, 0, near, "mapAnonForLinker");
++  return mmapForLinker (bytes, PROT_READ|PROT_WRITE, MAP_ANONYMOUS, -1, 0, near, name);
  }
  
  
@@ -170,7 +170,7 @@ index 55d1e3d186..d4afd44e46 100644
  
     if (image == MAP_FAILED) {
 diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
-index f326a840b5..ec1c905d5c 100644
+index f326a840b5..f058d8d7a6 100644
 --- a/rts/LinkerInternals.h
 +++ b/rts/LinkerInternals.h
 @@ -14,6 +14,7 @@
@@ -187,13 +187,13 @@ index f326a840b5..ec1c905d5c 100644
  
 -void *mmapAnonForLinker (size_t bytes);
 -void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset);
-+void *mmapAnonForLinker (size_t bytes, bool near);
++void *mmapAnonForLinker (size_t bytes, bool near, char *name);
 +void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset, bool near, char * name);
  void mmapForLinkerMarkExecutable (void *start, size_t len);
  
  void addProddableBlock ( ObjectCode* oc, void* start, int size );
 diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
-index fdfe87a4e5..6e9dc4e6c7 100644
+index fdfe87a4e5..0bbbbf2cc0 100644
 --- a/rts/linker/Elf.c
 +++ b/rts/linker/Elf.c
 @@ -638,7 +638,7 @@ mapObjectFileSection (int fd, Elf_Word offset, Elf_Word size,
@@ -210,7 +210,7 @@ index fdfe87a4e5..6e9dc4e6c7 100644
                 */
                alloc = SECTION_MMAP;
 -              start = mmapAnonForLinker(size);
-+              start = mmapAnonForLinker(size, true);
++              start = mmapAnonForLinker(size, true, "anon:SECTION_MAP");
                if (start == NULL) {
                  barf("failed to mmap memory for bss. "
                       "errno = %d", errno);
@@ -219,7 +219,7 @@ index fdfe87a4e5..6e9dc4e6c7 100644
            unsigned stub_space = STUB_SIZE * nstubs;
  
 -          void * mem = mmapAnonForLinker(size+stub_space);
-+          void * mem = mmapAnonForLinker(size+stub_space, true);
++          void * mem = mmapAnonForLinker(size+stub_space, true, "anon:stub_space");
  
            if( mem == NULL ) {
                barf("failed to mmap allocated memory to load section %d. "
@@ -228,12 +228,12 @@ index fdfe87a4e5..6e9dc4e6c7 100644
        void * common_mem = NULL;
        if(common_size > 0) {
 -          common_mem = mmapAnonForLinker(common_size);
-+          common_mem = mmapAnonForLinker(common_size, true);
++          common_mem = mmapAnonForLinker(common_size, true, "anon:common_mem");
            if (common_mem == NULL) {
              barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
            }
 diff --git a/rts/linker/LoadArchive.c b/rts/linker/LoadArchive.c
-index 366b45d105..2391c58b1d 100644
+index 366b45d105..0920340831 100644
 --- a/rts/linker/LoadArchive.c
 +++ b/rts/linker/LoadArchive.c
 @@ -489,7 +489,7 @@ static HsInt loadArchive_ (pathchar *path)
@@ -241,7 +241,7 @@ index 366b45d105..2391c58b1d 100644
  #if defined(darwin_HOST_OS) || defined(ios_HOST_OS)
              if (RTS_LINKER_USE_MMAP)
 -                image = mmapAnonForLinker(memberSize);
-+                image = mmapAnonForLinker(memberSize, false);
++                image = mmapAnonForLinker(memberSize, false, "anon:image");
              else {
                  /* See loadObj() */
                  misalignment = machoGetMisalignment(f);
@@ -250,12 +250,12 @@ index 366b45d105..2391c58b1d 100644
              DEBUG_LOG("Found GNU-variant file index\n");
  #if RTS_LINKER_USE_MMAP
 -            gnuFileIndex = mmapAnonForLinker(memberSize + 1);
-+            gnuFileIndex = mmapAnonForLinker(memberSize + 1, false);
++            gnuFileIndex = mmapAnonForLinker(memberSize + 1, false, "anon:loadArchive(image)");
  #else
              gnuFileIndex = stgMallocBytes(memberSize + 1, "loadArchive(image)");
  #endif
 diff --git a/rts/linker/M32Alloc.c b/rts/linker/M32Alloc.c
-index d2b91140c0..45deca9a18 100644
+index d2b91140c0..089fbeb717 100644
 --- a/rts/linker/M32Alloc.c
 +++ b/rts/linker/M32Alloc.c
 @@ -264,7 +264,7 @@ m32_alloc_page(void)
@@ -263,7 +263,7 @@ index d2b91140c0..45deca9a18 100644
      const size_t pgsz = getPageSize();
      const size_t map_sz = pgsz * M32_MAP_PAGES;
 -    uint8_t *chunk = mmapAnonForLinker(map_sz);
-+    uint8_t *chunk = mmapAnonForLinker(map_sz, false);
++    uint8_t *chunk = mmapAnonForLinker(map_sz, false, "anon:m32_alloc_page");
      if (chunk + map_sz > (uint8_t *) 0xffffffff) {
        barf("m32_alloc_page: failed to get allocation in lower 32-bits");
      }
@@ -272,12 +272,12 @@ index d2b91140c0..45deca9a18 100644
        // large object
        size_t alsize = ROUND_UP(sizeof(struct m32_page_t), alignment);
 -      struct m32_page_t *page = mmapAnonForLinker(alsize+size);
-+      struct m32_page_t *page = mmapAnonForLinker(alsize+size, false);
++      struct m32_page_t *page = mmapAnonForLinker(alsize+size, false, "anon:m32_alloc");
        if (page == NULL) {
            sysErrorBelch("m32_alloc: Failed to map pages for %zd bytes", size);
            return NULL;
 diff --git a/rts/linker/MachO.c b/rts/linker/MachO.c
-index 00b0dce04c..e0333c4c11 100644
+index 00b0dce04c..d4cd4d48b1 100644
 --- a/rts/linker/MachO.c
 +++ b/rts/linker/MachO.c
 @@ -445,7 +445,7 @@ makeGot(ObjectCode * oc) {
@@ -285,7 +285,7 @@ index 00b0dce04c..e0333c4c11 100644
      if(got_slots > 0) {
          oc->info->got_size =  got_slots * sizeof(void*);
 -        oc->info->got_start = mmapAnonForLinker(oc->info->got_size);
-+        oc->info->got_start = mmapAnonForLinker(oc->info->got_size, true);
++        oc->info->got_start = mmapAnonForLinker(oc->info->got_size, true, "anon:makeGot");
          if( oc->info->got_start == NULL ) {
              barf("MAP_FAILED. errno=%d", errno );
              return EXIT_FAILURE;
@@ -294,7 +294,7 @@ index 00b0dce04c..e0333c4c11 100644
      }
  
 -    mem = mmapAnonForLinker(size_compound);
-+    mem = mmapAnonForLinker(size_compound, true);
++    mem = mmapAnonForLinker(size_compound, true, "anon:BuildSegment");
      if (NULL == mem) return 0;
  
      IF_DEBUG(linker, debugBelch("ocBuildSegments: allocating %d segments\n", n_activeSegments));
@@ -308,7 +308,7 @@ index 00b0dce04c..e0333c4c11 100644
                  if( mem == MAP_FAILED ) {
                      sysErrorBelch("failed to mmap allocated memory to load section %d. "
 diff --git a/rts/linker/SymbolExtras.c b/rts/linker/SymbolExtras.c
-index 9d4eb89400..1b0283527f 100644
+index 9d4eb89400..5e1071eb72 100644
 --- a/rts/linker/SymbolExtras.c
 +++ b/rts/linker/SymbolExtras.c
 @@ -81,7 +81,7 @@ int ocAllocateExtras(ObjectCode* oc, int count, int first, int bssSize)
@@ -316,12 +316,12 @@ index 9d4eb89400..1b0283527f 100644
        bssSize = roundUpToPage(bssSize);
        size_t allocated_size = n + bssSize + extras_size;
 -      void *new = mmapAnonForLinker(allocated_size);
-+      void *new = mmapAnonForLinker(allocated_size, true);
++      void *new = mmapAnonForLinker(allocated_size, true, "anon:allocateExtras");
        if (new) {
            memcpy(new, oc->image, oc->fileSize);
            if (oc->imageMapped) {
 diff --git a/rts/linker/elf_got.c b/rts/linker/elf_got.c
-index 25f5a91d5a..613575ef07 100644
+index 25f5a91d5a..b55a44320c 100644
 --- a/rts/linker/elf_got.c
 +++ b/rts/linker/elf_got.c
 @@ -52,7 +52,7 @@ makeGot(ObjectCode * oc) {
@@ -329,7 +329,7 @@ index 25f5a91d5a..613575ef07 100644
      if(got_slots > 0) {
          oc->info->got_size = got_slots * sizeof(void *);
 -        void * mem = mmapAnonForLinker(oc->info->got_size);
-+        void * mem = mmapAnonForLinker(oc->info->got_size, true);
++        void * mem = mmapAnonForLinker(oc->info->got_size, true, "anon:oc->info->got_size");
          if (mem == NULL) {
              errorBelch("MAP_FAILED. errno=%d", errno);
              return EXIT_FAILURE;
