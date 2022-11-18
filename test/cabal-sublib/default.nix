@@ -47,7 +47,7 @@ in recurseIntoAttrs {
     optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64 && !stdenv.hostPlatform.isMusl) (''
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString (stdenv.isLinux && !stdenv.hostPlatform.isMusl) ''
-      ldd $exe | grep libgmp
+      ldd $exe | grep 'libc[.]so'
     '' + optionalString stdenv.isDarwin ''
       otool -L $exe |grep .dylib
     '') + ''
