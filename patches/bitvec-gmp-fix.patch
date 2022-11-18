@@ -1,0 +1,33 @@
+From 903561107640cdbe1fbb3669c58e006d8b658fb8 Mon Sep 17 00:00:00 2001
+From: Mikaela Allan <mikaela@vitalbio.com>
+Date: Sun, 31 Jul 2022 11:52:27 -0400
+Subject: [PATCH] include Data.Bit.Gmp only if libgmp flag is set
+
+if this module is linked into the library when libgmp is not enabled,
+the foreign imports will lead to link failures when consuming the
+library.
+---
+ bitvec.cabal | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/bitvec.cabal b/bitvec.cabal
+index c6cb6c0..d4a28d6 100644
+--- a/bitvec.cabal
++++ b/bitvec.cabal
+@@ -78,7 +78,6 @@ library
+   other-modules:
+     Data.Bit.F2Poly
+     Data.Bit.F2PolyTS
+-    Data.Bit.Gmp
+     Data.Bit.Immutable
+     Data.Bit.ImmutableTS
+     Data.Bit.Internal
+@@ -98,6 +97,8 @@ library
+   if flag(libgmp)
+     extra-libraries: gmp
+     cpp-options: -DUseLibGmp
++    other-modules:
++      Data.Bit.Gmp
+ 
+ test-suite bitvec-tests
+   type: exitcode-stdio-1.0
