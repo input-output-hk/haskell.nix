@@ -249,7 +249,7 @@ stdenv.mkDerivation (rec {
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
-    '' + lib.optionalString (!targetPlatform.isWindows) ''
+    '' + lib.optionalString (targetPlatform.isWindows) ''
         export DllWrap="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}dllwrap"
         export Windres="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}windres"
     '' + ''
