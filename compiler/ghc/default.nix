@@ -586,6 +586,8 @@ stdenv.mkDerivation (rec {
         mkdir $out
         cp -r _build/stage1/bin $out
         cp -r _build/stage1/lib $out
+        mkdir $doc
+        cp -r _build/stage1/share $doc
         runHook postInstall
       ''
       else ''
