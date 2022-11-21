@@ -463,11 +463,11 @@ stdenv.mkDerivation (rec {
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 1
     fi
+    ${ lib.optionalString (!useHadrian) ''
     if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
       echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
       exit 1
     fi
-    ${ lib.optionalString (!useHadrian) ''
     if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
       echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
       exit 1
