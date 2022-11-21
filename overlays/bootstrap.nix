@@ -68,6 +68,7 @@ let
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
       "9.2" = "9.2.5";
+      "9.4" = "9.4.3";
     };
     traceWarnOld = v: x:
       let
@@ -189,8 +190,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
                 ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
 
-                ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
-                ++ from      "8.10.1"          ./patches/ghc/ghc-mprotect-nonzero-len.patch
+                ++ fromUntil "8.10.1" "9.3"    ./patches/ghc/ghc-acrt-iob-func.patch
+                ++ fromUntil "8.10.1" "9.3"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
 
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
@@ -201,7 +202,7 @@ in {
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ++ final.lib.optionals final.targetPlatform.isWindows
                   (fromUntil "8.10.4" "9.3"    ./patches/ghc/ghc-8.10-z-drive-fix.patch)
-                ++ final.lib.optional (versionAtLeast "8.6.5") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
+                ++ final.lib.optional (versionAtLeast "8.6.5" && versionLessThan "9.3") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
                 ++ fromUntil "9.0.1"  "9.0.2"  ./patches/ghc/AC_PROG_CC_99.patch
@@ -690,6 +691,26 @@ in {
 
                 ghc-patches = ghc-patches "9.2.5";
             });
+            ghc943 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc943; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_14;
+                llvmPackages = final.llvmPackages_14;
+
+                src-spec = rec {
+                    version = "9.4.3";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "0nlhx2cbq1jh2yr6zk475lavjkh9sncj57qp77p51pkfad4kkxpa";
+                };
+
+                ghc-patches = ghc-patches "9.4.3";
+            });
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
@@ -931,7 +952,7 @@ in {
         # Until all the dependencies build with 9.0.1 we will have to avoid
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
-          if __elem args.compiler-nix-name [ "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" ]
+          if __elem args.compiler-nix-name [ "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc943" ]
             then "ghc8107"
             else args.compiler-nix-name;
         project =
@@ -1100,7 +1121,7 @@ in {
             # infinite recursion).
             alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({pkgs, ...}: {
                 evalPackages = pkgs.buildPackages;
-                version = "3.2.4";
+                version = "3.2.7.1";
                 inherit ghcOverride nix-tools cabal-install index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
                 modules = [{ reinstallableLibGhc = false; }];

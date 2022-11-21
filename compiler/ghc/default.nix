@@ -259,7 +259,7 @@ stdenv.mkDerivation (rec {
     '' + lib.optionalString (ghc-version-date != null) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version-date}' > VERSION_DATE
-    '' + lib.optionalString (builtins.compareVersions ghc-version "9.2.3" >= 0) ''
+    '' + lib.optionalString (builtins.compareVersions ghc-version "9.2.3" >= 0 && builtins.compareVersions ghc-version "9.4" < 0) ''
         ./boot
     '';
 
