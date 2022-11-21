@@ -1,8 +1,8 @@
 diff --git a/rts/Linker.c b/rts/Linker.c
-index f1c0db7c92..fa3bb41292 100644
+index 55d1e3d186..26c224c76c 100644
 --- a/rts/Linker.c
 +++ b/rts/Linker.c
-@@ -1004,6 +1004,42 @@ resolveSymbolAddr (pathchar* buffer, int size,
+@@ -1037,6 +1037,109 @@ resolveSymbolAddr (pathchar* buffer, int size,
  }
  
  #if RTS_LINKER_USE_MMAP
@@ -24,28 +24,95 @@ index f1c0db7c92..fa3bb41292 100644
 +   via the first argument).
 +   -------------------------------------------------------------------------- */
 +
++
++typedef struct _info {
++  void *addr;
++  size_t length;
++  void *next_addr;
++  struct _info *next;
++} info;
++
++static info *infos = NULL;
++
++info *mkInfo(void *addr, size_t length) {
++  info *i = NULL;
++  i = (info *)calloc(sizeof(info), 1);
++  if (infos == NULL) {
++    infos = i;
++  } else {
++    info *last = infos;
++    while (last->next != NULL) {
++      last = last->next;
++    }
++    last->next = i;
++  }
++  i->addr = addr;
++  i->length = length;
++  i->next_addr = addr;
++  i->next = NULL;
++  return i;
++}
++
++info *lookupInfo(void *addr, size_t length) {
++  if (infos == NULL) {
++    return NULL;
++  }
++  for (info *cur = infos; cur != NULL; cur = cur->next) {
++    if (cur->addr == addr && cur->length == length) {
++      return cur;
++    }
++  }
++  return NULL;
++}
++
++info *lookupOrCreateInfo(void *addr, size_t length) {
++  info *i = lookupInfo(addr, length);
++  if (i == NULL) {
++    i = mkInfo(addr, length);
++  }
++  return i;
++}
++
++void printInfo(info *cur) {
++  printf("%p %8zu %p\n", cur->addr, cur->length, cur->next_addr);
++}
++void printInfos() {
++  printf("Infos:\n");
++  for (info *cur = infos; cur != NULL; cur = cur->next) {
++    printInfo(cur);
++  }
++}
++
 +void*
 +mmap_next(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
 +  if(addr == NULL) return mmap(addr, length, prot, flags, fd, offset);
++  size_t length_ = roundUpToPage(length);
++  info *bucket = lookupOrCreateInfo(addr, length);
 +  // we are going to look for up to pageSize * 1024 * 1024 (4GB) from the
 +  // address.
 +  size_t pageSize = getPageSize();
 +  for(int i = (uintptr_t)addr & (pageSize-1) ? 1 : 0; i < 1024*1024; i++) {
-+    void *target = (void*)(((uintptr_t)addr & ~(pageSize-1))+(i*pageSize));
++
++    void *target = (void*)(((uintptr_t)(bucket->next_addr) & ~(pageSize-1))+(i*pageSize));
 +    void *mem = mmap(target, length, prot, flags, fd, offset);
-+    if(mem == NULL) return mem;
-+    if(mem == target) return mem;
++    if(mem == MAP_FAILED) { return mem; }
++    if(mem == target) {
++        bucket->next_addr = mem;
++        return mem;
++    }
 +    munmap(mem, length);
 +    IF_DEBUG(linker && (i % 1024 == 0),
 +      debugBelch("mmap_next failed to find suitable space in %p - %p\n", addr, target));
 +  }
++  printInfos();
++  barf("Failed to mmap_next for %p and size %zu\n", addr, length);
 +  return NULL;
 +}
 +
  //
  // Returns NULL on failure.
  //
-@@ -1035,8 +1071,8 @@ mmap_again:
+@@ -1068,8 +1171,8 @@ mmap_again:
              debugBelch("mmapForLinker: \tflags      %#0x\n",
                         MAP_PRIVATE | tryMap32Bit | fixed | flags));
  
