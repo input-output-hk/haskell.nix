@@ -578,7 +578,7 @@ stdenv.mkDerivation (rec {
   '';
 } // lib.optionalAttrs useHadrian {
   buildPhase = ''
-    ${hadrian}/bin/hadrian ${__trace hadrianArgs hadrianArgs}
+    ${hadrian}/bin/hadrian ${hadrianArgs}
   '';
   installPhase =
     if haskell-nix.haskellLib.isCrossTarget
