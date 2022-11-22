@@ -1169,7 +1169,7 @@ in {
             # infinite recursion).
             alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
                 evalPackages = pkgs.buildPackages;
-                version = "3.2.4";
+                version = "3.2.7.1";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
                 modules = [{ reinstallableLibGhc = false; }];
@@ -1178,7 +1178,7 @@ in {
             } // args);
             alex = bootstrap.packages.alex-tool {};
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
-            happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy"
+            happy-tool = { version ? "1.20.0", ... }@args: tool buildBootstrapper.compilerNixName "happy"
               ({config, pkgs, ...}: {
                 evalPackages = pkgs.buildPackages;
                 inherit version ghcOverride index-state;
