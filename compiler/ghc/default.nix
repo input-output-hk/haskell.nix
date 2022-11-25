@@ -209,6 +209,15 @@ let
           + lib.optionalString useLLVM "+llvm"
       } --docs=no-sphinx -j -V";
 
+  rootDir =
+    if targetPrefix == "x86_64-w64-mingw32-" && useHadrian
+      then ""
+      else "lib/${targetPrefix}ghc-${ghc-version}/";
+  libDir =
+    if targetPrefix == "x86_64-w64-mingw32-" && useHadrian
+      then "lib"
+      else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
+
 in
 stdenv.mkDerivation (rec {
   version = ghc-version;
@@ -412,9 +421,9 @@ stdenv.mkDerivation (rec {
       ''
       # Convert ${pkgroot} relative paths to /nix/store paths
       + ''
-        for f in "$out/lib/${targetPrefix}ghc-${ghc-version}/lib/package.conf.d/"*.conf; do
-          sed -i -e "s|\''${pkgroot}/../lib/|$out/lib/${targetPrefix}ghc-${ghc-version}/lib/|" \
-                 -e "s|\''${pkgroot}/../share/|$out/lib/${targetPrefix}ghc-${ghc-version}/share/|" \
+        for f in "$out/${rootDir}lib/package.conf.d/"*.conf; do
+          sed -i -e "s|\''${pkgroot}/../lib/|$out/${rootDir}lib/|" \
+                 -e "s|\''${pkgroot}/../share/|$out/${rootDir}share/|" \
                  -e "s|\''${pkgroot}/../../../share/doc/|$doc/share/doc/|" $f
         done
       ''
@@ -475,8 +484,7 @@ stdenv.mkDerivation (rec {
     ''}'';
 
   passthru = {
-    inherit bootPkgs targetPrefix;
-    libDir = "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
+    inherit bootPkgs targetPrefix libDir;
 
     inherit llvmPackages;
     inherit enableShared;
@@ -589,6 +597,10 @@ stdenv.mkDerivation (rec {
         mkdir $doc
         cp -r _build/stage1/share $doc
         runHook postInstall
+      '' + lib.optionalString (targetPlatform.isWindows) ''
+        substituteInPlace $out/lib/settings \
+          --replace ',("dllwrap command", "/bin/false")' ',("dllwrap command", "${targetCC.bintools.targetPrefix}dllwrap")' \
+          --replace ',("windres command", "/bin/false")' ',("windres command", "${targetCC.bintools.targetPrefix}windres")'
       ''
       else ''
         ${hadrian}/bin/hadrian ${hadrianArgs} install --prefix=$out

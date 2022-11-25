@@ -36,6 +36,20 @@ final: prev:
      defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
       let
+        iserv-proxy-exes = (final.buildPackages.haskell-nix.cabalProject {
+          name = "iserv-proxy";
+          compiler-nix-name = config.compiler.nix-name;
+          src = final.buildPackages.haskell-nix.sources.iserv-proxy;
+          cabalProjectLocal = ''
+            allow-newer: *:libiserv, *:ghci
+          '';
+          modules = [{
+            config.reinstallableLibGhc = false;
+            options.nonReinstallablePkgs = pkgs.lib.mkOption {
+              apply = x: x ++ [ "exceptions" "stm" "libiserv" ];
+            };
+          }];
+        }).hsPkgs.iserv-proxy.components.exes;
         withTH = import ./mingw_w64.nix {
           inherit (pkgs.stdenv) hostPlatform;
           inherit (pkgs) stdenv lib writeScriptBin;
@@ -45,10 +59,7 @@ final: prev:
           inherit (pkgs.buildPackages) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
-          # remote-iserv however needs to come from the regular packages as it has to
-          # run on the target host.
-          inherit (final.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
+          inherit (iserv-proxy-exes) iserv-proxy iserv-proxy-interpreter;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {

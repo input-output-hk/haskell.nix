@@ -58,15 +58,10 @@
       url = "github:phadej/HTTP";
       flake = false;
     };
-    ghc-for-hadrian = {
-      #type = "gitlab";
-      #owner = "hsyl20";
-      #repo = "ghc";
-      #ref = "hsyl20/cross-win";
-      # url = "gitlab:hsyl20/ghc?ref=hsyl20/cross-win";
+    iserv-proxy = {
       type = "git";
-      url = "https://gitlab.haskell.org/hsyl20/ghc.git";
-      ref = "hsyl20/cross-win";
+      url = "https://gitlab.haskell.org/ghc/iserv-proxy.git";
+      rev = "6e95df7be6dd29680f983db07a057fc2f34f81f6";
       flake = false;
     };
   };

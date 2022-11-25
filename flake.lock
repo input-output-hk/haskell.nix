@@ -261,23 +261,6 @@
         "type": "github"
       }
     },
-    "ghc-for-hadrian": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1667999056,
-        "narHash": "sha256-rSCDJs6h5X7Z8XMOe/6lXyuAgcdWO4XzUaQVjDHHKPk=",
-        "ref": "hsyl20/cross-win",
-        "rev": "58fa3f5f3f0da720f7d63f158a1a139d3d27a175",
-        "revCount": 60215,
-        "type": "git",
-        "url": "https://gitlab.haskell.org/hsyl20/ghc.git"
-      },
-      "original": {
-        "ref": "hsyl20/cross-win",
-        "type": "git",
-        "url": "https://gitlab.haskell.org/hsyl20/ghc.git"
-      }
-    },
     "gomod2nix": {
       "inputs": {
         "nixpkgs": "nixpkgs_2",
@@ -349,6 +332,22 @@
       "original": {
         "id": "hydra",
         "type": "indirect"
+      }
+    },
+    "iserv-proxy": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1639165170,
+        "narHash": "sha256-QsWL/sBDL5GM8IXd/dE/ORiL4RvteEN+aok23tXgAoc=",
+        "rev": "6e95df7be6dd29680f983db07a057fc2f34f81f6",
+        "revCount": 7,
+        "type": "git",
+        "url": "https://gitlab.haskell.org/ghc/iserv-proxy.git"
+      },
+      "original": {
+        "rev": "6e95df7be6dd29680f983db07a057fc2f34f81f6",
+        "type": "git",
+        "url": "https://gitlab.haskell.org/ghc/iserv-proxy.git"
       }
     },
     "lowdown-src": {
@@ -694,10 +693,10 @@
         "flake-compat": "flake-compat",
         "flake-utils": "flake-utils",
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk",
-        "ghc-for-hadrian": "ghc-for-hadrian",
         "hackage": "hackage",
         "hpc-coveralls": "hpc-coveralls",
         "hydra": "hydra",
+        "iserv-proxy": "iserv-proxy",
         "nixpkgs": [
           "nixpkgs-unstable"
         ],
