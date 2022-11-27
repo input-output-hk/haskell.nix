@@ -1,0 +1,223 @@
+  diff --git a/rts/Linker.c b/rts/Linker.c
+index aaca823..f476702 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1037,6 +1037,12 @@ typedef struct _info {
+ 
+ static info *infos = NULL;
+ 
++info *mkInfo(void *addr, size_t length);
++info *lookupInfo(void *addr, size_t length);
++info *lookupOrCreateInfo(void *addr, size_t length);
++void printInfo(info *cur);
++void printInfos(void);
++
+ info *mkInfo(void *addr, size_t length) {
+   info *i = NULL;
+   i = (info *)calloc(sizeof(info), 1);
+@@ -1083,7 +1089,7 @@ info *lookupOrCreateInfo(void *addr, size_t length) {
+ void printInfo(info *cur) {
+   printf("%p %8zu %p; n = %zu; total = %zu\n", cur->addr, cur->length, cur->next_addr, cur->count, cur->total_length);
+ }
+-void printInfos() {
++void printInfos(void) {
+   printf("Infos:\n");
+   for (info *cur = infos; cur != NULL; cur = cur->next) {
+     printInfo(cur);
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 0bbbbf2..85054ea 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -739,7 +739,6 @@ ocGetNames_ELF ( ObjectCode* oc )
+           oc->sections[i].info->stubs = NULL;
+       } else if (kind != SECTIONKIND_OTHER && size > 0) {
+ 
+-#if defined(NEED_PLT)
+           /* To support stubs next to sections, we will use the following
+            * layout:
+            *
+@@ -758,26 +757,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+           unsigned nstubs = numberOfStubsForSection(oc, i);
+           unsigned stub_space = STUB_SIZE * nstubs;
+ 
+-          void * mem = mmapAnonForLinker(size+stub_space, true, "anon:stub_space");
+-
+-          if( mem == NULL ) {
+-              barf("failed to mmap allocated memory to load section %d. "
+-                   "errno = %d", i, errno);
+-          }
+-
+-          /* copy only the image part over; we don't want to copy data
+-           * into the stub part.
+-           */
+-          memcpy( mem, oc->image + offset, size );
+-
+-          alloc = SECTION_MMAP;
+-
+-          mapped_offset = 0;
+-          mapped_size = roundUpToPage(size+stub_space);
+-          start = mem;
+-          mapped_start = mem;
+-#else
+-          if (USE_CONTIGUOUS_MMAP || RtsFlags.MiscFlags.linkerAlwaysPic) {
++          if (false) { //USE_CONTIGUOUS_MMAP || RtsFlags.MiscFlags.linkerAlwaysPic) {
+               // already mapped.
+               start = oc->image + offset;
+               alloc = SECTION_NOMEM;
+@@ -793,32 +773,46 @@ ocGetNames_ELF ( ObjectCode* oc )
+               // RODATA sections. Specifically .rodata.cst16. However we don't
+               // handle the cst part in any way what so ever, so 16 seems
+               // better than 8.
+-              start = m32_alloc(allocator, size, 16);
++              start = m32_alloc(allocator, size+stub_space, 16);
+               if (start == NULL) goto fail;
+               memcpy(start, oc->image + offset, size);
+               alloc = SECTION_M32;
+           } else {
+-              start = mapObjectFileSection(fd, offset, size,
++#if defined(NEED_PLT)
++            char buf[512];
++            sprintf(buf, "anon:%s, sec %d, kind %d, size %ld, stub %d, total %ld", oc->fileName, i, kind, size, stub_space, size + stub_space);
++
++            start = mmapAnonForLinker(size+stub_space, true, buf);
++
++            if( start == NULL ) {
++                barf("failed to mmap allocated memory to load section %d. "
++                    "errno = %d", i, errno);
++            }
++
++            /* copy only the image part over; we don't want to copy data
++            * into the stub part.
++            */
++            memcpy( start, oc->image + offset, size );
++
++            mapped_offset = 0;
++            mapped_size = roundUpToPage(size+stub_space);
++            mapped_start = start;
++
++#else
++              start = mapObjectFileSection(fd, offset, size+stub_space,
+                                            &mapped_start, &mapped_size,
+                                            &mapped_offset);
+               if (start == NULL) goto fail;
++#endif
+               alloc = SECTION_MMAP;
+           }
+-#endif
+           addSection(&sections[i], kind, alloc, start, size,
+                      mapped_offset, mapped_start, mapped_size);
+ 
+-#if defined(NEED_PLT)
+           oc->sections[i].info->nstubs = 0;
+-          oc->sections[i].info->stub_offset = (uint8_t*)mem + size;
++          oc->sections[i].info->stub_offset = (uint8_t*)start + size;
+           oc->sections[i].info->stub_size = stub_space;
+           oc->sections[i].info->stubs = NULL;
+-#else
+-          oc->sections[i].info->nstubs = 0;
+-          oc->sections[i].info->stub_offset = NULL;
+-          oc->sections[i].info->stub_size = 0;
+-          oc->sections[i].info->stubs = NULL;
+-#endif
+ 
+           addProddableBlock(oc, start, size);
+       } else {
+diff --git a/rts/linker/M32Alloc.c b/rts/linker/M32Alloc.c
+index 089fbeb..8d80b02 100644
+--- a/rts/linker/M32Alloc.c
++++ b/rts/linker/M32Alloc.c
+@@ -264,10 +264,10 @@ m32_alloc_page(void)
+      */
+     const size_t pgsz = getPageSize();
+     const size_t map_sz = pgsz * M32_MAP_PAGES;
+-    uint8_t *chunk = mmapAnonForLinker(map_sz, false, "anon:m32_alloc_page");
+-    if (chunk + map_sz > (uint8_t *) 0xffffffff) {
+-      barf("m32_alloc_page: failed to get allocation in lower 32-bits");
+-    }
++    uint8_t *chunk = mmapAnonForLinker(map_sz, true, "anon:m32_alloc_page");
++    // if (chunk + map_sz > (uint8_t *) 0xffffffff) {
++    //   barf("m32_alloc_page: failed to get allocation in lower 32-bits");
++    // }
+ 
+ #define GET_PAGE(i) ((struct m32_page_t *) (chunk + (i) * pgsz))
+     for (int i=0; i < M32_MAP_PAGES; i++) {
+@@ -467,6 +467,18 @@ m32_alloc(struct m32_allocator_t *alloc, size_t size, size_t alignment)
+        size+ROUND_UP(sizeof(struct m32_page_t),alignment);
+    return (char*)page + ROUND_UP(sizeof(struct m32_page_t),alignment);
+ }
++void
++m32_list(m32_allocator *alloc) {
++  for(struct m32_page_t *page = alloc->unprotected_list; page != NULL; page = m32_filled_page_get_next(page)) {
++      printf("%p (%d) %0x %0x %0x %0x\n", page, page->filled_page.size,
++      ((uint32_t*)page)[0],
++      ((uint32_t*)page)[1],
++      ((uint32_t*)page)[2],
++      ((uint32_t*)page)[3]
++      );
++  }
++}
++
+ 
+ #else
+ 
+@@ -499,4 +511,9 @@ m32_alloc(m32_allocator *alloc STG_UNUSED,
+     barf("%s: RTS_LINKER_USE_MMAP is %d", __func__, RTS_LINKER_USE_MMAP);
+ }
+ 
++void
++m32_list(m32_allocator *alloc STG_UNUSED) {
++    barf("%s: RTS_LINKER_USE_MMAP is %d", __func__, RTS_LINKER_USE_MMAP);
++}
++
+ #endif
+diff --git a/rts/linker/M32Alloc.h b/rts/linker/M32Alloc.h
+index 8a349a3..ab116eb 100644
+--- a/rts/linker/M32Alloc.h
++++ b/rts/linker/M32Alloc.h
+@@ -35,4 +35,6 @@ void m32_allocator_flush(m32_allocator *alloc) M32_NO_RETURN;
+ 
+ void * m32_alloc(m32_allocator *alloc, size_t size, size_t alignment) M32_NO_RETURN;
+ 
++void m32_list(m32_allocator *alloc);
++
+ #include "EndPrivate.h"
+diff --git a/rts/linker/elf_got.c b/rts/linker/elf_got.c
+index b55a443..c30ebef 100644
+--- a/rts/linker/elf_got.c
++++ b/rts/linker/elf_got.c
+@@ -110,8 +110,18 @@ fillGot(ObjectCode * oc) {
+ 
+                 if(0x0 == symbol->addr) {
+                     errorBelch(
+-                        "Something went wrong! Symbol %s has null address.\n",
+-                            symbol->name);
++                        "In oc: %s\n"
++                        "in symbtab: %d (%ld symbols total)\n"
++                        "Something went wrong! Symbol %ld: %s has null address.\n"
++                        "type: %d, bind: %d\n",
++
++                            oc->archiveMemberName ? oc->archiveMemberName : oc->fileName,
++                            symTab->index, symTab->n_symbols,
++                            i,
++                            symbol->name,
++                            ELF_ST_TYPE(symbol->elf_sym->st_info),
++                            ELF_ST_BIND(symbol->elf_sym->st_info)
++                            );
+                     return EXIT_FAILURE;
+                 }
+ 
+diff --git a/rts/linker/elf_plt.c b/rts/linker/elf_plt.c
+index 9cd42ef..913d788 100644
+--- a/rts/linker/elf_plt.c
++++ b/rts/linker/elf_plt.c
+@@ -56,8 +56,9 @@ makeStub(Section * section,
+     s->target = *addr;
+     s->flags  = flags;
+     s->next = NULL;
+-    s->addr = (uint8_t *)section->info->stub_offset + 8
++    s->addr = (uint8_t *)section->info->stub_offset
+             + STUB_SIZE * section->info->nstubs;
++    ASSERT(s->addr >= section->info->stub_offset && s->addr <= (void*)((uintptr_t)section->info->stub_offset + section->info->stub_size - STUB_SIZE));
+ 
+     if((*_makeStub)(s))
+         return EXIT_FAILURE;
