@@ -36,7 +36,7 @@ let
         PORT=$((5000 + $RANDOM % 5000))
         (>&2 echo "---> Starting iserv-proxy-interpreter on port $PORT")
         REMOTE_ISERV=$(mktemp -d)
-        ln -s ${interpreter.exePath} $REMOTE_ISERV
+        ln -s ${interpreter}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
         for p in $pkgsHostTargetAsString; do
           find "$p" -iname '*.dll' -exec ln -sf {} $REMOTE_ISERV \;
