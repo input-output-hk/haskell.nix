@@ -85,9 +85,9 @@ index fdfe87a..c3f9110 100644
 +      oc->common_mem = NULL;
 +      oc->common_size = common_size;
        if(common_size > 0) {
--          common_mem = mmapAnonForLinker(common_size);
+-          common_mem = mmapAnonForLinker(common_size, true, "anon:common_mem");
 -          if (common_mem == NULL) {
-+          oc->common_mem = mmapAnonForLinker(common_size);
++          oc->common_mem = mmapAnonForLinker(common_size, true, "anon:common_mem");
 +          if (oc->common_mem == NULL) {
              barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
            }
