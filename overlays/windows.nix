@@ -54,7 +54,7 @@ final: prev:
               modules = [{
                 config.reinstallableLibGhc = false;
                 options.nonReinstallablePkgs = pkgs.lib.mkOption {
-                  apply = x: x ++ [ "exceptions" "stm" "libiserv" ];
+                  apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                 };
               }];
             }).hsPkgs.iserv-proxy.components.exes;
