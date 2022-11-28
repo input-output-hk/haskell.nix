@@ -210,11 +210,11 @@ let
       } --docs=no-sphinx -j -V";
 
   rootDir =
-    if targetPrefix == "x86_64-w64-mingw32-" && useHadrian
+    if (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl) && useHadrian
       then ""
       else "lib/${targetPrefix}ghc-${ghc-version}/";
   libDir =
-    if targetPrefix == "x86_64-w64-mingw32-" && useHadrian
+    if (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl) && useHadrian
       then "lib"
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
 
@@ -589,7 +589,7 @@ stdenv.mkDerivation (rec {
     ${hadrian}/bin/hadrian ${hadrianArgs}
   '';
   installPhase =
-    if haskell-nix.haskellLib.isCrossTarget
+    if haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl
       then ''
         mkdir $out
         cp -r _build/stage1/bin $out

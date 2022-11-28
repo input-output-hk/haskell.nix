@@ -84,12 +84,12 @@ let
 
   # The nix produced by `cabalProject` differs slightly depending on
   # what the platforms are.  There are currently 3 possible outputs.
-  ghc-extra-projects-type =
+  ghc-extra-projects-type = ghc:
     if final.stdenv.hostPlatform.isWindows
       then "windows"
       else if final.stdenv.hostPlatform.isGhcjs
         then "ghcjs"
-        else if final.haskell-nix.haskellLib.isCrossHost
+        else if final.haskell-nix.haskellLib.isCrossHost || (final.stdenv.hostPlatform.isMusl && builtins.compareVersions ghc.version "9.4.1" >= 0)
           then "cross"
           else "default";
 
@@ -210,13 +210,13 @@ in rec {
           sed -i 's|/nix/store/.*-libffi.*/include||' $out/${dir}/*.cabal
         '') package-locs)}
       '';
-    }) // { inherit cabalProject; }) final.buildPackages.haskell-nix.compiler;
+    }) // { inherit cabalProject ghc; }) final.buildPackages.haskell-nix.compiler;
 
   # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
     final.haskell-nix.cabalProject' ({pkgs, ...}: {
       evalPackages = pkgs.buildPackages;
-      name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
+      name = "ghc-extra-projects-${ghc-extra-projects-type proj.ghc}-${ghcName}";
       src = proj;
       inherit (proj) cabalProject;
       # Avoid readDir and readFile IFD functions looking for these files
@@ -225,7 +225,7 @@ in rec {
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized = ../materialized/ghc-extra-projects
-                       + "/${ghc-extra-projects-type}/${ghcName}";
+                       + "/${ghc-extra-projects-type proj.ghc}/${ghcName}";
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
       modules = [{ reinstallableLibGhc = false; }];
