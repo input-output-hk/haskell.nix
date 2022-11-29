@@ -110,7 +110,6 @@ let
     # to copy over dlls as needed.
     echo "Copying library dependencies..."
     ls -ld /tmp
-    ls -l /tmp
     for libdir in $(${hostPlatform.config}-ghc-pkg field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
       if [ -d "$libdir" ]; then
         find "$libdir" -iname '*.dll' -exec cp {} . \;
