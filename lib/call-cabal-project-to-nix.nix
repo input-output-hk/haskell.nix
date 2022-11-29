@@ -484,8 +484,6 @@ let
       "freeze"  # The `cabal.project.freeze` file created by `cabal v2-freeze`
     ];
   } ''
-    set -ex
-
     tmp=$(mktemp -d)
     cd $tmp
     # if cleanedSource is empty, this means it's a new
