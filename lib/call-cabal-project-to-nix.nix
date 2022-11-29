@@ -558,9 +558,6 @@ let
             "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
         ${configureArgs}
 
-    # ${builtins.toJSON fixedProject.repos}
-    # ${builtins.toJSON extra-hackage-tarballs}
-
     mkdir -p $out
 
     cp cabal.project.freeze $freeze
