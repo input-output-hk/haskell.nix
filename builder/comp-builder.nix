@@ -16,7 +16,7 @@ let self =
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
 , configureFlags ? component.configureFlags
 , preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
-, setupBuildFlags ? component.setupBuildFlags
+, setupBuildFlags ? []
 , preBuild ? component.preBuild , postBuild ? component.postBuild
 , preCheck ? component.preCheck , postCheck ? component.postCheck
 , setupInstallFlags ? component.setupInstallFlags
