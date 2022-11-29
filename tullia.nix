@@ -13,10 +13,10 @@ in rec {
         # needed on top-level task to set runtime options
         nix.enable = true;
 
-        github = {
+        github.ci = {
           enable = config.actionRun.facts != {};
-          repo = "input-output-hk/haskell.nix";
-          sha = config.preset.github.lib.getRevision ciInputName null;
+          repository = "input-output-hk/haskell.nix";
+          revision = config.preset.github.lib.getRevision ciInputName null;
         };
       };
     };
