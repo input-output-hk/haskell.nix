@@ -70,7 +70,7 @@ in
 }@args:
 
 let
-  inherit (evalPackages.haskell-nix) materialize mkLocalHackageRepo;
+  inherit (evalPackages.haskell-nix) materialize dotCabal;
 
   # These defaults are hear rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
@@ -261,6 +261,10 @@ let
       sourceRepoPackageResult = pkgs.haskell-nix.haskellLib.parseSourceRepositoryPackages
         cabalProjectFileName sha256map source-repo-override projectFile;
 
+      # Parse the `repository` blocks
+      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
+        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
+
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
       #   Here we want to use evalPackages.fetchgit, so one can calculate
@@ -274,6 +278,7 @@ let
       sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
     in {
       sourceRepos = sourceReposBuild;
+      inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
         cp -f ${evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
       '' +
@@ -451,44 +456,6 @@ let
     '';
   };
 
-  fakeCurl = inputMap:
-    let inputMapFile = evalPackages.writeTextFile {
-          name = "fakeCurlInputMap";
-          text = ''
-          ${builtins.concatStringsSep "\n" (pkgs.lib.mapAttrsToList f inputMap)}
-          '';
-        };
-        f = name: index: "${name}\tfile://${index}";
-    in
-      evalPackages.writeShellApplication {
-        name = "curl";
-        text = ''
-          declare -a ARGS
-          ARGS=("''${@}")
-          while read -r uri path; do
-            ARGS=("''${ARGS[@]/$uri/$path}")
-          done <${inputMapFile}
-          ${pkgs.curl}/bin/curl "''${ARGS[@]}" >/dev/null
-          echo 200
-        '';
-      };
-
-  hackageRepo = { index-state, sha256 }:
-    assert sha256 != null;
-    let at = builtins.replaceStrings [ ":" ] [ "" ] index-state;
-    in mkLocalHackageRepo {
-      name = "hackage.haskell.org";
-      index = pkgs.fetchurl {
-        name = "01-index.tar.gz-at-${at}";
-        url = "https://hackage.haskell.org/01-index.tar.gz";
-        downloadToTemp = true;
-        postFetch =
-          "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
-        outputHashAlgo = "sha256";
-        outputHash = sha256;
-      };
-    };
-
   plan-nix = materialize ({
     inherit materialized;
     sha256 = plan-sha256;
@@ -517,7 +484,7 @@ let
       "freeze"  # The `cabal.project.freeze` file created by `cabal v2-freeze`
     ];
   } ''
-    set -e
+    set -ex
 
     tmp=$(mktemp -d)
     cd $tmp
@@ -562,32 +529,19 @@ let
     export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
 
-    export CABAL_DIR=$(mktemp -d)
-
-    cat >$CABAL_DIR/config <<EOF
-    repository hackage.haskell.org
-      url: http://hackage.haskell.org/
-      secure: True
-      root-keys: aaa
-      key-threshold: 0
-    EOF
-    cat $CABAL_DIR/config
-
-    echo "Installing fake curl"
-    PATH=${
-      fakeCurl ({
-        "http://hackage.haskell.org" = hackageRepo { index-state = cached-index-state; sha256 = index-sha256-found; };
-      } // inputMap)
-    }/bin:$PATH
-
-    # cabal update needs a compiler, see https://github.com/haskell/cabal/issues/8352
-    cabal update \
-        -w ${ghc.targetPrefix}ghc \
-        --with-ghc-pkg=${ghc.targetPrefix}ghc-pkg
-
     echo "Using index-state ${index-state-found}"
-
-    make-install-plan ${
+    CABAL_DIR=${
+      # This creates `.cabal` directory that is as it would have
+      # been at the time `cached-index-state`.  We may include
+      # some packages that will be excluded by `index-state-found`
+      # which is used by cabal (cached-index-state >= index-state-found).
+      dotCabal {
+        inherit cabal-install nix-tools extra-hackage-tarballs;
+        extra-hackage-repos = fixedProject.repos;
+        index-state = cached-index-state;
+        sha256 = index-sha256-found;
+      }
+    } make-install-plan ${
           # Setting the desired `index-state` here in case it is not
           # in the cabal.project file. This will further restrict the
           # packages used by the solver (cached-index-state >= index-state-found).
@@ -603,6 +557,9 @@ let
         ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-")
             "--ghcjs --with-ghcjs=js-unknown-ghcjs-ghc --with-ghcjs-pkg=js-unknown-ghcjs-ghc-pkg"} \
         ${configureArgs}
+
+    # ${builtins.toJSON fixedProject.repos}
+    # ${builtins.toJSON extra-hackage-tarballs}
 
     mkdir -p $out
 
@@ -655,5 +612,5 @@ in {
   projectNix = plan-nix;
   index-state = index-state-found;
   inherit src;
-  inherit (fixedProject) sourceRepos;
+  inherit (fixedProject) sourceRepos extra-hackages;
 }

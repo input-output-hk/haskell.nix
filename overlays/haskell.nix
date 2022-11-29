@@ -185,23 +185,6 @@ final: prev: {
             then snapshots."lts-15.13"
             else snapshots."lts-14.13";
 
-        # Produce a fixed output derivation from a moving target (hackage index tarball)
-        # Takes desired index-state and sha256 and produces a set { name, index }, where
-        # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
-        hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools }:
-            assert sha256 != null;
-            let at = builtins.replaceStrings [":"] [""] index-state; in
-            { "hackage.haskell.org-at-${at}" = final.fetchurl {
-                name = "01-index.tar.gz-at-${at}";
-                url = "https://hackage.haskell.org/01-index.tar.gz";
-                downloadToTemp = true;
-                postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
-
-                outputHashAlgo = "sha256";
-                outputHash = sha256;
-              };
-            };
-
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
@@ -253,6 +236,66 @@ final: prev: {
             '';
           })
         ];
+
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
+            let
+              # we have this snippet already somewhere else, maybe we need to find a place (and meaning) to it
+              # NOTE: root-keys: aaa is because key-threshold: 0 does seem to be enough by itself
+              bootstrapRepo = name: index: final.runCommand "cabal-bootstrap-repo-${name}" {
+                nativeBuildInputs = [ cabal-install ] ++ cabal-issue-8352-workaround;
+              } ''
+                HOME=$(mktemp -d)
+                mkdir -p $HOME/.cabal/packages/${name}
+                cat <<EOF > $HOME/.cabal/config
+                repository ${name}
+                  url: file:${mkLocalHackageRepo { inherit name index; }}
+                  secure: True
+                  root-keys: aaa
+                  key-threshold: 0
+                EOF
+                cabal v2-update ${name}
+                cp -r $HOME/.cabal/packages/${name} $out
+                '';
+
+              # Produce a fixed output derivation from a moving target (hackage index tarball)
+              # Takes desired index-state and sha256 and produces a set { name, index }, where
+              # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
+              hackage-tarball =
+                  let at = builtins.replaceStrings [":"] [""] index-state;
+                  in {
+                    "hackage.haskell.org" = final.fetchurl {
+                      name = "01-index.tar.gz-at-${at}";
+                      url = "https://hackage.haskell.org/01-index.tar.gz";
+                      downloadToTemp = true;
+                      postFetch = "${final.haskell-nix.internal-nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+                      outputHashAlgo = "sha256";
+                      outputHash = sha256;
+                    };
+                  };
+
+              # All 01-index.tar.gz index tarballs, including hackage itself
+              index-tarballs = hackage-tarball // extra-hackage-tarballs;
+              # All repositories bootstrapped from the single tarball
+              bootstrapped-index-tarballs = final.lib.mapAttrs bootstrapRepo index-tarballs;
+              # NOTE: extra-hackage-repos are already bootstrapped
+            in
+              # Add the extra-hackage-repos where we have all the files needed.
+              final.runCommand "dot-cabal" {
+                nativeBuildInputs = [ cabal-install final.xorg.lndir ] ++ cabal-issue-8352-workaround;
+              } ''
+                # bootstrapped-index-tarballs
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  mkdir -p $out/packages/${name}
+                  lndir ${repo} $out/packages/${name}
+                '') bootstrapped-index-tarballs)}
+                # extra-hackage-repos
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  mkdir -p $out/packages/${name}
+                  lndir ${repo} $out/packages/${name}
+                '') extra-hackage-repos)}
+                # Write cabal default config
+                CABAL_DIR=$out cabal user-config init
+              '';
 
         # Some of features of haskell.nix rely on using a hackage index
         # to calculate a build plan.  To maintain stability for caching and
@@ -494,6 +537,7 @@ final: prev: {
                       evalPackages = final.lib.mkDefault evalPackages;
                       inputMap = final.lib.mkDefault inputMap;
                     } ];
+                  extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
 
               project = addProjectAndPackageAttrs rec {
