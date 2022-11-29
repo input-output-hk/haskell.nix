@@ -34,7 +34,7 @@
  ,("LLVM llc command","llc")
  ,("LLVM opt command","opt")
  ,("LLVM clang command","clang")
- ,("bignum backend","native")
+ ,("bignum backend","gmp")
  ,("Use interpreter","YES")
  ,("Support SMP","YES")
  ,("RTS ways","l debug thr thr_debug thr_l thr_p  thr_debug_p debug_p")
