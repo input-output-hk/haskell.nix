@@ -15,6 +15,7 @@
 , withHoogle ? true
 , withHaddock ? withHoogle
 , exactDeps ? false
+, allToolDeps ? !exactDeps
 , tools ? {}
 , packageSetupDeps ? true
 , enableDWARF ? false
@@ -110,7 +111,7 @@ let
     (uniqueWithName (lib.concatMap (c: c.executableToolDepends)
       # When not using `exactDeps` cabal may try to build arbitrary dependencies
       # so in this case we need to provide the build tools for all of hsPkgs:
-      (if exactDeps then selectedComponents else allHsPkgsComponents)));
+      (if exactDeps || !allToolDeps then selectedComponents else allHsPkgsComponents)));
 
   # Set up a "dummy" component to use with ghcForComponent.
   component = {
