@@ -471,16 +471,15 @@ stdenv.mkDerivation (rec {
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 1
     fi
-    ${ lib.optionalString (!useHadrian) ''
-    if [[ ! -d "$out/lib/${targetPrefix}ghc-${version}" ]]; then
+    if [[ ! -d "$out/${rootDir}lib/package.conf.d" ]]; then
       echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
       exit 1
     fi
-    if (( $(ls -1 "$out/lib/${targetPrefix}ghc-${version}" | wc -l) < 30 )); then
+    if (( $(ls -1 "$out/${rootDir}lib/package.conf.d" | wc -l) < 30 )); then
       echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
       exit 1
     fi
-    ''}'';
+    '';
 
   passthru = {
     inherit bootPkgs targetPrefix libDir;
