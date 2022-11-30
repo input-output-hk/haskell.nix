@@ -240,7 +240,7 @@ final: prev: {
         dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
             let
               # we have this snippet already somewhere else, maybe we need to find a place (and meaning) to it
-              # NOTE: root-keys: aaa is because key-threshold: 0 does seem to be enough by itself
+              # NOTE: root-keys: aaa is because key-threshold: 0 does not seem to be enough by itself
               bootstrapRepo = name: index: final.runCommand "cabal-bootstrap-repo-${name}" {
                 nativeBuildInputs = [ cabal-install ] ++ cabal-issue-8352-workaround;
               } ''
