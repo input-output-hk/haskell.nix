@@ -35,7 +35,7 @@ main :: IO ()
 main = do
   args <- getArgs
   case commandParseArgs cmdUI True args of
-    CommandHelp help -> putStrLn (help "something")
+    CommandHelp help -> putStrLn (help "make-install-plan")
     CommandList opts -> putStrLn $ "commandList" ++ show opts
     CommandErrors errs -> putStrLn $ "commandErrors: " ++ show errs
     CommandReadyToGo (mkflags, _commandParse) ->
@@ -57,16 +57,12 @@ cmdUI =
       commandOptions = nixStyleOptions (const [])
     }
 
+-- The following is adapted from cabal-install's Distribution.Client.CmdFreeze
 installPlanAction :: Verbosity -> ProjectConfig -> IO ()
 installPlanAction verbosity cliConfig = do
   ProjectBaseContext {distDirLayout, cabalDirLayout, projectConfig, localPackages} <-
     establishProjectBaseContext verbosity cliConfig OtherCommand
 
-  -- Two variants of the install plan are returned: with and without
-  -- packages from the store. That is, the "improved" plan where source
-  -- packages are replaced by pre-existing installed packages from the
-  -- store (when their ids match), and also the original elaborated plan
-  -- which uses primarily source packages.
   (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, _tis, _at) <-
     rebuildInstallPlan verbosity distDirLayout cabalDirLayout projectConfig localPackages
 

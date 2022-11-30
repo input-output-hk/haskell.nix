@@ -293,7 +293,10 @@ final: prev: {
                   mkdir -p $out/packages/${name}
                   lndir ${repo} $out/packages/${name}
                 '') extra-hackage-repos)}
-                # Write cabal default config
+                # the CABAL_DIR we are producing is going to be complete and immutable
+                # (it is going to be located in the nix store). We write a
+                # default cabal config file now so that cabal does not try
+                # to write one later on.
                 CABAL_DIR=$out cabal user-config init
               '';
 
