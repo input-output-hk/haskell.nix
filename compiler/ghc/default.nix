@@ -246,10 +246,7 @@ stdenv.mkDerivation (rec {
         # GHC is a bit confused on its cross terminology, as these would normally be
         # the *host* tools.
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
-        ${
-          if builtins.compareVersions ghc-version "9.4" < 0
-            then ''export CXX="${targetCC}/bin/${targetCC.targetPrefix}cxx"''
-            else ''export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"''}
+        export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
         # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
         export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
