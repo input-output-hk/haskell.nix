@@ -600,7 +600,7 @@ stdenv.mkDerivation (rec {
         cp -r _build/stage1/share $doc
         runHook postInstall
       ''
-      # there appears to be a bug in GHCs configure script not properly passing dllwrap, and winders to the
+      # there appears to be a bug in GHCs configure script not properly passing dllwrap, and windres to the
       # generated settings file. Hence we patch it back in here.
       + lib.optionalString (targetPlatform.isWindows) ''
         substituteInPlace $out/lib/settings \
