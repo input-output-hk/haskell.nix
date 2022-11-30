@@ -273,31 +273,37 @@ final: prev: {
                     };
                   };
 
-              # All 01-index.tar.gz index tarballs, including hackage itself
-              index-tarballs = hackage-tarball // extra-hackage-tarballs;
-              # All repositories bootstrapped from the single tarball
-              bootstrapped-index-tarballs = final.lib.mapAttrs bootstrapRepo index-tarballs;
+              bootstrapped-hackage-tarball = final.lib.mapAttrs bootstrapRepo hackage-tarball;
+              # All extra repositories bootstrapped from a single tarball
+              bootstrapped-extra-hackage-tarballs = final.lib.mapAttrs bootstrapRepo extra-hackage-tarballs;
               # NOTE: extra-hackage-repos are already bootstrapped
             in
               # Add the extra-hackage-repos where we have all the files needed.
               final.runCommand "dot-cabal" {
                 nativeBuildInputs = [ cabal-install final.xorg.lndir ] ++ cabal-issue-8352-workaround;
               } ''
-                # bootstrapped-index-tarballs
+                # hackage-tarball
                 ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
                   mkdir -p $out/packages/${name}
                   lndir ${repo} $out/packages/${name}
-                '') bootstrapped-index-tarballs)}
+                '') bootstrapped-hackage-tarball)}
+                # bootstrapped-extra-hackage-tarballs
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  mkdir -p $out/packages/${name}
+                  lndir ${repo} $out/packages/${name}
+                '') bootstrapped-extra-hackage-tarballs)}
                 # extra-hackage-repos
                 ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
                   mkdir -p $out/packages/${name}
                   lndir ${repo} $out/packages/${name}
                 '') extra-hackage-repos)}
-                # the CABAL_DIR we are producing is going to be complete and immutable
-                # (it is going to be located in the nix store). We write a
-                # default cabal config file now so that cabal does not try
-                # to write one later on.
-                CABAL_DIR=$out cabal user-config init
+                cat >$out/config <<EOF
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  repository ${name}
+                    url: file:${repo}
+                    secure: True
+                '') bootstrapped-extra-hackage-tarballs)}
+                EOF
               '';
 
         # Some of features of haskell.nix rely on using a hackage index
