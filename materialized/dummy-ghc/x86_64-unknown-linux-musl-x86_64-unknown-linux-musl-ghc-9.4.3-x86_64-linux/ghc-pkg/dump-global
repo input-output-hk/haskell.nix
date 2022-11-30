@@ -1770,6 +1770,43 @@ haddock-interfaces:
 haddock-html:
     ${pkgroot}/../../doc/html/libraries/template-haskell-2.19.0.0
 ---
+name:                 terminfo
+version:              0.4.1.5
+visibility:           public
+id:                   terminfo-0.4.1.5
+key:                  terminfo-0.4.1.5
+license:              BSD-3-Clause
+copyright:            (c) Judah Jacobson
+maintainer:           Judah Jacobson <judah.jacobson@gmail.com>
+author:               Judah Jacobson
+stability:            Stable
+homepage:             https://github.com/judah/terminfo
+synopsis:             Haskell bindings to the terminfo library.
+description:
+    This library provides an interface to the terminfo database (via bindings to the
+    curses library).  <http://en.wikipedia.org/wiki/Terminfo Terminfo> allows POSIX
+    systems to interact with a variety of terminals using a standard set of capabilities.
+category:             User Interfaces
+exposed:              True
+exposed-modules:
+    System.Console.Terminfo System.Console.Terminfo.Base
+    System.Console.Terminfo.Color System.Console.Terminfo.Cursor
+    System.Console.Terminfo.Edit System.Console.Terminfo.Effects
+    System.Console.Terminfo.Keys
+import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.3/terminfo-0.4.1.5
+library-dirs:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.3/terminfo-0.4.1.5
+dynamic-library-dirs:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.3
+data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.3/terminfo-0.4.1.5
+hs-libraries:         HSterminfo-0.4.1.5
+extra-libraries:      tinfo
+include-dirs:
+depends:              base-4.17.0.0
+haddock-interfaces:
+    ${pkgroot}/../../doc/html/libraries/terminfo-0.4.1.5/terminfo.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/terminfo-0.4.1.5
+---
 name:                 text
 version:              2.0.1
 visibility:           public

@@ -93,7 +93,7 @@ let
       then "windows"
       else if final.stdenv.hostPlatform.isGhcjs
         then "ghcjs"
-        else if final.haskell-nix.haskellLib.isCrossHost || (final.stdenv.hostPlatform.isMusl && builtins.compareVersions ghc.version "9.4.1" >= 0)
+        else if final.haskell-nix.haskellLib.isCrossHost
           then "cross"
           else "default";
 

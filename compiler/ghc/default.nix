@@ -597,6 +597,8 @@ stdenv.mkDerivation (rec {
 } // lib.optionalAttrs useHadrian {
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
+  '' + lib.optionalString targetPlatform.isMusl ''
+    ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '';
 
   # Hadrian's installation only works for native compilers, and is broken for cross compilers.
