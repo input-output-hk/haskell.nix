@@ -110,7 +110,10 @@ let
   nativeBuildInputs = removeSelectedInputs
     (uniqueWithName (lib.concatMap (c: c.executableToolDepends)
       # When not using `exactDeps` cabal may try to build arbitrary dependencies
-      # so in this case we need to provide the build tools for all of hsPkgs:
+      # so in this case we need to provide the build tools for all of `hsPkgs`.
+      # In some cases those tools may be unwanted or broken so the `allToolDeps`
+      # flag can be set to `false` to disable this (stack projects default `allToolDeps`
+      # to `false` as `hsPkgs` for them includes all of stackage):
       (if exactDeps || !allToolDeps then selectedComponents else allHsPkgsComponents)));
 
   # Set up a "dummy" component to use with ghcForComponent.
