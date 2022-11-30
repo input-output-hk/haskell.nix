@@ -190,6 +190,8 @@ let
   targetCC = builtins.head toolsForTarget;
 
   useHadrian = builtins.compareVersions ghc-version "9.4" >= 0;
+  # Indicates if we are installing by copying the hadrian stage1 output
+  installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl);
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
@@ -209,12 +211,14 @@ let
           + lib.optionalString useLLVM "+llvm"
       } --docs=no-sphinx -j -V";
 
+  # When installation is done by copying the stage1 output the directory layout
+  # is different.
   rootDir =
-    if (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl) && useHadrian
+    if installStage1
       then ""
       else "lib/${targetPrefix}ghc-${ghc-version}/";
   libDir =
-    if (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl) && useHadrian
+    if installStage1
       then "lib"
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
 
@@ -389,77 +393,79 @@ stdenv.mkDerivation (rec {
         $i
     done
 
-    ${ if useHadrian
-    then
-      # Save generated files for needed when building ghc and ghcjs
-      ''
-        mkdir -p $generated/includes
-        if [[ -f _build/stage1/lib/ghcplatform.h ]]; then
-          cp _build/stage1/lib/ghcplatform.h $generated/includes
-        fi
-        if [[ -f _build/stage1/compiler/build/GHC/PlatformConstants.hs ]]; then
-          mkdir -p $generated/compiler/stage2/build/GHC/Platform
-          cp _build/stage1/compiler/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
-        fi
-        mkdir -p $generated/compiler/stage2/build
-        if [[ -f _build/stage1/compiler/build/GHC/Settings/Config.hs ]]; then
-          mkdir -p $generated/compiler/stage2/build/GHC/Settings
-          cp _build/stage1/compiler/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
-        fi
-        cp _build/stage1/compiler/build/*.hs-incl $generated/compiler/stage2/build || true
-      ''
-      # Save generated files for needed when building ghc-boot
-      + ''
-        mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
-        if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Version.hss ]]; then
-          cp _build/stage1/libraries/ghc-boot/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
-        fi
-        if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs ]]; then
-          cp _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
-        fi
-      ''
-      # Convert ${pkgroot} relative paths to /nix/store paths
-      + ''
-        for f in "$out/${rootDir}lib/package.conf.d/"*.conf; do
-          sed -i -e "s|\''${pkgroot}/../lib/|$out/${rootDir}lib/|" \
-                 -e "s|\''${pkgroot}/../share/|$out/${rootDir}share/|" \
-                 -e "s|\''${pkgroot}/../../../share/doc/|$doc/share/doc/|" $f
-        done
-      ''
-    else
-      ''
-        # Save generated files for needed when building ghc and ghcjs
-        mkdir -p $generated/includes/dist-derivedconstants/header
-        cp includes/dist-derivedconstants/header/GHCConstantsHaskell*.hs \
-           $generated/includes/dist-derivedconstants/header
-        if [[ -f includes/ghcplatform.h ]]; then
-          cp includes/ghcplatform.h $generated/includes
-        elif [[ -f includes/dist-install/build/ghcplatform.h ]]; then
-          cp includes/dist-install/build/ghcplatform.h $generated/includes
-        fi
-        mkdir -p $generated/compiler/stage2/build
-        cp compiler/stage2/build/Config.hs $generated/compiler/stage2/build || true
-        if [[ -f compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
-          mkdir -p $generated/compiler/stage2/build/GHC/Platform
-          cp compiler/stage2/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
-        fi
-        if [[ -f compiler/stage2/build/GHC/Settings/Config.hs ]]; then
-          mkdir -p $generated/compiler/stage2/build/GHC/Settings
-          cp compiler/stage2/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
-        fi
-        cp compiler/stage2/build/*.hs-incl $generated/compiler/stage2/build || true
-        mkdir -p $generated/rts/build
-        cp rts/build/config.hs-incl $generated/rts/build || true
+    ${
+      # Save generated files for needed when building ghc and ghcjs.
+      # These files are needed to build the stand alone ghcjs package.
+      if useHadrian
+        then
+          ''
+            mkdir -p $generated/includes
+            if [[ -f _build/stage1/lib/ghcplatform.h ]]; then
+              cp _build/stage1/lib/ghcplatform.h $generated/includes
+            fi
+            if [[ -f _build/stage1/compiler/build/GHC/PlatformConstants.hs ]]; then
+              mkdir -p $generated/compiler/stage2/build/GHC/Platform
+              cp _build/stage1/compiler/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
+            fi
+            mkdir -p $generated/compiler/stage2/build
+            if [[ -f _build/stage1/compiler/build/GHC/Settings/Config.hs ]]; then
+              mkdir -p $generated/compiler/stage2/build/GHC/Settings
+              cp _build/stage1/compiler/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
+            fi
+            cp _build/stage1/compiler/build/*.hs-incl $generated/compiler/stage2/build || true
+          ''
+          # Save generated files for needed when building ghc-boot
+          + ''
+            mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
+            if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Version.hss ]]; then
+              cp _build/stage1/libraries/ghc-boot/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
+            fi
+            if [[ -f _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs ]]; then
+              cp _build/stage1/libraries/ghc-boot/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
+            fi
+          ''
+          # Convert ${pkgroot} relative paths to /nix/store paths
+          + ''
+            for f in "$out/${rootDir}lib/package.conf.d/"*.conf; do
+              sed -i -e "s|\''${pkgroot}/../lib/|$out/${rootDir}lib/|" \
+                     -e "s|\''${pkgroot}/../share/|$out/${rootDir}share/|" \
+                     -e "s|\''${pkgroot}/../../../share/doc/|$doc/share/doc/|" $f
+            done
+          ''
+        else
+          ''
+            mkdir -p $generated/includes/dist-derivedconstants/header
+            cp includes/dist-derivedconstants/header/GHCConstantsHaskell*.hs \
+               $generated/includes/dist-derivedconstants/header
+            if [[ -f includes/ghcplatform.h ]]; then
+              cp includes/ghcplatform.h $generated/includes
+            elif [[ -f includes/dist-install/build/ghcplatform.h ]]; then
+              cp includes/dist-install/build/ghcplatform.h $generated/includes
+            fi
+            mkdir -p $generated/compiler/stage2/build
+            cp compiler/stage2/build/Config.hs $generated/compiler/stage2/build || true
+            if [[ -f compiler/stage2/build/GHC/Platform/Constants.hs ]]; then
+              mkdir -p $generated/compiler/stage2/build/GHC/Platform
+              cp compiler/stage2/build/GHC/Platform/Constants.hs $generated/compiler/stage2/build/GHC/Platform
+            fi
+            if [[ -f compiler/stage2/build/GHC/Settings/Config.hs ]]; then
+              mkdir -p $generated/compiler/stage2/build/GHC/Settings
+              cp compiler/stage2/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
+            fi
+            cp compiler/stage2/build/*.hs-incl $generated/compiler/stage2/build || true
+            mkdir -p $generated/rts/build
+            cp rts/build/config.hs-incl $generated/rts/build || true
 
-        # Save generated files for needed when building ghc-boot
-        mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
-        if [[ -f libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
-          cp libraries/ghc-boot/dist-install/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
-        fi
-        if [[ -f libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
-          cp libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
-        fi
-    ''}
+            # Save generated files for needed when building ghc-boot
+            mkdir -p $generated/libraries/ghc-boot/dist-install/build/GHC/Platform
+            if [[ -f libraries/ghc-boot/dist-install/build/GHC/Version.hs ]]; then
+              cp libraries/ghc-boot/dist-install/build/GHC/Version.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Version.hs
+            fi
+            if [[ -f libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs ]]; then
+              cp libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs $generated/libraries/ghc-boot/dist-install/build/GHC/Platform/Host.hs
+            fi
+        ''
+    }
     ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
@@ -592,7 +598,7 @@ stdenv.mkDerivation (rec {
   # stage1/{bin, lib, share} into the destination as the copy phase.
   
   installPhase =
-    if haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl
+    if installStage1
       then ''
         mkdir $out
         cp -r _build/stage1/bin $out
