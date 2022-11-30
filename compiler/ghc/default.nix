@@ -205,11 +205,13 @@ let
       };
     }).hsPkgs.hadrian.components.exes) hadrian;
 
+  # For a discription of hadrian command line args
+  # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
   hadrianArgs = "--flavour=${
         "default"
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
-      } --docs=no-sphinx -j -V";
+      } --docs=no-sphinx -j --verbose";
 
   # When installation is done by copying the stage1 output the directory layout
   # is different.
