@@ -399,8 +399,9 @@ stdenv.mkDerivation (rec {
     done
 
     ${
-      # Save generated files for needed when building ghc and ghcjs.
-      # These files are needed to build the stand alone ghcjs package.
+      # Save generated files needed when building:
+      # * The reinstallable `ghc` package (see overlays/ghc-packages.nix)
+      # * The `ghcjs` package (see lib/ghcjs-project.nix).
       if useHadrian
         then
           ''
