@@ -225,6 +225,10 @@ let
     if installStage1
       then "lib"
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
+  packageConfDir =
+    if installStage1
+      then "lib/package.conf.d"
+      else "lib/${targetPrefix}ghc-${ghc-version}/package.conf.d";
 
 in
 stdenv.mkDerivation (rec {
@@ -430,7 +434,7 @@ stdenv.mkDerivation (rec {
           ''
           # Convert ${pkgroot} relative paths to /nix/store paths
           + ''
-            for f in "$out/${rootDir}lib/package.conf.d/"*.conf; do
+            for f in "$out/${packageConfDir}/"*.conf; do
               sed -i -e "s|\''${pkgroot}/../lib/|$out/${rootDir}lib/|" \
                      -e "s|\''${pkgroot}/../share/|$out/${rootDir}share/|" \
                      -e "s|\''${pkgroot}/../../../share/doc/|$doc/share/doc/|" $f
@@ -481,12 +485,12 @@ stdenv.mkDerivation (rec {
       echo "ERROR: Missing file $out/bin/${targetPrefix}ghc-pkg"
       exit 1
     fi
-    if [[ ! -d "$out/${rootDir}lib/package.conf.d" ]]; then
-      echo "ERROR: Missing directory $out/lib/${targetPrefix}ghc-${version}"
+    if [[ ! -d "$out/${packageConfDir}" ]]; then
+      echo "ERROR: Missing directory $out/${packageConfDir}"
       exit 1
     fi
-    if (( $(ls -1 "$out/${rootDir}lib/package.conf.d" | wc -l) < 30 )); then
-      echo "ERROR: Expected more files in $out/lib/${targetPrefix}ghc-${version}"
+    if (( $(ls -1 "$out/${packageConfDir}" | wc -l) < 30 )); then
+      echo "ERROR: Expected more files in $out/${packageConfDir}"
       exit 1
     fi
     '';
