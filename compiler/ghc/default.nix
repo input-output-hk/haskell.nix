@@ -207,6 +207,8 @@ let
 
   # For a discription of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
+  # For build flavours and flavour transformers
+  # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
   hadrianArgs = "--flavour=${
         "default"
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
