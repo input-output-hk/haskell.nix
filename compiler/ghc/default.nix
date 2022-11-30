@@ -225,10 +225,7 @@ let
     if installStage1
       then "lib"
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
-  packageConfDir =
-    if installStage1
-      then "lib/package.conf.d"
-      else "lib/${targetPrefix}ghc-${ghc-version}/package.conf.d";
+  packageConfDir = "${libDir}/package.conf.d";
 
 in
 stdenv.mkDerivation (rec {
