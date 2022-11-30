@@ -585,6 +585,11 @@ stdenv.mkDerivation (rec {
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
   '';
+
+  # Hadrian's installation only works for native compilers, and is broken for cross compilers.
+  # However Hadrian produces mostly relocatable installs anyway, so we can simply copy 
+  # stage1/{bin, lib, share} into the destination as the copy phase.
+  
   installPhase =
     if haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl
       then ''
