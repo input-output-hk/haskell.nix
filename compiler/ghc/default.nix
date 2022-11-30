@@ -599,7 +599,10 @@ stdenv.mkDerivation (rec {
         mkdir $doc
         cp -r _build/stage1/share $doc
         runHook postInstall
-      '' + lib.optionalString (targetPlatform.isWindows) ''
+      ''
+      # there appears to be a bug in GHCs configure script not properly passing dllwrap, and winders to the
+      # generated settings file. Hence we patch it back in here.
+      + lib.optionalString (targetPlatform.isWindows) ''
         substituteInPlace $out/lib/settings \
           --replace ',("dllwrap command", "/bin/false")' ',("dllwrap command", "${targetCC.bintools.targetPrefix}dllwrap")' \
           --replace ',("windres command", "/bin/false")' ',("windres command", "${targetCC.bintools.targetPrefix}windres")'
