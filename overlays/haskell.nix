@@ -314,7 +314,7 @@ final: prev: {
               #
               # Let's examine how we deal with these repositories.
               #
-              # - hackage: Hackage index tarball is downloaded and truncated from hackage.haskel.org.
+              # - hackage: Hackage index tarball is downloaded and truncated from hackage.haskell.org.
               #   Since this is only the tarball, we need to add the TUF files and we need to bootstrap
               #   it (both part of bootstrapIndexTarball called above). Additionally, cabal will always
               #   include hackage when creating a default global configuration, so we need to add it to
