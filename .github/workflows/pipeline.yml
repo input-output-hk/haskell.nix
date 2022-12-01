@@ -406,3 +406,9 @@ jobs:
             substituters = https://hydra.iohk.io https://cache.nixos.org/
       - name: "nix-tools build"
         run: cd ./nix-tools && .buildkite/nix-tools-build.sh
+
+  all-tests: # quick hack because bors wrongly detect matrix jobs status ...
+    needs: [ nix-build, unit-tests, runghc, cabal, cabal-doExactConfig, tests-benchmarks, multi-target, shellFor-single-package, shellFor-multiple-package, shellFor-hoogle, shellFor-not-depends, maintainer-scripts, plan-extra-hackages, build-extra-hackages, hix, docs, hydra-ifdLevel-0-and-1, hydra-ifdLevel-2, hydra-ifdLevel-3-and-ghc-8-10, hydra-ifdLevel-3-and-ghc-9-2, hydra-ifdLevel-3-and-not-ghc-8-10-or-9-2, closure-size, update-docs, check-materialization-concurrency, check-path-support, haskell-nix-roots-do-not-require-IFDs, hydra-without-remote-builders, hix-cabal, nix-tools-build ]
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0
