@@ -106,10 +106,10 @@ packageLocation2Src pkgSrcLoc pkgSrcHash = case pkgSrcLoc of
   LocalUnpackedPackage path -> Cabal2Nix.Path path
   LocalTarballPackage path -> Cabal2Nix.Path path
   RemoteTarballPackage uri _local -> Cabal2Nix.Repo (show uri) mSrcHash
-  RepoTarballPackage repo packageId _local -> case repo of
+  RepoTarballPackage repo _packageId _local -> case repo of
     (RepoLocalNoIndex lr _local) -> Cabal2Nix.Path (localRepoPath lr)
-    (RepoRemote rr _local) -> Cabal2Nix.Repo (show (remoteRepoURI rr) </> "package" </> prettyShow packageId) mSrcHash
-    (RepoSecure rr _local) -> Cabal2Nix.Repo (show (remoteRepoURI rr) </> "package" </> prettyShow packageId) mSrcHash
+    (RepoRemote rr _local) -> Cabal2Nix.Repo (show $ remoteRepoURI rr) mSrcHash
+    (RepoSecure rr _local) -> Cabal2Nix.Repo (show $ remoteRepoURI rr) mSrcHash
   RemoteSourceRepoPackage sourceRepoMaybe _local -> case sourceRepoMaybe of
     (SourceRepositoryPackage (KnownRepoType Git) location (Just tag) branch subdir []) ->
       Cabal2Nix.Git location tag branch subdir
