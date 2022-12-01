@@ -1,60 +1,41 @@
-self: system:
 let
   ciInputName = "GitHub event";
-in rec {
-  tasks = let
-    inherit (self.inputs.tullia) flakeOutputTasks taskSequence;
+  repository = "input-output-hk/haskell.nix";
+in {
+  tasks.ci = {config, lib, ...}: {
+    preset = {
+      nix.enable = true;
 
-    common = {
-      config,
-      ...
-    }: {
-      preset = {
-        # needed on top-level task to set runtime options
-        nix.enable = true;
-
-        github-ci = {
-          enable = config.actionRun.facts != {};
-          repo = "input-output-hk/haskell.nix";
-          sha = config.preset.github-ci.lib.getRevision ciInputName null;
-        };
+      github.ci = {
+        enable = config.actionRun.facts != {};
+        inherit repository;
+        revision = config.preset.github.lib.readRevision ciInputName null;
       };
     };
 
-    mkHydraJobTask = flakeOutputTask: {...}: {
-      imports = [common flakeOutputTask];
-
-      memory = 1024 * 8;
-      nomad.resources.cpu = 10000;
-    };
-    mkHydraJobTasks = __mapAttrs (_: mkHydraJobTask);
-
-    hydraJobTasks = mkHydraJobTasks (flakeOutputTasks ["ciJobs" system] self);
-
-    ciTasks = taskSequence "ci/" hydraJobTasks (__attrNames hydraJobTasks);
-  in
-    ciTasks // {
-      "ci" = {lib, ...}: {
-        imports = [common];
-        after = __attrNames ciTasks;
-      };
+    command.text = config.preset.github.status.lib.reportBulk {
+      bulk.text = "nix eval .#ciJobs --apply __attrNames --json | nix-systems -i";
+      each.text = ''nix build -L .#ciJobs."$1".required'';
+      skippedDescription = lib.escapeShellArg "No nix builder available for this system";
     };
 
-  actions = {
-    "haskell.nix/ci" = {
-      task = "ci";
-      io = ''
-        let github = {
-          #input: "${ciInputName}"
-          #repo: "input-output-hk/haskell.nix"
-        }
-        
-        #lib.merge
-        #ios: [
-          #lib.io.github_push & github,
-          #lib.io.github_pr   & github,
-        ]
-      '';
-    };
+    memory = 1024 * 8;
+    nomad.resources.cpu = 10000;
+  };
+
+  actions."haskell.nix/ci" = {
+    task = "ci";
+    io = ''
+      let github = {
+        #input: "${ciInputName}"
+        #repo: "${repository}"
+      }
+      
+      #lib.merge
+      #ios: [
+        #lib.io.github_push & github,
+        #lib.io.github_pr   & github,
+      ]
+    '';
   };
 }
