@@ -298,6 +298,8 @@ final: prev: {
                   lndir ${repo} $out/packages/${name}
                 '') extra-hackage-repos)}
                 cat >$out/config <<EOF
+                repository hackage.haskell.org
+                  url: http://hackage.haskell.org/
                 ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
                   repository ${name}
                     url: file:${repo}
