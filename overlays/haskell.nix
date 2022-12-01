@@ -279,7 +279,7 @@ final: prev: {
               #
               # NOTE: both steps need to be completed exactly as cabal would complete them. We won't
               # be able to alter CABAL_DIR at all after this since it will be stored in the nix store.
-              # If these steps are not done properly, few things could go wrong. Here are some examples:
+              # If these steps are not done properly, few things could go wrong, e.g.:
               #
               # - if cabal.config is missing cabal will try to write a default configuration file and
               #   fail with "Permission denied"
@@ -288,11 +288,11 @@ final: prev: {
               # - cabal will try to recreate 01-index.cache on the nix store and fail with "Permission
               #   denied"
               #
-              # Let's examine them one by one.
+              # Let's examine the steps above one by one.
               #
-              # Step 1) is typically the result of `cabal update`. Because Haskell.nix supports
-              # different ways of including extra repositories, we need to divide this step into
-              # two other steps.
+              # Step 1) is typically the result of calling `cabal update`. Because Haskell.nix supports
+              # different ways of including extra repositories, we need to divide this step into two
+              # other steps.
               #
               # 1a) Download the index tarball (01-index.tar.gz) and the TUF matadata (mirrors.json,
               #     root.json, snapshot.json, timestamp.json)
@@ -304,13 +304,15 @@ final: prev: {
               # - extra-hackage-repos
               # - extra-hackage-tarballs
               #
-              # This is always in addititon to hackage, which is always prepopulated.
+              # These repositories are in addititon to hackage, which is always prepopulated.
               #
               # NOTE: this might not be 100% correct since cabal can work without hackage being defined
               # in the global configuration at all. As a workaround, a project that does not want to use
               # hackage can use an explicit `active-repositories:` in the project configuration.
               # Haskell.nix will prepopulate hackage in CABAL_DIR but then cabal will not use it for
               # project planning.
+              #
+              # Let's examine how we deal with these repositories.
               #
               # - hackage: Hackage index tarball is downloaded and truncated from hackage.haskel.org.
               #   Since this is only the tarball, we need to add the TUF files and we need to bootstrap
@@ -336,7 +338,8 @@ final: prev: {
               # extra-hackage-tarballs | yes       | yes             | yes               |
               # -----------------------+-----------+-----------------+-------------------+
               #
-              # Step 2) is writing the global cabal config. This is a simple step but there is one trick
+              # Step 2) is writing the global cabal config. cabal writes a default global configuration
+              # file at any invocation if it is missing. This is a simple step but there is one trick
               # we need to be aware and careful about. cabal populates CABAL_DIR with repositories obtained
               # from somewhere (the repository's url). What we are doing here is prepopulating CABAL_DIR
               # for cabal, we do not want to change where cabal thinks a repository is coming from.
