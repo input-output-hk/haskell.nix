@@ -19,7 +19,7 @@ in {
       skippedDescription = lib.escapeShellArg "No nix builder available for this system";
     };
 
-    memory = 1024 * 8;
+    memory = 1024 * 32;
     nomad.resources.cpu = 10000;
   };
 
