@@ -14,7 +14,11 @@ in {
     };
 
     command.text = config.preset.github.status.lib.reportBulk {
-      bulk.text = "nix eval .#ciJobs --apply __attrNames --json | nix-systems -i";
+      bulk.text = ''
+        nix eval .#ciJobs --apply __attrNames --json |
+        nix-systems -i |
+        jq 'with_entries(select(.value))' # filter out systems that we cannot build for
+      '';
       each.text = ''nix build -L .#ciJobs."$1".required'';
       skippedDescription = lib.escapeShellArg "No nix builder available for this system";
     };
