@@ -618,9 +618,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc922; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.stdenv.buildPlatform.config == final.stdenv.targetPlatform.config
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107
-                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc922;
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx installDeps;
 
