@@ -171,6 +171,10 @@
               ) (names allJobs));
         in {
           latest = allJobs.unstable.ghc8107.native or {};
+          required = legacyPackages.releaseTools.aggregate {
+            name = "required for CI";
+            constituents = builtins.attrValues requiredJobs;
+          };
         } // requiredJobs;
 
       hydraJobs = ciJobs;
@@ -200,7 +204,7 @@
             "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
             "ghc901"
             "ghc921" "ghc922" "ghc923"]);
-    } // tullia.fromSimple system (import ./tullia.nix self system));
+    } // tullia.fromSimple system (import ./tullia.nix));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
