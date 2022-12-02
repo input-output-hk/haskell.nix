@@ -3,49 +3,41 @@ on: workflow_dispatch
 jobs:
   tests:
     runs-on: windows-latest
-
     defaults:
       run:
         shell: bash
-
     steps:
-
-    - uses: haskell/actions/setup@v1
-      id: setup-haskell
-      with:
-        ghc-version: 8.10.7
-        cabal-version: 3.6.2.0
-     
-    - name: Install pkgconfiglite
-      run: choco install -y pkgconfiglite
-
-    - name: Install libsecp256k1
-      run: |
-        curl -Ls \
-          --connect-timeout 5 \
-          --max-time 10 \
-          --retry 5 \
-          --retry-delay 0 \
-          --retry-max-time 40 \
-          https://hydra.iohk.io/job/Cardano/haskell-nix/windows-secp256k1/latest/download/1 -o secp256k1.zip
-        mkdir secp256k1
-        cd secp256k1
-        unzip ../secp256k1.zip
-        cd ..
-        export PKG_CONFIG_PATH="$PKG_CONFIG_PATH;$(readlink -f secp256k1/lib/pkgconfig | sed 's|^/d|D:|g' | tr / '\\')"
-        echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-        echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> $GITHUB_ENV
-        export SECP256K1_PATH="$(readlink -f secp256k1/bin | sed 's|^/d|D:|g' | tr / '\\')"
-        echo "SECP256K1_PATH=$SECP256K1_PATH"
-        echo "$SECP256K1_PATH" >> $GITHUB_PATH
-
-    - name: Cabal update
-      run: cabal update
-
-    - name: Build and run haskell-secp256k1 tests
-      run: |
-        cabal unpack secp256k1-haskell
-        cd secp256k1-haskell-*
-        cabal build --enable-tests
-        cabal test
-
+      - uses: haskell/actions/setup@v1
+        id: setup-haskell
+        with:
+          ghc-version: 8.10.7
+          cabal-version: 3.6.2.0
+      - name: Install pkgconfiglite
+        run: choco install -y pkgconfiglite
+      - name: Install libsecp256k1
+        run: |
+          curl -Ls \
+            --connect-timeout 5 \
+            --max-time 10 \
+            --retry 5 \
+            --retry-delay 0 \
+            --retry-max-time 40 \
+            https://hydra.iohk.io/job/Cardano/haskell-nix/windows-secp256k1/latest/download/1 -o secp256k1.zip
+          mkdir secp256k1
+          cd secp256k1
+          unzip ../secp256k1.zip
+          cd ..
+          export PKG_CONFIG_PATH="$PKG_CONFIG_PATH;$(readlink -f secp256k1/lib/pkgconfig | sed 's|^/d|D:|g' | tr / '\\')"
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          export SECP256K1_PATH="$(readlink -f secp256k1/bin | sed 's|^/d|D:|g' | tr / '\\')"
+          echo "SECP256K1_PATH=$SECP256K1_PATH"
+          echo "$SECP256K1_PATH" >> $GITHUB_PATH
+      - name: Cabal update
+        run: cabal update
+      - name: Build and run haskell-secp256k1 tests
+        run: |
+          cabal unpack secp256k1-haskell
+          cd secp256k1-haskell-*
+          cabal build --enable-tests
+          cabal test
