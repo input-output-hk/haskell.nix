@@ -7,6 +7,7 @@
     nixpkgs-2105 = { url = "github:NixOS/nixpkgs/nixpkgs-21.05-darwin"; };
     nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
     nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
+    nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat"; flake = false; };
     flake-utils = { url = "github:numtide/flake-utils"; };
@@ -60,7 +61,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, flake-utils, tullia, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
     let compiler = "ghc925";
       config = import ./config.nix;
     in {
@@ -107,6 +108,8 @@
             pkgs-2111 = import nixpkgs-2111
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-2205 = import nixpkgs-2205
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2211 = import nixpkgs-2211
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable
               (nixpkgsArgs // { localSystem = { inherit system; }; });
