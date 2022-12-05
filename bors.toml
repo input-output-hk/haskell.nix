@@ -1,4 +1,4 @@
-status = [ "all-tests", "ci/hydra:Cardano:haskell-nix:required" ]
+status = [ "all-tests", "ci" ]
 timeout_sec = 7200
 required_approvals = 1
 block_labels = [ "WIP", "DO NOT MERGE" ]
