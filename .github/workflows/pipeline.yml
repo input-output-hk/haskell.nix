@@ -19,7 +19,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Running the nix-build tests..."
         run: "./test/tests.sh ghc8107 nix-build"
 
@@ -32,7 +32,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Running the unit tests..."
         run: "./test/tests.sh ghc8107 unit-tests"
 
@@ -45,7 +45,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking that a nix-shell works for runghc..."
         run: "./test/tests.sh ghc8107 runghc"
 
@@ -58,7 +58,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking that a nix-shell works for cabal..."
         run: "./test/tests.sh ghc8107 cabal"
 
@@ -71,7 +71,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking that a nix-shell works for cabal (doExactConfig component)..."
         run: "./test/tests.sh ghc8107 cabal-doExactConfig"
 
@@ -84,7 +84,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking that a nix-shell works for a project with test-suite build-tools and benchmarks..."
         run: "./test/tests.sh ghc8107 tests-benchmarks"
 
@@ -97,7 +97,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking that a nix-shell works for a multi-target project..."
         run: "./test/tests.sh ghc8107 multi-target"
 
@@ -110,7 +110,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking shellFor works for a cabal project, multiple packages..."
         run: "./test/tests.sh ghc8107 shellFor-single-package"
 
@@ -123,7 +123,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking shellFor works for a cabal project, single package...y"
         run: "./test/tests.sh ghc8107 shellFor-multiple-package"
 
@@ -136,7 +136,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking shellFor works for a cabal project, single package..."
         run: "./test/tests.sh ghc8107 shellFor-hoogle"
 
@@ -149,7 +149,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking shellFor does not depend on given packages...y"
         run: "./test/tests.sh ghc8107 shellFor-not-depends"
 
@@ -162,7 +162,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking the maintainer scripts...y"
         run: "./test/tests.sh ghc8107 maintainer-scripts"
 
@@ -175,7 +175,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking that plan construction works with extra Hackages..."
         run: "./test/tests.sh ghc8107 plan-extra-hackages"
 
@@ -188,7 +188,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: Checking that package with extra Hackages can be build..."
         run: "./test/tests.sh ghc8107 build-extra-hackages"
 
@@ -201,7 +201,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Run tests with ghc8107: End-2-end test of hix project initialization and flakes development shell ..."
         run: "./test/tests.sh ghc8107 hix"
 
@@ -214,7 +214,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Test examples in documentation ..."
         run: "./test/tests.sh ghc8107 docs"
 
@@ -227,7 +227,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 0 and 1"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -243,7 +243,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 2"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -258,7 +258,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 3 and ghc 8.10"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -273,7 +273,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 3 and ghc 9.2"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -288,7 +288,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check that jobset will evaluate in Hydra at ifdLevel 3 and not (ghc 8.10 or ghc 9.2)"
         run: |
           nix-build build.nix -A maintainer-scripts.check-hydra -o check-hydra.sh
@@ -303,7 +303,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check closure size with ghc8107"
         run: |
           nix-build build.nix -A maintainer-scripts.check-closure-size --argstr compiler-nix-name ghc8107 -o check-closure-size.sh
@@ -319,7 +319,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Update docs"
         run: |
           nix-build build.nix -A maintainer-scripts.update-docs -o update-docs.sh
@@ -334,7 +334,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Make sure materialize function does not limit concurrency"
         run: |
           nix-build build.nix -A maintainer-scripts.check-materialization-concurrency -o check-materialization-concurrency.sh
@@ -349,7 +349,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Make sure non store paths like can be used as src"
         run: |
           nix-build build.nix -A maintainer-scripts.check-path-support --argstr compiler-nix-name ghc8107 -o check-path-support.sh
@@ -364,7 +364,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check that the haskell.nix roots do not require IFDs"
         run: nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
 
@@ -377,7 +377,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check that evaluation of hydra jobs works without using remote builders"
         run: nix-instantiate release.nix -A x86_64-darwin.required-unstable-ghc8107-native --show-trace --builders ''
 
@@ -390,7 +390,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "Check hix -- run github:haskell/cabal/3.8#cabal-install:exe:cabal -- --version"
         run: "HIX_DIR=$(mktemp -d) nix run .#hix --accept-flake-config -- run github:haskell/cabal/3.8#cabal-install:exe:cabal --accept-flake-config --override-input haskellNix . -- --version"
 
@@ -403,6 +403,6 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://hydra.iohk.io https://cache.nixos.org/
+            substituters = https://cache.iog.io https://cache.nixos.org/
       - name: "nix-tools build"
         run: cd ./nix-tools && .buildkite/nix-tools-build.sh
