@@ -48,6 +48,8 @@ in { haskell-nix = prev.haskell-nix // {
   # Tools better known by their exe name.
   toolPackageName = {
     cabal = "cabal-install";
+    sos = "steeloverseer";
+    gen-hie = "implicit-hie";
   };
 
   # Packages that are better known by their package name.  We are not
@@ -55,6 +57,8 @@ in { haskell-nix = prev.haskell-nix // {
   # will have the same exe name.
   packageToolName = {
     cabal-install = "cabal";
+    steeloverseer = "sos";
+    implicit-hie = "gen-hie";
   };
 
   hackage-tool = projectModules:
