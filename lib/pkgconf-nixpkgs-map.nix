@@ -1310,8 +1310,6 @@ pkgs:
     "ddcutil" = [ "ddcutil" ];
     "dee-1.0" = [ "dee" ];
     "dee-icu-1.0" = [ "dee" ];
-    "libdigibyteconsensus" = [ "digibyte" ];
-#    "libdigibyteconsensus" = [ "digibyted" ];
     "basicobjects" = [ "ding-libs" ];
     "collection" = [ "ding-libs" ];
     "dhash" = [ "ding-libs" ];
