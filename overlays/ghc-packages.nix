@@ -57,11 +57,9 @@ let
 
   # The packages in GHC source and the locations of them
   ghc-extra-pkgs = ghcVersion: {
-      ghc          = "compiler";
       base         = "libraries/base";
       bytestring   = "libraries/bytestring";
       ghci         = "libraries/ghci";
-      ghc-boot     = "libraries/ghc-boot";
       ghc-heap     = "libraries/ghc-heap";
       ghc-prim     = "libraries/ghc-prim";
       hpc          = "libraries/hpc";
@@ -71,6 +69,9 @@ let
       iserv        = "utils/iserv";
       iserv-proxy  = "utils/iserv-proxy";
       Win32        = "libraries/Win32";
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
+      ghc          = "compiler";
+      ghc-boot     = "libraries/ghc-boot";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
       # Not sure why, but this is missing from older ghcjs versions
       remote-iserv = "utils/remote-iserv";
