@@ -57,11 +57,9 @@ let
 
   # The packages in GHC source and the locations of them
   ghc-extra-pkgs = ghcVersion: {
-      ghc          = "compiler";
       base         = "libraries/base";
       bytestring   = "libraries/bytestring";
       ghci         = "libraries/ghci";
-      ghc-boot     = "libraries/ghc-boot";
       ghc-heap     = "libraries/ghc-heap";
       ghc-prim     = "libraries/ghc-prim";
       hpc          = "libraries/hpc";
@@ -69,6 +67,9 @@ let
       libiserv     = "libraries/libiserv";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
+      ghc          = "compiler";
+      ghc-boot     = "libraries/ghc-boot";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.4" < 0) {
       # The version of `Win32` that comes with ghc 9.4 (2.12.0.0) is older
       # than the one in hackage.  Including it causes `cabal configure` to fail.

@@ -188,7 +188,7 @@ final: prev: {
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
         # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
-        hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools, ... }:
+        hackageTarball = { index-state, sha256, nix-tools, ... }:
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { "hackage.haskell.org-at-${at}" = final.fetchurl {

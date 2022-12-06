@@ -1168,12 +1168,14 @@ in {
             # building ghc itself (since GHC is a dependency
             # of the materialization check it would cause
             # infinite recursion).
-            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({pkgs, ...}: {
+            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
                 evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
-                inherit ghcOverride nix-tools cabal-install index-state;
+                inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
                 modules = [{ reinstallableLibGhc = false; }];
+                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args);
             alex = bootstrap.packages.alex-tool {};
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
