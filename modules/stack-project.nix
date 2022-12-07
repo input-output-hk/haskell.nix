@@ -91,4 +91,9 @@ with types;
       description = "Deprecated in favour of `compiler-nix-name`";
     };
   };
+  config = {
+    # For stack projects we normally do not want to include the tool dependencies
+    # of all the hsPkgs (all of stackage).
+    shell.allToolDeps = mkDefault false;
+  };
 }

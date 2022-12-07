@@ -18,6 +18,7 @@ let
     nix-env -f ${hixProject} ${args} "$@"
   '';
   hix = pkgs.writeScriptBin "hix" ''
+      #! /usr/bin/env bash
       cmd=$1
       shift
       case $cmd in

@@ -69,6 +69,18 @@ in [
     }
   )
 
+  # The latest version of stack (2.9.1) in hackage fails to build because the
+  # of version of rio-prettyprint (recently released 0.1.4.0) chosen by cabal.
+  # https://github.com/commercialhaskell/stack/issues/5963
+  ({config, lib, pkgs, ...}:
+    { _file = "haskell.nix/overlays/hackage-quirks.nix#stack"; } //
+    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.9.1" <= 0) {
+      cabalProjectLocal = ''
+        constraints: rio-prettyprint <0.1.4.0
+      '';
+    }
+  )
+
   # Map the following into modules that use `mkIf` to check the name of the
   # hackage package in a way that is lazy enought not to cause infinite recursion
   # issues.
