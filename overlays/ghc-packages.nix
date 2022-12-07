@@ -45,6 +45,8 @@ let
               # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
               # so it needs its own materialization.
               final.lib.optionalString final.targetPlatform.isAarch64 "-aarch64"
+              # GHCJS bytestring and libiserv versions differs
+              + final.lib.optionalString final.hostPlatform.isGhcjs "-ghcjs"
             }";
         } // final.lib.optionalAttrs unchecked {
           checkMaterialization = false;
@@ -193,7 +195,7 @@ in rec {
         (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq" ])) (ghc-extra-pkgs ghc.version));
       cabalProject = ''
         packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
-        allow-newer: iserv-proxy:bytestring, network:bytestring
+        allow-newer: iserv-proxy:bytestring, network:bytestring, iserv-proxy:containers
         -- need this for libiserv as it doesn't build against 3.0 yet.
         constraints: network < 3.0,
                      ghc +ghci,
