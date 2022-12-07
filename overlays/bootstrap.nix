@@ -42,10 +42,6 @@ let
         then {
             compilerNixName = "ghc883";
         }
-        else if final.targetPlatform.isAarch64
-        then {
-            compilerNixName = "ghc884";
-        }
         else {
             compilerNixName = "ghc844";
         };
@@ -410,7 +406,10 @@ in {
             ghc884 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc884; };
 
-                inherit bootPkgs sphinx installDeps;
+                bootPkgs = bootPkgs // final.lib.optionalAttrs (!final.buildPlatform.isAarch64 && final.targetPlatform.isAarch64) {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                };
+                inherit sphinx installDeps;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
