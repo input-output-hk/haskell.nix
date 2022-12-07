@@ -237,7 +237,7 @@ final: prev: {
           })
         ];
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }@args:
             let
               # NOTE: root-keys: aaa is because key-threshold: 0 does not seem to be enough by itself
               bootstrapIndexTarball = name: index: final.runCommand "cabal-bootstrap-index-tarball-${name}" {
@@ -263,8 +263,7 @@ final: prev: {
                   name = "01-index.tar.gz-at-${builtins.replaceStrings [ ":" ] [ "" ] index-state}";
                   url = "https://hackage.haskell.org/01-index.tar.gz";
                   downloadToTemp = true;
-                  postFetch =
-                    "${final.haskell-nix.internal-nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+                  postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
                   outputHashAlgo = "sha256";
                   outputHash = sha256;
                 });
