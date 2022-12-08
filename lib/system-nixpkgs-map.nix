@@ -20,6 +20,7 @@ in
 # -- linux
 { crypto = [ openssl ];
   "c++" = []; # no libc++
+  system-cxx-std-lib = [];
   "stdc++" = gcclibs;
   "stdc++-6" = gcclibs;
   gcc_s_seh-1 = gcclibs;

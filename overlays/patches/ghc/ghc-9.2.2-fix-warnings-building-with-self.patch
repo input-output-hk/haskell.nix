@@ -1,0 +1,86 @@
+Backport to 9.2.2
+From c41c478eb9003eaa9fc8081a0039652448124f5d Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Sat, 26 Mar 2022 19:58:13 -0400
+Subject: [PATCH] Fix a few new warnings when booting with GHC 9.2.2
+
+-Wuni-incomplete-patterns and apparent improvements in the pattern match
+checker surfaced these.
+---
+ compiler/GHC/Linker/Loader.hs   | 11 ++++++++---
+ hadrian/src/Rules/SourceDist.hs |  5 ++++-
+ utils/deriveConstants/Main.hs   |  2 +-
+ utils/genprimopcode/Main.hs     |  6 +++++-
+ 4 files changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/compiler/GHC/Linker/Loader.hs b/compiler/GHC/Linker/Loader.hs
+index 2c5e180b75..f71b07670c 100644
+--- a/compiler/GHC/Linker/Loader.hs
++++ b/compiler/GHC/Linker/Loader.hs
+@@ -587,12 +587,16 @@ dieWith dflags span msg = throwGhcExceptionIO (ProgramError (showSDoc dflags (mk
+ 
+ 
+ checkNonStdWay :: DynFlags -> Interp -> SrcSpan -> IO (Maybe FilePath)
+-checkNonStdWay dflags interp srcspan
++checkNonStdWay _dflags interp _srcspan
+   | ExternalInterp {} <- interpInstance interp = return Nothing
+     -- with -fexternal-interpreter we load the .o files, whatever way
+     -- they were built.  If they were built for a non-std way, then
+     -- we will use the appropriate variant of the iserv binary to load them.
+ 
++-- #if-guard the following equations otherwise the pattern match checker will
++-- complain that they are redundant.
++#if defined(HAVE_INTERNAL_INTERPRETER)
++checkNonStdWay dflags _interp srcspan
+   | hostFullWays == targetFullWays = return Nothing
+     -- Only if we are compiling with the same ways as GHC is built
+     -- with, can we dynamically load those object files. (see #3604)
+@@ -607,8 +611,8 @@ checkNonStdWay dflags interp srcspan
+                   "" -> ""
+                   tag -> tag ++ "_"
+ 
+-normalObjectSuffix :: String
+-normalObjectSuffix = phaseInputExt StopLn
++    normalObjectSuffix :: String
++    normalObjectSuffix = phaseInputExt StopLn
+ 
+ failNonStd :: DynFlags -> SrcSpan -> IO (Maybe FilePath)
+ failNonStd dflags srcspan = dieWith dflags srcspan $
+@@ -628,6 +632,7 @@ failNonStd dflags srcspan = dieWith dflags srcspan $
+             | hostIsDynamic = text "with -dynamic"
+             | hostIsProfiled = text "with -prof"
+             | otherwise = text "the normal way"
++#endif
+ 
+ getLinkDeps :: HscEnv -> HomePackageTable
+             -> LoaderState
+diff --git a/utils/deriveConstants/Main.hs b/utils/deriveConstants/Main.hs
+index 8bf8ae7b44..e2447833cf 100644
+--- a/utils/deriveConstants/Main.hs
++++ b/utils/deriveConstants/Main.hs
+@@ -795,7 +795,7 @@ getWanted verbose os tmpdir gccProgram gccFlags nmProgram mobjdumpProgram
+                   , Just sym <- stripPrefix prefix sym0 = Just (sym, read n)
+                   | otherwise = Nothing
+                 where
+-                  [sym0, _] = take 2 (reverse $ words l1)
++                  sym0 = head $ reverse $ words l1
+ 
+           -- If an Int value is larger than 2^28 or smaller
+           -- than -2^28, then fail.
+diff --git a/utils/genprimopcode/Main.hs b/utils/genprimopcode/Main.hs
+index 7fe672387c..2938612e32 100644
+--- a/utils/genprimopcode/Main.hs
++++ b/utils/genprimopcode/Main.hs
+@@ -668,7 +668,11 @@ gen_primop_list (Info _ entries)
+         map (\p -> "   , " ++ cons p) rest
+         ++
+         [     "   ]"     ]
+-     ) where (first:rest) = concatMap desugarVectorSpec (filter is_primop entries)
++     ) where
++         (first,rest) =
++           case concatMap desugarVectorSpec (filter is_primop entries) of
++             x:xs -> (x,xs)
++             [] -> error "gen_primop_list: no primops"
+ 
+ mIN_VECTOR_UNIQUE :: Int
+ mIN_VECTOR_UNIQUE = 300

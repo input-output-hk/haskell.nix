@@ -1310,8 +1310,6 @@ pkgs:
     "ddcutil" = [ "ddcutil" ];
     "dee-1.0" = [ "dee" ];
     "dee-icu-1.0" = [ "dee" ];
-    "libdigibyteconsensus" = [ "digibyte" ];
-#    "libdigibyteconsensus" = [ "digibyted" ];
     "basicobjects" = [ "ding-libs" ];
     "collection" = [ "ding-libs" ];
     "dhash" = [ "ding-libs" ];
@@ -3182,7 +3180,7 @@ pkgs:
     "libtap" = [ "libtap" ];
     "libtasn1" = [ "libtasn1" ];
     "libtelnet" = [ "libtelnet" ];
-    "tensorflow" = [ "libtensorflow" ];
+    "tensorflow" = pkgs.lib.optional (builtins.compareVersions pkgs.lib.version "21.11" >= 0) "libtensorflow";
 #    "tensorflow" = [ "libtensorflow-bin" ];
     "termkey" = [ "libtermkey" ];
     "libthai" = [ "libthai" ];

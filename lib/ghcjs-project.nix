@@ -47,7 +47,10 @@
     version = "3.2.0.0";
     # Cabal 3.2.1.0 no longer supports he mix of `cabal-version`,
     # lack of `custom-setup` and `v1-install` used by ghcjs boot.
-    cabalProjectLocal = ''
+    # Using cabalProject here instead of cabalProjectLocal because
+    # cabalProjectLocal gets replaced by modules/hackage-quirks.nix
+    cabalProject = ''
+      packages: .
       constraints: Cabal <3.2.1.0, Cabal-syntax <0
     '';
     materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";

@@ -139,4 +139,9 @@ in {
   packages.ghc.flags.internal-interpreter = true;
   packages.ghci.flags.ghci = true;
   packages.ghci.flags.internal-interpreter = true;
+
+  # See https://github.com/Bodigrim/bitvec/pull/61
+  packages.bitvec.patches = [
+    (fromUntil "1.1.3.0" "1.1.3.0.1" ../patches/bitvec-gmp-fix.patch)
+  ];
 }

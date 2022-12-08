@@ -64,7 +64,7 @@
         "hackage-security".flags.use-network-uri = true;
         "hackage-security".flags.old-directory = false;
         "hackage-security".flags.mtl21 = false;
-        "process".revision = (((hackage."process")."1.6.15.0").revisions).default;
+        "process".revision = (((hackage."process")."1.6.16.0").revisions).default;
         "base16-bytestring".revision = (((hackage."base16-bytestring")."1.0.2.0").revisions).default;
         "regex-base".revision = (((hackage."regex-base")."0.94.0.2").revisions).default;
         "hsc2hs".revision = (((hackage."hsc2hs")."0.68.8").revisions).default;

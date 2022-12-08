@@ -188,7 +188,7 @@ final: prev: {
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
         # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
-        hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools, ... }:
+        hackageTarball = { index-state, sha256, nix-tools, ... }:
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { "hackage.haskell.org-at-${at}" = final.fetchurl {
@@ -306,14 +306,14 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2022-08-29T00:00:00Z";
+        internalHackageIndexState = "2022-11-06T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          pkgs = final;
-          inherit (final) nix runCommand writeShellScript;
+          pkgs = final.pkgsBuildBuild;
+          inherit (final.pkgsBuildBuild) nix runCommand writeShellScript;
           inherit (final.haskell-nix) checkMaterialization;
         };
 

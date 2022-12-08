@@ -28,16 +28,16 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   { name = "${prefix}-boot";          value = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
   { name = "${prefix}-hello";         value = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (!__elem system ["aarch64-darwin" "aarch64-linux"]
-         && !__elem compiler-nix-name ["ghc881" "ghc882" "ghc883"]) [
+         && !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883"]) [
   { name = "${prefix}-windows";       value = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${prefix}-hello-windows"; value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux") [
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
   { name = "${prefix}-musl";          value = pkgs.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${prefix}-hello-musl";    value = pkgs.pkgsCross.musl64.haskell-nix.tool compiler-nix-name "hello" {}; }
-] ++ eval.lib.optionals (system == "x86_64-linux" && __elem compiler-nix-name ["ghc884" "ghc8105" "ghc8106" "ghc8107" "ghc902" "ghc922" "ghc923" "ghc924"]) [
+] ++ eval.lib.optionals (system == "x86_64-linux" && __elem compiler-nix-name ["ghc884" "ghc8105" "ghc8106" "ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc925"]) [
   { name = "${prefix}-arm";           value = pkgs.pkgsCross.aarch64-multiplatform.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
-] ++ eval.lib.optionals (system == "x86_64-linux" && __elem compiler-nix-name ["ghc884" "ghc8106" "ghc8107" "ghc8107" "ghc902" "ghc922" "ghc923" "ghc924"]) [
+] ++ eval.lib.optionals (system == "x86_64-linux" && __elem compiler-nix-name ["ghc884" "ghc8106" "ghc8107" "ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc925"]) [
   { name = "${prefix}-hello-arm";     value = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (
         (system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107"])
