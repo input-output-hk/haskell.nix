@@ -334,6 +334,22 @@
         "type": "indirect"
       }
     },
+    "iserv-proxy": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1639165170,
+        "narHash": "sha256-QsWL/sBDL5GM8IXd/dE/ORiL4RvteEN+aok23tXgAoc=",
+        "rev": "6e95df7be6dd29680f983db07a057fc2f34f81f6",
+        "revCount": 7,
+        "type": "git",
+        "url": "https://gitlab.haskell.org/ghc/iserv-proxy.git"
+      },
+      "original": {
+        "rev": "6e95df7be6dd29680f983db07a057fc2f34f81f6",
+        "type": "git",
+        "url": "https://gitlab.haskell.org/ghc/iserv-proxy.git"
+      }
+    },
     "lowdown-src": {
       "flake": false,
       "locked": {
@@ -696,6 +712,7 @@
         "hackage": "hackage",
         "hpc-coveralls": "hpc-coveralls",
         "hydra": "hydra",
+        "iserv-proxy": "iserv-proxy",
         "nixpkgs": [
           "nixpkgs-unstable"
         ],
