@@ -312,8 +312,8 @@ final: prev: {
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          pkgs = final;
-          inherit (final) nix runCommand writeShellScript;
+          pkgs = final.pkgsBuildBuild;
+          inherit (final.pkgsBuildBuild) nix runCommand writeShellScript;
           inherit (final.haskell-nix) checkMaterialization;
         };
 

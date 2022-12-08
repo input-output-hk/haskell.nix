@@ -34,7 +34,7 @@
  ,("LLVM clang command","clang")
  ,("Project version","8.8.4")
  ,("Project Git commit id","6cf8f835267581d551ca6695b3b02c34797e2cf4")
- ,("Booter version","8.8.3")
+ ,("Booter version","8.4.4")
  ,("Stage","2")
  ,("Build platform","x86_64-unknown-linux")
  ,("Host platform","x86_64-unknown-linux")

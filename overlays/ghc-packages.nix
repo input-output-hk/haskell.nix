@@ -45,6 +45,8 @@ let
               # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
               # so it needs its own materialization.
               final.lib.optionalString final.targetPlatform.isAarch64 "-aarch64"
+              # GHCJS bytestring and libiserv versions differs
+              + final.lib.optionalString final.hostPlatform.isGhcjs "-ghcjs"
             }";
         } // final.lib.optionalAttrs unchecked {
           checkMaterialization = false;
@@ -67,11 +69,16 @@ let
       libiserv     = "libraries/libiserv";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
-      iserv-proxy  = "utils/iserv-proxy";
-      Win32        = "libraries/Win32";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
       ghc          = "compiler";
       ghc-boot     = "libraries/ghc-boot";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.4" < 0) {
+      # The version of `Win32` that comes with ghc 9.4 (2.12.0.0) is older
+      # than the one in hackage.  Including it causes `cabal configure` to fail.
+      Win32        = "libraries/Win32";
+      # As of GHC 9.4 this has been split out of the GHC repo and
+      # is now in the iserv-proxy flake input
+      iserv-proxy  = "utils/iserv-proxy";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
       # Not sure why, but this is missing from older ghcjs versions
       remote-iserv = "utils/remote-iserv";
@@ -84,7 +91,7 @@ let
 
   # The nix produced by `cabalProject` differs slightly depending on
   # what the platforms are.  There are currently 3 possible outputs.
-  ghc-extra-projects-type =
+  ghc-extra-projects-type = ghc:
     if final.stdenv.hostPlatform.isWindows
       then "windows"
       else if final.stdenv.hostPlatform.isGhcjs
@@ -188,7 +195,7 @@ in rec {
         (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq" ])) (ghc-extra-pkgs ghc.version));
       cabalProject = ''
         packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
-        allow-newer: iserv-proxy:bytestring, network:bytestring
+        allow-newer: iserv-proxy:bytestring, network:bytestring, iserv-proxy:containers
         -- need this for libiserv as it doesn't build against 3.0 yet.
         constraints: network < 3.0,
                      ghc +ghci,
@@ -210,13 +217,13 @@ in rec {
           sed -i 's|/nix/store/.*-libffi.*/include||' $out/${dir}/*.cabal
         '') package-locs)}
       '';
-    }) // { inherit cabalProject; }) final.buildPackages.haskell-nix.compiler;
+    }) // { inherit cabalProject ghc; }) final.buildPackages.haskell-nix.compiler;
 
   # A `cabalProject'` project for each ghc
   ghc-extra-projects = builtins.mapAttrs (ghcName: proj:
     final.haskell-nix.cabalProject' ({pkgs, ...}: {
       evalPackages = pkgs.buildPackages;
-      name = "ghc-extra-projects-${ghc-extra-projects-type}-${ghcName}";
+      name = "ghc-extra-projects-${ghc-extra-projects-type proj.ghc}-${ghcName}";
       src = proj;
       inherit (proj) cabalProject;
       # Avoid readDir and readFile IFD functions looking for these files
@@ -225,7 +232,7 @@ in rec {
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
       materialized = ../materialized/ghc-extra-projects
-                       + "/${ghc-extra-projects-type}/${ghcName}";
+                       + "/${ghc-extra-projects-type proj.ghc}/${ghcName}";
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
       modules = [{ reinstallableLibGhc = false; }];

@@ -48,7 +48,7 @@ let
   ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
   ghcCommand     = "${ghc.targetPrefix}${ghcCommand'}";
   ghcCommandCaps = lib.toUpper ghcCommand';
-  libDir         = "lib/${ghcCommand}-${ghc.version}";
+  libDir         = ghc.libDir or "lib/${ghcCommand}-${ghc.version}";
   packageCfgDir  = "${libDir}/package.conf.d";
 
   # Filters out only library packages that for this GHC target
@@ -101,7 +101,7 @@ let
     ${ # Copy over the nonReinstallablePkgs from the global package db.
     ''
       for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
-        find $ghc/lib/${ghc.name}/package.conf.d -name $p'*.conf' -exec cp -f {} $out/${packageCfgDir} \;
+        find $ghc/${packageCfgDir} -name $p'*.conf' -exec cp -f {} $out/${packageCfgDir} \;
       done
     ''}
 
