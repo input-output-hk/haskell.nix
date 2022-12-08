@@ -1,0 +1,61 @@
+Name:                executable-path
+Version:             0.0.3.1
+Synopsis:            Finding out the full path of the executable.
+
+Description:         The documentation of "System.Environment.getProgName" says that
+
+                     \"However, this is hard-to-impossible to implement on some non-Unix OSes, 
+                     so instead, for maximum portability, we just return the leafname 
+                     of the program as invoked.\"
+                     
+                     This library tries to provide the missing path.
+                     
+                     Note: Since base 4.6.0.0, there is also a function 
+                     "System.Environment.getExecutablePath".
+
+License:             PublicDomain
+License-file:        LICENSE
+Author:              Balazs Komuves
+Maintainer:          bkomuves (plus) hackage (at) gmail (dot) com
+Homepage:            http://code.haskell.org/~bkomuves/
+Stability:           Experimental
+Category:            System
+Tested-With:         GHC == 6.12.3 
+Cabal-Version:       >= 1.2
+Build-Type:          Simple
+
+Library
+  Build-Depends:       base >= 3 && < 5 , filepath 
+  
+  if impl(ghc)
+    cpp-options:         -DWE_HAVE_GHC
+    build-depends:       directory
+    
+  Exposed-Modules:     System.Environment.Executable   
+  Extensions:          ForeignFunctionInterface, CPP, EmptyDataDecls
+  Hs-Source-Dirs:      .
+  
+  if os(darwin)
+    Frameworks:          CoreFoundation  
+    Other-Modules:       System.Environment.Executable.MacOSX
+   
+  if os(windows) 
+    Extra-Libraries:     kernel32
+    Other-Modules:       System.Environment.Executable.Win32
+    
+  if os(linux) 
+    Build-Depends:       unix
+    Other-Modules:       System.Environment.Executable.Linux
+    
+  if os(freebsd) 
+    Build-Depends:       unix, directory
+    Other-Modules:       System.Environment.Executable.FreeBSD
+
+  if os(openbsd) || os(netbsd)
+    Build-Depends:       unix, directory
+    Other-Modules:       System.Environment.Executable.BSD
+
+  if os(solaris) 
+    Build-Depends:       unix
+    Other-Modules:       System.Environment.Executable.Solaris
+    

@@ -1,0 +1,116 @@
+cabal-version:       1.24
+name:                lifted-async
+version:             0.10.1.3
+synopsis:            Run lifted IO operations asynchronously and wait for their results
+homepage:            https://github.com/maoe/lifted-async
+bug-reports:         https://github.com/maoe/lifted-async/issues
+license:             BSD3
+license-file:        LICENSE
+author:              Mitsutoshi Aoe
+maintainer:          Mitsutoshi Aoe <me@maoe.name>
+copyright:           Copyright (C) 2012-2021 Mitsutoshi Aoe
+category:            Concurrency
+build-type:          Simple
+tested-with:
+  GHC == 9.0.1
+  GHC == 8.10.3
+  GHC == 8.8.3
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
+
+extra-source-files:
+  README.md
+  CHANGELOG.md
+
+description:
+  This package provides IO operations from @async@ package lifted to any
+  instance of 'MonadBase' or 'MonadBaseControl'.
+
+library
+  exposed-modules:
+    Control.Concurrent.Async.Lifted
+    Control.Concurrent.Async.Lifted.Safe
+  build-depends:
+      base >= 4.5 && < 4.16
+    , async >= 2.2 && < 2.3
+    , lifted-base >= 0.2 && < 0.3
+    , transformers-base >= 0.4 && < 0.5
+    , monad-control == 1.0.*
+  if impl(ghc >= 7.8)
+    build-depends: constraints >= 0.2 && < 0.14
+  else
+    build-depends: constraints >= 0.2 && < 0.6
+  ghc-options: -Wall
+  hs-source-dirs: src
+  default-language: Haskell2010
+
+test-suite test-lifted-async
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is: TestSuite.hs
+  other-modules:
+    Test.Async.Common
+    Test.Async.IO
+    Test.Async.State
+    Test.Async.Reader
+  ghc-options: -Wall -threaded
+  build-depends:
+      base
+    , HUnit
+    , lifted-async
+    , lifted-base
+    , monad-control
+    , mtl
+    , tasty
+    , tasty-expected-failure < 0.13
+    , tasty-hunit >= 0.9 && < 0.11
+    , tasty-th
+  default-language: Haskell2010
+
+test-suite regression-tests
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is: RegressionTests.hs
+  ghc-options: -Wall -threaded
+  build-depends:
+      base
+    , async
+    , lifted-async
+    , mtl
+    , tasty-hunit >= 0.9 && < 0.11
+    , tasty-th
+  default-language: Haskell2010
+
+benchmark benchmark-lifted-async
+  type: exitcode-stdio-1.0
+  hs-source-dirs: benchmarks
+  main-is: Benchmarks.hs
+  ghc-options: -Wall
+  build-depends:
+      base
+    , async
+    , tasty-bench < 0.3
+    , deepseq
+    , lifted-async
+  default-language: Haskell2010
+
+benchmark benchmark-lifted-async-threaded
+  type: exitcode-stdio-1.0
+  hs-source-dirs: benchmarks
+  main-is: Benchmarks.hs
+  ghc-options: -Wall -threaded
+  build-depends:
+      base
+    , async
+    , tasty-bench < 0.3
+    , deepseq
+    , lifted-async
+  default-language: Haskell2010
+
+source-repository head
+  type: git
+  branch: develop
+  location: https://github.com/maoe/lifted-async.git

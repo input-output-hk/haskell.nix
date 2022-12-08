@@ -1,0 +1,246 @@
+Name:    websockets
+Version: 0.12.7.2
+
+Synopsis:
+  A sensible and clean way to write WebSocket-capable servers in Haskell.
+
+Description:
+ This library allows you to write WebSocket-capable servers.
+ .
+ An example server:
+ <https://github.com/jaspervdj/websockets/blob/master/example/server.lhs>
+ .
+ An example client:
+ <https://github.com/jaspervdj/websockets/blob/master/example/client.hs>
+ .
+ See also:
+ .
+ * The specification of the WebSocket protocol:
+ <http://www.whatwg.org/specs/web-socket-protocol/>
+ .
+ * The JavaScript API for dealing with WebSockets:
+ <http://www.w3.org/TR/websockets/>
+
+License:       BSD3
+License-file:  LICENCE
+Copyright:     (c) 2010-2011 Siniša Biđin
+               (c) 2011-2018 Jasper Van der Jeugt
+               (c) 2011 Steffen Schuldenzucker
+               (c) 2011 Alex Lang
+Author:        Siniša Biđin <sinisa@bidin.cc>
+               Jasper Van der Jeugt <m@jaspervdj.be>
+               Steffen Schuldenzucker <steffen.schuldenzucker@googlemail.com>
+               Alex Lang <lang@tsurucapital.com>
+Maintainer:    Jasper Van der Jeugt <m@jaspervdj.be>
+Stability:     experimental
+Category:      Network
+Build-type:    Simple
+Cabal-version: >= 1.10
+
+Homepage:    http://jaspervdj.be/websockets
+Bug-reports: https://github.com/jaspervdj/websockets/issues
+
+Extra-source-files:
+  CHANGELOG
+
+Source-repository head
+  Type:     git
+  Location: https://github.com/jaspervdj/websockets
+
+Flag Example
+  Description: Build the example server
+  Default:     False
+  Manual:      True
+
+Library
+  Hs-source-dirs: src
+  Ghc-options:      -Wall
+  C-sources:        cbits/cbits.c
+  Default-language: Haskell2010
+
+  Exposed-modules:
+    Network.WebSockets
+    Network.WebSockets.Client
+    Network.WebSockets.Connection
+    Network.WebSockets.Extensions
+    Network.WebSockets.Stream
+    -- Network.WebSockets.Util.PubSub TODO
+
+  Other-modules:
+    Network.WebSockets.Connection.Options
+    Network.WebSockets.Extensions.Description
+    Network.WebSockets.Extensions.PermessageDeflate
+    Network.WebSockets.Extensions.StrictUnicode
+    Network.WebSockets.Http
+    Network.WebSockets.Hybi13
+    Network.WebSockets.Hybi13.Demultiplex
+    Network.WebSockets.Hybi13.Mask
+    Network.WebSockets.Protocol
+    Network.WebSockets.Server
+    Network.WebSockets.Types
+
+  Build-depends:
+    async             >= 2.2    && < 2.3,
+    attoparsec        >= 0.10   && < 0.14,
+    base              >= 4.8    && < 5,
+    base64-bytestring >= 0.1    && < 1.3,
+    binary            >= 0.8.1  && < 0.11,
+    bytestring        >= 0.9    && < 0.12,
+    bytestring-builder             < 0.11,
+    case-insensitive  >= 0.3    && < 1.3,
+    clock             >= 0.8    && < 0.9,
+    containers        >= 0.3    && < 0.7,
+    network           >= 2.3    && < 3.2,
+    random            >= 1.0    && < 1.3,
+    SHA               >= 1.5    && < 1.7,
+    streaming-commons >= 0.1    && < 0.3,
+    text              >= 0.10   && < 1.3,
+    entropy           >= 0.2.1  && < 0.5
+
+Test-suite websockets-tests
+  Type:             exitcode-stdio-1.0
+  Hs-source-dirs:   src tests/haskell
+  Main-is:          TestSuite.hs
+  Ghc-options:      -Wall
+  C-sources:        cbits/cbits.c
+  Default-language: Haskell2010
+
+  Other-modules:
+    Network.WebSockets
+    Network.WebSockets.Client
+    Network.WebSockets.Connection
+    Network.WebSockets.Connection.Options
+    Network.WebSockets.Extensions
+    Network.WebSockets.Extensions.Description
+    Network.WebSockets.Extensions.PermessageDeflate
+    Network.WebSockets.Extensions.PermessageDeflate.Tests
+    Network.WebSockets.Extensions.StrictUnicode
+    Network.WebSockets.Extensions.Tests
+    Network.WebSockets.Handshake.Tests
+    Network.WebSockets.Http
+    Network.WebSockets.Http.Tests
+    Network.WebSockets.Hybi13
+    Network.WebSockets.Hybi13.Demultiplex
+    Network.WebSockets.Hybi13.Demultiplex.Tests
+    Network.WebSockets.Hybi13.Mask
+    Network.WebSockets.Mask.Tests
+    Network.WebSockets.Protocol
+    Network.WebSockets.Server
+    Network.WebSockets.Server.Tests
+    Network.WebSockets.Stream
+    Network.WebSockets.Tests
+    Network.WebSockets.Tests.Util
+    Network.WebSockets.Types
+    Paths_websockets
+
+  Build-depends:
+    HUnit                      >= 1.2 && < 1.7,
+    QuickCheck                 >= 2.7 && < 2.15,
+    test-framework             >= 0.4 && < 0.9,
+    test-framework-hunit       >= 0.2 && < 0.4,
+    test-framework-quickcheck2 >= 0.2 && < 0.4,
+    -- Copied from regular dependencies...
+    async             >= 2.2    && < 2.3,
+    attoparsec        >= 0.10   && < 0.14,
+    base              >= 4      && < 5,
+    base64-bytestring >= 0.1    && < 1.3,
+    binary            >= 0.8.1  && < 0.11,
+    bytestring        >= 0.9    && < 0.12,
+    bytestring-builder             < 0.11,
+    case-insensitive  >= 0.3    && < 1.3,
+    clock             >= 0.8    && < 0.9,
+    containers        >= 0.3    && < 0.7,
+    network           >= 2.3    && < 3.2,
+    random            >= 1.0    && < 1.3,
+    SHA               >= 1.5    && < 1.7,
+    streaming-commons >= 0.1    && < 0.3,
+    text              >= 0.10   && < 1.3,
+    entropy           >= 0.2.1  && < 0.5
+
+Executable websockets-example
+  If !flag(Example)
+    Buildable: False
+
+  Hs-source-dirs:   example
+  Main-is:          server.lhs
+  Ghc-options:      -Wall
+  Default-language: Haskell2010
+
+  Build-depends:
+    websockets,
+    -- Copied from regular dependencies...
+    async             >= 2.2    && < 2.3,
+    attoparsec        >= 0.10   && < 0.14,
+    base              >= 4      && < 5,
+    base64-bytestring >= 0.1    && < 1.3,
+    binary            >= 0.8.1  && < 0.11,
+    bytestring        >= 0.9    && < 0.12,
+    bytestring-builder             < 0.11,
+    case-insensitive  >= 0.3    && < 1.3,
+    clock             >= 0.8    && < 0.9,
+    containers        >= 0.3    && < 0.7,
+    network           >= 2.3    && < 3.2,
+    random            >= 1.0    && < 1.3,
+    SHA               >= 1.5    && < 1.7,
+    text              >= 0.10   && < 1.3,
+    entropy           >= 0.2.1  && < 0.5
+
+Executable websockets-autobahn
+  If !flag(Example)
+    Buildable: False
+
+  Hs-source-dirs:   tests/autobahn
+  Main-is:          server.hs
+  Ghc-options:      -Wall -threaded -O2 -rtsopts "-with-rtsopts=-N"
+  Default-language: Haskell2010
+
+  Other-modules:
+    Paths_websockets
+
+  Build-depends:
+    websockets,
+    -- Copied from regular dependencies...
+    async             >= 2.2    && < 2.3,
+    attoparsec        >= 0.10   && < 0.14,
+    base              >= 4      && < 5,
+    base64-bytestring >= 0.1    && < 1.3,
+    binary            >= 0.8.1  && < 0.11,
+    bytestring        >= 0.9    && < 0.12,
+    bytestring-builder             < 0.11,
+    case-insensitive  >= 0.3    && < 1.3,
+    clock             >= 0.8    && < 0.9,
+    containers        >= 0.3    && < 0.7,
+    network           >= 2.3    && < 3.2,
+    random            >= 1.0    && < 1.3,
+    SHA               >= 1.5    && < 1.7,
+    text              >= 0.10   && < 1.3,
+    entropy           >= 0.2.1  && < 0.5
+
+Benchmark bench-mask
+  Type:             exitcode-stdio-1.0
+  Main-is:          mask.hs
+  C-sources:        cbits/cbits.c
+  Hs-source-dirs:   benchmarks, src
+  Default-language: Haskell2010
+
+  Other-modules:
+    Network.WebSockets.Hybi13.Mask
+
+  Build-depends:
+    criterion,
+    -- Copied from regular dependencies...
+    async             >= 2.2    && < 2.3,
+    attoparsec        >= 0.10   && < 0.14,
+    base              >= 4      && < 5,
+    base64-bytestring >= 0.1    && < 1.3,
+    binary            >= 0.8.1  && < 0.11,
+    bytestring        >= 0.9    && < 0.12,
+    bytestring-builder             < 0.11,
+    case-insensitive  >= 0.3    && < 1.3,
+    clock             >= 0.8    && < 0.9,
+    containers        >= 0.3    && < 0.7,
+    network           >= 2.3    && < 3.2,
+    random            >= 1.0    && < 1.3,
+    SHA               >= 1.5    && < 1.7,
+    text              >= 0.10   && < 1.3,
+    entropy           >= 0.2.1  && < 0.5

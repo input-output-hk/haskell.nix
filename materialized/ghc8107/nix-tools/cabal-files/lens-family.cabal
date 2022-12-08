@@ -1,0 +1,64 @@
+name:               lens-family
+category:           Data, Lenses
+version:            2.1.2
+license:            BSD3
+cabal-version:      >= 1.10
+license-file:       LICENSE
+author:             Russell O'Connor
+maintainer:         Russell O'Connor <roconnor@theorem.ca>
+stability:          experimental
+copyright:          Copyright (C) 2012,2013,2014,2017,2018,2019 Russell O'Connor
+synopsis:           Lens Families
+build-type:         Simple
+extra-source-files: CHANGELOG
+description:        This package provides first class functional references in Van Laarhoven style supporting the following optics:
+                    .
+                    * Lenses (view, over)
+                    .
+                    * Traversals (toListOf, matching, over)
+                    .
+                    * Setters (over)
+                    .
+                    * Grates (zipWithOf, under, review)
+                    .
+                    * Resetters (under)
+                    .
+                    * Adapters (view, review)
+                    .
+                    * Grids (toListOf, over / under, review)
+                    .
+                    * Prisms (matching, over / under, review)
+                    .
+                    * Getters (view)
+                    .
+                    * Folders (toListOf)
+                    .
+                    * Reviewers (review)
+
+source-repository head
+  type:     darcs
+  location: https://hub.darcs.net/roconnor/lens-family
+
+library
+  default-language:   Haskell2010
+  other-extensions:   Rank2Types
+  build-depends:
+    base                 >= 4.11    && < 5,
+    containers           >= 0.5.8   && < 0.7,
+    transformers         >= 0.3.0   && < 0.7,
+    mtl                  >= 2.2     && < 2.4,
+    lens-family-core     >= 2.1.0   && < 2.2
+
+  exposed-modules:
+    Lens.Family2.Unchecked
+    Lens.Family2
+    Lens.Family2.Stock
+    Lens.Family2.State.Lazy
+    Lens.Family2.State.Strict
+    Lens.Family2.State
+
+  ghc-options:      -Wall
+
+  hs-source-dirs:
+                    src
+

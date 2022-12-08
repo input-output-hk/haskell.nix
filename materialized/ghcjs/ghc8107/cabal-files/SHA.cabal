@@ -1,0 +1,145 @@
+name:       SHA
+category:   Cryptography, Codec
+version:    1.6.4.4
+license:    BSD3
+license-file: LICENSE
+author:     Adam Wick <awick@galois.com>, Brian Lewis <brian@lorf.org>
+maintainer: Adam Wick <awick@galois.com>,
+            Raphael Javaux <raphaeljavaux@gmail.com>
+stability:  stable
+build-type: Simple
+cabal-version: >= 1.8
+tested-with: GHC == 7.6.1
+synopsis: Implementations of the SHA suite of message digest functions
+description: This library implements the SHA suite of message digest functions,
+             according to NIST FIPS 180-2 (with the SHA-224 addendum), as well
+             as the SHA-based HMAC routines. The functions have been tested 
+             against most of the NIST and RFC test vectors for the various
+             functions. While some attention has been paid to performance, 
+             these do not presently reach the speed of well-tuned libraries, 
+             like OpenSSL.
+
+Flag exe
+  Description: Build a sha executables similar to 'md5sum'.
+  Default: False
+
+Library
+  hs-source-dirs: src
+  build-depends: array > 0 && < 10000,
+                 base >= 4 && < 6,
+                 binary >= 0.7 && < 10000,
+                 bytestring > 0.8 && < 10000
+  exposed-modules: Data.Digest.Pure.SHA
+  GHC-Options: -Wall -fno-ignore-asserts -fno-warn-orphans
+               -funbox-strict-fields -fwarn-tabs
+  extensions: BangPatterns
+  if impl(ghc >= 6.12) && impl(ghc < 7.7)
+    Ghc-Options: -fregs-graph
+
+test-suite test-sha
+  type:            exitcode-stdio-1.0
+  hs-source-dirs:  src
+  main-is:         Test.hs
+  ghc-options:     -Wall
+  build-depends: array > 0 && < 10000,
+                 base > 4.3 && < 7,
+                 binary >= 0.7 && < 10000,
+                 bytestring > 0.8 && < 10000,
+                 QuickCheck >= 2.5 && < 3,
+                 test-framework >= 0.8.0.3 && < 10000,
+                 test-framework-quickcheck2 >= 0.3.0.2 && < 10000
+  extensions: BangPatterns, MultiParamTypeClasses, DeriveDataTypeable
+  GHC-Options: -O2 -Wall -fno-ignore-asserts -fno-warn-orphans
+               -funbox-strict-fields -fwarn-tabs
+  cpp-options: -DSHA_TEST
+  if impl(ghc >= 6.12) && impl(ghc < 7.7)
+    Ghc-Options: -fregs-graph
+
+Executable sha1
+  Main-Is: Main.hs
+  if flag(exe)
+    hs-source-dirs: src-bin
+    build-depends: base >= 4 && < 6,
+                   bytestring > 0.8 && < 10000,
+                   directory > 0.0 && < 10000,
+                   SHA > 1.6 && < 10000
+    extensions: CPP
+    GHC-Options: -O2 -Wall -fno-ignore-asserts -fno-warn-orphans
+                 -funbox-strict-fields -fwarn-tabs
+    cpp-options: -DALGORITHM=sha1
+    if impl(ghc >= 6.12) && impl(ghc < 7.7)
+      Ghc-Options: -fregs-graph
+  else 
+    buildable: False
+
+Executable sha224
+  Main-Is: Main.hs
+  if flag(exe)
+    hs-source-dirs: src-bin
+    build-depends: base >= 4 && < 6,
+                   bytestring > 0.8 && < 10000,
+                   directory > 0.0 && < 10000,
+                   SHA > 1.6 && < 10000
+    extensions: CPP
+    GHC-Options: -O2 -Wall -fno-ignore-asserts -fno-warn-orphans
+                 -funbox-strict-fields -fwarn-tabs
+    cpp-options: -DALGORITHM=sha224
+    if impl(ghc >= 6.12) && impl(ghc < 7.7)
+      Ghc-Options: -fregs-graph
+  else
+    buildable: False
+
+Executable sha256
+  Main-Is: Main.hs
+  if flag(exe)
+    hs-source-dirs: src-bin
+    build-depends: base >= 4 && < 6,
+                   bytestring > 0.8 && < 10000,
+                   directory > 0.0 && < 10000,
+                   SHA > 1.6 && < 10000
+    extensions: CPP
+    GHC-Options: -O2 -Wall -fno-ignore-asserts -fno-warn-orphans
+                 -funbox-strict-fields -fwarn-tabs
+    cpp-options: -DALGORITHM=sha256
+    if impl(ghc >= 6.12) && impl(ghc < 7.7)
+      Ghc-Options: -fregs-graph
+  else
+    buildable: False
+
+Executable sha384
+  Main-Is: Main.hs
+  if flag(exe)
+    hs-source-dirs: src-bin
+    build-depends: base >= 4 && < 6,
+                   bytestring > 0.8 && < 10000,
+                   directory > 0.0 && < 10000,
+                   SHA > 1.6 && < 10000
+    extensions: CPP
+    GHC-Options: -O2 -Wall -fno-ignore-asserts -fno-warn-orphans
+                 -funbox-strict-fields -fwarn-tabs
+    cpp-options: -DALGORITHM=sha384
+    if impl(ghc >= 6.12) && impl(ghc < 7.7)
+      Ghc-Options: -fregs-graph
+  else
+    buildable: False
+
+Executable sha512
+  Main-Is: Main.hs
+  if flag(exe)
+    hs-source-dirs: src-bin
+    build-depends: base >= 4 && < 6,
+                   bytestring > 0.8 && < 10000,
+                   directory > 0.0 && < 10000,
+                   SHA > 1.6 && < 10000
+    extensions: CPP
+    GHC-Options: -O2 -Wall -fno-ignore-asserts -fno-warn-orphans
+                 -funbox-strict-fields -fwarn-tabs
+    cpp-options: -DALGORITHM=sha512
+    if impl(ghc >= 6.12) && impl(ghc < 7.7)
+      Ghc-Options: -fregs-graph
+  else
+    buildable: False
+
+source-repository head
+  type:     git
+  location: git://github.com/GaloisInc/SHA.git

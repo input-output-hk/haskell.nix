@@ -1,0 +1,82 @@
+name:                microlens
+version:             0.4.13.0
+synopsis:            A tiny lens library with no dependencies
+description:
+  NOTE: If you're writing an app, you probably want <http://hackage.haskell.org/package/microlens-platform microlens-platform> – it has the most features. <http://hackage.haskell.org/package/microlens microlens> is intended more for library writers who want a tiny lens library (after all, lenses are pretty useful for everything, not just for updating records!).
+  .
+  This library is an extract from <http://hackage.haskell.org/package/lens lens> (with no dependencies). It's not a toy lenses library, unsuitable for “real world”, but merely a small one. It is compatible with lens, and should have same performance. It also has better documentation.
+  .
+  There's a longer readme <https://github.com/monadfix/microlens#readme on Github>. It has a migration guide for lens users, a description of other packages in the family, a discussion of other lens libraries you could use instead, and so on.
+  .
+  Here are some usecases for this library:
+  .
+    * You want to define lenses or traversals in your own library, but don't want to depend on lens. Having lenses available often make working with a library more pleasant.
+  .
+    * You just want to be able to use lenses to transform data (or even just use @over _1@ to change the first element of a tuple).
+  .
+    * You are new to lenses and want a small library to play with.
+  .
+  However, don't use this library if:
+  .
+    * You need @Iso@s, @Prism@s, indexed traversals, or actually anything else which isn't defined here (though some indexed functions are available elsewhere – containers and vector provide them for their types, and <http://hackage.haskell.org/package/ilist ilist> provides indexed functions for lists).
+  .
+    * You want a library with a clean, understandable implementation (in which case you're looking for <http://hackage.haskell.org/package/lens-simple lens-simple>).
+  .
+  As already mentioned, if you're writing an application which uses lenses more extensively, look at <http://hackage.haskell.org/package/microlens-platform microlens-platform> – it combines features of most other microlens packages (<http://hackage.haskell.org/package/microlens-mtl microlens-mtl>, <http://hackage.haskell.org/package/microlens-th microlens-th>, <http://hackage.haskell.org/package/microlens-ghc microlens-ghc>).
+  .
+  If you want to export getters or folds and don't mind the <http://hackage.haskell.org/package/contravariant contravariant> dependency, please consider using <http://hackage.haskell.org/package/microlens-contra microlens-contra>.
+  .
+  If you haven't ever used lenses before, read <http://hackage.haskell.org/package/lens-tutorial/docs/Control-Lens-Tutorial.html this tutorial>. (It's for lens, but it applies to microlens just as well.)
+  .
+  Note that microlens has no dependencies starting from GHC 7.10 (base-4.8). Prior to that, it depends on transformers-0.2 or above.
+license:             BSD3
+license-file:        LICENSE
+author:              Edward Kmett, Artyom Kazak
+maintainer:          Steven Fontanella <steven.fontanella@gmail.com>
+homepage:            http://github.com/monadfix/microlens
+bug-reports:         http://github.com/monadfix/microlens/issues
+-- copyright:
+category:            Data, Lenses
+build-type:          Simple
+extra-source-files:
+  CHANGELOG.md
+cabal-version:       >=1.10
+tested-with:         GHC==7.6.3
+                     GHC==7.8.4
+                     GHC==7.10.3
+                     GHC==8.0.2
+                     GHC==8.2.2
+                     GHC==8.4.4
+                     GHC==8.6.5
+                     GHC==8.8.4
+                     GHC==8.10.7
+                     GHC==9.0.1
+                     GHC==9.2.1
+
+source-repository head
+  type:                git
+  location:            git://github.com/monadfix/microlens.git
+
+library
+  exposed-modules:     Lens.Micro
+                       Lens.Micro.Extras
+                       Lens.Micro.Internal
+                       Lens.Micro.Type
+  -- other-modules:
+  -- other-extensions:
+
+  -- Since base-4.8 we get the Identity functor in base, so we can avoid a
+  -- transformers dependency.
+  if impl(ghc>=7.9)
+    build-depends:     base >=4.8 && <5
+  if !impl(ghc>=7.9)
+    build-depends:     base >=4.5 && <5
+                     , transformers >=0.2
+
+  ghc-options:
+    -Wall -fwarn-tabs
+    -O2 -fdicts-cheap -funbox-strict-fields
+    -fmax-simplifier-iterations=10
+
+  hs-source-dirs:      src
+  default-language:    Haskell2010

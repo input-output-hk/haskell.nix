@@ -1,0 +1,106 @@
+name:          contravariant
+category:      Control, Data
+version:       1.5.5
+license:       BSD3
+cabal-version: >= 1.10
+license-file:  LICENSE
+author:        Edward A. Kmett
+maintainer:    Edward A. Kmett <ekmett@gmail.com>
+stability:     provisional
+homepage:      http://github.com/ekmett/contravariant/
+bug-reports:   http://github.com/ekmett/contravariant/issues
+copyright:     Copyright (C) 2007-2015 Edward A. Kmett
+synopsis:      Contravariant functors
+description:   Contravariant functors.
+build-type:    Simple
+tested-with:   GHC == 7.0.4
+             , GHC == 7.2.2
+             , GHC == 7.4.2
+             , GHC == 7.6.3
+             , GHC == 7.8.4
+             , GHC == 7.10.3
+             , GHC == 8.0.2
+             , GHC == 8.2.2
+             , GHC == 8.4.4
+             , GHC == 8.6.5
+             , GHC == 8.8.4
+             , GHC == 8.10.4
+             , GHC == 9.0.1
+extra-source-files:
+  .hlint.yaml
+  CHANGELOG.markdown
+  README.markdown
+
+source-repository head
+  type: git
+  location: git://github.com/ekmett/contravariant.git
+
+flag tagged
+  description:
+    You can disable the use of the `tagged` package using `-f-tagged`.
+    .
+    Disabling this is an unsupported configuration, but it may be useful for accelerating builds in sandboxes for expert users.
+  default: True
+  manual: True
+
+flag semigroups
+  description:
+    You can disable the use of the `semigroups` package using `-f-semigroups`.
+    .
+    Disabling this is an unsupported configuration, but it may be useful for accelerating builds in sandboxes for expert users.
+  default: True
+  manual: True
+
+flag StateVar
+  description:
+    You can disable the use of the `StateVar` package using `-f-StateVar`.
+    .
+    Disabling this is an unsupported configuration, but it may be useful for accelerating builds in sandboxes for expert users.
+  default: True
+  manual: True
+
+library
+  hs-source-dirs: src
+  build-depends:
+    base                              < 5,
+    transformers        >= 0.3 &&     < 0.7
+
+  if !impl(ghc > 7.10)
+    build-depends: transformers-compat >= 0.5 && < 1
+
+  if !impl(ghc >= 7.9)
+    build-depends: void >= 0.6.1 && < 1
+
+  if flag(tagged) && !impl(ghc >= 7.7)
+    build-depends: tagged >= 0.8.6.1 && < 1
+
+  if flag(semigroups) && !impl(ghc >= 7.11)
+    build-depends: semigroups >= 0.18.5 && < 1
+
+  if flag(StateVar)
+    build-depends: StateVar >= 1.2.1 && < 1.3
+
+  if impl(ghc >= 7.2 && < 7.6)
+    build-depends: ghc-prim
+
+  exposed-modules:
+    Data.Functor.Contravariant.Compose
+    Data.Functor.Contravariant.Divisible
+
+  if impl(ghc < 8.5)
+    hs-source-dirs: old-src
+    exposed-modules: Data.Functor.Contravariant
+
+  if impl(ghc >= 7.4)
+    exposed-modules: Data.Functor.Contravariant.Generic
+
+  if impl(ghc >= 8.6)
+    ghc-options: -Wno-star-is-type
+
+  if impl(ghc >= 9.0)
+    -- these flags may abort compilation with GHC-8.10
+    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3295
+    ghc-options: -Winferred-safe-imports -Wmissing-safe-haskell-mode
+
+  ghc-options: -Wall
+  default-language: Haskell2010

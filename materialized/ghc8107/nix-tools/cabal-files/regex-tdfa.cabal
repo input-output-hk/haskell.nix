@@ -1,0 +1,188 @@
+cabal-version:          1.12
+name:                   regex-tdfa
+version:                1.3.2
+
+build-Type:             Simple
+license:                BSD3
+license-file:           LICENSE
+copyright:              Copyright (c) 2007-2009, Christopher Kuklewicz
+author:                 Christopher Kuklewicz
+maintainer:             Andreas Abel
+homepage:               https://wiki.haskell.org/Regular_expressions
+bug-reports:            https://github.com/haskell-hvr/regex-tdfa/issues
+
+category:               Text
+synopsis:               Pure Haskell Tagged DFA Backend for "Text.Regex" (regex-base)
+description:
+  This package provides a pure Haskell \"Tagged\" DFA regex engine for <//hackage.haskell.org/package/regex-base regex-base>. This implementation was inspired by the algorithm (and Master's thesis) behind the regular expression library known as <https://github.com/laurikari/tre/ TRE or libtre>.
+  .
+  Please consult the "Text.Regex.TDFA" module for API documentation including a tutorial with usage examples;
+  see also <https://wiki.haskell.org/Regular_expressions> for general information about regular expression support in Haskell.
+
+extra-source-files:
+  CHANGELOG.md
+  README.md
+  test/cases/*.txt
+
+tested-with:
+  GHC == 9.4.1
+  GHC == 9.2.3
+  GHC == 9.0.2
+  GHC == 8.10.7
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
+  GHC == 7.8.4
+  GHC == 7.6.3
+  GHC == 7.4.2
+
+source-repository head
+  type:                git
+  location:            https://github.com/haskell-hvr/regex-tdfa.git
+
+source-repository this
+  type:                git
+  location:            https://github.com/haskell-hvr/regex-tdfa.git
+  tag:                 v1.3.2
+
+flag force-O2
+  default: False
+  manual: True
+  description:
+    Force building @regex-tdfa@ with \"@ghc-options: -O2@\".
+    .
+    __NOTE__: This flag is mostly provided for legacy use-cases. Nowadays you can conveniently control optimization levels on a per-package granularity via @cabal.project@ files; see <https://cabal.readthedocs.io/en/latest/nix-local-build.html#configuring-builds-with-cabal-project cabal's user-guide> for more details.
+
+library
+  hs-source-dirs:       lib
+
+  exposed-modules:      Data.IntMap.CharMap2
+                        Data.IntMap.EnumMap2
+                        Data.IntSet.EnumSet2
+                        Text.Regex.TDFA
+                        Text.Regex.TDFA.ByteString
+                        Text.Regex.TDFA.ByteString.Lazy
+                        Text.Regex.TDFA.Common
+                        Text.Regex.TDFA.CorePattern
+                        Text.Regex.TDFA.IntArrTrieSet
+                        Text.Regex.TDFA.NewDFA.Engine
+                        Text.Regex.TDFA.NewDFA.Engine_FA
+                        Text.Regex.TDFA.NewDFA.Engine_NC
+                        Text.Regex.TDFA.NewDFA.Engine_NC_FA
+                        Text.Regex.TDFA.NewDFA.Tester
+                        Text.Regex.TDFA.NewDFA.Uncons
+                        Text.Regex.TDFA.NewDFA.MakeTest
+                        Text.Regex.TDFA.Pattern
+                        Text.Regex.TDFA.ReadRegex
+                        Text.Regex.TDFA.Sequence
+                        Text.Regex.TDFA.String
+                        Text.Regex.TDFA.TDFA
+                        Text.Regex.TDFA.TNFA
+                        Text.Regex.TDFA.Text
+                        Text.Regex.TDFA.Text.Lazy
+
+  other-modules:        Paths_regex_tdfa
+
+  -- Support Semigroup instances uniformly
+  --
+  -- See also
+  --  https://prime.haskell.org/wiki/Libraries/Proposals/SemigroupMonoid#RecommendedVariant
+  --
+  -- NB: This is the same logic `parsec.cabal` uses, so this doesn't
+  -- add any new dependency that isn't already incurred by
+  -- `regex-tdfa`'s transitive deps
+  if !impl(ghc >= 8.0)
+    build-depends:      fail               == 4.9.*
+                      , semigroups         == 0.18.* || == 0.19.*
+  build-depends:        array              >= 0.4    && < 0.6
+                      , base               >= 4.5    && < 5
+                      , bytestring         >= 0.9.2  && < 0.12
+                      , containers         >= 0.4.2  && < 0.7
+                      , mtl                >= 2.1.3  && < 2.4
+                      , parsec             == 3.1.*
+                      , regex-base         == 0.94.*
+                      , text               >= 1.2.3  && < 2.1
+
+  default-language:     Haskell2010
+  default-extensions:   BangPatterns
+                        ExistentialQuantification
+                        FlexibleContexts
+                        FlexibleInstances
+                        ForeignFunctionInterface
+                        FunctionalDependencies
+                        MagicHash
+                        MultiParamTypeClasses
+                        NondecreasingIndentation
+                        RecursiveDo
+                        ScopedTypeVariables
+                        TypeOperators
+                        TypeSynonymInstances
+                        UnboxedTuples
+                        UnliftedFFITypes
+  other-extensions:     CPP
+
+  ghc-options:          -Wall -funbox-strict-fields -fspec-constr-count=10 -fno-warn-orphans
+
+  if impl(ghc >= 8.0)
+    ghc-options:        -Wcompat
+
+  if flag(force-O2)
+    ghc-options:        -O2
+
+
+test-suite regex-tdfa-unittest
+  type:                 exitcode-stdio-1.0
+
+  hs-source-dirs:       test
+  main-is:              Main.hs
+
+  -- intra-package dependency
+  build-depends:        regex-tdfa
+
+  -- dependencies whose version constraints are inherited via intra-package 'regex-tdfa' dependency
+  if !impl(ghc >= 8.0)
+    build-depends:      fail
+                      , semigroups
+  build-depends:        array
+                      , base
+                      , bytestring
+                      , containers
+                      , filepath
+                      , mtl
+                      , regex-base
+                      , text
+
+  -- component-specific dependencies not inherited via 'regex-tdfa'
+                      , directory          >= 1.1.0  && < 1.4
+                      , filepath           >= 1.3.0  && < 1.5
+                      , utf8-string        >= 1.0.1  && < 1.1
+
+  default-language:     Haskell2010
+  default-extensions:   FlexibleInstances
+                        FlexibleContexts
+                        Rank2Types
+  other-extensions:     GeneralizedNewtypeDeriving
+
+  ghc-options:          -Wall -funbox-strict-fields
+
+  if impl(ghc >= 8.0)
+    ghc-options:        -Wcompat
+
+  if flag(force-O2)
+    ghc-options:        -O2
+
+test-suite doc-test
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is:        DocTestMain.hs
+
+  build-depends:
+      base
+    , regex-tdfa
+    , doctest-parallel >= 0.2.2
+        -- doctest-parallel-0.2.2 is the first to filter out autogen-modules
+
+  default-language:     Haskell2010

@@ -1,0 +1,101 @@
+cabal-version:   2.4
+name:            text-metrics
+version:         0.3.2
+x-revision: 2
+license:         BSD-3-Clause
+license-file:    LICENSE.md
+maintainer:      Mark Karpov <markkarpov92@gmail.com>
+author:          Mark Karpov <markkarpov92@gmail.com>
+tested-with:     ghc ==8.10.7 ghc ==9.0.1 ghc ==9.2.1
+homepage:        https://github.com/mrkkrp/text-metrics
+bug-reports:     https://github.com/mrkkrp/text-metrics/issues
+synopsis:        Calculate various string metrics efficiently
+description:     Calculate various string metrics efficiently.
+category:        Text, Algorithms
+build-type:      Simple
+extra-doc-files:
+    CHANGELOG.md
+    README.md
+
+source-repository head
+    type:     git
+    location: https://github.com/mrkkrp/text-metrics.git
+
+flag dev
+    description: Turn on development settings.
+    default:     False
+    manual:      True
+
+library
+    exposed-modules:  Data.Text.Metrics
+    default-language: Haskell2010
+    build-depends:
+        base >=4.13 && <5.0,
+        containers >=0.5 && <0.7,
+        text >=0.2 && <2.1,
+        vector >=0.11 && <0.14
+
+    if flag(dev)
+        ghc-options: -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall
+
+test-suite tests
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   tests
+    default-language: Haskell2010
+    build-depends:
+        QuickCheck >=2.8 && <3.0,
+        base >=4.13 && <5.0,
+        hspec >=2.0 && <3.0,
+        text >=0.2 && <2.1,
+        text-metrics
+
+    if flag(dev)
+        ghc-options: -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall
+
+    if flag(dev)
+        ghc-options:
+            -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+            -Wnoncanonical-monad-instances
+
+benchmark bench-speed
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   bench/speed
+    default-language: Haskell2010
+    build-depends:
+        base >=4.13 && <5.0,
+        criterion >=0.6.2.1 && <1.7,
+        deepseq >=1.3 && <1.5,
+        text >=0.2 && <2.1,
+        text-metrics
+
+    if flag(dev)
+        ghc-options: -O2 -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall
+
+benchmark bench-memory
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   bench/memory
+    default-language: Haskell2010
+    build-depends:
+        base >=4.13 && <5.0,
+        deepseq >=1.3 && <1.5,
+        text >=0.2 && <2.1,
+        text-metrics,
+        weigh >=0.0.4
+
+    if flag(dev)
+        ghc-options: -O2 -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall

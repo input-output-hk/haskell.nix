@@ -1,0 +1,65 @@
+Name:               th-lift
+Version:            0.8.2
+x-revision: 2
+Cabal-Version:      1.12
+License:            BSD3
+License-Files:      COPYING, BSD3, GPL-2
+Copyright:          © 2006 Ian Lynagh, © 2010-2019 Mathieu Boespflug, © 2019 Ryan Scott
+Author:             Ian Lynagh
+Maintainer:         Ryan Scott <ryan.gl.scott@gmail.com>
+Homepage:           http://github.com/RyanGlScott/th-lift
+Synopsis:           Derive Template Haskell's Lift class for datatypes.
+Description:
+  Derive Template Haskell's @Lift@ class for datatypes using @TemplateHaskell@.
+  The functionality in this package has largely been subsumed by the
+  @DeriveLift@ language extension, which is available in GHC 8.0 and later
+  versions. This package can still be useful as a uniform way to derive
+  @Lift@ instances that is backwards-compatible with older GHCs.
+  .
+  The following libraries are related:
+  .
+  * The <https://hackage.haskell.org/package/th-orphans th-orphans> package
+    provides instances for @template-haskell@ syntax types.
+  .
+  * The <http://hackage.haskell.org/package/th-lift-instances th-lift-instances>
+    package provides @Lift@ instances for types in @base@, @text@,
+    @bytestring@, @vector@, etc. Some of these instances are only provided for
+    old versions of their respective libraries, as the same @Lift@ instances
+    are also present upstream on newer versions.
+Category:           Language
+Tested-With:        GHC==7.0.4, GHC==7.2.2, GHC==7.4.2, GHC==7.6.3, GHC==7.8.4, GHC==7.10.3, GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.3, GHC==8.10.1
+build-type:         Simple
+Extra-source-files: CHANGELOG.md
+
+source-repository head
+  type:     git
+  location: https://github.com/RyanGlScott/th-lift
+
+Library
+  Default-Language: Haskell2010
+  Exposed-modules:  Language.Haskell.TH.Lift
+                    Language.Haskell.TH.Lift.Internal
+  Other-Extensions: CPP,  MagicHash, TypeSynonymInstances, FlexibleInstances
+  if impl(ghc >= 8.0)
+    Other-Extensions: TemplateHaskellQuotes
+  else
+    Other-Extensions: TemplateHaskell
+  Hs-Source-Dirs:   src
+  Build-Depends:    base              >= 4.3  && < 5,
+                    ghc-prim,
+                    th-abstraction   >= 0.2.3 && < 0.5,
+                    template-haskell >= 2.5   && < 2.20
+  ghc-options:      -Wall
+
+Test-Suite test
+  Default-Language: Haskell2010
+  Type:             exitcode-stdio-1.0
+  Main-Is:          Test.hs
+  Hs-Source-Dirs:   t
+  other-modules:    Foo
+  ghc-options:      -Wall
+  Build-Depends:    base,
+                    ghc-prim,
+                    th-lift,
+                    template-haskell
+

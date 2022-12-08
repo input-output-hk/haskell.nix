@@ -1,0 +1,69 @@
+name:               lens-family-core
+category:           Data, Lenses
+version:            2.1.2
+license:            BSD3
+cabal-version:      >= 1.10
+license-file:       LICENSE
+author:             Russell O'Connor
+maintainer:         Russell O'Connor <roconnor@theorem.ca>
+stability:          experimental
+copyright:          Copyright (C) 2012,2013,2014,2017,2018,2019 Russell O'Connor
+synopsis:           Haskell 2022 Lens Families
+build-type:         Simple
+extra-source-files: CHANGELOG
+description:        This package provides first class(†) functional references in Van Laarhoven style supporting the following optics:
+                    .
+                    * Lenses (view, over)
+                    .
+                    * Traversals (toListOf, matching, over)
+                    .
+                    * Setters (over)
+                    .
+                    * Grates (zipWithOf, under, review)
+                    .
+                    * Resetters (under)
+                    .
+                    * Adapters (view, review)
+                    .
+                    * Grids (toListOf, over / under, review)
+                    .
+                    * Prisms (matching, over / under, review)
+                    .
+                    * Getters (view)
+                    .
+                    * Folders (toListOf)
+                    .
+                    * Reviewers (review)
+                    .
+                    (†) For optimal first-class support use the @lens-family@ package with rank 2 / rank N polymorphism.
+                    "Lens.Family.Clone" allows for first-class support of lenses and traversals for those who cannot support rank 2 polymorphism.
+
+source-repository head
+  type:     darcs
+  location: https://hub.darcs.net/roconnor/lens-family
+
+library
+  default-language:   Haskell2010
+  build-depends:
+    base                 >= 4.11    && < 5,
+    containers           >= 0.5.8   && < 0.7,
+    transformers         >= 0.3.0   && < 0.7
+
+  exposed-modules:
+    Lens.Family.Unchecked
+    Lens.Family.Clone
+    Lens.Family
+    Lens.Family.Stock
+    Lens.Family.State.Lazy
+    Lens.Family.State.Strict
+    Lens.Family.State
+  other-modules:
+    Lens.Family.Identical
+    Lens.Family.Phantom
+    Lens.Family.State.Zoom
+
+  ghc-options:      -Wall
+
+  hs-source-dirs:
+                    src
+

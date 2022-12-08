@@ -1,0 +1,36 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 9cae5ca1af8760786d8e586fd9b1ed7e329f13f4ec8a3d0aee62818b25038c1f
+
+name:           unliftio-core
+version:        0.2.0.1
+x-revision: 2
+synopsis:       The MonadUnliftIO typeclass for unlifting monads to IO
+description:    Please see the documentation and README at <https://www.stackage.org/package/unliftio-core>
+category:       Control
+homepage:       https://github.com/fpco/unliftio/tree/master/unliftio-core#readme
+author:         Michael Snoyman, Francesco Mazzoli
+maintainer:     michael@snoyman.com
+copyright:      2017-2020 FP Complete
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+library
+  exposed-modules:
+      Control.Monad.IO.Unlift
+  other-modules:
+      Paths_unliftio_core
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.5 && < 10
+    , transformers >=0.2 && <0.7
+  default-language: Haskell2010

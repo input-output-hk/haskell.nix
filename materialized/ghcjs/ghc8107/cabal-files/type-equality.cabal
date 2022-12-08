@@ -1,0 +1,60 @@
+name:               type-equality
+version:            1
+x-revision:         2
+stability:          provisional
+cabal-version:      >=1.10
+build-type:         Simple
+author:
+  Oleg Grenrus <oleg.grenrus@iki.fi>, Ryan Scott <ryan.gl.scott@gmail.com>, Erik Hesselink <hesselink@gmail.com>, Martijn van Steenbergen
+
+maintainer:
+  Oleg Grenrus <oleg.grenrus@iki.fi>, Ryan Scott <ryan.gl.scott@gmail.com>, Erik Hesselink <hesselink@gmail.com>
+
+license:            BSD3
+license-file:       LICENSE
+homepage:           https://github.com/hesselink/type-equality
+category:           Data, Dependent Types
+synopsis:           Data.Type.Equality compat package
+description:
+  This library defines a propositional equality data type,
+  shims @Data.Type.Equality@ as well as possible for older GHCs (< 7.8).
+  .
+  @
+  data a :~: b where
+  \    Refl :: a :~: a
+  @
+  .
+  The module @Data.Type.Equality.Hetero@ shims @:~~:@ equality, for
+  compilers with @PolyKinds@
+
+extra-source-files: CHANGELOG.md
+tested-with:
+  GHC ==7.0.4
+   || ==7.2.2
+   || ==7.4.2
+   || ==7.6.3
+   || ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.4
+   || ==8.10.3
+
+source-repository head
+  type:     git
+  location: git://github.com/hesselink/type-equality
+
+library
+  default-language: Haskell2010
+  build-depends:    base >=4.3 && <4.16
+
+  if !impl(ghc >=7.8)
+    hs-source-dirs:  src-old
+    exposed-modules: Data.Type.Equality
+
+  if impl(ghc >=8.0)
+    hs-source-dirs:   src-hetero
+    exposed-modules:  Data.Type.Equality.Hetero
+    other-extensions: PolyKinds

@@ -1,0 +1,54 @@
+cabal-version:       1.12
+name:                base16-bytestring
+version:             0.1.1.7
+x-revision: 3
+synopsis:            Fast base16 (hex) encoding and decoding for ByteStrings
+description:         This package provides support for encoding and decoding binary data according
+                     to @base16@ (see also <https://tools.ietf.org/html/rfc4648 RFC 4648>) for
+                     strict (see "Data.ByteString.Base16") and lazy @ByteString@s (see "Data.ByteString.Base16.Lazy").
+                     .
+                     See also the <https://hackage.haskell.org/package/base-encoding base-encoding> package which
+                     provides an uniform API providing conversion paths between more binary and textual types.
+homepage:            http://github.com/haskell/base16-bytestring
+bug-reports:         http://github.com/haskell/base16-bytestring/issues
+license:             BSD3
+license-file:        LICENSE
+copyright:           Copyright 2011 MailRank, Inc.;
+                     Copyright 2010-2020 Bryan O'Sullivan et al.
+author:              Bryan O'Sullivan <bos@serpentine.com>
+maintainer:          Herbert Valerio Riedel <hvr@gnu.org>,
+                     Mikhail Glushenkov <mikhail.glushenkov@gmail.com>,
+                     Emily Pillmore <emilypi@cohomolo.gy>
+category:            Data
+build-type:          Simple
+extra-source-files:  README.md CHANGELOG.md
+tested-with:         GHC==8.10.1, GHC==8.8.3, GHC==8.6.5,
+                     GHC==8.4.4,  GHC==8.2.2, GHC==8.0.2,
+                     GHC==7.10.3, GHC==7.8.4, GHC==7.6.3,
+                     GHC==7.4.2,  GHC==7.2.2, GHC==7.0.4
+
+library
+  exposed-modules:
+    Data.ByteString.Base16
+    Data.ByteString.Base16.Lazy
+
+  build-depends:
+    base == 4.*,
+    bytestring >= 0.9 && < 0.11,
+    ghc-prim
+
+  ghc-options: -Wall -funbox-strict-fields
+  default-language: Haskell2010
+
+source-repository head
+  type:     git
+  location: http://github.com/haskell/base16-bytestring
+
+test-suite test
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is: Tests.hs
+  default-language: Haskell2010
+  build-depends: base
+               , base16-bytestring
+               , bytestring

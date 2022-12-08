@@ -1,0 +1,121 @@
+Name:                blaze-builder
+Version:             0.4.2.2
+x-revision: 1
+Synopsis:            Efficient buffered output.
+
+Description:
+    This library allows to efficiently serialize Haskell values to lazy bytestrings
+    with a large average chunk size. The large average chunk size allows to make
+    good use of cache prefetching in later processing steps (e.g. compression) and
+    reduces the system call overhead when writing the resulting lazy bytestring to a
+    file or sending it over the network.
+    .
+    This library was inspired by the module Data.Binary.Builder provided by the
+    binary package. It was originally developed with the specific needs of the
+    blaze-html package in mind. Since then it has been restructured to serve as a
+    drop-in replacement for Data.Binary.Builder, which it improves upon both in
+    speed as well as expressivity.
+
+Author:              Jasper Van der Jeugt, Simon Meier, Leon P Smith
+Copyright:           (c) 2010-2014 Simon Meier
+                     (c) 2010 Jasper Van der Jeugt
+                     (c) 2013-2015 Leon P Smith
+Maintainer:          https://github.com/blaze-builder
+
+License:             BSD3
+License-file:        LICENSE
+
+Homepage:            https://github.com/blaze-builder/blaze-builder
+Bug-Reports:         https://github.com/blaze-builder/blaze-builder/issues
+Stability:           Stable
+
+Category:            Data
+Build-type:          Simple
+Cabal-version:       >= 1.10
+
+Tested-with:
+  GHC == 9.2.1
+  GHC == 9.0.1
+  GHC == 8.10.7
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
+  GHC == 7.8.4
+  GHC == 7.6.3
+  GHC == 7.4.2
+  GHC == 7.0.4
+
+Extra-source-files:
+                     Makefile
+                     README.markdown
+                     TODO
+                     CHANGES
+
+                     benchmarks/*.hs
+                     benchmarks/Throughput/*.hs
+                     benchmarks/Throughput/*.h
+                     benchmarks/Throughput/*.c
+
+                     tests/*.hs
+
+Source-repository head
+  Type: git
+  Location: https://github.com/blaze-builder/blaze-builder.git
+
+Library
+  default-language:  Haskell98
+
+  exposed-modules:   Blaze.ByteString.Builder
+                     Blaze.ByteString.Builder.Int
+                     Blaze.ByteString.Builder.Word
+                     Blaze.ByteString.Builder.ByteString
+                     Blaze.ByteString.Builder.Char.Utf8
+                     Blaze.ByteString.Builder.Char8
+                     Blaze.ByteString.Builder.Html.Utf8
+                     Blaze.ByteString.Builder.Html.Word
+                     Blaze.ByteString.Builder.HTTP
+                     Blaze.ByteString.Builder.Compat.Write
+
+                     Blaze.ByteString.Builder.Internal.Write
+
+  build-depends:
+      base == 4.*
+    , bytestring >= 0.9 && < 1.0
+    , deepseq
+    , ghc-prim
+    , text >= 0.10 && < 2.1
+
+  if impl(ghc < 7.8)
+     build-depends:  bytestring-builder
+  else
+     build-depends:  bytestring >= 0.10.4
+
+  if impl(ghc < 8.0)
+     build-depends:  semigroups >= 0.16 && < 0.20
+
+  ghc-options:       -Wall
+  if impl(ghc >= 8.0)
+    ghc-options:     -Wcompat
+
+test-suite test
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   tests
+  main-is:          Tests.hs
+  default-language: Haskell98
+  ghc-options:      -Wall -fno-warn-orphans
+  if impl(ghc >= 8.0)
+    ghc-options:     -Wcompat
+
+  build-depends: base
+               , blaze-builder
+               , bytestring
+               , HUnit
+               , QuickCheck
+               , test-framework
+               , test-framework-hunit
+               , test-framework-quickcheck2
+               , text
+               , utf8-string

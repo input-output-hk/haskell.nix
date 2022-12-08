@@ -1,0 +1,98 @@
+Name: nix-derivation
+Version: 1.1.2
+x-revision: 4
+Cabal-Version: >=1.10
+Build-Type: Simple
+Tested-With: GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.2, GHC == 8.8.3
+License: BSD3
+License-File: LICENSE
+Copyright: 2017 Gabriella Gonzalez
+Author: Gabriella Gonzalez
+Maintainer: GenuineGabriella@gmail.com
+Bug-Reports: https://github.com/Gabriella439/Haskell-Nix-Derivation-Library/issues
+Synopsis: Parse and render *.drv files
+Description:
+    Use this package to parse and render Nix derivation files (i.e. *.drv files)
+    .
+    This package also provides a @pretty-derivation@ executable which reads a
+    derivation on standard input and outputs the pretty-printed Haskell
+    representation on standard output
+Category: System
+Extra-Source-Files:
+    tests/example0.drv
+    tests/example1.drv
+Source-Repository head
+    Type: git
+    Location: https://github.com/Gabriella439/Haskell-Nix-Derivation-Library
+
+Library
+    Default-Language: Haskell2010
+    Hs-Source-Dirs: src
+    Build-Depends:
+        base            >= 4.6.0.0  && < 5   ,
+        attoparsec      >= 0.12.0.0 && < 0.15,
+        containers                     < 0.7 ,
+        deepseq         >= 1.4.0.0  && < 1.5 ,
+        text            >= 0.8.0.0  && < 2.1 ,
+        vector                         < 0.14,
+        filepath                       < 1.5
+    Exposed-Modules:
+        Nix.Derivation
+    Other-Modules:
+        Nix.Derivation.Builder,
+        Nix.Derivation.Parser,
+        Nix.Derivation.Types
+    GHC-Options: -Wall
+
+Executable pretty-derivation
+    Default-Language: Haskell2010
+    Hs-Source-Dirs: pretty-derivation
+    Build-Depends:
+        base           >= 4.6.0.0  && < 5   ,
+        attoparsec     >= 0.12.0.0 && < 0.15,
+        pretty-show    >= 1.6.11   && < 1.11,
+        text                                ,
+        nix-derivation
+    GHC-Options: -Wall
+    Main-Is: Main.hs
+
+Test-Suite example
+    Default-Language: Haskell2010
+    Type: exitcode-stdio-1.0
+    Hs-Source-Dirs: tests
+    Main-Is: Example.hs
+    GHC-Options: -Wall
+    Build-Depends:
+        base           >= 4.6.0.0  && < 5   ,
+        attoparsec     >= 0.12.0.0 && < 0.15,
+        nix-derivation                      ,
+        text
+
+Test-Suite property
+    Default-Language: Haskell2010
+    Type: exitcode-stdio-1.0
+    Hs-Source-Dirs: tests
+    Main-Is: Property.hs
+    GHC-Options: -Wall
+    Build-Depends:
+        base            >= 4.6.0.0  && < 5   ,
+        attoparsec      >= 0.12.0.0 && < 0.15,
+        nix-derivation                       ,
+        QuickCheck                     < 2.15,
+        text                                 ,
+        vector                         < 0.14,
+        filepath                       < 1.5
+
+Benchmark benchmark
+    Default-Language: Haskell2010
+    Type:             exitcode-stdio-1.0
+    HS-Source-Dirs:   bench
+    Main-Is:          Main.hs
+    GHC-Options:      -Wall
+
+    Build-Depends:
+        base            >= 4.6.0.0  && < 5   ,
+        attoparsec      >= 0.12.0.0 && < 0.15,
+        criterion       >= 1.1.4.0  && < 1.7 ,
+        nix-derivation                       ,
+        text

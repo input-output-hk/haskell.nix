@@ -1,0 +1,96 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: b2ac08c2845dd12213a3bc3c6e01f805bb98a7693a588b0ae313ceadcb5ca592
+
+name:           mono-traversable
+version:        1.0.15.1
+synopsis:       Type classes for mapping, folding, and traversing monomorphic containers
+description:    Please see the README at <https://www.stackage.org/package/mono-traversable>
+category:       Data
+homepage:       https://github.com/snoyberg/mono-traversable#readme
+bug-reports:    https://github.com/snoyberg/mono-traversable/issues
+author:         Michael Snoyman, John Wiegley, Greg Weber
+maintainer:     michael@snoyman.com
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/snoyberg/mono-traversable
+
+library
+  exposed-modules:
+      Data.Containers
+      Data.MonoTraversable
+      Data.MonoTraversable.Unprefixed
+      Data.NonNull
+      Data.Sequences
+  other-modules:
+      Paths_mono_traversable
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base >=4.10 && <5
+    , bytestring >=0.9
+    , containers >=0.5.8
+    , hashable
+    , split >=0.2
+    , text >=0.11
+    , transformers >=0.3
+    , unordered-containers >=0.2
+    , vector >=0.10
+    , vector-algorithms >=0.6
+  if impl(ghc <8.0)
+    build-depends:
+        semigroups >=0.10
+  default-language: Haskell2010
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: main.hs
+  other-modules:
+      Spec
+      Paths_mono_traversable
+  hs-source-dirs:
+      test
+  ghc-options: -O0
+  build-depends:
+      HUnit
+    , QuickCheck
+    , base
+    , bytestring
+    , containers
+    , foldl
+    , hspec
+    , mono-traversable
+    , semigroups
+    , text
+    , transformers
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
+
+benchmark sorting
+  type: exitcode-stdio-1.0
+  main-is: sorting.hs
+  other-modules:
+      Paths_mono_traversable
+  hs-source-dirs:
+      bench
+  ghc-options: -Wall -O2
+  build-depends:
+      base
+    , gauge
+    , mono-traversable
+    , mwc-random
+    , vector
+  default-language: Haskell2010

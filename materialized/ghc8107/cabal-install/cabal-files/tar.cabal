@@ -1,0 +1,182 @@
+cabal-version:   1.12
+name:            tar
+version:         0.5.1.1
+x-revision: 5
+
+license:         BSD3
+license-file:    LICENSE
+author:          Duncan Coutts <duncan@community.haskell.org>
+                 Bjorn Bringert <bjorn@bringert.net>
+maintainer:      Duncan Coutts <duncan@community.haskell.org>
+bug-reports:     https://github.com/haskell/tar/issues
+copyright:       2007 Bjorn Bringert <bjorn@bringert.net>
+                 2008-2016 Duncan Coutts <duncan@community.haskell.org>
+category:        Codec
+synopsis:        Reading, writing and manipulating ".tar" archive files.
+description:     This library is for working with \"@.tar@\" archive files. It
+                 can read and write a range of common variations of archive
+                 format including V7, POSIX USTAR and GNU formats.
+                 .
+                 It provides support for packing and unpacking portable
+                 archives. This makes it suitable for distribution but not
+                 backup because details like file ownership and exact
+                 permissions are not preserved.
+                 .
+                 It also provides features for random access to archive
+                 content using an index.
+build-type:      Simple
+extra-source-files: changelog.md
+tested-with:     GHC==7.0.4, GHC==7.2.2, GHC==7.4.2, GHC==7.6.3,
+                 GHC==7.8.4, GHC==7.10.3, GHC==8.0.2, GHC==8.2.2, GHC==8.4.4,
+                 GHC==8.6.5, GHC==8.8.3, GHC==8.10.4, GHC==9.0.1
+
+source-repository head
+  type: git
+  location: https://github.com/haskell/tar.git
+
+flag old-time
+  default: False
+
+flag old-bytestring
+  default: False
+
+library
+
+  build-depends: base       >= 4 && < 4.18,
+                 filepath             < 1.5,
+                 array                < 0.6,
+                 containers >= 0.2 && < 0.7,
+                 deepseq    >= 1.1 && < 1.5
+
+  if flag(old-time)
+    build-depends: directory < 1.2, old-time < 1.2
+  else
+    build-depends: directory >= 1.2 && < 1.4, time < 1.13
+
+  if flag(old-bytestring)
+    build-depends: bytestring-builder >= 0.10.4.0.2 && < 0.11, bytestring == 0.9.*
+  else
+    build-depends: bytestring >= 0.10 && < 0.12
+
+  if !impl(ghc >= 8.0)
+    build-depends: semigroups >= 0.18 && < 0.20
+
+  exposed-modules:
+    Codec.Archive.Tar
+    Codec.Archive.Tar.Entry
+    Codec.Archive.Tar.Check
+    Codec.Archive.Tar.Index
+
+  other-modules:
+    Codec.Archive.Tar.Types
+    Codec.Archive.Tar.Read
+    Codec.Archive.Tar.Write
+    Codec.Archive.Tar.Pack
+    Codec.Archive.Tar.Unpack
+    Codec.Archive.Tar.Index.StringTable
+    Codec.Archive.Tar.Index.IntTrie
+
+  default-language: Haskell2010
+  -- Previously, the package used GHC's default Haskell mode which implies
+  -- NDI; so we keep it transitionally enabled here until we've reviewed the
+  -- code to make sure there isn't any code relies on NDI and keeps compiling
+  -- albeit with different semantics even without NDI
+  default-extensions: NondecreasingIndentation
+
+  other-extensions:
+    BangPatterns
+    CPP
+    DeriveDataTypeable
+    GeneralizedNewtypeDeriving
+    PatternGuards
+    ScopedTypeVariables
+
+
+  ghc-options: -Wall -fno-warn-unused-imports
+
+test-suite properties
+  type:          exitcode-stdio-1.0
+  build-depends: base,
+                 filepath,
+                 array,
+                 containers,
+                 deepseq,
+                 bytestring-handle,
+                 QuickCheck       == 2.*,
+                 tasty            >= 0.10 && <1.5,
+                 tasty-quickcheck >= 0.8  && <0.11
+
+  if flag(old-time)
+    build-depends: directory < 1.2, old-time
+  else
+    build-depends: directory >= 1.2, time
+
+  if flag(old-bytestring)
+    build-depends: bytestring-builder, bytestring >= 0.9 && <0.10
+  else
+    build-depends: bytestring >= 0.10
+
+  if !impl(ghc >= 8.0)
+    build-depends: semigroups >= 0.18 && <0.20
+
+  default-language: Haskell2010
+
+  hs-source-dirs: . test
+
+  main-is: test/Properties.hs
+  cpp-options: -DTESTS
+
+  other-modules:
+    Codec.Archive.Tar.Index
+    Codec.Archive.Tar.Index.StringTable
+    Codec.Archive.Tar.Index.IntTrie
+
+  -- shared w/ lib:tar component
+  other-modules:
+    Codec.Archive.Tar
+    Codec.Archive.Tar.Check
+    Codec.Archive.Tar.Pack
+    Codec.Archive.Tar.Read
+    Codec.Archive.Tar.Types
+    Codec.Archive.Tar.Unpack
+    Codec.Archive.Tar.Write
+
+  other-extensions:
+    CPP
+    BangPatterns,
+    DeriveDataTypeable
+    ScopedTypeVariables
+
+  ghc-options: -fno-ignore-asserts
+
+benchmark bench
+  type:          exitcode-stdio-1.0
+  hs-source-dirs: . bench
+  main-is:       bench/Main.hs
+  build-depends: base,
+                 bytestring >= 0.10,
+                 filepath,
+                 directory >= 1.2,
+                 array,
+                 containers,
+                 deepseq,
+                 time,
+                 criterion >= 1.0
+
+  if !impl(ghc >= 8.0)
+    build-depends: semigroups >= 0.18 && <0.20
+
+  default-language: Haskell2010
+
+  -- shared w/ lib:tar component
+  other-modules:
+    Codec.Archive.Tar
+    Codec.Archive.Tar.Check
+    Codec.Archive.Tar.Index
+    Codec.Archive.Tar.Index.IntTrie
+    Codec.Archive.Tar.Index.StringTable
+    Codec.Archive.Tar.Pack
+    Codec.Archive.Tar.Read
+    Codec.Archive.Tar.Types
+    Codec.Archive.Tar.Unpack
+    Codec.Archive.Tar.Write

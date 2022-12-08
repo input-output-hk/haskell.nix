@@ -1,0 +1,98 @@
+cabal-version:       2.2
+name:                hnix-store-remote
+version:             0.5.0.0
+synopsis:            Remote hnix store
+description:         Implementation of the nix store using the daemon protocol.
+homepage:            https://github.com/haskell-nix/hnix-store
+license:             Apache-2.0
+license-file:        LICENSE
+author:              Richard Marko
+maintainer:          srk@48.io
+copyright:           2018 Richard Marko
+category:            Nix
+build-type:          Simple
+extra-source-files:  ChangeLog.md, README.md
+
+Common commons
+  if impl(ghc >= 8.10)
+    ghc-options:  -Wall -Wunused-packages
+  else
+    ghc-options:  -Wall
+
+flag io-testsuite
+  default:
+    False
+  description:
+    Enable testsuite, which requires external
+    binaries and Linux namespace support.
+
+library
+  import: commons
+  exposed-modules:
+      System.Nix.Store.Remote
+    , System.Nix.Store.Remote.Binary
+    , System.Nix.Store.Remote.Builders
+    , System.Nix.Store.Remote.Logger
+    , System.Nix.Store.Remote.Parsers
+    , System.Nix.Store.Remote.Protocol
+    , System.Nix.Store.Remote.Types
+    , System.Nix.Store.Remote.Util
+
+  build-depends:
+      base >=4.10 && <5
+    , attoparsec
+    , binary
+    , bytestring
+    , containers
+    , cryptonite
+    , text
+    , time
+    , network
+    , nix-derivation >= 1.1.1 && <2
+    , mtl
+    , unordered-containers
+    , hnix-store-core >= 0.5 && <0.6
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+test-suite hnix-store-remote-tests
+  import: commons
+
+  if !flag(io-testsuite)
+    buildable: False
+    ghc-options:       -rtsopts -fprof-auto
+
+  type:              exitcode-stdio-1.0
+  main-is:           Driver.hs
+  other-modules:
+      Derivation
+    , NixDaemon
+    , Spec
+    , Util
+  hs-source-dirs:    tests
+  build-tool-depends:
+    tasty-discover:tasty-discover
+  build-depends:
+      base
+    , hnix-store-core >= 0.3
+    , hnix-store-remote
+    , containers
+    , cryptonite
+    , directory
+    , process
+    , filepath
+    , hspec-expectations-lifted
+    , quickcheck-text
+    , tasty
+    , hspec
+    , tasty-hspec
+    , tasty-quickcheck
+    , linux-namespaces
+    , nix-derivation
+    , temporary
+    , text
+    , unix
+    , unordered-containers
+    , vector
+  default-language: Haskell2010

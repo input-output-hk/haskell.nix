@@ -1,0 +1,119 @@
+cabal-version:      >= 1.18
+build-type:         Simple
+name:               cmdargs
+version:            0.10.21
+license:            BSD3
+license-file:       LICENSE
+category:           Console
+author:             Neil Mitchell <ndmitchell@gmail.com>
+maintainer:         Neil Mitchell <ndmitchell@gmail.com>
+copyright:          Neil Mitchell 2009-2021
+synopsis:           Command line argument processing
+description:
+    This library provides an easy way to define command line parsers. Most users
+    will want to use the "System.Console.CmdArgs.Implicit" module, whose
+    documentation contains an example.
+    .
+    * "System.Console.CmdArgs.Explicit" provides a way to write command line
+      parsers for both single mode programs (most programs) and multiple
+      mode programs (e.g. darcs or cabal). Parsers are defined by constructing
+      a data structure.
+    .
+    * "System.Console.CmdArgs.Implicit" provides a way to concisely define
+      command line parsers, up to three times shorter than getopt. These parsers
+      are translated into the Explicit data type.
+    .
+    * "System.Console.CmdArgs.GetOpt" provides a wrapper allowing compatiblity
+      with existing getopt parsers, mapping to the Explicit data type.
+    .
+    For a general reference on what command line flags are commonly used,
+    see <http://www.faqs.org/docs/artu/ch10s05.html>.
+bug-reports:        https://github.com/ndmitchell/cmdargs/issues
+homepage:           https://github.com/ndmitchell/cmdargs#readme
+extra-doc-files:
+    README.md
+    CHANGES.txt
+tested-with:        GHC==9.0, GHC==8.10, GHC==8.8, GHC==8.6, GHC==8.4, GHC==8.2, GHC==8.0
+
+source-repository head
+    type:     git
+    location: https://github.com/ndmitchell/cmdargs.git
+
+flag testprog
+    default: False
+    manual: True
+    description: Build the test program
+
+flag quotation
+    default: True
+    manual: True
+    description: Build the Quote module
+
+library
+    default-language: Haskell2010
+    build-depends:
+        base >= 4.4 && < 5,
+        filepath,
+        transformers >= 0.2,
+        process >= 1.0
+
+    if impl(ghc < 8.0)
+        build-depends: semigroups >= 0.18
+
+    if flag(quotation)
+        build-depends: template-haskell
+        exposed-modules: System.Console.CmdArgs.Quote
+        -- See bug #539 for why this magic is required
+        other-extensions: TemplateHaskell
+
+    exposed-modules:
+        System.Console.CmdArgs
+        System.Console.CmdArgs.Annotate
+        System.Console.CmdArgs.Default
+        System.Console.CmdArgs.Explicit
+        System.Console.CmdArgs.GetOpt
+        System.Console.CmdArgs.Implicit
+        System.Console.CmdArgs.Text
+        System.Console.CmdArgs.Helper
+        System.Console.CmdArgs.Verbosity
+
+    other-modules:
+        Data.Generics.Any
+        Data.Generics.Any.Prelude
+        System.Console.CmdArgs.Explicit.Complete
+        System.Console.CmdArgs.Explicit.ExpandArgsAt
+        System.Console.CmdArgs.Explicit.Help
+        System.Console.CmdArgs.Explicit.Process
+        System.Console.CmdArgs.Explicit.SplitJoin
+        System.Console.CmdArgs.Explicit.Type
+        System.Console.CmdArgs.Implicit.Ann
+        System.Console.CmdArgs.Implicit.Global
+        System.Console.CmdArgs.Implicit.Local
+        System.Console.CmdArgs.Implicit.Reader
+        System.Console.CmdArgs.Implicit.Reform
+        System.Console.CmdArgs.Implicit.Type
+        System.Console.CmdArgs.Implicit.UI
+
+executable cmdargs
+    default-language: Haskell2010
+    main-is: Main.hs
+    other-extensions: TemplateHaskell
+    build-depends:
+        base, transformers, filepath, process, template-haskell
+    if flag(testprog) && flag(quotation)
+        buildable: True
+    else
+        buildable: False
+
+    other-modules:
+        System.Console.CmdArgs.Test.All
+        System.Console.CmdArgs.Test.Explicit
+        System.Console.CmdArgs.Test.GetOpt
+        System.Console.CmdArgs.Test.Implicit
+        System.Console.CmdArgs.Test.Implicit.Diffy
+        System.Console.CmdArgs.Test.Implicit.HLint
+        System.Console.CmdArgs.Test.Implicit.Maker
+        System.Console.CmdArgs.Test.Implicit.Tests
+        System.Console.CmdArgs.Test.Implicit.Util
+        System.Console.CmdArgs.Test.SplitJoin
+        System.Console.CmdArgs.Test.Util

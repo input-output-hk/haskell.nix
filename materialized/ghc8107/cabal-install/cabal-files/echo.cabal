@@ -1,0 +1,73 @@
+name:                echo
+version:             0.1.4
+synopsis:            A cross-platform, cross-console way to handle echoing terminal input
+description:         The @base@ library exposes the @hGetEcho@ and @hSetEcho@ functions
+                     for querying and setting echo status, but unfortunately, neither
+                     function works with MinTTY consoles on Windows. This is a serious
+                     issue, since @hGetEcho@ and @hSetEcho@ are often used to disable
+                     input echoing when a program prompts for a password, so many
+                     programs will reveal your password as you type it on MinTTY!
+                     .
+                     This library provides an alternative interface which works
+                     with both MinTTY and other consoles. An example is included
+                     which demonstrates how one might prompt for a password using
+                     this library. To build it, make sure to configure with the
+                     @-fexample@ flag.
+homepage:            https://github.com/RyanGlScott/echo
+bug-reports:         https://github.com/RyanGlScott/echo/issues
+license:             BSD3
+license-file:        LICENSE
+author:              Ryan Scott
+maintainer:          Ryan Scott <ryan.gl.scott@gmail.com>
+stability:           Provisional
+copyright:           (C) 2016-2017 Ryan Scott
+category:            System
+build-type:          Simple
+extra-source-files:  CHANGELOG.md, README.md
+cabal-version:       >=1.10
+tested-with:         GHC == 7.0.4
+                   , GHC == 7.2.2
+                   , GHC == 7.4.2
+                   , GHC == 7.6.3
+                   , GHC == 7.8.4
+                   , GHC == 7.10.3
+                   , GHC == 8.0.2
+                   , GHC == 8.2.2
+                   , GHC == 8.4.4
+                   , GHC == 8.6.5
+                   , GHC == 8.8.4
+                   , GHC == 8.10.2
+
+source-repository head
+  type:                git
+  location:            https://github.com/RyanGlScott/echo
+
+flag example
+  description:         Build the bundled example program.
+  default:             False
+
+library
+  exposed-modules:     System.IO.Echo
+                       System.IO.Echo.Internal
+
+  build-depends:       base    >= 4.3     && < 5
+                     , process >= 1.0.1.1 && < 1.7
+  if os(windows)
+    cpp-options:       "-DWINDOWS"
+    build-depends:     mintty >= 0.1 && < 0.2
+                     , Win32  >= 2   && < 3
+
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+executable password
+  if !flag(example)
+    buildable:         False
+
+  main-is:             Password.hs
+  build-depends:       base >= 4.3 && < 5
+                     , echo
+  hs-source-dirs:      example
+  default-language:    Haskell2010
+  ghc-options:         -Wall

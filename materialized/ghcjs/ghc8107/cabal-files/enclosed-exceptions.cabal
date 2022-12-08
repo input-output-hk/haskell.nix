@@ -1,0 +1,47 @@
+name:                enclosed-exceptions
+version:             1.0.3
+synopsis:            Catching all exceptions from within an enclosed computation
+description:         Catching all exceptions raised within an enclosed computation,
+                     while remaining responsive to (external) asynchronous exceptions.
+                     For more information on the technique, please see:
+                     <https://www.fpcomplete.com/user/snoyberg/general-haskell/exceptions/catching-all-exceptions>
+homepage:            https://github.com/jcristovao/enclosed-exceptions
+license:             MIT
+license-file:        LICENSE
+author:              Michael Snoyman, João Cristóvão
+maintainer:          jmacristovao@gmail.com, michael@snoyman.com
+category:            Control
+build-type:          Simple
+cabal-version:       >=1.8
+extra-source-files:  README.md ChangeLog.md
+
+library
+  exposed-modules:   Control.Exception.Enclosed
+  hs-source-dirs:    src
+  build-depends:       base                          >= 4.6        && < 5
+                     , transformers
+                     , lifted-base                   >= 0.2
+                     , monad-control
+                     , deepseq
+                     , transformers-base
+  ghc-options:         -Wall -fno-warn-orphans
+
+test-suite test
+    hs-source-dirs: src, test
+    main-is: main.hs
+    type: exitcode-stdio-1.0
+    build-depends:   base
+                   , lifted-base                   >= 0.2
+                   , monad-control
+                   , async                         >= 2.0
+                   , deepseq
+                   , hspec                         >= 1.3
+                   , QuickCheck
+                   , stm
+                   , transformers
+                   , transformers-base
+    ghc-options:     -Wall
+
+source-repository head
+  type:     git
+  location: git://github.com/jcristovao/enclosed-exceptions.git

@@ -1,0 +1,36 @@
+name:           extensible-exceptions
+version:        0.1.1.4
+license:        BSD3
+license-file:   LICENSE
+maintainer:     libraries@haskell.org
+bug-reports: http://hackage.haskell.org/trac/ghc/newticket?component=libraries%20%28other%29
+synopsis:       Extensible exceptions
+category:       Control
+description:
+    This package provides extensible exceptions for both new and 
+    old versions of GHC (i.e., < 6.10).
+-- We want to remain compatible with older Cabal versions for now,
+-- but we need at least 1.2.3 in order to list DeriveDataTypeable
+-- as an extension.
+-- (GHC trac #3931)
+-- cabal-version:  >=1.6
+cabal-version:  >=1.2.3
+build-type: Simple
+
+-- We want to remain compatible with older Cabal versions for now,
+-- and they don't understand source-repository sections
+-- (GHC trac #3931)
+-- source-repository head
+--     type:     git
+--     location: http://darcs.haskell.org/packages/extensible-exceptions.git/
+
+Library {
+    if impl(ghc>=6.9)
+        cpp-options: -DUSE_NEW_EXCEPTIONS
+        build-depends: base>=4&&<5
+    else
+        build-depends: base<4
+    exposed-modules:
+        Control.Exception.Extensible
+    extensions: CPP, ExistentialQuantification, DeriveDataTypeable
+}

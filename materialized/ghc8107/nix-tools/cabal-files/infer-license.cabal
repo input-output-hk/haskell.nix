@@ -1,0 +1,74 @@
+cabal-version: >= 1.10
+
+-- This file has been generated from package.yaml by hpack version 0.29.3.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: d60db93dd346c9277287cf8528ebcb3c62202cb8c214322bf6557d80c687f737
+
+name:           infer-license
+version:        0.2.0
+synopsis:       Infer software license from a given license file
+category:       Development
+bug-reports:    https://github.com/sol/infer-license/issues
+author:         Simon Hengel <sol@typeful.net>
+maintainer:     Simon Hengel <sol@typeful.net>
+copyright:      (c) 2018 Simon Hengel
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    test/resources/AGPLv3
+    test/resources/Apache_2_0
+    test/resources/BSD2
+    test/resources/BSD3
+    test/resources/BSD4
+    test/resources/GPLv2
+    test/resources/GPLv3
+    test/resources/ISC/me
+    test/resources/ISC/spdx
+    test/resources/LGPLv2_1
+    test/resources/LGPLv3
+    test/resources/MIT
+    test/resources/MPL_2_0
+
+source-repository head
+  type: git
+  location: https://github.com/sol/infer-license
+
+library
+  exposed-modules:
+      Data.License.Infer
+  other-modules:
+      Data.License.SpdxLicenses
+      Data.License.Type
+      Paths_infer_license
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base >=4.9 && <5
+    , directory >=1.2.5.0
+    , filepath
+    , text
+    , text-metrics >=0.3.0 && <0.4
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Data.License.InferSpec
+      Paths_infer_license
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      base >=4.9 && <5
+    , directory >=1.2.5.0
+    , filepath
+    , hspec ==2.*
+    , infer-license
+    , text
+    , text-metrics >=0.3.0 && <0.4
+  default-language: Haskell2010

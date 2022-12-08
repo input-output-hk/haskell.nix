@@ -1,0 +1,106 @@
+cabal-version:          1.12
+name:                   regex-posix
+version:                0.96.0.1
+x-revision:             1
+
+build-type:             Simple
+license:                BSD3
+license-file:           LICENSE
+copyright:              Copyright (c) 2007-2010, Christopher Kuklewicz
+author:                 Christopher Kuklewicz
+maintainer:             Andreas Abel
+bug-reports:            https://github.com/haskell-hvr/regex-posix
+synopsis:               POSIX Backend for "Text.Regex" (regex-base)
+category:               Text
+description:
+  The POSIX regex backend for <//hackage.haskell.org/package/regex-base regex-base>.
+  .
+  The main appeal of this backend is that it's very lightweight due to its reliance on the ubiquitous <https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/regex.h.html POSIX.2 regex> facility that is provided by the standard C library on most POSIX platforms.
+  .
+  See also <https://wiki.haskell.org/Regular_expressions> for more information.
+
+extra-source-files:
+  ChangeLog.md
+  cbits/myfree.h
+
+tested-with:
+  GHC == 9.4.1
+  GHC == 9.2.2
+  GHC == 9.0.2
+  GHC == 8.10.7
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
+  GHC == 7.8.4
+  GHC == 7.6.3
+  GHC == 7.4.2
+  GHC == 7.2.2
+  GHC == 7.0.4
+
+source-repository head
+  type:     git
+  location: https://github.com/hvr/regex-posix.git
+
+source-repository this
+  type:     git
+  location: https://github.com/hvr/regex-base.git
+  tag:      v0.96.0.1-r1
+
+flag _regex-posix-clib
+  manual: False
+  default: False
+  description: Use <//hackage.haskell.org/package/regex-posix-clib regex-posix-clib> package (used by default on Windows)
+
+library
+  hs-source-dirs: src
+  exposed-modules:
+      Text.Regex.Posix
+      Text.Regex.Posix.Wrap
+      Text.Regex.Posix.String
+      Text.Regex.Posix.Sequence
+      Text.Regex.Posix.ByteString
+      Text.Regex.Posix.ByteString.Lazy
+
+  other-modules:
+      Paths_regex_posix
+
+  c-sources:        cbits/myfree.c
+  include-dirs:     cbits
+
+  if flag(_regex-posix-clib) || os(windows)
+    build-depends: regex-posix-clib == 2.7.*
+    -- Otherwise, use POSIX.2 regex implementation from @libc@.
+    -- However, Windows/msys2 doesn't provide a POSIX.2 regex impl in its @libc@.
+
+  default-language: Haskell2010
+  default-extensions:
+      MultiParamTypeClasses
+      FunctionalDependencies
+      ForeignFunctionInterface
+      GeneralizedNewtypeDeriving
+      FlexibleContexts
+      TypeSynonymInstances
+         -- ^ for ghc 7.0, subsumed under FlexibleInstances later
+      FlexibleInstances
+
+  build-depends: regex-base == 0.94.*
+               , base       >= 4.3 && < 5
+               , containers >= 0.4 && < 0.7
+               , bytestring >= 0.9 && < 0.12
+               , array      >= 0.3 && < 0.6
+
+  if impl(ghc < 8)
+      build-depends: fail == 4.9.*
+
+  -- Warnings
+
+  ghc-options:
+      -Wall
+      -fno-warn-unused-imports
+
+  if impl(ghc >= 8)
+    ghc-options:
+      -Wcompat

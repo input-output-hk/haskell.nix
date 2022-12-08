@@ -1,0 +1,88 @@
+cabal-version:      1.12
+name:               indexed-traversable-instances
+version:            0.1.1.1
+build-type:         Simple
+license:            BSD2
+license-file:       LICENSE
+category:           Data
+maintainer:         Oleg Grenrus <oleg.grenrus@iki.fi>
+author:             Edward Kmett
+synopsis:
+  More instances of FunctorWithIndex, FoldableWithIndex, TraversableWithIndex
+
+description:
+  This package provides extra instances for type-classes in the [indexed-traversable](https://hackage.haskell.org/package/indexed-traversable) package.
+  .
+  The intention is to keep this package minimal;
+  it provides instances that formely existed in @lens@ or @optics-extra@.
+  We recommend putting other instances directly into their defining packages.
+  The @indexed-traversable@ package is light, having only GHC boot libraries
+  as its dependencies.
+
+extra-source-files: Changelog.md
+tested-with:
+  GHC ==7.4.2
+   || ==7.6.3
+   || ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.4
+   || ==8.10.7
+   || ==9.0.2
+   || ==9.2.4
+   || ==9.4.1
+
+source-repository head
+  type:     git
+  location: https://github.com/haskellari/indexed-traversable
+  subdir:   indexed-traversable-instances
+
+library
+  default-language: Haskell2010
+  ghc-options:      -Wall
+  hs-source-dirs:   src
+  build-depends:
+      base                  >=4.5      && <4.18
+    , indexed-traversable   >=0.1      && <0.2
+    , OneTuple              >=0.3      && <0.4
+    , tagged                >=0.8.6    && <0.9
+    , unordered-containers  >=0.2.8.0  && <0.3
+    , vector                >=0.12.1.2 && <0.14
+
+  exposed-modules:  Data.Functor.WithIndex.Instances
+
+test-suite safe
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
+  ghc-options:      -Wall
+  hs-source-dirs:   tests
+  main-is:          safe.hs
+  build-depends:
+      base
+    , indexed-traversable
+    , indexed-traversable-instances
+
+test-suite indexed-tests
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
+  ghc-options:      -Wall
+  hs-source-dirs:   tests
+  main-is:          main.hs
+  build-depends:
+      base
+    , containers
+    , indexed-traversable
+    , indexed-traversable-instances
+    , OneTuple
+    , transformers
+    , unordered-containers
+    , vector
+
+  build-depends:
+      QuickCheck            >=2.14.2   && <2.15
+    , quickcheck-instances  >=0.3.26   && <0.4
+    , tasty                 >=1.2.3    && <1.5
+    , tasty-quickcheck      >=0.10.1.1 && <0.11

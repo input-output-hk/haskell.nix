@@ -1,0 +1,85 @@
+cabal-version: >=1.10
+name: half
+version: 0.3.1
+license: BSD3
+license-file: LICENSE
+copyright: Copyright (C) 2014 Edward A. Kmett
+maintainer: Edward A. Kmett <ekmett@gmail.com>
+author: Edward A. Kmett
+stability: provisional
+homepage: http://github.com/ekmett/half
+bug-reports: http://github.com/ekmett/half/issues
+synopsis: Half-precision floating-point
+description:
+    Half-precision floating-point.
+category: Numeric
+build-type: Simple
+extra-source-files:
+    .gitignore
+    README.markdown
+    CHANGELOG.markdown
+
+tested-with:   GHC == 7.4.2
+             , GHC == 7.6.3
+             , GHC == 7.8.4
+             , GHC == 7.10.3
+             , GHC == 8.0.2
+             , GHC == 8.2.2
+             , GHC == 8.4.4
+             , GHC == 8.6.5
+             , GHC == 8.8.4
+             , GHC == 8.10.3
+
+source-repository head
+    type: git
+    location: git://github.com/ekmett/half.git
+
+library
+    default-language: Haskell2010
+    exposed-modules:
+        Numeric.Half
+        Numeric.Half.Internal
+    hs-source-dirs: src
+    other-extensions: BangPatterns CPP DeriveDataTypeable DeriveGeneric
+                      ForeignFunctionInterface
+    ghc-options: -Wall -fwarn-tabs -O2
+    build-depends:
+        base >=4.5 && <5,
+        binary >=0.5.1.0 && <0.9,
+        deepseq >=1.3.0.0 && <1.5,
+        template-haskell
+
+    if !impl(ghcjs)
+      c-sources:
+        cbits/half.c
+
+    if impl(ghc >= 8.0)
+        other-extensions: DeriveLift StandaloneDeriving
+    else
+        other-extensions: TemplateHaskell
+
+    if impl(ghc >=7.8)
+        other-extensions: PatternSynonyms
+
+    if impl(ghc <7.6)
+        build-depends:
+            ghc-prim
+
+    if impl(ghc >=8)
+        ghc-options: -Wno-missing-pattern-synonym-signatures
+
+test-suite spec
+    default-language: Haskell2010
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    hs-source-dirs: test
+    ghc-options: -Wall
+
+    build-depends:
+        base,
+        binary,
+        bytestring,
+        half,
+        QuickCheck >=2.14.1 && <2.15,
+        test-framework,
+        test-framework-quickcheck2

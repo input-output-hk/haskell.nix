@@ -1,0 +1,301 @@
+cabal-version:       1.12
+name:                hackage-security
+version:             0.6.2.2
+x-revision: 1
+
+synopsis:            Hackage security library
+description:         The hackage security library provides both server and
+                     client utilities for securing the Hackage package server
+                     (<https://hackage.haskell.org/>).  It is based on The Update
+                     Framework (<https://theupdateframework.com/>), a set of
+                     recommendations developed by security researchers at
+                     various universities in the US as well as developers on the
+                     Tor project (<https://www.torproject.org/>).
+                     .
+                     The current implementation supports only index signing,
+                     thereby enabling untrusted mirrors. It does not yet provide
+                     facilities for author package signing.
+                     .
+                     The library has two main entry points:
+                     "Hackage.Security.Client" is the main entry point for
+                     clients (the typical example being @cabal@), and
+                     "Hackage.Security.Server" is the main entry point for
+                     servers (the typical example being @hackage-server@).
+license:             BSD3
+license-file:        LICENSE
+author:              Edsko de Vries
+maintainer:          cabal-devel@haskell.org
+copyright:           Copyright 2015-2022 Well-Typed LLP
+category:            Distribution
+homepage:            https://github.com/haskell/hackage-security
+bug-reports:         https://github.com/haskell/hackage-security/issues
+build-type:          Simple
+
+tested-with:
+  GHC==9.2.1, GHC==9.0.2,
+  GHC==8.10.7, GHC==8.8.4, GHC==8.6.5, GHC==8.4.4, GHC==8.2.2, GHC==8.0.2,
+  GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2
+
+extra-source-files:
+  ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/haskell/hackage-security.git
+
+flag base48
+  description: Are we using @base@ 4.8 or later?
+  manual: False
+
+flag use-network-uri
+  description: Are we using @network-uri@?
+  manual: False
+
+flag Cabal-syntax
+  description: Are we using Cabal-syntax?
+  manual: False
+  default: False
+
+flag old-directory
+  description: Use @directory@ < 1.2 and @old-time@
+  manual:      False
+  default:     False
+
+flag mtl21
+  description: Use @mtl@ < 2.2 and @mtl-compat@
+  manual:      False
+  default:     False
+
+flag lukko
+  description: Use @lukko@ for file-locking, otherwise use @GHC.IO.Handle.Lock@
+  manual:      True
+  default:     True
+
+library
+  -- Most functionality is exported through the top-level entry points .Client
+  -- and .Server; the other exported modules are intended for qualified imports.
+  exposed-modules:     Hackage.Security.Client
+                       Hackage.Security.Client.Formats
+                       Hackage.Security.Client.Repository
+                       Hackage.Security.Client.Repository.Cache
+                       Hackage.Security.Client.Repository.Local
+                       Hackage.Security.Client.Repository.Remote
+                       Hackage.Security.Client.Repository.HttpLib
+                       Hackage.Security.Client.Verify
+                       Hackage.Security.JSON
+                       Hackage.Security.Key.Env
+                       Hackage.Security.Server
+                       Hackage.Security.Trusted
+                       Hackage.Security.TUF.FileMap
+                       Hackage.Security.Util.Checked
+                       Hackage.Security.Util.Path
+                       Hackage.Security.Util.Pretty
+                       Hackage.Security.Util.Some
+                       Text.JSON.Canonical
+  other-modules:       Hackage.Security.Key
+                       Hackage.Security.Trusted.TCB
+                       Hackage.Security.TUF
+                       Hackage.Security.TUF.Common
+                       Hackage.Security.TUF.FileInfo
+                       Hackage.Security.TUF.Header
+                       Hackage.Security.TUF.Layout.Cache
+                       Hackage.Security.TUF.Layout.Index
+                       Hackage.Security.TUF.Layout.Repo
+                       Hackage.Security.TUF.Mirrors
+                       Hackage.Security.TUF.Paths
+                       Hackage.Security.TUF.Patterns
+                       Hackage.Security.TUF.Root
+                       Hackage.Security.TUF.Signed
+                       Hackage.Security.TUF.Snapshot
+                       Hackage.Security.TUF.Targets
+                       Hackage.Security.TUF.Timestamp
+                       Hackage.Security.Util.Base64
+                       Hackage.Security.Util.Exit
+                       Hackage.Security.Util.IO
+                       Hackage.Security.Util.JSON
+                       Hackage.Security.Util.Lens
+                       Hackage.Security.Util.Stack
+                       Hackage.Security.Util.TypedEmbedded
+                       MyPrelude
+  -- We support ghc 7.4 (bundled with Cabal 1.14) and up
+  build-depends:       base              >= 4.5     && < 4.18,
+                       base16-bytestring >= 0.1.1   && < 1.1,
+                       base64-bytestring >= 1.0     && < 1.3,
+                       bytestring        >= 0.9     && < 0.12,
+                       containers        >= 0.4     && < 0.7,
+                       ed25519           >= 0.0     && < 0.1,
+                       filepath          >= 1.2     && < 1.5,
+                       parsec            >= 3.1     && < 3.2,
+                       pretty            >= 1.0     && < 1.2,
+                       cryptohash-sha256 >= 0.11    && < 0.12,
+                       -- 0.4.2 introduces TarIndex, 0.4.4 introduces more
+                       -- functionality, 0.5.0 changes type of serialise
+                       tar               >= 0.5     && < 0.6,
+                       template-haskell  >= 2.7     && < 2.20,
+                       time              >= 1.2     && < 1.13,
+                       transformers      >= 0.3     && < 0.7,
+                       zlib              >= 0.5     && < 0.7,
+                       -- whatever versions are bundled with ghc:
+                       ghc-prim
+  if flag(old-directory)
+    build-depends:     directory  >= 1.1.0.2 && < 1.2,
+                       old-time   >= 1 &&       < 1.2
+  else
+    build-depends:     directory  >= 1.2 && < 1.4
+
+  if flag(mtl21)
+    build-depends:     mtl        >= 2.1     && < 2.2,
+                       mtl-compat >= 0.2     && < 0.3
+  else
+    build-depends:     mtl        >= 2.2     && < 2.4
+
+  if flag(lukko)
+    build-depends:     lukko      >= 0.1     && < 0.2
+  else
+    build-depends:     base       >= 4.10
+
+  if flag(Cabal-syntax) && impl(ghc >= 8.2)
+    build-depends: Cabal-syntax >= 3.7 && < 3.10
+  else
+    build-depends: Cabal        >= 1.14    && < 1.26
+                             || >= 2.0     && < 2.6
+                             || >= 3.0     && < 3.7,
+                   Cabal-syntax <  3.7
+
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  default-extensions:  DefaultSignatures
+                       DeriveDataTypeable
+                       DeriveFunctor
+                       FlexibleContexts
+                       FlexibleInstances
+                       GADTs
+                       GeneralizedNewtypeDeriving
+                       KindSignatures
+                       MultiParamTypeClasses
+                       NamedFieldPuns
+                       NoImplicitPrelude
+                       NoMonomorphismRestriction
+                       RankNTypes
+                       RecordWildCards
+                       ScopedTypeVariables
+                       StandaloneDeriving
+                       TupleSections
+                       TypeFamilies
+                       TypeOperators
+                       ViewPatterns
+  other-extensions:    BangPatterns
+                       CPP
+                       OverlappingInstances
+                       PackageImports
+                       UndecidableInstances
+
+  -- use the new stage1/cross-compile-friendly DeriveLift extension for GHC 8.0+
+  if impl(ghc >= 8.0)
+    other-extensions: DeriveLift
+  else
+    other-extensions: TemplateHaskell
+
+  ghc-options:         -Wall
+
+  if flag(base48)
+    build-depends: base >= 4.8
+  else
+    build-depends: base < 4.8, old-locale == 1.0.*
+
+  -- The URI type got split out off the network package after version 2.5, and
+  -- moved to a separate network-uri package. Since we don't need the rest of
+  -- network here, it would suffice to rely only on network-uri:
+  --
+  -- > if flag(use-network-uri)
+  -- >   build-depends: network-uri >= 2.6 && < 2.7
+  -- > else
+  -- >   build-depends: network     >= 2.5 && < 2.6
+  --
+  -- However, if we did the same in hackage-security-HTTP, Cabal would consider
+  -- those two flag choices (hackage-security:use-network-uri and
+  -- hackage-security-HTTP:use-network-uri) to be completely independent; but
+  -- they aren't: if it links hackage-security against network-uri and
+  -- hackage-security-HTTP against network, we will get type errors when
+  -- hackage-security-HTTP tries to pass a URI to hackage-security.
+  --
+  -- It might seem we can solve this problem by re-exporting the URI type in
+  -- hackage-security and avoid the dependency in hackage-security-HTTP
+  -- altogether. However, this merely shifts the problem: hackage-security-HTTP
+  -- relies on the HTTP library which--surprise!--makes the same choice between
+  -- depending on network or network-uri. Cabal will not notice that we cannot
+  -- build hackage-security and hackage-security-HTTP against network-uri but
+  -- HTTP against network.
+  --
+  -- We solve the problem by explicitly relying on network-2.6 when choosing
+  -- network-uri. This dependency is redundant, strictly speaking. However, it
+  -- serves as a proxy for forcing flag choices: since all packages in a
+  -- solution must be linked against the same version of network, having one
+  -- version of network in one branch of the conditional and another version of
+  -- network in the other branch forces the choice to be consistent throughout.
+  -- (Note that the HTTP library does the same thing, though in this case the
+  -- dependency in network is not redundant.)
+  if flag(use-network-uri)
+    build-depends: network-uri >= 2.6 && < 2.7,
+                   network     >= 2.6 && < 2.9
+                            || >= 3.0 && < 3.2
+  else
+    build-depends: network     >= 2.5 && < 2.6
+
+  if impl(ghc >= 7.8)
+     other-extensions: RoleAnnotations
+
+  if impl(ghc >= 7.10)
+     other-extensions: AllowAmbiguousTypes
+                       StaticPointers
+
+test-suite TestSuite
+  type:                exitcode-stdio-1.0
+  main-is:             TestSuite.hs
+  other-modules:       TestSuite.HttpMem
+                       TestSuite.InMemCache
+                       TestSuite.InMemRepo
+                       TestSuite.InMemRepository
+                       TestSuite.JSON
+                       TestSuite.PrivateKeys
+                       TestSuite.Util.StrictMVar
+
+  -- inherited constraints from lib:hackage-security component
+  build-depends:       hackage-security,
+                       base,
+                       containers,
+                       bytestring,
+                       network-uri,
+                       tar,
+                       text,
+                       time,
+                       zlib
+
+  if flag(Cabal-syntax) && impl(ghc >= 8.2)
+    build-depends: Cabal        >= 3.7 && < 3.10,
+                   Cabal-syntax >= 3.7 && < 3.10
+  else
+    build-depends: Cabal        >= 1.14    && < 1.26
+                             || >= 2.0     && < 2.6
+                             || >= 3.0     && < 3.7,
+                   Cabal-syntax <  3.7
+
+  -- dependencies exclusive to test-suite
+  build-depends:       tasty            >= 1.2 && < 1.5,
+                       tasty-hunit      == 0.10.*,
+                       tasty-quickcheck == 0.10.*,
+                       QuickCheck       >= 2.11 && <2.15,
+                       aeson            == 1.4.* || == 1.5.* || == 2.0.* || == 2.1.*,
+                       vector           == 0.12.*,
+                       unordered-containers >=0.2.8.0 && <0.3,
+                       temporary        >= 1.2 && < 1.4
+
+  hs-source-dirs:      tests
+  default-language:    Haskell2010
+  default-extensions:  FlexibleContexts
+                       GADTs
+                       KindSignatures
+                       RankNTypes
+                       RecordWildCards
+                       ScopedTypeVariables
+  ghc-options:         -Wall

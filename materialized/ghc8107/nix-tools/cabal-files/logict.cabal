@@ -1,0 +1,56 @@
+name: logict
+version: 0.7.0.3
+x-revision: 1
+license: BSD3
+license-file: LICENSE
+copyright:
+  Copyright (c) 2007-2014, Dan Doel,
+  Copyright (c) 2011-2013, Edward Kmett,
+  Copyright (c) 2014, Roman Cheplyaka
+maintainer: Andrew Lelechenko <andrew.lelechenko@gmail.com>
+author: Dan Doel
+homepage: https://github.com/Bodigrim/logict#readme
+synopsis: A backtracking logic-programming monad.
+description:
+  A continuation-based, backtracking, logic programming monad.
+  An adaptation of the two-continuation implementation found
+  in the paper "Backtracking, Interleaving, and Terminating
+  Monad Transformers" available here:
+  <http://okmij.org/ftp/papers/LogicT.pdf>
+category: Control
+build-type: Simple
+extra-source-files:
+  changelog.md
+cabal-version: >=1.10
+tested-with: GHC ==7.4.2 GHC ==7.6.3 GHC ==7.8.4 GHC ==7.10.3 GHC ==8.0.2 GHC ==8.2.2 GHC ==8.4.4 GHC ==8.6.5 GHC ==8.8.3 GHC ==8.10.1
+
+source-repository head
+  type: git
+  location: https://github.com/Bodigrim/logict
+
+library
+  exposed-modules:
+    Control.Monad.Logic
+    Control.Monad.Logic.Class
+  default-language: Haskell2010
+  ghc-options: -O2 -Wall
+  build-depends:
+    base >=4.5 && <5,
+    mtl >=2 && <2.3
+
+  if impl(ghc <8.0)
+    build-depends:
+      fail -any
+
+test-suite logict-tests
+  type: exitcode-stdio-1.0
+  main-is: Test.hs
+  default-language: Haskell2010
+  ghc-options: -Wall
+  build-depends:
+    base >=2 && <5,
+    logict -any,
+    mtl >=2 && <2.3,
+    tasty,
+    tasty-hunit
+  hs-source-dirs: test

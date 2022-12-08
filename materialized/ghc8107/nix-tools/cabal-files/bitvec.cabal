@@ -1,0 +1,163 @@
+name: bitvec
+version: 1.1.3.0
+cabal-version: >=1.10
+build-type: Simple
+license: BSD3
+license-file: LICENSE
+copyright: 2019-2022 Andrew Lelechenko, 2012-2016 James Cook
+maintainer: Andrew Lelechenko <andrew.lelechenko@gmail.com>
+homepage: https://github.com/Bodigrim/bitvec
+synopsis: Space-efficient bit vectors
+description:
+  A newtype over 'Bool' with a better 'Vector' instance: 8x less memory, up to 1000x faster.
+  .
+  The <https://hackage.haskell.org/package/vector vector>
+  package represents unboxed arrays of 'Bool's
+  spending 1 byte (8 bits) per boolean.
+  This library provides a newtype wrapper 'Bit' and a custom instance
+  of an unboxed 'Vector', which packs bits densely,
+  achieving an __8x smaller memory footprint.__
+  The performance stays mostly the same;
+  the most significant degradation happens for random writes
+  (up to 10% slower).
+  On the other hand, for certain bulk bit operations
+  'Vector' 'Bit' is up to 1000x faster than 'Vector' 'Bool'.
+  .
+  === Thread safety
+  .
+  * "Data.Bit" is faster, but writes and flips are thread-unsafe.
+    This is because naive updates are not atomic:
+    they read the whole word from memory,
+    then modify a bit, then write the whole word back.
+  * "Data.Bit.ThreadSafe" is slower (up to 20%),
+    but writes and flips are thread-safe.
+  .
+  === Similar packages
+  .
+  * <https://hackage.haskell.org/package/bv bv> and
+    <https://hackage.haskell.org/package/bv-little bv-little>
+    do not offer mutable vectors.
+  .
+  * <https://hackage.haskell.org/package/array array>
+    is memory-efficient for 'Bool', but lacks
+    a handy 'Vector' interface and is not thread-safe.
+
+category: Data, Bit Vectors
+author: Andrew Lelechenko <andrew.lelechenko@gmail.com>,
+        James Cook <mokus@deepbondi.net>
+
+tested-with: GHC ==8.0.2 GHC ==8.2.2 GHC ==8.4.4 GHC ==8.6.5 GHC ==8.8.1 GHC ==8.8.2 GHC ==8.8.4 GHC ==8.10.7 GHC ==9.0.1 GHC ==9.2.1
+extra-source-files:
+  changelog.md
+  README.md
+
+source-repository head
+  type: git
+  location: git://github.com/Bodigrim/bitvec.git
+
+flag libgmp
+  description:
+    Link against the GMP library for the ultimate performance of
+    `zipBits`, `invertBits` and `countBits`. Users are strongly encouraged
+    to enable this flag whenever possible.
+  default: False
+  manual: True
+
+library
+  exposed-modules:
+    Data.Bit
+    Data.Bit.ThreadSafe
+  build-depends:
+    base >=4.9 && <5,
+    bytestring >=0.10,
+    deepseq,
+    primitive >=0.5,
+    vector >=0.11 && <0.14
+  default-language: Haskell2010
+  hs-source-dirs: src
+  other-modules:
+    Data.Bit.F2Poly
+    Data.Bit.F2PolyTS
+    Data.Bit.Gmp
+    Data.Bit.Immutable
+    Data.Bit.ImmutableTS
+    Data.Bit.Internal
+    Data.Bit.InternalTS
+    Data.Bit.Mutable
+    Data.Bit.MutableTS
+    Data.Bit.PdepPext
+    Data.Bit.Utils
+  ghc-options: -O2 -Wall -Wcompat
+  include-dirs: src
+
+  if impl(ghc <9.0)
+    build-depends: integer-gmp
+  else
+    build-depends: ghc-bignum
+
+  if flag(libgmp)
+    extra-libraries: gmp
+    cpp-options: -DUseLibGmp
+
+test-suite bitvec-tests
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  build-depends:
+    base,
+    bitvec,
+    primitive >=0.5,
+    quickcheck-classes-base,
+    quickcheck-classes >=0.6.1,
+    vector >=0.11,
+    tasty,
+    tasty-quickcheck
+  default-language: Haskell2010
+  hs-source-dirs: test
+  other-modules:
+    Support
+    Tests.Conc
+    Tests.F2Poly
+    Tests.MVector
+    Tests.MVectorTS
+    Tests.SetOps
+    Tests.SetOpsTS
+    Tests.Vector
+  ghc-options: -Wall -threaded -rtsopts -Wcompat
+  include-dirs: test
+
+  if impl(ghc <9.0)
+    build-depends: integer-gmp
+  else
+    build-depends: ghc-bignum
+
+benchmark bitvec-bench
+  build-depends:
+    base,
+    bitvec,
+    containers,
+    random,
+    tasty-bench,
+    vector
+  type: exitcode-stdio-1.0
+  main-is: Bench.hs
+  default-language: Haskell2010
+  hs-source-dirs: bench
+  other-modules:
+    Bench.BitIndex
+    Bench.GCD
+    Bench.Invert
+    Bench.Intersection
+    Bench.Product
+    Bench.RandomFlip
+    Bench.RandomRead
+    Bench.RandomWrite
+    Bench.Remainder
+    Bench.Reverse
+    Bench.Sum
+    Bench.Union
+  ghc-options: -O2 -Wall -Wcompat
+
+  if impl(ghc <9.0)
+    build-depends: integer-gmp
+  else
+    build-depends: ghc-bignum

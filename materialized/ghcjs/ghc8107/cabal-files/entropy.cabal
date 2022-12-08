@@ -1,0 +1,95 @@
+name:           entropy
+version:        0.4.1.6
+description:    A mostly platform independent method to obtain cryptographically strong entropy
+                (RDRAND, urandom, CryptAPI, and patches welcome)
+                Users looking for cryptographically strong (number-theoretically
+                sound) PRNGs should see the 'DRBG' package too.
+synopsis:       A platform independent entropy source
+license:        BSD3
+license-file:   LICENSE
+copyright:      Thomas DuBuisson <thomas.dubuisson@gmail.com>
+author:         Thomas DuBuisson <thomas.dubuisson@gmail.com>
+maintainer:     Thomas DuBuisson <thomas.dubuisson@gmail.com>
+category:       Data, Cryptography
+homepage:       https://github.com/TomMD/entropy
+bug-reports:    https://github.com/TomMD/entropy/issues
+stability:      stable
+
+-- build-type:  Simple
+-- ^^ Used for HaLVM
+build-type:     Custom
+
+-- ^^ Test for RDRAND support using 'ghc'
+cabal-version:  >=1.10
+tested-with:    GHC == 8.2.2
+-- data-files:
+extra-source-files:   ./cbits/getrandom.c ./cbits/random_initialized.c ./cbits/rdrand.c, ./cbits/rdrand.h, README.md
+
+-- Notice to compile  with HaLVM the above 'build-type' must be changed
+-- to 'Simple' instead of 'Custom'.  The current build system naively
+-- runs GHC to determine if the compiler supports RDRAND before proceeding.
+flag halvm
+    description:        Build for the HaLVM
+    default:            False
+
+
+custom-setup
+  setup-depends: Cabal >= 1.10 && < 3.3
+               , base < 5
+               , filepath < 1.5
+               , directory < 1.4
+               , process < 1.7
+
+library
+  ghc-options:  -O2
+  exposed-modules: System.Entropy
+  if impl(ghcjs) || os(ghcjs)
+    other-modules: System.EntropyGhcjs
+  else {
+    if os(windows)
+      other-modules: System.EntropyWindows
+    else {
+         if os(halvm)
+           other-modules: System.EntropyXen
+         else
+           other-modules: System.EntropyNix
+    }
+  }
+  other-extensions:    CPP, ForeignFunctionInterface, BangPatterns,
+                       ScopedTypeVariables
+  build-depends:       base >= 4.8 && < 5, bytestring
+
+  default-language:    Haskell2010
+
+  if impl(ghcjs) || os(ghcjs) {
+    build-depends:     ghcjs-dom
+                     , jsaddle
+  }
+  else {
+    if(os(halvm))
+      cpp-options: -DXEN -DHAVE_RDRAND
+      cc-options:  -DXEN -DHAVE_RDRAND
+    if arch(x86_64)
+      cpp-options: -Darch_x86_64
+      cc-options:  -Darch_x86_64 -O2
+      -- gcc 4.8.2 on i386 fails to compile rdrand.c when using -fPIC!
+      c-sources:    cbits/rdrand.c
+      include-dirs: cbits
+    if arch(i386)
+      cpp-options: -Darch_i386
+      cc-options:  -Darch_i386 -O2
+    if os(windows)
+      build-depends: Win32 >= 2.5
+      cpp-options: -DisWindows
+      cc-options:  -DisWindows
+      extra-libraries: advapi32
+    else
+      if !os(halvm)
+         Build-Depends: unix
+         c-sources: cbits/getrandom.c cbits/random_initialized.c
+  }
+
+
+source-repository head
+    type:       git
+    location:   https://github.com/TomMD/entropy

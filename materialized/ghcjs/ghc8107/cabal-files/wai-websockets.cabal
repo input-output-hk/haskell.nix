@@ -1,0 +1,56 @@
+Name:                wai-websockets
+Version:             3.0.1.2
+Synopsis:            Provide a bridge between WAI and the websockets package.
+License:             MIT
+License-file:        LICENSE
+Author:              Michael Snoyman, Jasper Van der Jeugt, Ting-Yen Lai
+Maintainer:          michael@snoyman.com
+Homepage:            http://github.com/yesodweb/wai
+Category:            Web, Yesod
+Build-Type:          Simple
+Cabal-Version:       >=1.8
+Stability:           Stable
+description:         API docs and the README are available at <http://www.stackage.org/package/wai-websockets>.
+
+extra-source-files: static/client.js, static/client.html, static/screen.css
+                    README.md ChangeLog.md
+
+flag example
+
+Library
+  Build-Depends:     base               >= 3        && < 5
+                   , bytestring         >= 0.9.1.4
+                   , wai                >= 3.0      && < 3.3
+                   , case-insensitive   >= 0.2
+                   , network            >= 2.2.1.5
+                   , transformers       >= 0.2
+                   , websockets         >= 0.9
+                   , http-types
+  Exposed-modules:   Network.Wai.Handler.WebSockets
+  ghc-options:       -Wall
+
+Executable           wai-websockets-example
+  if flag(example)
+    buildable: True
+    Build-Depends:   base               >= 3 && < 5
+                   , wai-websockets
+                   , websockets
+                   , warp
+                   , wai
+                   , wai-app-static
+                   , bytestring
+                   , case-insensitive
+                   , transformers
+                   , network
+                   , text
+                   , file-embed
+                   , http-types
+  else
+    buildable: False
+
+  ghc-options:       -Wall -threaded
+  main-is:           server.lhs
+
+source-repository head
+  type:     git
+  location: git://github.com/yesodweb/wai.git

@@ -1,0 +1,88 @@
+name:            directory-tree
+version:         0.12.1
+homepage:        http://brandon.si/code/directory-tree-module-released/
+synopsis:        A simple directory-like tree datatype, with useful IO functions
+description:     A simple directory-like tree datatype, with useful IO functions and Foldable and Traversable instance
+ .
+ Provides a simple data structure mirroring a directory tree on the
+ filesystem, as well as useful functions for reading and writing
+ file and directory structures in the IO monad.
+ .
+ Importing the library and optional (useful) Foldable and Traverable libraries:
+ .
+ > import System.Directory.Tree
+ > import qualified Data.Foldable as F
+ > import qualified Data.Traversable as T
+ .
+ Write a hand-made directory tree of textfiles (strings) to the disk.
+ Simulates creating a new user Tux's home directory on a unix machine:
+ .
+ > writeDirectory$ "/home" :/ Dir "Tux" [File "README" "Welcome!"]
+ .
+ "read" a directory by opening all the files at a filepath with readFile,
+ returning an 'AnchoredDirTree String' (d2). Then check for any IO failures:
+ .
+ > do (base :/ d2) <- readDirectory "../parent_dir/dir2/"
+ >    let failed = anyFailed d2
+ >    if failed then ...
+ .
+ Use Foldable instance function to concat a directory 'dir' of text files into a
+ single file under the same directory:
+ .
+ > do (b :/ dt) <- readDirectory dir
+ >    let f = F.concat dt
+ >    return$ b :/ File "ALL_TEXT" f
+ .
+ Open all the files in the current directory as lazy bytestrings, ignoring
+ the base path in Anchored wrapper:
+ .
+ > import qualified Data.ByteString.Lazy as B
+ > do (_ :/ dTree) <- readDirectoryWith B.readFile "./"
+ .
+ This version also offers an experimental function `readDirectoryWithL` that does
+ lazy directory IO, allowing you to treat the returned `DirTree` as if it were a
+ normal lazily-generated data structure.
+ .
+ For example, the following does only the amount of IO necessary to list the file
+ names of the children of the root directory, similar to "ls /":
+ .
+ > do d <- readDirectoryWithL readFile "/"
+ >    mapM_ (putStrLn . name) $ contents $ free d
+ .
+ Any ideas or suggestions for improvements are most welcome :-)
+ .
+ /CHANGES/: from 0.11
+ .
+ - export 'System.Directory.Tree.transformDir' as requested
+ .
+ - add test suite to cabal file
+ .
+ - remove redundant @removeNonexistent@ (thanks to dmwit for patch)
+ .
+
+category:        Data, System
+license:         BSD3
+license-file:    LICENSE
+copyright:       (c) 2011, Brandon Simmons <brandon.m.simmons@gmail.com>
+author:          Brandon Simmons
+maintainer:      Brandon Simmons <brandon.m.simmons@gmail.com>
+cabal-version:   >= 1.8.0.4
+build-type:      Simple
+tested-with:     GHC <=7.8.2
+extra-source-files: EXAMPLES/Examples.hs, EXAMPLES/LazyExamples.hs
+
+source-repository head
+    type:     git
+    location: https://github.com/jberryman/directory-tree.git
+
+library
+    exposed-modules: System.Directory.Tree
+    build-depends: base <5, filepath <2, directory <2
+    ghc-options:       -Wall
+
+test-suite test
+    main-is: Test.hs
+    type: exitcode-stdio-1.0
+    build-depends: base <5, filepath <2, directory <2
+                 , process
+    ghc-options:       -Wall

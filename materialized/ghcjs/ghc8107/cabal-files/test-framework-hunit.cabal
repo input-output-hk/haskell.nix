@@ -1,0 +1,43 @@
+Name:                test-framework-hunit
+Version:             0.3.0.2
+x-revision: 3
+Cabal-Version:       >= 1.6
+Category:            Testing
+Synopsis:            HUnit support for the test-framework package.
+License:             BSD3
+License-File:        LICENSE
+Author:              Max Bolingbroke <batterseapower@hotmail.com>
+Maintainer:          Haskell Libraries <libraries@haskell.org>
+Homepage:            https://batterseapower.github.io/test-framework/
+Bug-Reports:         https://github.com/haskell/test-framework/issues
+Build-Type:          Simple
+Description:         HUnit support for the test-framework package.
+
+Flag Base4
+        Description:    Choose base version 4
+        Default:        True
+
+Flag Base3
+        Description:    Choose base version 3
+        Default:        False
+
+
+Library
+        Exposed-Modules:        Test.Framework.Providers.HUnit
+
+        Build-Depends:          test-framework >= 0.2.0, HUnit >= 1.2 && < 1.7, extensible-exceptions >= 0.1.1 && < 0.2.0
+        if flag(base3)
+                Build-Depends:          base >= 3 && < 4
+        else
+                if flag(base4)
+                        Build-Depends:          base >= 4 && < 5
+
+        Extensions:             TypeOperators
+                                MultiParamTypeClasses
+
+        Ghc-Options:            -Wall
+
+Source-Repository head
+  Type:     git
+  Location: https://github.com/haskell/test-framework.git
+  subdir:   hunit

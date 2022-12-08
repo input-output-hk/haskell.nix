@@ -1,0 +1,160 @@
+cabal-version: 2.2
+name:          algebraic-graphs
+version:       0.5
+synopsis:      A library for algebraic graph construction and transformation
+license:       MIT
+license-file:  LICENSE
+author:        Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard
+maintainer:    Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard,
+               Alexandre Moine <alexandre@moine.me>, github: @nobrakal
+copyright:     Andrey Mokhov, 2016-2019
+homepage:      https://github.com/snowleopard/alga
+category:      Algebra, Algorithms, Data Structures, Graphs
+build-type:    Simple
+tested-with:   GHC == 8.0.2,
+               GHC == 8.2.2,
+               GHC == 8.4.4,
+               GHC == 8.6.5,
+               GHC == 8.8.1
+stability:     experimental
+description:
+    <https://github.com/snowleopard/alga Alga> is a library for algebraic construction and
+    manipulation of graphs in Haskell. See <https://github.com/snowleopard/alga-paper this paper>
+    for the motivation behind the library, the underlying theory and implementation details.
+    .
+    The top-level module
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph.html Algebra.Graph>
+    defines the main data type for /algebraic graphs/
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph.html#t:Graph Graph>,
+    as well as associated algorithms. For type-safe representation and
+    manipulation of /non-empty algebraic graphs/, see
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-NonEmpty.html Algebra.Graph.NonEmpty>.
+    Furthermore, /algebraic graphs with edge labels/ are implemented in
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-Labelled.html Algebra.Graph.Labelled>.
+    .
+    The library also provides conventional graph data structures, such as
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-AdjacencyMap.html Algebra.Graph.AdjacencyMap>
+    along with its various flavours: adjacency maps specialised to graphs with
+    vertices of type 'Int'
+    (<http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-AdjacencyIntMap.html Algebra.Graph.AdjacencyIntMap>),
+    non-empty adjacency maps
+    (<http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-NonEmpty-AdjacencyMap.html Algebra.Graph.NonEmpty.AdjacencyMap>),
+    and adjacency maps with edge labels
+    (<http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-Labelled-AdjacencyMap.html Algebra.Graph.Labelled.AdjacencyMap>).
+    A large part of the API of algebraic graphs and adjacency maps is available
+    through the 'Foldable'-like type class
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-ToGraph.html Algebra.Graph.ToGraph>.
+    .
+    The type classes defined in
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-Class.html Algebra.Graph.Class>
+    and
+    <http://hackage.haskell.org/package/algebraic-graphs/docs/Algebra-Graph-HigherKinded-Class.html Algebra.Graph.HigherKinded.Class>
+    can be used for polymorphic construction and manipulation of graphs.
+    .
+    This is an experimental library and the API is expected to remain unstable until version 1.0.0.
+    Please consider contributing to the on-going
+    <https://github.com/snowleopard/alga/issues discussions on the library API>.
+
+extra-doc-files:
+    AUTHORS.md
+    CHANGES.md
+    README.md
+
+source-repository head
+    type:     git
+    location: https://github.com/snowleopard/alga.git
+
+common common-settings
+    build-depends:      array        >= 0.4     && < 0.6,
+                        base         >= 4.7     && < 5,
+                        containers   >= 0.5.5.1 && < 0.8,
+                        deepseq      >= 1.3.0.1 && < 1.5,
+                        mtl          >= 2.1     && < 2.3,
+                        transformers >= 0.4     && < 0.6
+    default-language:   Haskell2010
+    default-extensions: FlexibleContexts
+                        FlexibleInstances
+                        GeneralizedNewtypeDeriving
+                        ScopedTypeVariables
+                        TupleSections
+                        TypeApplications
+                        TypeFamilies
+    other-extensions:   CPP
+                        DeriveFunctor
+                        OverloadedStrings
+                        RankNTypes
+                        RecordWildCards
+    GHC-options:        -Wall
+                        -Wcompat
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wredundant-constraints
+                        -fno-warn-name-shadowing
+                        -fspec-constr
+
+library
+    import:             common-settings
+    hs-source-dirs:     src
+    exposed-modules:    Algebra.Graph,
+                        Algebra.Graph.Undirected,
+                        Algebra.Graph.Acyclic.AdjacencyMap,
+                        Algebra.Graph.AdjacencyIntMap,
+                        Algebra.Graph.AdjacencyIntMap.Algorithm,
+                        Algebra.Graph.AdjacencyMap,
+                        Algebra.Graph.AdjacencyMap.Algorithm,
+                        Algebra.Graph.Bipartite.Undirected.AdjacencyMap,
+                        Algebra.Graph.Class,
+                        Algebra.Graph.Export,
+                        Algebra.Graph.Export.Dot,
+                        Algebra.Graph.HigherKinded.Class,
+                        Algebra.Graph.Internal,
+                        Algebra.Graph.Label,
+                        Algebra.Graph.Labelled,
+                        Algebra.Graph.Labelled.AdjacencyMap,
+                        Algebra.Graph.Labelled.Example.Automaton,
+                        Algebra.Graph.Labelled.Example.Network,
+                        Algebra.Graph.NonEmpty,
+                        Algebra.Graph.NonEmpty.AdjacencyMap,
+                        Algebra.Graph.Relation,
+                        Algebra.Graph.Relation.Preorder,
+                        Algebra.Graph.Relation.Reflexive,
+                        Algebra.Graph.Relation.Symmetric,
+                        Algebra.Graph.Relation.Transitive,
+                        Algebra.Graph.ToGraph,
+                        Data.Graph.Typed
+
+test-suite test-alga
+    import:             common-settings
+    hs-source-dirs:     test
+    type:               exitcode-stdio-1.0
+    main-is:            Main.hs
+    other-modules:      Algebra.Graph.Test,
+                        Algebra.Graph.Test.API,
+                        Algebra.Graph.Test.Acyclic.AdjacencyMap,
+                        Algebra.Graph.Test.AdjacencyIntMap,
+                        Algebra.Graph.Test.AdjacencyMap,
+                        Algebra.Graph.Test.Arbitrary,
+                        Algebra.Graph.Test.Bipartite.Undirected.AdjacencyMap,
+                        Algebra.Graph.Test.Export,
+                        Algebra.Graph.Test.Generic,
+                        Algebra.Graph.Test.Graph,
+                        Algebra.Graph.Test.Undirected,
+                        Algebra.Graph.Test.Internal,
+                        Algebra.Graph.Test.Label,
+                        Algebra.Graph.Test.Labelled.AdjacencyMap,
+                        Algebra.Graph.Test.Labelled.Graph,
+                        Algebra.Graph.Test.NonEmpty.AdjacencyMap,
+                        Algebra.Graph.Test.NonEmpty.Graph,
+                        Algebra.Graph.Test.Relation,
+                        Algebra.Graph.Test.Relation.SymmetricRelation,
+                        Algebra.Graph.Test.RewriteRules,
+                        Data.Graph.Test.Typed
+    build-depends:      algebraic-graphs,
+                        extra              >= 1.4     && < 2,
+                        inspection-testing >= 0.4.2.2 && < 0.5,
+                        QuickCheck         >= 2.10    && < 2.14
+    other-extensions:   ConstrainedClassMethods
+                        ConstraintKinds
+                        MultiParamTypeClasses
+                        TemplateHaskell
+                        ViewPatterns

@@ -1,0 +1,42 @@
+Name:               utf8-string
+Version:            1.0.2
+Author:             Eric Mertens
+Maintainer:         emertens@galois.com
+License:            BSD3
+License-file:       LICENSE
+Homepage:           https://github.com/glguy/utf8-string/
+Bug-Reports:        https://github.com/glguy/utf8-string/issues
+Synopsis:           Support for reading and writing UTF8 Strings
+Description:        A UTF8 layer for Strings. The utf8-string
+                    package provides operations for encoding UTF8
+                    strings to Word8 lists and back, and for reading and
+                    writing UTF8 without truncation.
+Category:           Codec
+Build-type:         Simple
+cabal-version:      >= 1.10
+Extra-Source-Files: CHANGELOG.markdown
+Tested-With:        GHC==7.0.4, GHC==7.4.2, GHC==7.6.3, GHC==7.8.4, GHC==7.10.3, GHC==8.0.2, GHC==8.2.1
+
+source-repository head
+  type:               git
+  location:           https://github.com/glguy/utf8-string
+
+library
+  Ghc-options:        -W -O2
+
+  build-depends:      base >= 4.3 && < 5, bytestring >= 0.9
+
+  Exposed-modules:    Codec.Binary.UTF8.String
+                      Codec.Binary.UTF8.Generic
+                      Data.String.UTF8
+                      Data.ByteString.UTF8
+                      Data.ByteString.Lazy.UTF8
+
+  default-language:   Haskell2010
+
+test-suite unit-tests
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     tests
+  main-is:            Tests.hs
+  build-depends:      base, HUnit >= 1.3 && < 1.7, utf8-string
+  default-language:   Haskell2010

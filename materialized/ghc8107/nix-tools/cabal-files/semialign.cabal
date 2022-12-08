@@ -1,0 +1,108 @@
+cabal-version:      >=1.10
+name:               semialign
+version:            1.2.0.1
+x-revision:         3
+synopsis:
+  Align and Zip type-classes from the common Semialign ancestor.
+
+homepage:           https://github.com/haskellari/these
+license:            BSD3
+license-file:       LICENSE
+author:             C. McCann, Oleg Grenrus
+maintainer:         Oleg Grenrus <oleg.grenrus@iki.fi>
+category:           Data, These
+build-type:         Simple
+extra-source-files: CHANGELOG.md
+description:
+  The major use of @These@ of this is provided by the @align@ member of
+  @Semialign@ class, representing a generalized notion of "zipping with padding"
+  that combines structures without truncating to the size of the smaller input.
+  .
+  It turns out that @zip@ operation fits well the @Semialign@ class,
+  forming lattice-like structure.
+
+tested-with:
+    GHC ==7.4.2
+     || ==7.6.3
+     || ==7.8.4
+     || ==7.10.3
+     || ==8.0.2
+     || ==8.2.2
+     || ==8.4.4
+     || ==8.6.5
+     || ==8.8.4
+     || ==8.10.4
+     || ==9.0.2
+     || ==9.2.4
+     || ==9.4.1
+  , GHCJS ==8.4
+
+source-repository head
+  type:     git
+  location: https://github.com/haskellari/these.git
+  subdir:   semialign
+
+flag semigroupoids
+  description: Build with semigroupoids dependency
+  manual:      True
+  default:     True
+
+library
+  default-language: Haskell2010
+  ghc-options:      -Wall
+
+  if impl(ghc >=8.0)
+    ghc-options: -Wno-trustworthy-safe
+  if impl(ghc >=9.2)
+    ghc-options: -Wno-noncanonical-monoid-instances
+
+  hs-source-dirs:   src
+  exposed-modules:
+    Data.Align
+    Data.Crosswalk
+    Data.Semialign
+    Data.Semialign.Indexed
+    Data.Zip
+
+  other-modules:    Data.Semialign.Internal
+
+  -- ghc boot libs
+  build-depends:
+      base          >=4.5.1.0 && <4.18
+    , containers    >=0.4.2.1 && <0.7
+    , transformers  >=0.3.0.0 && <0.7
+
+  -- These
+  build-depends:    these >=1.1.1.1 && <1.2
+
+  -- other dependencies
+  build-depends:
+      hashable                       >=1.2.7.0  && <1.5
+    , indexed-traversable            >=0.1.1    && <0.2
+    , indexed-traversable-instances  >=0.1      && <0.2
+    , tagged                         >=0.8.6    && <0.9
+    , unordered-containers           >=0.2.8.0  && <0.3
+    , vector                         >=0.12.0.2 && <0.14
+
+  -- base shims
+  if !impl(ghc >=8.2)
+    build-depends: bifunctors >=5.5.4 && <5.6
+
+  if !impl(ghc >=8.0)
+    build-depends:
+        semigroups           >=0.18.5  && <0.21
+      , transformers         >=0.3.0.0 && <0.7
+      , transformers-compat  >=0.6.5   && <0.8
+
+    -- Ensure Data.Functor.Classes is always available
+    if impl(ghc >=7.10)
+      build-depends: transformers >=0.4.2.0
+
+  if !impl(ghc >=7.10)
+    build-depends: void >=0.7.3 && <0.8
+
+  if impl(ghc <7.5)
+    build-depends: ghc-prim
+
+  if flag(semigroupoids)
+    build-depends: semigroupoids >=5.3.2 && <5.4

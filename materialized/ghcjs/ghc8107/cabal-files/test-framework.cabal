@@ -1,0 +1,133 @@
+cabal-version:       >= 1.10
+Name:                test-framework
+Version:             0.8.2.0
+x-revision: 6
+
+Build-Type:          Simple
+Category:            Testing
+Synopsis:            Framework for running and organising tests, with HUnit and QuickCheck support
+Description:         Allows tests such as QuickCheck properties and HUnit test cases to be assembled into test groups, run in
+                     parallel (but reported in deterministic order, to aid diff interpretation) and filtered and controlled by
+                     command line options. All of this comes with colored test output, progress reporting and test statistics output.
+License:             BSD3
+License-File:        LICENSE
+Author:              Max Bolingbroke <batterseapower@hotmail.com>
+Maintainer:          Libraries List <libraries@haskell.org>
+Homepage:            http://haskell.github.io/test-framework/
+Bug-Reports:         https://github.com/haskell/test-framework/issues
+Tested-With:         GHC==8.2.2, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2, GHC==7.2.2, GHC==7.0.4
+
+Extra-Source-Files: ChangeLog.md
+
+Library
+        Exposed-Modules:        Test.Framework
+                                Test.Framework.Options
+                                Test.Framework.Providers.API
+                                Test.Framework.Runners.Console
+                                Test.Framework.Runners.Options
+                                Test.Framework.Runners.TestPattern
+                                Test.Framework.Runners.API
+                                Test.Framework.Seed
+
+        Other-Modules:          Test.Framework.Core
+                                Test.Framework.Improving
+                                Test.Framework.Runners.Console.Colors
+                                Test.Framework.Runners.Console.ProgressBar
+                                Test.Framework.Runners.Console.Run
+                                Test.Framework.Runners.Console.Statistics
+                                Test.Framework.Runners.Console.Table
+                                Test.Framework.Runners.Console.Utilities
+                                Test.Framework.Runners.Core
+                                Test.Framework.Runners.Processors
+                                Test.Framework.Runners.Statistics
+                                Test.Framework.Runners.ThreadPool
+                                Test.Framework.Runners.TimedConsumption
+                                Test.Framework.Runners.XML.JUnitWriter
+                                Test.Framework.Runners.XML
+                                Test.Framework.Utilities
+
+        Build-Depends:          base           >= 4.3    && < 5
+                              , ansi-terminal  >= 0.4.0  && < 0.12
+                              , ansi-wl-pprint >= 0.5.1  && < 0.7
+                              , random         >= 1.0    && < 1.3
+                              , containers     >= 0.1    && < 0.7
+                              , regex-posix    >= 0.72   && < 0.97
+                              , old-locale     >= 1.0    && < 1.1
+                              , time           >= 1.1.2  && < 1.12
+                              , xml            >= 1.3.5  && < 1.4
+                              , hostname       >= 1.0    && < 1.1
+
+        if !impl(ghc >= 7.8)
+                Build-Depends:  base-orphans   >= 0.1    && < 0.9
+
+        if !impl(ghc >= 8.0)
+                Build-Depends:  semigroups     >= 0.18   && < 0.20
+
+        Default-Language:       Haskell2010
+        Default-Extensions:     CPP
+                                PatternGuards
+                                ExistentialQuantification
+                                RecursiveDo
+                                FlexibleInstances
+                                TypeSynonymInstances
+                                TypeOperators
+                                FunctionalDependencies
+                                MultiParamTypeClasses
+
+        -- workaround https://github.com/haskell/cabal/issues/4443
+        if impl(ghc >= 7.2)
+                Default-Extensions: NondecreasingIndentation
+        Ghc-Options:            -Wall
+
+        if impl(ghc)
+                Cpp-Options:            -DCOMPILER_GHC
+
+        if impl(ghc >= 8.0)
+                Ghc-Options: -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
+
+Test-Suite test-framework-tests
+        Main-Is:                Test/Framework/Tests.hs
+        Type:                   exitcode-stdio-1.0
+
+        -- Buildable:              False
+        Build-Depends:          HUnit          >= 1.2
+                              , QuickCheck     >= 2.3 && < 2.15
+                              , base           >= 4.3
+                              , random         >= 1.0
+                              , containers     >= 0.1
+                              , ansi-terminal  >= 0.4.0
+                              , ansi-wl-pprint >= 0.5.1
+                              , regex-posix    >= 0.72
+                              , old-locale     >= 1.0
+                              , time           >= 1.1.2
+                              , xml            >= 1.3.5
+                              , hostname       >= 1.0
+                              , libxml         >= 0.1.1
+                              , bytestring     >= 0.9
+                              , semigroups     >= 0.18
+
+        Default-Language:       Haskell2010
+        Default-Extensions:     CPP
+                                PatternGuards
+                                ExistentialQuantification
+                                RecursiveDo
+                                FlexibleInstances
+                                TypeSynonymInstances
+                                TypeOperators
+                                FunctionalDependencies
+                                MultiParamTypeClasses
+
+        if impl(ghc >= 7.2)
+            Default-Extensions: NondecreasingIndentation
+
+        Cpp-Options:            -DTEST
+
+        Ghc-Options:            -Wall -threaded
+
+        if impl(ghc)
+                Cpp-Options:            -DCOMPILER_GHC
+
+Source-Repository head
+  Type:     git
+  Location: https://github.com/haskell/test-framework.git
+  subdir:   core

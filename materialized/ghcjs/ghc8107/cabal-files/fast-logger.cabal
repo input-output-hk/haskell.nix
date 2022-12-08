@@ -1,0 +1,64 @@
+Name:                   fast-logger
+Version:                3.0.3
+Author:                 Kazu Yamamoto <kazu@iij.ad.jp>
+Maintainer:             Kazu Yamamoto <kazu@iij.ad.jp>
+License:                BSD3
+License-File:           LICENSE
+Synopsis:               A fast logging system
+Description:            A fast logging system for Haskell
+Homepage:               https://github.com/kazu-yamamoto/logger
+Category:               System
+Cabal-Version:          >= 1.10
+Build-Type:             Simple
+Extra-Source-Files:     README.md ChangeLog.md
+Tested-With:            GHC ==7.8.4 || ==7.10.3 || ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.3
+
+Library
+  Default-Language:     Haskell2010
+  GHC-Options:          -Wall
+  Exposed-Modules:      System.Log.FastLogger
+                        System.Log.FastLogger.Date
+                        System.Log.FastLogger.File
+                        System.Log.FastLogger.Internal
+                        System.Log.FastLogger.LoggerSet
+                        System.Log.FastLogger.Types
+  Other-Modules:        System.Log.FastLogger.Imports
+                        System.Log.FastLogger.IO
+                        System.Log.FastLogger.FileIO
+                        System.Log.FastLogger.LogStr
+                        System.Log.FastLogger.Logger
+  Build-Depends:        base >= 4.9 && < 5
+                      , array
+                      , auto-update >= 0.1.2
+                      , easy-file >= 0.2
+                      , bytestring >= 0.10.4
+                      , directory
+                      , filepath
+                      , text
+                      , unix-time >= 0.4.4
+                      , unix-compat
+  if impl(ghc < 7.8)
+      Build-Depends:    bytestring-builder
+  if impl(ghc >= 8)
+      Default-Extensions:  Strict StrictData
+
+Test-Suite spec
+  Main-Is:          Spec.hs
+  Hs-Source-Dirs:   test
+  Default-Language: Haskell2010
+  Type:             exitcode-stdio-1.0
+
+  Ghc-Options:      -Wall -threaded
+  Other-Modules:    FastLoggerSpec
+  Build-Tools:      hspec-discover >= 2.6
+  Build-Depends:    base >= 4 && < 5
+                  , bytestring >= 0.10.4
+                  , directory
+                  , fast-logger
+                  , hspec
+  if impl(ghc >= 8)
+      Default-Extensions:  Strict StrictData
+
+Source-Repository head
+  Type:                 git
+  Location:             git://github.com/kazu-yamamoto/logger.git

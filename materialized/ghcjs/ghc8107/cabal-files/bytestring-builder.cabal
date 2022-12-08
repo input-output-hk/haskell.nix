@@ -1,0 +1,91 @@
+name:                bytestring-builder
+version:             0.10.8.2.0
+synopsis:            The new bytestring builder, packaged outside of GHC
+description:
+  This is the bytestring builder that is debuting in bytestring-0.10.4.0, which
+  should be shipping with GHC 7.8, probably late in 2013.  This builder has
+  several nice simplifications and improvements, and more out-of-box
+  functionality than the older blaze-builder.
+  .
+  Note that this package detects which version of bytestring you are compiling
+  against,  and if you are compiling against bytestring-0.10.4 or later, will
+  be an empty package.
+  .
+  This package lets the new interface and implementation be used with most
+  older compilers without upgrading bytestring, which can be rather
+  problematic.  In conjunction with blaze-builder-0.4 or later,  which
+  offers an implementation of blaze-builder in terms of bytestring-builder,
+  this should let most people try the new interface and implementation without
+  causing undue compatibility problems with packages that depend on
+  blaze-builder.
+  .
+  GHC 7.6 did debut an almost identical interface and implementation, but with
+  slightly different module names and organization.   Trying to re-export/rename
+  the builder provided with 7.6 did not turn out to be very practical,  because
+  this interface includes new functions that rely on Builder internals,
+  which are not exported in 7.6.  Furthermore, these module names should be
+  deprecated in 7.10.
+license:             BSD3
+license-file:        LICENSE
+author:              Simon Meier, Jasper Van der Jeugt, Duncan Coutts
+maintainer:          Leon P Smith <leon@melding-monads.com>
+copyright:           (c) 2010 Jasper Van der Jeugt
+                     (c) 2010-2013 Simon Meier
+                     (c) 2012-2013 Duncan Coutts
+category:            Data
+build-type:          Simple
+extra-source-files:
+                     cbits/*.c
+
+                     src/Data/ByteString/*.hs
+                     src/Data/ByteString/Builder/*.hs
+                     src/Data/ByteString/Builder/Prim/*.hs
+                     src/Data/ByteString/Builder/Prim/Internal/*.hs
+                     src/Data/ByteString/Short/*.hs
+
+                     CHANGELOG.md
+cabal-version:       >=1.8
+
+source-repository head
+  type:     git
+  location: http://github.com/lpsmith/bytestring-builder
+
+source-repository this
+  type:     git
+  location: http://github.com/lpsmith/bytestring-builder
+  tag:      v0.10.8.1.0
+
+Flag bytestring_has_builder
+  default: True
+
+library
+  build-depends:     base >= 4.2 && < 5,
+                     deepseq
+
+  if flag(bytestring_has_builder)
+      build-depends:     bytestring >= 0.10.4
+      -- package is empty for bytestring >= 0.10.4
+  else
+      build-depends:     bytestring >= 0.9     && < 0.10.2
+      hs-source-dirs: src
+      c-sources: cbits/itoa.c
+                 cbits/fpstring.c
+      exposed-modules:
+                         Data.ByteString.Builder
+                         Data.ByteString.Builder.Extra
+                         Data.ByteString.Builder.Prim
+
+                         -- perhaps only exposed temporarily
+                         Data.ByteString.Builder.Internal
+                         Data.ByteString.Builder.Prim.Internal
+
+                         Data.ByteString.Short
+                         Data.ByteString.Short.Internal
+
+      other-modules:
+                         Data.ByteString.Builder.ASCII
+                         Data.ByteString.Builder.Prim.Binary
+                         Data.ByteString.Builder.Prim.ASCII
+                         Data.ByteString.Builder.Prim.Internal.Floating
+                         Data.ByteString.Builder.Prim.Internal.UncheckedShifts
+                         Data.ByteString.Builder.Prim.Internal.Base16

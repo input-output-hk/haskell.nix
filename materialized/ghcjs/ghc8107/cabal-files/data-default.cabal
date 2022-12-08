@@ -1,0 +1,21 @@
+Name:            data-default
+Version:         0.7.1.1
+Cabal-Version:   >= 1.6
+Category:        Data
+Synopsis:        A class for types with a default value
+Build-Type:      Simple
+License:         BSD3
+License-File:    LICENSE
+Author:          Lukas Mai
+Maintainer:      <l.mai@web.de>
+
+source-repository head
+  type: git
+  location: https://github.com/mauke/data-default
+
+Library
+  Build-Depends:     base >=2 && <5, data-default-class >=0.1.2.0,
+                     data-default-instances-containers,
+                     data-default-instances-dlist,
+                     data-default-instances-old-locale
+  Exposed-Modules:   Data.Default

@@ -1,0 +1,159 @@
+cabal-version: 2.0
+
+name:                saltine
+version:             0.2.0.1
+synopsis:            Cryptography that's easy to digest (NaCl/libsodium bindings).
+description:
+
+  /NaCl/ (pronounced \"salt\") is a new easy-to-use high-speed software
+  library for network communication, encryption, decryption,
+  signatures, etc. NaCl's goal is to provide all of the core
+  operations needed to build higher-level cryptographic tools.
+  .
+  <http://nacl.cr.yp.to/>
+  .
+  /Sodium/ is a portable, cross-compilable, installable, packageable
+  crypto library based on NaCl, with a compatible API.
+  .
+  <https://github.com/jedisct1/libsodium>
+  .
+  /Saltine/ is a Haskell binding to the NaCl primitives going through
+  Sodium for build convenience and, eventually, portability.
+
+extra-source-files:
+                     README.md
+                     CHANGELOG.md
+
+license:             MIT
+license-file:        LICENSE
+author:              Joseph Abrahamson
+maintainer:          Max Amanshauser <max@lambdalifting.org>
+bug-reports:         http://github.com/tel/saltine/issues
+copyright:           Copyright (c) Joseph Abrahamson 2013
+category:            Cryptography
+build-type:          Simple
+tested-with:         GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.7, GHC==9.0.2, GHC==9.2.2
+
+source-repository head
+  type: git
+  location: https://github.com/tel/saltine.git
+
+library
+  hs-source-dirs:     src
+  exposed-modules:
+                  Crypto.Saltine
+                  Crypto.Saltine.Class
+                  Crypto.Saltine.Core.SecretBox
+                  Crypto.Saltine.Core.AEAD
+                  Crypto.Saltine.Core.AEAD.AES256GCM
+                  Crypto.Saltine.Core.AEAD.ChaCha20Poly1305
+                  Crypto.Saltine.Core.AEAD.ChaCha20Poly1305IETF
+                  Crypto.Saltine.Core.AEAD.XChaCha20Poly1305
+                  Crypto.Saltine.Core.Box
+                  Crypto.Saltine.Core.Stream
+                  Crypto.Saltine.Core.Auth
+                  Crypto.Saltine.Core.OneTimeAuth
+                  Crypto.Saltine.Core.Sign
+                  Crypto.Saltine.Core.Hash
+                  Crypto.Saltine.Core.ScalarMult
+                  Crypto.Saltine.Core.Password
+                  Crypto.Saltine.Core.Utils
+                  Crypto.Saltine.Internal.AEAD.AES256GCM
+                  Crypto.Saltine.Internal.AEAD.ChaCha20Poly1305
+                  Crypto.Saltine.Internal.AEAD.ChaCha20Poly1305IETF
+                  Crypto.Saltine.Internal.AEAD.XChaCha20Poly1305
+                  Crypto.Saltine.Internal.Auth
+                  Crypto.Saltine.Internal.Box
+                  Crypto.Saltine.Internal.ByteSizes
+                  Crypto.Saltine.Internal.Hash
+                  Crypto.Saltine.Internal.OneTimeAuth
+                  Crypto.Saltine.Internal.Password
+                  Crypto.Saltine.Internal.ScalarMult
+                  Crypto.Saltine.Internal.SecretBox
+                  Crypto.Saltine.Internal.Sign
+                  Crypto.Saltine.Internal.Stream
+                  Crypto.Saltine.Internal.Util
+  other-modules:
+
+  if os(windows)
+    extra-libraries: sodium
+  else
+    pkgconfig-depends: libsodium >= 1.0.18
+
+  cc-options:         -Wall
+  ghc-options:        -Wall -funbox-strict-fields
+  default-language:   Haskell2010
+  build-depends:
+                base        >= 4.5    && < 5
+              , bytestring  >= 0.10.8 && < 0.12
+              , deepseq    ^>= 1.4
+              , profunctors >= 5.3    && < 5.7
+              , hashable
+              , text       ^>= 1.2 || ^>= 2.0
+
+test-suite tests
+  type:    exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+                AuthProperties
+                BoxProperties
+                HashProperties
+                OneTimeAuthProperties
+                PasswordProperties
+                ScalarMultProperties
+                SecretBoxProperties
+                SealedBoxProperties
+                SignProperties
+                StreamProperties
+                AEAD.AES256GCMProperties
+                AEAD.ChaCha20Poly1305IETFProperties
+                AEAD.ChaCha20Poly1305Properties
+                AEAD.XChaCha20Poly1305Properties
+                Util
+                UtilProperties
+  ghc-options: -Wall -threaded -rtsopts
+  hs-source-dirs: tests
+  default-language: Haskell2010
+  build-depends:
+                base >= 4.7 && < 5
+              , saltine
+              , bytestring
+              , text
+              , QuickCheck
+              , test-framework-quickcheck2
+              , test-framework
+              , semigroups
+
+benchmark benchmarks
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  hs-source-dirs:
+      bench
+  ghc-options: -rtsopts -threaded -with-rtsopts=-N -O2
+  extra-libraries:
+      sodium
+  build-depends:
+      base
+    , bytestring
+    , text
+    , criterion
+    , deepseq
+    , saltine
+  other-modules:
+      AuthBench
+      OneTimeAuthBench
+      ConstantTimeBench
+      BoxBench
+      SecretBoxBench
+      HashBench
+      RandomBench
+      PasswordBench
+      ScalarMultBench
+      SignBench
+      StreamBench
+      BenchUtils
+      AES256GCMBench
+      ChaCha20Poly1305Bench
+      ChaCha20Poly1305IETFBench
+      XChaCha20Poly1305Bench
+  default-language: Haskell2010

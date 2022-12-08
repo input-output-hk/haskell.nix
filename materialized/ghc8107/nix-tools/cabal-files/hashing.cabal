@@ -1,0 +1,69 @@
+name:                hashing
+version:             0.1.0.1
+x-revision: 2
+synopsis:            A pure haskell library implements several hash algorithms.
+description:         hashing is a pure haskell hash library, supported hash algorithm: SHA1\/SHA224\/SHA256\/SHA384\/SHA512
+                     MD5 and Whirlpool. 
+                     .
+                     It provides a simple interface 'hash' and 'hashLazy' to compute a hash value Based on the type signature.
+                     .
+                     Performance wise it only has 1\/5 - 1\/15 of native C implementations, or 'cryptonite'.
+                     .
+                     Compare to other pure hash libraries such as PureMD5/SHA, it provides a simpler interface, 
+                     implements more algorithms, and has less dependencies.
+homepage:            https://github.com/wangbj/hashing
+license:             MIT
+license-file:        LICENSE
+author:              Baojun Wang
+maintainer:          wangbj@gmail.com
+copyright:           2016 Baojun Wang
+category:            Cryptography
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+bug-reports:         https://github.com/wangbj/hashing/issues
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Crypto.Hash
+                     , Crypto.Hash.ADT
+                     , Crypto.Hash.SHA1
+                     , Crypto.Hash.SHA256
+                     , Crypto.Hash.SHA512
+                     , Crypto.Hash.MD5
+                     , Crypto.Hash.Whirlpool
+  build-depends:       array >= 0.5.1.0 && < 0.6
+                     , base >= 4.8 && < 5
+                     , bytestring >= 0.10.6.0 && < 0.11
+  default-language:    Haskell2010
+
+executable hashing-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -Wall -with-rtsopts=-N1
+  build-depends:       QuickCheck >= 2.8.1
+                     , array >= 0.5.1.0
+                     , base
+                     , bytestring >= 0.10.6.0
+                     , hashing
+                     , mtl >= 2.2.1
+  default-language:    Haskell2010
+
+test-suite hashing-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       QuickCheck >= 2.8.1
+                     , array >= 0.5.1.0
+                     , base
+                     , bytestring >= 0.10.6.0
+                     , hashing >= 0.1.0.0
+                     , mtl >= 2.2.1
+                     , template-haskell >= 2.10.0.0
+                     , cryptonite >= 0.15
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N1
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/wangbj/hashing

@@ -1,0 +1,202 @@
+Name:       shelly
+
+Version:     1.9.0
+x-revision: 1
+Synopsis:    shell-like (systems) programming in Haskell
+
+Description: Shelly provides convenient systems programming in Haskell,
+             similar in spirit to POSIX shells. Shelly:
+             .
+               * is aimed at convenience and getting things done rather than
+                 being a demonstration of elegance.
+             .
+               * has detailed and useful error messages
+             .
+               * maintains its own environment, making it thread-safe.
+             .
+               * is modern, using Text filepath/directory
+             .
+             Shelly is originally forked from the Shellish package.
+             .
+             See the shelly-extra package for additional functionality.
+             .
+             An overview is available in the README: <https://github.com/yesodweb/Shelly.hs/blob/master/README.md>
+
+
+Homepage:            https://github.com/yesodweb/Shelly.hs
+License:             BSD3
+License-file:        LICENSE
+Author:              Greg Weber, Petr Rockai
+Maintainer:          Greg Weber <greg@gregweber.info>
+Category:            Development
+Build-type:          Simple
+Cabal-version:       >=1.8
+
+-- for the sdist of the test suite
+extra-source-files: test/src/*.hs
+                    test/examples/*.sh
+                    test/examples/*.hs
+                    test/data/zshrc
+                    test/data/nonascii.txt
+                    test/data/symlinked_dir/hoge_file
+                    test/testall
+                    README.md
+                    ChangeLog.md
+
+Library
+  Exposed-modules: Shelly, Shelly.Lifted, Shelly.Pipe, Shelly.Unix
+  other-modules:   Shelly.Base, Shelly.Find, Shelly.Directory
+  hs-source-dirs: src
+
+  Build-depends:
+    containers                >= 0.4.2.0,
+    time                      >= 1.3 && < 1.10,
+    directory                 >= 1.3.0.0 && < 1.4.0.0,
+    mtl                       >= 2,
+    process                   >= 1.0,
+    unix-compat               < 0.6,
+    unix,
+    filepath,
+    monad-control             >= 0.3.2 && < 1.1,
+    lifted-base,
+    lifted-async,
+    exceptions                >= 0.6,
+    enclosed-exceptions,
+    text, bytestring, async, transformers, transformers-base
+
+  build-depends: base >= 4.9
+  if impl(ghc >= 7.6.1)
+    build-depends:
+        base >= 4.6 && < 5
+  else
+    build-depends:
+      base >= 4 && < 5
+
+  ghc-options: -Wall
+
+  if impl(ghc >= 7.6.1)
+      CPP-Options: -DNO_PRELUDE_CATCH
+
+  extensions:
+    CPP
+
+source-repository head
+  type:     git
+  location: https://github.com/yesodweb/Shelly.hs
+
+Flag lifted
+   Description: run the tests against Shelly.Lifted
+   Default: False
+
+Test-Suite shelly-testsuite
+  type: exitcode-stdio-1.0
+  hs-source-dirs: src test/src
+  main-is: TestMain.hs
+  other-modules:
+    CopySpec
+    EnvSpec
+    FailureSpec
+    FindSpec
+    Help
+    LiftedSpec
+    MoveSpec
+    ReadFileSpec
+    RmSpec
+    RunSpec
+    SshSpec
+    Shelly
+    Shelly.Base
+    Shelly.Find
+    Shelly.Lifted
+    TestInit
+    WhichSpec
+    WriteSpec
+
+  ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -threaded
+               -fno-warn-unused-do-bind -fno-warn-type-defaults
+
+
+  extensions: OverloadedStrings, ExtendedDefaultRules
+
+  if flag(lifted)
+     cpp-options: -DLIFTED
+
+  build-depends:
+    base                      >= 4.6,
+    text                      >= 0.11,
+    async,
+    bytestring                >= 0.10,
+    containers                >= 0.5.0.0,
+    directory                 >= 1.3.0.0 && < 1.4.0.0,
+    process                   >= 1.1.0,
+    unix-compat               < 0.6,
+    unix,
+    time                      >= 1.3 && < 1.10,
+    mtl                       >= 2,
+    HUnit                     >= 1.2,
+    hspec                     >= 2.0,
+    hspec-contrib,
+    transformers,
+    transformers-base,
+    filepath,
+    monad-control,
+    lifted-base,
+    lifted-async,
+    enclosed-exceptions,
+    exceptions
+
+  if impl(ghc < 8.0)
+    build-depends:       fail >= 4.9 && < 4.10
+
+  extensions:
+    CPP
+
+Flag build-examples
+   Description: build some example programs
+   Default: False
+   Manual: True
+
+-- demonstarated that command output in Shellish was not shown until after the command finished
+-- not necessary anymore
+Executable drain
+  hs-source-dirs: test/examples
+  main-is: drain.hs
+  if flag(build-examples)
+    buildable: True
+
+    build-depends: base                      >= 4.6
+                 , shelly
+                 , text
+
+    extensions:
+      CPP
+  else
+    buildable: False
+
+Executable run-handles
+  hs-source-dirs: test/examples
+  main-is: run-handles.hs
+  if flag(build-examples)
+    buildable: True
+
+    build-depends: base                      >= 4.6
+                 , shelly
+                 , text
+
+    extensions:
+      CPP
+  else
+    buildable: False
+
+Executable Color
+  hs-source-dirs: test/examples
+  main-is: color.hs
+  if flag(build-examples)
+    buildable: True
+
+    build-depends: base                      >= 4.6
+                 , process
+                 , shelly
+                 , text
+  else
+    buildable: False

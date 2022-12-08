@@ -1,0 +1,74 @@
+cabal-version:       >=1.10
+name:                th-compat
+version:             0.1.4
+synopsis:            Backward- (and forward-)compatible Quote and Code types
+description:         This package defines a "Language.Haskell.TH.Syntax.Compat"
+                     module, which backports the @Quote@ and @Code@ types to
+                     work across a wide range of @template-haskell@ versions.
+                     The @makeRelativeToProject@ utility is also backported.
+                     On recent versions of @template-haskell@ (2.17.0.0 or
+                     later), this module simply reexports definitions
+                     from "Language.Haskell.TH.Syntax". Refer to the Haddocks
+                     for "Language.Haskell.TH.Syntax.Compat" for examples of
+                     how to use this module.
+homepage:            https://github.com/haskell-compat/th-compat
+bug-reports:         https://github.com/haskell-compat/th-compat/issues
+license:             BSD3
+license-file:        LICENSE
+author:              Ryan Scott
+maintainer:          Ryan Scott <ryan.gl.scott@gmail.com>
+copyright:           (C) 2020 Ryan Scott
+category:            Text
+build-type:          Simple
+tested-with:         GHC == 7.0.4
+                   , GHC == 7.2.2
+                   , GHC == 7.4.2
+                   , GHC == 7.6.3
+                   , GHC == 7.8.4
+                   , GHC == 7.10.3
+                   , GHC == 8.0.2
+                   , GHC == 8.2.2
+                   , GHC == 8.4.4
+                   , GHC == 8.6.5
+                   , GHC == 8.8.4
+                   , GHC == 8.10.7
+                   , GHC == 9.0.2
+                   , GHC == 9.2.3
+                   , GHC == 9.4.1
+extra-source-files:  CHANGELOG.md, README.md
+
+source-repository head
+  type:                git
+  location:            https://github.com/haskell-compat/th-compat
+
+library
+  exposed-modules:     Language.Haskell.TH.Syntax.Compat
+  build-depends:       base             >= 4.3 && < 5
+                     , template-haskell >= 2.5 && < 2.20
+  if !impl(ghc >= 8.0)
+    build-depends:     fail             == 4.9.*
+                     , transformers     >= 0.2 && < 0.7
+  if !impl(ghc >= 9.4)
+    build-depends:     filepath         >= 1.2.0.0 && < 1.5
+                     , directory        >= 1.1.0.0 && < 1.4
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  if impl(ghc >= 8.6)
+    ghc-options:       -Wno-star-is-type
+
+test-suite spec
+  type:                exitcode-stdio-1.0
+  main-is:             Spec.hs
+  other-modules:       Language.Haskell.TH.Syntax.CompatSpec
+                       Types
+  build-depends:       base             >= 4.3 && < 5
+                     , base-compat      >= 0.6 && < 0.13
+                     , hspec            >= 2   && < 3
+                     , mtl              >= 2.1 && < 2.4
+                     , template-haskell >= 2.5 && < 2.20
+                     , th-compat
+  build-tool-depends:  hspec-discover:hspec-discover >= 2
+  hs-source-dirs:      tests
+  default-language:    Haskell2010
+  ghc-options:         -Wall -threaded -rtsopts

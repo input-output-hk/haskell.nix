@@ -1,0 +1,18 @@
+Name:            data-default-instances-containers
+Version:         0.0.1
+Cabal-Version:   >= 1.6
+Category:        Data
+Synopsis:        Default instances for types in containers
+Build-Type:      Simple
+License:         BSD3
+License-File:    LICENSE
+Author:          Lukas Mai
+Maintainer:      <l.mai@web.de>
+
+source-repository head
+  type: git
+  location: https://github.com/mauke/data-default
+
+Library
+  Build-Depends:     base >=2 && <5, data-default-class, containers
+  Exposed-Modules:   Data.Default.Instances.Containers

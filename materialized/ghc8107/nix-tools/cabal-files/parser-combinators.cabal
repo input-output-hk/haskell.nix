@@ -1,0 +1,57 @@
+cabal-version:   1.18
+name:            parser-combinators
+version:         1.3.0
+license:         BSD3
+license-file:    LICENSE.md
+maintainer:      Mark Karpov <markkarpov92@gmail.com>
+author:
+    Mark Karpov <markkarpov92@gmail.com>
+    Alex Washburn <github@recursion.ninja>
+
+tested-with:     ghc ==8.6.5 ghc ==8.8.4 ghc ==8.10.3
+homepage:        https://github.com/mrkkrp/parser-combinators
+bug-reports:     https://github.com/mrkkrp/parser-combinators/issues
+synopsis:
+    Lightweight package providing commonly useful parser combinators
+
+description:
+    Lightweight package providing commonly useful parser combinators.
+
+category:        Parsing
+build-type:      Simple
+extra-doc-files:
+    CHANGELOG.md
+    README.md
+
+source-repository head
+    type:     git
+    location: https://github.com/mrkkrp/parser-combinators.git
+
+flag dev
+    description: Turn on development settings.
+    default:     False
+    manual:      True
+
+library
+    exposed-modules:
+        Control.Applicative.Combinators
+        Control.Applicative.Combinators.NonEmpty
+        Control.Applicative.Permutations
+        Control.Monad.Combinators
+        Control.Monad.Combinators.Expr
+        Control.Monad.Combinators.NonEmpty
+        Control.Monad.Permutations
+
+    default-language: Haskell2010
+    build-depends:    base >=4.12 && <5.0
+
+    if flag(dev)
+        ghc-options: -Wall -Werror
+
+    else
+        ghc-options: -O2 -Wall
+
+    if flag(dev)
+        ghc-options:
+            -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+            -Wnoncanonical-monad-instances

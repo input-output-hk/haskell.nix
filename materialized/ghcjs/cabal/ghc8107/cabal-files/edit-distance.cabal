@@ -1,0 +1,49 @@
+name:                edit-distance
+version:             0.2.2.1
+x-revision: 1
+cabal-version:       >= 1.10
+category:            Algorithms
+synopsis:            Levenshtein and restricted Damerau-Levenshtein edit distances
+description:         Optimized edit distances for fuzzy matching, including Levenshtein and restricted Damerau-Levenshtein algorithms.
+license:             BSD3
+license-File:        LICENSE
+extra-source-files:  README.md
+author:              Max Bolingbroke <batterseapower@hotmail.com>
+copyright:           (c) 2008-2013 Maximilian Bolinbroke
+maintainer:          Oleg Grenrus <oleg.grenrus@iki.fi>
+homepage:            http://github.com/phadej/edit-distance
+build-type:          Simple
+
+library
+  default-language:       Haskell98
+  exposed-modules:        Text.EditDistance
+  other-modules:          Text.EditDistance.EditCosts
+                          Text.EditDistance.SquareSTUArray
+                          Text.EditDistance.STUArray
+                          Text.EditDistance.Bits
+                          Text.EditDistance.MonadUtilities
+                          Text.EditDistance.ArrayUtilities
+  build-depends:          base >= 4.5 && < 5, array >= 0.1, random >= 1.0, containers >= 0.1.0.1
+  ghc-options:            -O2 -Wall
+
+test-suite edit-distance-tests
+  default-language:       Haskell98
+  main-is:                Text/EditDistance/Tests.hs
+  other-modules:          Text.EditDistance.Tests.EditOperationOntology
+                          Text.EditDistance.Tests.Properties
+  type:                   exitcode-stdio-1.0
+  ghc-options:            -O2 -Wall
+  build-depends:          base >= 4.5 && < 5, array >= 0.1, random >= 1.0, containers >= 0.1.0.1,
+                          test-framework >= 0.1.1, QuickCheck >= 2.4 && <2.10, test-framework-quickcheck2
+
+benchmark edit-distance-benchmark
+  default-language:       Haskell98
+  main-is:                Text/EditDistance/Benchmark.hs
+  type:                   exitcode-stdio-1.0
+  build-depends:          base >= 4.5 && < 5, array >= 0.1, random >= 1.0, time >= 1.0, process >= 1.0,
+                          deepseq >= 1.2, unix >= 2.3, criterion >= 1.1, containers >= 0.1.0.1
+  ghc-options:            -O2
+
+source-repository head
+  type:     git
+  location: https://github.com/phadej/edit-distance.git
