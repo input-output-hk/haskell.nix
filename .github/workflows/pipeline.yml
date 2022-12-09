@@ -8,12 +8,13 @@ on:
 defaults:
   run:
     shell: bash
+  # do we really want nixos-unstable?
+  env: 
+    NIX_PATH: "nixpkgs=channel:nixos-unstable"
 
 jobs:
   nix-build:
     runs-on: [self-hosted, linux]
-    env: 
-      NIX_PATH: "nixpkgs=channel:nixos-unstable"
     steps:
       - uses: actions/checkout@v3
       - name: "Run tests with ghc8107: Running the nix-build tests..."
