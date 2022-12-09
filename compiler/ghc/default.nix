@@ -597,6 +597,8 @@ stdenv.mkDerivation (rec {
 } // lib.optionalAttrs useHadrian {
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
+  '' + lib.optionalString installStage1 ''
+    ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '';

@@ -147,12 +147,15 @@
 
       packages = ((self.internal.compat { inherit system; }).hix).apps;
 
+      allJobs =
+        let
+          inherit (import ./ci-lib.nix { pkgs = legacyPackagesUnstable; }) stripAttrsForHydra filterDerivations;
+          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
+        in stripAttrsForHydra (filterDerivations ci);
+
       ciJobs =
         let
           inherit (legacyPackages) lib;
-          inherit (import ./ci-lib.nix { pkgs = legacyPackagesUnstable; }) stripAttrsForHydra filterDerivations;
-          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
-          allJobs = stripAttrsForHydra (filterDerivations ci);
           names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
               (builtins.attrNames x);
           requiredJobs =

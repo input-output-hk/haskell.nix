@@ -883,6 +883,42 @@ final: prev: {
         #   testProjectPlan = withInputs project.plan-nix;
         withInputs = final.recurseIntoAttrs;
 
+        iserv-proxy-exes = __mapAttrs (compiler-nix-name: ghc:
+          if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0
+            then {
+              inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
+              # remote-iserv however needs to come from the regular packages as it has to
+              # run on the target host.
+              iserv-proxy-interpreter = final.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes.remote-iserv;
+            }
+          else
+            let
+              exes = pkgs: (pkgs.haskell-nix.cabalProject {
+                name = "iserv-proxy";
+                inherit compiler-nix-name;
+                src = final.buildPackages.haskell-nix.sources.iserv-proxy;
+                cabalProjectLocal = ''
+                  allow-newer: *:libiserv, *:ghci
+                '';
+                modules = [{
+                  config = {
+                    reinstallableLibGhc = false;
+                    # Prevent the iserve-proxy-interpreter from depending on itself
+                    # by disabling the `--ghc-option` normally passed to `setupBuildFlags`
+                    # when cross compiling.
+                    setupBuildFlags = final.lib.mkForce [];
+                  };
+                  options.nonReinstallablePkgs = pkgs.lib.mkOption {
+                    apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
+                  };
+                }];
+              }).hsPkgs.iserv-proxy.components.exes;
+            in {
+              # We need the proxy for the build system and the interpreter for the target
+              inherit (exes final.buildPackages) iserv-proxy;
+              inherit (exes final) iserv-proxy-interpreter;
+            }) final.haskell-nix.compiler;
+
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
@@ -922,14 +958,12 @@ final: prev: {
             internal-nix-tools = final.buildPackages.haskell-nix.internal-nix-tools;
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
             internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;
-          } // final.lib.optionalAttrs (ifdLevel > 1 && !final.stdenv.hostPlatform.isGhcjs) {
+          } // final.lib.optionalAttrs (ifdLevel > 1
+            && final.haskell-nix.haskellLib.isCrossHost
             # GHCJS builds its own template haskell runner.
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
-            inherit (final.ghc-extra-packages."${compiler-nix-name}"
-              .iserv-proxy.components.exes) iserv-proxy;
-            inherit (final.ghc-extra-packages."${compiler-nix-name}"
-              .remote-iserv.components.exes) remote-iserv;
-          });
+            && !final.stdenv.hostPlatform.isGhcjs)
+              final.haskell-nix.iserv-proxy-exes.${compiler-nix-name});
     };
 }

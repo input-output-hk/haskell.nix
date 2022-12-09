@@ -16,10 +16,7 @@ final: prev:
           inherit (pkgs) gmp;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
-          # remote-iserv however needs to come from the regular packages as it has to
-          # run on the target host.
-          inherit (final.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes) remote-iserv;
+          inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           extra-test-libs = [
             # pkgs.rocksdb
