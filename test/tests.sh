@@ -193,7 +193,7 @@ if [ "$TESTS" == "hix" ] || [ "$TESTS" == "all" ]; then
   HASKELL_NIX=$(pwd)/..
   cd "$(mktemp -d)"
   mkdir "from-source" && pushd "from-source"
-  nix-shell -p cabal-install --run "cabal update; cabal unpack hello"
+  nix-shell -p cabal-install ghc --run "cabal update; cabal unpack hello"
   cd hello-*
   nix run "$HASKELL_NIX#hix" -- init
   nix flake update

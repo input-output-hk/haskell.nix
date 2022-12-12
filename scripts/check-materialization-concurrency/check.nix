@@ -1,4 +1,4 @@
-{ stdenv, lib, writeScript }:
+{ stdenv, lib, writeScript, diffutils }:
 
 with lib;
 
@@ -18,6 +18,6 @@ writeScript "check-materialization-concurrency.sh" ''
 
   nix-build -j2 scripts/check-materialization-concurrency --arg n "\"$(date)\"" 2>&1 | grep '^EVENT' > $WORK/actual.txt
 
-  diff -u $WORK/expected.txt $WORK/actual.txt
+  ${diffutils}/bin/diff -u $WORK/expected.txt $WORK/actual.txt
 ''
 
