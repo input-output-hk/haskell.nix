@@ -13,7 +13,7 @@
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
     "R2205" = "nixpkgs-2205";
-    "R2205" = "nixpkgs-2211";
+    "R2211" = "nixpkgs-2211";
     "unstable" = "nixpkgs-unstable";
   };
   haskellNix = compat { inherit checkMaterialization system; };
