@@ -12,7 +12,10 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs ||
+    # TH breaks for ghc 9.4.3 cross compile for windows if the library even
+    # just depends on the `text` package (might be related to the C++ dependency).
+    (stdenv.hostPlatform.isWindows && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943"]);
 
   ifdInputs = {
     inherit (project) plan-nix;
