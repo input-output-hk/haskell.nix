@@ -61,8 +61,8 @@
     };
     iserv-proxy = {
       type = "git";
-      url = "https://gitlab.haskell.org/ghc/iserv-proxy.git";
-      rev = "6e95df7be6dd29680f983db07a057fc2f34f81f6";
+      url = "https://gitlab.haskell.org/hamishmack/iserv-proxy.git";
+      ref = "hkm/remote-iserv";
       flake = false;
     };
   };
