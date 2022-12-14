@@ -1,0 +1,37 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 727fe74..12a22d7 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1810,6 +1810,8 @@ static HsInt resolveObjs_ (void)
+     IF_DEBUG(linker, debugBelch("resolveObjs: start\n"));
+ 
+     for (ObjectCode *oc = objects; oc; oc = oc->next) {
++        if(oc->status == OBJECT_RESOLVED)
++            continue;
+         int r = ocTryLoad(oc);
+         if (!r)
+         {
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index c3f9110..1b497af 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -963,10 +963,15 @@ ocGetNames_ELF ( ObjectCode* oc )
+                                       stab[j].st_size, stab[j].st_value, nm);
+                    }
+                    */
+-                   symbol->addr = (SymbolAddr*)(
+-                           (intptr_t) oc->sections[secno].start +
+-                           (intptr_t) symbol->elf_sym->st_value);
+-                   ASSERT(symbol->addr != 0x0);
++                   if(shndx == SHN_UNDEF && ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK) {
++                       symbol->addr = NULL;
++                   } else {
++                        symbol->addr = (SymbolAddr*)(
++                                (intptr_t) oc->sections[secno].start +
++                                (intptr_t) symbol->elf_sym->st_value);
++                        ASSERT(symbol->addr != 0x0);
++                   }
++
+                    if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_LOCAL) {
+                        isLocal = true;
+                        isWeak = false;

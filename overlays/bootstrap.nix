@@ -227,6 +227,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
+                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-weak-symbols-2.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc (traceWarnOld "8.4" {
