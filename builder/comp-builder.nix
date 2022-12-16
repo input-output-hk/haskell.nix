@@ -150,7 +150,7 @@ let
       "$(read packageId < <(read sedline < <(echo ${instLine} | sed -n -e 's/.*=\\(.*\\)-inplace-\\(.*\\):.*/\\1-\\\\\\\\([^\"]*\\\\\\\\)-\\2/p') ; sed -n -e \"s/.*\$\{sedline\}/\\1/p\" ${configFiles}/configure-flags | head -1) ; echo ${instLine} | sed -n -e \"s/\\(.*\\)-inplace-\\(.*\\)/\\1-\$\{packageId\}-\\2/p\")"
     else instLine;
 
-  finalConfigureFlags' = lib.concatStringsSep " " (
+  finalConfigureFlags = lib.concatStringsSep " " (
     [ "--prefix=$out"
     ] ++
     # We don't specify this in 'commonConfigureFlags', as these are also
@@ -170,8 +170,6 @@ let
     ] ++ commonConfigureFlags ++
     (map (arg: "--instantiate-with=" + patchInstLine arg) component.instantiatedWith)
     );
-
-  finalConfigureFlags = builtins.trace componentId (builtins.trace component.instantiatedWith (if name == "backpack-handle-0.1.0.0" then (builtins.trace finalConfigureFlags' finalConfigureFlags') else finalConfigureFlags'));
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
   pkgConfigHasPrefix = builtins.compareVersions lib.version "20.09pre" >= 0;

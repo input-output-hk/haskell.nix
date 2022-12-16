@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, NamedFieldPuns, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, NamedFieldPuns, RecordWildCards, TupleSections #-}
 
 module Plan2Nix
   ( doPlan2Nix
