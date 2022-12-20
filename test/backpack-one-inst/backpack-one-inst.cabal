@@ -1,6 +1,6 @@
 cabal-version:       >=2.0
 
-name:                backpack
+name:                backpack-one-inst
 version:             0.1.0.0
 license:             PublicDomain
 author:              Evgenii Akentev

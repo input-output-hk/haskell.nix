@@ -173,7 +173,8 @@ let
     # cabal-simple-prof = callTest ./cabal-simple-prof { inherit util; };
     # cabal-sublib = callTest ./cabal-sublib { inherit util; };
     # with-packages = callTest ./with-packages { inherit util; };
-    backpack = callTest ./backpack {};
+    backpack-one-inst = callTest ./backpack-one-inst {};
+    backpack-two-insts = callTest ./backpack-two-insts {};
     # builder-haddock = callTest ./builder-haddock {};
     # stack-simple = callTest ./stack-simple {};
     # stack-local-resolver = callTest ./stack-local-resolver {};
