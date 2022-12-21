@@ -17,6 +17,23 @@ import           Nix.Expr
 type Version = Text
 type Revision = Text -- Can be: rNUM, cabal file sha256, or "default"
 
+type PackageId = Text
+type InstantiatedWith = Text
+
+-- | Extracted info about instantiated signatures in the libraries.
+--
+-- The keys are package ids and the values are instantiated-with lines.
+-- For example, '<signature-name>=<pkg-id>:<module-name>',
+-- where <pkg-id> is '<pkg-name>-<pkg-version>-inplace-<library-name>'.
+--
+-- Package ids as keys have abis instead of 'inplace'.
+newtype InstantiatedWithMap = InstantiatedWithMap
+  { unInstantiatedMapWith :: HashMap PackageId [InstantiatedWith]
+  } deriving (Eq, Show)
+
+emptyInstantiatedWithMap :: InstantiatedWithMap
+emptyInstantiatedWithMap = InstantiatedWithMap Map.empty
+
 data Plan = Plan
   { packages :: HashMap Text (Maybe Package)
   , compilerVersion :: Text

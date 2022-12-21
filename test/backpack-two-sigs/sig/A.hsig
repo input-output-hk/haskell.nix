@@ -1,0 +1,4 @@
+signature A where
+
+data SomeData
+instance Show SomeData

@@ -42,6 +42,7 @@ import Control.Monad.Extra (unlessM)
 
 import Cabal2Nix hiding (Git)
 import qualified Cabal2Nix as C2N
+import Cabal2Nix.Plan (InstantiatedWithMap(..))
 import Cabal2Nix.Util
 
 
@@ -151,7 +152,7 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
           -> String    -- Revision
           -> FilePath  -- Subdir
           -> FilePath  -- Local Directory
-          -> HashMap Text [Text]
+          -> InstantiatedWithMap
           -> MaybeT IO (String -> IO [Binding NExpr])
   cabalFromPath url rev subdir path instantiatedWith = do
           d <- liftIO $ doesDirectoryExist path
@@ -224,8 +225,8 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
       }
     _ -> Nothing
 
-  instantiatedWith :: HashMap Text [Text]
-  instantiatedWith = Map.fromListWith ((<>))
+  instantiatedWith :: InstantiatedWithMap
+  instantiatedWith = InstantiatedWithMap $ Map.fromListWith ((<>))
     $ map (\pkg -> (pkg ^. key "id" . _String, map (\v -> v ^. _String) $ Vector.toList $ pkg ^. key "instantiated-with" . _Array))
     $ Vector.toList (plan ^. key "install-plan" . _Array)
 
@@ -271,6 +272,7 @@ value2plan plan = Plan { packages, components, extras, compilerVersion, compiler
       $ concatMap (\pkg ->
           let pkgName = pkg ^. key "pkg-name" . _String
               nixComponentAttr = Text.pack . componentNameToHaskellNixAttr pkgName . Text.unpack
+              -- Include packages with instantiated signatures
               instantiedIdentifier = snd $ Text.span (/='+') $ pkg ^. key "id" . _String
           in
             map ((quoted pkgName <> ".components.") <>) $

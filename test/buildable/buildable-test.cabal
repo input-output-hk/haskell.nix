@@ -28,4 +28,3 @@ executable does-not-build2
   main-is:             Missing.hs
   build-depends:       base
   default-language:    Haskell2010
-

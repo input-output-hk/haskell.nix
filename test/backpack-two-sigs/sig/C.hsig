@@ -1,0 +1,4 @@
+signature C where
+
+data SomeData
+instance Show SomeData

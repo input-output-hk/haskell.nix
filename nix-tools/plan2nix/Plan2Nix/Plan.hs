@@ -16,6 +16,7 @@ import           Data.Text                                ( Text )
 import           Data.HashMap.Strict                      ( HashMap )
 import           Data.HashSet                             ( HashSet )
 import           Nix.Expr
+import Cabal2Nix.Plan (InstantiatedWithMap(..))
 
 type Version = Text
 type Revision = Text -- Can be: rNUM, cabal file sha256, or "default"
@@ -34,9 +35,8 @@ data Plan = Plan
   , components :: HashSet Text
   , compilerVersion :: Text
   , compilerPackages :: HashMap Text (Maybe Version)
-  , instantiatedWith :: HashMap Text [Text]
+  , instantiatedWith :: InstantiatedWithMap
   } deriving (Show)
-
 
 data PkgSrc
   = LocalPath FilePath -- ^ some local package (potentially overriding a package in the index as well)

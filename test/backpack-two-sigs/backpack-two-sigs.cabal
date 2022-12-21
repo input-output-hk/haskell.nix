@@ -1,6 +1,6 @@
-cabal-version:       >=1.10
+cabal-version:       >=2.0
 
-name:                buildable
+name:                backpack-two-sigs
 version:             0.1.0.0
 license:             PublicDomain
 author:              Evgenii Akentev
@@ -8,17 +8,27 @@ maintainer:          i@ak3n.com
 build-type:          Simple
 
 library sig
-  signatures:      A
+  hs-source-dirs: sig
+  signatures:      A, C
+  exposed-modules: B
   default-language: Haskell2010
   build-depends:    base
 
 library impl
+  hs-source-dirs: impl
   exposed-modules: ImplA
   reexported-modules: ImplA as A
   default-language: Haskell2010
   build-depends:    base
 
+library impl2
+  hs-source-dirs: impl2
+  exposed-modules: ImplC
+  reexported-modules: ImplC as C
+  default-language: Haskell2010
+  build-depends:    base
+
 executable main
   main-is:             Main.hs
-  build-depends:       base, impl, sig
+  build-depends:       base, impl, sig, impl2
   default-language:    Haskell2010

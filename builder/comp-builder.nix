@@ -145,9 +145,20 @@ let
 
   disableFeature = disable: enableFeature (!disable);
 
-  patchInstLine = instLine:
+  # This function uses nested sed commands to
+  # 1. Uses sed to build a regex line for (2) command by replacing 'inplace' with a regex.
+  # 2. Extracts the packageId from the configure-flags file using the regex from (1).
+  # 3. Replaces the 'inplace' substring with the extracted packageId in 'instLine' configuration line.
+  replaceInplaceWithAbiHash = instLine:
     if lib.strings.hasInfix "inplace" instLine then
-      "$(read packageId < <(read sedline < <(echo ${instLine} | sed -n -e 's/.*=\\(.*\\)-inplace-\\(.*\\):.*/\\1-\\\\\\\\([^\"]*\\\\\\\\)-\\2/p') ; sed -n -e \"s/.*\$\{sedline\}/\\1/p\" ${configFiles}/configure-flags | head -1) ; echo ${instLine} | sed -n -e \"s/\\(.*\\)-inplace-\\(.*\\)/\\1-\$\{packageId\}-\\2/p\")"
+      let
+        # We print the 'instLine' and replace the 'inplace' substring with a regex which we will use later
+        instLineWithRegex = "<(echo ${instLine} | sed -n -e 's/.*=\\(.*\\)-inplace-\\(.*\\):.*/\\1-\\\\\\\\([^\"]*\\\\\\\\)-\\2/p')";
+        # We execute 'instLineWithRegex' into 'sedline' variable and use it again to extract the packageId from 'configure-flags'
+        packageIdLine = "<(read sedline < ${instLineWithRegex}; sed -n -e \"s/.*\$\{sedline\}/\\1/p\" ${configFiles}/configure-flags | head -1)";
+      in
+        # We read the packageId from the previous sed command and replace the 'inplace' substring with 'packageId'
+        "$(read packageId < ${packageIdLine}; echo ${instLine} | sed -n -e \"s/\\(.*\\)-inplace-\\(.*\\)/\\1-\$\{packageId\}-\\2/p\")"
     else instLine;
 
   finalConfigureFlags = lib.concatStringsSep " " (
@@ -166,9 +177,20 @@ let
       if configureAllComponents
         then ["--enable-tests" "--enable-benchmarks"]
         else ["${haskellLib.componentTarget componentId}"]
-    ) ++ [ "$(sed 's/--dependency=\\(.*\\)+\\(.*\\)/--dependency=\\1/' ${configFiles}/configure-flags)"
+    ) ++ [
+      # We have to use sed here to patch 'configure-flags' file to drop the abi hash suffix.
+      #
+      # plan2nix created packages for sublibs with instantiated signatures and they have
+      # names like 'domain+EwFBnH3u8XWEhAhZr7XmS1' where 'domain' is the original sublib's name.
+      #
+      # To build them we pass the folllowing configure flags:
+      # '--dependency=<package-name>:<sublib-name>=<package-name>-<version>-<abi-hash>-domain+EwFBnH3u8XWEhAhZr7XmS1'
+      # which is incorrect and the build fails. The build of the instantiated sublib should be called just like for
+      # the original sublib:
+      # '--dependency=<package-name>:<sublib-name>=<package-name>-<version>-<abi-hash>-domain'
+      "$(sed 's/--dependency=\\(.*\\)+\\(.*\\)/--dependency=\\1/' ${configFiles}/configure-flags)"
     ] ++ commonConfigureFlags ++
-    (map (arg: "--instantiate-with=" + patchInstLine arg) component.instantiatedWith)
+    (map (arg: "--instantiate-with=" + replaceInplaceWithAbiHash arg) component.instantiatedWith)
     );
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one

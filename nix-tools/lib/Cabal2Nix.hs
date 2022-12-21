@@ -16,6 +16,7 @@ import Distribution.Utils.Path (getSymbolicPath)
 import Data.Char (toUpper)
 import System.FilePath
 import Data.ByteString (ByteString)
+import Data.Functor ((<&>))
 import Data.Maybe (catMaybes, maybeToList, listToMaybe)
 import Data.Foldable (toList)
 import Distribution.Package
@@ -39,21 +40,15 @@ import qualified Distribution.ModuleName as ModuleName
 
 import Data.String (fromString, IsString)
 import qualified Data.HashMap.Strict as Map
-import           Data.HashMap.Strict                      ( HashMap )
 
 import Data.Maybe (mapMaybe, isJust)
-import qualified Data.List.NonEmpty as NE
-import Data.List.NonEmpty as NE (NonEmpty(..))
-import Distribution.Types.PackageId
-import Distribution.Types.UnqualComponentName
-import Nix.Atoms
+import Data.Function ((&))
 import Nix.Expr
-import Nix.Expr.Types.Annotated
 import Data.Fix(Fix(..))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Cabal2Nix.Util (quoted, selectOr)
-
+import Cabal2Nix.Plan (InstantiatedWithMap(..), InstantiatedWith, emptyInstantiatedWithMap)
 
 data Src
   = Path FilePath
@@ -105,14 +100,16 @@ data CabalDetailLevel = MinimalDetails | FullDetails deriving (Show, Eq)
 
 cabal2nix :: Bool -> CabalDetailLevel -> Maybe Src -> CabalFile -> IO NExpr
 cabal2nix isLocal fileDetails src = \case
-  (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing Map.empty
+  (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing emptyInstantiatedWithMap
     <$> readGenericPackageDescription normal path
-  (InMemory gen _ body) -> gpd2nix isLocal fileDetails src (genExtra <$> gen) Map.empty
+  (InMemory gen _ body) -> gpd2nix isLocal fileDetails src (genExtra <$> gen) emptyInstantiatedWithMap
     <$> case runParseResult (parseGenericPackageDescription body) of
         (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
         (_, Right desc) -> pure desc
 
-cabal2nixInstWith :: Bool -> CabalDetailLevel -> Maybe Src -> HashMap Text [Text] -> CabalFile -> IO NExpr
+-- | Same as 'cabal2nix' but with information about instantiated signatures.
+-- See 'instantiatedWith' in 'Plan2Nix.value2plan' for details.
+cabal2nixInstWith :: Bool -> CabalDetailLevel -> Maybe Src -> InstantiatedWithMap -> CabalFile -> IO NExpr
 cabal2nixInstWith isLocal fileDetails src instantiatedWith = \case
   (OnDisk path) -> gpd2nix isLocal fileDetails src Nothing instantiatedWith
     <$> readGenericPackageDescription normal path
@@ -121,7 +118,7 @@ cabal2nixInstWith isLocal fileDetails src instantiatedWith = \case
         (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
         (_, Right desc) -> pure desc
 
-gpd2nix :: Bool -> CabalDetailLevel -> Maybe Src -> Maybe NExpr -> HashMap Text [Text] -> GenericPackageDescription -> NExpr
+gpd2nix :: Bool -> CabalDetailLevel -> Maybe Src -> Maybe NExpr -> InstantiatedWithMap -> GenericPackageDescription -> NExpr
 gpd2nix isLocal fileDetails src extra instantiatedWith gpd =
   mkFunction args $ toNixGenericPackageDescription isLocal fileDetails gpd instantiatedWith
     $//? (srcToNix (package $ packageDescription gpd) <$> src)
@@ -310,15 +307,54 @@ data BuildToolDependency = BuildToolDependency PackageName UnqualComponentName d
 mkSysDep :: String -> SysDependency
 mkSysDep = SysDependency
 
-toNixGenericPackageDescription :: Bool -> CabalDetailLevel -> GenericPackageDescription -> HashMap Text [Text] -> NExpr
-toNixGenericPackageDescription isLocal detailLevel gpd instantiatedWith = mkNonRecSet
+-- | Returns the prefix of the instantiated sublib
+--
+-- >>> getOriginalComponentName "domain+EwFBnH3u8XWEhAhZr7XmS1"
+-- "domain"
+getOriginalComponentName :: Text -> Text
+getOriginalComponentName = fst . Text.span (/='+')
+
+toNixGenericPackageDescription :: Bool -> CabalDetailLevel -> GenericPackageDescription -> InstantiatedWithMap -> NExpr
+toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap instantiatedWith) = mkNonRecSet
                           [ "flags"         $= (mkNonRecSet . fmap toNixBinding $ genPackageFlags gpd)
                           , "package"       $= toNixPackageDescription isLocal detailLevel (packageDescription gpd)
                           , "components"    $= components ]
     where _packageName :: IsString a => a
           _packageName = fromString . show . pretty . pkgName . package . packageDescription $ gpd
-          component :: IsComponent comp => UnqualComponentName -> CondTree ConfVar [Dependency] comp -> [Text] -> Binding NExpr
-          component unQualName comp instWith
+
+          -- Names of the sublibs with instantiated signatures
+          namesOfSublibsWithInstSigs = Map.filter (not . null) instantiatedWith & Map.toList <&>
+            \(pkgId, instWith) ->
+              let pkgName = last (Text.split (=='-') pkgId)
+              in (pkgName, instWith)
+
+          components =
+            mkNonRecSet $
+              [ component "library" (lib, []) | Just lib <- [condLibrary gpd] ] ++
+              (bindTo "sublibs"     . mkNonRecSet <$> filter (not . null) [ uncurry component <$> (extendTuple (condSubLibraries gpd) ++ instantiatedSublibs) ]) ++
+              (bindTo "foreignlibs" . mkNonRecSet <$> filter (not . null) [ uncurry component <$> (extendTuple $ condForeignLibs  gpd) ]) ++
+              (bindTo "exes"        . mkNonRecSet <$> filter (not . null) [ uncurry component <$> (extendTuple $ condExecutables  gpd) ]) ++
+              (bindTo "tests"       . mkNonRecSet <$> filter (not . null) [ uncurry component <$> (extendTuple $ condTestSuites   gpd) ]) ++
+              (bindTo "benchmarks"  . mkNonRecSet <$> filter (not . null) [ uncurry component <$> (extendTuple $ condBenchmarks   gpd) ])
+            where
+              -- We extend the tuples with instantiatedSignatures information.
+              extendTuple = map (\(k, v) -> (k, (v, [])))
+
+              -- | SubLibraries with instantiated signatures
+              --
+              -- We iterate over a list with sublib names with instantiation lines and extend
+              -- it with a corresponding dependency tree 'CondTree' that corresponds to the original library.
+              --
+              -- E.g. There is a library called 'domain', and 'namesOfSublibsWithInstSigs' will have a sublib
+              -- called 'domain+EwFBnH3u8XWEhAhZr7XmS1'. We take the original name without '+EwFBnH3u8XWEhAhZr7XmS1',
+              -- look up a dependency tree 'CondTree' for 'domain' and return a tuple ('domain+EwFBnH3u8XWEhAhZr7XmS1', CondTree, instWith).
+              instantiatedSublibs = flip mapMaybe namesOfSublibsWithInstSigs $ \(pkgName, instWith) ->
+                let origPackageName = mkUnqualComponentName $ Text.unpack $ getOriginalComponentName pkgName
+                    pkgName' = mkUnqualComponentName $ Text.unpack pkgName
+                in lookup origPackageName (condSubLibraries gpd) <&> \condTree -> (pkgName', (condTree, instWith))
+
+          component :: IsComponent comp => UnqualComponentName -> (CondTree ConfVar [Dependency] comp, [InstantiatedWith]) -> Binding NExpr
+          component unQualName (comp, instWith)
             = quoted name $=
                 mkNonRecSet (
                   [ "depends"      $= toNix (patchDeps name instWith deps) | Just deps <- [shakeTree . fmap ( (>>= depends) . targetBuildDepends . getBuildInfo) $ comp ] ] ++
@@ -327,6 +363,7 @@ toNixGenericPackageDescription isLocal detailLevel gpd instantiatedWith = mkNonR
                   [ "pkgconfig"    $= toNix deps | Just deps <- [shakeTree . fmap (           pkgconfigDepends . getBuildInfo) $ comp ] ] ++
                   [ "build-tools"  $= toNix deps | Just deps <- [shakeTree . fmap (                   toolDeps . getBuildInfo) $ comp ] ] ++
                   [ "buildable"    $= boolTreeToNix (and <$> b) | Just b <- [shakeTree . fmap ((:[]) . buildable . getBuildInfo) $ comp ] ] ++
+                  -- Provide component's 'instantiatedWith' line if it exists
                   [ "instantiatedWith" $= toNix (map Text.unpack instWith) | not . null $ instWith ] ++
                   if detailLevel == MinimalDetails
                     then []
@@ -349,49 +386,102 @@ toNixGenericPackageDescription isLocal detailLevel gpd instantiatedWith = mkNonR
                            map toBuildToolDep (buildToolDepends bi)
                         <> map (\led -> maybe (guess led) toBuildToolDep $ desugarBuildTool pkg led) (buildTools bi)
                     guess (LegacyExeDependency n _) = BuildToolDependency (mkPackageName n) (mkUnqualComponentName n)
+
+          -- | Patch the dependency tree of the given component with 'InstantiatedWith' lines.
+          --
+          -- This function updates the dependency tree of both types of components:
+          --
+          -- 1. The dynamically created sublib with an instantiated signature.
+          --
+          -- We need to add the original package to the dependencies and the sublib with
+          -- the modules that instantiates the signature.
+          --
+          -- For example, 'domain+EwFBnH3u8XWEhAhZr7XmS1' must have 'domain' in the 'depends' field and
+          -- it must have 'impl' in the 'depends' field if the 'InstantiatedWith' line is like
+          -- '<sig-name>=<pkg-name>-<version>-inplace-impl:<mod-name>'.
+          --
+          -- 2. The already existed component that depends on the dynamically created sublib.
+          --
+          -- We need to replace the original sublib with the dynamically created sublib with instantiated signature.
+          --
+          -- For example, 'main' depends on the 'domain' sublib which has a signature, the instantiation process
+          -- creates 'domain+EwFBnH3u8XWEhAhZr7XmS1' sublib which should replace the original 'domain' in the dependency tree.
+          patchDeps
+            :: Text
+            -> [InstantiatedWith]
+            -> CondTree ConfVar [Dependency] [HaskellLibDependency]
+            -> CondTree ConfVar [Dependency] [HaskellLibDependency]
           patchDeps componentName instWith CondNode{condTreeData, condTreeConstraints, condTreeComponents} =
             let
-              preparedSublibs = concatMap (\(k,vs) -> map (\v -> (fst $ Text.span (/=':') v, k)) vs) sublibsInstWith
-              lookupNewNameForComponent :: Text -> Maybe Text
-              lookupNewNameForComponent c =
-                fmap snd $ listToMaybe $ filter (\(k,_) -> Text.isSuffixOf c k) $ preparedSublibs
-              newNamesConfirmed = flip mapMaybe condTreeData $ \(HaskellLibDependency packageName name) ->
-                case name of
-                  (LSubLibName (unUnqualComponentName -> n)) -> lookupNewNameForComponent (Text.pack n)
-                  LMainLibName -> Nothing
-              newNamesConfirmedWithOld = map (\s -> (fst $ Text.span (/='+') s, s)) newNamesConfirmed
-              updTreeData = flip map condTreeData $ \(HaskellLibDependency packageName name) ->
+              -- [1] Creates new dependencies
+              --
+              -- If the given component is a dynamically created sublib,
+              -- then we add the original sublib and the sublibs with instantiation modules to its dependencies.
+              newSublibs = if isJust (Text.find (=='+') componentName)
+                then (
+                  let
+                    -- We take the names of all sublibs, iterate over the list
+                    -- with 'InstantiatedWith' lines and filter the sublibs that instantiated the 'componentName'.
+                    namesOfAllSublibs = map (Text.pack . unUnqualComponentName . fst) $ condSubLibraries gpd
+                    sublibsThatInstantiated =
+                      [ subLibName
+                      | instLine <- instWith
+                      , let instLineWithoutModule = dropModuleName instLine
+                      , subLibName <- namesOfAllSublibs
+                      , Text.isSuffixOf subLibName instLineWithoutModule
+                      ]
+
+                    namesOfNewSublibs = getOriginalComponentName componentName : sublibsThatInstantiated
+                  in namesOfNewSublibs <&> \sublibName ->
+                    HaskellLibDependency
+                      (mkPackageName _packageName)
+                      (LSubLibName (mkUnqualComponentName $ Text.unpack sublibName))
+                  )
+                else []
+
+              -- [2] Update existing dependencies
+              --
+              -- The idea here is that we need to iterate over the dependencies
+              -- of the 'componentName' and replace the original's sublib name
+              -- with its instantiated sublib name.
+              --
+              -- To find the instantiated sublib name for the given 'componentName'
+              -- we need iterate over instLines, drop the module name,
+              -- to find the 'InstantiatedWith' by the suffix, and return the component name
+              -- that corresponds to this 'InstantiatedWith'.
+
+              -- | This function returns the sublib name for the given component name,
+              -- if this component instantiates the sublib.
+              lookupSublibNameForInstantiateComponent :: Text -> Maybe Text
+              lookupSublibNameForInstantiateComponent compName =
+                fmap snd $ listToMaybe $
+                  [ (line', pkgName)
+                  | (pkgName, instLines) <- namesOfSublibsWithInstSigs
+                  , instLine <- instLines
+                  , let line' = dropModuleName instLine
+                  , Text.isSuffixOf compName line'
+                  ]
+
+              namesOfInstantiatedSublibs = flip mapMaybe condTreeData $ \(HaskellLibDependency _ name) -> do
+                libName <- Text.pack . unUnqualComponentName <$> libraryNameString name
+                lookupSublibNameForInstantiateComponent libName
+
+              originalAndNewNames = map (\s -> (getOriginalComponentName s, s)) namesOfInstantiatedSublibs
+
+              -- Iterate over the dependencies of 'componentName' and replace
+              -- the sublib's name with a dynamically generated sublib's name.
+              newCondTreeData = condTreeData <&> \(HaskellLibDependency pkgName name) ->
                 let
                   newName =
                     case name of
-                      (LSubLibName (unUnqualComponentName -> n)) -> LSubLibName $ mkUnqualComponentName $
-                        case lookup (Text.pack n) newNamesConfirmedWithOld of
-                          Just newN -> "\"" ++ Text.unpack newN ++ "\""
-                          Nothing -> n
+                      LSubLibName (Text.pack . unUnqualComponentName -> n) -> LSubLibName $ mkUnqualComponentName $ Text.unpack $
+                        -- Wrap the sublib's name with quotes because '+' in Nix can't be a field selector.
+                        maybe n (\n' -> "\"" <> n' <> "\"") $ lookup n originalAndNewNames
                       LMainLibName -> LMainLibName
-                in HaskellLibDependency packageName newName
-              updTreeCons = condTreeConstraints
-              subLibsNames = map (Text.pack . unUnqualComponentName . fst) $ condSubLibraries gpd
-              subLibsNamesDeps = flip concatMap instWith $ \instLine -> filter (\subLibName -> Text.isSuffixOf subLibName $ fst $ Text.span (/=':') instLine) subLibsNames
-              newDeps = if isJust (Text.find (=='+') componentName)
-                then (flip map ((fst $ Text.span (/='+') componentName):subLibsNamesDeps) $ \cn ->
-                  HaskellLibDependency (mkPackageName _packageName) (LSubLibName (mkUnqualComponentName $ Text.unpack cn)))
-                else []
-            in CondNode{condTreeData = updTreeData ++ newDeps, condTreeConstraints = updTreeCons, condTreeComponents}
-          components = mkNonRecSet $
-            [ component "library" lib [] | Just lib <- [condLibrary gpd] ] ++
-            (bindTo "sublibs"     . mkNonRecSet <$> (filter (not . null) [ uncurry3 component <$> subLibsToCreate ])) ++
-            (bindTo "foreignlibs" . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condForeignLibs  gpd) ]) ++
-            (bindTo "exes"        . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condExecutables  gpd) ]) ++
-            (bindTo "tests"       . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condTestSuites   gpd) ]) ++
-            (bindTo "benchmarks"  . mkNonRecSet <$> filter (not . null) [ uncurry3 component <$> (extendTuple $ condBenchmarks   gpd) ])
-          extendTuple = map (\(k, v) -> (k,v,[]))
-          subLibsToCreate = extendTuple (condSubLibraries gpd) ++ subLibsInstComps
-          subLibsInstComps = flip mapMaybe sublibsInstWith $ \(k, v) ->
-            let origPackageName = mkUnqualComponentName $ Text.unpack $ fst $ Text.span (/='+') k
-                packageName = mkUnqualComponentName $ Text.unpack k
-            in (\t -> (packageName, t, v)) <$> lookup origPackageName (condSubLibraries gpd)
-          sublibsInstWith = map (\(k, v) -> (last (Text.split (=='-') k), v)) $ Map.toList $ Map.filter (not . null) instantiatedWith
+                in HaskellLibDependency pkgName newName
+
+              dropModuleName = fst . Text.span (/=':')
+            in CondNode{condTreeData = newCondTreeData ++ newSublibs, condTreeConstraints, condTreeComponents}
 
 -- WARNING: these use functions bound at he top level in the GPD expression, they won't work outside it
 
@@ -531,6 +621,3 @@ boolTreeToNix (CondNode True _c bs) =
 
 instance ToNixBinding PackageFlag where
   toNixBinding (MkPackageFlag name _desc def _manual) = (fromString . show . pretty $ name) $= mkBool def
-
-uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
-uncurry3 f (a, b, c) = f a b c

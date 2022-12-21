@@ -106,6 +106,8 @@ in {
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
+  #
+  # We omit the suffix that starts with '+' because libraries with instantiated signatures are being built by their usual name.
   componentTarget = componentId:"${componentId.ctype}:${builtins.head (builtins.split "\\+" componentId.cname)}";
 
   # Remove null or empty values from an attrset.
