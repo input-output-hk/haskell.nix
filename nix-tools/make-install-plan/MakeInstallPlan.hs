@@ -36,6 +36,7 @@ import Prettyprinter.Render.Text (hPutDoc)
 import System.Environment (getArgs)
 import System.FilePath
 import System.IO (IOMode (WriteMode), hClose, openFile)
+import Cabal2Nix.Plan (emptyInstantiatedWithMap)
 
 main :: IO ()
 main = do
@@ -107,7 +108,7 @@ installPlanAction verbosity cliConfig = do
                 (_, Left (_, err)) -> error ("Failed to parse in-memory cabal file: " ++ show err)
                 (_, Right desc) -> desc
           let extra = mkNonRecSet ["package-description-override" $= mkStr (T.decodeUtf8 gpdText)]
-          let nix = gpd2nix elabLocalToProject Cabal2Nix.MinimalDetails (Just src) (Just extra) gpd
+          let nix = gpd2nix elabLocalToProject Cabal2Nix.MinimalDetails (Just src) (Just extra) emptyInstantiatedWithMap gpd
           writeDoc nixFile $ prettyNix nix
 
 packageLocation2Src :: PackageLocation local -> Maybe HashValue -> Cabal2Nix.Src

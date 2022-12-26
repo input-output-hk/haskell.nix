@@ -5,7 +5,7 @@ with lib;
 let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
-    src = testSrc "backpack-two-insts";
+    src = testSrc "backpack/backpack-one-inst";
   };
 
   packages = project.hsPkgs;
@@ -17,6 +17,6 @@ in recurseIntoAttrs rec {
     inherit (project) plan-nix;
   };
 
-  build = packages.backpack-two-insts.components.exes.test;
+  build = packages.backpack-one-inst.components.exes.main;
   check = haskellLib.check build;
 }

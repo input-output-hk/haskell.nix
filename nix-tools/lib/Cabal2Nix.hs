@@ -450,11 +450,11 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
               -- to find the 'InstantiatedWith' by the suffix, and return the component name
               -- that corresponds to this 'InstantiatedWith'.
 
-              -- | This function returns the sublib name for the given component name,
+              -- | This function returns the sublib names for the given component name,
               -- if this component instantiates the sublib.
-              lookupSublibNameForInstantiateComponent :: Text -> Maybe Text
+              lookupSublibNameForInstantiateComponent :: Text -> [Text]
               lookupSublibNameForInstantiateComponent compName =
-                fmap snd $ listToMaybe $
+                map snd
                   [ (line', pkgName)
                   | (pkgName, instLines) <- namesOfSublibsWithInstSigs
                   , instLine <- instLines
@@ -462,9 +462,10 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
                   , Text.isSuffixOf compName line'
                   ]
 
-              namesOfInstantiatedSublibs = flip mapMaybe condTreeData $ \(HaskellLibDependency _ name) -> do
-                libName <- Text.pack . unUnqualComponentName <$> libraryNameString name
-                lookupSublibNameForInstantiateComponent libName
+              namesOfInstantiatedSublibs = flip concatMap condTreeData $ \(HaskellLibDependency _ name) -> do
+                case Text.pack . unUnqualComponentName <$> libraryNameString name of
+                  Just libName -> lookupSublibNameForInstantiateComponent libName
+                  Nothing -> []
 
               originalAndNewNames = map (\s -> (getOriginalComponentName s, s)) namesOfInstantiatedSublibs
 

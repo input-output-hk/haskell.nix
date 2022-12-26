@@ -5,7 +5,7 @@ with lib;
 let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
-    src = testSrc "backpack-two-sigs";
+    src = testSrc "backpack/backpack-two-sigs";
   };
 
   packages = project.hsPkgs;
