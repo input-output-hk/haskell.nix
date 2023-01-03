@@ -1,30 +1,11 @@
-name: "Update pins, hackage.nix and stackage.nix"
+name: "Update pins for hackage.nix and stackage.nix"
 
 on:
+  workflow_dispatch:
   schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron: "0 0 * * *"
+    - cron: "30 0 * * *"
 
 jobs:
-  update-hackage-and-stackage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v15
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          extra_nix_config: |
-            trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://cache.iog.io https://cache.zw3rk.com https://cache.nixos.org/
-      - name: "Update hackage.nix and stackage.nix"
-        run: |
-          nix-build build.nix -A maintainer-scripts.update-hackage -o update-hackage.sh
-          echo "+++ Updating hackage.nix"
-          ./update-hackage.sh
-          nix-build build.nix -A maintainer-scripts.update-stackage -o update-stackage.sh
-          echo "+++ Updating stackage.nix"
-          ./update-stackage.sh
-
   update-pins:
     runs-on: ubuntu-latest
     steps:
@@ -37,6 +18,12 @@ jobs:
             substituters = https://cache.iog.io https://cache.zw3rk.com https://cache.nixos.org/
       - name: "Update pins"
         run: |
-          'buildkite-agent artifact download "flake.lock" .'
-          nix-build build.nix -A maintainer-scripts.update-pins -o update-pins.sh
-          ./update-pins.sh
+          nix flake lock --update-input hackage
+          nix flake lock --update-input stackage
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "devops+nix-tools@iohk.io"
+          git config --local user.name "IOHK"
+          git add .
+          git commit -m "Update Hackage and Stackage"
+          git push
