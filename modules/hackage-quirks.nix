@@ -56,6 +56,9 @@ in [
         package haskell-language-server
           flags: -qualifyimportednames -stylishhaskell${lib.optionalString (config.compiler-nix-name != "ghc902") " -hlint"}
       ''
+      + lib.optionalString (config.version == "1.9.0.0") ''
+        allow-newer: hls-call-hierarchy-plugin:ghcide, hls-call-hierarchy-plugin:hls-plugin-api
+      ''
       # TODO Remove this flag once the hls-haddock-comments-plugin is updated in hackage to work with ghc 9.2
       + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925"]) ''
         package haskell-language-server
