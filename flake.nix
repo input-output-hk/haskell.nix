@@ -9,7 +9,7 @@
     nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
-    flake-compat = { url = "github:input-output-hk/flake-compat"; flake = false; };
+    flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     flake-utils = { url = "github:numtide/flake-utils"; };
     tullia = {
       url = "github:input-output-hk/tullia";
