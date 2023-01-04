@@ -2,11 +2,13 @@
   pkgs = hackage:
     {
       packages = {
+        "happy".revision = (((hackage."happy")."1.20.0").revisions).default;
         "pretty".revision = (((hackage."pretty")."1.1.3.6").revisions).default;
         "text".revision = (((hackage."text")."2.0.1").revisions).default;
         "array".revision = (((hackage."array")."0.5.4.0").revisions).default;
         "Cabal-syntax".revision = (((hackage."Cabal-syntax")."3.8.1.0").revisions).default;
         "Cabal".revision = (((hackage."Cabal")."3.8.1.0").revisions).default;
+        "alex".revision = (((hackage."alex")."3.2.7.1").revisions).default;
         "mtl".revision = (((hackage."mtl")."2.2.2").revisions).default;
         "parsec".revision = (((hackage."parsec")."3.1.15.0").revisions).default;
         "bytestring".revision = (((hackage."bytestring")."0.11.3.1").revisions).default;
@@ -68,10 +70,12 @@
     {
       packages = {
         ghc = ./.plan.nix/ghc.nix;
+        deriveConstants = ./.plan.nix/deriveConstants.nix;
         remote-iserv = ./.plan.nix/remote-iserv.nix;
         ghci = ./.plan.nix/ghci.nix;
         ghc-boot = ./.plan.nix/ghc-boot.nix;
         iserv = ./.plan.nix/iserv.nix;
+        genprimopcode = ./.plan.nix/genprimopcode.nix;
         libiserv = ./.plan.nix/libiserv.nix;
         hpc = ./.plan.nix/hpc.nix;
         };
@@ -85,15 +89,19 @@
               "dynamic-system-linker" = lib.mkOverride 900 true;
               "terminfo" = lib.mkOverride 900 true;
               "internal-interpreter" = lib.mkOverride 900 false;
-              "build-tool-depends" = lib.mkOverride 900 false;
+              "build-tool-depends" = lib.mkOverride 900 true;
               };
             };
+          "deriveConstants" = { flags = {}; };
           "remote-iserv" = { flags = {}; };
           "ghci" = {
             flags = { "internal-interpreter" = lib.mkOverride 900 true; };
             };
           "ghc-boot" = { flags = {}; };
           "iserv" = { flags = {}; };
+          "genprimopcode" = {
+            flags = { "build-tool-depends" = lib.mkOverride 900 true; };
+            };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
           "hpc" = { flags = {}; };
           };
@@ -115,6 +123,7 @@
           "rts".components.library.planned = lib.mkOverride 900 true;
           "unix".components.library.planned = lib.mkOverride 900 true;
           "directory".components.library.planned = lib.mkOverride 900 true;
+          "happy".components.exes."happy".planned = lib.mkOverride 900 true;
           "iserv".components.exes."iserv".planned = lib.mkOverride 900 true;
           "ghc".components.setup.planned = lib.mkOverride 900 true;
           "time".components.library.planned = lib.mkOverride 900 true;
@@ -124,7 +133,9 @@
           "template-haskell".components.library.planned = lib.mkOverride 900 true;
           "stm".components.library.planned = lib.mkOverride 900 true;
           "ghci".components.library.planned = lib.mkOverride 900 true;
+          "alex".components.exes."alex".planned = lib.mkOverride 900 true;
           "ghc-boot".components.library.planned = lib.mkOverride 900 true;
+          "deriveConstants".components.exes."deriveConstants".planned = lib.mkOverride 900 true;
           "hpc".components.library.planned = lib.mkOverride 900 true;
           "ghc-boot".components.setup.planned = lib.mkOverride 900 true;
           "ghc-heap".components.library.planned = lib.mkOverride 900 true;
@@ -133,6 +144,7 @@
           "libiserv".components.library.planned = lib.mkOverride 900 true;
           "parsec".components.library.planned = lib.mkOverride 900 true;
           "deepseq".components.library.planned = lib.mkOverride 900 true;
+          "genprimopcode".components.exes."genprimopcode".planned = lib.mkOverride 900 true;
           "text".components.library.planned = lib.mkOverride 900 true;
           "base".components.library.planned = lib.mkOverride 900 true;
           "containers".components.library.planned = lib.mkOverride 900 true;
