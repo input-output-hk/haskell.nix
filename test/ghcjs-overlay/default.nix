@@ -56,6 +56,7 @@ in recurseIntoAttrs {
       touch $out
     '';
     meta.platforms = platforms.all;
+    meta.disabled = __elem compiler-nix-name ["ghc941" "ghc942" "ghc943"];
     passthru = {
       inherit project;
     };
