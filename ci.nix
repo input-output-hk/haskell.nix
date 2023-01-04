@@ -89,11 +89,11 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         # TODO: can we merge this into the general case by picking an appropriate "cross system" to mean native?
         native = pkgs.recurseIntoAttrs ({
           roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
-          ghc = pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}";
+          ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
         } // pkgs.lib.optionalAttrs runTests {
           inherit (build) tests tools maintainer-scripts maintainer-script-cache;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 1) {
-          iserv-proxy = pkgs.ghc-extra-projects."${compiler-nix-name}".getComponent "iserv-proxy:exe:iserv-proxy";
+          inherit (pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}) iserv-proxy;
         } // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit evalPackages compiler-nix-name; }).getComponent "exe:hello";
         });
@@ -105,9 +105,9 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
             build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
         in pkgs.recurseIntoAttrs (pkgs.lib.optionalAttrs (ifdLevel >= 1) ({
             roots = pkgs.haskell-nix.roots' compiler-nix-name ifdLevel;
-            ghc = pkgs.buildPackages.haskell-nix.compiler."${compiler-nix-name}";
+            ghc = pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             # TODO: look into cross compiling ghc itself
-            # ghc = pkgs.haskell-nix.compiler."${compiler-nix-name}";
+            # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
             # TODO: look into making tools work when cross compiling
             # inherit (build) tools;
           } // pkgs.lib.optionalAttrs (runTests && crossSystemName != "aarch64-multiplatform") {
@@ -116,7 +116,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
         })
         # GHCJS builds its own template haskell runner.
         // pkgs.lib.optionalAttrs (ifdLevel >= 2 && crossSystemName != "ghcjs")
-            pkgs.haskell-nix.iserv-proxy-exes
+            pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}
         // pkgs.lib.optionalAttrs (ifdLevel >= 3) {
           hello = (pkgs.haskell-nix.hackage-package { name = "hello"; version = "1.0.0.2"; inherit compiler-nix-name; }).getComponent "exe:hello";
         })
