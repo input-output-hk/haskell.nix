@@ -886,10 +886,10 @@ final: prev: {
         iserv-proxy-exes = __mapAttrs (compiler-nix-name: ghc:
           if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0
             then {
-              inherit (final.buildPackages.ghc-extra-packages."${compiler-nix-name}".iserv-proxy.components.exes) iserv-proxy;
+              inherit (final.buildPackages.ghc-extra-packages.${compiler-nix-name}.iserv-proxy.components.exes) iserv-proxy;
               # remote-iserv however needs to come from the regular packages as it has to
               # run on the target host.
-              iserv-proxy-interpreter = final.ghc-extra-packages."${compiler-nix-name}".remote-iserv.components.exes.remote-iserv;
+              iserv-proxy-interpreter = final.ghc-extra-packages.${compiler-nix-name}.remote-iserv.components.exes.remote-iserv;
             }
           else
             let
