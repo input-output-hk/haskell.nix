@@ -179,7 +179,7 @@ let
     ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
     ] ++ lib.optionals (!enableIntegerSimple) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
-    ] ++ lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
+    ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
         "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
