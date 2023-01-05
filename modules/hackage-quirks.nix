@@ -55,6 +55,7 @@ in [
       + lib.optionalString (config.version == "1.8.0.0") ''
         package haskell-language-server
           flags: -qualifyimportednames -stylishhaskell${lib.optionalString (config.compiler-nix-name != "ghc902") " -hlint"}
+        constraints: hls-fourmolu-plugin <1.1.1.0, hls-rename-plugin <1.0.2.0, hls-stan-plugin <1.0.1.0
       ''
       + lib.optionalString (config.version == "1.9.0.0") ''
         allow-newer: hls-call-hierarchy-plugin:ghcide, hls-call-hierarchy-plugin:hls-plugin-api

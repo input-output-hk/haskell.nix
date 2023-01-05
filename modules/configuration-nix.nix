@@ -58,12 +58,13 @@ in {
   # Avoid dependency on genprimopcode and deriveConstants (cabal does not put these in the plan,
   # most likely because it finds them in the PATH).
   # See https://github.com/input-output-hk/haskell.nix/issues/1808
-  packages.ghc.components.library.build-tools = pkgs.lib.mkForce [
-    (config.hsPkgs.buildPackages.alex.components.exes.alex or pkgs.buildPackages.alex)
-    (config.hsPkgs.buildPackages.happy.components.exes.happy or pkgs.buildPackages.happy)
-    pkgs.buildPackages.ghc-extra-packages.${config.compiler.nix-name}.genprimopcode.components.exes.genprimopcode
-    pkgs.buildPackages.ghc-extra-packages.${config.compiler.nix-name}.deriveConstants.components.exes.deriveConstants
-  ];
+  packages.ghc.components.library.build-tools = pkgs.lib.mkForce (
+    pkgs.lib.optionals (__compareVersions config.hsPkgs.ghc.identifier.version "9.4.1" > 0) [
+      (config.hsPkgs.buildPackages.alex.components.exes.alex or pkgs.buildPackages.alex)
+      (config.hsPkgs.buildPackages.happy.components.exes.happy or pkgs.buildPackages.happy)
+      pkgs.buildPackages.ghc-extra-packages.${config.compiler.nix-name}.genprimopcode.components.exes.genprimopcode
+      pkgs.buildPackages.ghc-extra-packages.${config.compiler.nix-name}.deriveConstants.components.exes.deriveConstants
+    ]);
 
   # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
   packages.mintty.components.library.build-tools = pkgs.lib.mkForce [];
