@@ -14,9 +14,8 @@ start setting up your project.
 
 ## Using `flake init` and `nix`
 
-The `flake init` command create an example `hello` package from hackage
-containing an `flake.nix` and `nix/hix.nix` file. The project can be used with
-regular `nix` tools.
+The following `nix flake init` command creates a template `hello` package containing a `flake.nix` and `nix/hix.nix` file. The project can be used with
+regular `nix` tools. This template is defined in the [NixOS/templates repository](https://github.com/NixOS/templates/tree/master/haskell.nix).
 
 ```bash
 nix flake init --template templates#haskell-nix --impure
