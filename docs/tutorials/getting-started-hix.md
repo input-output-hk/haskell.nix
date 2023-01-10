@@ -7,9 +7,11 @@ You will need `nix` installed and in you `PATH` with nix in PATH with
 `experimental-features = [ "nix-command" "flakes" ];` configured.
 See https://nixos.wiki/wiki/Flakes for details.
 
-## Using `hix init` and `nix`
+## Start with a template
 
-The `hix init` command adds a `flake.nix` and `nix/hix.nix` file.
+The `hix init` (here wrapped by
+`nix run "github:input-output-hk/haskell.nix#hix" -- init`) command
+adds a `flake.nix` and `nix/hix.nix` file.
 After that the project can be used with regular `nix` tools.
 
 For instance to run `cabal build` on the `hello` package from hackage:
