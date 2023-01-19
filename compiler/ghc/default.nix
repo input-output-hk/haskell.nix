@@ -9,7 +9,7 @@ let self =
 # build-tools
 , bootPkgs
 , buildPackages
-, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils
+, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils, libcxx, libcxxabi
 , autoreconfHook
 , bash
 
@@ -597,6 +597,12 @@ stdenv.mkDerivation (rec {
     fi
   '';
 } // lib.optionalAttrs useHadrian {
+  postConfigure = lib.optionalString stdenv.isDarwin ''
+    substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+      --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+    find . -name 'system*.conf*'
+    cat mk/system-cxx-std-lib-1.0.conf
+  '';
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
   '' + lib.optionalString installStage1 ''
@@ -630,6 +636,12 @@ stdenv.mkDerivation (rec {
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
+        ${lib.optionalString stdenv.isDarwin ''
+          substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+          substituteInPlace lib/package.conf.d/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        ''}
         mkdir -p utils
         cp -r ../../../utils/completion utils
         make install
