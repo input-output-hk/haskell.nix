@@ -61,6 +61,8 @@ echo
 echo "--- Test index file truncation"
 
 shopt -s nullglob
+echo "Look for roots that may prevent nix-store --delete working"
+for a in /nix/store/*-00-index.tar.gz; do nix-store --query --roots $a; done
 for a in /nix/store/*-00-index.tar.gz; do nix-store --delete $a; done
 shopt -u nullglob
 
