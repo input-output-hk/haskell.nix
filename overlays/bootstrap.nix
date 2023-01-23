@@ -771,7 +771,9 @@ in {
                 bootPkgs = bootPkgs // {
                   alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
                   happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                  ghc = if final.buildPlatform != final.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc944
+                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
                 };
                 inherit sphinx installDeps;
 

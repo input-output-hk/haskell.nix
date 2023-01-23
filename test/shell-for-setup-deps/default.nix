@@ -26,7 +26,7 @@ in recurseIntoAttrs ({
   meta.disabled = stdenv.buildPlatform != stdenv.hostPlatform
     || compiler-nix-name == "ghc901" || compiler-nix-name == "ghc902" ||
     # TH breaks for ghc 9.4.3 cross compile for macOS with this test
-    (stdenv.hostPlatform.isDarwin && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943"]);
+    (stdenv.hostPlatform.isDarwin && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944"]);
   ifdInputs = {
     inherit (project) plan-nix;
   };
