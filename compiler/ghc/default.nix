@@ -9,7 +9,7 @@ let self =
 # build-tools
 , bootPkgs
 , buildPackages
-, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils
+, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils, libcxx, libcxxabi
 , autoreconfHook
 , bash
 
@@ -172,6 +172,31 @@ let
     BUILD_PROF_LIBS = NO
   '';
 
+  # `--with` flags for libraries needed for RTS linker
+  configureFlags = [
+        "--datadir=$doc/share/doc/ghc"
+        "--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
+    ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
+    ] ++ lib.optionals (!enableIntegerSimple) [
+        "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
+    ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
+        "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
+    ] ++ lib.optionals (targetPlatform != hostPlatform) [
+        "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
+    ] ++ lib.optionals (targetPlatform != hostPlatform) [
+        "--enable-bootstrap-with-devel-snapshot"
+    ] ++ lib.optionals (disableLargeAddressSpace) [
+        "--disable-large-address-space"
+    ] ++ lib.optionals (targetPlatform.isAarch32) [
+        "CFLAGS=-fuse-ld=gold"
+        "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
+        "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
+    ] ++ lib.optionals enableDWARF [
+        "--enable-dwarf-unwind"
+        "--with-libdw-includes=${lib.getDev elfutils}/include"
+        "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ];
+
   # Splicer will pull out correct variations
   libDeps = platform: lib.optional enableTerminfo [ targetPackages.ncurses targetPackages.ncurses.dev ]
     ++ [targetLibffi]
@@ -179,7 +204,8 @@ let
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
     ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
     # Even with terminfo disabled some older ghc cross arm and windows compilers do not build unless `ncurses` is found and they seem to want the buildPlatform version
-    ++ lib.optional (!enableTerminfo && haskell-nix.haskellLib.isCrossTarget && (stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) && builtins.compareVersions ghc-version "8.10" < 0) ncurses.dev;
+    ++ lib.optional (!enableTerminfo && haskell-nix.haskellLib.isCrossTarget && (stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) && builtins.compareVersions ghc-version "8.10" < 0) ncurses.dev
+    ++ lib.optional enableDWARF (lib.getLib elfutils);
 
   toolsForTarget =
     if hostPlatform == buildPlatform then
@@ -232,7 +258,7 @@ stdenv.mkDerivation (rec {
   version = ghc-version;
   name = "${targetPrefix}ghc-${version}";
 
-  inherit src;
+  inherit src configureFlags;
   patches = ghc-patches;
 
   # configure was run by configured-src already.
@@ -308,30 +334,6 @@ stdenv.mkDerivation (rec {
     '';
 
   configurePlatforms = [ "build" "host" "target" ];
-  # `--with` flags for libraries needed for RTS linker
-  configureFlags = [
-        "--datadir=$doc/share/doc/ghc"
-        "--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
-    ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-    ] ++ lib.optional (!enableIntegerSimple) [
-        "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
-    ] ++ lib.optional (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
-        "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
-    ] ++ lib.optional (targetPlatform != hostPlatform) [
-        "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
-    ] ++ lib.optionals (targetPlatform != hostPlatform) [
-        "--enable-bootstrap-with-devel-snapshot"
-    ] ++ lib.optionals (disableLargeAddressSpace) [
-        "--disable-large-address-space"
-    ] ++ lib.optionals (targetPlatform.isAarch32) [
-        "CFLAGS=-fuse-ld=gold"
-        "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
-        "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
-    ] ++ lib.optionals enableDWARF [
-        "--enable-dwarf-unwind"
-        "--with-libdw-includes=${lib.getDev elfutils}/include"
-        "--with-libdw-libraries=${lib.getLib elfutils}/lib"
-    ];
 
   enableParallelBuilding = true;
   postPatch = "patchShebangs .";
@@ -595,8 +597,16 @@ stdenv.mkDerivation (rec {
     fi
   '';
 } // lib.optionalAttrs useHadrian {
+  postConfigure = lib.optionalString stdenv.isDarwin ''
+    substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+      --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+    find . -name 'system*.conf*'
+    cat mk/system-cxx-std-lib-1.0.conf
+  '';
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
+  '' + lib.optionalString installStage1 ''
+    ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '';
@@ -623,7 +633,19 @@ stdenv.mkDerivation (rec {
           --replace ',("windres command", "/bin/false")' ',("windres command", "${targetCC.bintools.targetPrefix}windres")'
       ''
       else ''
-        ${hadrian}/bin/hadrian ${hadrianArgs} install --prefix=$out
+        ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
+        cd _build/bindist/ghc-*
+        ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
+        ${lib.optionalString stdenv.isDarwin ''
+          substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+          substituteInPlace lib/package.conf.d/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        ''}
+        mkdir -p utils
+        cp -r ../../../utils/completion utils
+        make install
+        cd ../../..
         runHook postInstall
       '';
 });

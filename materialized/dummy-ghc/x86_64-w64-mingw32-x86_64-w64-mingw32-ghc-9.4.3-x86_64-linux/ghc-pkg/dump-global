@@ -1522,6 +1522,34 @@ haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1/integer-gmp.haddock
 haddock-html:         ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1
 ---
+name:                 libiserv
+version:              9.4.3
+visibility:           public
+id:                   libiserv-9.4.3
+key:                  libiserv-9.4.3
+license:              BSD-3-Clause
+copyright:            XXX
+maintainer:           XXX
+author:               XXX
+synopsis:
+    Provides shared functionality between iserv and iserv-proxy.
+description:
+    Provides shared functionality between iserv and iserv-proxy.
+category:             Development
+exposed:              True
+exposed-modules:      GHCi.Utils IServ
+import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.4.3/libiserv-9.4.3
+library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.4.3/libiserv-9.4.3
+dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.4.3
+data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.4.3/libiserv-9.4.3
+hs-libraries:         HSlibiserv-9.4.3
+depends:
+    base-4.17.0.0 binary-0.8.9.1 bytestring-0.11.3.1 containers-0.6.6
+    deepseq-1.4.8.0 ghci-9.4.3
+haddock-interfaces:
+    ${pkgroot}/../../doc/html/libraries/libiserv-9.4.3/libiserv.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/libiserv-9.4.3
+---
 name:                 mtl
 version:              2.2.2
 visibility:           public

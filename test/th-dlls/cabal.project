@@ -1,0 +1,9 @@
+packages: .
+
+-- Needed for ghc 9.4.3 until hackage is updated
+source-repository-package
+  type: git
+  location: https://github.com/haskell/double-conversion.git
+  tag: 50623e40e23cb6da8bc673d58932a5e58bdebb01
+  --sha256: sha256-9LctKu+GFgGYUf6VPgpSXn0lrCxJezU924BS9ZZrFvo=
+

@@ -19,7 +19,8 @@ let
 in
 # -- linux
 { crypto = [ openssl ];
-  "c++" = []; # no libc++
+  "c++" = [ libcxx ];
+  "c++abi" = [ libcxxabi ];
   system-cxx-std-lib = [];
   "stdc++" = gcclibs;
   "stdc++-6" = gcclibs;
