@@ -34,7 +34,7 @@ let
         # due to a too large environment.
         unset configureFlags
         PORT=$((5000 + $RANDOM % 5000))
-        (>&2 echo "---> Starting iserv-proxy-interpreter on port $PORT")
+        (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
         REMOTE_ISERV=$(mktemp -d)
         ln -s ${interpreter}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
@@ -54,10 +54,10 @@ let
         # Not sure why this `unset` helps.  It might avoids some kind of overflow issue.  We see `wine` fail to start when building `cardano-wallet-cli` test `unit`.
         unset pkgsHostTargetAsString
         WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp $PORT &
-        (>&2 echo "---| iserv-proxy-interpreter should have started on $PORT")
+        (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
         RISERV_PID="$!"
         ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
-        (>&2 echo "---> killing iserv-proxy-interpreter...")
+        (>&2 echo "---> killing ${interpreter.exeName}...")
         kill $RISERV_PID
       '';
 

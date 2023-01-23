@@ -72,14 +72,21 @@ let
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
       ghc          = "compiler";
       ghc-boot     = "libraries/ghc-boot";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.4" < 0) {
-      # The version of `Win32` that comes with ghc 9.4 (2.12.0.0) is older
-      # than the one in hackage.  Including it causes `cabal configure` to fail.
-      Win32        = "libraries/Win32";
-      # As of GHC 9.4 this has been split out of the GHC repo and
-      # is now in the iserv-proxy flake input
-      iserv-proxy  = "utils/iserv-proxy";
-    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
+    } // (
+      if builtins.compareVersions ghcVersion "9.4" < 0
+        then {
+          # The version of `Win32` that comes with ghc 9.4 (2.12.0.0) is older
+          # than the one in hackage.  Including it causes `cabal configure` to fail.
+          Win32        = "libraries/Win32";
+          # As of GHC 9.4 this has been split out of the GHC repo and
+          # is now in the iserv-proxy flake input
+          iserv-proxy  = "utils/iserv-proxy";
+        }
+        else {
+          genprimopcode = "utils/genprimopcode";
+          deriveConstants = "utils/deriveConstants";
+        }
+    ) // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "8.10.5" >= 0) {
       # Not sure why, but this is missing from older ghcjs versions
       remote-iserv = "utils/remote-iserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.0.1" >= 0) {
