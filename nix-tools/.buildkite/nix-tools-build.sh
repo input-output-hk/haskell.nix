@@ -60,9 +60,13 @@ nix build -f .buildkite/nix2 nix-tools.components.exes --no-link
 echo
 echo "--- Test index file truncation"
 
+# Wait for processes that may still have nix roots to flush and exit
+sleep 5
+
 shopt -s nullglob
 echo "Look for roots that may prevent nix-store --delete working"
 for a in /nix/store/*-00-index.tar.gz; do nix-store --query --roots $a; done
+sleep 5
 for a in /nix/store/*-00-index.tar.gz; do nix-store --delete $a; done
 shopt -u nullglob
 
