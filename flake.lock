@@ -155,15 +155,16 @@
     "flake-compat": {
       "flake": false,
       "locked": {
-        "lastModified": 1635892615,
-        "narHash": "sha256-harGbMZr4hzat2BWBU+Y5OYXlu+fVz7E4WeQzHi5o8A=",
+        "lastModified": 1672831974,
+        "narHash": "sha256-z9k3MfslLjWQfnjBtEtJZdq3H7kyi2kQtUThfTgdRk0=",
         "owner": "input-output-hk",
         "repo": "flake-compat",
-        "rev": "eca47d3377946315596da653862d341ee5341318",
+        "rev": "45f2638735f8cdc40fe302742b79f248d23eb368",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "hkm/gitlab-fix",
         "repo": "flake-compat",
         "type": "github"
       }
@@ -283,11 +284,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1670977567,
-        "narHash": "sha256-cHBJASESN/SyrqpwWItFXPCJy9v4kn9K2RaPoYPXzq4=",
+        "lastModified": 1674347197,
+        "narHash": "sha256-3LacpKb2duHoDW+Q6OzOO4bRPQA+HYtKe/sqecVkHC8=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "afe0a3e34cbec10411bb372f8d78b67e24812e30",
+        "rev": "08e1d49039790c86283f6eff6dbe99973e5d1187",
         "type": "github"
       },
       "original": {
@@ -337,17 +338,18 @@
     "iserv-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1639165170,
-        "narHash": "sha256-QsWL/sBDL5GM8IXd/dE/ORiL4RvteEN+aok23tXgAoc=",
-        "rev": "6e95df7be6dd29680f983db07a057fc2f34f81f6",
-        "revCount": 7,
+        "lastModified": 1670983692,
+        "narHash": "sha256-avLo34JnI9HNyOuauK5R69usJm+GfW3MlyGlYxZhTgY=",
+        "ref": "hkm/remote-iserv",
+        "rev": "50d0abb3317ac439a4e7495b185a64af9b7b9300",
+        "revCount": 10,
         "type": "git",
-        "url": "https://gitlab.haskell.org/ghc/iserv-proxy.git"
+        "url": "https://gitlab.haskell.org/hamishmack/iserv-proxy.git"
       },
       "original": {
-        "rev": "6e95df7be6dd29680f983db07a057fc2f34f81f6",
+        "ref": "hkm/remote-iserv",
         "type": "git",
-        "url": "https://gitlab.haskell.org/ghc/iserv-proxy.git"
+        "url": "https://gitlab.haskell.org/hamishmack/iserv-proxy.git"
       }
     },
     "lowdown-src": {
@@ -730,11 +732,11 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1670890221,
-        "narHash": "sha256-kV7irjUr4Ot3b2MwTcgVKYuEe+legxhGh4ApBeESy1s=",
+        "lastModified": 1674346223,
+        "narHash": "sha256-f4ZX6MkqXgdQi7bktPGvPo2OlO9aZGYt88/Uehwy3xw=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "56f59c2d4ecdb237348a0774274f38874f81a3ca",
+        "rev": "ab962911f5bd13c708d6d2722daf23b3897ed1ed",
         "type": "github"
       },
       "original": {
