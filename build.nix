@@ -44,7 +44,7 @@ in rec {
       hls-latest = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         version =
-          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0
+          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0
             then "1.8.0.0"
             else "latest";
       };
