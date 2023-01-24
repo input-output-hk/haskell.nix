@@ -8,7 +8,6 @@ let self =
 , setup
 , src
 , flags
-, revision
 , cabalFile
 , cabal-generator
 , patches ? []
@@ -246,12 +245,12 @@ let
         && x.identifier.name or "" != "hsc2hs")
       (map
         (p: if builtins.isFunction p
-          then p { inherit  (package.identifier) version; inherit revision; }
+          then p { inherit  (package.identifier) version; }
           else p) build-tools))) ++
     lib.optional (pkgconfig != []) buildPackages.cabalPkgConfigWrapper;
 
   # Unfortunately, we need to wrap ghc commands for cabal builds to
-  # work in the nix-shell. See ../doc/removing-with-package-wrapper.md.
+  # work in the nix-shell. See ../docs/dev/removing-with-package-wrapper.md.
   shellWrappers = ghcForComponent {
     componentName = fullName;
     inherit configFiles enableDWARF;
@@ -301,11 +300,11 @@ let
             ''
         );
     }
-    # patches can (if they like) depend on the version and revision of the package.
+    # patches can (if they like) depend on the version of the package.
     // lib.optionalAttrs (patches != []) {
       patches = map (p:
         if builtins.isFunction p
-          then p { inherit (package.identifier) version; inherit revision; }
+          then p { inherit (package.identifier) version; }
           else p
         ) patches;
     }
@@ -319,7 +318,7 @@ let
 
   haddock = haddockBuilder {
     inherit componentId component package flags commonConfigureFlags
-      commonAttrs revision doHaddock
+      commonAttrs doHaddock
       doHoogle hyperlinkSource quickjump setupHaddockFlags
       needsProfiling configFiles preHaddock postHaddock pkgconfig;
 

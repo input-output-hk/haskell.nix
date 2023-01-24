@@ -12,7 +12,7 @@ import Data.String (fromString)
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (unless, forM, forM_)
-import Extra (unlessM)
+import Control.Monad.Extra (unlessM)
 
 import qualified Data.Map as M (fromListWith, toList)
 import System.FilePath ((<.>), (</>), takeDirectory, dropFileName)
@@ -22,8 +22,8 @@ import Data.Yaml (decodeFileEither)
 
 import Nix.Expr
 import Nix.Pretty (prettyNix)
-import Data.Text.Prettyprint.Doc (Doc)
-import Data.Text.Prettyprint.Doc.Render.Text (hPutDoc)
+import Prettyprinter (Doc)
+import Prettyprinter.Render.Text (hPutDoc)
 
 import Distribution.Types.PackageId (PackageIdentifier(..))
 import Distribution.Nixpkgs.Fetch (DerivationSource(..), Source(..), Hash(..), fetch)

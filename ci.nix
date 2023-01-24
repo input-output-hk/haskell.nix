@@ -3,10 +3,10 @@
 { ifdLevel ? 3
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
-, checkMaterialization ? false
+, checkMaterialization ? true
 , compat
 , system
-, evalSystem ? builtins.currentSystem or "x86_64-linux"
+, evalSystem ? builtins.currentSystem or "aarch64-linux"
 , pkgs ? (compat { inherit system; }).pkgs }:
  let
   inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
