@@ -5,8 +5,8 @@
 
 To build a package, say [lens][], from a Stackage snapshot, say
 [lts-13.28][], you could run:
-```bash
-nix build '(with import <nixpkgs> (import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}).nixpkgsArgs; haskell-nix.snapshots."lts-13.28").lens.components.library'
+```shell
+nix-build -E '(with import <nixpkgs> (import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}).nixpkgsArgs; haskell-nix.snapshots."lts-13.28").lens.components.library'
 ```
 This would build the (public) library component of the [lens][] package as
 fixed by the [lts-13.28][] stackage snapshot. Nightly snapshots like
@@ -16,8 +16,8 @@ fixed by the [lts-13.28][] stackage snapshot. Nightly snapshots like
 
 To build any package from hackage, say [lens][], at any version, say 4.17.1,
 you could run:
-```bash
-nix build '(with import <nixpkgs> (import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}).nixpkgsArgs; (haskell-nix.hackage-package { name = "lens"; version = "4.17.1"; compiler-nix-name = "ghc8102"; })).components.library'
+```shell
+nix-build -E '(with import <nixpkgs> (import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}).nixpkgsArgs; (haskell-nix.hackage-package { name = "lens"; version = "4.17.1"; compiler-nix-name = "ghc8102"; })).components.library'
 ```
 This would build the (public) library component of the [lens-4.17.1][] package
 from hackage.
@@ -27,8 +27,8 @@ from hackage.
 The dependencies would be resolved against the most recent
 [hackage-index-state][] which comes with your [haskell.nix][] checkout via the
 [hackage.nix][] pin.  A specific one can be specified as well:
-```bash
-nix build '(with import <nixpkgs> (import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}).nixpkgsArgs; (haskell-nix.hackage-package { name = "lens"; version = "4.17.1"; compiler-nix-name = "ghc8102"; index-state = "2019-07-14T00:00:00Z"; })).components.library'
+```shell
+nix-build -E '(with import <nixpkgs> (import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}).nixpkgsArgs; (haskell-nix.hackage-package { name = "lens"; version = "4.17.1"; compiler-nix-name = "ghc8102"; index-state = "2019-07-14T00:00:00Z"; })).components.library'
 ```
 This would use the hackage index as of `2019-07-14T00:00:00Z` to produce a
 build plan for the [lens-4.17.1][] package.

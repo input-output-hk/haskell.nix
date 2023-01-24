@@ -1,4 +1,4 @@
-{ sources,  ... }:
+{ sources, ... }:
 # The haskell.nix infrastructure
 #
 # for hygienic reasons we'll use haskell-nix as a prefix.
@@ -11,7 +11,7 @@ final: prev: {
         # overlays.
         defaultModules = [];
 
-        # TODO: doc etc
+        # Additional user-provided mappings to augment ./../lib/pkgconf-nixpkgs-map.nix
         extraPkgconfigMappings = {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
@@ -188,7 +188,7 @@ final: prev: {
         # Produce a fixed output derivation from a moving target (hackage index tarball)
         # Takes desired index-state and sha256 and produces a set { name, index }, where
         # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
-        hackageTarball = { index-state, sha256, nix-tools ? final.haskell-nix.nix-tools, ... }:
+        hackageTarball = { index-state, sha256, nix-tools, ... }:
             assert sha256 != null;
             let at = builtins.replaceStrings [":"] [""] index-state; in
             { "hackage.haskell.org-at-${at}" = final.fetchurl {
@@ -306,14 +306,14 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2022-08-29T00:00:00Z";
+        internalHackageIndexState = "2022-11-06T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
         # Helps materialize the output of derivations
         materialize = import ../lib/materialize.nix {
-          pkgs = final;
-          inherit (final) nix runCommand writeShellScript;
+          pkgs = final.pkgsBuildBuild;
+          inherit (final.pkgsBuildBuild) nix runCommand writeShellScript;
           inherit (final.haskell-nix) checkMaterialization;
         };
 
@@ -510,7 +510,7 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, evalPackages, ... }@args:
+            { src, compiler-nix-name, evalPackages, inputMap, ... }@args:
             let
               callProjectResults = callCabalProjectToNix args;
               plan-pkgs = importAndFilterProject {
@@ -538,6 +538,7 @@ final: prev: {
                     ++ [ {
                       compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
+                      inputMap = final.lib.mkDefault inputMap;
                     } ];
                   extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
@@ -622,6 +623,10 @@ final: prev: {
                 # Re-apply overlay from original project:
                 .extend project.__overlay__
               ) final.pkgsCross) // { recurseForDerivations = false; };
+
+            # attribute set of variant (with an extra module applied) for the project,
+            # mapped from `flake.variants` config values.
+            projectVariants = final.lib.mapAttrs (_: project.appendModule) project.args.flake.variants;
 
             # re-eval this project with an extra module (or module list).
             appendModule = extraProjectModule: (rawProject.projectFunction final.haskell-nix
@@ -737,77 +742,6 @@ final: prev: {
                   "Invalid package component name ${componentName}.  Expected package:ctype:component (where ctype is one of lib, flib, exe, test, or bench)";
                 (getPackage (builtins.elemAt m 0)).getComponent "${builtins.elemAt m 1}:${builtins.elemAt m 2}";
 
-            rawFlake =
-              let
-                packageNames = project: builtins.attrNames (project.args.flake.packages project.hsPkgs);
-              in {
-                # Used by:
-                #   `nix build .#pkg-name:lib:pkg-name`
-                #   `nix build .#pkg-name:lib:sublib-name`
-                #   `nix build .#pkg-name:exe:exe-name`
-                #   `nix build .#pkg-name:test:test-name`
-                packages = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.optional (package.components ? library)
-                          { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:lib:${n}"; value = v; })
-                        (package.components.sublibs)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = v; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = v; })
-                        (package.components.tests)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:bench:${n}"; value = v; })
-                        (package.components.benchmarks)
-                  ) (packageNames project));
-                # Used by:
-                #   `nix flake check`
-                checks = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                        { name = "${packageName}:test:${n}"; value = v; })
-                      (final.lib.filterAttrs (_: v: final.lib.isDerivation v) (package.checks))
-                  ) (packageNames project));
-                #   `nix run .#pkg-name:exe:exe-name`
-                #   `nix run .#pkg-name:test:test-name`
-                apps = builtins.listToAttrs (
-                  final.lib.concatMap (packageName:
-                    let package = project.hsPkgs.${packageName};
-                    in final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.exes)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.tests)
-                      ++ final.lib.mapAttrsToList (n: v:
-                          { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
-                        (package.components.benchmarks)
-                  ) (packageNames project));
-                # Used by hydra:
-                hydraJobs.checks = rawFlake.checks;
-                hydraJobs.coverage =
-                  let
-                    coverageProject = project.appendModule [
-                      project.args.flake.coverage
-                      {
-                        modules = [{
-                          packages = final.lib.genAttrs (packageNames project)
-                            (_: { doCoverage = final.lib.mkDefault true; });
-                        }];
-                      }
-                    ];
-                  in  builtins.listToAttrs (final.lib.concatMap (packageName: [{
-                      name = packageName;
-                      value = coverageProject.hsPkgs.${packageName}.coverageReport;
-                    }]) (packageNames coverageProject));
-                devShells.default = project.shell;
-                devShell = project.shell;
-              };
             # Helper function that can be used to make a Nix Flake out of a project
             # by including a flake.nix.  See docs/tutorials/getting-started-flakes.md
             # for an example flake.nix file.
@@ -815,19 +749,26 @@ final: prev: {
             # `checks` and `apps` output attributes.
             flake' =
               let
-                combinePrefix = a: b: if a == "default" then b else "${a}:${b}";
+                combinePrefix = a: b: if a == "default" then b else "${a}-${b}";
+                mkFlake = project: haskellLib.mkFlake project rec {
+                  selectPackages = project.args.flake.packages;
+                  coverage = final.lib.optionalAttrs project.args.flake.doCoverage
+                    (haskellLib.projectCoverageCiJobs
+                      project selectPackages project.args.flake.coverageProjectModule);
+                };
                 forAllCrossCompilers = prefix: project: (
-                    [{ ${prefix} = project.rawFlake; }]
+                    [{ ${prefix} = mkFlake project; }]
                   ++ (map (project: {
-                       ${combinePrefix prefix project.pkgs.stdenv.hostPlatform.config} = project.rawFlake;
+                       ${combinePrefix prefix project.pkgs.stdenv.hostPlatform.config} =
+                         mkFlake project;
                       })
                      (project.args.flake.crossPlatforms project.projectCross)
                   ));
                 forAllVariants =
                     forAllCrossCompilers "default" project
                   ++ final.lib.concatLists (final.lib.mapAttrsToList
-                    (name: projectModule: forAllCrossCompilers name (project.appendModule projectModule))
-                     project.args.flake.variants);
+                    (name: projectVariant: forAllCrossCompilers name projectVariant)
+                     project.projectVariants);
               in haskellLib.combineFlakes ":" (builtins.foldl' (a: b: a // b) {} forAllVariants);
             flake = args: (project.appendModule { flake = args; }).flake';
 
@@ -942,6 +883,54 @@ final: prev: {
         #   testProjectPlan = withInputs project.plan-nix;
         withInputs = final.recurseIntoAttrs;
 
+        iserv-proxy-exes = __mapAttrs (compiler-nix-name: ghc:
+          if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0
+            then {
+              inherit (final.buildPackages.ghc-extra-packages.${compiler-nix-name}.iserv-proxy.components.exes) iserv-proxy;
+              # remote-iserv however needs to come from the regular packages as it has to
+              # run on the target host.
+              iserv-proxy-interpreter = final.ghc-extra-packages.${compiler-nix-name}.remote-iserv.components.exes.remote-iserv;
+            }
+          else
+            let
+              exes = pkgs: (pkgs.haskell-nix.cabalProject {
+                name = "iserv-proxy";
+                inherit compiler-nix-name;
+                src =
+                  # Instead of using `sources.iserv-proxy` pull the pin from
+                  # the flake.lock file and use `pkgs.fetchgit`.
+                  # Unlike `sources.iserv-proxy`, this works even when using:
+                  #   --option restrict-eval true
+                  let
+                    pins = (__fromJSON (__readFile ../flake.lock)).nodes;
+                    iservProxyPin = pins.iserv-proxy.locked;
+                  in pkgs.fetchgit {
+                    inherit (iservProxyPin) url rev;
+                    sha256 = iservProxyPin.narHash;
+                  };
+                cabalProjectLocal = ''
+                  allow-newer: *:libiserv, *:ghci
+                  allow-older: *:libiserv, *:ghci
+                '';
+                modules = [{
+                  config = {
+                    reinstallableLibGhc = false;
+                    # Prevent the iserve-proxy-interpreter from depending on itself
+                    # by disabling the `--ghc-option` normally passed to `setupBuildFlags`
+                    # when cross compiling.
+                    setupBuildFlags = final.lib.mkForce [];
+                  };
+                  options.nonReinstallablePkgs = pkgs.lib.mkOption {
+                    apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
+                  };
+                }];
+              }).hsPkgs.iserv-proxy.components.exes;
+            in {
+              # We need the proxy for the build system and the interpreter for the target
+              inherit (exes final.buildPackages) iserv-proxy;
+              inherit (exes final) iserv-proxy-interpreter;
+            }) final.haskell-nix.compiler;
+
         # Add this to your tests to make all the dependencies of haskell.nix
         # are tested and cached. Consider using `p.roots` where `p` is a
         # project as it will automatically match the `compiler-nix-name`
@@ -981,14 +970,12 @@ final: prev: {
             internal-nix-tools = final.buildPackages.haskell-nix.internal-nix-tools;
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
             internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;
-          } // final.lib.optionalAttrs (ifdLevel > 1 && !final.stdenv.hostPlatform.isGhcjs) {
+          } // final.lib.optionalAttrs (ifdLevel > 1
+            && final.haskell-nix.haskellLib.isCrossHost
             # GHCJS builds its own template haskell runner.
             # These seem to be the only things we use from `ghc-extra-packages`
             # in haskell.nix itself.
-            inherit (final.ghc-extra-packages."${compiler-nix-name}"
-              .iserv-proxy.components.exes) iserv-proxy;
-            inherit (final.ghc-extra-packages."${compiler-nix-name}"
-              .remote-iserv.components.exes) remote-iserv;
-          });
+            && !final.stdenv.hostPlatform.isGhcjs)
+              final.haskell-nix.iserv-proxy-exes.${compiler-nix-name});
     };
 }

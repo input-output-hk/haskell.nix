@@ -1,13 +1,13 @@
-{ stdenv, lib, writeScript, coreutils, time, gnutar, gzip, hydra-unstable, jq, gitMinimal }:
+{ stdenv, glibc, lib, writeScript, coreutils, time, gnutar, gzip, hydra-unstable, jq, gitMinimal }:
 
 with lib;
 
 writeScript "check-hydra.sh" ''
-  #!${stdenv.shell}
+  #! /usr/bin/env nix-shell
+  #! nix-shell -i bash --pure -p glibc coreutils time gnutar gzip hydra-unstable jq gitMinimal
 
   set -euo pipefail
 
-  export PATH="${makeBinPath [ coreutils time gnutar gzip hydra-unstable jq gitMinimal ]}"
   export NIX_PATH=
 
   echo '~~~ Evaluating release.nix with' "$@"

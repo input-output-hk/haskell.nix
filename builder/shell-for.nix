@@ -15,6 +15,7 @@
 , withHoogle ? true
 , withHaddock ? withHoogle
 , exactDeps ? false
+, allToolDeps ? !exactDeps
 , tools ? {}
 , packageSetupDeps ? true
 , enableDWARF ? false
@@ -67,6 +68,8 @@ let
   selectedComponents =
     lib.filter isSelectedComponent  (lib.attrValues transitiveDependenciesComponents);
 
+  allHsPkgsComponents = lib.concatMap haskellLib.getAllComponents (builtins.attrValues hsPkgs);
+
   # Given a list of `depends`, removes those which are selected components
   removeSelectedInputs =
     lib.filter (input: !(isSelectedComponent input));
@@ -105,7 +108,13 @@ let
   systemInputs = removeSelectedInputs (uniqueWithName allSystemInputs);
 
   nativeBuildInputs = removeSelectedInputs
-    (lib.concatMap (c: c.executableToolDepends) selectedComponents);
+    (uniqueWithName (lib.concatMap (c: c.executableToolDepends)
+      # When not using `exactDeps` cabal may try to build arbitrary dependencies
+      # so in this case we need to provide the build tools for all of `hsPkgs`.
+      # In some cases those tools may be unwanted or broken so the `allToolDeps`
+      # flag can be set to `false` to disable this (stack projects default `allToolDeps`
+      # to `false` as `hsPkgs` for them includes all of stackage):
+      (if exactDeps || !allToolDeps then selectedComponents else allHsPkgsComponents)));
 
   # Set up a "dummy" component to use with ghcForComponent.
   component = {

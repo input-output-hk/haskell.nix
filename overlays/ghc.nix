@@ -5,7 +5,7 @@ final: prev: with prev;
     hasNativeBignum = name: !lib.hasPrefix "ghc8" name;
 
     ghcPkgOverrides = name: { enableIntegerSimple = false; } // lib.optionalAttrs (hasNativeBignum name) {
-      enableNativeBignum = false;
+      enableNativeBignum = true;
     };
 
     ghcDrvOverrides = drv: {

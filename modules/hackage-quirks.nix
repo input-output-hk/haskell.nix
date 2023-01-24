@@ -55,12 +55,33 @@ in [
       + lib.optionalString (config.version == "1.8.0.0") ''
         package haskell-language-server
           flags: -qualifyimportednames -stylishhaskell${lib.optionalString (config.compiler-nix-name != "ghc902") " -hlint"}
+        constraints: hls-fourmolu-plugin <1.1.1.0, hls-rename-plugin <1.0.2.0, hls-stan-plugin <1.0.1.0
+      ''
+      + lib.optionalString (config.version == "1.9.0.0") ''
+        allow-newer: hls-call-hierarchy-plugin:ghcide, hls-call-hierarchy-plugin:hls-plugin-api
       ''
       # TODO Remove this flag once the hls-haddock-comments-plugin is updated in hackage to work with ghc 9.2
-      + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924"]) ''
+      + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925"]) ''
         package haskell-language-server
           flags: -haddockcomments
+      ''
+      # Exclude `retrie` that does not actually work with older versions of GHC.
+      # TODO Remove this once https://github.com/facebookincubator/retrie/pull/51 is fixed somehow
+      + lib.optionalString (__elem config.compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107" "ghc901" "ghc902"]) ''
+        constraints: retrie <1.2.1
       '');
+    }
+  )
+
+  # The latest version of stack (2.9.1) in hackage fails to build because the
+  # of version of rio-prettyprint (recently released 0.1.4.0) chosen by cabal.
+  # https://github.com/commercialhaskell/stack/issues/5963
+  ({config, lib, pkgs, ...}:
+    { _file = "haskell.nix/overlays/hackage-quirks.nix#stack"; } //
+    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.9.1" <= 0) {
+      cabalProjectLocal = ''
+        constraints: rio-prettyprint <0.1.4.0
+      '';
     }
   )
 
@@ -105,4 +126,15 @@ in [
       })];
     };
 
+    stack = {
+      modules = [{
+        # Stack has a custom setup that expects both the library and stack executable
+        # to be configured at the same time.  Unfortunately this does mean that
+        # the library component is rebuilt unecessarily in the exe component derivation.
+        packages.stack.components.exes.stack.configureAllComponents = true;
+        # But we don't want to configure the tests as they have dependencies that
+        # are not included in the `exes` dependencies.
+        packages.stack.components.exes.stack.configureFlags = ["--disable-tests"];
+      }];
+    };
   }

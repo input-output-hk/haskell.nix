@@ -1,0 +1,184 @@
+diff --git a/configure.ac b/configure.ac
+index f80b6368f5..f8c45f837a 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -204,6 +204,7 @@ if test "$WithGhc" != ""; then
+   fi
+   BOOTSTRAPPING_GHC_INFO_FIELD([AR_OPTS_STAGE0],[ar flags])
+   BOOTSTRAPPING_GHC_INFO_FIELD([ArSupportsAtFile_STAGE0],[ar supports at file])
++  BOOTSTRAPPING_GHC_INFO_FIELD([ArSupportsDashL_STAGE0],[ar supports -L])
+   BOOTSTRAPPING_GHC_INFO_FIELD([SUPPORT_SMP_STAGE0],[Support SMP])
+   BOOTSTRAPPING_GHC_INFO_FIELD([RTS_WAYS_STAGE0],[RTS ways])
+ 
+diff --git a/hadrian/cfg/system.config.in b/hadrian/cfg/system.config.in
+index 68e4a69467..8c1710d32f 100644
+--- a/hadrian/cfg/system.config.in
++++ b/hadrian/cfg/system.config.in
+@@ -39,10 +39,12 @@ python         = @PythonCmd@
+ # Information about builders:
+ #============================
+ 
+-ar-supports-at-file = @ArSupportsAtFile@
+-ar-supports-dash-l  = @ArSupportsDashL@
+-cc-llvm-backend     = @CcLlvmBackend@
+-hs-cpp-args         = @HaskellCPPArgs@
++ar-supports-at-file       = @ArSupportsAtFile@
++system-ar-supports-at-file = @ArSupportsAtFile_STAGE0@
++ar-supports-dash-l        = @ArSupportsDashL@
++system-ar-supports-dash-l = @ArSupportsDashL_STAGE0@
++cc-llvm-backend           = @CcLlvmBackend@
++hs-cpp-args               = @HaskellCPPArgs@
+ 
+ # Build options:
+ #===============
+diff --git a/hadrian/src/Builder.hs b/hadrian/src/Builder.hs
+index c41a761c02..bcb8d6a301 100644
+--- a/hadrian/src/Builder.hs
++++ b/hadrian/src/Builder.hs
+@@ -311,8 +311,8 @@ instance H.Builder Builder where
+                     Stdout stdout <- cmd' [path] buildArgs
+                     writeFileChanged output stdout
+             case builder of
+-                Ar Pack _ -> do
+-                    useTempFile <- flag ArSupportsAtFile
++                Ar Pack stg -> do
++                    useTempFile <- arSupportsAtFile stg
+                     if useTempFile then runAr                path buildArgs buildInputs
+                                    else runArWithoutTempFile path buildArgs buildInputs
+ 
+diff --git a/hadrian/src/Oracles/Flag.hs b/hadrian/src/Oracles/Flag.hs
+index 7c05be5a68..ce4eedd8f2 100644
+--- a/hadrian/src/Oracles/Flag.hs
++++ b/hadrian/src/Oracles/Flag.hs
+@@ -5,7 +5,9 @@ module Oracles.Flag (
+     platformSupportsSharedLibs,
+     platformSupportsGhciObjects,
+     targetSupportsSMP,
+-    useLibffiForAdjustors
++    useLibffiForAdjustors,
++    arSupportsDashL,
++    arSupportsAtFile
+     ) where
+ 
+ import Hadrian.Oracles.TextFile
+@@ -16,6 +18,8 @@ import Oracles.Setting
+ 
+ data Flag = ArSupportsAtFile
+           | ArSupportsDashL
++          | SystemArSupportsAtFile
++          | SystemArSupportsDashL
+           | CrossCompiling
+           | CcLlvmBackend
+           | GhcUnregisterised
+@@ -39,6 +43,8 @@ flag f = do
+     let key = case f of
+             ArSupportsAtFile     -> "ar-supports-at-file"
+             ArSupportsDashL      -> "ar-supports-dash-l"
++            SystemArSupportsAtFile-> "system-ar-supports-at-file"
++            SystemArSupportsDashL-> "system-ar-supports-dash-l"
+             CrossCompiling       -> "cross-compiling"
+             CcLlvmBackend        -> "cc-llvm-backend"
+             GhcUnregisterised    -> "ghc-unregisterised"
+@@ -69,6 +75,14 @@ platformSupportsGhciObjects :: Action Bool
+ platformSupportsGhciObjects =
+     not . null <$> settingsFileSetting SettingsFileSetting_MergeObjectsCommand
+ 
++arSupportsDashL :: Stage -> Action Bool
++arSupportsDashL (Stage0 {}) = flag SystemArSupportsDashL
++arSupportsDashL _           = flag ArSupportsDashL
++
++arSupportsAtFile :: Stage -> Action Bool
++arSupportsAtFile (Stage0 {}) = flag SystemArSupportsAtFile
++arSupportsAtFile _           = flag ArSupportsAtFile
++
+ platformSupportsSharedLibs :: Action Bool
+ platformSupportsSharedLibs = do
+     windows       <- isWinTarget
+diff --git a/hadrian/src/Settings/Builders/Ar.hs b/hadrian/src/Settings/Builders/Ar.hs
+index 08379f07f8..65c9d5bb59 100644
+--- a/hadrian/src/Settings/Builders/Ar.hs
++++ b/hadrian/src/Settings/Builders/Ar.hs
+@@ -6,7 +6,9 @@ import Settings.Builders.Common
+ -- want to place these in a response file. This is handled in
+ -- 'Hadrian.Builder.Ar.runAr'.
+ arBuilderArgs :: Args
+-arBuilderArgs = mconcat
++arBuilderArgs = do
++  stage <- getStage
++  mconcat
+     [ builder (Ar Pack) ? mconcat
+       [ -- When building on platforms which don't support object merging
+         -- we must use the -L flag supported by llvm-ar, which ensures that
+@@ -14,7 +16,7 @@ arBuilderArgs = mconcat
+         -- not added as a single file. This requires that we are using llvm-ar
+         --
+         -- See Note [Object merging] in GHC.Driver.Pipeline.Execute for details.
+-        ifM ((&&) <$> notStage0 <*> expr (flag ArSupportsDashL)) (arg "qL") (arg "q")
++        ifM (expr $ arSupportsDashL stage) (arg "qL") (arg "q")
+       , arg =<< getOutput
+       ]
+     , builder (Ar Unpack) ? mconcat
+diff --git a/hadrian/src/Settings/Default.hs b/hadrian/src/Settings/Default.hs
+index 7d36a54c54..bdff5ec264 100644
+--- a/hadrian/src/Settings/Default.hs
++++ b/hadrian/src/Settings/Default.hs
+@@ -69,7 +69,6 @@ stageBootPackages = return [lintersCommon, lintCommitMsg, lintSubmoduleRefs, lin
+ stage0Packages :: Action [Package]
+ stage0Packages = do
+     cross <- flag CrossCompiling
+-    winTarget  <- isWinTarget
+     return $ [ binary
+              , bytestring
+              , cabalSyntax
+@@ -97,17 +96,25 @@ stage0Packages = do
+              , text
+              , transformers
+              , unlit
+-             , if winTarget then win32 else unix
++             , hp2ps
++             , if windowsHost then win32 else unix
+              ]
+           ++ [ terminfo | not windowsHost, not cross ]
+           ++ [ timeout  | windowsHost                ]
+           ++ [ touchy   | windowsHost                ]
+-          ++ [ hp2ps    | cross                      ]
+ 
+ -- | Packages built in 'Stage1' by default. You can change this in "UserSettings".
+ stage1Packages :: Action [Package]
+ stage1Packages = do
+-    libraries0 <- filter isLibrary <$> stage0Packages
++    let good_stage0_package p
++          -- we only keep libraries for some reason
++          | not (isLibrary p) = False
++          -- but not win32/unix because it depends on cross-compilation target
++          | p == win32        = False
++          | p == unix         = False
++          | otherwise         = True
++
++    libraries0 <- filter good_stage0_package <$> stage0Packages
+     cross      <- flag CrossCompiling
+     winTarget  <- isWinTarget
+ 
+@@ -135,6 +142,7 @@ stage1Packages = do
+         , stm
+         , unlit
+         , xhtml
++        , if winTarget then win32 else unix
+         ]
+       , when (not cross)
+         [ haddock
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 3285aa4ff4..d4c3dee5ad 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -164,8 +164,8 @@ extern char **environ;
+       SymI_NeedsProto(__mingw_module_is_dll)             \
+       RTS_WIN32_ONLY(SymI_NeedsProto(___chkstk_ms))      \
+       RTS_WIN64_ONLY(SymI_NeedsProto(___chkstk_ms))      \
+-      RTS_WIN64_ONLY(SymI_HasProto(__stdio_common_vswprintf_s)) \
+-      RTS_WIN64_ONLY(SymI_HasProto(__stdio_common_vswprintf)) \
++      RTS_WIN32_ONLY(SymI_HasProto(__stdio_common_vswprintf_s)) \
++      RTS_WIN32_ONLY(SymI_HasProto(__stdio_common_vswprintf)) \
+       RTS_WIN64_ONLY(SymI_HasProto(_errno))  \
+       /* see Note [Symbols for MinGW's printf] */        \
+       SymI_HasProto(_lock_file)                          \

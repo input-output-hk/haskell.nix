@@ -18,20 +18,29 @@
         Anything you can pass to `project.addModule` can be used.
         For instance to include variants using ghc 9.2.4:
         ```
-          flake.variants.ghc924.compiler-nix-name = pkgs.lib.mkForce "ghc924";
+          flake.variants.ghc925.compiler-nix-name = pkgs.lib.mkForce "ghc925";
         ```
         Then use it with:
         ```
-          nix build .#ghc924:hello:exe:hello
+          nix build .#ghc925:hello:exe:hello
         ```
       '';
     };
-    coverage = lib.mkOption {
+    doCoverage = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Specifies if the flake `ciJobs` and `hydraJobs` should include code
+        coverage reports.
+      '';
+    };
+    coverageProjectModule = lib.mkOption {
       type = lib.types.unspecified;
       default = {};
       description = ''
         Project module for use when generating coverage reports.
-        The project packages will have `doCoverage` by default.
+        The project packages will have `packages.X.doCoverage`
+        turned on by default.
       '';
     };
   };

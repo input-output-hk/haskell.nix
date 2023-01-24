@@ -2,10 +2,7 @@
 #
 # It is separate from default.nix because that file is the public API
 # of Haskell.nix, which shouldn't have tests, etc.
-let
-  haskellNix = (import ./default.nix {});
-in
-{ nixpkgs ? haskellNix.sources.nixpkgs-2205
+{ nixpkgs ? haskellNix.sources.nixpkgs-unstable
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , evalPackages ? import nixpkgs nixpkgsArgs
@@ -13,6 +10,7 @@ in
 , pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
+, haskellNix ? (import ./default.nix {})
 }:
 
 let
@@ -32,9 +30,24 @@ in rec {
             "ghc882" = "3.3.6";
             "ghc883" = "3.3.6";
             "ghc884" = "3.3.6";
-          }.compiler-nix-name or "latest";
+            "ghc8101" = "3.4.1";
+            "ghc8102" = "3.4.1";
+            "ghc8103" = "3.4.1";
+            "ghc8104" = "3.4.1";
+            "ghc8105" = "3.4.1";
+            "ghc8106" = "3.4.1";
+            "ghc8107" = "3.4.1";
+          }.${compiler-nix-name} or "latest";
       };
-      hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
+    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944"]) {
+      stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
+      hls-latest = tool compiler-nix-name "haskell-language-server" {
+        inherit evalPackages;
+        version =
+          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0
+            then "1.8.0.0"
+            else "latest";
+      };
     })
   );
 

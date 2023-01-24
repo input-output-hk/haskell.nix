@@ -4,7 +4,7 @@ let
     inherit haskellLib;
     ghc = config.ghc.package;
     compiler-nix-name = config.compiler.nix-name;
-    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages;
+    inherit (config) nonReinstallablePkgs hsPkgs compiler evalPackages inputMap;
   };
 
 in
@@ -61,8 +61,11 @@ in
     ]
     # TODO make this unconditional
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924"]) [
+      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943" "ghc944"]) [
       "ghc-bignum" ]
+    ++ lib.optionals (
+      __elem config.compiler.nix-name ["ghc925" "ghc941" "ghc942" "ghc943" "ghc944"]) [
+      "system-cxx-std-lib" ]
     ++ lib.optionals (!config.reinstallableLibGhc) [
       "ghc-boot"
       "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
@@ -86,8 +89,16 @@ in
       "ghcjs-prim"
    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924"]) [
-      "ghc-bignum" ];
+      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943" "ghc944"]) [
+      "ghc-bignum" ]
+    ++ lib.optionals (
+      __elem config.compiler.nix-name ["ghc941" "ghc942" "ghc943" "ghc944"]) [
+      "system-cxx-std-lib" ];
+
+  options.inputMap = lib.mkOption {
+    type = lib.types.attrsOf lib.types.unspecified;
+    default = {};
+  };
 
   options.hsPkgs = lib.mkOption {
     type = lib.types.unspecified;

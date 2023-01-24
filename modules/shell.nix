@@ -29,6 +29,16 @@
       type = lib.types.bool;
       default = false;
     };
+    allToolDeps = lib.mkOption {
+      type = lib.types.bool;
+      default = !config.exactDeps;
+      description = ''
+        Indicates if the shell should include all the tool dependencies
+        of in the haskell packages in the project.  Defaulted to `false` in
+        stack projects (to avoid trying to build the tools used by
+        every `stackage` package).
+      '';
+    };
     tools = lib.mkOption {
       type = lib.types.attrsOf lib.types.unspecified;
       default = {};

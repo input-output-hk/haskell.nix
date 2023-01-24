@@ -42,10 +42,6 @@ let
         then {
             compilerNixName = "ghc883";
         }
-        else if final.targetPlatform.isAarch64
-        then {
-            compilerNixName = "ghc884";
-        }
         else {
             compilerNixName = "ghc844";
         };
@@ -67,7 +63,8 @@ let
       "8.8" = "8.8.4";
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
-      "9.2" = "9.2.4";
+      "9.2" = "9.2.5";
+      "9.4" = "9.4.4";
     };
     traceWarnOld = v: x:
       let
@@ -189,8 +186,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
                 ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
 
-                ++ from      "8.10.1"          ./patches/ghc/ghc-acrt-iob-func.patch
-                ++ from      "8.10.1"          ./patches/ghc/ghc-mprotect-nonzero-len.patch
+                ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-acrt-iob-func.patch
+                ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
 
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
@@ -201,7 +198,7 @@ in {
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
                 ++ final.lib.optionals final.targetPlatform.isWindows
                   (fromUntil "8.10.4" "9.3"    ./patches/ghc/ghc-8.10-z-drive-fix.patch)
-                ++ final.lib.optional (versionAtLeast "8.6.5") ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
+                ++ fromUntil "8.6.5"  "9.4"    ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
                 ++ fromUntil "9.0.1"  "9.0.2"  ./patches/ghc/AC_PROG_CC_99.patch
@@ -216,10 +213,13 @@ in {
                 ++ fromUntil "8.10"   "9.2"    ./patches/ghc/ghc-8.10-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
                 ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-global-unique-counters-in-rts.patch # backport of https://gitlab.haskell.org/ghc/ghc/-/commit/9a28680d2e23e7b25dd7254a439aea31dfae32d5
                 ++ fromUntil "8.10"   "9.1"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
+                ++ fromUntil "9.2.2"  "9.3"    ./patches/ghc/ghc-9.2.2-fix-warnings-building-with-self.patch # https://gitlab.haskell.org/ghc/ghc/-/commit/c41c478eb9003eaa9fc8081a0039652448124f5d
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
+                ++ final.lib.optionals (final.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
+                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/m32_alloc.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
@@ -406,7 +406,10 @@ in {
             ghc884 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc884; };
 
-                inherit bootPkgs sphinx installDeps;
+                bootPkgs = bootPkgs // final.lib.optionalAttrs (!final.buildPlatform.isAarch64 && final.targetPlatform.isAarch64) {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                };
+                inherit sphinx installDeps;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
@@ -670,6 +673,122 @@ in {
 
                 ghc-patches = ghc-patches "9.2.4";
             });
+            ghc925 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc925; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.2.5";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-BgZ5fRs44tiO4iQ/OOxrmhqpPptXjpXw3pqcCkFEAhw=";
+                };
+
+                ghc-patches = ghc-patches "9.2.5";
+            });
+            ghc941 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc941; };
+
+                bootPkgs = bootPkgs // {
+                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
+                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                  ghc = if final.buildPlatform != final.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc941
+                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.4.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-y/7UZAvfAl4zulVDPa+M32mPTgSZrnqADd5EqC5zluM=";
+                };
+
+                ghc-patches = ghc-patches "9.4.1";
+            });
+            ghc942 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc942; };
+
+                bootPkgs = bootPkgs // {
+                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
+                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                  ghc = if final.buildPlatform != final.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc942
+                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.4.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-cifvO14VoNcLjxpDrsMoZ+KpsthXzA7VVq7tFy1Ns6U";
+                };
+
+                ghc-patches = ghc-patches "9.4.2";
+            });
+            ghc943 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc943; };
+
+                bootPkgs = bootPkgs // {
+                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
+                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                  ghc = if final.buildPlatform != final.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc943
+                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.4.3";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-6vY5SVNu3lDuORefIpnVCU65FS2HzG+yF1AGvJjokFo=";
+                };
+
+                ghc-patches = ghc-patches "9.4.3";
+            });
+            ghc944 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc944; };
+
+                bootPkgs = bootPkgs // {
+                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
+                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                  ghc = if final.buildPlatform != final.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc944
+                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.4.4";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-6M7yWm3tFTHNp6kEiNDPtteAZX0WY22qWUML4DDNZ+I=";
+                };
+
+                ghc-patches = ghc-patches "9.4.4";
+            });
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
@@ -911,45 +1030,13 @@ in {
         # Until all the dependencies build with 9.0.1 we will have to avoid
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
-          if __elem args.compiler-nix-name [ "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" ]
+          if __elem args.compiler-nix-name [ "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943" "ghc944" ]
             then "ghc8107"
             else args.compiler-nix-name;
         project =
-          final.haskell-nix.cabalProject ({pkgs, ...}: {
-            evalPackages = pkgs.buildPackages;
-            name = "nix-tools";
+          final.haskell-nix.hix.project ({
+            evalPackages = final.buildPackages;
             src = ../nix-tools;
-            # This is a handy way to use a local git clone of nix-tools when developing
-            # src = final.haskell-nix.haskellLib.cleanGit { name = "nix-tools"; src = ../../nix-tools; };
-            cabalProjectLocal = ''
-              allow-newer: Cabal:base, cryptohash-sha512:base, haskeline:base
-            '';
-            materialized = ../materialized + "/${compiler-nix-name}/nix-tools";
-            modules = [
-              # Work around issue when using older ghc on new MacOS versions.  The
-              # old process library used by these versions of ghc uses `fork` in a
-              # way that can sometimes while evaluating template haskell.
-              ({pkgs, ...}: final.lib.mkIf (pkgs.stdenv.hostPlatform.isDarwin
-                  && __elem args.compiler-nix-name [ "ghc865" "ghc881" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" ]
-                ) { packages.hnix.components.library.ghcOptions = [ "-j1" ]; }
-              )
-              {
-                packages.transformers-compat.components.library.doExactConfig = true;
-                packages.time-compat.components.library.doExactConfig = true;
-                packages.time-locale-compat.components.library.doExactConfig = true;
-                # Make Cabal reinstallable
-                reinstallableLibGhc = false;
-                nonReinstallablePkgs =
-                  [ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                    "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-                    "ghc-boot"
-                    "ghc" "Win32" "array" "binary" "bytestring" "containers"
-                    "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
-                    "hpc"
-                    "mtl" "parsec" "process" "text" "time" "transformers"
-                    "unix" "xhtml"
-                  ];
-            }];
           } // args // { inherit compiler-nix-name; });
         exes =
           let
@@ -985,7 +1072,7 @@ in {
             wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
           done
         '';
-      };
+      } // { inherit project; };
 
     # Memoize the cabal-install and nix-tools derivations by adding:
     #   haskell-nix.cabal-install.ghcXXX
@@ -1110,12 +1197,14 @@ in {
             # building ghc itself (since GHC is a dependency
             # of the materialization check it would cause
             # infinite recursion).
-            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({pkgs, ...}: {
+            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
                 evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
-                inherit ghcOverride nix-tools cabal-install index-state;
+                inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
                 modules = [{ reinstallableLibGhc = false; }];
+                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args);
             alex = bootstrap.packages.alex-tool {};
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };

@@ -1710,7 +1710,6 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSunix-2.7.2.2
-extra-libraries:      rt util dl pthread
 include-dirs:
 includes:             HsUnix.h execvpe.h
 depends:              base-4.16.1.0 bytestring-0.11.3.0 time-1.11.1.1
@@ -1764,7 +1763,7 @@ maintainer:      glasgow-haskell-users@haskell.org
 exposed:         True
 library-dirs:
 hs-libraries:    HSrts
-extra-libraries: m rt dl ffi numa pthread
+extra-libraries: m rt dl ffi numa
 include-dirs:
 includes:        Stg.h
 ld-options:

@@ -51,7 +51,6 @@ pkgs:
     "idn"                                = [ "libidn" ];
     "Imlib2"                             = [ "imlib2" ];
     "iw"                                 = [ "wirelesstools" ];
-    "javascriptcoregtk-3.0"              = [ "webkitgtk24x-gtk3" ]; # These are the old APIs, of which 2.4 is the last provider, so map directly to that.
     "jpeg"                               = [ "libjpeg" ];
     "jvm"                                = [ "jdk" ];
     "liboath"                            = [ "liboauth" ];
@@ -83,7 +82,6 @@ pkgs:
     "systemd-journal"                    = [ "systemd" ];
     "tag_c"                              = [ "taglib" ];
     "webkit2gtk"                         = [ "webkitgtk" ];
-    "webkitgtk-3.0"                      = [ "webkitgtk24x-gtk3" ]; # These are the old APIs, of which 2.4 is the last provider, so map directly to that
     "xml2"                               = [ "libxml2" ];
     "yaml"                               = [ "libyaml" ];
     "z"                                  = [ "zlib" ];
@@ -1312,8 +1310,6 @@ pkgs:
     "ddcutil" = [ "ddcutil" ];
     "dee-1.0" = [ "dee" ];
     "dee-icu-1.0" = [ "dee" ];
-    "libdigibyteconsensus" = [ "digibyte" ];
-#    "libdigibyteconsensus" = [ "digibyted" ];
     "basicobjects" = [ "ding-libs" ];
     "collection" = [ "ding-libs" ];
     "dhash" = [ "ding-libs" ];
@@ -3110,7 +3106,7 @@ pkgs:
     "librevenge-0.0" = [ "librevenge" ];
     "librevenge-generators-0.0" = [ "librevenge" ];
     "librevenge-stream-0.0" = [ "librevenge" ];
-    "librevisa" = [ "librevisa" ];
+#    "librevisa" = [ "librevisa" ];
     "rime" = [ "librime" ];
     "libroxml" = [ "libroxml" ];
     "librsb" = [ "librsb" ];
@@ -3184,7 +3180,7 @@ pkgs:
     "libtap" = [ "libtap" ];
     "libtasn1" = [ "libtasn1" ];
     "libtelnet" = [ "libtelnet" ];
-    "tensorflow" = [ "libtensorflow" ];
+    "tensorflow" = pkgs.lib.optional (builtins.compareVersions pkgs.lib.version "21.11" >= 0) "libtensorflow";
 #    "tensorflow" = [ "libtensorflow-bin" ];
     "termkey" = [ "libtermkey" ];
     "libthai" = [ "libthai" ];
@@ -4301,7 +4297,7 @@ pkgs:
 #    "python3-embed" = [ "pythonInterpreters" ];
 #    "python3" = [ "pythonInterpreters" ];
 #    "python" = [ "pythonInterpreters" ];
-    "qca2" = [ "qca2" ];
+#    "qca2" = [ "qca2" ];
     "qhullcpp" = [ "qhull" ];
     "qhull_r" = [ "qhull" ];
     "qhullstatic" = [ "qhull" ];

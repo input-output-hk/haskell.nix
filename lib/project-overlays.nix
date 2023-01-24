@@ -2,21 +2,11 @@
   lib
 , haskellLib
 }: {
-  # Provide a devshell profile (https://github.com/numtide/devshell),
-  # adapted from the project normal shell.
+
+  # TODO: remove by end of 2022.
   devshell = final: prev: {
-    devshell = let
-    in {
-      packages = final.shell.nativeBuildInputs
-      # devshell does not use pkgs.mkShell / pkgs.stdenv.mkDerivation,
-      # so we need to explicit required dependencies which
-      # are provided implicitely by stdenv when using the normal shell:
-      ++ (lib.filter lib.isDerivation final.shell.stdenv.defaultNativeBuildInputs)
-      ++ lib.optional final.shell.stdenv.targetPlatform.isGnu final.pkgs.buildPackages.binutils;
-      env = lib.mapAttrsToList lib.nameValuePair {
-        inherit (final.shell) CABAL_CONFIG NIX_GHC_LIBDIR;
-      };
-    };
+    devshell = builtins.trace "WARNING: `projectOverlays.devshell` is deprecated in favor of `haskellLib.devshellFor`"
+      (haskellLib.devshellFor final.shell);
   };
 
   # Provides easily accessible attrset for each type of
