@@ -61,10 +61,10 @@ in
     ]
     # TODO make this unconditional
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943"]) [
+      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943" "ghc944"]) [
       "ghc-bignum" ]
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc925" "ghc941" "ghc942" "ghc943"]) [
+      __elem config.compiler.nix-name ["ghc925" "ghc941" "ghc942" "ghc943" "ghc944"]) [
       "system-cxx-std-lib" ]
     ++ lib.optionals (!config.reinstallableLibGhc) [
       "ghc-boot"
@@ -89,10 +89,10 @@ in
       "ghcjs-prim"
    ] ++ lib.optional (!config.reinstallableLibGhc) "ghc"
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943"]) [
+      __elem config.compiler.nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943" "ghc944"]) [
       "ghc-bignum" ]
     ++ lib.optionals (
-      __elem config.compiler.nix-name ["ghc941" "ghc942" "ghc943"]) [
+      __elem config.compiler.nix-name ["ghc941" "ghc942" "ghc943" "ghc944"]) [
       "system-cxx-std-lib" ];
 
   options.inputMap = lib.mkOption {

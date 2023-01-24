@@ -64,7 +64,7 @@ let
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
       "9.2" = "9.2.5";
-      "9.4" = "9.4.3";
+      "9.4" = "9.4.4";
     };
     traceWarnOld = v: x:
       let
@@ -765,6 +765,30 @@ in {
 
                 ghc-patches = ghc-patches "9.4.3";
             });
+            ghc944 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc944; };
+
+                bootPkgs = bootPkgs // {
+                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
+                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                  ghc = if final.buildPlatform != final.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc944
+                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.4.4";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-6M7yWm3tFTHNp6kEiNDPtteAZX0WY22qWUML4DDNZ+I=";
+                };
+
+                ghc-patches = ghc-patches "9.4.4";
+            });
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
@@ -1006,7 +1030,7 @@ in {
         # Until all the dependencies build with 9.0.1 we will have to avoid
         # building & testing nix-tools with 9.0.1
         compiler-nix-name =
-          if __elem args.compiler-nix-name [ "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943" ]
+          if __elem args.compiler-nix-name [ "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc941" "ghc942" "ghc943" "ghc944" ]
             then "ghc8107"
             else args.compiler-nix-name;
         project =
