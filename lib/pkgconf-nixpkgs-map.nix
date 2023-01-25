@@ -1419,7 +1419,7 @@ pkgs:
 #    "zlib" = [ "emscripten" ];
     "enca" = [ "enca" ];
 #    "enchant-2" = [ "enchant" ];
-    "enchant" = [ "enchant1" ];
+#    "enchant" = [ "enchant1" ];
     "enchant-2" = [ "enchant2" ];
     "libenet" = [ "enet" ];
     "ecore-audio" = [ "enlightenment" ];
