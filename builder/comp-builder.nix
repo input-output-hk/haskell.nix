@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, zlib, ncurses, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -557,7 +557,10 @@ let
       '')
       + (lib.optionalString (stdenv.hostPlatform.isWindows && (haskellLib.mayHaveExecutable componentId)) (''
         echo "Symlink libffi and gmp .dlls ..."
-        for p in ${lib.concatStringsSep " " [ libffi gmp ]}; do
+        for p in ${lib.concatStringsSep " " ([ libffi gmp ] ++
+              # Also include C++ and mcfgthreads DLLs for GHC 9.4.1 and newer
+              lib.optionals (builtins.compareVersions defaults.ghc.version "9.4.1" >= 0)
+                [ buildPackages.gcc-unwrapped windows.mcfgthreads ])}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
         ''

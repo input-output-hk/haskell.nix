@@ -41,30 +41,31 @@ in [
     }
   )
 
-  # TODO remove this when `dependent-sum-0.7.1.0` constraint on `some` has been updated.
-  # See https://github.com/haskell/haskell-language-server/issues/2969
-  # and https://github.com/obsidiansystems/dependent-sum/issues/71
   ({config, lib, pkgs, ...}:
     { _file = "haskell.nix/overlays/hackage-quirks.nix#haskell-language-server"; } //
     lib.mkIf (config.name == "haskell-language-server") {
+      # TODO remove this when `dependent-sum-0.7.1.0` constraint on `some` has been updated.
+      # See https://github.com/haskell/haskell-language-server/issues/2969
+      # and https://github.com/obsidiansystems/dependent-sum/issues/71
       cabalProject = lib.mkDefault (''
         packages: .
         constraints: dependent-sum >=0.7.1.0
       ''
-      # TODO remove once these two plugins have been updated in hackage
+      # TODO remove once these the plugins have been updated in hackage
       + lib.optionalString (config.version == "1.8.0.0") ''
         package haskell-language-server
-          flags: -qualifyimportednames -stylishhaskell${lib.optionalString (config.compiler-nix-name != "ghc902") " -hlint"}
+          flags: -qualifyimportednames${
+            # Stylish haskell is broken for GHC 9.2
+            lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925"]) " -stylishhaskell"
+            # Hlint with this HLS only compiles for GHC 9.0
+            + lib.optionalString (!__elem config.compiler-nix-name ["ghc901" "ghc902"]) " -hlint"
+        }
+        constraints: hls-fourmolu-plugin <1.1.1.0, hls-rename-plugin <1.0.2.0, hls-stan-plugin <1.0.1.0
       ''
       # TODO Remove this flag once the hls-haddock-comments-plugin is updated in hackage to work with ghc 9.2
       + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925"]) ''
         package haskell-language-server
           flags: -haddockcomments
-      ''
-      # Exclude `retrie` that does not actually work with older versions of GHC.
-      # TODO Remove this once https://github.com/facebookincubator/retrie/pull/51 is fixed somehow
-      + lib.optionalString (__elem config.compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107" "ghc901" "ghc902"]) ''
-        constraints: retrie <1.2.1
       '');
     }
   )

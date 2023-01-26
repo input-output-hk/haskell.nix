@@ -23,7 +23,6 @@ in rec {
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
-      stack = tool compiler-nix-name "stack" { version = "2.9.1"; inherit evalPackages; };
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;
         version = {
@@ -40,7 +39,15 @@ in rec {
             "ghc8107" = "3.4.1";
           }.${compiler-nix-name} or "latest";
       };
-      hls-latest = tool compiler-nix-name "haskell-language-server" { inherit evalPackages; };
+    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944"]) {
+      stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
+      hls-latest = tool compiler-nix-name "haskell-language-server" {
+        inherit evalPackages;
+        version =
+          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0
+            then "1.8.0.0"
+            else "latest";
+      };
     })
   );
 

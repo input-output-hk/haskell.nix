@@ -26,6 +26,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
+  meta.disabled = __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944"];
   ifdInputs = {
     inherit (project) plan-nix;
   };

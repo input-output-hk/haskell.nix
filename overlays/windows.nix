@@ -36,28 +36,6 @@ final: prev:
      defaultModules = prev.haskell-nix.defaultModules ++ [
       ({ pkgs, buildModules, config, lib, ... }:
       let
-        iserv-proxy-exes =
-          if __elem config.compiler.nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925"]
-            then {
-              inherit (final.buildPackages.ghc-extra-packages."${config.compiler.nix-name}".iserv-proxy.components.exes) iserv-proxy;
-              # remote-iserv however needs to come from the regular packages as it has to
-              # run on the target host.
-              iserv-proxy-interpreter = final.ghc-extra-packages."${config.compiler.nix-name}".remote-iserv.components.exes.remote-iserv;
-            }
-          else (final.buildPackages.haskell-nix.cabalProject {
-              name = "iserv-proxy";
-              compiler-nix-name = config.compiler.nix-name;
-              src = final.buildPackages.haskell-nix.sources.iserv-proxy;
-              cabalProjectLocal = ''
-                allow-newer: *:libiserv, *:ghci
-              '';
-              modules = [{
-                config.reinstallableLibGhc = false;
-                options.nonReinstallablePkgs = pkgs.lib.mkOption {
-                  apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
-                };
-              }];
-            }).hsPkgs.iserv-proxy.components.exes;
         withTH = import ./mingw_w64.nix {
           inherit (pkgs.stdenv) hostPlatform;
           inherit (pkgs) stdenv lib writeScriptBin;
@@ -67,7 +45,7 @@ final: prev:
           inherit (pkgs.buildPackages) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
-          inherit (iserv-proxy-exes) iserv-proxy iserv-proxy-interpreter;
+          inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter;
           # we need to use openssl.bin here, because the .dll's are in the .bin expression.
           # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {

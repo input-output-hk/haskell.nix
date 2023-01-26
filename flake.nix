@@ -9,7 +9,7 @@
     nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
-    flake-compat = { url = "github:input-output-hk/flake-compat"; flake = false; };
+    flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     flake-utils = { url = "github:numtide/flake-utils"; };
     tullia = {
       url = "github:input-output-hk/tullia";
@@ -61,8 +61,8 @@
     };
     iserv-proxy = {
       type = "git";
-      url = "https://gitlab.haskell.org/ghc/iserv-proxy.git";
-      rev = "6e95df7be6dd29680f983db07a057fc2f34f81f6";
+      url = "https://gitlab.haskell.org/hamishmack/iserv-proxy.git";
+      ref = "hkm/remote-iserv";
       flake = false;
     };
   };
@@ -147,12 +147,15 @@
 
       packages = ((self.internal.compat { inherit system; }).hix).apps;
 
+      allJobs =
+        let
+          inherit (import ./ci-lib.nix { pkgs = legacyPackagesUnstable; }) stripAttrsForHydra filterDerivations;
+          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
+        in stripAttrsForHydra (filterDerivations ci);
+
       ciJobs =
         let
           inherit (legacyPackages) lib;
-          inherit (import ./ci-lib.nix { pkgs = legacyPackagesUnstable; }) stripAttrsForHydra filterDerivations;
-          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
-          allJobs = stripAttrsForHydra (filterDerivations ci);
           names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
               (builtins.attrNames x);
           requiredJobs =

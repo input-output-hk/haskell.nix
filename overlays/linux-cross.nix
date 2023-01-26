@@ -17,7 +17,7 @@ in
 , qemu
 , qemuSuffix ? (qemuByHostPlatform hostPlatform)
 , iserv-proxy
-, remote-iserv
+, iserv-proxy-interpreter
 , gmp
 , extra-test-libs ? []
 , buildPlatform
@@ -34,12 +34,12 @@ let
     # Unset configure flags as configure should have run already
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
-    (>&2 echo "---> Starting remote-iserv on port $PORT")
-    ${qemu}/bin/qemu-${qemuSuffix} ${remote-iserv.override (lib.optionalAttrs hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ];})}/bin/remote-iserv tmp $PORT &
-    (>&2 echo "---| remote-iserv should have started on $PORT")
+    (>&2 echo "---> Starting ${iserv-proxy-interpreter.exeName} on port $PORT")
+    ${qemu}/bin/qemu-${qemuSuffix} ${iserv-proxy-interpreter.override (lib.optionalAttrs hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ];})}/bin/${iserv-proxy-interpreter.exeName} tmp $PORT &
+    (>&2 echo "---| ${iserv-proxy-interpreter.exeName} should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
-    (>&2 echo "---> killing remote-iserve...")
+    (>&2 echo "---> killing ${iserv-proxy-interpreter.exeName}...")
     kill $RISERV_PID
     '';
   configureFlags = lib.optional hostPlatform.isAarch32 "--disable-split-sections";
