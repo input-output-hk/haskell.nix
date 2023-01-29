@@ -3,7 +3,7 @@
 { ifdLevel ? 3
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
-, checkMaterialization ? true
+, checkMaterialization ? false
 , compat
 , system
 , evalSystem ? builtins.currentSystem or "x86_64-linux"
