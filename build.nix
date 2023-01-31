@@ -39,12 +39,12 @@ in rec {
             "ghc8107" = "3.4.1";
           }.${compiler-nix-name} or "latest";
       };
-    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc941" "ghc942" "ghc943"]) {
+    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944"]) {
       stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
       hls-latest = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         version =
-          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0
+          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0
             then "1.8.0.0"
             else "latest";
       };
