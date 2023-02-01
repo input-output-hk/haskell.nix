@@ -44,9 +44,9 @@ let self =
 
 , enableDWARF ? false
 
-, enableTerminfo ?
+, enableTerminfo ? !stdenv.targetPlatform.isAndroid &&
     # Terminfo does not work on older ghc cross arm and windows compilers
-     (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
+     (!haskell-nix.haskellLib.isCrossTarget || !(stdenv.targetPlatform.isAarch32 || stdenv.targetPlatform.isAarch64 || stdenv.targetPlatform.isWindows) || builtins.compareVersions ghc-version "8.10" >= 0)
 
 , # Wheter to build in NUMA support
   enableNUMA ? true
@@ -346,7 +346,10 @@ stdenv.mkDerivation (rec {
         export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${ghc-version}"
     '' + lib.optionalString stdenv.isDarwin ''
         export NIX_LDFLAGS+=" -no_dtrace_dof"
-    '' + lib.optionalString targetPlatform.useAndroidPrebuilt ''
+    '' + 
+    # we really want "+armv7-a,+soft-float,+neon" as features, but llvm will 
+    # fail with those :facepalm:
+    lib.optionalString targetPlatform.useAndroidPrebuilt ''
         sed -i -e '5i ,("armv7a-unknown-linux-androideabi", ("e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64", "cortex-a8", ""))' llvm-targets
     '' + lib.optionalString targetPlatform.isMusl ''
         echo "patching llvm-targets for musl targets..."
@@ -416,7 +419,7 @@ stdenv.mkDerivation (rec {
                    ++ lib.optional stdenv.targetPlatform.isAarch32 "pic"
                    ++ lib.optional stdenv.targetPlatform.isMusl "pie";
 
-  postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux) ''
+  postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux && !targetPlatform.isAarch32 && !targetPlatform.isAndroid) ''
     # Patch rts.conf to ensure libnuma can be found
 
     for file in $(find "$out/lib" -name "rts*.conf"); do

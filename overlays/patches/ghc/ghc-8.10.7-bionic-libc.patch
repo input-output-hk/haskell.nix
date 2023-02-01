@@ -1,0 +1,35 @@
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index da7007c..9f99f58 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1968,15 +1968,22 @@ int ocRunInit_ELF( ObjectCode *oc )
+       }
+ 
+       if (kind == SECTIONKIND_INIT_ARRAY) {
+-          char *init_startC = oc->sections[i].start;
+-         init_start = (init_t*)init_startC;
+-         init_end = (init_t*)(init_startC + shdr[i].sh_size);
+-         for (init = init_start; init < init_end; init++) {
+-            ASSERT(0x0 != *init);
+-            (*init)(argc, argv, envv);
+-         }
+-      }
++        char *bname = basename(OC_INFORMATIVE_FILENAME(oc));
+ 
++        // do not run .array initialization for jemalloc from libc. This simply cannot work.
++        // It's most likely already run by the hosting process (ghc, or iserv) as they've been
++        // linked against that libc.
++        if(strncmp(bname, "libc.a(jemalloc.o)", 18) != 0)
++        {
++            char *init_startC = oc->sections[i].start;
++            init_start = (init_t*)init_startC;
++            init_end = (init_t*)(init_startC + shdr[i].sh_size);
++            for (init = init_start; init < init_end; init++) {
++                ASSERT(0x0 != *init);
++                (*init)(argc, argv, envv);
++            }
++        }
++      }
+       // XXX could be more strict and assert that it's
+       // SECTIONKIND_RWDATA; but allowing RODATA seems harmless enough.
+       if ((kind == SECTIONKIND_RWDATA || kind == SECTIONKIND_CODE_OR_RODATA)
