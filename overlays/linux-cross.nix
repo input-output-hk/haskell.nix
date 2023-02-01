@@ -13,6 +13,22 @@
 , ...
 }:
 let
+  # For 32bit android, we need to pass -no-pie, as we otherwise
+  # get -pie injected into the linker flags. We don't want that.
+  # If we target 32bit android, we need remote-iserv to be runnable
+  # in a 32bit linux (via qemu-arm user mode emulation).  If we have
+  # -pie enabled, it will produce a static-pie executable, which
+  # seems a lot like what we want but will crash on launch.  It appears
+  # the the __stack_chk_guard lookups go through some lookup table, and
+  # while the relocations for the lookup table are correct, the __stack_chk_guard
+  # address isn't properly relocated.  This could also be because libc isn't
+  # supposed to be staticlly linked really.  However because we are lacking
+  # the loader for arm on linux, we can't used dynamically linked executables
+  # until one in /system/bin/linker is provided.
+  #
+  # We also need to run armv7a-android in unshare --user --pid --fork, to
+  # ensure that we get a low pid < 65535 for android (If we run outside)
+  # of nix build envs.
 
   # we want this to hold only for arm (32 and 64bit) for now.
   isLinuxCross = haskellLib.isCrossHost && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64);
@@ -24,12 +40,13 @@ let
           else iserv-proxy-interpreter;
     in
       writeShellScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
+    #!${stdenv.shell}
     set -euo pipefail
     # Unset configure flags as configure should have run already
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
-    ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override (lib.optionalAttrs hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ];})}/bin/${interpreter.exeName} tmp $PORT &
+    ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override (lib.optionalAttrs hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ] ++ lib.optional hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";})}/bin/${interpreter.exeName} tmp $PORT &
     (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"

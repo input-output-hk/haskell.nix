@@ -437,8 +437,8 @@ let
         cabal.project.freeze
       chmod +w cabal.project.freeze
     ''}
-    export SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt
-    export GIT_SSL_CAINFO=${cacert}/etc/ssl/certs/ca-bundle.crt
+    export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
+    export GIT_SSL_CAINFO=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
 
     CABAL_DIR=${
       # This creates `.cabal` directory that is as it would have
