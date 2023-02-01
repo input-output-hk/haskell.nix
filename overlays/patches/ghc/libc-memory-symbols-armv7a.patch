@@ -1,0 +1,42 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 062159f..727fe74 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -340,6 +340,20 @@ int ghciInsertSymbolTable(
+            call this function again to trigger the duplicate error. */
+         return 1;
+     }
++    else if(strncmp(key, "fprintf", 7) == 0
++         || strncmp(key, "printf", 6) == 0
++         || strncmp(key, "sprintf", 7) == 0
++         || strncmp(key, "snprintf", 8) == 0
++         || strncmp(key, "getauxval", 9) == 0
++         || strncmp(key, "free", 4) == 0
++         || strncmp(key, "malloc", 6) == 0
++         || strncmp(key, "calloc", 6) == 0
++         || strncmp(key, "realloc", 7) == 0
++         || strncmp(key, "reallocarray", 12) == 0
++         ) {
++        /* symbols we link aginst the libc we link ghc or iserv against */
++        return 1;
++    }
+ 
+    pathchar* archiveName = NULL;
+    debugBelch(
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 2acd634..b86b516 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -1039,7 +1039,11 @@
+       SymI_HasProto(printf) \
+       SymI_HasProto(fprintf) \
+       SymI_HasProto(sprintf) \
+-      SymI_HasProto(snprintf)
++      SymI_HasProto(snprintf) \
++      SymI_HasProto(free) \
++      SymI_HasProto(malloc) \
++      SymI_HasProto(calloc) \
++      SymI_HasProto(realloc)
+ #else
+ #define RTS_STACK_PROTECTOR_SYMBOLS
+ #define RTS_LIBC_SYMBOLS
