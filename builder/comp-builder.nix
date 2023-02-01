@@ -278,6 +278,9 @@ let
 
       SETUP_HS = setup + /bin/Setup;
 
+      inherit cabalFile;
+      passAsFile = [ "cabalFile" ];
+
       prePatch =
         # If the package is in a sub directory `cd` there first.
         # In some cases the `cleanSrc.subDir` will be empty and the `.cabal`
@@ -291,7 +294,7 @@ let
           ''
         ) +
         (if cabalFile != null
-          then ''cat ${cabalFile} > ${package.identifier.name}.cabal''
+          then ''cp -v $cabalFilePath ${package.identifier.name}.cabal''
           else
             # When building hpack package we use the internal nix-tools
             # (compiled with a fixed GHC version)

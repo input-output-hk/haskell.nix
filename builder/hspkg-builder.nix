@@ -48,8 +48,7 @@ let
         inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
     else pkg.src;
 
-  cabalFile = if package-description-override == null || bundledSrc != null then null else
-    pkgs.writeText "${package.identifier.name}-${toString package.identifier.version}.cabal" package-description-override;
+  cabalFile = if package-description-override == null || bundledSrc != null then null else package-description-override;
 
   defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
