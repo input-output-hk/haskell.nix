@@ -447,7 +447,9 @@ let
       '' else ''
         runHook preBuild
         # https://gitlab.haskell.org/ghc/ghc/issues/9221
-        $SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
+        ${ # This fixes musl compilation of TH code that depends on C++ (for instance TH code that uses the double-conversion package)
+           lib.optionalString stdenv.hostPlatform.isMusl "LD_LIBRARY_PATH=${pkgs.buildPackages.gcc-unwrapped.lib}/x86_64-unknown-linux-musl/lib "
+        }$SETUP_HS build ${haskellLib.componentTarget componentId} -j$(($NIX_BUILD_CORES > 4 ? 4 : $NIX_BUILD_CORES)) ${lib.concatStringsSep " " setupBuildFlags}
         runHook postBuild
       '');
 
