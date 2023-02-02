@@ -39,9 +39,9 @@ let
 
   # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
-  combineAndMaterialize = unchecked: ghcName: bootPackages:
+  combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
-          materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName +
+          materialized = materialized-dir + "/ghc-boot-packages-nix/${ghcName +
               # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
               # so it needs its own materialization.
               final.lib.optionalString final.targetPlatform.isAarch64 "-aarch64"
@@ -123,12 +123,13 @@ let
 # as part of patches we applied to the GHC tree.
 
 in rec {
+  inherit combineAndMaterialize;
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
     (ghcName: ghc: builtins.mapAttrs
       (pkgName: subDir: rec {
         src =
           # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
-          # See https://github.com/input-output-hk/haskell.nix/issues/1459 
+          # See https://github.com/input-output-hk/haskell.nix/issues/1459
           let nix24srcFix = src: src // { filterPath = { path, ... }: path; };
           # Add in the generated files needed by ghc-boot
           in if subDir == "libraries/ghc-boot"
@@ -170,11 +171,11 @@ in rec {
 
   # All the ghc boot package nix files for each ghc.
   ghc-boot-packages-nix = builtins.mapAttrs
-    (combineAndMaterialize false)
+    (combineAndMaterialize false ../materialized)
       ghc-boot-packages-src-and-nix;
 
   ghc-boot-packages-nix-unchecked = builtins.mapAttrs
-    (combineAndMaterialize true)
+    (combineAndMaterialize true ../materialized)
       ghc-boot-packages-src-and-nix;
 
   # The import nix results for each ghc boot package for each ghc.
@@ -182,7 +183,7 @@ in rec {
     (ghcName: value: builtins.mapAttrs
       (pkgName: srcAndNix: importSrcAndNix {
         inherit (srcAndNix) src;
-        nix = ghc-boot-packages-nix.${ghcName} + "/${pkgName}.nix";
+        nix = final.ghc-boot-packages-nix.${ghcName} + "/${pkgName}.nix";
       }) value)
         ghc-boot-packages-src-and-nix;
 
@@ -190,11 +191,11 @@ in rec {
     (ghcName: value: builtins.mapAttrs
       (pkgName: srcAndNix: importSrcAndNix {
         inherit (srcAndNix) src;
-        nix = ghc-boot-packages-nix-unchecked.${ghcName} + "/${pkgName}.nix";
+        nix = final.ghc-boot-packages-nix-unchecked.${ghcName} + "/${pkgName}.nix";
       }) value)
         ghc-boot-packages-src-and-nix;
 
-  # Derivation with cabal.project for use with `cabalProject'` for each ghc. 
+  # Derivation with cabal.project for use with `cabalProject'` for each ghc.
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (ghcName: ghc:
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call

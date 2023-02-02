@@ -19,7 +19,7 @@
 # needed for configuring the source and booting the compiler
 # once it is built.  These are added to the `hsPkgs.shellFor`
 # of the project.
-{ pkgs }:
+{ pkgs, materialized-dir }:
 { src
 , compiler-nix-name
 , ghc ? pkgs.buildPackages.haskell-nix.compiler.${compiler-nix-name}
@@ -28,19 +28,19 @@
 , happy ? pkgs.haskell-nix.tool compiler-nix-name "happy" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
     version = "1.19.12";
-    materialized = ../materialized/ghcjs/happy + "/${compiler-nix-name}";
+    materialized = materialized-dir +"/ghcjs/happy/${compiler-nix-name}";
   }
 , alex ? pkgs.haskell-nix.tool compiler-nix-name "alex" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
     version = "3.2.5";
-    materialized = ../materialized/ghcjs/alex + "/${compiler-nix-name}";
+    materialized = materialized-dir + "/ghcjs/alex/${compiler-nix-name}";
   }
 , cabal-install ?
   if (builtins.compareVersions ghcjsVersion "8.10.0.0" >= 0)
   then pkgs.haskell-nix.tool compiler-nix-name "cabal" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
     version = "3.8.1.0";
-    materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
+    materialized = materialized-dir + "/ghcjs/cabal/${compiler-nix-name}";
   }
   else pkgs.haskell-nix.tool compiler-nix-name "cabal" {
     index-state = pkgs.haskell-nix.internalHackageIndexState;
@@ -53,7 +53,7 @@
       packages: .
       constraints: Cabal <3.2.1.0, Cabal-syntax <0
     '';
-    materialized = ../materialized/ghcjs/cabal + "/${compiler-nix-name}";
+    materialized = materialized-dir + "/ghcjs/cabal/${compiler-nix-name}";
   }
 , ...
 }@args:
@@ -153,7 +153,7 @@ let
         pkg-def-extras = pkgs.lib.optional (!isGhcjs88) (hackage: {
           packages.happy.revision = hackage.happy."1.19.9".revisions.default;
         });
-        materialized = ../materialized + "/ghcjs/${compiler-nix-name}";
+        materialized = materialized-dir + "/ghcjs/${compiler-nix-name}";
         modules = [
             {
                 # we need ghc-boot in here for ghcjs.
