@@ -318,7 +318,7 @@ let
     }
     // lib.optionalAttrs stdenv.hostPlatform.isMusl {
       # This fixes musl compilation of TH code that depends on C++ (for instance TH code that uses the double-conversion package)
-      LD_LIBRARY_PATH="${pkgs.buildPackages.gcc-unwrapped.lib}/x86_64-unknown-linux-musl/lib"
+      LD_LIBRARY_PATH="${pkgs.buildPackages.gcc-unwrapped.lib}/x86_64-unknown-linux-musl/lib";
     };
 
   haddock = haddockBuilder {
