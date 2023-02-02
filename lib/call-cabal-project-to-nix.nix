@@ -107,9 +107,6 @@ let
               pkgs.haskell-nix.compiler."${compiler-nix-name}";
 
 in
-  assert (if ghc'.isHaskellNixCompiler or false then true
-    else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
-      + forName));
 
 let
   ghc = ghc';
