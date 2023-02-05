@@ -1,3 +1,4 @@
+{ with-nixpkgs ? true }:
 let
 
   haskell-nix = import ../../default.nix { };
@@ -17,14 +18,12 @@ let
   );
 
   pkgs = import nixpkgs {
-    system = __currentSystem;
     inherit (haskell-nix) config;
     overlays = [
-      # haskell-nix.overlays.haskell
-      # haskell-nix.overlays.tools
       haskell-nix.overlay
-      o2
-    ];
+    ]
+    ++
+    (if with-nixpkgs then [ o2 ] else [ ]);
   };
 
   prj = pkgs.haskell-nix.cabalProject {
@@ -35,4 +34,3 @@ let
 in
 
 prj.plan-nix
-
