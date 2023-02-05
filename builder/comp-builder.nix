@@ -82,7 +82,7 @@ let self =
 , enableTSanRTS ? false
 
 # LLVM
-, useLLVM ? false
+, useLLVM ? ghc.useLLVM
 , smallAddressSpace ? false
 
 }@drvArgs:
