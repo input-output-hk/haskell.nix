@@ -81,26 +81,32 @@ final: prev:
   #
   # See https://github.com/input-output-hk/haskell.nix/issues/1642
   #
-  cabalPkgConfigWrapper = prev.pkgconfig.overrideAttrs (attrs: {
+  cabalPkgConfigWrapper = prev.pkgconfig.overrideAttrs (attrs: (
+  let
+    # These vars moved from attrs to attrs.env in nixpkgs adc8900df1758eda56abd68f7d781d1df74fa531
+    # Support both for the time being.
+    targetPrefix = attrs.targetPrefix or attrs.env.targetPrefix;
+    baseBinName = attrs.baseBinName or attrs.env.baseBinName;
+  in {
     installPhase = attrs.installPhase + ''
-      mv $out/bin/${attrs.targetPrefix}${attrs.baseBinName} \
-        $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped
+      mv $out/bin/${targetPrefix}${baseBinName} \
+        $out/bin/${targetPrefix}${baseBinName}-wrapped
 
-      cat <<EOF >$out/bin/${attrs.targetPrefix}${attrs.baseBinName}      
+      cat <<EOF >$out/bin/${targetPrefix}${baseBinName}
       #!${final.stdenv.shell}
       if [[ "\$1" == "--libs" && "\$2" == "--static" ]]; then
         OUTPUT=\$(mktemp)
         ERROR=\$(mktemp)
-        if $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped "\$@" >output 2>\$ERROR; then
+        if $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@" >output 2>\$ERROR; then
           cat \$OUTPUT
         else
           echo "--error-pkg-config-static-failed=\$ERROR"
         fi
       else
-        $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped "\$@"
+        $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@"
       fi
       EOF
-      chmod +x $out/bin/${attrs.targetPrefix}${attrs.baseBinName}
+      chmod +x $out/bin/${targetPrefix}${baseBinName}
     '';
-  });
+  }));
 }
