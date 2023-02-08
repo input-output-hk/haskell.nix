@@ -218,15 +218,15 @@ in {
                 ++ final.lib.optionals (final.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/m32_alloc.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-rts-linker-condbr.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
-                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/m32_alloc.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-rts-linker-condbr.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
                 ;
         in ({
             ghc844 = final.callPackage ../compiler/ghc (traceWarnOld "8.4" {
@@ -1051,6 +1051,7 @@ in {
             "truncate-index"
             "stack-repos"
             "cabal-name"
+            "make-install-plan"
           ]) ++ [
             (project.getComponent "hpack:exe:hpack")
           ];
@@ -1153,7 +1154,7 @@ in {
       let
         # This compiler-nix-name will only be used to build nix-tools and cabal-install
         # when checking materialization of alex, happy and hscolour.
-        compiler-nix-name = "ghc865";
+        compiler-nix-name = buildBootstrapper.compilerNixName;
         # The ghc boot compiler to use to compile alex, happy and hscolour
         ghc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
         ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };

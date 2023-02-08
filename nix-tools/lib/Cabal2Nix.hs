@@ -5,9 +5,10 @@
 
 module Cabal2Nix (cabal2nix, gpd2nix, Src(..), CabalFile(..), CabalFileGenerator(..), cabalFilePath, cabalFilePkgName, CabalDetailLevel(..)) where
 
-import Distribution.PackageDescription.Parsec (readGenericPackageDescription, parseGenericPackageDescription, runParseResult)
+import Distribution.PackageDescription.Parsec (parseGenericPackageDescription, runParseResult)
+import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Verbosity (normal)
-import Distribution.Pretty (pretty)
+import Distribution.Pretty ( pretty, prettyShow )
 import Distribution.Utils.ShortText (fromShortText)
 import Distribution.Utils.Path (getSymbolicPath)
 import Data.Char (toUpper)
@@ -17,9 +18,8 @@ import Data.Maybe (catMaybes, maybeToList)
 import Data.Foldable (toList)
 import Distribution.Package
          ( packageName, packageVersion )
-import Distribution.Pretty (prettyShow)
 import qualified System.FilePath.Posix as FilePath.Posix
-         ( combine, joinPath, splitDirectories )
+         ( joinPath, splitDirectories )
 import Network.URI
          ( URI(uriAuthority, uriPath), URIAuth(..), parseURI )
 
@@ -27,16 +27,10 @@ import Distribution.Types.CondTree
 import Distribution.Types.Library
 import Distribution.Types.ForeignLib
 import Distribution.PackageDescription hiding (Git)
-import Distribution.Types.Dependency
-import Distribution.Types.ExeDependency
-import Distribution.Types.LegacyExeDependency
-import Distribution.Types.PkgconfigDependency
-import Distribution.Types.PkgconfigName
 import Distribution.Types.Version
 import Distribution.Types.VersionRange
 import Distribution.CabalSpecVersion
 import Distribution.Compiler
-import Distribution.Types.PackageName (PackageName, mkPackageName, unPackageName)
 import Distribution.Simple.BuildToolDepends (desugarBuildTool)
 import Distribution.ModuleName (ModuleName)
 import qualified Distribution.ModuleName as ModuleName
@@ -45,18 +39,16 @@ import Data.String (fromString, IsString)
 
 -- import Distribution.Types.GenericPackageDescription
 -- import Distribution.Types.PackageDescription
-import Distribution.Types.PackageId
 --import Distribution.Types.Condition
-import Distribution.Types.UnqualComponentName
 import Nix.Expr
 import Data.Fix(Fix(..))
 import Data.Text (Text)
 
-import Cabal2Nix.Util (quoted, selectOr, mkThrow)
+import Cabal2Nix.Util (quoted, selectOr)
 
 data Src
   = Path FilePath
-  | PrivateHackage String
+  | Repo String (Maybe String)
   | Git String String (Maybe String) (Maybe String)
   deriving Show
 
@@ -228,11 +220,13 @@ toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
 
 srcToNix :: PackageIdentifier -> Src -> NExpr
 srcToNix _ (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
-srcToNix pi' (PrivateHackage url)
-  = mkNonRecSet $
+srcToNix pi' (Repo url mHash)
+  = mkNonRecSet
     [ "src" $= applyMkDefault (mkSym pkgs @. "fetchurl" @@ mkNonRecSet
       [ "url" $= mkStr (fromString . show $ mkPrivateHackageUrl url pi')
-      , "sha256" $= (mkSym "config" @. "sha256")
+      , "sha256" $= case mHash of
+                      Nothing -> mkSym "config" @. "sha256"
+                      Just hash -> mkStr (fromString hash)
       ])
     ]
 srcToNix _ (Git url rev mbSha256 mbPath)
