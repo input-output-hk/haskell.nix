@@ -36,12 +36,18 @@ final: prev:
       pkgconfigPkgs =
         final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
-    in prev.pkgconfig.overrideAttrs (attrs: {
+    in prev.pkgconfig.overrideAttrs (attrs:
+      let
+        # These vars moved from attrs to attrs.env in nixpkgs adc8900df1758eda56abd68f7d781d1df74fa531
+        # Support both for the time being.
+        targetPrefix = attrs.targetPrefix or attrs.env.targetPrefix;
+        baseBinName = attrs.baseBinName or attrs.env.baseBinName;
+      in {
       installPhase = attrs.installPhase + ''
-        mv $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName} \
-          $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}-wrapped
+        mv $out/bin/${targetPrefix}${baseBinName} \
+          $out/bin/${targetPrefix}${baseBinName}-wrapped
 
-        cat <<EOF >$out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}
+        cat <<EOF >$out/bin/${targetPrefix}${baseBinName}
         #!${final.stdenv.shell}
         if [[ "\$1" == "--list-all" ]]; then
           OUTPUT=\$(mktemp)
@@ -62,10 +68,10 @@ final: prev:
         }
         EOF2
         else
-          $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}-wrapped "\$@"
+          $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@"
         fi
         EOF
-        chmod +x $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}
+        chmod +x $out/bin/${targetPrefix}${baseBinName}
       '';
   });
   # cabal 3.8 asks pkg-config for linker options for both
@@ -81,26 +87,32 @@ final: prev:
   #
   # See https://github.com/input-output-hk/haskell.nix/issues/1642
   #
-  cabalPkgConfigWrapper = prev.pkgconfig.overrideAttrs (attrs: {
+  cabalPkgConfigWrapper = prev.pkgconfig.overrideAttrs (attrs: (
+  let
+    # These vars moved from attrs to attrs.env in nixpkgs adc8900df1758eda56abd68f7d781d1df74fa531
+    # Support both for the time being.
+    targetPrefix = attrs.targetPrefix or attrs.env.targetPrefix;
+    baseBinName = attrs.baseBinName or attrs.env.baseBinName;
+  in {
     installPhase = attrs.installPhase + ''
-      mv $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName} \
-        $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}-wrapped
+      mv $out/bin/${targetPrefix}${baseBinName} \
+        $out/bin/${targetPrefix}${baseBinName}-wrapped
 
-      cat <<EOF >$out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}
+      cat <<EOF >$out/bin/${targetPrefix}${baseBinName}
       #!${final.stdenv.shell}
       if [[ "\$1" == "--libs" && "\$2" == "--static" ]]; then
         OUTPUT=\$(mktemp)
         ERROR=\$(mktemp)
-        if $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}-wrapped "\$@" >output 2>\$ERROR; then
+        if $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@" >output 2>\$ERROR; then
           cat \$OUTPUT
         else
           echo "--error-pkg-config-static-failed=\$ERROR"
         fi
       else
-        $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}-wrapped "\$@"
+        $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@"
       fi
       EOF
-      chmod +x $out/bin/${prev.pkgconfig.targetPrefix}${prev.pkgconfig.baseBinName}
+      chmod +x $out/bin/${targetPrefix}${baseBinName}
     '';
-  });
+  }));
 }

@@ -25,9 +25,7 @@ import Data.Aeson
 import Control.Applicative ((<|>))
 import Data.Monoid (mempty)
 
-import Distribution.Types.PackageName
 import Distribution.Types.PackageId
-import Distribution.Text
 import Distribution.Pretty
 import Distribution.Parsec
 import Distribution.Compat.CharParsing

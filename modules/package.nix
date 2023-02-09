@@ -302,6 +302,11 @@ in {
       default = pkgs.fetchurl { url = "mirror://hackage/${config.name}.tar.gz"; inherit (config) sha256; };
       defaultText = "pkgs.fetchurl { url = \"mirror://hackage/\${config.name}.tar.gz\"; inherit (config) sha256; };";
     };
+    package-description-override = mkOption {
+      type = nullOr str;
+      default = null;
+      description = "Cabal file to use instead of the one shipped inside the package source distribution.";
+    };
     cabal-generator = mkOption {
       type = nullOr str;
       default = null;

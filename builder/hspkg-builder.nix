@@ -9,8 +9,7 @@ config:
 , name
 , sha256
 , src
-, revision
-, revisionSha256
+, package-description-override
 , patches
 
 , shellHook
@@ -48,12 +47,8 @@ let
         # repository.
         inputMap.${__head baseUrlMatch} + "/package/${__elemAt baseUrlMatch 1}"
     else pkg.src;
-  cabalFile = if revision == null || revision == 0 || bundledSrc != null then null else
-    fetchurl {
-      name = "${name}-${toString revision}.cabal";
-      url = "https://hackage.haskell.org/package/${name}/revision/${toString revision}.cabal";
-      sha256 = revisionSha256;
-    };
+
+  cabalFile = if package-description-override == null || bundledSrc != null then null else package-description-override;
 
   defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
@@ -134,12 +129,12 @@ let
         extraSrcFiles = components.setup.extraSrcFiles ++ [ "Setup.hs" "Setup.lhs" ];
         pkgconfig = if components ? library then components.library.pkgconfig or [] else [];
       };
-      inherit package name src flags revision patches defaultSetupSrc;
+      inherit package name src flags patches defaultSetupSrc;
       inherit (pkg) preUnpack postUnpack;
     };
 
   buildComp = allComponent: componentId: component: comp-builder {
-    inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches revision
+    inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches
             shellHook
             ;
   };
@@ -150,7 +145,7 @@ in rec {
     (_: d: haskellLib.check d)
       (lib.filterAttrs (_: d: d.config.doCheck) components.tests));
   inherit (package) identifier detailLevel isLocal isProject buildType;
-  inherit setup cabalFile;
+  inherit setup;
   isHaskell = true;
   inherit src;
 }

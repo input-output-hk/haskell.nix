@@ -1770,6 +1770,18 @@ haddock-interfaces:
 haddock-html:
     ${pkgroot}/../../../share/doc/ghc-9.4.2/html/libraries/stm-2.5.1.0
 ---
+name:                 system-cxx-std-lib
+version:              1.0
+visibility:           public
+id:                   system-cxx-std-lib-1.0
+key:                  system-cxx-std-lib-1.0
+synopsis:
+    A placeholder for the system's C++ standard library implementation.
+category:             System
+exposed:              True
+dynamic-library-dirs:
+extra-libraries:      c++ c++abi
+---
 name:                 template-haskell
 version:              2.19.0.0
 visibility:           public
@@ -2124,14 +2136,3 @@ haddock-interfaces:
     ${pkgroot}/../../../share/doc/ghc-9.4.2/html/libraries/xhtml-3000.2.2.1/xhtml.haddock
 haddock-html:
     ${pkgroot}/../../../share/doc/ghc-9.4.2/html/libraries/xhtml-3000.2.2.1
----
-name:            system-cxx-std-lib
-version:         1.0
-visibility:      public
-id:              system-cxx-std-lib-1.0
-key:             system-cxx-std-lib-1.0
-synopsis:
-    A placeholder for the system's C++ standard library implementation.
-category:        System
-exposed:         True
-extra-libraries: c++ c++abi

@@ -70,7 +70,7 @@ if [ "$TESTS" == "cabal" ] || [ "$TESTS" == "all" ]; then
       --pure ./default.nix \
       --argstr compiler-nix-name ghc865 \
       -A with-packages.test-shell \
-      --run 'echo CABAL_CONFIG=$CABAL_CONFIG && type -p ghc && cd with-packages && cabal new-build'
+      --run 'echo CABAL_CONFIG=$CABAL_CONFIG && type -p ghc && cd with-packages && CABAL_DIR=$(mktemp -d) cabal new-build'
   echo >& 2
 fi
 
@@ -81,7 +81,7 @@ if [ "$TESTS" == "cabal-doExactConfig" ] || [ "$TESTS" == "all" ]; then
       --pure ./default.nix \
       --argstr compiler-nix-name ghc865 \
       -A with-packages.test-shell-dec \
-      --run 'echo CABAL_CONFIG=$CABAL_CONFIG && echo GHC_ENVIRONMENT=$GHC_ENVIRONMENT && cd with-packages && cabal new-build'
+      --run 'echo CABAL_CONFIG=$CABAL_CONFIG && echo GHC_ENVIRONMENT=$GHC_ENVIRONMENT && cd with-packages && CABAL_DIR=$(mktemp -d) cabal new-build'
   echo >& 2
 fi
 
@@ -92,7 +92,7 @@ if [ "$TESTS" == "tests-benchmarks" ] || [ "$TESTS" == "all" ]; then
       --pure ./default.nix \
       --argstr compiler-nix-name "$GHC" \
       -A cabal-22.shell \
-      --run 'cd cabal-22 && cabal new-build all --enable-tests --enable-benchmarks' \
+      --run 'cd cabal-22 && CABAL_DIR=$(mktemp -d) cabal new-build all --enable-tests --enable-benchmarks' \
       || true
   echo >& 2
 fi
@@ -103,7 +103,7 @@ if [ "$TESTS" == "multi-target" ] || [ "$TESTS" == "all" ]; then
       --pure ./default.nix \
       --argstr compiler-nix-name "$GHC" \
       -A cabal-simple.test-shell \
-      --run 'cd cabal-simple && cabal new-build'
+      --run 'cd cabal-simple && CABAL_DIR=$(mktemp -d) cabal new-build'
   echo >& 2
 fi
 
@@ -116,7 +116,7 @@ if [ "$TESTS" == "shellFor-single-package" ] || [ "$TESTS" == "all" ]; then
       --pure ./default.nix \
       --argstr compiler-nix-name $SHELL_FOR_GHC \
       -A shell-for.env \
-      --run 'cd shell-for && cabal new-build all'
+      --run 'cd shell-for && CABAL_DIR=$(mktemp -d) cabal new-build all'
   echo >& 2
 fi
 
@@ -126,7 +126,7 @@ if [ "$TESTS" == "shellFor-multiple-package" ] || [ "$TESTS" == "all" ]; then
       --pure ./default.nix \
       --argstr compiler-nix-name $SHELL_FOR_GHC \
       -A shell-for.envPkga \
-      --run 'cd shell-for && cabal new-build --project=single.project all'
+      --run 'cd shell-for && CABAL_DIR=$(mktemp -d) cabal new-build --project=single.project all'
   echo >& 2
 fi
 

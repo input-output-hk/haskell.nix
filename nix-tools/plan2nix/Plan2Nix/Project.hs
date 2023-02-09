@@ -12,7 +12,6 @@ import System.FilePath ((</>))
 import System.Directory (listDirectory, doesFileExist)
 import Data.List (isSuffixOf)
 
-import qualified Hpack
 import qualified Hpack.Config as Hpack
 import qualified Hpack.Render as Hpack
 
