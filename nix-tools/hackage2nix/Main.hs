@@ -64,7 +64,8 @@ main :: IO ()
 main = do
   out:rest <- getArgs
   (inp, src) <- case rest of
-                 [tarball, url] -> return (tarball, Just $ PrivateHackage url)
+                 [tarball, url, hash] -> return (tarball, Just $ Repo url (Just hash))
+                 [tarball, url] -> return (tarball, Just $ Repo url Nothing)
                  [] -> hackageTarball >>= \tarball -> return (tarball, Nothing)
 
   db    <- U.readTarball Nothing inp

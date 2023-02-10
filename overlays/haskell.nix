@@ -185,23 +185,6 @@ final: prev: {
             then snapshots."lts-15.13"
             else snapshots."lts-14.13";
 
-        # Produce a fixed output derivation from a moving target (hackage index tarball)
-        # Takes desired index-state and sha256 and produces a set { name, index }, where
-        # index points to "01-index.tar.gz" file downloaded from hackage.haskell.org.
-        hackageTarball = { index-state, sha256, nix-tools, ... }:
-            assert sha256 != null;
-            let at = builtins.replaceStrings [":"] [""] index-state; in
-            { "hackage.haskell.org-at-${at}" = final.fetchurl {
-                name = "01-index.tar.gz-at-${at}";
-                url = "https://hackage.haskell.org/01-index.tar.gz";
-                downloadToTemp = true;
-                postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
-
-                outputHashAlgo = "sha256";
-                outputHash = sha256;
-              };
-            };
-
         # Creates Cabal local repository from { name, index } set.
         mkLocalHackageRepo = import ../mk-local-hackage-repo final;
 
@@ -254,51 +237,207 @@ final: prev: {
           })
         ];
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, ... }@args:
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }@args:
             let
-              allTarballs = hackageTarball args // extra-hackage-tarballs;
-              allNames = final.lib.concatStringsSep "-" (builtins.attrNames allTarballs);
-              # Main Hackage index-state is embedded in its name and thus will propagate to
-              # dotCabalName anyway.
-              dotCabalName = "dot-cabal-" + allNames;
-              tarballRepoFor = name: index: final.runCommand "tarballRepo_${name}" {
+              # NOTE: root-keys: aaa is because key-threshold: 0 does not seem to be enough by itself
+              bootstrapIndexTarball = name: index: final.runCommand "cabal-bootstrap-index-tarball-${name}" {
                 nativeBuildInputs = [ cabal-install ] ++ cabal-issue-8352-workaround;
               } ''
-                set -xe
-
-                mkdir -p $out/.cabal
-                cat <<EOF > $out/.cabal/config
+                HOME=$(mktemp -d)
+                mkdir -p $HOME/.cabal/packages/${name}
+                cat <<EOF > $HOME/.cabal/config
                 repository ${name}
                   url: file:${mkLocalHackageRepo { inherit name index; }}
                   secure: True
-                  root-keys:
+                  root-keys: aaa
                   key-threshold: 0
-
                 EOF
-
-                # All repositories must be mkdir'ed before calling new-update on any repo,
-                # otherwise it fails.
-                mkdir -p $out/.cabal/packages/${name}
-
-                HOME=$out cabal new-update ${name}
-              '';
-              f = name: index:
-                let x = tarballRepoFor name index; in
-                ''
-                  ln -s ${x}/.cabal/packages/${name} $out/.cabal/packages/${name}
-                  cat ${x}/.cabal/config >> $out/.cabal/config
+                cabal v2-update ${name}
+                cp -r $HOME/.cabal/packages/${name} $out
                 '';
-            in
-              # Add the extra-hackage-repos where we have all the files needed.
-              final.runCommand dotCabalName { nativeBuildInputs = [ final.xorg.lndir ]; } ''
-                mkdir -p $out/.cabal/packages
-                ${builtins.concatStringsSep "\n" (final.lib.mapAttrsToList f allTarballs)}
 
+              # Produce a fixed output derivation from a moving target (hackage index tarball)
+              bootstrapped-hackage-tarball =
+                bootstrapIndexTarball "hackage.haskell.org"
+                (final.fetchurl {
+                  name = "01-index.tar.gz-at-${builtins.replaceStrings [ ":" ] [ "" ] index-state}";
+                  url = "https://hackage.haskell.org/01-index.tar.gz";
+                  downloadToTemp = true;
+                  postFetch = "${nix-tools}/bin/truncate-index -o $out -i $downloadedFile -s ${index-state}";
+                  outputHashAlgo = "sha256";
+                  outputHash = sha256;
+                });
+
+              bootstrapped-extra-hackage-tarballs = final.lib.mapAttrs bootstrapIndexTarball extra-hackage-tarballs;
+            in
+              # dotCabal creates a suitable CABAL_DIR for cabal to use to make an install plan.
+              # This directory will need to include two things:
+              #
+              # 1) pre-downloaded and pre-bootstrapped repositories
+              # 2) a configuration file
+              #
+              # NOTE: both steps need to be completed exactly as cabal would complete them. We won't
+              # be able to alter CABAL_DIR at all after this since it will be stored in the nix store.
+              # If these steps are not done properly, few things could go wrong, e.g.:
+              #
+              # - if cabal.config is missing cabal will try to write a default configuration file and
+              #   fail with "Permission denied"
+              # - if 01-index.tar.idx is missing cabal will fail to read the index and error out with
+              #   "Could not read index. Did you call 'checkForUpdates'?"
+              # - cabal will try to recreate 01-index.cache on the nix store and fail with "Permission
+              #   denied"
+              #
+              # Let's examine the steps above one by one.
+              #
+              # Step 1) is typically the result of calling `cabal update`. Because Haskell.nix supports
+              # different ways of including extra repositories, we need to divide this step into two
+              # other steps.
+              #
+              # 1a) Download the index tarball (01-index.tar.gz) and the TUF matadata (mirrors.json,
+              #     root.json, snapshot.json, timestamp.json)
+              # 1b) Decompress the index tarball and create additional index/cache files (01-index.cache,
+              #     01-index.tar, 01-index.tar.idx, 01-index.timestamp)
+              #
+              # dotCabal supports pre-populating a CABAL_DIR from two kind of repositories:
+              #
+              # - extra-hackage-repos
+              # - extra-hackage-tarballs
+              #
+              # These repositories are in addititon to hackage, which is always prepopulated.
+              #
+              # NOTE: this might not be 100% correct since cabal can work without hackage being defined
+              # in the global configuration at all. As a workaround, a project that does not want to use
+              # hackage can use an explicit `active-repositories:` in the project configuration.
+              # Haskell.nix will prepopulate hackage in CABAL_DIR but then cabal will not use it for
+              # project planning.
+              #
+              # Let's examine how we deal with these repositories.
+              #
+              # - hackage: Hackage index tarball is downloaded and truncated from hackage.haskell.org.
+              #   Since this is only the tarball, we need to add the TUF files and we need to bootstrap
+              #   it (both part of bootstrapIndexTarball called above). Additionally, cabal will always
+              #   include hackage when creating a default global configuration, so we need to add it to
+              #   the global cabal config as well.
+              #
+              # - extra-hackage-repos: The repos are parsed from the project configuration but the user
+              #   is responsible for downloading the whole repo (not only the tarball but also the TUF
+              #   files). The downloaded repository still needs to be bootstrapped but it's done in
+              #   ./lib/cabal-project-parser.nix, before we get here. We don't need to add these
+              #   repositories in cabal.config since they are already present in the project configuration.
+              #
+              # - extra-hackage-tarballs: These are index tarballs the user is asking haskell.nix to
+              #   "inject" into the project. They work in a similar way to hackage, since they also need
+              #   TUF files, bootstrap and to be added in the cabal configuration.
+              #
+              #                        |           |                 | needs to be added |
+              #                        | needs TUF | needs bootstrap | to cabal.config   |
+              # -----------------------+-----------+-----------------+-------------------+
+              # hackage                | yes       | yes             | yes               |
+              # extra-hackage-repos    | no        | already done    | no                |
+              # extra-hackage-tarballs | yes       | yes             | yes               |
+              # -----------------------+-----------+-----------------+-------------------+
+              #
+              # Step 2) is writing the global cabal config. cabal writes a default global configuration
+              # file at any invocation if it is missing. This is a simple step but there is one trick
+              # we need to be aware and careful about. cabal populates CABAL_DIR with repositories obtained
+              # from somewhere (the repository's url). What we are doing here is prepopulating CABAL_DIR
+              # for cabal, we do not want to change where cabal thinks a repository is coming from.
+              #
+              # E.g. after prepopulating CABAL_DIR/packages/hackage.haskell.org from the nix path
+              # /nix/store/ff4pn0yva7ndsrg2zshy8qxzlrfsr4cl-cabal-bootstrap-index-tarball-hackage.haskell.org/
+              # the configuration we want to write is still
+              #
+              #   repository hackage.haskell.org
+              #     url: http://hackage.haskell.org
+              #     secure: True
+              #
+              # and not
+              #
+              #   repository hackage.haskell.org
+              #     url: file:/nix/store/ff4pn0yva7ndsrg2zshy8qxzlrfsr4cl-cabal-bootstrap-index-tarball-hackage.haskell.org/
+              #     secure: True
+              #
+              # Doing this correctly is important for few reasons:
+              #
+              # 1. cabal as called by haskell.nix will produce exactly the same install plan as cabal
+              #    called outside of haskell.nix (other things equal, of course)
+              # 2. The url of the repositories will be visible in the install plan. Having the correct
+              #    urls there will allow us to know from where to fetch the packages tarballs at build
+              #    time.
+              # 3. We don't want to leak the nix path of the index into the derivation of the component
+              #    builder since this will cause unnecesary recompilation. In other words, the recipe to
+              #    compile a package has to only depend on its content, not on where the recipe is from
+              #    or how it is obtained.
+              #
+              # Using the correct url for the repository is only possible if the url is well-known. Again
+              # there is a difference in this regard among the different kind of repositories.
+              #
+              # - hackage: hackage's url is always well known.
+              # - extra-hackage-repos: since the user is responsible for downloading these repositories,
+              #   we don't really know where they are from, BUT, we also don't have to include them in
+              #   cabal.config because the user has already included them in the project configuration.
+              # - extra-hackage-tarballs: this is just a tarball passed to haskell.nix, we have no idea
+              #   if the corresponding repository is published anywhere. The best we can do in this case
+              #   is to form a url from the key of the extra-hackage-tarball and leave the user to decide.
+              #   The user could use a key corresponding to a real reository domain or overwrite the
+              #   packages source manually.
+              #   E.g. passing
+              #
+              #     extra-hackage-tarballs = { extra-hackage-demo = ./01-index.tar.gz; };
+              #
+              #   will produce in cabal.config
+              #
+              #     repository extra-hackage-demo
+              #       url: http://extra-hackage-demo/
+              #       secure: True
+              #
+              #   and any package from that index will have a source url like
+              #
+              #   http://extra-hackage-demo/package/external-package-demo-0.1.0.0.tar.gz
+              #
+              #   If "extra-hackage-demo" is not a real domain, the user can correct those source urls
+              #   while calling cabalProject
+              #
+              #   modules = [
+              #     { packages.external-package-demo.src = demo-src; }
+              #   ];
+              #
+              # In summary:
+              #                        | well know url | what to do |
+              # -----------------------+---------------+------------+
+              # hackage                | yes           | use it     |
+              # extra-hackage-repos    | no            | nothing    |
+              # extra-hackage-tarballs | no            | workaround |
+              # -----------------------+---------------+------------+
+              #
+              final.runCommand "dot-cabal" {
+                nativeBuildInputs = [ cabal-install final.xorg.lndir ] ++ cabal-issue-8352-workaround;
+              } ''
+                # prepopulate hackage
+                mkdir -p $out/packages/hackage.haskell.org
+                lndir ${bootstrapped-hackage-tarball} $out/packages/hackage.haskell.org
+                # prepopulate extra-hackage-repos
                 ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
-                  mkdir -p $out/.cabal/packages/${name}
-                  lndir ${repo} $out/.cabal/packages/${name}
+                  mkdir -p $out/packages/${name}
+                  lndir ${repo} $out/packages/${name}
                 '') extra-hackage-repos)}
-            '';
+                # prepopulate extra-hackage-tarballs
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  mkdir -p $out/packages/${name}
+                  lndir ${repo} $out/packages/${name}
+                '') bootstrapped-extra-hackage-tarballs)}
+                # Write global cabal config
+                cat >$out/config <<EOF
+                repository hackage.haskell.org
+                  url: http://hackage.haskell.org/
+                  secure: True
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                  repository ${name}
+                    url: http://${name}/
+                    secure: True
+                '') bootstrapped-extra-hackage-tarballs)}
+                EOF
+              '';
 
         # Some of features of haskell.nix rely on using a hackage index
         # to calculate a build plan.  To maintain stability for caching and

@@ -157,7 +157,6 @@ let
               ${pkgs.lib.optionalString (attrs ? root-keys) "root-keys: ${attrs.root-keys}"}
               ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
             EOF
-
             cabal v2-update ${name}
             cp -r $HOME/.cabal/packages/${name} $out
         ''
@@ -180,7 +179,6 @@ let
               ${pkgs.lib.optionalString (attrs ? root-keys) "root-keys: ${attrs.root-keys}"}
               ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
             EOF
-
             export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
             cabal v2-update ${name}
             cp -r $HOME/.cabal/packages/${name} $out

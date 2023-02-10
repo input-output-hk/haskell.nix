@@ -14,8 +14,6 @@
  ,("ar flags","q")
  ,("ar supports at file","YES")
  ,("touch command","touch")
- ,("dllwrap command","x86_64-w64-mingw32-dllwrap")
- ,("windres command","x86_64-w64-mingw32-windres")
  ,("libtool command","libtool")
  ,("cross compiling","YES")
  ,("target platform string","x86_64-unknown-mingw32")
