@@ -59,10 +59,10 @@
         ghc865 = false;
         ghc884 = false; # Native version is used to boot 9.0.1
         ghc8107 = true;
-        ghc902 = false;
-        ghc924 = false;
-        ghc925 = true;
-        ghc944 = true;
+#        ghc902 = false;
+#        ghc924 = false;
+#        ghc925 = true;
+#        ghc944 = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
