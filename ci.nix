@@ -53,15 +53,16 @@
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2211") {
         ghc865 = false;
         ghc8107 = false;
+        ghc902 = false;
         ghc925 = false;
-        ghc944 = false;
+#        ghc944 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc865 = false;
         ghc884 = false; # Native version is used to boot 9.0.1
         ghc8107 = true;
         ghc902 = false;
         ghc925 = true;
-        ghc944 = true;
+#        ghc944 = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
