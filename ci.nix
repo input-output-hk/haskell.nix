@@ -53,8 +53,8 @@
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2211") {
         ghc865 = false;
         ghc8107 = false;
-        ghc925 = false;
-        ghc944 = false;
+#        ghc925 = false;
+#        ghc944 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc865 = false;
         ghc884 = false; # Native version is used to boot 9.0.1
