@@ -177,10 +177,6 @@
               ) (names allJobs));
         in {
           latest = allJobs.unstable.ghc8107.native or {};
-          required = legacyPackages.releaseTools.aggregate {
-            name = "required for CI";
-            constituents = builtins.attrValues requiredJobs;
-          };
         } // requiredJobs;
 
       hydraJobs = ciJobs;
