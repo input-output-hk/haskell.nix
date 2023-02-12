@@ -13,6 +13,7 @@
   inherit (pkgs.haskell-nix) sources;
   nixpkgsVersions = {
     "R2205" = "nixpkgs-2205";
+    "R2211" = "nixpkgs-2211";
     "unstable" = "nixpkgs-unstable";
   };
   haskellNix = compat { inherit checkMaterialization system; };
@@ -49,12 +50,17 @@
       nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
         ghc865 = false;
         ghc8107 = false;
+      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2211") {
+        ghc865 = false;
+        ghc8107 = false;
+        ghc902 = false;
+        ghc926 = false;
+        ghc944 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc865 = false;
         ghc884 = false; # Native version is used to boot 9.0.1
         ghc8107 = true;
         ghc902 = false;
-        ghc925 = false;
         ghc926 = true;
         ghc944 = true;
       }));
