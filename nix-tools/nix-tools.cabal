@@ -205,13 +205,16 @@ executable cabal-name
 executable make-install-plan
   ghc-options:         -Wall
   main-is:             MakeInstallPlan.hs
+  other-modules:       Freeze
   -- TODO clean this up
   build-depends:       base
                      , aeson
                      , bytestring
                      , Cabal         >= 3.8
                      , cabal-install >= 3.8
+                     , cabal-install-solver >= 3.8
                      , Cabal-syntax  >= 3.8
+                     , containers
                      , directory
                      , extra
                      , filepath
