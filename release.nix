@@ -49,7 +49,7 @@ let
     constituents = lib.collect lib.isDerivation (
       lib.optionalAttrs (jobs ? x86_64-darwin) {
         darwin-ghc8107  = jobs.x86_64-darwin.required-unstable-ghc8107-native;
-        darwin-ghc925   = jobs.x86_64-darwin.required-unstable-ghc925-native;
+        darwin-ghc926   = jobs.x86_64-darwin.required-unstable-ghc926-native;
       }
     );
   };
