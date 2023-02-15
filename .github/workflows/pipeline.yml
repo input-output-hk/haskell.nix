@@ -5,6 +5,10 @@ on:
     branches:
       - master
 
+  push:
+    branches:
+      - master
+
 defaults:
   run:
     shell: bash
