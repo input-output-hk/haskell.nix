@@ -3,6 +3,10 @@
 
 set -euo pipefail
 
+which nix
+nix --version
+set
+
 # check if Nix has the `ca-derivations` experimental features (code 0) is enabled
 NIX_CA_DERIVATIONS=$(jq -e '."experimental-features".value|any(. == 0)' <<< $(nix show-config --json)) || true
 NIX_BUILD_ARGS="${NIX_BUILD_ARGS:-}"
