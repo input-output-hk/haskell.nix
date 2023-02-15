@@ -23,7 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: "Run tests with ghc8107: Running the nix-build tests..."
-        run: "./test/tests.sh ghc8107 nix-build"
+        run: |
+          nix --version
+          ./test/tests.sh ghc8107 nix-build
 
   unit-tests:
     runs-on: [self-hosted, linux]
