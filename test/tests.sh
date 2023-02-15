@@ -1,11 +1,7 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -I "nixpkgs=channel:nixos-22.11" -i bash -p bash jq nix gnused which
+#! nix-shell -I "nixpkgs=channel:nixos-22.11" -i bash -p bash jq nix gnused
 
 set -euo pipefail
-
-which nix
-nix --version
-set
 
 # check if Nix has the `ca-derivations` experimental features (code 0) is enabled
 NIX_CA_DERIVATIONS=$(jq -e '."experimental-features".value|any(. == 0)' <<< $(nix show-config --json)) || true
