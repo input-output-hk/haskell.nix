@@ -28,9 +28,6 @@ rm -rf .buildkite/nix1
 ./nt/bin/plan-to-nix --output .buildkite/nix1 --plan-json dist-newstyle/cache/plan.json
 mv dist-newstyle/cabal-files .buildkite/nix1/cabal-files
 
-# Replace currently broken plan-to-nix output
-cp .buildkite/fixed.nix .buildkite/nix1/default.nix
-
 echo
 echo "+++ Build project"
 nix build -f .buildkite/nix1 nix-tools.components.exes --no-link
@@ -62,10 +59,6 @@ nix build -f .buildkite/nix1 nix-tools.components.exes.plan-to-nix
 rm -rf .buildkite/nix2
 ./result/bin/plan-to-nix --output .buildkite/nix2 --plan-json dist-newstyle/cache/plan.json
 mv dist-newstyle/cabal-files .buildkite/nix2/cabal-files
-
-# Add module needed to allow Cabal 3.2 to be installed
-sed -i -e 's|modules = \[\]|modules = \[{ nonReinstallablePkgs = \[ "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base" "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell" "ghcjs-prim" "ghcjs-th" "ghc-boot" "ghc" "Win32" "array" "binary" "bytestring" "containers" "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim" "hpc" "mtl" "parsec" "process" "text" "time" "transformers" "unix" "xhtml" "stm" "terminfo" \]; }\]|' \
-  .buildkite/nix2/default.nix
 
 echo
 echo "+++ Build project"
