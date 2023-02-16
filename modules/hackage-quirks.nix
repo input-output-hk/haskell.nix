@@ -62,10 +62,10 @@ in [
         }
         constraints: hls-fourmolu-plugin <1.1.1.0, hls-rename-plugin <1.0.2.0, hls-stan-plugin <1.0.1.0
       ''
-      # TODO Remove this flag once the hls-haddock-comments-plugin is updated in hackage to work with ghc 9.2
+      # TODO Remove this flag once the hls-call-hierarchy-plugin is updated in hackage to work with ghc 9.2
       + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926"]) ''
         package haskell-language-server
-          flags: -haddockcomments
+          flags: -callhierarchy
       '');
     }
   )
