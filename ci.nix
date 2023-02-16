@@ -54,14 +54,14 @@
         ghc865 = false;
         ghc8107 = false;
         ghc902 = false;
-        ghc925 = false;
+        ghc926 = false;
         ghc944 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc865 = false;
         ghc884 = false; # Native version is used to boot 9.0.1
         ghc8107 = true;
         ghc902 = false;
-        ghc925 = true;
+        ghc926 = true;
         ghc944 = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
@@ -73,10 +73,10 @@
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc925" "ghc944"])
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc944"])
        || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc925"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
