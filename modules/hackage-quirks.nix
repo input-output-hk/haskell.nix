@@ -65,7 +65,7 @@ in [
       # TODO Remove this flag once the hls-haddock-comments-plugin is updated in hackage to work with ghc 9.2
       + lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926"]) ''
         package haskell-language-server
-          flags: -haddockcomments
+          flags: -haddockcomments -callhierarchy
       '');
     }
   )
