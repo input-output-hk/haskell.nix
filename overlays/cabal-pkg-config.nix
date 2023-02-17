@@ -36,12 +36,18 @@ final: prev:
       pkgconfigPkgs =
         final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
-    in prev.pkgconfig.overrideAttrs (attrs: {
+    in prev.pkgconfig.overrideAttrs (attrs:
+      let
+        # These vars moved from attrs to attrs.env in nixpkgs adc8900df1758eda56abd68f7d781d1df74fa531
+        # Support both for the time being.
+        targetPrefix = attrs.targetPrefix or attrs.env.targetPrefix;
+        baseBinName = attrs.baseBinName or attrs.env.baseBinName;
+      in {
       installPhase = attrs.installPhase + ''
-        mv $out/bin/${attrs.targetPrefix}${attrs.baseBinName} \
-          $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped
+        mv $out/bin/${targetPrefix}${baseBinName} \
+          $out/bin/${targetPrefix}${baseBinName}-wrapped
 
-        cat <<EOF >$out/bin/${attrs.targetPrefix}${attrs.baseBinName}      
+        cat <<EOF >$out/bin/${targetPrefix}${baseBinName}
         #!${final.stdenv.shell}
         if [[ "\$1" == "--list-all" ]]; then
           OUTPUT=\$(mktemp)
@@ -62,17 +68,17 @@ final: prev:
         }
         EOF2
         else
-          $out/bin/${attrs.targetPrefix}${attrs.baseBinName}-wrapped "\$@"
+          $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@"
         fi
         EOF
-        chmod +x $out/bin/${attrs.targetPrefix}${attrs.baseBinName}
+        chmod +x $out/bin/${targetPrefix}${baseBinName}
       '';
   });
   # cabal 3.8 asks pkg-config for linker options for both
   # dynamic and static linking.
   # For some derivations (glib for instance) pkg-config can
   # fail when `--static` is passed.  This might be because
-  # the library only has dynamic libraries. 
+  # the library only has dynamic libraries.
   #
   # To work around this problem this wrapper makes cabal lazy
   # by return a single command line option when it fails.

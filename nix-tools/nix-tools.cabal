@@ -28,10 +28,10 @@ library
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
                      , Stack2nix.Stack
-  build-depends:       base          >= 4    && <4.15
+  build-depends:       base          >= 4    && <4.16
                      , Cabal         >= 3.8  && <3.9
                      , Cabal-syntax  >= 3.8  && <3.9
-                     , aeson         >= 2.0  && <2.1
+                     , aeson         >= 2.0  && <2.2
                      , aeson-pretty
                      , base16-bytestring
                      , bytestring
@@ -205,13 +205,16 @@ executable cabal-name
 executable make-install-plan
   ghc-options:         -Wall
   main-is:             MakeInstallPlan.hs
+  other-modules:       Freeze
   -- TODO clean this up
   build-depends:       base
                      , aeson
                      , bytestring
                      , Cabal         >= 3.8
                      , cabal-install >= 3.8
+                     , cabal-install-solver >= 3.8
                      , Cabal-syntax  >= 3.8
+                     , containers
                      , directory
                      , extra
                      , filepath

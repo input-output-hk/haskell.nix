@@ -237,7 +237,9 @@
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
             (hsPkgs."cabal-install" or (errorHandler.buildDepError "cabal-install"))
+            (hsPkgs."cabal-install-solver" or (errorHandler.buildDepError "cabal-install-solver"))
             (hsPkgs."Cabal-syntax" or (errorHandler.buildDepError "Cabal-syntax"))
+            (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."extra" or (errorHandler.buildDepError "extra"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
@@ -254,6 +256,7 @@
             (hsPkgs."vector" or (errorHandler.buildDepError "vector"))
             ];
           buildable = true;
+          modules = [ "Freeze" ];
           hsSourceDirs = [ "make-install-plan" "plan2nix" ];
           mainPath = [ "MakeInstallPlan.hs" ];
           };

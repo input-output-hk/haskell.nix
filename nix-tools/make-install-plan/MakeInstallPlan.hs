@@ -28,6 +28,7 @@ import qualified Distribution.Simple.Utils as Cabal
 import Distribution.Types.SourceRepo (KnownRepoType (Git), RepoType (..))
 import Distribution.Verbosity (Verbosity)
 import qualified Distribution.Verbosity as Verbosity
+import Freeze (projectFreezeConfig)
 import Nix.Expr
 import Nix.Pretty (prettyNix)
 import Prettyprinter (Doc)
@@ -68,7 +69,7 @@ installPlanAction verbosity cliConfig = do
   ProjectBaseContext {distDirLayout, cabalDirLayout, projectConfig, localPackages} <-
     establishProjectBaseContext verbosity cliConfig OtherCommand
 
-  (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, _tis, _at) <-
+  (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, totalIndexState, activeRepos) <-
     rebuildInstallPlan verbosity distDirLayout cabalDirLayout projectConfig localPackages
 
   -- Write plan.json
@@ -76,9 +77,9 @@ installPlanAction verbosity cliConfig = do
   writePlanExternalRepresentation distDirLayout elaboratedPlan elaboratedSharedConfig
 
   -- Write cabal.freeze
-  let cabalFreezeFile = distProjectFile distDirLayout "freeze"
-  Cabal.notice verbosity $ "Wrote freeze file to " ++ cabalFreezeFile
-  writeProjectConfigFile cabalFreezeFile projectConfig
+  let freezeConfig = projectFreezeConfig elaboratedPlan totalIndexState activeRepos
+  writeProjectLocalFreezeConfig distDirLayout freezeConfig
+  Cabal.notice verbosity $ "Wrote freeze file to " ++ distProjectFile distDirLayout "freeze"
 
   -- Write cabal files and their nix version
   let cabalFilesDir = distDirectory distDirLayout </> "cabal-files"
@@ -99,8 +100,6 @@ installPlanAction verbosity cliConfig = do
         for_ elabPkgDescriptionOverride $ \pkgTxt -> do
           -- In the plan we have elabPkgDescription :: PackageDescription which is the cabal file after
           -- the conditionals are resolved but gpd2nix still wants a GenericPackageDescription so we need
-          -- to reparse elabPkgDescriptionOverride. This should be fixed by getting gpd2nix to take a
-          -- PackageDescription.
 
           let gpdText = BSL.toStrict pkgTxt
           let src = packageLocation2Src elabPkgSourceLocation elabPkgSourceHash

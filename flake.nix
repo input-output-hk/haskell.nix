@@ -68,7 +68,7 @@
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
-    let compiler = "ghc925";
+    let compiler = "ghc926";
       config = import ./config.nix;
     in {
       inherit config;
@@ -177,10 +177,6 @@
               ) (names allJobs));
         in {
           latest = allJobs.unstable.ghc8107.native or {};
-          required = legacyPackages.releaseTools.aggregate {
-            name = "required for CI";
-            constituents = builtins.attrValues requiredJobs;
-          };
         } // requiredJobs;
 
       hydraJobs = ciJobs;

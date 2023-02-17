@@ -12,7 +12,7 @@
           helloProject =
             final.haskell-nix.project' {
               src = ./.;
-              compiler-nix-name = "ghc925";
+              compiler-nix-name = "ghc926";
               # This is used by `nix develop .` to open a shell for use with
               # `cabal`, `hlint` and `haskell-language-server`
               shell.tools = {
