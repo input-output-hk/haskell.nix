@@ -185,7 +185,7 @@
                    }) (names ghcJobs))
                 ) (names nixpkgsJobs)
               ) (names allJobs));
-        in {
+        in lib.optionalAttrs (system == "x86_64-linux") {
           latest = allJobs.unstable.ghc8107.native or {};
         } // requiredJobs;
 
