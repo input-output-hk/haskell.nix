@@ -50,6 +50,8 @@ import qualified Data.Text as Text
 import Cabal2Nix.Util (quoted, selectOr)
 import Cabal2Nix.Plan (InstantiatedWithMap(..), InstantiatedWith, emptyInstantiatedWithMap)
 
+import Debug.Trace
+
 data Src
   = Path FilePath
   | Repo String (Maybe String)
@@ -411,7 +413,7 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
             -> [InstantiatedWith]
             -> CondTree ConfVar [Dependency] [HaskellLibDependency]
             -> CondTree ConfVar [Dependency] [HaskellLibDependency]
-          patchDeps componentName instWith CondNode{condTreeData, condTreeConstraints, condTreeComponents} =
+          patchDeps componentName instWith node@CondNode{condTreeData, condTreeConstraints, condTreeComponents} = trace ("componentName: " ++ show componentName) $
             let
               -- [1] Creates new dependencies
               --
@@ -432,10 +434,14 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
                       ]
 
                     namesOfNewSublibs = getOriginalComponentName componentName : sublibsThatInstantiated
-                  in namesOfNewSublibs <&> \sublibName ->
+
+                    externalDeps = catMaybes (map getExternalDep instWith) <&> \pkgName ->
+                      HaskellLibDependency (mkPackageName $ Text.unpack pkgName) LMainLibName
+
+                  in externalDeps ++ (namesOfNewSublibs <&> \sublibName ->
                     HaskellLibDependency
                       (mkPackageName _packageName)
-                      (LSubLibName (mkUnqualComponentName $ Text.unpack sublibName))
+                      (LSubLibName (mkUnqualComponentName $ Text.unpack sublibName)))
                   )
                 else []
 
@@ -450,17 +456,26 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
               -- to find the 'InstantiatedWith' by the suffix, and return the component name
               -- that corresponds to this 'InstantiatedWith'.
 
+              -- the list of dependencies packages
+              depsPackages = map Text.pack $ catMaybes $ condTreeData <&> \(HaskellLibDependency pkgName name) ->
+                  case name of
+                    LMainLibName -> Just $ unPackageName pkgName
+                    _ -> Nothing
+
               -- | This function returns the sublib names for the given component name,
               -- if this component instantiates the sublib.
               lookupSublibNameForInstantiateComponent :: Text -> [Text]
-              lookupSublibNameForInstantiateComponent compName =
-                map snd
-                  [ (line', pkgName)
-                  | (pkgName, instLines) <- namesOfSublibsWithInstSigs
-                  , instLine <- instLines
-                  , let line' = dropModuleName instLine
-                  , Text.isSuffixOf compName line'
-                  ]
+              lookupSublibNameForInstantiateComponent compName = trace ("namesOfSublibsWithInstSigs" ++ show namesOfSublibsWithInstSigs) $
+                -- trace "lookupSublibNameForInstantiateComponent: " $
+                -- traceShowId $
+                  map snd
+                    [ (line', pkgName)
+                    | (pkgName, instLines) <- namesOfSublibsWithInstSigs
+                    , instLine <- instLines
+                    , let line' = dropVersionName $ dropModuleName instLine
+                    , dependencyName <- trace ("names to check " ++ show (compName:depsPackages)) compName:depsPackages
+                    , Text.isSuffixOf dependencyName line'
+                    ]
 
               namesOfInstantiatedSublibs = flip concatMap condTreeData $ \(HaskellLibDependency _ name) -> do
                 case Text.pack . unUnqualComponentName <$> libraryNameString name of
@@ -468,7 +483,10 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
                   Nothing -> []
 
               originalAndInstantiatedNames = map (\s -> (getOriginalComponentName s, s)) namesOfInstantiatedSublibs
-              getInstantiatedNames n = map snd $ filter ((== n) . fst) originalAndInstantiatedNames
+              -- []
+              -- [("indef", "indef+6YmfnARghEC3uazvHVLJ9b")]
+
+              getInstantiatedNames n = map snd $ filter ((== n) . fst) (trace ("originalAndInstantiatedNames : " ++ show originalAndInstantiatedNames) originalAndInstantiatedNames)
 
               -- Iterate over the dependencies of 'componentName' and replace
               -- the sublib's name with a dynamically generated names.
@@ -485,7 +503,20 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
                 in map (HaskellLibDependency pkgName) newNames
 
               dropModuleName = fst . Text.span (/=':')
-            in CondNode{condTreeData = newCondTreeData ++ newSublibs, condTreeConstraints, condTreeComponents}
+
+              getExternalDep n =
+                let (componentName, version) = Text.breakOnEnd "-" n
+                    componentName' = Text.dropEnd 1 componentName
+                    libName = Text.takeWhileEnd (/='=') componentName'
+                in if Text.isInfixOf "." version then Just libName else Nothing
+
+              -- is incorrect
+              -- "Database=Includes2-0.1.0.0-inplace-postgresql"
+              dropVersionName n =
+                let (componentName, version) = Text.breakOnEnd "-" n
+                in if Text.isInfixOf "." version then Text.dropEnd 1 componentName else n
+
+            in CondNode{condTreeData = newCondTreeData ++ trace ("newSublibs: " ++ show newSublibs) newSublibs, condTreeConstraints, condTreeComponents}
 
 -- WARNING: these use functions bound at he top level in the GPD expression, they won't work outside it
 
