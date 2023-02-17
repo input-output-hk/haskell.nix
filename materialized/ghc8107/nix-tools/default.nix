@@ -175,6 +175,7 @@
         terminfo.revision = (((hackage.terminfo)."0.4.1.4").revisions).default;
         serialise.revision = import ./cabal-files/serialise.nix;
         serialise.flags.newtime15 = true;
+        generically.revision = import ./cabal-files/generically.nix;
         async.revision = import ./cabal-files/async.nix;
         async.flags.bench = false;
         base-orphans.revision = import ./cabal-files/base-orphans.nix;
@@ -310,6 +311,7 @@
         pretty.revision = (((hackage.pretty)."1.1.3.6").revisions).default;
         xml.revision = import ./cabal-files/xml.nix;
         hashable.revision = import ./cabal-files/hashable.nix;
+        hashable.flags.containers = true;
         hashable.flags.random-initial-seed = false;
         hashable.flags.integer-gmp = true;
         cryptohash-sha256.revision = import ./cabal-files/cryptohash-sha256.nix;
@@ -495,6 +497,7 @@
           "infer-license".components.library.planned = lib.mkOverride 900 true;
           "byteorder".components.library.planned = lib.mkOverride 900 true;
           "witherable".components.library.planned = lib.mkOverride 900 true;
+          "generically".components.library.planned = lib.mkOverride 900 true;
           "asn1-encoding".components.library.planned = lib.mkOverride 900 true;
           "semialign".components.library.planned = lib.mkOverride 900 true;
           "http-client".components.library.planned = lib.mkOverride 900 true;
