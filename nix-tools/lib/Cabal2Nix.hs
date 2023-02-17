@@ -17,7 +17,7 @@ import Data.Char (toUpper)
 import System.FilePath
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
-import Data.Maybe (catMaybes, maybeToList, listToMaybe)
+import Data.Maybe (catMaybes, maybeToList)
 import Data.Foldable (toList)
 import Distribution.Package
          ( packageName, packageVersion )
@@ -467,19 +467,22 @@ toNixGenericPackageDescription isLocal detailLevel gpd (InstantiatedWithMap inst
                   Just libName -> lookupSublibNameForInstantiateComponent libName
                   Nothing -> []
 
-              originalAndNewNames = map (\s -> (getOriginalComponentName s, s)) namesOfInstantiatedSublibs
+              originalAndInstantiatedNames = map (\s -> (getOriginalComponentName s, s)) namesOfInstantiatedSublibs
+              getInstantiatedNames n = map snd $ filter ((== n) . fst) originalAndInstantiatedNames
 
               -- Iterate over the dependencies of 'componentName' and replace
-              -- the sublib's name with a dynamically generated sublib's name.
-              newCondTreeData = condTreeData <&> \(HaskellLibDependency pkgName name) ->
+              -- the sublib's name with a dynamically generated names.
+              newCondTreeData = concat $ condTreeData <&> \(HaskellLibDependency pkgName name) ->
                 let
-                  newName =
+                  newNames =
                     case name of
-                      LSubLibName (Text.pack . unUnqualComponentName -> n) -> LSubLibName $ mkUnqualComponentName $ Text.unpack $
-                        -- Wrap the sublib's name with quotes because '+' in Nix can't be a field selector.
-                        maybe n (\n' -> "\"" <> n' <> "\"") $ lookup n originalAndNewNames
-                      LMainLibName -> LMainLibName
-                in HaskellLibDependency pkgName newName
+                      originalName@(LSubLibName (Text.pack . unUnqualComponentName -> n)) ->
+                        let instantiatedNames = getInstantiatedNames n <&> \instantiatedName ->
+                              -- Wrap the sublib's name with quotes because '+' in Nix can't be a field selector.
+                              LSubLibName $ mkUnqualComponentName $ Text.unpack $ "\"" <> instantiatedName <> "\""
+                        in if instantiatedNames == [] then [originalName] else instantiatedNames
+                      LMainLibName -> [LMainLibName]
+                in map (HaskellLibDependency pkgName) newNames
 
               dropModuleName = fst . Text.span (/=':')
             in CondNode{condTreeData = newCondTreeData ++ newSublibs, condTreeConstraints, condTreeComponents}

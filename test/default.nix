@@ -177,6 +177,7 @@ let
     backpack-two-insts = callTest ./backpack/backpack-two-insts {};
     backpack-two-sigs = callTest ./backpack/backpack-two-sigs {};
     bkpcabal01 = callTest ./backpack/bkpcabal01 {};
+    includes2 = callTest ./backpack/Includes2 {};
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
     stack-local-resolver = callTest ./stack-local-resolver {};
