@@ -1051,6 +1051,7 @@ final: prev: {
                   allow-newer: *:libiserv, *:ghci
                   allow-older: *:libiserv, *:ghci
                 '';
+                index-state = final.haskell-nix.internalHackageIndexState;
                 materialized =../materialized/iserv-proxy + "/${
                   if pkgs.stdenv.hostPlatform.isWindows
                     then "windows"

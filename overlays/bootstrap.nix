@@ -90,6 +90,18 @@ in {
                 happy = final.haskell-nix.bootstrap.packages.happy-unchecked;
                 hscolour = final.haskell-nix.bootstrap.packages.hscolour-unchecked;
             };
+            bootPkgsGhc94 = bootPkgs // {
+                alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" {
+                  version = "3.2.7.1";
+                  index-state = final.haskell-nix.internalHackageIndexState;
+                  materialized = ../materialized/alex-3.2.7.1;
+                };
+                happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" {
+                  version = "1.20.0";
+                  index-state = final.haskell-nix.internalHackageIndexState;
+                  materialized = ../materialized/happy-1.20.0;
+                };
+            };
             sphinx = with final.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
             hsc2hs-align-conditionals-patch = final.fetchpatch {
                 url = "https://git.haskell.org/hsc2hs.git/patch/738f3666c878ee9e79c3d5e819ef8b3460288edf";
@@ -716,9 +728,7 @@ in {
             ghc941 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc941; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc941
                     else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
@@ -740,9 +750,7 @@ in {
             ghc942 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc942; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc942
                     else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
@@ -764,9 +772,7 @@ in {
             ghc943 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc943; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc943
                     else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
@@ -788,9 +794,7 @@ in {
             ghc944 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc944; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
+                bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc944
                     else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
