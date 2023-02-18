@@ -221,6 +221,7 @@ let
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
+      index-state = "2023-02-17T00:00:00Z";
       materialized = ../../materialized/ghc8107/hadrian;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = buildPackages.srcOnly {
