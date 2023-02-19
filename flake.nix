@@ -70,7 +70,17 @@
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
     let compiler = "ghc926";
       config = import ./config.nix;
-    in {
+
+      traceNames = prefix: builtins.mapAttrs (n: v:
+        if builtins.isAttrs v
+          then if v ? type && v.type == "derivation"
+            then __trace (prefix + n) v
+            else traceNames (prefix + n + ".") v
+          else v);
+
+      traceHydraJobs = x: x // { inherit (traceNames "" x) hydraJobs; };
+
+    in traceHydraJobs ({
       inherit config;
       overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
@@ -175,7 +185,7 @@
                    }) (names ghcJobs))
                 ) (names nixpkgsJobs)
               ) (names allJobs));
-        in {
+        in lib.optionalAttrs (system == "x86_64-linux") {
           latest = allJobs.unstable.ghc8107.native or {};
         } // requiredJobs;
 
@@ -206,7 +216,7 @@
             "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
             "ghc901"
             "ghc921" "ghc922" "ghc923"]);
-    } // tullia.fromSimple system (import ./tullia.nix));
+    } // tullia.fromSimple system (import ./tullia.nix)));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

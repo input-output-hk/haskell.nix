@@ -1032,7 +1032,7 @@ final: prev: {
             }
           else
             let
-              exes = pkgs: (pkgs.haskell-nix.cabalProject {
+              exes = pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name;
                 src =
@@ -1051,6 +1051,15 @@ final: prev: {
                   allow-newer: *:libiserv, *:ghci
                   allow-older: *:libiserv, *:ghci
                 '';
+                index-state = final.haskell-nix.internalHackageIndexState;
+                materialized =../materialized/iserv-proxy + "/${
+                  if pkgs.stdenv.hostPlatform.isWindows
+                    then "windows"
+                    else if pkgs.stdenv.hostPlatform.isGhcjs
+                      then "ghcjs"
+                        else if pkgs.haskell-nix.haskellLib.isCrossHost
+                         then "cross"
+                         else "default"}/${compiler-nix-name}";
                 modules = [{
                   config = {
                     reinstallableLibGhc = false;
@@ -1063,10 +1072,10 @@ final: prev: {
                     apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
-              }).hsPkgs.iserv-proxy.components.exes;
+              })).hsPkgs.iserv-proxy.components.exes;
             in {
               # We need the proxy for the build system and the interpreter for the target
-              inherit (exes final.buildPackages) iserv-proxy;
+              inherit (exes final.pkgsBuildBuild) iserv-proxy;
               inherit (exes final) iserv-proxy-interpreter;
             }) final.haskell-nix.compiler;
 
