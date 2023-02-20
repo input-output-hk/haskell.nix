@@ -26,5 +26,5 @@ in pkgs.haskell-nix.project {
     src = ./.;
   };
   # Specify the GHC version to use.
-  compiler-nix-name = "ghc925"; # Not required for `stack.yaml` based projects.
+  compiler-nix-name = "ghc926"; # Not required for `stack.yaml` based projects.
 }

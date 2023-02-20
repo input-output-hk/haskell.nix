@@ -105,7 +105,7 @@ let
           cd ${lib.removePrefix "/" cleanSrc'.subDir}
         '';
     })
-    // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; inherit revision; } else p) patches; })
+    // (lib.optionalAttrs (patches != []) { patches = map (p: if builtins.isFunction p then p { inherit (package.identifier) version; } else p) patches; })
     // hooks
   );
 in drv; in self

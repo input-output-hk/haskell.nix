@@ -8,7 +8,6 @@ import Control.Monad
 import Data.String (IsString)
 
 import Data.ByteString.Char8 (pack, unpack)
-import Data.Text (Text)
 import Crypto.Hash.SHA256 (hash)
 import qualified Data.ByteString.Base16 as Base16
 

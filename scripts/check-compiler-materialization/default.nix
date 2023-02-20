@@ -26,12 +26,15 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   { name = "${prefix}-nix-tools";     value = pkgs.haskell-nix.nix-tools.${compiler-nix-name}; }
   { name = "${prefix}-extra";         value = pkgs.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${prefix}-boot";          value = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
+  { name = "${prefix}-iserv";         value = pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy.project.plan-nix; }
+  { name = "${prefix}-iserv-int";     value = pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy-interpreter.project.plan-nix; }
   { name = "${prefix}-hello";         value = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (!__elem system ["aarch64-darwin" "aarch64-linux"]
          && !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883"]) [
   { name = "${prefix}-windows";       value = pkgsForWindows.pkgsCross.mingwW64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${prefix}-hello-windows"; value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
-] ++ eval.lib.optionals (system == "x86_64-linux") [
+] ++ eval.lib.optionals (system == "x86_64-linux"
+         && !__elem compiler-nix-name ["ghc881"]) [
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
   { name = "${prefix}-musl";          value = pkgs.pkgsCross.musl64.ghc-extra-projects.${compiler-nix-name}.plan-nix; }
   { name = "${prefix}-hello-musl";    value = pkgs.pkgsCross.musl64.haskell-nix.tool compiler-nix-name "hello" {}; }

@@ -4,7 +4,6 @@
 , component
 , package
 , flags
-, revision
 , commonAttrs
 , preHaddock
 , postHaddock

@@ -28,9 +28,10 @@ library
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
                      , Stack2nix.Stack
-  build-depends:       base >=4 && <4.15
-                     , Cabal >= 3.6.2 && <3.7
-                     , aeson >= 2.0.0.0
+  build-depends:       base          >= 4    && <4.16
+                     , Cabal         >= 3.8  && <3.9
+                     , Cabal-syntax  >= 3.8  && <3.9
+                     , aeson         >= 2.0  && <2.2
                      , aeson-pretty
                      , base16-bytestring
                      , bytestring
@@ -44,7 +45,7 @@ library
 -- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
 -- to work with the data-dir issues when building components.
 -- This commit is included since 0.6.5.
-                     , hnix >= 0.6.5
+                     , hnix          >= 0.6.5 && <0.17
                      , hpack
                      , http-client
                      , http-client-tls
@@ -65,7 +66,7 @@ library
 executable cabal-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , transformers
                      , bytestring
                      , hpack
@@ -81,7 +82,7 @@ executable cabal-to-nix
 executable hashes-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , hnix
                      , nix-tools
                      , data-fix
@@ -102,10 +103,10 @@ executable plan-to-nix
                      , Plan2Nix.CLI
                      , Plan2Nix.Project
                      , Plan2Nix.Plan
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , nix-tools
                      , hnix
-                     , Cabal >= 2.4
+                     , Cabal
                      , text
                      , hpack
                      , unordered-containers
@@ -126,7 +127,7 @@ executable plan-to-nix
 executable hackage-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , nix-tools
                      , hackage-db
                      , hnix
@@ -148,7 +149,7 @@ executable hackage-to-nix
 executable lts-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , nix-tools
                      , hnix
                      , yaml
@@ -167,7 +168,7 @@ executable lts-to-nix
 executable stack-to-nix
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , nix-tools
   hs-source-dirs:      stack2nix
   default-language:    Haskell2010
@@ -188,7 +189,7 @@ executable truncate-index
 executable stack-repos
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , nix-tools
   hs-source-dirs:      stack-repos
   default-language:    Haskell2010
@@ -196,7 +197,38 @@ executable stack-repos
 executable cabal-name
   ghc-options:         -Wall
   main-is:             Main.hs
-  build-depends:       base >=4 && <4.15
+  build-depends:       base
                      , nix-tools
   hs-source-dirs:      cabal-name
+  default-language:    Haskell2010
+
+executable make-install-plan
+  ghc-options:         -Wall
+  main-is:             MakeInstallPlan.hs
+  other-modules:       Freeze
+  -- TODO clean this up
+  build-depends:       base
+                     , aeson
+                     , bytestring
+                     , Cabal         >= 3.8
+                     , cabal-install >= 3.8
+                     , cabal-install-solver >= 3.8
+                     , Cabal-syntax  >= 3.8
+                     , containers
+                     , directory
+                     , extra
+                     , filepath
+                     , hnix
+                     , hpack
+                     , microlens
+                     , microlens-aeson
+                     , nix-tools
+                     , optparse-applicative
+                     , prettyprinter
+                     , text
+                     , transformers
+                     , unordered-containers
+                     , vector
+  hs-source-dirs:      make-install-plan
+                     , plan2nix
   default-language:    Haskell2010

@@ -32,8 +32,8 @@ in {
     '';
     cabalProjectLocal = lib.mkOverride 1100 null;
     cabalProjectFreeze = lib.mkOverride 1100 null;
-    src = 
-      let      
+    src =
+      let
         tarball = config.evalPackages.fetchurl {
           url = "mirror://hackage/${name}-${version}.tar.gz";
           inherit (pkgs.haskell-nix.hackage.${name}.${version}) sha256; };
