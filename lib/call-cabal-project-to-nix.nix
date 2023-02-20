@@ -9,6 +9,7 @@ let readIfExists = src: fileName:
 in
 { name          ? src.name or null # optional name for better error messages
 , src
+, materialized-dir ? ../materialized
 , compiler-nix-name    # The name of the ghc compiler to use eg. "ghc884"
 , index-state   ? null # Hackage index-state, eg. "2019-10-10T00:00:00Z"
 , index-sha256  ? null # The hash of the truncated hackage index-state
@@ -335,7 +336,7 @@ let
   # when `checkMaterialization` is set.
   dummy-ghc-data =
     let
-      materialized = ../materialized/dummy-ghc + "/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}"
+      materialized = materialized-dir + "/dummy-ghc/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}"
         + pkgs.lib.optionalString (builtins.compareVersions ghc.version "8.10" < 0 && ghc.targetPrefix == "" && builtins.compareVersions pkgs.lib.version "22.05" < 0) "-old";
     in pkgs.haskell-nix.materialize ({
       sha256 = null;
