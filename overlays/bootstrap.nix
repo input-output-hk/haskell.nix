@@ -65,6 +65,7 @@ let
       "9.0" = "9.0.2";
       "9.2" = "9.2.6";
       "9.4" = "9.4.4";
+      "9.6" = "9.6.1";
     };
     traceWarnOld = v: x:
       let
@@ -812,6 +813,28 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.4.4";
+            });
+            ghc961 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc961; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.buildPlatform != final.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc961
+                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc926;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.6.0.20230210";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-3vSnSFFiJm6R70YA38yoQki+1kFHF91+66za2WogT0c=";
+                };
+
+                ghc-patches = ghc-patches "9.6.1";
             });
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
