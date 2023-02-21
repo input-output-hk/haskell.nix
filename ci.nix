@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 3
+{ ifdLevel ? 0
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false
@@ -63,6 +63,7 @@
         ghc902 = false;
         ghc926 = true;
         ghc944 = true;
+        ghc961 = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values

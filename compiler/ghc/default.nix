@@ -227,7 +227,6 @@ let
         if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/ghc8107/hadrian
           else ../../materialized/ghc8107/hadrian-ghc96;
-      checkMaterialization = true;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = buildPackages.srcOnly {
           name = "hadrian";
@@ -285,11 +284,15 @@ stdenv.mkDerivation (rec {
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
-        # GHC is a bit confused on its cross terminology, as these would normally be
-        # the *host* tools.
+    ''
+    # GHC is a bit confused on its cross terminology, as these would normally be
+    # the *host* tools.
+    + ''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
-        # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
+    ''
+    # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
+    + ''
         export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
