@@ -35,6 +35,7 @@
         integer-gmp.revision = (((hackage.integer-gmp)."1.0.3.0").revisions).default;
         process.revision = (((hackage.process)."1.6.13.2").revisions).default;
         unix.revision = (((hackage.unix)."2.7.2.2").revisions).default;
+        data-array-byte.revision = import ./cabal-files/data-array-byte.nix;
         transformers.revision = (((hackage.transformers)."0.5.6.2").revisions).default;
         unordered-containers.revision = import ./cabal-files/unordered-containers.nix;
         unordered-containers.flags.debug = false;
@@ -48,7 +49,6 @@
         filepattern.revision = import ./cabal-files/filepattern.nix;
         pretty.revision = (((hackage.pretty)."1.1.3.6").revisions).default;
         hashable.revision = import ./cabal-files/hashable.nix;
-        hashable.flags.containers = true;
         hashable.flags.random-initial-seed = false;
         hashable.flags.integer-gmp = true;
         };
@@ -119,6 +119,7 @@
           "directory".components.library.planned = lib.mkOverride 900 true;
           "time".components.library.planned = lib.mkOverride 900 true;
           "js-flot".components.library.planned = lib.mkOverride 900 true;
+          "data-array-byte".components.library.planned = lib.mkOverride 900 true;
           "process".components.library.planned = lib.mkOverride 900 true;
           "clock".components.library.planned = lib.mkOverride 900 true;
           "template-haskell".components.library.planned = lib.mkOverride 900 true;
