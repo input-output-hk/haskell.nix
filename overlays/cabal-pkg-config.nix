@@ -36,7 +36,7 @@ final: prev:
       pkgconfigPkgs =
         final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
-    in prev.pkgconfig.overrideAttrs (attrs:
+    in prev.pkg-config.overrideAttrs (attrs:
       let
         # These vars moved from attrs to attrs.env in nixpkgs adc8900df1758eda56abd68f7d781d1df74fa531
         # Support both for the time being.
@@ -87,7 +87,7 @@ final: prev:
   #
   # See https://github.com/input-output-hk/haskell.nix/issues/1642
   #
-  cabalPkgConfigWrapper = prev.pkgconfig.overrideAttrs (attrs: (
+  cabalPkgConfigWrapper = prev.pkg-config.overrideAttrs (attrs: (
   let
     # These vars moved from attrs to attrs.env in nixpkgs adc8900df1758eda56abd68f7d781d1df74fa531
     # Support both for the time being.
