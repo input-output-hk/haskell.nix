@@ -501,7 +501,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc921
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc925;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
                 inherit sphinx;
 
@@ -523,7 +523,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc922
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc925;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
                 inherit sphinx;
 
@@ -545,7 +545,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc923
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc925;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
                 inherit sphinx;
 
@@ -567,7 +567,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc924
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc925;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
                 inherit sphinx;
 
@@ -589,7 +589,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc925
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc925;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
                 inherit sphinx;
 
@@ -611,7 +611,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = if final.buildPlatform != final.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc926
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc925;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
                 inherit sphinx;
 
