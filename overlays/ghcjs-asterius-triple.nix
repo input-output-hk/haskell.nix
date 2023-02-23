@@ -17,7 +17,7 @@ final: prev: prev.lib.recursiveUpdate prev {
             platform = {};
         };
     };
-    # gcc = if final.targetPlatform.isGhcjs then null else prev.gcc;
+    # gcc = if final.stdenv.targetPlatform.isGhcjs then null else prev.gcc;
     lib.systems.parse = with final.lib.systems.parse; {
         cpuTypes.js = cpuTypes.wasm32 // { name = "js"; family = "js"; };
         kernels.ghcjs = kernels.none // { name = "ghcjs"; };
