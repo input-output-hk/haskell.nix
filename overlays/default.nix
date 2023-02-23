@@ -22,6 +22,7 @@ let
     hix = import ./hix.nix;
     ghcjs = import ./ghcjs.nix;
     cabalPkgConfig = import ./cabal-pkg-config.nix;
+    cacheCompilerDeps = import ./cache-compiler-deps.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -58,6 +59,7 @@ let
     hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
+    cacheCompilerDeps
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
 in overlays // { inherit combined; }

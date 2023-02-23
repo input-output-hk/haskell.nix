@@ -564,4 +564,8 @@ in {
       inherit (shell) CABAL_CONFIG;
     });
   };
+
+  makeCompilerDeps = import ./make-compiler-deps.nix {
+    inherit (pkgs.buildPackages.buildPackages) runCommand;
+  };
 }

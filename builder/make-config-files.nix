@@ -98,6 +98,8 @@ let
     })}
 
     ghc=${ghc}
+    ghcInstallDeps=${ghc.cachedDeps
+      or (__trace "WARNING: ghc.cachedDeps not found" haskellLib.makeCompilerDeps ghc)}
     ${ # Copy over the nonReinstallablePkgs from the global package db.
     ''
       for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
@@ -163,15 +165,15 @@ let
       ''}
     done
     for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs')}; do
-      if [ -e $ghc/envDeps/$p ]; then
-        cat $ghc/envDeps/$p >> $out/ghc-environment
+      if [ -e $ghcDeps/envDeps/$p ]; then
+        cat $ghcDeps/envDeps/$p >> $out/ghc-environment
       fi
     done
   '' + lib.optionalString component.doExactConfig ''
     for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
-      if [ -e $ghc/exactDeps/$p ]; then
-        cat $ghc/exactDeps/$p/configure-flags >> $out/configure-flags
-        cat $ghc/exactDeps/$p/cabal.config >> $out/cabal.config
+      if [ -e $ghcDeps/exactDeps/$p ]; then
+        cat $ghcDeps/exactDeps/$p/configure-flags >> $out/configure-flags
+        cat $ghcDeps/exactDeps/$p/cabal.config >> $out/cabal.config
       fi
     done
   ''

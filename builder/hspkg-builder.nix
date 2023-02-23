@@ -17,10 +17,6 @@ config:
 , ...
 }@pkg:
 
-assert (if ghc.isHaskellNixCompiler or false then true
-  else throw ("It is likely you used `haskell.compiler.X` instead of `haskell-nix.compiler.X`"
-    + pkgs.lib.optionalString (name != null) (" for " + name)));
-
 let
   # Some packages bundled with GHC are not the same as they are in hackage.
   bundledSrc = {

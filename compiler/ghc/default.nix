@@ -17,8 +17,6 @@ let self =
 
 , ncurses # TODO remove this once the cross compilers all work without
 
-, installDeps
-
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
@@ -484,7 +482,6 @@ stdenv.mkDerivation (rec {
             fi
         ''
     }
-    ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
     if ! "$out/bin/${targetPrefix}ghc" --version; then
