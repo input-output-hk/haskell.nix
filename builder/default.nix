@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs, compiler, inputMap }:
+{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, inputMap }:
 
 let
   # Builds a single component of a package.

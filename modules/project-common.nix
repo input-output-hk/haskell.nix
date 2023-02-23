@@ -15,7 +15,7 @@ with lib.types;
     };
     crossPlatforms = mkOption {
       type = unspecified;
-      default = p: [];
+      default = p: [ ];
     };
     # Default shell arguments
     shell = mkOption {
@@ -23,7 +23,7 @@ with lib.types;
         (import ./shell.nix { projectConfig = config; })
         { _module.args = { inherit (pkgs.haskell-nix) haskellLib; }; }
       ];
-      default = {};
+      default = { };
       description = ''
         Arguments to use for the default shell `p.shell` (these are passed to p.shellFor).
         For instance to include `cabal` and `ghcjs` support use
@@ -36,14 +36,14 @@ with lib.types;
         (import ./flake.nix { projectConfig = config; })
         { _module.args = { inherit (pkgs.haskell-nix) haskellLib; }; }
       ];
-      default = {};
+      default = { };
       description = ''
         Default arguments to use for the `p.flake`.
       '';
     };
     evalSystem = mkOption {
       type = str;
-      default = pkgs.pkgsBuildBuild.system;
+      default = pkgs.pkgsBuildBuild.stdenv.system;
       description = ''
         Specifies the system on which `cabal` and `nix-tools` should run.
         If not specified the `pkgsBuildBuild` system will be used.
@@ -55,8 +55,8 @@ with lib.types;
     evalPackages = mkOption {
       type = attrs;
       default =
-        if pkgs.pkgsBuildBuild.system == config.evalSystem
-          then pkgs.pkgsBuildBuild
+        if pkgs.pkgsBuildBuild.stdenv.system == config.evalSystem
+        then pkgs.pkgsBuildBuild
         else
           import pkgs.path {
             system = config.evalSystem;
