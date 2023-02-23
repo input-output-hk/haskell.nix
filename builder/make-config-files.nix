@@ -98,7 +98,7 @@ let
     })}
 
     ghc=${ghc}
-    ghcInstallDeps=${ghc.cachedDeps
+    ghcDeps=${ghc.cachedDeps
       or (__trace "WARNING: ghc.cachedDeps not found" haskellLib.makeCompilerDeps ghc)}
     ${ # Copy over the nonReinstallablePkgs from the global package db.
     ''
