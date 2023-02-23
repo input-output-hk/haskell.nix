@@ -90,7 +90,7 @@ let
     if ghcOverride != null
       then ghcOverride
       else
-        if ghc != null
+        if args.ghc != null
           then __trace ("WARNING: A `ghc` argument was passed" + forName
             + " this has been deprecated in favour of `compiler-nix-name`. "
             + "Using `ghc` will break cross compilation setups, as haskell.nix cannot "
