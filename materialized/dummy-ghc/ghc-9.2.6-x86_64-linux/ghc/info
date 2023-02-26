@@ -43,7 +43,7 @@
  ,("RTS expects libdw","NO")
  ,("Project version","9.2.6")
  ,("Project Git commit id","5383016c78fe4b2555e0aae9248bea5b42f67a78")
- ,("Booter version","8.10.7")
+ ,("Booter version","9.0.2")
  ,("Stage","2")
  ,("Build platform","x86_64-unknown-linux")
  ,("Host platform","x86_64-unknown-linux")

@@ -87,12 +87,7 @@
     ({ lib, ... }:
       {
         packages = {
-          "hadrian" = {
-            flags = {
-              "threaded" = lib.mkOverride 900 true;
-              "selftest" = lib.mkOverride 900 true;
-              };
-            };
+          "hadrian" = { flags = { "threaded" = lib.mkOverride 900 true; }; };
           };
         })
     ({ lib, ... }:

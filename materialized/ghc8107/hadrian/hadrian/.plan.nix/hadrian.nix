@@ -8,7 +8,7 @@
   , config
   , ... }:
   {
-    flags = { threaded = true; selftest = true; };
+    flags = { threaded = true; };
     package = {
       specVersion = "1.18";
       identifier = { name = "hadrian"; version = "0.1.0.0"; };
@@ -28,13 +28,14 @@
       dataFiles = [];
       extraSrcFiles = [];
       extraTmpFiles = [];
-      extraDocFiles = [ "README.md" ];
+      extraDocFiles = [];
       };
     components = {
       exes = {
         "hadrian" = {
           depends = [
             (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
+            (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"))
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
@@ -46,8 +47,7 @@
             (hsPkgs."shake" or (errorHandler.buildDepError "shake"))
             (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
             (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
-            (hsPkgs."text" or (errorHandler.buildDepError "text"))
-            ] ++ (pkgs.lib).optional (flags.selftest) (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"));
+            ];
           buildable = true;
           modules = [
             "Base"
@@ -60,7 +60,6 @@
             "Expression"
             "Expression/Type"
             "Flavour"
-            "Flavour/Type"
             "Hadrian/Builder"
             "Hadrian/Builder/Ar"
             "Hadrian/Builder/Sphinx"
@@ -89,9 +88,9 @@
             "Packages"
             "Rules"
             "Rules/BinaryDist"
-            "Rules/CabalReinstall"
             "Rules/Clean"
             "Rules/Compile"
+            "Rules/Configure"
             "Rules/Dependencies"
             "Rules/Docspec"
             "Rules/Documentation"
@@ -104,6 +103,7 @@
             "Rules/Program"
             "Rules/Register"
             "Rules/Rts"
+            "Rules/Selftest"
             "Rules/SimpleTargets"
             "Rules/SourceDist"
             "Rules/Test"
@@ -122,7 +122,6 @@
             "Settings/Builders/Happy"
             "Settings/Builders/Hsc2Hs"
             "Settings/Builders/HsCpp"
-            "Settings/Builders/Ar"
             "Settings/Builders/Ld"
             "Settings/Builders/Make"
             "Settings/Builders/MergeObjects"
@@ -137,8 +136,8 @@
             "Settings/Flavours/Quick"
             "Settings/Flavours/QuickCross"
             "Settings/Flavours/Quickest"
+            "Settings/Flavours/Static"
             "Settings/Flavours/Validate"
-            "Settings/Flavours/Release"
             "Settings/Packages"
             "Settings/Parser"
             "Settings/Program"
@@ -149,11 +148,9 @@
             "Utilities"
             "Way"
             "Way/Type"
-            ] ++ (pkgs.lib).optional (flags.selftest) "Rules/Selftest";
+            ];
           hsSourceDirs = [ "." "src" ];
-          mainPath = ([
-            "Main.hs"
-            ] ++ (pkgs.lib).optional (flags.threaded) "") ++ (pkgs.lib).optional (flags.selftest) "";
+          mainPath = [ "Main.hs" ] ++ (pkgs.lib).optional (flags.threaded) "";
           };
         };
       };
