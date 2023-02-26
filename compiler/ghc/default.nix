@@ -213,7 +213,7 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
-  useHadrian = builtins.compareVersions ghc-version "9.4" >= 0;
+  useHadrian = builtins.compareVersions ghc-version "9.2" >= 0;
   # Indicates if we are installing by copying the hadrian stage1 output
   installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl);
 
