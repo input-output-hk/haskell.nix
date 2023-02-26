@@ -181,7 +181,7 @@ final: prev: {
         snapshots = import ../snapshots.nix { inherit (final) lib ghc-boot-packages; inherit mkPkgSet stackage excludeBootPackages; };
         # Pick a recent LTS snapshot to be our "default" package set.
         haskellPackages =
-            if final.targetPlatform.isAarch64 && final.buildPlatform.isAarch64
+            if final.stdenv.targetPlatform.isAarch64 && final.stdenv.buildPlatform.isAarch64
             then snapshots."lts-15.13"
             else snapshots."lts-14.13";
 

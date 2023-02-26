@@ -2,7 +2,7 @@ final: prev:
 let
     # For each architecture, what GHC version we should use for bootstrapping.
     buildBootstrapper =
-        if final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin
+        if final.stdenv.buildPlatform.isAarch64 && final.stdenv.buildPlatform.isDarwin
         then {
             compilerNixName = "ghc8107";
         }
@@ -28,9 +28,9 @@ let
         bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
       in
       if builtins.compareVersions x.src-spec.version bootstrapGhc.version < 0 then
-          throw "Desired GHC (${x.src-spec.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.targetPlatform.config})."
+          throw "Desired GHC (${x.src-spec.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
       # There is no binary for aarch64-linux ghc 8.8.4 so don't warn about 8.8.3 not being the latest version
-      else if x.src-spec.version == "8.8.3" && (final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64)
+      else if x.src-spec.version == "8.8.3" && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.buildPlatform.isAarch64)
         then x
       else if builtins.compareVersions x.src-spec.version latestVer.${v} < 0
         then __trace
@@ -152,8 +152,8 @@ in {
                 ++ fromUntil "8.10.2" "8.10.3" ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 # See https://github.com/input-output-hk/haskell.nix/issues/1027
-                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
-                ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
+                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
+                ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
 
                 ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-acrt-iob-func.patch
                 ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
@@ -165,14 +165,14 @@ in {
                 ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-Cabal-3886.patch
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
-                ++ final.lib.optionals final.targetPlatform.isWindows
+                ++ final.lib.optionals final.stdenv.targetPlatform.isWindows
                   (fromUntil "8.10.4" "9.3"    ./patches/ghc/ghc-8.10-z-drive-fix.patch)
                 ++ fromUntil "8.6.5"  "9.4"    ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
                 ++ fromUntil "9.0.1"  "9.0.2"  ./patches/ghc/AC_PROG_CC_99.patch
                 ++ fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-add-rts-exports.patch
-                ++ final.lib.optionals final.hostPlatform.isDarwin
+                ++ final.lib.optionals final.stdenv.hostPlatform.isDarwin
                   (fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-darwin-allocateExec.patch)
                 ++ until              "8.10.6" ./patches/ghc/Sphinx_Unicode_Error.patch
                 ++ fromUntil "9.0.2"  "9.2.2"  ./patches/ghc/ghc-9.2.1-xattr-fix.patch      # Problem was backported to 9.0.2
@@ -184,18 +184,19 @@ in {
                 ++ fromUntil "8.10"   "9.1"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
                 ++ fromUntil "9.2.2"  "9.3"    ./patches/ghc/ghc-9.2.2-fix-warnings-building-with-self.patch # https://gitlab.haskell.org/ghc/ghc/-/commit/c41c478eb9003eaa9fc8081a0039652448124f5d
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
-                ++ final.lib.optionals (final.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/m32_alloc.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-rts-linker-condbr.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/m32_alloc.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-rts-linker-condbr.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
+                ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.4" && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-make-stage-1-lib-ghc.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
@@ -289,7 +290,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc884; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
                     else final.buildPackages.buildPackages.haskell.compiler.ghc884;
                 };
@@ -631,7 +632,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc941; };
 
                 bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc941
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -654,7 +655,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc942; };
 
                 bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc942
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -677,7 +678,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc943; };
 
                 bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc943
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -700,7 +701,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc944; };
 
                 bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc944
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -747,7 +748,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if (final.buildPlatform.isAarch64 || final.targetPlatform.isAarch64)
+                  ghc = if (final.stdenv.buildPlatform.isAarch64 || final.stdenv.targetPlatform.isAarch64)
                         then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
                         else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
                 };
@@ -767,8 +768,8 @@ in {
                 # Avoid clashes with normal ghc8104
                 ghc-version = "8.10.4.20210212";
             };
-        } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false) (
-         if final.hostPlatform.isGhcjs
+        } // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
+         if final.stdenv.hostPlatform.isGhcjs
            then throw "An attempt was made to build ghcjs with ghcjs (perhaps use `buildPackages` when refering to ghc)"
            else
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
