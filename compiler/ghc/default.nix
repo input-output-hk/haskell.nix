@@ -222,9 +222,11 @@ let
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
       materialized =
-        if builtins.compareVersions ghc-version "9.6" < 0
-          then ../../materialized/ghc8107/hadrian
-          else ../../materialized/ghc8107/hadrian-ghc96;
+        if builtins.compareVersions ghc-version "9.4" < 0
+          then ../../materialized/ghc8107/hadrian-ghc92
+        else if builtins.compareVersions ghc-version "9.6" < 0
+          then ../../materialized/ghc8107/hadrian-ghc94
+        else ../../materialized/ghc8107/hadrian-ghc96;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = buildPackages.srcOnly {
           name = "hadrian";
