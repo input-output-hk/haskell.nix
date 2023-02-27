@@ -65,6 +65,12 @@ let self =
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
+, useLdGold ? 
+    # might be better check to see if cc is clang/llvm?
+    # use gold as the linker on linux to improve link times
+    (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid) 
+    || stdenv.targetPlatform.isAarch32
+
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
 , src-spec
@@ -187,7 +193,7 @@ let
         "--enable-bootstrap-with-devel-snapshot"
     ] ++ lib.optionals (disableLargeAddressSpace) [
         "--disable-large-address-space"
-    ] ++ lib.optionals (targetPlatform.isAarch32) [
+    ] ++ lib.optionals useLdGold [
         "CFLAGS=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
@@ -285,7 +291,7 @@ stdenv.mkDerivation (rec {
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
         # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
-        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
+        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
         export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
