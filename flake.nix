@@ -68,7 +68,7 @@
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
-    let compiler = "ghc926";
+    let compiler = "ghc927";
       config = import ./config.nix;
 
       traceNames = prefix: builtins.mapAttrs (n: v:

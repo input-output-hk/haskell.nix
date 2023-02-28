@@ -79,9 +79,7 @@ assert enableNativeBignum -> !enableIntegerSimple;
 assert enableIntegerSimple -> !enableNativeBignum;
 
 let
-  src = if src-spec ? file
-    then src-spec.file
-    else fetchurl { inherit (src-spec) url sha256; };
+  src = src-spec.file or fetchurl { inherit (src-spec) url sha256; };
 
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
@@ -213,7 +211,7 @@ let
 
   targetCC = builtins.head toolsForTarget;
 
-  useHadrian = builtins.compareVersions ghc-version "9.2" >= 0;
+  useHadrian = builtins.compareVersions ghc-version "9.4" >= 0;
   # Indicates if we are installing by copying the hadrian stage1 output
   installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl);
 
@@ -505,11 +503,7 @@ stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir;
-
-    inherit llvmPackages;
-    inherit enableShared;
-    inherit useLLVM;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
