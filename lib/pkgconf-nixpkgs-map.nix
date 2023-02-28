@@ -4119,12 +4119,6 @@ pkgs:
     "ply-boot-client" = [ "plymouth" ];
     "ply-splash-core" = [ "plymouth" ];
     "ply-splash-graphics" = [ "plymouth" ];
-    "libpmem2" = [ "pmdk" ];
-    "libpmemblk" = [ "pmdk" ];
-    "libpmemlog" = [ "pmdk" ];
-    "libpmemobj" = [ "pmdk" ];
-    "libpmem" = [ "pmdk" ];
-    "libpmempool" = [ "pmdk" ];
     "pmix" = [ "pmix" ];
     "pm-utils" = [ "pmutils" ];
     "libpodofo" = [ "podofo" ];
