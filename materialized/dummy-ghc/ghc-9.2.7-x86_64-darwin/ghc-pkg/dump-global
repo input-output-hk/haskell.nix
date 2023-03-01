@@ -174,7 +174,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSCabal-3.6.3.0
 depends:
-    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.4.0
     containers-0.6.5.1 deepseq-1.4.6.1 directory-1.3.6.2
     filepath-1.4.2.2 mtl-2.2.2 parsec-3.1.15.0 pretty-1.1.3.6
     process-1.6.16.0 text-1.2.5.0 time-1.11.1.1 transformers-0.5.6.2
@@ -315,6 +315,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSbase-4.16.4.0
+extra-libraries:      iconv
 include-dirs:
 includes:             HsBase.h
 depends:              ghc-bignum-1.2 ghc-prim-0.8.0 rts
@@ -356,15 +357,15 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSbinary-0.8.9.0
 depends:
-    array-0.5.4.0 base-4.16.4.0 bytestring-0.11.3.1 containers-0.6.5.1
+    array-0.5.4.0 base-4.16.4.0 bytestring-0.11.4.0 containers-0.6.5.1
 haddock-interfaces:
 haddock-html:
 ---
 name:                 bytestring
-version:              0.11.3.1
+version:              0.11.4.0
 visibility:           public
-id:                   bytestring-0.11.3.1
-key:                  bytestring-0.11.3.1
+id:                   bytestring-0.11.4.0
+key:                  bytestring-0.11.4.0
 license:              BSD-3-Clause
 copyright:
     Copyright (c) Don Stewart          2005-2009,
@@ -428,12 +429,12 @@ hidden-modules:
     Data.ByteString.Builder.RealFloat.D2S
     Data.ByteString.Builder.RealFloat.Internal
     Data.ByteString.Builder.RealFloat.TableGenerator
-    Data.ByteString.Lazy.Internal.Deque
+    Data.ByteString.Internal.Type Data.ByteString.Lazy.Internal.Deque
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSbytestring-0.11.3.1
+hs-libraries:         HSbytestring-0.11.4.0
 include-dirs:
 includes:             fpstring.h
 depends:
@@ -614,10 +615,10 @@ haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc
-version:              9.2.5
+version:              9.2.7
 visibility:           public
-id:                   ghc-9.2.5
-key:                  ghc-9.2.5
+id:                   ghc-9.2.7
+key:                  ghc-9.2.7
 license:              BSD-3-Clause
 maintainer:           glasgow-haskell-users@haskell.org
 author:               The GHC Team
@@ -756,9 +757,9 @@ exposed-modules:
     GHC.Parser.Header, GHC.Parser.Lexer, GHC.Parser.PostProcess,
     GHC.Parser.PostProcess.Haddock, GHC.Parser.Types, GHC.Parser.Utils,
     GHC.Platform, GHC.Platform.AArch64, GHC.Platform.ARM,
-    GHC.Platform.ArchOS from ghc-boot-9.2.5:GHC.Platform.ArchOS,
+    GHC.Platform.ArchOS from ghc-boot-9.2.7:GHC.Platform.ArchOS,
     GHC.Platform.Constants,
-    GHC.Platform.Host from ghc-boot-9.2.5:GHC.Platform.Host,
+    GHC.Platform.Host from ghc-boot-9.2.7:GHC.Platform.Host,
     GHC.Platform.NoRegs, GHC.Platform.PPC, GHC.Platform.Profile,
     GHC.Platform.RISCV64, GHC.Platform.Reg, GHC.Platform.Reg.Class,
     GHC.Platform.Regs, GHC.Platform.S390X, GHC.Platform.SPARC,
@@ -848,14 +849,14 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-9.2.5
+hs-libraries:         HSghc-9.2.7
 include-dirs:
 depends:
-    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.4.0
     containers-0.6.5.1 deepseq-1.4.6.1 directory-1.3.6.2
-    exceptions-0.10.4 filepath-1.4.2.2 ghc-boot-9.2.5 ghc-heap-9.2.5
-    ghci-9.2.5 hpc-0.6.1.0 process-1.6.16.0 template-haskell-2.18.0.0
-    time-1.11.1.1 transformers-0.5.6.2 unix-2.7.2.2
+    exceptions-0.10.4 filepath-1.4.2.2 ghc-boot-9.2.7 ghc-heap-9.2.7
+    ghci-9.2.7 hpc-0.6.1.0 process-1.6.16.0 template-haskell-2.18.0.0
+    terminfo-0.4.1.5 time-1.11.1.1 transformers-0.5.6.2 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -887,10 +888,10 @@ haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc-boot
-version:              9.2.5
+version:              9.2.7
 visibility:           public
-id:                   ghc-boot-9.2.5
-key:                  ghc-boot-9.2.5
+id:                   ghc-boot-9.2.7
+key:                  ghc-boot-9.2.7
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:             Shared functionality between GHC and its boot libraries
@@ -912,10 +913,10 @@ exposed:              True
 exposed-modules:
     GHC.BaseDir, GHC.Data.ShortText, GHC.Data.SizedSeq,
     GHC.ForeignSrcLang,
-    GHC.ForeignSrcLang.Type from ghc-boot-th-9.2.5:GHC.ForeignSrcLang.Type,
+    GHC.ForeignSrcLang.Type from ghc-boot-th-9.2.7:GHC.ForeignSrcLang.Type,
     GHC.HandleEncoding, GHC.LanguageExtensions,
-    GHC.LanguageExtensions.Type from ghc-boot-th-9.2.5:GHC.LanguageExtensions.Type,
-    GHC.Lexeme from ghc-boot-th-9.2.5:GHC.Lexeme, GHC.Platform.ArchOS,
+    GHC.LanguageExtensions.Type from ghc-boot-th-9.2.7:GHC.LanguageExtensions.Type,
+    GHC.Lexeme from ghc-boot-th-9.2.7:GHC.Lexeme, GHC.Platform.ArchOS,
     GHC.Platform.Host, GHC.Serialized, GHC.Settings.Utils,
     GHC.UniqueSubdir, GHC.Unit.Database, GHC.Utils.Encoding,
     GHC.Version
@@ -923,19 +924,19 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-boot-9.2.5
+hs-libraries:         HSghc-boot-9.2.7
 depends:
-    base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1 containers-0.6.5.1
+    base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.4.0 containers-0.6.5.1
     deepseq-1.4.6.1 directory-1.3.6.2 filepath-1.4.2.2
-    ghc-boot-th-9.2.5 unix-2.7.2.2
+    ghc-boot-th-9.2.7 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc-boot-th
-version:              9.2.5
+version:              9.2.7
 visibility:           public
-id:                   ghc-boot-th-9.2.5
-key:                  ghc-boot-th-9.2.5
+id:                   ghc-boot-th-9.2.7
+key:                  ghc-boot-th-9.2.7
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:
@@ -955,7 +956,7 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-boot-th-9.2.5
+hs-libraries:         HSghc-boot-th-9.2.7
 depends:              base-4.16.4.0
 haddock-interfaces:
 haddock-html:
@@ -989,15 +990,15 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-compact-0.1.0.0
-depends:              base-4.16.4.0 bytestring-0.11.3.1 ghc-prim-0.8.0
+depends:              base-4.16.4.0 bytestring-0.11.4.0 ghc-prim-0.8.0
 haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc-heap
-version:              9.2.5
+version:              9.2.7
 visibility:           public
-id:                   ghc-heap-9.2.5
-key:                  ghc-heap-9.2.5
+id:                   ghc-heap-9.2.7
+key:                  ghc-heap-9.2.7
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Functions for walking GHC's heap
@@ -1020,7 +1021,7 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-heap-9.2.5
+hs-libraries:         HSghc-heap-9.2.7
 depends:              base-4.16.4.0 containers-0.6.5.1 ghc-prim-0.8.0 rts
 haddock-interfaces:
 haddock-html:
@@ -1046,16 +1047,15 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-prim-0.8.0
-extra-libraries:      gcc c m
 depends:              rts
 haddock-interfaces:
 haddock-html:
 ---
 name:                 ghci
-version:              9.2.5
+version:              9.2.7
 visibility:           public
-id:                   ghci-9.2.5
-key:                  ghci-9.2.5
+id:                   ghci-9.2.7
+key:                  ghci-9.2.7
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:             The library supporting GHC's interactive interpreter
@@ -1074,11 +1074,11 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghci-9.2.5
+hs-libraries:         HSghci-9.2.7
 depends:
-    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
-    containers-0.6.5.1 deepseq-1.4.6.1 filepath-1.4.2.2 ghc-boot-9.2.5
-    ghc-heap-9.2.5 ghc-prim-0.8.0 rts template-haskell-2.18.0.0
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.4.0
+    containers-0.6.5.1 deepseq-1.4.6.1 filepath-1.4.2.2 ghc-boot-9.2.7
+    ghc-heap-9.2.7 ghc-prim-0.8.0 rts template-haskell-2.18.0.0
     transformers-0.5.6.2 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
@@ -1124,15 +1124,17 @@ hidden-modules:
     System.Console.Haskeline.Backend.Posix
     System.Console.Haskeline.Backend.Posix.Encoder
     System.Console.Haskeline.Backend.DumbTerm
+    System.Console.Haskeline.Backend.Terminfo
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HShaskeline-0.8.2
 depends:
-    base-4.16.4.0 bytestring-0.11.3.1 containers-0.6.5.1
+    base-4.16.4.0 bytestring-0.11.4.0 containers-0.6.5.1
     directory-1.3.6.2 exceptions-0.10.4 filepath-1.4.2.2
-    process-1.6.16.0 stm-2.5.0.2 transformers-0.5.6.2 unix-2.7.2.2
+    process-1.6.16.0 stm-2.5.0.2 terminfo-0.4.1.5 transformers-0.5.6.2
+    unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -1193,10 +1195,10 @@ haddock-interfaces:
 haddock-html:
 ---
 name:                 libiserv
-version:              9.2.5
+version:              9.2.7
 visibility:           public
-id:                   libiserv-9.2.5
-key:                  libiserv-9.2.5
+id:                   libiserv-9.2.7
+key:                  libiserv-9.2.7
 license:              BSD-3-Clause
 copyright:            XXX
 maintainer:           XXX
@@ -1212,10 +1214,10 @@ import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSlibiserv-9.2.5
+hs-libraries:         HSlibiserv-9.2.7
 depends:
-    base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1 containers-0.6.5.1
-    deepseq-1.4.6.1 ghci-9.2.5 unix-2.7.2.2
+    base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.4.0 containers-0.6.5.1
+    deepseq-1.4.6.1 ghci-9.2.7 unix-2.7.2.2
 haddock-interfaces:
 haddock-html:
 ---
@@ -1304,7 +1306,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSparsec-3.1.15.0
 depends:
-    base-4.16.4.0 bytestring-0.11.3.1 mtl-2.2.2 text-1.2.5.0
+    base-4.16.4.0 bytestring-0.11.4.0 mtl-2.2.2 text-1.2.5.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -1437,7 +1439,40 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HStemplate-haskell-2.18.0.0
 depends:
-    base-4.16.4.0 ghc-boot-th-9.2.5 ghc-prim-0.8.0 pretty-1.1.3.6
+    base-4.16.4.0 ghc-boot-th-9.2.7 ghc-prim-0.8.0 pretty-1.1.3.6
+haddock-interfaces:
+haddock-html:
+---
+name:                 terminfo
+version:              0.4.1.5
+visibility:           public
+id:                   terminfo-0.4.1.5
+key:                  terminfo-0.4.1.5
+license:              BSD-3-Clause
+copyright:            (c) Judah Jacobson
+maintainer:           Judah Jacobson <judah.jacobson@gmail.com>
+author:               Judah Jacobson
+stability:            Stable
+homepage:             https://github.com/judah/terminfo
+synopsis:             Haskell bindings to the terminfo library.
+description:
+    This library provides an interface to the terminfo database (via bindings to the
+    curses library).  <http://en.wikipedia.org/wiki/Terminfo Terminfo> allows POSIX
+    systems to interact with a variety of terminals using a standard set of capabilities.
+category:             User Interfaces
+exposed:              True
+exposed-modules:
+    System.Console.Terminfo System.Console.Terminfo.Base
+    System.Console.Terminfo.Color System.Console.Terminfo.Cursor
+    System.Console.Terminfo.Edit System.Console.Terminfo.Effects
+    System.Console.Terminfo.Keys
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSterminfo-0.4.1.5
+extra-libraries:      tinfo
+depends:              base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -1519,7 +1554,7 @@ dynamic-library-dirs:
 data-dir:
 hs-libraries:         HStext-1.2.5.0
 depends:
-    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.3.1
+    array-0.5.4.0 base-4.16.4.0 binary-0.8.9.0 bytestring-0.11.4.0
     deepseq-1.4.6.1 ghc-prim-0.8.0 template-haskell-2.18.0.0
 haddock-interfaces:
 haddock-html:
@@ -1674,7 +1709,44 @@ data-dir:
 hs-libraries:         HSunix-2.7.2.2
 include-dirs:
 includes:             HsUnix.h execvpe.h
-depends:              base-4.16.4.0 bytestring-0.11.3.1 time-1.11.1.1
+depends:              base-4.16.4.0 bytestring-0.11.4.0 time-1.11.1.1
+haddock-interfaces:
+haddock-html:
+---
+name:                 xhtml
+version:              3000.2.2.1
+visibility:           public
+id:                   xhtml-3000.2.2.1
+key:                  xhtml-3000.2.2.1
+license:              BSD-3-Clause
+copyright:
+    Bjorn Bringert 2004-2006, Andy Gill and the Oregon
+    Graduate Institute of Science and Technology, 1999-2001
+maintainer:           Chris Dornan <chris@chrisdornan.com>
+author:               Bjorn Bringert
+stability:            Stable
+homepage:             https://github.com/haskell/xhtml
+synopsis:             An XHTML combinator library
+description:
+    This package provides combinators for producing
+    XHTML 1.0, including the Strict, Transitional and
+    Frameset variants.
+category:             Web, XML, Pretty Printer
+exposed:              True
+exposed-modules:
+    Text.XHtml Text.XHtml.Debug Text.XHtml.Frameset Text.XHtml.Strict
+    Text.XHtml.Table Text.XHtml.Transitional
+hidden-modules:
+    Text.XHtml.Strict.Attributes Text.XHtml.Strict.Elements
+    Text.XHtml.Frameset.Attributes Text.XHtml.Frameset.Elements
+    Text.XHtml.Transitional.Attributes Text.XHtml.Transitional.Elements
+    Text.XHtml.BlockTable Text.XHtml.Extras Text.XHtml.Internals
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSxhtml-3000.2.2.1
+depends:              base-4.16.4.0
 haddock-interfaces:
 haddock-html:
 ---
@@ -1688,71 +1760,72 @@ maintainer:      glasgow-haskell-users@haskell.org
 exposed:         True
 library-dirs:
 hs-libraries:    HSrts
-extra-libraries: m rt dl ffi numa
+extra-libraries: m dl ffi
 include-dirs:
 includes:        Stg.h
 ld-options:
-    "-Wl,-u,base_GHCziTopHandler_runIO_closure"
-    "-Wl,-u,base_GHCziTopHandler_runNonIO_closure"
-    "-Wl,-u,ghczmprim_GHCziTuple_Z0T_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_True_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_False_closure"
-    "-Wl,-u,base_GHCziPack_unpackCString_closure"
-    "-Wl,-u,base_GHCziWeak_runFinalizzerBatch_closure"
-    "-Wl,-u,base_GHCziIOziException_stackOverflow_closure"
-    "-Wl,-u,base_GHCziIOziException_heapOverflow_closure"
-    "-Wl,-u,base_GHCziIOziException_allocationLimitExceeded_closure"
-    "-Wl,-u,base_GHCziIOziException_blockedIndefinitelyOnMVar_closure"
-    "-Wl,-u,base_GHCziIOziException_blockedIndefinitelyOnSTM_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactFunction_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactPinned_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactMutable_closure"
-    "-Wl,-u,base_GHCziIOPort_doubleReadException_closure"
-    "-Wl,-u,base_ControlziExceptionziBase_nonTermination_closure"
-    "-Wl,-u,base_ControlziExceptionziBase_nestedAtomically_closure"
-    "-Wl,-u,base_GHCziEventziThread_blockedOnBadFD_closure"
-    "-Wl,-u,base_GHCziExceptionziType_divZZeroException_closure"
-    "-Wl,-u,base_GHCziExceptionziType_underflowException_closure"
-    "-Wl,-u,base_GHCziExceptionziType_overflowException_closure"
-    "-Wl,-u,base_GHCziConcziSync_runSparks_closure"
-    "-Wl,-u,base_GHCziConcziIO_ensureIOManagerIsRunning_closure"
-    "-Wl,-u,base_GHCziConcziIO_interruptIOManager_closure"
-    "-Wl,-u,base_GHCziConcziIO_ioManagerCapabilitiesChanged_closure"
-    "-Wl,-u,base_GHCziConcziSignal_runHandlersPtr_closure"
-    "-Wl,-u,base_GHCziTopHandler_flushStdHandles_closure"
-    "-Wl,-u,base_GHCziTopHandler_runMainIO_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_Czh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Izh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Fzh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Dzh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Wzh_con_info"
-    "-Wl,-u,base_GHCziPtr_Ptr_con_info"
-    "-Wl,-u,base_GHCziPtr_FunPtr_con_info"
-    "-Wl,-u,base_GHCziInt_I8zh_con_info"
-    "-Wl,-u,base_GHCziInt_I16zh_con_info"
-    "-Wl,-u,base_GHCziInt_I32zh_con_info"
-    "-Wl,-u,base_GHCziInt_I64zh_con_info"
-    "-Wl,-u,base_GHCziWord_W8zh_con_info"
-    "-Wl,-u,base_GHCziWord_W16zh_con_info"
-    "-Wl,-u,base_GHCziWord_W32zh_con_info"
-    "-Wl,-u,base_GHCziWord_W64zh_con_info"
-    "-Wl,-u,base_GHCziStable_StablePtr_con_info"
-    "-Wl,-u,hs_atomic_add8" "-Wl,-u,hs_atomic_add16"
-    "-Wl,-u,hs_atomic_add32" "-Wl,-u,hs_atomic_add64"
-    "-Wl,-u,hs_atomic_sub8" "-Wl,-u,hs_atomic_sub16"
-    "-Wl,-u,hs_atomic_sub32" "-Wl,-u,hs_atomic_sub64"
-    "-Wl,-u,hs_atomic_and8" "-Wl,-u,hs_atomic_and16"
-    "-Wl,-u,hs_atomic_and32" "-Wl,-u,hs_atomic_and64"
-    "-Wl,-u,hs_atomic_nand8" "-Wl,-u,hs_atomic_nand16"
-    "-Wl,-u,hs_atomic_nand32" "-Wl,-u,hs_atomic_nand64"
-    "-Wl,-u,hs_atomic_or8" "-Wl,-u,hs_atomic_or16"
-    "-Wl,-u,hs_atomic_or32" "-Wl,-u,hs_atomic_or64"
-    "-Wl,-u,hs_atomic_xor8" "-Wl,-u,hs_atomic_xor16"
-    "-Wl,-u,hs_atomic_xor32" "-Wl,-u,hs_atomic_xor64"
-    "-Wl,-u,hs_cmpxchg8" "-Wl,-u,hs_cmpxchg16" "-Wl,-u,hs_cmpxchg32"
-    "-Wl,-u,hs_cmpxchg64" "-Wl,-u,hs_xchg8" "-Wl,-u,hs_xchg16"
-    "-Wl,-u,hs_xchg32" "-Wl,-u,hs_xchg64" "-Wl,-u,hs_atomicread8"
-    "-Wl,-u,hs_atomicread16" "-Wl,-u,hs_atomicread32"
-    "-Wl,-u,hs_atomicread64" "-Wl,-u,hs_atomicwrite8"
-    "-Wl,-u,hs_atomicwrite16" "-Wl,-u,hs_atomicwrite32"
-    "-Wl,-u,hs_atomicwrite64"
+    "-Wl,-u,_base_GHCziTopHandler_runIO_closure"
+    "-Wl,-u,_base_GHCziTopHandler_runNonIO_closure"
+    "-Wl,-u,_ghczmprim_GHCziTuple_Z0T_closure"
+    "-Wl,-u,_ghczmprim_GHCziTypes_True_closure"
+    "-Wl,-u,_ghczmprim_GHCziTypes_False_closure"
+    "-Wl,-u,_base_GHCziPack_unpackCString_closure"
+    "-Wl,-u,_base_GHCziWeak_runFinalizzerBatch_closure"
+    "-Wl,-u,_base_GHCziIOziException_stackOverflow_closure"
+    "-Wl,-u,_base_GHCziIOziException_heapOverflow_closure"
+    "-Wl,-u,_base_GHCziIOziException_allocationLimitExceeded_closure"
+    "-Wl,-u,_base_GHCziIOziException_blockedIndefinitelyOnMVar_closure"
+    "-Wl,-u,_base_GHCziIOziException_blockedIndefinitelyOnSTM_closure"
+    "-Wl,-u,_base_GHCziIOziException_cannotCompactFunction_closure"
+    "-Wl,-u,_base_GHCziIOziException_cannotCompactPinned_closure"
+    "-Wl,-u,_base_GHCziIOziException_cannotCompactMutable_closure"
+    "-Wl,-u,_base_GHCziIOPort_doubleReadException_closure"
+    "-Wl,-u,_base_ControlziExceptionziBase_nonTermination_closure"
+    "-Wl,-u,_base_ControlziExceptionziBase_nestedAtomically_closure"
+    "-Wl,-u,_base_GHCziEventziThread_blockedOnBadFD_closure"
+    "-Wl,-u,_base_GHCziExceptionziType_divZZeroException_closure"
+    "-Wl,-u,_base_GHCziExceptionziType_underflowException_closure"
+    "-Wl,-u,_base_GHCziExceptionziType_overflowException_closure"
+    "-Wl,-u,_base_GHCziConcziSync_runSparks_closure"
+    "-Wl,-u,_base_GHCziConcziIO_ensureIOManagerIsRunning_closure"
+    "-Wl,-u,_base_GHCziConcziIO_interruptIOManager_closure"
+    "-Wl,-u,_base_GHCziConcziIO_ioManagerCapabilitiesChanged_closure"
+    "-Wl,-u,_base_GHCziConcziSignal_runHandlersPtr_closure"
+    "-Wl,-u,_base_GHCziTopHandler_flushStdHandles_closure"
+    "-Wl,-u,_base_GHCziTopHandler_runMainIO_closure"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Czh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Izh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Fzh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Dzh_con_info"
+    "-Wl,-u,_ghczmprim_GHCziTypes_Wzh_con_info"
+    "-Wl,-u,_base_GHCziPtr_Ptr_con_info"
+    "-Wl,-u,_base_GHCziPtr_FunPtr_con_info"
+    "-Wl,-u,_base_GHCziInt_I8zh_con_info"
+    "-Wl,-u,_base_GHCziInt_I16zh_con_info"
+    "-Wl,-u,_base_GHCziInt_I32zh_con_info"
+    "-Wl,-u,_base_GHCziInt_I64zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W8zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W16zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W32zh_con_info"
+    "-Wl,-u,_base_GHCziWord_W64zh_con_info"
+    "-Wl,-u,_base_GHCziStable_StablePtr_con_info"
+    "-Wl,-u,_hs_atomic_add8" "-Wl,-u,_hs_atomic_add16"
+    "-Wl,-u,_hs_atomic_add32" "-Wl,-u,_hs_atomic_add64"
+    "-Wl,-u,_hs_atomic_sub8" "-Wl,-u,_hs_atomic_sub16"
+    "-Wl,-u,_hs_atomic_sub32" "-Wl,-u,_hs_atomic_sub64"
+    "-Wl,-u,_hs_atomic_and8" "-Wl,-u,_hs_atomic_and16"
+    "-Wl,-u,_hs_atomic_and32" "-Wl,-u,_hs_atomic_and64"
+    "-Wl,-u,_hs_atomic_nand8" "-Wl,-u,_hs_atomic_nand16"
+    "-Wl,-u,_hs_atomic_nand32" "-Wl,-u,_hs_atomic_nand64"
+    "-Wl,-u,_hs_atomic_or8" "-Wl,-u,_hs_atomic_or16"
+    "-Wl,-u,_hs_atomic_or32" "-Wl,-u,_hs_atomic_or64"
+    "-Wl,-u,_hs_atomic_xor8" "-Wl,-u,_hs_atomic_xor16"
+    "-Wl,-u,_hs_atomic_xor32" "-Wl,-u,_hs_atomic_xor64"
+    "-Wl,-u,_hs_cmpxchg8" "-Wl,-u,_hs_cmpxchg16" "-Wl,-u,_hs_cmpxchg32"
+    "-Wl,-u,_hs_cmpxchg64" "-Wl,-u,_hs_xchg8" "-Wl,-u,_hs_xchg16"
+    "-Wl,-u,_hs_xchg32" "-Wl,-u,_hs_xchg64" "-Wl,-u,_hs_atomicread8"
+    "-Wl,-u,_hs_atomicread16" "-Wl,-u,_hs_atomicread32"
+    "-Wl,-u,_hs_atomicread64" "-Wl,-u,_hs_atomicwrite8"
+    "-Wl,-u,_hs_atomicwrite16" "-Wl,-u,_hs_atomicwrite32"
+    "-Wl,-u,_hs_atomicwrite64" "-Wl,-search_paths_first"
+    "-Wl,-U,___darwin_check_fd_set_overflow"
