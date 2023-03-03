@@ -63,7 +63,7 @@ let
       "8.8" = "8.8.4";
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
-      "9.2" = "9.2.6";
+      "9.2" = "9.2.7";
       "9.4" = "9.4.4";
     };
     traceWarnOld = v: x:
@@ -725,6 +725,26 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.2.6";
+            });
+            ghc927 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc927; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
+                };
+                inherit sphinx installDeps;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.2.7";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-olNWehe3NKTA3Q/6KW0zwqW1pUp335iIBqKh4cp+iLg=";
+                };
+
+                ghc-patches = ghc-patches "9.2.7";
             });
             ghc941 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc941; };

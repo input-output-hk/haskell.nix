@@ -16,13 +16,13 @@
         This allows flakes to easily include variations of the
         project by with different project arguments.
         Anything you can pass to `project.addModule` can be used.
-        For instance to include variants using ghc 9.2.6:
+        For instance to include variants using ghc 9.2.7:
         ```
-          flake.variants.ghc926.compiler-nix-name = pkgs.lib.mkForce "ghc926";
+          flake.variants.ghc927.compiler-nix-name = pkgs.lib.mkForce "ghc927";
         ```
         Then use it with:
         ```
-          nix build .#ghc926:hello:exe:hello
+          nix build .#ghc927:hello:exe:hello
         ```
       '';
     };
