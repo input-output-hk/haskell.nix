@@ -302,7 +302,7 @@ stdenv.mkDerivation (rec {
     '' + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
-        export LD="ld.gold"
+        export LD="${targetCC.bintools}/bin/ld.gold"
     '' + lib.optionalString (targetPlatform.isWindows) ''
         export DllWrap="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}dllwrap"
         export Windres="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}windres"
