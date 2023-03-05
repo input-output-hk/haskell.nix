@@ -68,7 +68,7 @@ let self =
 , useLdGold ? 
     # might be better check to see if cc is clang/llvm?
     # use gold as the linker on linux to improve link times
-    # do not use it on musl due to a ld.gold bug.
+    # do not use it on musl due to a ld.gold bug. See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
     (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid && !stdenv.targetPlatform.isMusl) 
     || stdenv.targetPlatform.isAarch32
 
