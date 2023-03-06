@@ -541,6 +541,17 @@ stdenv.mkDerivation (rec {
       phases = [ "unpackPhase" "patchPhase" ]
             ++ lib.optional (ghc-patches != []) "autoreconfPhase"
             ++ [ "configurePhase" "installPhase"];
+     } // lib.optionalAttrs useHadrian {
+      postConfigure = ''
+        for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
+          ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
+        done
+      '' + lib.optionalString stdenv.isDarwin ''
+        substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+          --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        find . -name 'system*.conf*'
+        cat mk/system-cxx-std-lib-1.0.conf
+      '';
     });
 
     # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)

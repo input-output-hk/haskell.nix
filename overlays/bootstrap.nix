@@ -21,7 +21,7 @@ let
       "9.0" = "9.0.2";
       "9.2" = "9.2.6";
       "9.4" = "9.4.4";
-      "9.6" = "9.6.1";
+      "9.6" = "9.6.0.20230210";
     };
     traceWarnOld = v: x:
       let
@@ -728,12 +728,12 @@ in {
 
                 ghc-patches = ghc-patches "9.4.4";
             });
-            ghc961 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc961; };
+            ghc96020230210 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230210; };
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.buildPlatform != final.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc961
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc96020230210
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
