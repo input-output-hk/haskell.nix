@@ -140,6 +140,7 @@ final: prev: {
             , modules ? []
             , extra-hackages ? []
             , compiler-nix-name ? null
+            , compilerSelection ? p: p.haskell-nix.compiler
             }:
 
             let
@@ -149,8 +150,8 @@ final: prev: {
                     else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
-                package.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version;
-                plan.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
+                package.compiler-nix-name.version = (compilerSelection final.buildPackages).${compiler-nix-name'}.version;
+                plan.compiler-nix-name.version = (compilerSelection final.buildPackages).${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
                 withMsg = final.lib.assertMsg;
             in
               # Check that the GHC version of the selected compiler matches the one of the plan
@@ -649,7 +650,7 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, evalPackages, inputMap, ... }@args:
+            { src, compiler-nix-name, compilerSelection, evalPackages, inputMap, ... }@args:
             let
               callProjectResults = callCabalProjectToNix args;
               plan-pkgs = importAndFilterProject {
@@ -668,13 +669,18 @@ final: prev: {
                   };
                 }
                 else mkCabalProjectPkgSet
-                { inherit compiler-nix-name plan-pkgs;
+                { inherit compiler-nix-name compilerSelection plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; } ]
                     ++ (args.modules or [])
-                    ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
-                        { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
                     ++ [ {
+                      ghc.package =
+                        if args.ghcOverride != null
+                          then args.ghcOverride
+                        else if args.ghc != null
+                          then args.ghc
+                        else
+                          final.lib.mkDefault (args.compilerSelection final.buildPackages).${compiler-nix-name};
                       compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                       inputMap = final.lib.mkDefault inputMap;

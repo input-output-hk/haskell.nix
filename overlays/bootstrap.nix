@@ -982,6 +982,7 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
+        compilerSelection = p: p.haskell.compiler;
         version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
@@ -999,7 +1000,7 @@ in {
           final.haskell-nix.hix.project ({
             evalPackages = final.buildPackages;
             src = ../nix-tools;
-          } // args // { inherit compiler-nix-name; });
+          } // args // { inherit compiler-nix-name compilerSelection; });
         exes =
           let
             package = project.getPackage "nix-tools";
