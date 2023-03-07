@@ -994,6 +994,7 @@ in {
           if !__elem args.compiler-nix-name [ "ghc883" "ghc884" "ghc8107" ]
             then "ghc8107"
             else args.compiler-nix-name;
+        compilerSelection = p: p.haskell.compiler;
         project =
           final.haskell-nix.hix.project ({
             evalPackages = final.buildPackages;
@@ -1134,6 +1135,7 @@ in {
             # of the materialization check it would cause
             # infinite recursion).
             alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
+                compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
                 inherit ghcOverride index-state;
@@ -1146,6 +1148,7 @@ in {
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
             happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy"
               ({config, pkgs, ...}: {
+                compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
@@ -1160,6 +1163,7 @@ in {
             happy-old-unchecked = bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
             hscolour-tool = args: (hackage-package
               ({config, pkgs, ...}: {
+                compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";

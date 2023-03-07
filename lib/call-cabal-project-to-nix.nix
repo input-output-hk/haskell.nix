@@ -21,6 +21,7 @@ in
 , cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
 , cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
+, compilerSelection    ? p: p.haskell-nix.compiler
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
 , ghcOverride   ? null # Used when we need to set ghc explicitly during bootstrapping
 , configureArgs ? "" # Extra arguments to pass to `cabal v2-configure`.
@@ -105,7 +106,7 @@ let
               #
               # > The option `packages.Win32.package.identifier.name' is used but not defined.
               #
-              pkgs.haskell-nix.compiler."${compiler-nix-name}";
+              (compilerSelection pkgs)."${compiler-nix-name}";
 
   ghc = ghc';
   subDir' = src.origSubDir or "";

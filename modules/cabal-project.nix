@@ -15,6 +15,11 @@ in {
       type = str;
       description = "The name of the ghc compiler to use eg. \"ghc884\"";
     };
+    compilerSelection = mkOption {
+      type = unspecified;
+      default = p: p.haskell-nix.compiler;
+      description = "Use GHC from pkgs.haskell instead of pkgs.haskell-nix";
+    };
     index-state = mkOption {
       type = nullOr str;
       default = null;
