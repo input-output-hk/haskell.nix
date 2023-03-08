@@ -17,7 +17,7 @@ let
       "9.0" = "9.0.2";
       "9.2" = "9.2.6";
       "9.4" = "9.4.4";
-      "9.6" = "9.6.0.20230210";
+      "9.6" = "9.6.0.20230302";
     };
     traceWarnOld = v: x:
       let
@@ -724,12 +724,12 @@ in {
 
                 ghc-patches = ghc-patches "9.4.4";
             });
-            ghc96020230210 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230210; };
+            ghc96020230302 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230302; };
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.buildPlatform != final.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc96020230210
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc96020230302
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
@@ -740,9 +740,9 @@ in {
                 llvmPackages = final.llvmPackages_12;
 
                 src-spec = rec {
-                    version = "9.6.0.20230210";
+                    version = "9.6.0.20230302";
                     url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "sha256-3vSnSFFiJm6R70YA38yoQki+1kFHF91+66za2WogT0c=";
+                    sha256 = "sha256-Vlj/E1eoL/7PUsYCsareTGPRGEvLzYtjPcxsYaSmNvM=";
                 };
 
                 ghc-patches = ghc-patches "9.6.1";

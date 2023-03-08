@@ -30,7 +30,7 @@ in [
         # See https://github.com/haskell/cabal/issues/8370
         + lib.optionalString (builtins.compareVersions config.version "3.7" < 0) ''
           constraints: Cabal-syntax <0
-        '' + lib.optionalString (config.compiler-nix-name == "ghc96020230210") ''
+        '' + lib.optionalString (config.compiler-nix-name == "ghc96020230302") ''
           allow-newer: *:base, *:template-haskell
       '');
       modules = [
