@@ -63,6 +63,13 @@ let self =
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
+, useLdGold ? 
+    # might be better check to see if cc is clang/llvm?
+    # use gold as the linker on linux to improve link times
+    # do not use it on musl due to a ld.gold bug. See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
+    (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid && !stdenv.targetPlatform.isMusl) 
+    || stdenv.targetPlatform.isAarch32
+
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
 , src-spec
@@ -183,10 +190,11 @@ let
         "--enable-bootstrap-with-devel-snapshot"
     ] ++ lib.optionals (disableLargeAddressSpace) [
         "--disable-large-address-space"
-    ] ++ lib.optionals (targetPlatform.isAarch32) [
+    ] ++ lib.optionals useLdGold [
         "CFLAGS=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
+        "CONF_LD_LINKER_OPTS_STAGE2=-fuse-ld=gold" # See: <https://gitlab.haskell.org/ghc/ghc/-/issues/22550#note_466656>
     ] ++ lib.optionals enableDWARF [
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
@@ -291,13 +299,17 @@ stdenv.mkDerivation (rec {
     ''
     # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
     + ''
-        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
+        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
         export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
+    '' + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
+    # set LD explicitly if we want gold even if we aren't cross compiling
+    ''
+        export LD="${targetCC.bintools}/bin/ld.gold"
     '' + lib.optionalString (targetPlatform.isWindows) ''
         export DllWrap="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}dllwrap"
         export Windres="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}windres"

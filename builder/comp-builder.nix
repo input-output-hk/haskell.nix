@@ -179,16 +179,7 @@ let
       [ "--with-gcc=${stdenv.cc.targetPrefix}cc"
       ] ++
       # BINTOOLS
-      (if stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isAndroid # might be better check to see if cc is clang/llvm?
-        # use gold as the linker on linux to improve link times
-        then [
-          "--with-ld=${stdenv.cc.bintools.targetPrefix}ld.gold"
-          "--ghc-option=-optl-fuse-ld=gold"
-          "--ld-option=-fuse-ld=gold"
-        ] else [
-          "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
-        ]
-      ) ++ [
+       [
         "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
         "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       ]
