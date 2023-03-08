@@ -9,10 +9,6 @@ let
         else {
             compilerNixName = "ghc884";
         };
-    # AArch64 needs 8.8, but we prefer 8.6.5 for other 8.10 builds because of
-    # * https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-    ghcForBuilding810 = final.buildPackages.buildPackages.haskell.compiler.ghc8107;
-    ghcForBuilding90 = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
     latestVer = {
       "8.4" = "8.4.4";
       "8.6" = "8.6.5";
@@ -982,19 +978,14 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
-        compilerSelection = p: p.haskell.compiler;
+        compilerSelection = p: p.haskell-nix.compiler // p.haskell.compiler;
         version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args));
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
-        # Until all the dependencies build with 9.0.1 we will have to avoid
-        # building & testing nix-tools with 9.0.1
-        compiler-nix-name =
-          if !__elem args.compiler-nix-name [ "ghc883" "ghc884" "ghc8107" ]
-            then "ghc8107"
-            else args.compiler-nix-name;
+        compiler-nix-name = "ghc8107";
         compilerSelection = p: p.haskell.compiler;
         project =
           final.haskell-nix.hix.project ({
