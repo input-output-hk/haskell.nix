@@ -15,6 +15,7 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-hpack";
+    supportHpack = true;
     inherit modules;
   };
 

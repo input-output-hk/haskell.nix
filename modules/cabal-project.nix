@@ -124,6 +124,10 @@ in {
       type = attrsOf (functionTo attrs);
       default = {};
     };
+    supportHpack = mkOption {
+      type = bool;
+      default = false;
+    };
 
     # Used by mkCabalProjectPkgSet
     pkg-def-extras = mkOption {
