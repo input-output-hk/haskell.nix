@@ -45,11 +45,13 @@ in {
             };
             bootPkgsGhc94 = bootPkgs // {
                 alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" {
+                  compilerSelection = p: p.haskell.compiler;
                   version = "3.2.7.1";
                   index-state = final.haskell-nix.internalHackageIndexState;
                   materialized = ../materialized/alex-3.2.7.1;
                 };
                 happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" {
+                  compilerSelection = p: p.haskell.compiler;
                   version = "1.20.0";
                   index-state = final.haskell-nix.internalHackageIndexState;
                   materialized = ../materialized/happy-1.20.0;

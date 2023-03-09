@@ -24,6 +24,7 @@ let
     cabalPkgConfig = import ./cabal-pkg-config.nix;
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
     default-setup = import ./default-setup.nix;
+    dummy-ghc-data = import ./dummy-ghc-data.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -60,6 +61,7 @@ let
     hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
+    dummy-ghc-data
     cacheCompilerDeps
     default-setup
   ];
