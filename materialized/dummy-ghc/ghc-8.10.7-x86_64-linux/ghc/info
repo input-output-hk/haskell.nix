@@ -5,7 +5,7 @@
  ,("C compiler link flags","-fuse-ld=gold ")
  ,("C compiler supports -no-pie","YES")
  ,("Haskell CPP flags","-E -undef -traditional")
- ,("ld flags","")
+ ,("ld flags","-fuse-ld=gold")
  ,("ld supports compact unwind","YES")
  ,("ld supports build-id","YES")
  ,("ld supports filelist","NO")
