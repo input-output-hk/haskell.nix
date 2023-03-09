@@ -71,7 +71,6 @@ in
 , supportHpack ? false      # Run hpack on package.yaml files with no .cabal file
 , ...
 }@args:
-
 let
   inherit (evalPackages.haskell-nix) materialize dotCabal;
 
@@ -92,7 +91,7 @@ let
     if ghcOverride != null
       then ghcOverride
       else
-        if args.ghc != null
+        if ghc != null
           then __trace ("WARNING: A `ghc` argument was passed" + forName
             + " this has been deprecated in favour of `compiler-nix-name`. "
             + "Using `ghc` will break cross compilation setups, as haskell.nix cannot "
@@ -109,6 +108,7 @@ let
               #
               (compilerSelection pkgs)."${compiler-nix-name}";
 
+in let
   ghc = ghc';
   subDir' = src.origSubDir or "";
   subDir = pkgs.lib.strings.removePrefix "/" subDir';
