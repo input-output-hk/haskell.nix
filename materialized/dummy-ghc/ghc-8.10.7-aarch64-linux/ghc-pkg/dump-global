@@ -859,7 +859,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-prim-0.6.1
-extra-libraries:      gcc c m
+extra-libraries:      c m
 depends:              rts
 haddock-interfaces:
 haddock-html:
@@ -1573,7 +1573,7 @@ maintainer:      glasgow-haskell-users@haskell.org
 exposed:         True
 library-dirs:
 hs-libraries:    HSrts
-extra-libraries: m rt dl ffi numa
+extra-libraries: m rt dl ffi
 include-dirs:
 includes:        Stg.h
 ld-options:

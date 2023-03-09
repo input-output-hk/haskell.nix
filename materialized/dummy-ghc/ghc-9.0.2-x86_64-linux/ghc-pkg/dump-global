@@ -821,11 +821,14 @@ exposed-modules:
     GHC.Num.Backend GHC.Num.Backend.Native GHC.Num.Backend.Selected
     GHC.Num.BigNat GHC.Num.Integer GHC.Num.Natural GHC.Num.Primitives
     GHC.Num.WordArray
+hidden-modules:       GHC.Num.Backend.GMP
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-bignum-1.1
+extra-libraries:      gmp
+include-dirs:
 depends:              ghc-prim-0.7.0
 haddock-interfaces:
 haddock-html:
@@ -1693,7 +1696,7 @@ maintainer:      glasgow-haskell-users@haskell.org
 exposed:         True
 library-dirs:
 hs-libraries:    HSrts
-extra-libraries: m rt dl ffi numa
+extra-libraries: m rt dl ffi
 include-dirs:
 includes:        Stg.h
 ld-options:
