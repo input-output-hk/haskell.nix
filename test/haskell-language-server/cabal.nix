@@ -13,5 +13,5 @@ in recurseIntoAttrs {
   build = project.getComponent "haskell-language-server:exe:haskell-language-server";
 
   # hls does not need to be cross compiled.
-  meta.disabled = stdenv.hostPlatform != stdenv.buildPlatform || __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944"];
+  meta.disabled = stdenv.hostPlatform != stdenv.buildPlatform || __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc96020230302"];
 }
