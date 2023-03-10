@@ -69,7 +69,7 @@ let
       libiserv     = "libraries/libiserv";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
-      Cabal        = "libraries/Cabal";
+      Cabal        = "libraries/Cabal/Cabal";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
       ghc          = "compiler";
       ghc-boot     = "libraries/ghc-boot";
