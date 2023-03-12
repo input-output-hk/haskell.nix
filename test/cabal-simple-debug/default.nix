@@ -10,6 +10,8 @@ let
     cabalProject = ''
       packages: .
       allow-newer: aeson:*
+    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302"]) ''
+      allow-newer: *:base, *:ghc-prim, *:template-haskell
     '';
   };
 

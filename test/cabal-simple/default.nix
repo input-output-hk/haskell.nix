@@ -20,7 +20,7 @@ let
       packages: .
       allow-newer: aeson:*
     '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302"]) ''
-      allow-newer: aeson:*, *:base, *:ghc-prim, *:template-haskell
+      allow-newer: *:base, *:ghc-prim, *:template-haskell
     '';
   };
 
