@@ -32,7 +32,6 @@ in [
           constraints: Cabal-syntax <0
         '' + lib.optionalString (config.compiler-nix-name == "ghc96020230302" && config.version == "3.8.1.0") ''
           allow-newer: *:base, *:template-haskell
-          constraints: Cabal <3.9, Cabal-syntax <3.9
       '');
       modules = [
         # Version of of cabal-install in hackage is broken for GHC 8.10.1
