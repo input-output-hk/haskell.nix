@@ -72,6 +72,7 @@ let
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.6" > 0) {
       Cabal        = "libraries/Cabal/Cabal";
       Cabal-syntax = "libraries/Cabal/Cabal-syntax";
+      cabal-install = "libraries/Cabal/cabal-install";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
       ghc          = "compiler";
       ghc-boot     = "libraries/ghc-boot";
