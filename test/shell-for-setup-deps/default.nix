@@ -6,6 +6,9 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "shell-for-setup-deps";
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302"]) ''
+      allow-newer: *:base *:ghc-prim, *:template-haskell
+    '';
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
