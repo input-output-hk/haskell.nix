@@ -7,7 +7,7 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-source-repo";
     cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302"]) ''
-      allow-newer: *:base *:ghc-prim, *:template-haskell
+      allow-newer: *:base, *:ghc-prim, *:template-haskell
     '';
   };
   packages = project.hsPkgs;
