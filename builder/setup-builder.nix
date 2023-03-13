@@ -74,7 +74,7 @@ let
       };
 
       outputs = ["out" "configFiles"];
-      phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
+      phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase" "installCheckPhase"];
       buildPhase = ''
         mkdir -p $configFiles
         ${configFiles.script}
@@ -97,6 +97,16 @@ let
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
         runHook postInstall
+      '';
+      doInstallCheck = true;
+      # Our aarch64-linux build sometimes wind up with files full of 0.
+      # This seems similar to an issue we had before that turned out
+      # to be low level disk issue in `cp` itself.
+      # This check might not prevent it, but may prevent invalid results
+      # making it into the store and nic cache (where they can be hard to
+      # remove).
+      installCheckPhase = ''
+        diff ./Setup $out/bin/Setup
       '';
     }
     // (lib.optionalAttrs (cleanSrc'.subDir != "") {
