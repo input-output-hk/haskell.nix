@@ -1,0 +1,30 @@
+From eda28ef51ccf23665a8a4f2fcf4deb2c7df13d26 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Mon, 13 Mar 2023 06:46:15 +0000
+Subject: [PATCH] Use CXX when trying to link a c++ object against a c++
+ library.
+
+Using CC is not guaranteed to have the right C++ semantics during linking.
+---
+ m4/fp_find_cxx_std_lib.m4 | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/m4/fp_find_cxx_std_lib.m4 b/m4/fp_find_cxx_std_lib.m4
+index 09f4524d89c..7ceb2f10e53 100644
+--- a/m4/fp_find_cxx_std_lib.m4
++++ b/m4/fp_find_cxx_std_lib.m4
+@@ -51,9 +51,9 @@ EOF
+         fi
+ 
+         try_libs() {
+-            dnl Try to link a plain object with CC manually
++            dnl Try to link a plain object with CXX manually
+             AC_MSG_CHECKING([for linkage against '${3}'])
+-            if "$CC" -o actest actest.o ${1} 2>/dev/null; then
++            if "$CXX" -o actest actest.o ${1} 2>/dev/null; then
+                 CXX_STD_LIB_LIBS="${3}"
+                 p="`"$CXX" --print-file-name ${2}`"
+                 d="`dirname "$p"`"
+-- 
+GitLab
+
