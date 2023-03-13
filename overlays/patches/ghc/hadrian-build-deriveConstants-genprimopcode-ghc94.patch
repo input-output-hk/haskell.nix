@@ -1,0 +1,25 @@
+diff --git a/hadrian/src/Rules/BinaryDist.hs b/hadrian/src/Rules/BinaryDist.hs
+index 309b7fb392..5d2b382c1e 100644
+--- a/hadrian/src/Rules/BinaryDist.hs
++++ b/hadrian/src/Rules/BinaryDist.hs
+@@ -380,7 +380,7 @@ pkgToWrappers pkg
+   | pkg == runGhc = pure ["runghc", "runhaskell"]
+   -- These are the packages which we want to expose to the user and hence
+   -- there are wrappers installed in the bindist.
+-  | pkg `elem` [hpcBin, haddock, hp2ps, hsc2hs, ghc, ghcPkg]
++  | pkg `elem` [hpcBin, haddock, hp2ps, hsc2hs, ghc, ghcPkg] ++ [ deriveConstants, genprimopcode ]
+     = (:[]) <$> (programName =<< programContext Stage1 pkg)
+   | otherwise = pure []
+ 
+diff --git a/hadrian/src/Settings/Default.hs b/hadrian/src/Settings/Default.hs
+index bdff5ec264..aa34237d35 100644
+--- a/hadrian/src/Settings/Default.hs
++++ b/hadrian/src/Settings/Default.hs
+@@ -144,6 +144,7 @@ stage1Packages = do
+         , xhtml
+         , if winTarget then win32 else unix
+         ]
++      , [ deriveConstants, genprimopcode ]
+       , when (not cross)
+         [ haddock
+         , hpcBin
