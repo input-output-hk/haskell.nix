@@ -1,17 +1,13 @@
-{ stdenv, lib, util, mkPkgSet, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 with util;
 
 let
-  pkgs = import ./pkgs.nix;
-  pkgSet = doExactConfig: mkPkgSet {
-    # generated with:
-    #   cabal new-build
-    #   plan-to-nix -o .
-    pkg-def = pkgs.pkgs;
-    pkg-def-extras = [ pkgs.extras ];
-    modules = pkgs.modules ++ [
+  project = doExactConfig: cabalProject' {
+    inherit compiler-nix-name evalPackages;
+    src = testSrc "with-packages";
+    modules = [
       # overrides to fix the build
       {
         packages.transformers-compat.components.library.doExactConfig = true;
@@ -26,7 +22,7 @@ let
     ];
   };
 
-  packages = doExactConfig: (pkgSet doExactConfig).config.hsPkgs;
+  packages = doExactConfig: (project doExactConfig).hsPkgs;
 
   package = doExactConfig: (packages doExactConfig).test-with-packages;
 
@@ -38,7 +34,6 @@ let
   extraFlags = "";
 
 in recurseIntoAttrs {
-  meta.disabled = compiler-nix-name != "ghc865";
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
   test-shell = addCabalInstall library;
