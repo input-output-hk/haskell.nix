@@ -346,10 +346,10 @@ let
       inherit executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers.drv;
-      shell = stdenv.mkDerivation ({
+      shell = drv.overrideAttrs (attrs: {
         pname = nameOnly + "-shell";
         inherit (package.identifier) version;
-        buildInputs = [shellWrappers.drv];
+        nativeBuildInputs = [shellWrappers.drv] ++ attrs.nativeBuildInputs;
       });
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
       dwarf = self (drvArgs // { enableDWARF = true; });
