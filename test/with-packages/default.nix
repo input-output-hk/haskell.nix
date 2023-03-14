@@ -43,8 +43,8 @@ in recurseIntoAttrs {
 
   run = stdenv.mkDerivation {
     name = "with-packages-test";
-    decLibraryDepends = showDepends (project true).hsPkgs.test-with-packages.components.library;
-    libraryDepends = showDepends (project false).hsPkgs.test-with-packages.components.library;
+    decLibraryDepends = showDepends (project true).pkg-set.config.packages.test-with-packages.components.library;
+    libraryDepends = showDepends (project false).pkg-set.config.packages.test-with-packages.components.library;
 
     src = ./.;
 
