@@ -36,10 +36,10 @@ let
 in recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
-  test-shell = addCabalInstall library;
+  test-shell = addCabalInstall library.shell;
 
   # A variant of test-shell with the component option doExactConfig enabled
-  test-shell-dec = addCabalInstall decLibrary;
+  test-shell-dec = addCabalInstall decLibrary.shell;
 
   run = stdenv.mkDerivation {
     name = "with-packages-test";

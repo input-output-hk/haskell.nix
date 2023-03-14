@@ -346,6 +346,11 @@ let
       inherit executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
       env = shellWrappers.drv;
+      shell = stdenv.mkDerivation ({
+        pname = nameOnly + "-shell";
+        inherit (package.identifier) version;
+        buildInputs = [shellWrappers.drv];
+      });
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
       dwarf = self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
