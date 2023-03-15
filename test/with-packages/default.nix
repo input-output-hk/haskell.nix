@@ -7,6 +7,9 @@ let
   project = doExactConfig: cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "with-packages";
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
+      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    '';
     modules = [
       # overrides to fix the build
       {
