@@ -206,7 +206,7 @@ in {
                 bootPkgs = bootPkgs // {
                   # GHC 8.6.5 and earlier need happy 1.19.11
                   happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc865
                     else final.buildPackages.buildPackages.haskell.compiler.ghc865;
                 };
@@ -228,7 +228,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc881; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc881
                     else final.buildPackages.buildPackages.haskell.compiler.ghc884;
                 };
@@ -249,7 +249,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc882; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc882
                     else final.buildPackages.buildPackages.haskell.compiler.ghc884;
                 };
@@ -270,7 +270,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc883; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc883
                     else final.buildPackages.buildPackages.haskell.compiler.ghc884;
                 };
@@ -312,7 +312,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8101
                     else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
@@ -333,7 +333,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8102
                     else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
@@ -354,7 +354,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8103; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8103
                     else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
@@ -375,7 +375,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8104
                     else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
@@ -396,7 +396,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8105
                     else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
@@ -417,7 +417,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8106; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8106
                     else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
@@ -438,7 +438,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8107; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107
                     else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
@@ -459,7 +459,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc901; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc901
                     else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
@@ -480,7 +480,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc902; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc902
                     else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
@@ -733,7 +733,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230302; };
 
                 bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc96020230302
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -756,7 +756,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc961; };
 
                 bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.buildPlatform != final.targetPlatform
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc961
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
