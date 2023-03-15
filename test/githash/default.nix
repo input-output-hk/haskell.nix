@@ -19,7 +19,7 @@ let
     modules = (optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {
       packages.githash-test.src =
         rec {
-          origSrc = runCommand "githash-test-src" { nativeBuildInputs = [ git ]; } ''
+          origSrc = evalPackages.runCommand "githash-test-src" { nativeBuildInputs = [ evalPackages.gitReallyMinimal ]; } ''
             mkdir -p $out/test/githash
             cd $out
             git init
