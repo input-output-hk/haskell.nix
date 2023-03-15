@@ -23,7 +23,14 @@ in rec {
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
-      stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
+      stack = tool compiler-nix-name "stack" {
+        inherit evalPackages;
+        version =
+          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0
+            then "2.9.1"
+            else "2.9.3"; # Don't use "latest" here. A deprecated stack 9.9.9 is in hackage to require an explicit versions to be picked.
+      };
+    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc96020230302" "ghc961"]) {
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;
         version = {
@@ -40,8 +47,6 @@ in rec {
             "ghc8107" = "3.4.1";
           }.${compiler-nix-name} or "latest";
       };
-    } // pkgs.lib.optionalAttrs (!__elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944"]) {
-      stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
       hls-latest = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         version =
