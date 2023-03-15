@@ -49,7 +49,11 @@ let
   defaultSetupSrc = if stdenv.hostPlatform.isGhcjs then ./Setup.ghcjs.hs else ./Setup.hs;
 
   setup = if package.buildType == "Simple"
-    then ghc.defaultSetupFor package.identifier.name
+    then
+      # Don't try to build default setup with DWARF enabled
+      let defaultSetup = ghc.defaultSetupFor package.identifier.name // {
+        dwarf = defaultSetup;
+      }; in defaultSetup
     else setup-builder ({
       component = components.setup // {
         depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;

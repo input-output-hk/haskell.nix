@@ -17,57 +17,62 @@
 # requests and materialize it so that the real GHC is only needed
 # when `checkMaterialization` is set.
 { pkgs, runCommand }:
-materialized-dir: ghc:
+materialized-dir:
 let
   inherit (pkgs.haskell-nix) checkMaterialization;
-in ghc // {
-  dummy-ghc-data =
-    let
-      materialized = materialized-dir + "/dummy-ghc/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}"
-        + pkgs.lib.optionalString (builtins.compareVersions ghc.version "8.10" < 0 && ghc.targetPrefix == "" && builtins.compareVersions pkgs.lib.version "22.05" < 0) "-old";
-    in pkgs.haskell-nix.materialize ({
-      sha256 = null;
-      sha256Arg = "sha256";
-      materialized = if __pathExists materialized
-        then materialized
-        else __trace "WARNING: No materialized dummy-ghc-data.  mkdir ${toString materialized}"
-          null;
-      reasonNotSafe = null;
-    } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
-      inherit checkMaterialization;
-    }) (
-  runCommand ("dummy-data-" + ghc.name) {
-    nativeBuildInputs = [ ghc ];
-  } ''
-    mkdir -p $out/ghc
-    mkdir -p $out/ghc-pkg
-    ${ghc.targetPrefix}ghc --version > $out/ghc/version
-    ${ghc.targetPrefix}ghc --numeric-version > $out/ghc/numeric-version
-    ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
-    ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
-    ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
-    ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
-      ${ghc.targetPrefix}ghc --numeric-ghc-version > $out/ghc/numeric-ghc-version
-      ${ghc.targetPrefix}ghc --numeric-ghcjs-version > $out/ghc/numeric-ghcjs-version
-      ${ghc.targetPrefix}ghc-pkg --numeric-ghcjs-version > $out/ghc-pkg/numeric-ghcjs-version
-    ''}
-    # The order of the `ghc-pkg dump` output seems to be non
-    # deterministic so we need to sort it so that it is always
-    # the same.
-    # Sort the output by spliting it on the --- separator line,
-    # sorting it, adding the --- separators back and removing the
-    # last line (the trailing ---)
-    ${ghc.targetPrefix}ghc-pkg dump --global -v0 \
-      | grep -v /nix/store \
-      | grep -v '^abi:' \
-      | tr '\n' '\r' \
-      | sed -e 's/\r\r*/\r/g' \
-      | sed -e 's/\r$//g' \
-      | sed -e 's/\r---\r/\n/g' \
-      | sort \
-      | sed -e 's/$/\r---/g' \
-      | tr '\r' '\n' \
-      | sed -e '$ d' \
-        > $out/ghc-pkg/dump-global
-  '');
-}
+  makeDummyGhcData = ghc: ghc // {
+    dummy-ghc-data =
+      let
+        materialized = materialized-dir + "/dummy-ghc/${ghc.targetPrefix}${ghc.name}-${pkgs.stdenv.buildPlatform.system}"
+          + pkgs.lib.optionalString (builtins.compareVersions ghc.version "8.10" < 0 && ghc.targetPrefix == "" && builtins.compareVersions pkgs.lib.version "22.05" < 0) "-old";
+      in pkgs.haskell-nix.materialize ({
+        sha256 = null;
+        sha256Arg = "sha256";
+        materialized = if __pathExists materialized
+          then materialized
+          else __trace "WARNING: No materialized dummy-ghc-data.  mkdir ${toString materialized}"
+            null;
+        reasonNotSafe = null;
+      } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
+        inherit checkMaterialization;
+      }) (
+    runCommand ("dummy-data-" + ghc.name) {
+      nativeBuildInputs = [ ghc ];
+    } ''
+      mkdir -p $out/ghc
+      mkdir -p $out/ghc-pkg
+      ${ghc.targetPrefix}ghc --version > $out/ghc/version
+      ${ghc.targetPrefix}ghc --numeric-version > $out/ghc/numeric-version
+      ${ghc.targetPrefix}ghc --info | grep -v /nix/store > $out/ghc/info
+      ${ghc.targetPrefix}ghc --supported-languages > $out/ghc/supported-languages
+      ${ghc.targetPrefix}ghc-pkg --version > $out/ghc-pkg/version
+      ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
+        ${ghc.targetPrefix}ghc --numeric-ghc-version > $out/ghc/numeric-ghc-version
+        ${ghc.targetPrefix}ghc --numeric-ghcjs-version > $out/ghc/numeric-ghcjs-version
+        ${ghc.targetPrefix}ghc-pkg --numeric-ghcjs-version > $out/ghc-pkg/numeric-ghcjs-version
+      ''}
+      # The order of the `ghc-pkg dump` output seems to be non
+      # deterministic so we need to sort it so that it is always
+      # the same.
+      # Sort the output by spliting it on the --- separator line,
+      # sorting it, adding the --- separators back and removing the
+      # last line (the trailing ---)
+      ${ghc.targetPrefix}ghc-pkg dump --global -v0 \
+        | grep -v /nix/store \
+        | grep -v '^abi:' \
+        | tr '\n' '\r' \
+        | sed -e 's/\r\r*/\r/g' \
+        | sed -e 's/\r$//g' \
+        | sed -e 's/\r---\r/\n/g' \
+        | sort \
+        | sed -e 's/$/\r---/g' \
+        | tr '\r' '\n' \
+        | sed -e '$ d' \
+          > $out/ghc-pkg/dump-global
+    '');
+  } // pkgs.lib.optionalAttrs (ghc ? dwarf) {
+    dwarf = makeDummyGhcData ghc.dwarf;
+  } // pkgs.lib.optionalAttrs (ghc ? smallAddressSpace) {
+    smallAddressSpace = makeDummyGhcData ghc.smallAddressSpace;
+  };
+in makeDummyGhcData

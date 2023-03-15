@@ -566,7 +566,7 @@ in {
   };
 
   makeCompilerDeps = import ./make-compiler-deps.nix {
-    inherit (pkgs.buildPackages.buildPackages) runCommand;
+    inherit (pkgs.buildPackages.buildPackages) lib runCommand;
   };
 
   makeDummyGhcData = import ./make-dummy-ghc-data.nix {
