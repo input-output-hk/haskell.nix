@@ -163,6 +163,29 @@
           ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
         in stripAttrsForHydra (filterDerivations ci);
 
+      requiredJobs =
+        let
+          inherit (legacyPackages) lib;
+          names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
+              (builtins.attrNames x);
+        in
+          builtins.listToAttrs (
+              lib.concatMap (nixpkgsVer:
+                let nixpkgsJobs = allJobs.${nixpkgsVer};
+                in lib.concatMap (compiler-nix-name:
+                  let ghcJobs = nixpkgsJobs.${compiler-nix-name};
+                  in (
+                    builtins.map (crossPlatform: {
+                      name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                      value = legacyPackages.releaseTools.aggregate {
+                        name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                        meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
+                        constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${crossPlatform};
+                      };
+                   }) (names ghcJobs))
+                ) (names nixpkgsJobs)
+              ) (names allJobs));
+
       ciJobs = allJobs;
 
       hydraJobs = ciJobs;
