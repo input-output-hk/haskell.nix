@@ -177,13 +177,13 @@ let
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-        "--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
-    ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-    ] ++ lib.optionals (!enableIntegerSimple) [
+    ] ++ lib.optionals (!targetPlatform.isGhcjs) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
+    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
+    ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
     ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
         "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
-    ] ++ lib.optionals (targetPlatform != hostPlatform) [
+    ] ++ lib.optionals (targetPlatform != hostPlatform && !targetPlatform.isGhcjs) [
         "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--enable-bootstrap-with-devel-snapshot"
@@ -201,9 +201,9 @@ let
     ];
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional enableTerminfo [ targetPackages.ncurses targetPackages.ncurses.dev ]
-    ++ [targetLibffi]
-    ++ lib.optional (!enableIntegerSimple) gmp
+  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs) [ targetPackages.ncurses targetPackages.ncurses.dev ]
+    ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
+    ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
     ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
     # Even with terminfo disabled some older ghc cross arm and windows compilers do not build unless `ncurses` is found and they seem to want the buildPlatform version
@@ -211,8 +211,10 @@ let
     ++ lib.optional enableDWARF (lib.getLib elfutils);
 
   toolsForTarget =
-    if hostPlatform == buildPlatform then
-      [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
+    if targetPlatform.isGhcjs
+      then []
+    else if hostPlatform == buildPlatform
+      then [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
     else assert targetPlatform == hostPlatform; # build != host == target
       [ stdenv.cc ] ++ lib.optional useLLVM buildLlvmPackages.llvm;
 
@@ -293,7 +295,7 @@ stdenv.mkDerivation (rec {
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
-    + ''
+    + lib.optionalString (!targetPlatform.isGhcjs) (''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
     ''
@@ -306,7 +308,7 @@ stdenv.mkDerivation (rec {
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
-    '' + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
+    '') + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
         export LD="${targetCC.bintools}/bin/ld.gold"
@@ -376,8 +378,8 @@ stdenv.mkDerivation (rec {
 
   buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
-  depsTargetTarget = map lib.getDev (libDeps targetPlatform);
-  depsTargetTargetPropagated = map (lib.getOutput "out") (libDeps targetPlatform);
+  depsTargetTarget = lib.optionals (!targetPlatform.isGhcjs) (map lib.getDev (libDeps targetPlatform));
+  depsTargetTargetPropagated = lib.optionals (!targetPlatform.isGhcjs) (map (lib.getOutput "out") (libDeps targetPlatform));
 
   # required, because otherwise all symbols from HSffi.o are stripped, and
   # that in turn causes GHCi to abort
@@ -415,7 +417,7 @@ stdenv.mkDerivation (rec {
       # The ghcprog fixup is for musl (where runhaskell script just needs to point to the correct
       # ghc program to work).
       sed -i \
-        -e '2i export PATH="$PATH:${lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' \
+        -e '2i export PATH="$PATH:${lib.makeBinPath (lib.optionals (!targetPlatform.isGhcjs) [ targetPackages.stdenv.cc.bintools coreutils ])}"' \
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
