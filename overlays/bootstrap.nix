@@ -206,6 +206,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/libc-memory-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
                 ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-weak-symbols-2.patch
+                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && final.stdenv.targetPlatform.isDarwin && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10.7-rts-aarch64-darwin.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10-android.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10.7-android-bionic-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10.7-bionic-libc.patch
