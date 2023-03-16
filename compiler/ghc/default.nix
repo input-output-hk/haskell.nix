@@ -212,7 +212,7 @@ let
 
   toolsForTarget =
     if targetPlatform.isGhcjs
-      then []
+      then [ buildPackages.emscripten ]
     else if hostPlatform == buildPlatform
       then [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
     else assert targetPlatform == hostPlatform; # build != host == target
@@ -295,12 +295,12 @@ stdenv.mkDerivation (rec {
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
-    + lib.optionalString (!targetPlatform.isGhcjs) (''
+    + ''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
     ''
     # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
-    + ''
+    + lib.optionalString (!targetPlatform.isGhcjs) ''
         export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
@@ -308,7 +308,7 @@ stdenv.mkDerivation (rec {
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
-    '') + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
+    '' + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
         export LD="${targetCC.bintools}/bin/ld.gold"
