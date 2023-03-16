@@ -296,6 +296,7 @@ stdenv.mkDerivation (rec {
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
+        export EM_CACHE=$(mktemp -d)
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
