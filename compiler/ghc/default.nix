@@ -20,7 +20,7 @@ let self =
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
-, useLLVM ? !stdenv.targetPlatform.isx86
+, useLLVM ? !stdenv.targetPlatform.isx86 && !stdenv.targetPlatform.isGhcjs
 , # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
@@ -253,6 +253,7 @@ let
         "default"
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
+          + lib.optionalString targetPlatform.isGhcjs "+native_bignum+no_profiled_libs"
       } --docs=no-sphinx -j --verbose";
 
   # When installation is done by copying the stage1 output the directory layout
