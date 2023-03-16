@@ -198,7 +198,7 @@ let
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
-    ];
+    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs"; # TODO use 
 
   # Splicer will pull out correct variations
   libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs) [ targetPackages.ncurses targetPackages.ncurses.dev ]
@@ -292,15 +292,19 @@ stdenv.mkDerivation (rec {
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
+    '' + lib.optionalString (targetPlatform.isGhcjs) ''
+        export CC="${targetCC}/bin/emcc"
+        export CXX="${targetCC}/bin/em++"
+        export LD="${targetCC}/bin/emcc"
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
-    + ''
+    + lib.optionalString (!targetPlatform.isGhcjs) (''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
     ''
     # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
-    + lib.optionalString (!targetPlatform.isGhcjs) ''
+    + ''
         export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
@@ -308,7 +312,7 @@ stdenv.mkDerivation (rec {
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
         export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
-    '' + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
+    '') + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
         export LD="${targetCC.bintools}/bin/ld.gold"
@@ -355,7 +359,7 @@ stdenv.mkDerivation (rec {
         ./boot
     '';
 
-  configurePlatforms = [ "build" "host" "target" ];
+  configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
 
   enableParallelBuilding = true;
   postPatch = "patchShebangs .";
