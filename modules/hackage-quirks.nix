@@ -77,9 +77,11 @@ in [
   # https://github.com/commercialhaskell/stack/issues/5963
   ({config, lib, pkgs, ...}:
     { _file = "haskell.nix/overlays/hackage-quirks.nix#stack"; } //
-    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.9.1" <= 0) {
+    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.9.3" <= 0) {
       cabalProjectLocal = ''
-        constraints: rio-prettyprint <0.1.4.0
+        constraints: unix-compat <0.7${
+          lib.optionalString (builtins.compareVersions config.version "2.9.1" <= 0)
+            " rio-prettyprint <0.1.4.0"}
       '';
     }
   )
