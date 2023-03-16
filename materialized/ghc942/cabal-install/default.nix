@@ -79,7 +79,6 @@
         resolv.revision = import ./cabal-files/resolv.nix;
         pretty.revision = (((hackage.pretty)."1.1.3.6").revisions).default;
         hashable.revision = import ./cabal-files/hashable.nix;
-        hashable.flags.containers = true;
         hashable.flags.random-initial-seed = false;
         hashable.flags.integer-gmp = true;
         cryptohash-sha256.revision = import ./cabal-files/cryptohash-sha256.nix;

@@ -140,6 +140,7 @@ final: prev: {
             , modules ? []
             , extra-hackages ? []
             , compiler-nix-name ? null
+            , compilerSelection ? p: p.haskell-nix.compiler
             }:
 
             let
@@ -149,8 +150,8 @@ final: prev: {
                     else ((plan-pkgs.extras hackage).compiler or (plan-pkgs.pkgs hackage).compiler).nix-name;
                 pkg-def = excludeBootPackages compiler-nix-name plan-pkgs.pkgs;
                 patchesModule = ghcHackagePatches.${compiler-nix-name'} or {};
-                package.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${compiler-nix-name'}.version;
-                plan.compiler-nix-name.version = final.buildPackages.haskell-nix.compiler.${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
+                package.compiler-nix-name.version = (compilerSelection final.buildPackages).${compiler-nix-name'}.version;
+                plan.compiler-nix-name.version = (compilerSelection final.buildPackages).${(plan-pkgs.pkgs hackage).compiler.nix-name}.version;
                 withMsg = final.lib.assertMsg;
             in
               # Check that the GHC version of the selected compiler matches the one of the plan
@@ -445,7 +446,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2022-11-06T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
+        internalHackageIndexState = "2023-02-19T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -649,7 +650,7 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, evalPackages, inputMap, ... }@args:
+            { src, compiler-nix-name, compilerSelection, evalPackages, inputMap, ... }@args:
             let
               callProjectResults = callCabalProjectToNix args;
               plan-pkgs = importAndFilterProject {
@@ -668,13 +669,18 @@ final: prev: {
                   };
                 }
                 else mkCabalProjectPkgSet
-                { inherit compiler-nix-name plan-pkgs;
+                { inherit compiler-nix-name compilerSelection plan-pkgs;
                   pkg-def-extras = args.pkg-def-extras or [];
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; } ]
                     ++ (args.modules or [])
-                    ++ final.lib.optional (args.ghcOverride != null || args.ghc != null)
-                        { ghc.package = if args.ghcOverride != null then args.ghcOverride else args.ghc; }
                     ++ [ {
+                      ghc.package =
+                        if args.ghcOverride != null
+                          then args.ghcOverride
+                        else if args.ghc != null
+                          then args.ghc
+                        else
+                          final.lib.mkDefault (args.compilerSelection final.buildPackages).${compiler-nix-name};
                       compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
                       inputMap = final.lib.mkDefault inputMap;
@@ -1100,7 +1106,7 @@ final: prev: {
             inherit (final.buildPackages) nix;
           } // final.lib.optionalAttrs (final.stdenv.hostPlatform.libc == "glibc") {
             inherit (final) glibcLocales;
-          } // final.lib.optionalAttrs (ifdLevel > 0) {
+          } // final.lib.optionalAttrs (ifdLevel > 0) ({
             # Things that require one IFD to build (the inputs should be in level 0)
             boot-alex = final.buildPackages.haskell-nix.bootstrap.packages.alex;
             boot-happy = final.buildPackages.haskell-nix.bootstrap.packages.happy;
@@ -1108,9 +1114,10 @@ final: prev: {
             ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name};
             ghc-boot-packages-nix = final.recurseIntoAttrs
               final.ghc-boot-packages-nix.${compiler-nix-name};
-            ghc-extra-projects-nix =
-              final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
-          } // final.lib.optionalAttrs (ifdLevel > 1) {
+            } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0) {
+              # Only needed for older GHC versions (see iserv-proxy-exes)
+              ghc-extra-projects-nix = final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
+          }) // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             # The internal versions of nix-tools and cabal-install are occasionally used,
             # but definitely need to be cached in case they are used.

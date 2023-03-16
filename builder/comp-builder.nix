@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs }@defaults:
+{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -81,7 +81,7 @@ let self =
 , enableTSanRTS ? false
 
 # LLVM
-, useLLVM ? ghc.useLLVM
+, useLLVM ? ghc.useLLVM or false
 , smallAddressSpace ? false
 
 }@drvArgs:
@@ -161,7 +161,7 @@ let
       if configureAllComponents
         then ["--enable-tests" "--enable-benchmarks"]
         else ["${haskellLib.componentTarget componentId}"]
-    ) ++ [ "$(cat ${configFiles}/configure-flags)"
+    ) ++ [ "$(cat $configFiles/configure-flags)"
     ] ++ commonConfigureFlags);
 
   # From nixpkgs 20.09, the pkg-config exe has a prefix matching the ghc one
@@ -343,9 +343,14 @@ let
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
-      inherit configFiles executableToolDepends exeName enableDWARF;
+      inherit executableToolDepends exeName enableDWARF;
       exePath = drv + "/bin/${exeName}";
-      env = shellWrappers;
+      env = shellWrappers.drv;
+      shell = drv.overrideAttrs (attrs: {
+        pname = nameOnly + "-shell";
+        inherit (package.identifier) version;
+        nativeBuildInputs = [shellWrappers.drv] ++ attrs.nativeBuildInputs;
+      });
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
       dwarf = self (drvArgs // { enableDWARF = true; });
     } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
@@ -377,19 +382,22 @@ let
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
       ++ map pkgs.lib.getDev (builtins.concatLists pkgconfig)
+      # These only need to be propagated for library components (otherwise they
+      # will be in `buildInputs`)
+      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps
       ++ lib.optionals (stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs
-        ++ map haskellLib.dependToLib component.depends);
+        (lib.flatten component.libs);
 
-    buildInputs = lib.optionals (!stdenv.hostPlatform.isWindows)
-      (lib.flatten component.libs
-      ++ map haskellLib.dependToLib component.depends);
+    buildInputs =
+      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps
+      ++ lib.optionals (!stdenv.hostPlatform.isWindows)
+        (lib.flatten component.libs);
 
     nativeBuildInputs =
-      [shellWrappers buildPackages.removeReferencesTo]
+      [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends;
 
-    outputs = ["out" ]
+    outputs = ["out" "configFiles" "ghc"]
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source")
       ++ (lib.optional writeHieFiles "hie");
@@ -409,6 +417,18 @@ let
       '') + commonAttrs.prePatch;
 
     configurePhase = ''
+      mkdir -p $configFiles
+      mkdir -p $ghc
+      wrappedGhc=$ghc
+      ${configFiles.script}
+      ${shellWrappers.script}
+    ''
+    # Remove any ghc docs pages so nixpkgs does not include them in $out
+    # (this can result in unwanted dependencies on GHC)
+    + ''
+      rm -rf $wrappedGhc/share/doc $wrappedGhc/share/man $wrappedGhc/share/devhelp/books
+      PATH=$wrappedGhc/bin:$PATH
+
       runHook preConfigure
       echo Configure flags:
       printf "%q " ${finalConfigureFlags}
@@ -489,7 +509,7 @@ let
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
         $SETUP_HS register --gen-pkg-config=${name}.conf
         ${ghc.targetPrefix}ghc-pkg -v0 init $out/package.conf.d
-        ${ghc.targetPrefix}ghc-pkg -v0 --package-db ${configFiles}/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
+        ${ghc.targetPrefix}ghc-pkg -v0 --package-db $configFiles/${configFiles.packageCfgDir} -f $out/package.conf.d register ${name}.conf
 
         mkdir -p $out/exactDep
         touch $out/exactDep/configure-flags
@@ -521,6 +541,7 @@ let
               if id=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" id --simple-output); then
                 name=$(${target-pkg-and-db} field "z-${package.identifier.name}-z-*" name --simple-output)
                 echo "--dependency=''${name#z-${package.identifier.name}-z-}=$id" >> $out/exactDep/configure-flags
+                echo "package-id $id" >> $out/envDep
                 ''
                 # Allow `package-name:sublib-name` to work in `build-depends`
                 # by adding the same `--dependency` again, but with the package
@@ -616,7 +637,7 @@ let
     '';
 
     shellHook = ''
-      export PATH="${shellWrappers}/bin:$PATH"
+      export PATH=$ghc/bin:$PATH
       ${shellHookApplied}
     '';
   }

@@ -68,7 +68,7 @@
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
-    let compiler = "ghc926";
+    let compiler = "ghc927";
       config = import ./config.nix;
 
       traceNames = prefix: builtins.mapAttrs (n: v:
@@ -163,13 +163,13 @@
           ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
         in stripAttrsForHydra (filterDerivations ci);
 
-      ciJobs =
+      requiredJobs =
         let
           inherit (legacyPackages) lib;
           names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
               (builtins.attrNames x);
-          requiredJobs =
-            builtins.listToAttrs (
+        in
+          builtins.listToAttrs (
               lib.concatMap (nixpkgsVer:
                 let nixpkgsJobs = allJobs.${nixpkgsVer};
                 in lib.concatMap (compiler-nix-name:
@@ -185,9 +185,8 @@
                    }) (names ghcJobs))
                 ) (names nixpkgsJobs)
               ) (names allJobs));
-        in lib.optionalAttrs (system == "x86_64-linux") {
-          latest = allJobs.unstable.ghc8107.native or {};
-        } // requiredJobs;
+
+      ciJobs = allJobs;
 
       hydraJobs = ciJobs;
 

@@ -225,7 +225,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: "Check that evaluation of hydra jobs works without using remote builders"
-        run: nix-instantiate release.nix -A x86_64-darwin.required-unstable-ghc8107-native --show-trace --builders ''
+        run: nix path-info --derivation .#requiredJobs.x86_64-darwin.required-unstable-ghc8107-native --show-trace --builders ''
 
   hix-cabal:
     runs-on: [self-hosted, linux]

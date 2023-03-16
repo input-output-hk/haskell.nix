@@ -47,22 +47,19 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2205") {
-        ghc865 = false;
-        ghc8107 = false;
-      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2211") {
-        ghc865 = false;
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2211") {
         ghc8107 = false;
         ghc902 = false;
-        ghc926 = false;
+        ghc927 = false;
         ghc944 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-        ghc865 = false;
-        ghc884 = false; # Native version is used to boot 9.0.1
+        ghc884 = false;
         ghc8107 = true;
         ghc902 = false;
-        ghc926 = true;
+        ghc927 = true;
         ghc944 = true;
+        ghc96020230302 = true;
+        ghc961 = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
@@ -73,10 +70,10 @@
        || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"]))) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc944"])
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc944" "ghc961"])
        || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc944" "ghc961"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;

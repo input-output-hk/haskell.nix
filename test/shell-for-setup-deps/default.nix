@@ -6,6 +6,9 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "shell-for-setup-deps";
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
+      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    '';
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -14,7 +17,7 @@ let
   };
 
   env = project.shellFor {
-    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926"];
+    withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"];
   };
 
 in recurseIntoAttrs ({

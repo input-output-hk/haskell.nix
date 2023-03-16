@@ -19,8 +19,6 @@ let
 
   fullName = "${name}-setup";
 
-  includeGhcPackage = lib.any (p: p.identifier.name == "ghc") component.depends;
-
   configFiles = makeSetupConfigFiles {
     inherit (package) identifier;
     inherit fullName flags component enableDWARF nonReinstallablePkgs;
@@ -53,7 +51,9 @@ let
       src = cleanSrc'.root;
       buildInputs = component.libs
         ++ component.frameworks
-        ++ builtins.concatLists component.pkgconfig;
+        ++ builtins.concatLists component.pkgconfig
+        ++ configFiles.libDeps
+        ++ [ghc]; # Needs to be a build input so that the boot libraries are included
       nativeBuildInputs = [ghc] ++ executableToolDepends;
 
       passthru = {
@@ -62,7 +62,6 @@ let
         srcSubDir = cleanSrc'.subDir;
         srcSubDirPath = cleanSrc'.root + cleanSrc'.subDir;
         cleanSrc = cleanSrc';
-        inherit configFiles;
         dwarf = self (drvArgs // { enableDWARF = true; });
         smallAddressSpace = self (drvArgs // { smallAddressSpace = true; });
       };
@@ -74,8 +73,11 @@ let
         platforms = if component.platforms == null then lib.platforms.all else component.platforms;
       };
 
-      phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase"];
+      outputs = ["out" "configFiles"];
+      phases = ["unpackPhase" "patchPhase" "buildPhase" "installPhase" "installCheckPhase"];
       buildPhase = ''
+        mkdir -p $configFiles
+        ${configFiles.script}
         runHook preBuild
         if [[ ! -f ./Setup.hs  && ! -f ./Setup.lhs ]]; then
           cat ${defaultSetupSrc} > Setup.hs
@@ -83,8 +85,7 @@ let
         for f in Setup.hs Setup.lhs; do
           if [ -f $f ]; then
             echo Compiling package $f
-            ghc $f -threaded ${if includeGhcPackage then "-package ghc " else ""
-                }-package-db ${configFiles}/${configFiles.packageCfgDir} --make -o ./Setup
+            ghc $f -threaded -package-env $configFiles/ghc-environment --make -o ./Setup
           fi
         done
         [ -f ./Setup ] || (echo Failed to build Setup && exit 1)
@@ -96,6 +97,16 @@ let
         mkdir -p $out/bin
         install ./Setup $out/bin/Setup
         runHook postInstall
+      '';
+      doInstallCheck = true;
+      # Our aarch64-linux build sometimes wind up with files full of 0.
+      # This seems similar to an issue we had before that turned out
+      # to be low level disk issue in `cp` itself.
+      # This check might not prevent it, but may prevent invalid results
+      # making it into the store and nic cache (where they can be hard to
+      # remove).
+      installCheckPhase = ''
+        diff ./Setup $out/bin/Setup
       '';
     }
     // (lib.optionalAttrs (cleanSrc'.subDir != "") {

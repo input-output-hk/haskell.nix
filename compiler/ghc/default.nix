@@ -17,8 +17,6 @@ let self =
 
 , ncurses # TODO remove this once the cross compilers all work without
 
-, installDeps
-
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
@@ -88,9 +86,7 @@ assert enableNativeBignum -> !enableIntegerSimple;
 assert enableIntegerSimple -> !enableNativeBignum;
 
 let
-  src = if src-spec ? file
-    then src-spec.file
-    else fetchurl { inherit (src-spec) url sha256; };
+  src = src-spec.file or fetchurl { inherit (src-spec) url sha256; };
 
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
@@ -229,8 +225,15 @@ let
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
+      compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
-      materialized = ../../materialized/ghc8107/hadrian;
+      # Verions of hadrian that comes with 9.6 depends on `time`
+      materialized =
+        if builtins.compareVersions ghc-version "9.4" < 0
+          then ../../materialized/ghc8107/hadrian-ghc92
+        else if builtins.compareVersions ghc-version "9.6" < 0
+          then ../../materialized/ghc8107/hadrian-ghc94
+        else ../../materialized/ghc8107/hadrian-ghc96;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = buildPackages.srcOnly {
           name = "hadrian";
@@ -288,11 +291,15 @@ stdenv.mkDerivation (rec {
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
-        # GHC is a bit confused on its cross terminology, as these would normally be
-        # the *host* tools.
+    ''
+    # GHC is a bit confused on its cross terminology, as these would normally be
+    # the *host* tools.
+    + ''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
-        # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
+    ''
+    # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
+    + ''
         export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
@@ -488,7 +495,6 @@ stdenv.mkDerivation (rec {
             fi
         ''
     }
-    ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
     if ! "$out/bin/${targetPrefix}ghc" --version; then
@@ -510,11 +516,7 @@ stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir;
-
-    inherit llvmPackages;
-    inherit enableShared;
-    inherit useLLVM;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
@@ -552,6 +554,17 @@ stdenv.mkDerivation (rec {
       phases = [ "unpackPhase" "patchPhase" ]
             ++ lib.optional (ghc-patches != []) "autoreconfPhase"
             ++ [ "configurePhase" "installPhase"];
+     } // lib.optionalAttrs useHadrian {
+      postConfigure = ''
+        for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
+          ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
+        done
+      '' + lib.optionalString stdenv.isDarwin ''
+        substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+          --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        find . -name 'system*.conf*'
+        cat mk/system-cxx-std-lib-1.0.conf
+      '';
     });
 
     # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)
