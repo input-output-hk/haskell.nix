@@ -121,8 +121,10 @@ let
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = lib.optionalString
-    (targetPlatform != hostPlatform)
-    "${targetPlatform.config}-";
+    (targetPlatform != hostPlatform) (
+      if useHadrian && targetPlatform.isGhcjs
+        then "javascript-unknown-ghcjs-"
+        else "${targetPlatform.config}-");
 
   buildMK = ''
     BuildFlavour = ${ghcFlavour}
