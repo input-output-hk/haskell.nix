@@ -265,24 +265,6 @@ let
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
   packageConfDir = "${libDir}/package.conf.d";
 
-in
-stdenv.mkDerivation (rec {
-  version = ghc-version;
-  name = "${targetPrefix}ghc-${version}";
-
-  inherit src configureFlags;
-  patches = ghc-patches;
-
-  # configure was run by configured-src already.
-  phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
-            ++ [ "configurePhase" "buildPhase"
-             "checkPhase" "installPhase"
-             "fixupPhase"
-             "installCheckPhase"
-             "distPhase"
-             ];
-
   # This work around comes from nixpkgs/pkgs/development/compilers/ghc
   #
   # Sometimes we have to dispatch between the bintools wrapper and the unwrapped
@@ -302,6 +284,24 @@ stdenv.mkDerivation (rec {
       then targetCC.bintools
       else targetCC.bintools.bintools;
   };
+
+in
+stdenv.mkDerivation (rec {
+  version = ghc-version;
+  name = "${targetPrefix}ghc-${version}";
+
+  inherit src configureFlags;
+  patches = ghc-patches;
+
+  # configure was run by configured-src already.
+  phases = [ "unpackPhase" "patchPhase" ]
+            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
+            ++ [ "configurePhase" "buildPhase"
+             "checkPhase" "installPhase"
+             "fixupPhase"
+             "installCheckPhase"
+             "distPhase"
+             ];
 
   # GHC is a bit confused on its cross terminology.
   preConfigure =
