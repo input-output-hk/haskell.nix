@@ -635,6 +635,7 @@ stdenv.mkDerivation (rec {
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
+    ${hadrian}/bin/hadrian ${hadrianArgs} stage1:exe:iserv
   '';
 
   # Hadrian's installation only works for native compilers, and is broken for cross compilers.
