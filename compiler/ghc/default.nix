@@ -250,11 +250,11 @@ let
   # For build flavours and flavour transformers
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
   hadrianArgs = "--flavour=${
-        "default"
+        (if targetPlatform.isGhcjs then "quick" else "default")
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString targetPlatform.isGhcjs "+native_bignum+no_profiled_libs"
-      } --docs=no-sphinx -j --verbose";
+      } --docs=${if targetPlatform.isGhcjs then "none" else "no-sphinx"} -j --verbose";
 
   # When installation is done by copying the stage1 output the directory layout
   # is different.
@@ -639,7 +639,7 @@ stdenv.mkDerivation (rec {
   '';
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
-  '' + lib.optionalString installStage1 ''
+  '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
