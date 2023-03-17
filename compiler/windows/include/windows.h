@@ -7,6 +7,8 @@
 
 typedef unsigned long DWORD;
 typedef void * PVOID;
+typedef PVOID HANDLE;
+typedef void CRITICAL_SECTION;
 
 typedef struct _RTL_CONDITION_VARIABLE { PVOID Ptr; } RTL_CONDITION_VARIABLE;
 typedef RTL_CONDITION_VARIABLE CONDITION_VARIABLE;
