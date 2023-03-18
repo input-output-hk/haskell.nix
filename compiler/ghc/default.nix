@@ -177,6 +177,8 @@ let
     SplitSections = NO
   '' + lib.optionalString (!enableLibraryProfiling) ''
     BUILD_PROF_LIBS = NO
+  '' + lib.optionalString (disableLargeAddressSpace) ''
+    libraries/base_CONFIGURE_OPTS += --configure-option=--with-libcharset=no
   '';
 
   # `--with` flags for libraries needed for RTS linker
@@ -210,7 +212,10 @@ let
         # https://gitlab.haskell.org/ghc/ghc/-/issues/23188
         # https://github.com/haskell/cabal/issues/8882
         "fp_cv_prog_ar_supports_dash_l=no"
-    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs"; # TODO use configurePlatforms once tripple is updated in nixpkgs
+    ] ++ lib.optionals (targetPlatform.isDarwin) [
+        "--without-libcharset"
+    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs" # TODO use configurePlatforms once tripple is updated in nixpkgs
+    ;
 
   # Splicer will pull out correct variations
   libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs) [ targetPackages.ncurses targetPackages.ncurses.dev ]
@@ -426,8 +431,8 @@ stdenv.mkDerivation (rec {
         export NIX_LDFLAGS+=" -rpath $out/lib/${targetPrefix}ghc-${ghc-version}"
     '' + lib.optionalString stdenv.isDarwin ''
         export NIX_LDFLAGS+=" -no_dtrace_dof"
-    '' + 
-    # we really want "+armv7-a,+soft-float,+neon" as features, but llvm will 
+    '' +
+    # we really want "+armv7-a,+soft-float,+neon" as features, but llvm will
     # fail with those :facepalm:
     lib.optionalString targetPlatform.useAndroidPrebuilt ''
         sed -i -e '5i ,("armv7a-unknown-linux-androideabi", ("e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64", "cortex-a8", ""))' llvm-targets
