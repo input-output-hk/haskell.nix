@@ -120,7 +120,8 @@ let
   targetNumactl = targetPackages.numactl or numactl;
 
   # TODO(@Ericson2314) Make unconditional
-  targetPrefix = lib.optionalString isCrossTarget
+  targetPrefix = lib.optionalString
+    (targetPlatform != hostPlatform)
     "${targetPlatform.config}-";
 
   buildMK = ''
@@ -223,7 +224,7 @@ let
   # for musl only; but I'd like to stay far away from the unnecessary
   # bindist logic as we can. It's slow, and buggy, and doesn't provide any
   # value for us.
-  installStage1 = useHadrian && haskell-nix.haskellLib.isCrossTarget;
+  installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
