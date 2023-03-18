@@ -172,6 +172,8 @@ let
     SplitSections = NO
   '' + lib.optionalString (!enableLibraryProfiling) ''
     BUILD_PROF_LIBS = NO
+  '' + lib.optionalString (disableLargeAddressSpace) ''
+    libraries/base_CONFIGURE_OPTS += --configure-option=--with-libcharset=no
   '';
 
   # `--with` flags for libraries needed for RTS linker
@@ -198,6 +200,8 @@ let
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ] ++ lib.optionals (targetPlatform.isDarwin) [
+        "--without-libcharset"
     ];
 
   # Splicer will pull out correct variations
