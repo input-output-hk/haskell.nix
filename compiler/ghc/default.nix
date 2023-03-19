@@ -567,7 +567,7 @@ stdenv.mkDerivation (rec {
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
-      '' + lib.optionalString (!installStage1 && stdenv.targetPlatform.isMusl) ''
+      '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
         substituteInPlace hadrian/cfg/system.config \
           --replace 'cross-compiling       = YES' \
                     'cross-compiling       = NO'
@@ -636,7 +636,7 @@ stdenv.mkDerivation (rec {
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
-  '' + lib.optionalString (!installStage1 && stdenv.targetPlatform.isMusl) ''
+  '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
     substituteInPlace hadrian/cfg/system.config \
       --replace 'cross-compiling       = YES' \
                 'cross-compiling       = NO'
@@ -648,7 +648,7 @@ stdenv.mkDerivation (rec {
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget) ''
-    ${hadrian}/bin/hadrian ${hadrianArgs} stage1:exe:iserv
+    ${hadrian}/bin/hadrian ${hadrianArgs} stage2:exe:iserv
   '';
 
   # Hadrian's installation only works for native compilers, and is broken for cross compilers.
