@@ -649,7 +649,7 @@ stdenv.mkDerivation (rec {
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage2:exe:iserv
-    pushd ${hadrian}/bin
+    pushd _build/stage1/bin
     for exe in *; do
       mv $exe ${targetPrefix}$exe
     done
