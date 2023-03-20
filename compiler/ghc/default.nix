@@ -261,11 +261,11 @@ let
   # When installation is done by copying the stage1 output the directory layout
   # is different.
   rootDir =
-    if (installStage1 && !haskell-nix.haskellLib.isCrossTarget)
+    if installStage1
       then ""
       else "lib/${targetPrefix}ghc-${ghc-version}/";
   libDir =
-    if (installStage1 && !haskell-nix.haskellLib.isCrossTarget)
+    if installStage1
       then "lib"
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
   packageConfDir = "${libDir}/package.conf.d";
