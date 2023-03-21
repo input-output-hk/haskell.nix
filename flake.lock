@@ -187,11 +187,11 @@
     },
     "flake-utils": {
       "locked": {
-        "lastModified": 1679009484,
-        "narHash": "sha256-DK/NWnmuhpPZ19pl+c3tfutDpXo6pMD2/zIIbk8Xpws=",
+        "lastModified": 1679360468,
+        "narHash": "sha256-LGnza3cfXF10Biw3ZTg0u9o9t7s680Ww200t5KkHTh8=",
         "owner": "hamishmack",
         "repo": "flake-utils",
-        "rev": "8a0234caf748d84b75c4db0f9c6a2423e8fe4ea8",
+        "rev": "e1ea268ff47ad475443dbabcd54744b4e5b9d4f5",
         "type": "github"
       },
       "original": {
