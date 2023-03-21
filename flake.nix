@@ -68,9 +68,19 @@
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
-    let compiler = "ghc926";
+    let compiler = "ghc927";
       config = import ./config.nix;
-    in {
+
+      traceNames = prefix: builtins.mapAttrs (n: v:
+        if builtins.isAttrs v
+          then if v ? type && v.type == "derivation"
+            then __trace (prefix + n) v
+            else traceNames (prefix + n + ".") v
+          else v);
+
+      traceHydraJobs = x: x // { inherit (traceNames "" x) hydraJobs; };
+
+    in traceHydraJobs ({
       inherit config;
       overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
@@ -153,13 +163,13 @@
           ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
         in stripAttrsForHydra (filterDerivations ci);
 
-      ciJobs =
+      requiredJobs =
         let
           inherit (legacyPackages) lib;
           names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
               (builtins.attrNames x);
-          requiredJobs =
-            builtins.listToAttrs (
+        in
+          builtins.listToAttrs (
               lib.concatMap (nixpkgsVer:
                 let nixpkgsJobs = allJobs.${nixpkgsVer};
                 in lib.concatMap (compiler-nix-name:
@@ -175,9 +185,8 @@
                    }) (names ghcJobs))
                 ) (names nixpkgsJobs)
               ) (names allJobs));
-        in {
-          latest = allJobs.unstable.ghc8107.native or {};
-        } // requiredJobs;
+
+      ciJobs = allJobs;
 
       hydraJobs = ciJobs;
 
@@ -206,7 +215,7 @@
             "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
             "ghc901"
             "ghc921" "ghc922" "ghc923"]);
-    } // tullia.fromSimple system (import ./tullia.nix));
+    } // tullia.fromSimple system (import ./tullia.nix)));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

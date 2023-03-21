@@ -1,9 +1,9 @@
-{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, pkgconfig, nonReinstallablePkgs, hsPkgs, compiler, inputMap }:
+{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, inputMap }:
 
 let
   # Builds a single component of a package.
   comp-builder = haskellLib.weakCallPackage pkgs ./comp-builder.nix {
-    inherit ghc haskellLib makeConfigFiles haddockBuilder ghcForComponent hsPkgs compiler;
+    inherit ghc haskellLib makeConfigFiles haddockBuilder ghcForComponent hsPkgs compiler nonReinstallablePkgs;
   };
 
   haddockBuilder = haskellLib.weakCallPackage pkgs ./haddock-builder.nix {
@@ -44,7 +44,11 @@ let
 
 
   hoogleLocal = let
-    nixpkgsHoogle = import (pkgs.path + /pkgs/development/haskell-modules/hoogle.nix);
+    # Use hoogle.nix from at least nixpkgs 22.05
+    nixpkgs = if lib.versionAtLeast lib.trivial.release "22.05"
+      then pkgs.path
+      else pkgs.haskell-nix.sources.nixpkgs-2205;
+    nixpkgsHoogle = import (nixpkgs + /pkgs/development/haskell-modules/hoogle.nix);
   in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "ghc8107" "hoogle" {
         inherit evalPackages;
         version = "5.0.18.3";
@@ -59,11 +63,9 @@ let
           else ghc;
         inherit packages hoogle;
       };
-    in if lib.versionAtLeast lib.trivial.release "22.05"
-      then haskellLib.weakCallPackage pkgs nixpkgsHoogle {
-          inherit haskellPackages;
-        } (p: p.packages)
-      else haskellLib.weakCallPackage pkgs nixpkgsHoogle haskellPackages;
+    in haskellLib.weakCallPackage pkgs nixpkgsHoogle {
+      inherit haskellPackages;
+    } (p: p.packages);
 
   # Same as haskellPackages.shellFor in nixpkgs.
   shellFor = haskellLib.weakCallPackage pkgs ./shell-for.nix {

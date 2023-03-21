@@ -647,6 +647,130 @@ depends:              base-4.14.3.0
 haddock-interfaces:
 haddock-html:
 ---
+name:                 ghc
+version:              8.10.7
+visibility:           public
+id:                   ghc-8.10.7
+key:                  ghc-8.10.7
+license:              BSD-3-Clause
+maintainer:           glasgow-haskell-users@haskell.org
+author:               The GHC Team
+homepage:             http://www.haskell.org/ghc/
+synopsis:             The GHC API
+description:
+    GHC's functionality can be useful for more things than just
+    compiling Haskell programs. Important use cases are programs
+    that analyse (and perhaps transform) Haskell code. Others
+    include loading Haskell code dynamically in a GHCi-like manner.
+    For this reason, a lot of GHC's functionality is made available
+    through this package.
+category:             Development
+exposed-modules:
+    Annotations ApiAnnotation Ar AsmCodeGen AsmUtils Avail Bag
+    BasicTypes BinFingerprint BinIface Binary Bitmap BkpSyn BlockId
+    BlockLayout BooleanFormula BufWrite BuildTyCl ByteCodeAsm
+    ByteCodeGen ByteCodeInstr ByteCodeItbls ByteCodeLink ByteCodeTypes
+    CFG CLabel CPrim CSE CallArity Class CliOption ClsInst
+    CmdLineParser Cmm CmmBuildInfoTables CmmCallConv CmmCommonBlockElim
+    CmmContFlowOpt CmmExpr CmmImplementSwitchPlans CmmInfo
+    CmmLayoutStack CmmLex CmmLint CmmLive CmmMachOp CmmMonad CmmNode
+    CmmOpt CmmParse CmmPipeline CmmProcPoint CmmSink CmmSwitch CmmType
+    CmmUtils CoAxiom CodeOutput Coercion ConLike Config Constants
+    Constraint CoreArity CoreFVs CoreLint CoreMap CoreMonad CoreOpt
+    CorePrep CoreSeq CoreStats CoreSubst CoreSyn CoreTidy CoreToStg
+    CoreUnfold CoreUtils CostCentre CostCentreState Coverage Ctype
+    DataCon Debug Debugger Demand Desugar Digraph DmdAnal Dominators
+    DriverBkp DriverMkDepend DriverPhases DriverPipeline DsArrows
+    DsBinds DsCCall DsExpr DsForeign DsGRHSs DsListComp DsMeta DsMonad
+    DsUsage DsUtils Dwarf Dwarf.Constants Dwarf.Types DynFlags
+    DynamicLoading Elf Encoding EnumSet ErrUtils Exception Exitify
+    ExtractDocs FV FamInst FamInstEnv FastFunctions FastMutInt
+    FastString FastStringEnv FieldLabel FileCleanup FileSettings Finder
+    Fingerprint FiniteMap FlagChecker FloatIn FloatOut ForeignCall
+    Format FunDeps GHC GHC.Hs GHC.Hs.Binds GHC.Hs.Decls GHC.Hs.Doc
+    GHC.Hs.Dump GHC.Hs.Expr GHC.Hs.Extension GHC.Hs.ImpExp
+    GHC.Hs.Instances GHC.Hs.Lit GHC.Hs.Pat GHC.Hs.PlaceHolder
+    GHC.Hs.Types GHC.Hs.Utils GHC.HsToCore.PmCheck
+    GHC.HsToCore.PmCheck.Oracle GHC.HsToCore.PmCheck.Ppr
+    GHC.HsToCore.PmCheck.Types GHC.Platform.AArch64 GHC.Platform.ARM
+    GHC.Platform.NoRegs GHC.Platform.PPC GHC.Platform.Regs
+    GHC.Platform.S390X GHC.Platform.SPARC GHC.Platform.X86
+    GHC.Platform.X86_64 GHC.StgToCmm GHC.StgToCmm.ArgRep
+    GHC.StgToCmm.Bind GHC.StgToCmm.CgUtils GHC.StgToCmm.Closure
+    GHC.StgToCmm.DataCon GHC.StgToCmm.Env GHC.StgToCmm.Expr
+    GHC.StgToCmm.ExtCode GHC.StgToCmm.Foreign GHC.StgToCmm.Heap
+    GHC.StgToCmm.Hpc GHC.StgToCmm.Layout GHC.StgToCmm.Monad
+    GHC.StgToCmm.Prim GHC.StgToCmm.Prof GHC.StgToCmm.Ticky
+    GHC.StgToCmm.Utils GHC.ThToHs GHCi GhcMake GhcMonad GhcNameVersion
+    GhcPlugins GhcPrelude GraphBase GraphColor GraphOps GraphPpr
+    HaddockUtils HeaderInfo HieAst HieBin HieDebug HieTypes HieUtils
+    Hooks Hoopl.Block Hoopl.Collections Hoopl.Dataflow Hoopl.Graph
+    Hoopl.Label HscMain HscStats HscTypes IOEnv Id IdInfo IfaceEnv
+    IfaceSyn IfaceType Inst InstEnv Instruction InteractiveEval
+    InteractiveEvalTypes Json KnownUniques Lexeme Lexer LiberateCase
+    Linker LinkerTypes ListSetOps Literal Llvm Llvm.AbsSyn
+    Llvm.MetaData Llvm.PpLlvm Llvm.Types LlvmCodeGen LlvmCodeGen.Base
+    LlvmCodeGen.CodeGen LlvmCodeGen.Data LlvmCodeGen.Ppr
+    LlvmCodeGen.Regs LlvmMangler LoadIface Match MatchCon MatchLit
+    Maybes MkCore MkGraph MkId MkIface Module MonadUtils NCGMonad Name
+    NameCache NameEnv NameSet NameShape OccName OccurAnal OptCoercion
+    OrdList Outputable PIC PPC.CodeGen PPC.Cond PPC.Instr PPC.Ppr
+    PPC.RegInfo PPC.Regs PackageConfig Packages Pair Panic Parser
+    PatSyn PipelineMonad PlainPanic PlatformConstants Plugins PprBase
+    PprC PprCmm PprCmmDecl PprCmmExpr PprColour PprCore PprTyThing
+    Predicate PrelInfo PrelNames PrelRules Pretty PrimOp ProfInit
+    RdrHsSyn RdrName Reg RegAlloc.Graph.ArchBase RegAlloc.Graph.ArchX86
+    RegAlloc.Graph.Coalesce RegAlloc.Graph.Main RegAlloc.Graph.Spill
+    RegAlloc.Graph.SpillClean RegAlloc.Graph.SpillCost
+    RegAlloc.Graph.Stats RegAlloc.Graph.TrivColorable
+    RegAlloc.Linear.Base RegAlloc.Linear.FreeRegs
+    RegAlloc.Linear.JoinToTargets RegAlloc.Linear.Main
+    RegAlloc.Linear.PPC.FreeRegs RegAlloc.Linear.SPARC.FreeRegs
+    RegAlloc.Linear.StackMap RegAlloc.Linear.State
+    RegAlloc.Linear.Stats RegAlloc.Linear.X86.FreeRegs
+    RegAlloc.Linear.X86_64.FreeRegs RegAlloc.Liveness RegClass RepType
+    RnBinds RnEnv RnExpr RnFixity RnHsDoc RnModIface RnNames RnPat
+    RnSource RnSplice RnTypes RnUnbound RnUtils RtClosureInspect Rules
+    SAT SMRep SPARC.AddrMode SPARC.Base SPARC.CodeGen
+    SPARC.CodeGen.Amode SPARC.CodeGen.Base SPARC.CodeGen.CondCode
+    SPARC.CodeGen.Expand SPARC.CodeGen.Gen32 SPARC.CodeGen.Gen64
+    SPARC.CodeGen.Sanity SPARC.Cond SPARC.Imm SPARC.Instr SPARC.Ppr
+    SPARC.Regs SPARC.ShortcutJump SPARC.Stack SetLevels Settings
+    SimplCore SimplEnv SimplMonad SimplStg SimplUtils Simplify
+    SpecConstr Specialise SrcLoc State StaticPtrTable StgCse StgFVs
+    StgLiftLams StgLiftLams.Analysis StgLiftLams.LiftM
+    StgLiftLams.Transformation StgLint StgStats StgSubst StgSyn Stream
+    StringBuffer SysTools SysTools.BaseDir SysTools.ExtraObj
+    SysTools.Info SysTools.Process SysTools.Settings SysTools.Tasks
+    SysTools.Terminal THNames TargetReg TcAnnotations TcArrows
+    TcBackpack TcBinds TcCanonical TcClassDcl TcDefaults TcDeriv
+    TcDerivInfer TcDerivUtils TcEnv TcErrors TcEvTerm TcEvidence TcExpr
+    TcFlatten TcForeign TcGenDeriv TcGenFunctor TcGenGenerics
+    TcHoleErrors TcHoleFitTypes TcHsSyn TcHsType TcIface TcInstDcls
+    TcInteract TcMType TcMatches TcOrigin TcPat TcPatSyn TcPluginM
+    TcRnDriver TcRnExports TcRnMonad TcRnTypes TcRules TcSMonad TcSigs
+    TcSimplify TcSplice TcTyClsDecls TcTyDecls TcType TcTypeNats
+    TcTypeable TcUnify TcValidity TidyPgm ToIface ToolSettings TrieMap
+    TyCoFVs TyCoPpr TyCoRep TyCoSubst TyCoTidy TyCon Type TysPrim
+    TysWiredIn UnVarGraph UnariseStg Unify UniqDFM UniqDSet UniqFM
+    UniqMap UniqSet UniqSupply Unique Util Var VarEnv VarSet WorkWrap
+    WwLib X86.CodeGen X86.Cond X86.Instr X86.Ppr X86.RegInfo X86.Regs
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSghc-8.10.7
+include-dirs:
+depends:
+    Win32-2.6.2.1 array-0.5.4.0 base-4.14.3.0 binary-0.8.8.0
+    bytestring-0.10.12.0 containers-0.6.5.1 deepseq-1.4.4.0
+    directory-1.3.6.0 filepath-1.4.2.1 ghc-boot-8.10.7
+    ghc-boot-th-8.10.7 ghc-heap-8.10.7 ghci-8.10.7 hpc-0.6.1.0
+    integer-gmp-1.0.3.0 process-1.6.13.2 template-haskell-2.16.0.0
+    time-1.9.3 transformers-0.5.6.2
+haddock-interfaces:
+haddock-html:
+---
 name:                 ghc-boot
 version:              8.10.7
 visibility:           public

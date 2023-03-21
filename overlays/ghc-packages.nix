@@ -39,14 +39,14 @@ let
 
   # Combine the all the boot package nix files for a given ghc
   # into a single derivation and materialize it.
-  combineAndMaterialize = unchecked: ghcName: bootPackages:
+  combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
-          materialized = ../materialized/ghc-boot-packages-nix + "/${ghcName +
+          materialized = materialized-dir + "/ghc-boot-packages-nix/${ghcName +
               # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
               # so it needs its own materialization.
-              final.lib.optionalString final.targetPlatform.isAarch64 "-aarch64"
+              final.lib.optionalString final.stdenv.targetPlatform.isAarch64 "-aarch64"
               # GHCJS bytestring and libiserv versions differs
-              + final.lib.optionalString final.hostPlatform.isGhcjs "-ghcjs"
+              + final.lib.optionalString final.stdenv.hostPlatform.isGhcjs "-ghcjs"
             }";
         } // final.lib.optionalAttrs unchecked {
           checkMaterialization = false;
@@ -69,6 +69,11 @@ let
       libiserv     = "libraries/libiserv";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.6" > 0) {
+      Cabal        = "libraries/Cabal/Cabal";
+      Cabal-syntax = "libraries/Cabal/Cabal-syntax";
+      cabal-install = "libraries/Cabal/cabal-install";
+      cabal-install-solver = "libraries/Cabal/cabal-install-solver";
     } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs) {
       ghc          = "compiler";
       ghc-boot     = "libraries/ghc-boot";
@@ -123,12 +128,13 @@ let
 # as part of patches we applied to the GHC tree.
 
 in rec {
+  inherit combineAndMaterialize;
   ghc-boot-packages-src-and-nix = builtins.mapAttrs
     (ghcName: ghc: builtins.mapAttrs
       (pkgName: subDir: rec {
         src =
           # TODO remove once nix >=2.4 is widely adopted (will trigger rebuilds of everything).
-          # See https://github.com/input-output-hk/haskell.nix/issues/1459 
+          # See https://github.com/input-output-hk/haskell.nix/issues/1459
           let nix24srcFix = src: src // { filterPath = { path, ... }: path; };
           # Add in the generated files needed by ghc-boot
           in if subDir == "libraries/ghc-boot"
@@ -170,11 +176,11 @@ in rec {
 
   # All the ghc boot package nix files for each ghc.
   ghc-boot-packages-nix = builtins.mapAttrs
-    (combineAndMaterialize false)
+    (combineAndMaterialize false ../materialized)
       ghc-boot-packages-src-and-nix;
 
   ghc-boot-packages-nix-unchecked = builtins.mapAttrs
-    (combineAndMaterialize true)
+    (combineAndMaterialize true ../materialized)
       ghc-boot-packages-src-and-nix;
 
   # The import nix results for each ghc boot package for each ghc.
@@ -182,7 +188,7 @@ in rec {
     (ghcName: value: builtins.mapAttrs
       (pkgName: srcAndNix: importSrcAndNix {
         inherit (srcAndNix) src;
-        nix = ghc-boot-packages-nix.${ghcName} + "/${pkgName}.nix";
+        nix = final.ghc-boot-packages-nix.${ghcName} + "/${pkgName}.nix";
       }) value)
         ghc-boot-packages-src-and-nix;
 
@@ -190,16 +196,17 @@ in rec {
     (ghcName: value: builtins.mapAttrs
       (pkgName: srcAndNix: importSrcAndNix {
         inherit (srcAndNix) src;
-        nix = ghc-boot-packages-nix-unchecked.${ghcName} + "/${pkgName}.nix";
+        nix = final.ghc-boot-packages-nix-unchecked.${ghcName} + "/${pkgName}.nix";
       }) value)
         ghc-boot-packages-src-and-nix;
 
-  # Derivation with cabal.project for use with `cabalProject'` for each ghc. 
+  # Derivation with cabal.project for use with `cabalProject'` for each ghc.
   ghc-extra-pkgs-cabal-projects = builtins.mapAttrs (ghcName: ghc:
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
-        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq" ])) (ghc-extra-pkgs ghc.version));
+        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq"
+           "Cabal" "Cabal-syntax" "cabal-install" "cabal-install-solver" ])) (ghc-extra-pkgs ghc.version));
       cabalProject = ''
         packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
         allow-newer: iserv-proxy:bytestring, network:bytestring, iserv-proxy:containers

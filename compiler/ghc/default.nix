@@ -17,8 +17,6 @@ let self =
 
 , ncurses # TODO remove this once the cross compilers all work without
 
-, installDeps
-
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
@@ -65,6 +63,12 @@ let self =
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
+, useLdGold ? 
+    # might be better check to see if cc is clang/llvm?
+    # use gold as the linker on linux to improve link times
+    # do not use it on musl due to a ld.gold bug. See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
+    (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid && !stdenv.targetPlatform.isMusl) 
+
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
 , src-spec
@@ -81,9 +85,7 @@ assert enableNativeBignum -> !enableIntegerSimple;
 assert enableIntegerSimple -> !enableNativeBignum;
 
 let
-  src = if src-spec ? file
-    then src-spec.file
-    else fetchurl { inherit (src-spec) url sha256; };
+  src = src-spec.file or fetchurl { inherit (src-spec) url sha256; };
 
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
@@ -187,10 +189,11 @@ let
         "--enable-bootstrap-with-devel-snapshot"
     ] ++ lib.optionals (disableLargeAddressSpace) [
         "--disable-large-address-space"
-    ] ++ lib.optionals (targetPlatform.isAarch32) [
+    ] ++ lib.optionals useLdGold [
         "CFLAGS=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE1=-fuse-ld=gold"
         "CONF_GCC_LINKER_OPTS_STAGE2=-fuse-ld=gold"
+        "CONF_LD_LINKER_OPTS_STAGE2=-fuse-ld=gold" # See: <https://gitlab.haskell.org/ghc/ghc/-/issues/22550#note_466656>
     ] ++ lib.optionals enableDWARF [
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
@@ -221,6 +224,15 @@ let
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
+      compilerSelection = p: p.haskell.compiler;
+      index-state = buildPackages.haskell-nix.internalHackageIndexState;
+      # Verions of hadrian that comes with 9.6 depends on `time`
+      materialized =
+        if builtins.compareVersions ghc-version "9.4" < 0
+          then ../../materialized/ghc8107/hadrian-ghc92
+        else if builtins.compareVersions ghc-version "9.6" < 0
+          then ../../materialized/ghc8107/hadrian-ghc94
+        else ../../materialized/ghc8107/hadrian-ghc96;
       src = haskell-nix.haskellLib.cleanSourceWith {
         src = buildPackages.srcOnly {
           name = "hadrian";
@@ -253,6 +265,26 @@ let
       else "lib/${targetPrefix}ghc-${ghc-version}" + lib.optionalString (useHadrian) "/lib";
   packageConfDir = "${libDir}/package.conf.d";
 
+  # This work around comes from nixpkgs/pkgs/development/compilers/ghc
+  #
+  # Sometimes we have to dispatch between the bintools wrapper and the unwrapped
+  # derivation for certain tools depending on the platform.
+  bintoolsFor = {
+    # GHC needs install_name_tool on all darwin platforms. On aarch64-darwin it is
+    # part of the bintools wrapper (due to codesigning requirements), but not on
+    # x86_64-darwin.
+    install_name_tool =
+      if stdenv.targetPlatform.isAarch64
+      then targetCC.bintools
+      else targetCC.bintools.bintools;
+    # Same goes for strip.
+    strip =
+      # TODO(@sternenseemann): also use wrapper if linker == "bfd" or "gold"
+      if stdenv.targetPlatform.isAarch64 && stdenv.targetPlatform.isDarwin
+      then targetCC.bintools
+      else targetCC.bintools.bintools;
+  };
+
 in
 stdenv.mkDerivation (rec {
   version = ghc-version;
@@ -278,18 +310,29 @@ stdenv.mkDerivation (rec {
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
-        # GHC is a bit confused on its cross terminology, as these would normally be
-        # the *host* tools.
+    ''
+    # GHC is a bit confused on its cross terminology, as these would normally be
+    # the *host* tools.
+    + ''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
-        # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
-        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString targetPlatform.isAarch32 ".gold"}"
+    ''
+    # Use gold to work around https://sourceware.org/bugzilla/show_bug.cgi?id=16177
+    + ''
+        export LD="${targetCC.bintools}/bin/${targetCC.bintools.targetPrefix}ld${lib.optionalString useLdGold ".gold"}"
         export AS="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}as"
         export AR="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ar"
         export NM="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}nm"
         export RANLIB="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}ranlib"
         export READELF="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}readelf"
-        export STRIP="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}strip"
+        export STRIP="${bintoolsFor.strip}/bin/${bintoolsFor.strip.targetPrefix}strip"
+    '' + lib.optionalString (stdenv.targetPlatform.linker == "cctools") ''
+        export OTOOL="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}otool"
+        export INSTALL_NAME_TOOL="${bintoolsFor.install_name_tool}/bin/${bintoolsFor.install_name_tool.targetPrefix}install_name_tool"
+    '' + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
+    # set LD explicitly if we want gold even if we aren't cross compiling
+    ''
+        export LD="${targetCC.bintools}/bin/ld.gold"
     '' + lib.optionalString (targetPlatform.isWindows) ''
         export DllWrap="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}dllwrap"
         export Windres="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}windres"
@@ -474,7 +517,6 @@ stdenv.mkDerivation (rec {
             fi
         ''
     }
-    ${installDeps targetPrefix}
 
     # Sanity checks for https://github.com/input-output-hk/haskell.nix/issues/660
     if ! "$out/bin/${targetPrefix}ghc" --version; then
@@ -496,11 +538,7 @@ stdenv.mkDerivation (rec {
     '';
 
   passthru = {
-    inherit bootPkgs targetPrefix libDir;
-
-    inherit llvmPackages;
-    inherit enableShared;
-    inherit useLLVM;
+    inherit bootPkgs targetPrefix libDir llvmPackages enableShared useLLVM;
 
     # Our Cabal compiler name
     haskellCompilerName = "ghc-${version}";
@@ -538,6 +576,17 @@ stdenv.mkDerivation (rec {
       phases = [ "unpackPhase" "patchPhase" ]
             ++ lib.optional (ghc-patches != []) "autoreconfPhase"
             ++ [ "configurePhase" "installPhase"];
+     } // lib.optionalAttrs useHadrian {
+      postConfigure = ''
+        for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
+          ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
+        done
+      '' + lib.optionalString stdenv.isDarwin ''
+        substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+          --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        find . -name 'system*.conf*'
+        cat mk/system-cxx-std-lib-1.0.conf
+      '';
     });
 
     # Used to detect non haskell-nix compilers (accidental use of nixpkgs compilers can lead to unexpected errors)

@@ -1,79 +1,32 @@
 final: prev:
 let
-    installDeps = targetPrefix:
-      # First checks that ghc-pkg runs first with `--version` as failures in the `for` and
-      # `if` statements will be masked.
-      ''
-      $out/bin/${targetPrefix}ghc-pkg --version
-      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
-        mkdir -p $out/exactDeps/$P
-        touch $out/exactDeps/$P/configure-flags
-        touch $out/exactDeps/$P/cabal.config
-
-        if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
-          echo "--dependency=$P=$id" >> $out/exactDeps/$P/configure-flags
-        elif id=$($out/bin/${targetPrefix}ghc-pkg field "z-$P-z-*" id --simple-output); then
-          name=$($out/bin/${targetPrefix}ghc-pkg field "z-$P-z-*" name --simple-output)
-          # so we are dealing with a sublib. As we build sublibs separately, the above
-          # query should be safe.
-          echo "--dependency=''${name#z-$P-z-}=$id" >> $out/exactDeps/$P/configure-flags
-        fi
-        if ver=$($out/bin/${targetPrefix}ghc-pkg field $P version --simple-output); then
-          echo "constraint: $P == $ver" >> $out/exactDeps/$P/cabal.config
-          echo "constraint: $P installed" >> $out/exactDeps/$P/cabal.config
-        fi
-      done
-
-      mkdir -p $out/evalDeps
-      for P in $($out/bin/${targetPrefix}ghc-pkg list --simple-output | sed 's/-[0-9][0-9.]*//g'); do
-        touch $out/evalDeps/$P
-        if id=$($out/bin/${targetPrefix}ghc-pkg field $P id --simple-output); then
-          echo "package-id $id" >> $out/evalDeps/$P
-        fi
-      done
-    '';
     # For each architecture, what GHC version we should use for bootstrapping.
     buildBootstrapper =
-        if final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin
+        if final.stdenv.buildPlatform.isAarch64 && final.stdenv.buildPlatform.isDarwin
         then {
             compilerNixName = "ghc8107";
         }
-        else if final.buildPlatform.isAarch64
-        then {
-            compilerNixName = "ghc883";
-        }
         else {
-            compilerNixName = "ghc844";
+            compilerNixName = "ghc884";
         };
-    # AArch64 needs 8.8, but we prefer 8.6.5 for other 8.10 builds because of
-    # * https://gitlab.haskell.org/ghc/ghc/-/issues/18143
-    ghcForBuilding810
-      = if (final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin)
-          then final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler.ghc8107
-        else if (final.buildPlatform.isAarch64 || final.targetPlatform.isAarch64)
-          then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
-        else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
-    ghcForBuilding90
-      = if (final.buildPlatform.isAarch64 && final.buildPlatform.isDarwin)
-          then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107
-          else final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
     latestVer = {
       "8.4" = "8.4.4";
       "8.6" = "8.6.5";
       "8.8" = "8.8.4";
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
-      "9.2" = "9.2.5";
+      "9.2" = "9.2.7";
       "9.4" = "9.4.4";
+      "9.6" = "9.6.1";
     };
     traceWarnOld = v: x:
       let
         bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
       in
       if builtins.compareVersions x.src-spec.version bootstrapGhc.version < 0 then
-          throw "Desired GHC (${x.src-spec.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.targetPlatform.config})."
+          throw "Desired GHC (${x.src-spec.version}) is older than the bootstrap GHC (${bootstrapGhc.version}) for this platform (${final.stdenv.targetPlatform.config})."
       # There is no binary for aarch64-linux ghc 8.8.4 so don't warn about 8.8.3 not being the latest version
-      else if x.src-spec.version == "8.8.3" && (final.targetPlatform.isAarch64 || final.buildPlatform.isAarch64)
+      else if x.src-spec.version == "8.8.3" && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.buildPlatform.isAarch64)
         then x
       else if builtins.compareVersions x.src-spec.version latestVer.${v} < 0
         then __trace
@@ -89,6 +42,20 @@ in {
                 alex = final.haskell-nix.bootstrap.packages.alex-unchecked;
                 happy = final.haskell-nix.bootstrap.packages.happy-unchecked;
                 hscolour = final.haskell-nix.bootstrap.packages.hscolour-unchecked;
+            };
+            bootPkgsGhc94 = bootPkgs // {
+                alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" {
+                  compilerSelection = p: p.haskell.compiler;
+                  version = "3.2.7.1";
+                  index-state = final.haskell-nix.internalHackageIndexState;
+                  materialized = ../materialized/alex-3.2.7.1;
+                };
+                happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" {
+                  compilerSelection = p: p.haskell.compiler;
+                  version = "1.20.0";
+                  index-state = final.haskell-nix.internalHackageIndexState;
+                  materialized = ../materialized/happy-1.20.0;
+                };
             };
             sphinx = with final.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
             hsc2hs-align-conditionals-patch = final.fetchpatch {
@@ -183,8 +150,8 @@ in {
                 ++ fromUntil "8.10.2" "8.10.3" ./patches/ghc/MR3714-backported-to-8.10.2.patch
 
                 # See https://github.com/input-output-hk/haskell.nix/issues/1027
-                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
-                ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
+                ++ final.lib.optional (versionAtLeast "8.10.3" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-3434.patch
+                ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
 
                 ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-acrt-iob-func.patch
                 ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
@@ -196,14 +163,14 @@ in {
                 ++ fromUntil "9.2"    "9.3"    ./patches/ghc/ghc-9.2-Cabal-3886.patch
 
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-rts-make-markLiveObject-thread-safe.patch
-                ++ final.lib.optionals final.targetPlatform.isWindows
+                ++ final.lib.optionals final.stdenv.targetPlatform.isWindows
                   (fromUntil "8.10.4" "9.3"    ./patches/ghc/ghc-8.10-z-drive-fix.patch)
                 ++ fromUntil "8.6.5"  "9.4"    ./patches/ghc/ghc-8.10-windows-add-dependent-file.patch
                 ++ fromUntil "8.10.1" "9.0"    ./patches/ghc/Cabal-unbreak-GHCJS.patch
                 ++ until              "8.10.5" ./patches/ghc/AC_PROG_CC_99.patch
                 ++ fromUntil "9.0.1"  "9.0.2"  ./patches/ghc/AC_PROG_CC_99.patch
                 ++ fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-add-rts-exports.patch
-                ++ final.lib.optionals final.hostPlatform.isDarwin
+                ++ final.lib.optionals final.stdenv.hostPlatform.isDarwin
                   (fromUntil "8.10.5" "8.10.6" ./patches/ghc/ghc-8.10.5-darwin-allocateExec.patch)
                 ++ until              "8.10.6" ./patches/ghc/Sphinx_Unicode_Error.patch
                 ++ fromUntil "9.0.2"  "9.2.2"  ./patches/ghc/ghc-9.2.1-xattr-fix.patch      # Problem was backported to 9.0.2
@@ -215,133 +182,35 @@ in {
                 ++ fromUntil "8.10"   "9.1"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
                 ++ fromUntil "9.2.2"  "9.3"    ./patches/ghc/ghc-9.2.2-fix-warnings-building-with-self.patch # https://gitlab.haskell.org/ghc/ghc/-/commit/c41c478eb9003eaa9fc8081a0039652448124f5d
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
-                ++ final.lib.optionals (final.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
+                ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/MR10116.patch
+                ++ fromUntil "9.4.1"  "9.6"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch
+                ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAarch64) ./patches/ghc/m32_alloc.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-rts-linker-condbr.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
-                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/m32_alloc.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/rts-android-jemalloc-qemu.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/stack-protector-symbols.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/libraries-prim-os-android.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-rts-linker-condbr.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-8.10.7-linker-weak-and-common.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
+                ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
+                ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.4" && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-make-stage-1-lib-ghc.patch
                 ;
         in ({
-            ghc844 = final.callPackage ../compiler/ghc (traceWarnOld "8.4" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc844; };
-
-                inherit sphinx installDeps;
-                bootPkgs = bootPkgs // {
-                  # GHC 8.6.5 and earlier need happy 1.19.11
-                  happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
-                };
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_5;
-                llvmPackages = final.llvmPackages_5;
-
-                src-spec = rec {
-                    version = "8.4.4";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "1ch4j2asg7pr52ai1hwzykxyj553wndg7wq93i47ql4fllspf48i";
-                };
-
-                ghc-patches = ghc-patches "8.4.4"
-                            ++ [ hsc2hs-align-conditionals-patch D5123-patch ]
-                            ++ final.lib.optional final.stdenv.isDarwin ./patches/ghc/ghc-8.4.4-backport-dylib-command-size-limit.patch;
-            });
-            ghc861 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc861; };
-
-                inherit sphinx installDeps;
-                bootPkgs = bootPkgs // {
-                  # GHC 8.6.5 and earlier need happy 1.19.11
-                  happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
-                };
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_6;
-                llvmPackages = final.llvmPackages_6;
-
-                src-spec = rec {
-                    version = "8.6.1";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "0dkh7idgrqr567fq94a0f5x3w0r4cm2ydn51nb5wfisw3rnw499c";
-                };
-
-                ghc-patches = [ D5123-patch ];
-            });
-            ghc862 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc862; };
-
-                inherit sphinx installDeps;
-                bootPkgs = bootPkgs // {
-                  # GHC 8.6.5 and earlier need happy 1.19.11
-                  happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
-                };
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_6;
-                llvmPackages = final.llvmPackages_6;
-
-                src-spec = rec {
-                    version = "8.6.2";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "1mbn3n2ynmpfpb7jfnhpzzli31qqxqyi8ws71blws3i846fq3ana";
-                };
-
-                ghc-patches = ghc-patches "8.6.2"
-                            ++ [ D5123-patch ];
-            });
-            ghc863 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc863; };
-
-                inherit sphinx installDeps;
-                bootPkgs = bootPkgs // {
-                  # GHC 8.6.5 and earlier need happy 1.19.11
-                  happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
-                };
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_6;
-                llvmPackages = final.llvmPackages_6;
-
-                src-spec = rec {
-                    version = "8.6.3";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "08vzq0dpg4a39bs61j6rq4z0n7jby5mc69h4m25xhd8rjyvkg7lz";
-                };
-
-                ghc-patches = ghc-patches "8.6.3"
-                            ++ [ D5123-patch ];
-            });
-            ghc864 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc864; };
-
-                inherit sphinx installDeps;
-                bootPkgs = bootPkgs // {
-                  # GHC 8.6.5 and earlier need happy 1.19.11
-                  happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
-                };
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_6;
-                llvmPackages = final.llvmPackages_6;
-
-                src-spec = rec {
-                    version = "8.6.4";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "0fihs1sr0hpk67dn9cmrsav13kkcp9hz8ggdqcrs80rj8vj0fpav";
-                };
-
-                ghc-patches = ghc-patches "8.6.4"
-                            ++ [ D5123-patch ];
-            });
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc865; };
 
-                inherit sphinx installDeps;
                 bootPkgs = bootPkgs // {
                   # GHC 8.6.5 and earlier need happy 1.19.11
                   happy = final.haskell-nix.bootstrap.packages.happy-old-unchecked;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc865
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc865;
                 };
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_6;
                 llvmPackages = final.llvmPackages_6;
@@ -358,7 +227,12 @@ in {
             ghc881 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc881; };
 
-                inherit bootPkgs sphinx installDeps;
+                bootPkgs = bootPkgs // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc881
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc884;
+                };
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
@@ -374,7 +248,12 @@ in {
             ghc882 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc882; };
 
-                inherit bootPkgs sphinx installDeps;
+                bootPkgs = bootPkgs // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc882
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc884;
+                };
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
@@ -390,7 +269,12 @@ in {
             ghc883 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc883; };
 
-                inherit bootPkgs sphinx installDeps;
+                bootPkgs = bootPkgs // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc883
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc884;
+                };
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
@@ -406,10 +290,12 @@ in {
             ghc884 = final.callPackage ../compiler/ghc (traceWarnOld "8.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc884; };
 
-                bootPkgs = bootPkgs // final.lib.optionalAttrs (!final.buildPlatform.isAarch64 && final.targetPlatform.isAarch64) {
-                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc884;
+                bootPkgs = bootPkgs // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc884;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
@@ -426,9 +312,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8101; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding810;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8101
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -445,9 +333,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8102; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding810;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8102
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -464,9 +354,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8103; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding810;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8103
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -483,9 +375,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8104; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding810;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8104
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -502,9 +396,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding810;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8105
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -521,9 +417,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8106; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding810;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8106
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -540,9 +438,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc8107; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding810;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
@@ -559,9 +459,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc901; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding90;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc901
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -578,9 +480,11 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc902; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = ghcForBuilding90;
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc902
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc902;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -599,7 +503,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -619,7 +523,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -639,7 +543,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -659,7 +563,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -679,7 +583,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -699,7 +603,7 @@ in {
                 bootPkgs = bootPkgs // {
                   ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -713,17 +617,36 @@ in {
 
                 ghc-patches = ghc-patches "9.2.6";
             });
+            ghc927 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc927; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
+                };
+                inherit sphinx;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.2.7";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-olNWehe3NKTA3Q/6KW0zwqW1pUp335iIBqKh4cp+iLg=";
+                };
+
+                ghc-patches = ghc-patches "9.2.7";
+            });
             ghc941 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc941; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
-                  ghc = if final.buildPlatform != final.targetPlatform
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc941
-                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -740,14 +663,13 @@ in {
             ghc942 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc942; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
-                  ghc = if final.buildPlatform != final.targetPlatform
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc942
-                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -764,14 +686,13 @@ in {
             ghc943 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc943; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
-                  ghc = if final.buildPlatform != final.targetPlatform
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc943
-                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -788,14 +709,13 @@ in {
             ghc944 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc944; };
 
-                bootPkgs = bootPkgs // {
-                  alex = final.buildPackages.haskell-nix.tool "ghc902" "alex" "3.2.7.1";
-                  happy = final.buildPackages.haskell-nix.tool "ghc902" "happy" "1.20.0";
-                  ghc = if final.buildPlatform != final.targetPlatform
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc944
-                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
@@ -809,16 +729,62 @@ in {
 
                 ghc-patches = ghc-patches "9.4.4";
             });
+            ghc96020230302 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230302; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc96020230302
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.6.0.20230302";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-Vlj/E1eoL/7PUsYCsareTGPRGEvLzYtjPcxsYaSmNvM=";
+                };
+
+                ghc-patches = ghc-patches "9.6.1";
+            });
+            ghc961 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc961; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc961
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.6.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-/lrJCcuLsIfiNd6X+mOv9HqK5lDvqjeiFA9HgOIfNMs=";
+                };
+
+                ghc-patches = ghc-patches "9.6.1";
+            });
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if (final.buildPlatform.isAarch64 || final.targetPlatform.isAarch64)
+                  ghc = if (final.stdenv.buildPlatform.isAarch64 || final.stdenv.targetPlatform.isAarch64)
                         then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
                         else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
                 };
-                inherit sphinx installDeps;
+                inherit sphinx;
 
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
@@ -834,8 +800,8 @@ in {
                 # Avoid clashes with normal ghc8104
                 ghc-version = "8.10.4.20210212";
             };
-        } // final.lib.optionalAttrs (final.targetPlatform.isGhcjs or false) (
-         if final.hostPlatform.isGhcjs
+        } // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
+         if final.stdenv.hostPlatform.isGhcjs
            then throw "An attempt was made to build ghcjs with ghcjs (perhaps use `buildPackages` when refering to ghc)"
            else
                 # This will inject `exactDeps` and `envDeps`  into the ghcjs
@@ -844,7 +810,6 @@ in {
                 (builtins.mapAttrs
                     (_: v: v // {
                         useLLVM = false;
-                        isHaskellNixBootCompiler = true;
                     })
           ({
             # Better error messages when an unsupported version of ghcjs is used
@@ -893,7 +858,7 @@ in {
                 mkdir -p lib/${targetPrefix}ghc-8.6.5
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.6.5
-            '' + installDeps targetPrefix);
+            '');
             ghc884 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc884;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs88-src.json;
@@ -927,7 +892,7 @@ in {
                 mkdir -p lib/${targetPrefix}ghc-8.8.4
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.8.4
-            '' + installDeps targetPrefix);
+            '');
             ghc8105 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8105;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
@@ -961,7 +926,7 @@ in {
                 mkdir -p lib/${targetPrefix}ghc-8.10.5
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.5
-            '' + installDeps targetPrefix);
+            '');
             ghc8106 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8106;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
@@ -995,7 +960,7 @@ in {
                 mkdir -p lib/${targetPrefix}ghc-8.10.6
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.6
-            '' + installDeps targetPrefix);
+            '');
             ghc8107 = let buildGHC = final.buildPackages.haskell-nix.compiler.ghc8107;
                 in let booted-ghcjs = final.callPackage ../compiler/ghcjs/ghcjs.nix {
                 ghcjsSrcJson = ../compiler/ghcjs/ghcjs810-src.json;
@@ -1029,7 +994,7 @@ in {
                 mkdir -p lib/${targetPrefix}ghc-8.10.7
                 cd lib
                 lndir ${booted-ghcjs}/lib ${targetPrefix}ghc-8.10.7
-            '' + installDeps targetPrefix);
+            '');
         }))));
 
     # Both `cabal-install` and `nix-tools` are needed for `cabalProject`
@@ -1041,23 +1006,20 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
+        compilerSelection = p: p.haskell-nix.compiler // p.haskell.compiler;
         version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args));
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
-        # Until all the dependencies build with 9.0.1 we will have to avoid
-        # building & testing nix-tools with 9.0.1
-        compiler-nix-name =
-          if !__elem args.compiler-nix-name [ "ghc883" "ghc884" "ghc8107" ]
-            then "ghc8107"
-            else args.compiler-nix-name;
+        compiler-nix-name = "ghc8107";
+        compilerSelection = p: p.haskell.compiler;
         project =
           final.haskell-nix.hix.project ({
             evalPackages = final.buildPackages;
             src = ../nix-tools;
-          } // args // { inherit compiler-nix-name; });
+          } // args // { inherit compiler-nix-name compilerSelection; });
         exes =
           let
             package = project.getPackage "nix-tools";
@@ -1081,7 +1043,7 @@ in {
           final.buildPackages.buildPackages.gitMinimal
           final.buildPackages.buildPackages.nix-prefetch-git ];
     in
-      final.buildPackages.symlinkJoin {
+      (final.buildPackages.symlinkJoin {
         name = "nix-tools";
         paths = exes;
         buildInputs = [ final.buildPackages.makeWrapper ];
@@ -1093,7 +1055,12 @@ in {
             wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
           done
         '';
-      } // { inherit project; };
+      }) // {
+        inherit project;
+        exes = project.hsPkgs.nix-tools.components.exes // {
+          hpack = project.hsPkgs.hpack.components.exes.hpack;
+        };
+      };
 
     # Memoize the cabal-install and nix-tools derivations by adding:
     #   haskell-nix.cabal-install.ghcXXX
@@ -1177,36 +1144,10 @@ in {
         compiler-nix-name = buildBootstrapper.compilerNixName;
         # The ghc boot compiler to use to compile alex, happy and hscolour
         ghc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
-        ghcOverride = ghc // { isHaskellNixCompiler = ghc.isHaskellNixBootCompiler; };
+        ghcOverride = ghc;
         index-state = final.haskell-nix.internalHackageIndexState;
       in {
-        # XXX: import ../. will throw away all other overlays, config values, ...
-        #      this is not ideal!
-        # get binary compilers for bootstrapping.  We'll put the eventual proper
-        # compilers into the same place where nix expects them.
-        # We mark these compilers as boot compilers to make sure they are only used
-        # where a boot compiler is expected.
-        compiler = builtins.mapAttrs (_: v:
-            v.overrideAttrs (drv: {
-              postInstall = (drv.postInstall or "") + installDeps ""
-                # Check that the compiler works as in some cases we have had issues
-                # where the executables built by cached versions of this derivation
-                # fail to run on macOS.
-                + ''
-                cat << EOF > hello.hs
-                module Main where
-                main = putStrLn "Compiled App Runs OK"
-                EOF
-                $out/bin/ghc hello.hs -threaded --make -o ./hello
-                ./hello
-              '';
-            }) // {
-              useLLVM = false;
-              isHaskellNixBootCompiler = true;
-            }
-          )
-          (import sources.old-ghc-nix { pkgs = final; });
-
+        compiler = final.haskell.compiler;
         packages = {
             # now that we have nix-tools and hpack, we can just
             # use `hackage-package` to build any package from
@@ -1219,6 +1160,7 @@ in {
             # of the materialization check it would cause
             # infinite recursion).
             alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
+                compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
                 inherit ghcOverride index-state;
@@ -1231,6 +1173,7 @@ in {
             alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
             happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy"
               ({config, pkgs, ...}: {
+                compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
@@ -1245,6 +1188,7 @@ in {
             happy-old-unchecked = bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
             hscolour-tool = args: (hackage-package
               ({config, pkgs, ...}: {
+                compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 compiler-nix-name = buildBootstrapper.compilerNixName;
                 name = "hscolour";

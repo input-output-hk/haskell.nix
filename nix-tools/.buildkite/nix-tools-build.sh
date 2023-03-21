@@ -68,6 +68,14 @@ nix build -f .buildkite/nix2 nix-tools.components.exes --no-link
 echo
 echo "--- Test index file truncation"
 
+# Build the derivation if it does not exist
+nix-build test/truncate-index.nix --no-link \
+    --arg nix-tools-path ./.buildkite/nix2  \
+    --argstr index-state "$index_state" \
+    --argstr hash "$expected_hash" \
+    -A indexTruncated
+
+# `--check` it as well in case hash exists already, but code no longer works
 nix-build --check test/truncate-index.nix --no-link \
     --arg nix-tools-path ./.buildkite/nix2  \
     --argstr index-state "$index_state" \

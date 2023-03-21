@@ -10,9 +10,9 @@ let
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
   flagsAndConfig = field: xs: lib.optionalString (xs != []) ''
-    echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $out/configure-flags
+    echo ${lib.concatStringsSep " " (map (x: "--${field}=${x}") xs)} >> $configFiles/configure-flags
     ${lib.concatStrings (map (x: ''
-      echo "${field}: ${x}" >> $out/cabal.config
+      echo "${field}: ${x}" >> $configFiles/cabal.config
     '') xs)}
   '';
 
@@ -51,40 +51,13 @@ let
   libDir         = ghc.libDir or "lib/${ghcCommand}-${ghc.version}";
   packageCfgDir  = "${libDir}/package.conf.d";
 
-  # Filters out only library packages that for this GHC target
-  # TODO investigate why this is needed
-  # TODO find out why p ? configFiles helps (for instance for `R1909.aarch64-unknown-linux-gnu.tests.cabal-22.run.x86_64-linux`)
   libDeps = map chooseDrv (
     (if enableDWARF then (x: map (p: p.dwarf or p) x) else x: x)
     ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
-    (lib.filter (p: (p ? configFiles) && p.configFiles.targetPrefix == ghc.targetPrefix)
-    (map getLibComponent component.depends)))
+    (map haskellLib.dependToLib component.depends))
   );
-  cfgFiles =
-    let xs = map
-      (p: "${p.configFiles}")
-      libDeps;
-    in lib.concatStringsSep "\" \"" xs;
-  libs = lib.concatMapStringsSep "\" \"" (p: "${p}") libDeps;
-  drv = runCommand "${ghc.targetPrefix}${fullName}-config" {
-      nativeBuildInputs = [ghc];
-      passthru = {
-        inherit (ghc) targetPrefix;
-        inherit ghcCommand ghcCommandCaps libDir packageCfgDir component;
-        # Use ''${pkgroot} relative paths so that we can relocate the package database
-        # along with referenced packages and still have it work on systems with
-        # or without nix installed.
-        relocatableConfigFiles = runCommand "${ghc.targetPrefix}${fullName}-relocatable-config" ''
-          cp -r ${drv} $out
-          chmod -R +w $out
-          sed -i 's|/nix/store/|''${pkgroot}/../../../|' $out/${packageCfgDir}/*.conf
-          ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
-        '';
-      };
-    } (''
-    mkdir -p $out
-
-    ${target-pkg} init $out/${packageCfgDir}
+  script = ''
+    ${target-pkg} init $configFiles/${packageCfgDir}
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
       "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") (lib.flatten component.libs)
@@ -97,30 +70,32 @@ let
         (map (p: "${p}/Library/Frameworks") component.frameworks);
     })}
 
-    ghc=${ghc}
+    unwrappedGhc=${ghc}
+    ghcDeps=${ghc.cachedDeps
+      or (__trace "WARNING: ghc.cachedDeps not found" haskellLib.makeCompilerDeps ghc)}
     ${ # Copy over the nonReinstallablePkgs from the global package db.
     ''
       for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
-        find $ghc/${packageCfgDir} -name $p'*.conf' -exec cp -f {} $out/${packageCfgDir} \;
+        find $unwrappedGhc/${packageCfgDir} -name $p'*.conf' -exec cp -f {} $configFiles/${packageCfgDir} \;
       done
     ''}
 
-    for l in "${cfgFiles}"; do
-      if [ -n "$l" ]; then
+    for l in "''${pkgsHostTarget[@]}"; do
+      if [ -d "$l/${packageCfgDir}" ]; then
         files=("$l/${packageCfgDir}/"*.conf)
         if (( ''${#files[@]} )); then
-          cp -f "''${files[@]}" $out/${packageCfgDir}
+          cp -f "''${files[@]}" $configFiles/${packageCfgDir}
         else
           echo "$l/${packageCfgDir} didn't contain any *.conf files!"
           exit 1
         fi
       fi
     done
-    for l in "${libs}"; do
-      if [ -n "$l" ]; then
+    for l in "''${pkgsHostTarget[@]}"; do
+      if [ -d "$l/package.conf.d" ]; then
         files=("$l/package.conf.d/"*.conf)
         if (( ''${#files[@]} )); then
-          cp -f "''${files[@]}" $out/${packageCfgDir}
+          cp -f "''${files[@]}" $configFiles/${packageCfgDir}
         else
           echo "$l/package.conf.d didn't contain any *.conf files!"
           exit 1
@@ -132,46 +107,50 @@ let
        # However in `cabal.config` `cabal` requires `global` to be first.
       flagsAndConfig "package-db" ["clear"]
     }
-    echo "package-db: global" >> $out/cabal.config
-    ${ flagsAndConfig "package-db" ["$out/${packageCfgDir}"] }
+    echo "package-db: global" >> $configFiles/cabal.config
+    ${ flagsAndConfig "package-db" ["$configFiles/${packageCfgDir}"] }
 
-    echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $out/configure-flags
+    echo ${lib.concatStringsSep " " (lib.mapAttrsToList (fname: val: "--flags=${lib.optionalString (!val) "-" + fname}") flags)} >> $configFiles/configure-flags
 
     ${ # Provide a cabal config without remote package repositories
     ''
-      echo "write-ghc-environment-files: never" >> $out/cabal.config
+      echo "write-ghc-environment-files: never" >> $configFiles/cabal.config
     ''}
 
     ${ # Provide a GHC environment file
     ''
-      cat > $out/ghc-environment <<EOF
-      package-db $out/${packageCfgDir}
+      cat > $configFiles/ghc-environment <<EOF
+      package-db $configFiles/${packageCfgDir}
       EOF
     ''}
 
     ${ lib.optionalString component.doExactConfig ''
-      echo "--exact-configuration" >> $out/configure-flags
-      echo "allow-newer: ${identifier.name}:*" >> $out/cabal.config
-      echo "allow-older: ${identifier.name}:*" >> $out/cabal.config
+      echo "--exact-configuration" >> $configFiles/configure-flags
+      echo "allow-newer: ${identifier.name}:*" >> $configFiles/cabal.config
+      echo "allow-older: ${identifier.name}:*" >> $configFiles/cabal.config
     ''}
 
-    for p in ${lib.concatStringsSep " " libDeps}; do
-      cat $p/envDep >> $out/ghc-environment
+    for p in "''${pkgsHostTarget[@]}"; do
+      if [ -e $p/envDep ]; then
+        cat $p/envDep >> $configFiles/ghc-environment
+      fi
       ${ lib.optionalString component.doExactConfig ''
-        cat $p/exactDep/configure-flags >> $out/configure-flags
-        cat $p/exactDep/cabal.config >> $out/cabal.config
+        if [ -d $p/exactDep ]; then
+          cat $p/exactDep/configure-flags >> $configFiles/configure-flags
+          cat $p/exactDep/cabal.config >> $configFiles/cabal.config
+        fi
       ''}
     done
     for p in ${lib.concatStringsSep " " (lib.remove "ghc" nonReinstallablePkgs')}; do
-      if [ -e $ghc/envDeps/$p ]; then
-        cat $ghc/envDeps/$p >> $out/ghc-environment
+      if [ -e $ghcDeps/envDeps/$p ]; then
+        cat $ghcDeps/envDeps/$p >> $configFiles/ghc-environment
       fi
     done
   '' + lib.optionalString component.doExactConfig ''
     for p in ${lib.concatStringsSep " " nonReinstallablePkgs'}; do
-      if [ -e $ghc/exactDeps/$p ]; then
-        cat $ghc/exactDeps/$p/configure-flags >> $out/configure-flags
-        cat $ghc/exactDeps/$p/cabal.config >> $out/cabal.config
+      if [ -e $ghcDeps/exactDeps/$p ]; then
+        cat $ghcDeps/exactDeps/$p/configure-flags >> $configFiles/configure-flags
+        cat $ghcDeps/exactDeps/$p/cabal.config >> $configFiles/cabal.config
       fi
     done
   ''
@@ -204,11 +183,11 @@ let
     # Create a local directory with symlinks of the *.dylib (macOS shared
     # libraries) from all the dependencies.
   + lib.optionalString stdenv.isDarwin ''
-    local dynamicLinksDir="$out/lib/links"
+    local dynamicLinksDir="$configFiles/lib/links"
     mkdir -p $dynamicLinksDir
     # Enumerate dynamic-library-dirs with ''${pkgroot} expanded.
     local dirsToLink=$(
-      for f in "$out/${packageCfgDir}/"*.conf; do
+      for f in "$configFiles/${packageCfgDir}/"*.conf; do
         (cat $f; echo) | sed -En '/^ ./{H;$!d} ; x ; /^dynamic-library-dirs:/ {s/^dynamic-library-dirs:// ; s/ /\n/g ; s/\n\n*/\n/g; s/^\n//; p}'
       done | sed 's|''${pkgroot}/../../../|/nix/store/|' | sort -u
     )
@@ -216,12 +195,36 @@ let
       ln -f -s "$d/"*.{a,dylib,so} $dynamicLinksDir
     done
     # Edit the local package DB to reference the links directory.
-    for f in "$out/${packageCfgDir}/"*.conf; do
+    for f in "$configFiles/${packageCfgDir}/"*.conf; do
       chmod +w $f
       echo >> $f
       sed -i -E "/^ ./{H;$!d} ; x ; s,^dynamic-library-dirs:.*,dynamic-library-dirs: $dynamicLinksDir," $f
     done
   '' + ''
-    ${target-pkg} -v0 --package-db $out/${packageCfgDir} recache
+    ${target-pkg} -v0 --package-db $configFiles/${packageCfgDir} recache
+  '';  
+  drv = runCommand "${ghc.targetPrefix}${fullName}-config" {
+      nativeBuildInputs = [ghc];
+      propagatedBuildInputs = libDeps;
+      passthru = {
+        inherit (ghc) targetPrefix;
+        inherit script libDeps ghcCommand ghcCommandCaps libDir packageCfgDir component;
+      };
+    } (''
+    mkdir -p $out
+    configFiles=$out
+    ${script}
   '');
-in drv
+in {
+  inherit (ghc) targetPrefix;
+  inherit script libDeps drv ghcCommand ghcCommandCaps libDir packageCfgDir component;
+  # Use ''${pkgroot} relative paths so that we can relocate the package database
+  # along with referenced packages and still have it work on systems with
+  # or without nix installed.
+  relocatableConfigFiles = runCommand "${ghc.targetPrefix}${fullName}-relocatable-config" ''
+    cp -r ${drv} $configFiles
+    chmod -R +w $configFiles
+    sed -i 's|/nix/store/|''${pkgroot}/../../../|' $configFiles/${packageCfgDir}/*.conf
+    ${target-pkg} -v0 --package-db $configFiles/${packageCfgDir} recache
+  '';
+}
