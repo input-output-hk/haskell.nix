@@ -187,15 +187,16 @@
     },
     "flake-utils": {
       "locked": {
-        "lastModified": 1667395993,
-        "narHash": "sha256-nuEHfE/LcWyuSWnS8t12N1wc105Qtau+/OdUAjtQ0rA=",
-        "owner": "numtide",
+        "lastModified": 1679360468,
+        "narHash": "sha256-LGnza3cfXF10Biw3ZTg0u9o9t7s680Ww200t5KkHTh8=",
+        "owner": "hamishmack",
         "repo": "flake-utils",
-        "rev": "5aed5285a952e0b949eb3ba02c12fa4fcfef535f",
+        "rev": "e1ea268ff47ad475443dbabcd54744b4e5b9d4f5",
         "type": "github"
       },
       "original": {
-        "owner": "numtide",
+        "owner": "hamishmack",
+        "ref": "hkm/nested-hydraJobs",
         "repo": "flake-utils",
         "type": "github"
       }
