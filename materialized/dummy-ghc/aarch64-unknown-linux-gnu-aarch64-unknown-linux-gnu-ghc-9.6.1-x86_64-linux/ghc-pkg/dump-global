@@ -237,10 +237,10 @@ hidden-modules:
     Distribution.Simple.GHC.Internal Distribution.Simple.GHC.ImplInfo
     Distribution.Simple.ConfigureScript Distribution.ZinzaPrelude
     Paths_Cabal
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-3.10.1.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-3.10.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/Cabal-3.10.1.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/Cabal-3.10.1.0
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/Cabal-3.10.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/Cabal-3.10.1.0
 hs-libraries:         HSCabal-3.10.1.0
 depends:
     Cabal-syntax-3.10.1.0 array-0.5.5.0 base-4.18.0.0
@@ -356,12 +356,12 @@ exposed-modules:
     Distribution.Utils.String Distribution.Utils.Structured
     Distribution.Version Language.Haskell.Extension
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
 hs-libraries:         HSCabal-syntax-3.10.1.0
 depends:
     array-0.5.5.0 base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0
@@ -394,10 +394,10 @@ exposed-modules:
     Data.Array.MArray.Safe Data.Array.ST Data.Array.ST.Safe
     Data.Array.Storable Data.Array.Storable.Internals
     Data.Array.Storable.Safe Data.Array.Unboxed Data.Array.Unsafe
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/array-0.5.5.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/array-0.5.5.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/array-0.5.5.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/array-0.5.5.0
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/array-0.5.5.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/array-0.5.5.0
 hs-libraries:         HSarray-0.5.5.0
 depends:              base-4.18.0.0
 haddock-interfaces:
@@ -511,15 +511,15 @@ hidden-modules:
     GHC.Event.TimerManager System.CPUTime.Posix.ClockGetTime
     System.CPUTime.Posix.Times System.CPUTime.Posix.RUsage
     System.CPUTime.Unsupported
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/base-4.18.0.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/base-4.18.0.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/base-4.18.0.0
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/base-4.18.0.0
 dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/base-4.18.0.0
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/base-4.18.0.0
 hs-libraries:         HSbase-4.18.0.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/base-4.18.0.0/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/base-4.18.0.0/include
 includes:             HsBase.h
 depends:              ghc-bignum-1.3 ghc-prim-0.10.0 rts-1.0.2
 haddock-interfaces:
@@ -555,10 +555,10 @@ exposed-modules:
 hidden-modules:
     Data.Binary.Class Data.Binary.Internal Data.Binary.Generic
     Data.Binary.FloatCast
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/binary-0.8.9.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/binary-0.8.9.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/binary-0.8.9.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/binary-0.8.9.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/binary-0.8.9.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/binary-0.8.9.1
 hs-libraries:         HSbinary-0.8.9.1
 depends:
     array-0.5.5.0 base-4.18.0.0 bytestring-0.11.4.0 containers-0.6.7
@@ -636,15 +636,15 @@ hidden-modules:
     Data.ByteString.Builder.RealFloat.TableGenerator
     Data.ByteString.Internal.Type Data.ByteString.Lazy.Internal.Deque
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/bytestring-0.11.4.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/bytestring-0.11.4.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/bytestring-0.11.4.0
 hs-libraries:         HSbytestring-0.11.4.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/bytestring-0.11.4.0/include
 includes:             fpstring.h
 depends:
     base-4.18.0.0 deepseq-1.4.8.1 ghc-prim-0.10.0
@@ -692,10 +692,11 @@ hidden-modules:
     Utils.Containers.Internal.TypeError
     Data.Map.Internal.DeprecatedShowTree
     Data.IntMap.Internal.DeprecatedDebug
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/containers-0.6.7
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/containers-0.6.7
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/containers-0.6.7
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/containers-0.6.7
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/containers-0.6.7
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/containers-0.6.7
 hs-libraries:         HScontainers-0.6.7
 depends:
     array-0.5.5.0 base-4.18.0.0 deepseq-1.4.8.1
@@ -729,10 +730,10 @@ category:             Control
 exposed:              True
 exposed-modules:      Control.DeepSeq
 hidden-modules:       Control.DeepSeq.BackDoor
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/deepseq-1.4.8.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/deepseq-1.4.8.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/deepseq-1.4.8.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/deepseq-1.4.8.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/deepseq-1.4.8.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/deepseq-1.4.8.1
 hs-libraries:         HSdeepseq-1.4.8.1
 depends:              array-0.5.5.0 base-4.18.0.0 ghc-prim-0.10.0
 haddock-interfaces:
@@ -759,14 +760,14 @@ hidden-modules:
     System.Directory.Internal.C_utimensat
     System.Directory.Internal.Common System.Directory.Internal.Config
     System.Directory.Internal.Posix System.Directory.Internal.Windows
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/directory-1.3.8.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/directory-1.3.8.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/directory-1.3.8.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/directory-1.3.8.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/directory-1.3.8.1
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/directory-1.3.8.1
 hs-libraries:         HSdirectory-1.3.8.1
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/directory-1.3.8.1/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/directory-1.3.8.1/include
 depends:
     base-4.18.0.0 filepath-1.4.100.1 time-1.12.2 unix-2.8.1.0
 haddock-interfaces:
@@ -791,11 +792,11 @@ description:          Extensible optionally-pure exceptions.
 category:             Control, Exceptions, Monad
 exposed:              True
 exposed-modules:      Control.Monad.Catch Control.Monad.Catch.Pure
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/exceptions-0.10.7
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/exceptions-0.10.7
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/exceptions-0.10.7
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/exceptions-0.10.7
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/exceptions-0.10.7
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/exceptions-0.10.7
 hs-libraries:         HSexceptions-0.10.7
 depends:
     base-4.18.0.0 mtl-2.3.1 stm-2.5.1.0 template-haskell-2.20.0.0
@@ -842,11 +843,13 @@ exposed-modules:
     System.OsPath.Windows.Internal System.OsString
     System.OsString.Internal System.OsString.Internal.Types
     System.OsString.Posix System.OsString.Windows
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/filepath-1.4.100.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/filepath-1.4.100.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/filepath-1.4.100.1
+library-dirs:
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/filepath-1.4.100.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/filepath-1.4.100.1
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/filepath-1.4.100.1
 hs-libraries:         HSfilepath-1.4.100.1
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 deepseq-1.4.8.1 exceptions-0.10.7
@@ -1140,10 +1143,10 @@ exposed-modules:
     Language.Haskell.Syntax.ImpExp, Language.Haskell.Syntax.Lit,
     Language.Haskell.Syntax.Module.Name, Language.Haskell.Syntax.Pat,
     Language.Haskell.Syntax.Type
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-9.6.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghc-9.6.1
 hs-libraries:         HSghc-9.6.1
 includes:
     Unique.h Bytecodes.h ClosureTypes.h FunTypes.h ghc-llvm-version.h
@@ -1176,16 +1179,16 @@ exposed-modules:
     GHC.Num.BigNat GHC.Num.Integer GHC.Num.Natural GHC.Num.Primitives
     GHC.Num.WordArray
 hidden-modules:       GHC.Num.Backend.GMP
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-bignum-1.3
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-bignum-1.3
 dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghc-bignum-1.3
 hs-libraries:         HSghc-bignum-1.3
 extra-libraries:      gmp
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-bignum-1.3/include
 depends:              ghc-prim-0.10.0
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/ghc-bignum-1.3/ghc-bignum.haddock
@@ -1224,10 +1227,10 @@ exposed-modules:
     GHC.Platform.Host, GHC.Serialized, GHC.Settings.Utils,
     GHC.UniqueSubdir, GHC.Unit.Database, GHC.Utils.Encoding,
     GHC.Utils.Encoding.UTF8, GHC.Version
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-boot-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-boot-9.6.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-boot-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghc-boot-9.6.1
 hs-libraries:         HSghc-boot-9.6.1
 depends:
     base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0 containers-0.6.7
@@ -1257,11 +1260,11 @@ category:             GHC
 exposed:              True
 exposed-modules:
     GHC.ForeignSrcLang.Type GHC.LanguageExtensions.Type GHC.Lexeme
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
 hs-libraries:         HSghc-boot-th-9.6.1
 depends:              base-4.18.0.0
 haddock-interfaces:
@@ -1293,12 +1296,12 @@ category:             Data
 exposed:              True
 exposed-modules:      GHC.Compact GHC.Compact.Serialized
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
 hs-libraries:         HSghc-compact-0.1.0.0
 depends:              base-4.18.0.0 bytestring-0.11.4.0 ghc-prim-0.10.0
 haddock-interfaces:
@@ -1328,10 +1331,10 @@ exposed-modules:
     GHC.Exts.Heap.ProfInfo.PeekProfInfo_ProfilingDisabled
     GHC.Exts.Heap.ProfInfo.PeekProfInfo_ProfilingEnabled
     GHC.Exts.Heap.ProfInfo.Types GHC.Exts.Heap.Utils
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-heap-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-heap-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-heap-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-heap-9.6.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-heap-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghc-heap-9.6.1
 hs-libraries:         HSghc-heap-9.6.1
 depends:
     base-4.18.0.0 containers-0.6.7 ghc-prim-0.10.0 rts-1.0.2
@@ -1359,10 +1362,10 @@ exposed-modules:
     GHC.CString GHC.Classes GHC.Debug GHC.Magic GHC.Magic.Dict
     GHC.Prim.Exception GHC.Prim.Ext GHC.Prim.Panic GHC.Prim.PtrEq
     GHC.PrimopWrappers GHC.Tuple GHC.Tuple.Prim GHC.Types GHC.Prim
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-prim-0.10.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-prim-0.10.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-prim-0.10.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-prim-0.10.0
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghc-prim-0.10.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghc-prim-0.10.0
 hs-libraries:         HSghc-prim-0.10.0
 extra-libraries:      c m
 depends:              rts-1.0.2
@@ -1389,12 +1392,12 @@ exposed-modules:
     GHCi.InfoTable GHCi.Message GHCi.ObjLink GHCi.RemoteTypes
     GHCi.ResolvedBCO GHCi.Run GHCi.Signals GHCi.StaticPtrTable GHCi.TH
     GHCi.TH.Binary
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghci-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghci-9.6.1
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghci-9.6.1
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/ghci-9.6.1
 dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghci-9.6.1
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/ghci-9.6.1
 hs-libraries:         HSghci-9.6.1
 include-dirs:
 depends:
@@ -1446,18 +1449,16 @@ hidden-modules:
     System.Console.Haskeline.Backend.Posix
     System.Console.Haskeline.Backend.Posix.Encoder
     System.Console.Haskeline.Backend.DumbTerm
-    System.Console.Haskeline.Backend.Terminfo
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/haskeline-0.8.2.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/haskeline-0.8.2.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/haskeline-0.8.2.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/haskeline-0.8.2.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/haskeline-0.8.2.1
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/haskeline-0.8.2.1
 hs-libraries:         HShaskeline-0.8.2.1
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 containers-0.6.7
     directory-1.3.8.1 exceptions-0.10.7 filepath-1.4.100.1
-    process-1.6.17.0 stm-2.5.1.0 terminfo-0.4.1.6 transformers-0.6.1.0
-    unix-2.8.1.0
+    process-1.6.17.0 stm-2.5.1.0 transformers-0.6.1.0 unix-2.8.1.0
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1/haskeline.haddock
 haddock-html:         ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1
@@ -1479,10 +1480,10 @@ category:             Control
 exposed:              True
 exposed-modules:
     Trace.Hpc.Mix Trace.Hpc.Reflect Trace.Hpc.Tix Trace.Hpc.Util
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/hpc-0.6.2.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/hpc-0.6.2.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/hpc-0.6.2.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/hpc-0.6.2.0
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/hpc-0.6.2.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/hpc-0.6.2.0
 hs-libraries:         HShpc-0.6.2.0
 depends:
     base-4.18.0.0 containers-0.6.7 deepseq-1.4.8.1 directory-1.3.8.1
@@ -1510,10 +1511,10 @@ description:
 category:             Numeric, Algebra
 exposed:              True
 exposed-modules:      GHC.Integer.GMP.Internals
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/integer-gmp-1.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/integer-gmp-1.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/integer-gmp-1.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/integer-gmp-1.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/integer-gmp-1.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/integer-gmp-1.1
 hs-libraries:         HSinteger-gmp-1.1
 depends:              base-4.18.0.0 ghc-bignum-1.3 ghc-prim-0.10.0
 haddock-interfaces:
@@ -1536,10 +1537,10 @@ description:
 category:             Development
 exposed:              True
 exposed-modules:      GHCi.Utils IServ
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/libiserv-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/libiserv-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/libiserv-9.6.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/libiserv-9.6.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/libiserv-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/libiserv-9.6.1
 hs-libraries:         HSlibiserv-9.6.1
 depends:
     base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0 containers-0.6.7
@@ -1579,10 +1580,10 @@ exposed-modules:
     Control.Monad.State.Strict Control.Monad.Trans Control.Monad.Writer
     Control.Monad.Writer.CPS Control.Monad.Writer.Class
     Control.Monad.Writer.Lazy Control.Monad.Writer.Strict
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/mtl-2.3.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/mtl-2.3.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/mtl-2.3.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/mtl-2.3.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/mtl-2.3.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/mtl-2.3.1
 hs-libraries:         HSmtl-2.3.1
 depends:              base-4.18.0.0 transformers-0.6.1.0
 haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/mtl-2.3.1/mtl.haddock
@@ -1629,10 +1630,10 @@ exposed-modules:
     Text.ParserCombinators.Parsec.Pos
     Text.ParserCombinators.Parsec.Prim
     Text.ParserCombinators.Parsec.Token
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/parsec-3.1.16.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/parsec-3.1.16.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/parsec-3.1.16.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/parsec-3.1.16.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/parsec-3.1.16.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/parsec-3.1.16.1
 hs-libraries:         HSparsec-3.1.16.1
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 mtl-2.3.1 text-2.0.2
@@ -1664,10 +1665,10 @@ exposed-modules:
     Text.PrettyPrint.Annotated.HughesPJ
     Text.PrettyPrint.Annotated.HughesPJClass Text.PrettyPrint.HughesPJ
     Text.PrettyPrint.HughesPJClass
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/pretty-1.1.3.6
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/pretty-1.1.3.6
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/pretty-1.1.3.6
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/pretty-1.1.3.6
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/pretty-1.1.3.6
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/pretty-1.1.3.6
 hs-libraries:         HSpretty-1.1.3.6
 depends:              base-4.18.0.0 deepseq-1.4.8.1 ghc-prim-0.10.0
 haddock-interfaces:
@@ -1693,13 +1694,14 @@ category:             System
 exposed:              True
 exposed-modules:      System.Cmd System.Process System.Process.Internals
 hidden-modules:       System.Process.Common System.Process.Posix
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/process-1.6.17.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/process-1.6.17.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/process-1.6.17.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/process-1.6.17.0
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/process-1.6.17.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/process-1.6.17.0
 hs-libraries:         HSprocess-1.6.17.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/process-1.6.17.0/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/process-1.6.17.0/include
 includes:             runProcess.h
 depends:
     base-4.18.0.0 deepseq-1.4.8.1 directory-1.3.8.1 filepath-1.4.100.1
@@ -1717,14 +1719,14 @@ license:              BSD-3-Clause
 maintainer:           glasgow-haskell-users@haskell.org
 exposed:              True
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/rts-1.0.2
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/rts-1.0.2
 dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/rts-1.0.2
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/rts-1.0.2
 hs-libraries:         HSrts-1.0.2
 extra-libraries:      c m rt dl ffi numa
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/rts-1.0.2/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/rts-1.0.2/include
 includes:             Rts.h
 ld-options:
     "-Wl,-u,hs_atomic_add64" "-Wl,-u,hs_atomic_sub64"
@@ -1819,10 +1821,10 @@ exposed-modules:
     Control.Concurrent.STM.TSem Control.Concurrent.STM.TVar
     Control.Monad.STM
 hidden-modules:       Control.Sequential.STM
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/stm-2.5.1.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/stm-2.5.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/stm-2.5.1.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/stm-2.5.1.0
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/stm-2.5.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/stm-2.5.1.0
 hs-libraries:         HSstm-2.5.1.0
 depends:              array-0.5.5.0 base-4.18.0.0
 haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/stm-2.5.1.0/stm.haddock
@@ -1866,12 +1868,12 @@ hidden-modules:
     Language.Haskell.TH.Lib.Map System.FilePath System.FilePath.Posix
     System.FilePath.Windows
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/template-haskell-2.20.0.0
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/template-haskell-2.20.0.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/template-haskell-2.20.0.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/template-haskell-2.20.0.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/template-haskell-2.20.0.0
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/template-haskell-2.20.0.0
 hs-libraries:         HStemplate-haskell-2.20.0.0
 depends:
     base-4.18.0.0 ghc-boot-th-9.6.1 ghc-prim-0.10.0 pretty-1.1.3.6
@@ -1879,43 +1881,6 @@ haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/template-haskell-2.20.0.0/template-haskell.haddock
 haddock-html:
     ${pkgroot}/../../doc/html/libraries/template-haskell-2.20.0.0
----
-name:                 terminfo
-version:              0.4.1.6
-visibility:           public
-id:                   terminfo-0.4.1.6
-key:                  terminfo-0.4.1.6
-license:              BSD-3-Clause
-copyright:            (c) Judah Jacobson
-maintainer:           Judah Jacobson <judah.jacobson@gmail.com>
-author:               Judah Jacobson
-stability:            Stable
-homepage:             https://github.com/judah/terminfo
-synopsis:             Haskell bindings to the terminfo library.
-description:
-    This library provides an interface to the terminfo database (via bindings to the
-    curses library).  <http://en.wikipedia.org/wiki/Terminfo Terminfo> allows POSIX
-    systems to interact with a variety of terminals using a standard set of capabilities.
-category:             User Interfaces
-exposed:              True
-exposed-modules:
-    System.Console.Terminfo System.Console.Terminfo.Base
-    System.Console.Terminfo.Color System.Console.Terminfo.Cursor
-    System.Console.Terminfo.Edit System.Console.Terminfo.Effects
-    System.Console.Terminfo.Keys
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/terminfo-0.4.1.6
-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/terminfo-0.4.1.6
-dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/terminfo-0.4.1.6
-hs-libraries:         HSterminfo-0.4.1.6
-extra-libraries:      tinfo
-include-dirs:
-depends:              base-4.18.0.0
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/terminfo-0.4.1.6/terminfo.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/terminfo-0.4.1.6
 ---
 name:                 text
 version:              2.0.2
@@ -1982,10 +1947,10 @@ exposed-modules:
     Data.Text.Lazy.IO Data.Text.Lazy.Internal Data.Text.Lazy.Read
     Data.Text.Read Data.Text.Unsafe
 hidden-modules:       Data.Text.Show
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/text-2.0.2
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/text-2.0.2
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/text-2.0.2
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/text-2.0.2
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/text-2.0.2
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/text-2.0.2
 hs-libraries:         HStext-2.0.2
 depends:
     array-0.5.5.0 base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0
@@ -2036,13 +2001,13 @@ hidden-modules:
     Data.Time.Format.Locale Data.Time.Format.Format.Class
     Data.Time.Format.Format.Instances Data.Time.Format.Parse.Class
     Data.Time.Format.Parse.Instances
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/time-1.12.2
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/time-1.12.2
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/time-1.12.2
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/time-1.12.2
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/time-1.12.2
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/time-1.12.2
 hs-libraries:         HStime-1.12.2
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/time-1.12.2/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/time-1.12.2/include
 depends:              base-4.18.0.0 deepseq-1.4.8.1
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/time-1.12.2/time.haddock
@@ -2091,12 +2056,12 @@ exposed-modules:
     Control.Monad.Trans.Writer.Lazy Control.Monad.Trans.Writer.Strict
     Data.Functor.Constant Data.Functor.Reverse
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/transformers-0.6.1.0
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/transformers-0.6.1.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/transformers-0.6.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/transformers-0.6.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/transformers-0.6.1.0
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/transformers-0.6.1.0
 hs-libraries:         HStransformers-0.6.1.0
 depends:              base-4.18.0.0
 haddock-interfaces:
@@ -2150,13 +2115,13 @@ hidden-modules:
     System.Posix.Files.Common System.Posix.IO.Common
     System.Posix.Process.Common System.Posix.Terminal.Common
     System.Posix.User.Common
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/unix-2.8.1.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/unix-2.8.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/unix-2.8.1.0
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/unix-2.8.1.0
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/unix-2.8.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/unix-2.8.1.0
 hs-libraries:         HSunix-2.8.1.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/unix-2.8.1.0/include
+    ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/unix-2.8.1.0/include
 includes:             HsUnix.h execvpe.h
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 filepath-1.4.100.1 time-1.12.2
@@ -2192,10 +2157,11 @@ hidden-modules:
     Text.XHtml.Frameset.Attributes Text.XHtml.Frameset.Elements
     Text.XHtml.Transitional.Attributes Text.XHtml.Transitional.Elements
     Text.XHtml.BlockTable Text.XHtml.Extras Text.XHtml.Internals
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/xhtml-3000.2.2.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/xhtml-3000.2.2.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/xhtml-3000.2.2.1
+import-dirs:          ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/xhtml-3000.2.2.1
+library-dirs:         ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1/xhtml-3000.2.2.1
+dynamic-library-dirs: ${pkgroot}/../lib/aarch64-linux-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/aarch64-linux-ghc-9.6.1/xhtml-3000.2.2.1
 hs-libraries:         HSxhtml-3000.2.2.1
 depends:              base-4.18.0.0
 haddock-interfaces:
