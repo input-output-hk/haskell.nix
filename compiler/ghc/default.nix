@@ -251,6 +251,7 @@ let
         "default"
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
+          + lib.optionalString enableDWARF "+debug_info"
       } --docs=no-sphinx -j --verbose";
 
   # When installation is done by copying the stage1 output the directory layout
