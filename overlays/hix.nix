@@ -35,7 +35,7 @@ final: prev: { haskell-nix = prev.haskell-nix // { hix = {
           then {}
           else import src;
       projectDefaults = importDefaults (toString (src.origSrcSubDir or src) + "/nix/hix.nix");
-    in final.haskell-nix.project [
+    in final.haskell-nix.project' [
             (import ../modules/hix-project.nix)
             projectDefaults
             commandArgs'
