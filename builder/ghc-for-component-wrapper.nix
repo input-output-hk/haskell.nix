@@ -39,7 +39,11 @@ let
   ''
   # ... but retain the lib/ghc/bin directory. This contains `unlit' and friends.
   + ''
-    ln -s $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
+    if [ -d $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ]; then
+      ln -s $unwrappedGhc/lib/${ghcCommand}-${ghc.version}/bin ${libDir}
+    else
+      ln -s $unwrappedGhc/lib/bin ${libDir}
+    fi
   ''
   # ... and the ghcjs shim's if they are available ...
   + ''

@@ -220,7 +220,11 @@ let
 
   useHadrian = builtins.compareVersions ghc-version "9.4" >= 0;
   # Indicates if we are installing by copying the hadrian stage1 output
-  installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || targetPlatform.isMusl);
+  # I think we want to _always_ just install stage1. For now let's do this
+  # for musl only; but I'd like to stay far away from the unnecessary
+  # bindist logic as we can. It's slow, and buggy, and doesn't provide any
+  # value for us.
+  installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
 
   inherit ((buildPackages.haskell-nix.cabalProject {
       compiler-nix-name = "ghc8107";
@@ -586,6 +590,10 @@ stdenv.mkDerivation (rec {
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
+      '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
+        substituteInPlace hadrian/cfg/system.config \
+          --replace 'cross-compiling       = YES' \
+                    'cross-compiling       = NO'
       '';
     });
 
@@ -651,6 +659,10 @@ stdenv.mkDerivation (rec {
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
+  '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
+    substituteInPlace hadrian/cfg/system.config \
+      --replace 'cross-compiling       = YES' \
+                'cross-compiling       = NO'
   '';
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
@@ -658,6 +670,13 @@ stdenv.mkDerivation (rec {
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
+  '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget) ''
+    ${hadrian}/bin/hadrian ${hadrianArgs} stage2:exe:iserv
+    pushd _build/stage1/bin
+    for exe in *; do
+      mv $exe ${targetPrefix}$exe
+    done
+    popd
   '';
 
   # Hadrian's installation only works for native compilers, and is broken for cross compilers.
