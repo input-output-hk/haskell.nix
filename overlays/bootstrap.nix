@@ -188,6 +188,8 @@ in {
                 ++ fromUntil "9.4.1"  "9.6"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch
                 ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.4" && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-make-stage-1-lib-ghc.patch
+                ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.4.1" "9.6" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
+                ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.6.1" "9.8" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch

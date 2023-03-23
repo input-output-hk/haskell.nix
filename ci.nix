@@ -58,7 +58,6 @@
         ghc902 = false;
         ghc927 = true;
         ghc944 = true;
-        ghc96020230302 = true;
         ghc961 = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
