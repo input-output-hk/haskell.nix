@@ -260,6 +260,7 @@ let
         (if targetPlatform.isGhcjs then "quick" else "default")
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
+          + lib.optionalString enableDWARF "+debug_info"
           + lib.optionalString targetPlatform.isGhcjs "+native_bignum+no_profiled_libs"
       } --docs=no-sphinx -j --verbose";
 
