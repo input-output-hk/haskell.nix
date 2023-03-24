@@ -44,8 +44,11 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   { name = "${prefix}-arm";           value = (pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-hello-arm";     value = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (
-        (system == "x86_64-linux"  && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107"])
-     || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107"])) [
+        (system == "x86_64-linux"   && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107" "ghc961"])
+     || (system == "aarch64-linux"  && __elem compiler-nix-name ["ghc961"])
+     || (system == "x86_64-darwin"  && __elem compiler-nix-name ["ghc8107" "ghc961"])
+     || (system == "aarch64-darwin" && __elem compiler-nix-name ["ghc961"])) [
+  { name = "${prefix}-boot-ghcjs";    value = pkgs.pkgsCross.ghcjs.ghc-boot-packages-nix.${compiler-nix-name}; }
   { name = "${prefix}-ghcjs";         value = (pkgs.pkgsCross.ghcjs.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-hello-ghcjs";   value = pkgs.pkgsCross.ghcjs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ])) compiler-nix-names) systems)
