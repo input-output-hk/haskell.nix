@@ -184,8 +184,11 @@ in {
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
                 ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/MR10116.patch
-                ++ fromUntil "9.4.1"  "9.6"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch
-                ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch
+                ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.4.1" "9.6" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
+                ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.6.1" "9.8" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.2"    ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.2"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.2"    ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
@@ -212,6 +215,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_6;
                 llvmPackages = final.llvmPackages_6;
 
@@ -234,6 +238,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
 
@@ -255,6 +260,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
 
@@ -276,6 +282,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
 
@@ -297,6 +304,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_7;
                 llvmPackages = final.llvmPackages_7;
 
@@ -318,6 +326,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -339,6 +348,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -360,6 +370,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -381,6 +392,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -402,6 +414,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -423,6 +436,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -444,6 +458,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -465,6 +480,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -486,6 +502,7 @@ in {
                 };
                 inherit sphinx;
 
+                useLLVM = !final.stdenv.targetPlatform.isx86;
                 buildLlvmPackages = final.buildPackages.llvmPackages_9;
                 llvmPackages = final.llvmPackages_9;
 
@@ -505,7 +522,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -525,7 +541,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -545,7 +560,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -565,7 +579,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -585,7 +598,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -605,7 +617,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -625,7 +636,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -648,7 +658,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -671,7 +680,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -694,7 +702,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -717,7 +724,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -740,7 +746,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
@@ -763,7 +768,6 @@ in {
                 };
                 inherit sphinx;
 
-                useLLVM = !final.stdenv.targetPlatform.isx86 && !final.stdenv.targetPlatform.isAarch64;
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 

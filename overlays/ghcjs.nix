@@ -12,7 +12,7 @@ final: prev:
 
         # Apply the patches that came with `ghcjs`
         # Also add a "Keep alive" message to prevent hydra timeouts when hsc2hs runs
-        packages = pkgs.lib.genAttrs ["base" "directory" "filepath" "ghc-prim" "integer-gmp" "process" "template-haskell" "time" "unix" "Win32" ]
+        packages = pkgs.lib.genAttrs (pkgs.lib.optionals (__elem config.compiler.nix-name ["ghc865" "ghc884" "ghc8107"]) ["base" "directory" "filepath" "ghc-prim" "integer-gmp" "process" "template-haskell" "time" "unix" "Win32" ])
           (name: {
             components.library.preConfigure = ''
               tr -d '\r' < ${name}.cabal > ${name}.cabal-new

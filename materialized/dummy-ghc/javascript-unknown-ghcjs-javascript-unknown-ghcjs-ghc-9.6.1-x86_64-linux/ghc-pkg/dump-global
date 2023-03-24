@@ -237,10 +237,11 @@ hidden-modules:
     Distribution.Simple.GHC.Internal Distribution.Simple.GHC.ImplInfo
     Distribution.Simple.ConfigureScript Distribution.ZinzaPrelude
     Paths_Cabal
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-3.10.1.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-3.10.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/Cabal-3.10.1.0
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/Cabal-3.10.1.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/Cabal-3.10.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/Cabal-3.10.1.0
 hs-libraries:         HSCabal-3.10.1.0
 depends:
     Cabal-syntax-3.10.1.0 array-0.5.5.0 base-4.18.0.0
@@ -356,12 +357,12 @@ exposed-modules:
     Distribution.Utils.String Distribution.Utils.Structured
     Distribution.Version Language.Haskell.Extension
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/Cabal-syntax-3.10.1.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/Cabal-syntax-3.10.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/Cabal-syntax-3.10.1.0
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/Cabal-syntax-3.10.1.0
 hs-libraries:         HSCabal-syntax-3.10.1.0
 depends:
     array-0.5.5.0 base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0
@@ -394,10 +395,11 @@ exposed-modules:
     Data.Array.MArray.Safe Data.Array.ST Data.Array.ST.Safe
     Data.Array.Storable Data.Array.Storable.Internals
     Data.Array.Storable.Safe Data.Array.Unboxed Data.Array.Unsafe
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/array-0.5.5.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/array-0.5.5.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/array-0.5.5.0
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/array-0.5.5.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/array-0.5.5.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/array-0.5.5.0
 hs-libraries:         HSarray-0.5.5.0
 depends:              base-4.18.0.0
 haddock-interfaces:
@@ -469,8 +471,9 @@ exposed-modules:
     GHC.IO.Handle.Types, GHC.IO.IOMode, GHC.IO.StdHandles,
     GHC.IO.SubSystem, GHC.IO.Unsafe, GHC.IOArray, GHC.IOPort,
     GHC.IORef, GHC.InfoProv, GHC.Int, GHC.Integer,
-    GHC.Integer.Logarithms, GHC.IsList, GHC.Ix, GHC.List, GHC.MVar,
-    GHC.Maybe, GHC.Natural, GHC.Num,
+    GHC.Integer.Logarithms, GHC.IsList, GHC.Ix, GHC.JS.Prim,
+    GHC.JS.Prim.Internal, GHC.JS.Prim.Internal.Build, GHC.List,
+    GHC.MVar, GHC.Maybe, GHC.Natural, GHC.Num,
     GHC.Num.BigNat from ghc-bignum-1.3:GHC.Num.BigNat,
     GHC.Num.Integer from ghc-bignum-1.3:GHC.Num.Integer,
     GHC.Num.Natural from ghc-bignum-1.3:GHC.Num.Natural, GHC.OldList,
@@ -510,16 +513,15 @@ hidden-modules:
     GHC.Event.KQueue GHC.Event.Manager GHC.Event.Poll GHC.Event.Thread
     GHC.Event.TimerManager System.CPUTime.Posix.ClockGetTime
     System.CPUTime.Posix.Times System.CPUTime.Posix.RUsage
-    System.CPUTime.Unsupported
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/base-4.18.0.0
-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/base-4.18.0.0
-dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/base-4.18.0.0
+    System.CPUTime.Unsupported System.CPUTime.Javascript
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/base-4.18.0.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/base-4.18.0.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/base-4.18.0.0
 hs-libraries:         HSbase-4.18.0.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/base-4.18.0.0/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/base-4.18.0.0/include
 includes:             HsBase.h
 depends:              ghc-bignum-1.3 ghc-prim-0.10.0 rts-1.0.2
 haddock-interfaces:
@@ -555,10 +557,11 @@ exposed-modules:
 hidden-modules:
     Data.Binary.Class Data.Binary.Internal Data.Binary.Generic
     Data.Binary.FloatCast
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/binary-0.8.9.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/binary-0.8.9.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/binary-0.8.9.1
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/binary-0.8.9.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/binary-0.8.9.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/binary-0.8.9.1
 hs-libraries:         HSbinary-0.8.9.1
 depends:
     array-0.5.5.0 base-4.18.0.0 bytestring-0.11.4.0 containers-0.6.7
@@ -636,15 +639,15 @@ hidden-modules:
     Data.ByteString.Builder.RealFloat.TableGenerator
     Data.ByteString.Internal.Type Data.ByteString.Lazy.Internal.Deque
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/bytestring-0.11.4.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/bytestring-0.11.4.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/bytestring-0.11.4.0
 hs-libraries:         HSbytestring-0.11.4.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/bytestring-0.11.4.0/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/bytestring-0.11.4.0/include
 includes:             fpstring.h
 depends:
     base-4.18.0.0 deepseq-1.4.8.1 ghc-prim-0.10.0
@@ -692,10 +695,13 @@ hidden-modules:
     Utils.Containers.Internal.TypeError
     Data.Map.Internal.DeprecatedShowTree
     Data.IntMap.Internal.DeprecatedDebug
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/containers-0.6.7
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/containers-0.6.7
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/containers-0.6.7
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/containers-0.6.7
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/containers-0.6.7
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/containers-0.6.7
 hs-libraries:         HScontainers-0.6.7
 depends:
     array-0.5.5.0 base-4.18.0.0 deepseq-1.4.8.1
@@ -729,10 +735,13 @@ category:             Control
 exposed:              True
 exposed-modules:      Control.DeepSeq
 hidden-modules:       Control.DeepSeq.BackDoor
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/deepseq-1.4.8.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/deepseq-1.4.8.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/deepseq-1.4.8.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/deepseq-1.4.8.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/deepseq-1.4.8.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/deepseq-1.4.8.1
 hs-libraries:         HSdeepseq-1.4.8.1
 depends:              array-0.5.5.0 base-4.18.0.0 ghc-prim-0.10.0
 haddock-interfaces:
@@ -759,14 +768,16 @@ hidden-modules:
     System.Directory.Internal.C_utimensat
     System.Directory.Internal.Common System.Directory.Internal.Config
     System.Directory.Internal.Posix System.Directory.Internal.Windows
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/directory-1.3.8.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/directory-1.3.8.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/directory-1.3.8.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/directory-1.3.8.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/directory-1.3.8.1
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/directory-1.3.8.1
 hs-libraries:         HSdirectory-1.3.8.1
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/directory-1.3.8.1/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/directory-1.3.8.1/include
 depends:
     base-4.18.0.0 filepath-1.4.100.1 time-1.12.2 unix-2.8.1.0
 haddock-interfaces:
@@ -791,11 +802,13 @@ description:          Extensible optionally-pure exceptions.
 category:             Control, Exceptions, Monad
 exposed:              True
 exposed-modules:      Control.Monad.Catch Control.Monad.Catch.Pure
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/exceptions-0.10.7
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/exceptions-0.10.7
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/exceptions-0.10.7
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/exceptions-0.10.7
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/exceptions-0.10.7
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/exceptions-0.10.7
 hs-libraries:         HSexceptions-0.10.7
 depends:
     base-4.18.0.0 mtl-2.3.1 stm-2.5.1.0 template-haskell-2.20.0.0
@@ -842,11 +855,13 @@ exposed-modules:
     System.OsPath.Windows.Internal System.OsString
     System.OsString.Internal System.OsString.Internal.Types
     System.OsString.Posix System.OsString.Windows
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/filepath-1.4.100.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/filepath-1.4.100.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/filepath-1.4.100.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/filepath-1.4.100.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/filepath-1.4.100.1
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/filepath-1.4.100.1
 hs-libraries:         HSfilepath-1.4.100.1
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 deepseq-1.4.8.1 exceptions-0.10.7
@@ -1043,40 +1058,42 @@ exposed-modules:
     GHC.Rename.Unbound, GHC.Rename.Utils, GHC.Runtime.Context,
     GHC.Runtime.Debugger, GHC.Runtime.Eval, GHC.Runtime.Eval.Types,
     GHC.Runtime.Heap.Inspect, GHC.Runtime.Heap.Layout,
-    GHC.Runtime.Interpreter, GHC.Runtime.Interpreter.Types,
-    GHC.Runtime.Loader, GHC.Settings, GHC.Settings.Config,
-    GHC.Settings.Constants, GHC.Settings.IO, GHC.Stg.BcPrep,
-    GHC.Stg.CSE, GHC.Stg.Debug, GHC.Stg.FVs, GHC.Stg.InferTags,
-    GHC.Stg.InferTags.Rewrite, GHC.Stg.InferTags.TagSig,
-    GHC.Stg.InferTags.Types, GHC.Stg.Lift, GHC.Stg.Lift.Analysis,
-    GHC.Stg.Lift.Config, GHC.Stg.Lift.Monad, GHC.Stg.Lint,
-    GHC.Stg.Pipeline, GHC.Stg.Stats, GHC.Stg.Subst, GHC.Stg.Syntax,
-    GHC.Stg.Unarise, GHC.Stg.Utils, GHC.StgToByteCode, GHC.StgToCmm,
-    GHC.StgToCmm.ArgRep, GHC.StgToCmm.Bind, GHC.StgToCmm.CgUtils,
-    GHC.StgToCmm.Closure, GHC.StgToCmm.Config, GHC.StgToCmm.DataCon,
-    GHC.StgToCmm.Env, GHC.StgToCmm.Expr, GHC.StgToCmm.ExtCode,
-    GHC.StgToCmm.Foreign, GHC.StgToCmm.Heap, GHC.StgToCmm.Hpc,
-    GHC.StgToCmm.InfoTableProv, GHC.StgToCmm.Layout, GHC.StgToCmm.Lit,
-    GHC.StgToCmm.Monad, GHC.StgToCmm.Prim, GHC.StgToCmm.Prof,
-    GHC.StgToCmm.Sequel, GHC.StgToCmm.TagCheck, GHC.StgToCmm.Ticky,
-    GHC.StgToCmm.Types, GHC.StgToCmm.Utils, GHC.StgToJS,
-    GHC.StgToJS.Apply, GHC.StgToJS.Arg, GHC.StgToJS.Closure,
-    GHC.StgToJS.CodeGen, GHC.StgToJS.CoreUtils, GHC.StgToJS.DataCon,
-    GHC.StgToJS.Deps, GHC.StgToJS.Expr, GHC.StgToJS.ExprCtx,
-    GHC.StgToJS.FFI, GHC.StgToJS.Heap, GHC.StgToJS.Ids,
-    GHC.StgToJS.Linker.Linker, GHC.StgToJS.Linker.Types,
-    GHC.StgToJS.Linker.Utils, GHC.StgToJS.Literal, GHC.StgToJS.Monad,
-    GHC.StgToJS.Object, GHC.StgToJS.Prim, GHC.StgToJS.Printer,
-    GHC.StgToJS.Profiling, GHC.StgToJS.Regs, GHC.StgToJS.Rts.Rts,
-    GHC.StgToJS.Rts.Types, GHC.StgToJS.Sinker, GHC.StgToJS.Stack,
-    GHC.StgToJS.StaticPtr, GHC.StgToJS.StgUtils, GHC.StgToJS.Symbols,
-    GHC.StgToJS.Types, GHC.StgToJS.Utils, GHC.SysTools,
-    GHC.SysTools.Ar, GHC.SysTools.BaseDir, GHC.SysTools.Cpp,
-    GHC.SysTools.Elf, GHC.SysTools.Info, GHC.SysTools.Process,
-    GHC.SysTools.Tasks, GHC.SysTools.Terminal, GHC.Tc.Deriv,
-    GHC.Tc.Deriv.Functor, GHC.Tc.Deriv.Generate, GHC.Tc.Deriv.Generics,
-    GHC.Tc.Deriv.Infer, GHC.Tc.Deriv.Utils, GHC.Tc.Errors,
-    GHC.Tc.Errors.Hole, GHC.Tc.Errors.Hole.FitTypes, GHC.Tc.Errors.Ppr,
+    GHC.Runtime.Interpreter, GHC.Runtime.Interpreter.JS,
+    GHC.Runtime.Interpreter.Process, GHC.Runtime.Interpreter.Types,
+    GHC.Runtime.Loader, GHC.Runtime.Utils, GHC.Settings,
+    GHC.Settings.Config, GHC.Settings.Constants, GHC.Settings.IO,
+    GHC.Stg.BcPrep, GHC.Stg.CSE, GHC.Stg.Debug, GHC.Stg.FVs,
+    GHC.Stg.InferTags, GHC.Stg.InferTags.Rewrite,
+    GHC.Stg.InferTags.TagSig, GHC.Stg.InferTags.Types, GHC.Stg.Lift,
+    GHC.Stg.Lift.Analysis, GHC.Stg.Lift.Config, GHC.Stg.Lift.Monad,
+    GHC.Stg.Lint, GHC.Stg.Pipeline, GHC.Stg.Stats, GHC.Stg.Subst,
+    GHC.Stg.Syntax, GHC.Stg.Unarise, GHC.Stg.Utils, GHC.StgToByteCode,
+    GHC.StgToCmm, GHC.StgToCmm.ArgRep, GHC.StgToCmm.Bind,
+    GHC.StgToCmm.CgUtils, GHC.StgToCmm.Closure, GHC.StgToCmm.Config,
+    GHC.StgToCmm.DataCon, GHC.StgToCmm.Env, GHC.StgToCmm.Expr,
+    GHC.StgToCmm.ExtCode, GHC.StgToCmm.Foreign, GHC.StgToCmm.Heap,
+    GHC.StgToCmm.Hpc, GHC.StgToCmm.InfoTableProv, GHC.StgToCmm.Layout,
+    GHC.StgToCmm.Lit, GHC.StgToCmm.Monad, GHC.StgToCmm.Prim,
+    GHC.StgToCmm.Prof, GHC.StgToCmm.Sequel, GHC.StgToCmm.TagCheck,
+    GHC.StgToCmm.Ticky, GHC.StgToCmm.Types, GHC.StgToCmm.Utils,
+    GHC.StgToJS, GHC.StgToJS.Apply, GHC.StgToJS.Arg,
+    GHC.StgToJS.Closure, GHC.StgToJS.CodeGen, GHC.StgToJS.CoreUtils,
+    GHC.StgToJS.DataCon, GHC.StgToJS.Deps, GHC.StgToJS.Expr,
+    GHC.StgToJS.ExprCtx, GHC.StgToJS.FFI, GHC.StgToJS.Heap,
+    GHC.StgToJS.Ids, GHC.StgToJS.Linker.Linker,
+    GHC.StgToJS.Linker.Types, GHC.StgToJS.Linker.Utils,
+    GHC.StgToJS.Literal, GHC.StgToJS.Monad, GHC.StgToJS.Object,
+    GHC.StgToJS.Prim, GHC.StgToJS.Printer, GHC.StgToJS.Profiling,
+    GHC.StgToJS.Regs, GHC.StgToJS.Rts.Rts, GHC.StgToJS.Rts.Types,
+    GHC.StgToJS.Sinker, GHC.StgToJS.Stack, GHC.StgToJS.StaticPtr,
+    GHC.StgToJS.StgUtils, GHC.StgToJS.Symbols, GHC.StgToJS.Types,
+    GHC.StgToJS.Utils, GHC.SysTools, GHC.SysTools.Ar,
+    GHC.SysTools.BaseDir, GHC.SysTools.Cpp, GHC.SysTools.Elf,
+    GHC.SysTools.Info, GHC.SysTools.Process, GHC.SysTools.Tasks,
+    GHC.SysTools.Terminal, GHC.Tc.Deriv, GHC.Tc.Deriv.Functor,
+    GHC.Tc.Deriv.Generate, GHC.Tc.Deriv.Generics, GHC.Tc.Deriv.Infer,
+    GHC.Tc.Deriv.Utils, GHC.Tc.Errors, GHC.Tc.Errors.Hole,
+    GHC.Tc.Errors.Hole.FitTypes, GHC.Tc.Errors.Ppr,
     GHC.Tc.Errors.Types, GHC.Tc.Gen.Annotation, GHC.Tc.Gen.App,
     GHC.Tc.Gen.Arrow, GHC.Tc.Gen.Bind, GHC.Tc.Gen.Default,
     GHC.Tc.Gen.Export, GHC.Tc.Gen.Expr, GHC.Tc.Gen.Foreign,
@@ -1140,10 +1157,10 @@ exposed-modules:
     Language.Haskell.Syntax.ImpExp, Language.Haskell.Syntax.Lit,
     Language.Haskell.Syntax.Module.Name, Language.Haskell.Syntax.Pat,
     Language.Haskell.Syntax.Type
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-9.6.1
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-9.6.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghc-9.6.1
 hs-libraries:         HSghc-9.6.1
 includes:
     Unique.h Bytecodes.h ClosureTypes.h FunTypes.h ghc-llvm-version.h
@@ -1175,17 +1192,12 @@ exposed-modules:
     GHC.Num.Backend GHC.Num.Backend.Native GHC.Num.Backend.Selected
     GHC.Num.BigNat GHC.Num.Integer GHC.Num.Natural GHC.Num.Primitives
     GHC.Num.WordArray
-hidden-modules:       GHC.Num.Backend.GMP
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3
-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3
-dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-bignum-1.3
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-bignum-1.3
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghc-bignum-1.3
 hs-libraries:         HSghc-bignum-1.3
-extra-libraries:      gmp
-include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-bignum-1.3/include
 depends:              ghc-prim-0.10.0
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/ghc-bignum-1.3/ghc-bignum.haddock
@@ -1224,10 +1236,11 @@ exposed-modules:
     GHC.Platform.Host, GHC.Serialized, GHC.Settings.Utils,
     GHC.UniqueSubdir, GHC.Unit.Database, GHC.Utils.Encoding,
     GHC.Utils.Encoding.UTF8, GHC.Version
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-boot-9.6.1
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-boot-9.6.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-boot-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghc-boot-9.6.1
 hs-libraries:         HSghc-boot-9.6.1
 depends:
     base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0 containers-0.6.7
@@ -1257,11 +1270,13 @@ category:             GHC
 exposed:              True
 exposed-modules:
     GHC.ForeignSrcLang.Type GHC.LanguageExtensions.Type GHC.Lexeme
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-boot-th-9.6.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-boot-th-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-boot-th-9.6.1
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghc-boot-th-9.6.1
 hs-libraries:         HSghc-boot-th-9.6.1
 depends:              base-4.18.0.0
 haddock-interfaces:
@@ -1293,12 +1308,12 @@ category:             Data
 exposed:              True
 exposed-modules:      GHC.Compact GHC.Compact.Serialized
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-compact-0.1.0.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-compact-0.1.0.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-compact-0.1.0.0
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghc-compact-0.1.0.0
 hs-libraries:         HSghc-compact-0.1.0.0
 depends:              base-4.18.0.0 bytestring-0.11.4.0 ghc-prim-0.10.0
 haddock-interfaces:
@@ -1328,10 +1343,11 @@ exposed-modules:
     GHC.Exts.Heap.ProfInfo.PeekProfInfo_ProfilingDisabled
     GHC.Exts.Heap.ProfInfo.PeekProfInfo_ProfilingEnabled
     GHC.Exts.Heap.ProfInfo.Types GHC.Exts.Heap.Utils
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-heap-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-heap-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-heap-9.6.1
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-heap-9.6.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-heap-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghc-heap-9.6.1
 hs-libraries:         HSghc-heap-9.6.1
 depends:
     base-4.18.0.0 containers-0.6.7 ghc-prim-0.10.0 rts-1.0.2
@@ -1359,12 +1375,14 @@ exposed-modules:
     GHC.CString GHC.Classes GHC.Debug GHC.Magic GHC.Magic.Dict
     GHC.Prim.Exception GHC.Prim.Ext GHC.Prim.Panic GHC.Prim.PtrEq
     GHC.PrimopWrappers GHC.Tuple GHC.Tuple.Prim GHC.Types GHC.Prim
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-prim-0.10.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghc-prim-0.10.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghc-prim-0.10.0
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-prim-0.10.0
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghc-prim-0.10.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghc-prim-0.10.0
 hs-libraries:         HSghc-prim-0.10.0
-extra-libraries:      c m
 depends:              rts-1.0.2
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/ghc-prim-0.10.0/ghc-prim.haddock
@@ -1386,17 +1404,14 @@ category:             GHC
 exposed:              True
 exposed-modules:
     GHCi.BinaryArray GHCi.BreakArray GHCi.CreateBCO GHCi.FFI
-    GHCi.InfoTable GHCi.Message GHCi.ObjLink GHCi.RemoteTypes
-    GHCi.ResolvedBCO GHCi.Run GHCi.Signals GHCi.StaticPtrTable GHCi.TH
-    GHCi.TH.Binary
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghci-9.6.1
-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/ghci-9.6.1
-dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/ghci-9.6.1
+    GHCi.Message GHCi.ObjLink GHCi.RemoteTypes GHCi.ResolvedBCO
+    GHCi.Run GHCi.Server GHCi.Signals GHCi.StaticPtrTable GHCi.TH
+    GHCi.TH.Binary GHCi.Utils
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghci-9.6.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/ghci-9.6.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/ghci-9.6.1
 hs-libraries:         HSghci-9.6.1
-include-dirs:
 depends:
     array-0.5.5.0 base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0
     containers-0.6.7 deepseq-1.4.8.1 filepath-1.4.100.1 ghc-boot-9.6.1
@@ -1446,18 +1461,18 @@ hidden-modules:
     System.Console.Haskeline.Backend.Posix
     System.Console.Haskeline.Backend.Posix.Encoder
     System.Console.Haskeline.Backend.DumbTerm
-    System.Console.Haskeline.Backend.Terminfo
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/haskeline-0.8.2.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/haskeline-0.8.2.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/haskeline-0.8.2.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/haskeline-0.8.2.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/haskeline-0.8.2.1
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/haskeline-0.8.2.1
 hs-libraries:         HShaskeline-0.8.2.1
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 containers-0.6.7
     directory-1.3.8.1 exceptions-0.10.7 filepath-1.4.100.1
-    process-1.6.17.0 stm-2.5.1.0 terminfo-0.4.1.6 transformers-0.6.1.0
-    unix-2.8.1.0
+    process-1.6.17.0 stm-2.5.1.0 transformers-0.6.1.0 unix-2.8.1.0
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1/haskeline.haddock
 haddock-html:         ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1
@@ -1479,10 +1494,10 @@ category:             Control
 exposed:              True
 exposed-modules:
     Trace.Hpc.Mix Trace.Hpc.Reflect Trace.Hpc.Tix Trace.Hpc.Util
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/hpc-0.6.2.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/hpc-0.6.2.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/hpc-0.6.2.0
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/hpc-0.6.2.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/hpc-0.6.2.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/hpc-0.6.2.0
 hs-libraries:         HShpc-0.6.2.0
 depends:
     base-4.18.0.0 containers-0.6.7 deepseq-1.4.8.1 directory-1.3.8.1
@@ -1510,43 +1525,18 @@ description:
 category:             Numeric, Algebra
 exposed:              True
 exposed-modules:      GHC.Integer.GMP.Internals
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/integer-gmp-1.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/integer-gmp-1.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/integer-gmp-1.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/integer-gmp-1.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/integer-gmp-1.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/integer-gmp-1.1
 hs-libraries:         HSinteger-gmp-1.1
 depends:              base-4.18.0.0 ghc-bignum-1.3 ghc-prim-0.10.0
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1/integer-gmp.haddock
 haddock-html:         ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1
----
-name:                 libiserv
-version:              9.6.1
-visibility:           public
-id:                   libiserv-9.6.1
-key:                  libiserv-9.6.1
-license:              BSD-3-Clause
-copyright:            XXX
-maintainer:           XXX
-author:               XXX
-synopsis:
-    Provides shared functionality between iserv and iserv-proxy.
-description:
-    Provides shared functionality between iserv and iserv-proxy.
-category:             Development
-exposed:              True
-exposed-modules:      GHCi.Utils IServ
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/libiserv-9.6.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/libiserv-9.6.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/libiserv-9.6.1
-hs-libraries:         HSlibiserv-9.6.1
-depends:
-    base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0 containers-0.6.7
-    deepseq-1.4.8.1 ghci-9.6.1 unix-2.8.1.0
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/libiserv-9.6.1/libiserv.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/libiserv-9.6.1
 ---
 name:                 mtl
 version:              2.3.1
@@ -1579,10 +1569,10 @@ exposed-modules:
     Control.Monad.State.Strict Control.Monad.Trans Control.Monad.Writer
     Control.Monad.Writer.CPS Control.Monad.Writer.Class
     Control.Monad.Writer.Lazy Control.Monad.Writer.Strict
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/mtl-2.3.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/mtl-2.3.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/mtl-2.3.1
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/mtl-2.3.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/mtl-2.3.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/mtl-2.3.1
 hs-libraries:         HSmtl-2.3.1
 depends:              base-4.18.0.0 transformers-0.6.1.0
 haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/mtl-2.3.1/mtl.haddock
@@ -1629,10 +1619,13 @@ exposed-modules:
     Text.ParserCombinators.Parsec.Pos
     Text.ParserCombinators.Parsec.Prim
     Text.ParserCombinators.Parsec.Token
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/parsec-3.1.16.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/parsec-3.1.16.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/parsec-3.1.16.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/parsec-3.1.16.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/parsec-3.1.16.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/parsec-3.1.16.1
 hs-libraries:         HSparsec-3.1.16.1
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 mtl-2.3.1 text-2.0.2
@@ -1664,10 +1657,11 @@ exposed-modules:
     Text.PrettyPrint.Annotated.HughesPJ
     Text.PrettyPrint.Annotated.HughesPJClass Text.PrettyPrint.HughesPJ
     Text.PrettyPrint.HughesPJClass
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/pretty-1.1.3.6
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/pretty-1.1.3.6
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/pretty-1.1.3.6
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/pretty-1.1.3.6
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/pretty-1.1.3.6
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/pretty-1.1.3.6
 hs-libraries:         HSpretty-1.1.3.6
 depends:              base-4.18.0.0 deepseq-1.4.8.1 ghc-prim-0.10.0
 haddock-interfaces:
@@ -1693,13 +1687,16 @@ category:             System
 exposed:              True
 exposed-modules:      System.Cmd System.Process System.Process.Internals
 hidden-modules:       System.Process.Common System.Process.Posix
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/process-1.6.17.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/process-1.6.17.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/process-1.6.17.0
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/process-1.6.17.0
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/process-1.6.17.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/process-1.6.17.0
 hs-libraries:         HSprocess-1.6.17.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/process-1.6.17.0/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/process-1.6.17.0/include
 includes:             runProcess.h
 depends:
     base-4.18.0.0 deepseq-1.4.8.1 directory-1.3.8.1 filepath-1.4.100.1
@@ -1716,79 +1713,12 @@ key:                  rts-1.0.2
 license:              BSD-3-Clause
 maintainer:           glasgow-haskell-users@haskell.org
 exposed:              True
-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/rts-1.0.2
-dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/rts-1.0.2
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/rts-1.0.2
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/rts-1.0.2
 hs-libraries:         HSrts-1.0.2
-extra-libraries:      c m rt dl ffi numa
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/rts-1.0.2/include
-includes:             Rts.h
-ld-options:
-    "-Wl,-u,hs_atomic_add64" "-Wl,-u,hs_atomic_sub64"
-    "-Wl,-u,hs_atomic_and64" "-Wl,-u,hs_atomic_nand64"
-    "-Wl,-u,hs_atomic_or64" "-Wl,-u,hs_atomic_xor64"
-    "-Wl,-u,hs_atomicread64" "-Wl,-u,hs_atomicwrite64"
-    "-Wl,-u,base_GHCziTopHandler_runIO_closure"
-    "-Wl,-u,base_GHCziTopHandler_runNonIO_closure"
-    "-Wl,-u,ghczmprim_GHCziTupleziPrim_Z0T_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_True_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_False_closure"
-    "-Wl,-u,base_GHCziPack_unpackCString_closure"
-    "-Wl,-u,base_GHCziWeakziFinalizze_runFinalizzerBatch_closure"
-    "-Wl,-u,base_GHCziIOziException_stackOverflow_closure"
-    "-Wl,-u,base_GHCziIOziException_heapOverflow_closure"
-    "-Wl,-u,base_GHCziIOziException_allocationLimitExceeded_closure"
-    "-Wl,-u,base_GHCziIOziException_blockedIndefinitelyOnMVar_closure"
-    "-Wl,-u,base_GHCziIOziException_blockedIndefinitelyOnSTM_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactFunction_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactPinned_closure"
-    "-Wl,-u,base_GHCziIOziException_cannotCompactMutable_closure"
-    "-Wl,-u,base_GHCziIOPort_doubleReadException_closure"
-    "-Wl,-u,base_ControlziExceptionziBase_nonTermination_closure"
-    "-Wl,-u,base_ControlziExceptionziBase_nestedAtomically_closure"
-    "-Wl,-u,base_GHCziEventziThread_blockedOnBadFD_closure"
-    "-Wl,-u,base_GHCziConcziSync_runSparks_closure"
-    "-Wl,-u,base_GHCziConcziIO_ensureIOManagerIsRunning_closure"
-    "-Wl,-u,base_GHCziConcziIO_interruptIOManager_closure"
-    "-Wl,-u,base_GHCziConcziIO_ioManagerCapabilitiesChanged_closure"
-    "-Wl,-u,base_GHCziConcziSignal_runHandlersPtr_closure"
-    "-Wl,-u,base_GHCziTopHandler_flushStdHandles_closure"
-    "-Wl,-u,base_GHCziTopHandler_runMainIO_closure"
-    "-Wl,-u,ghczmprim_GHCziTypes_Czh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Izh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Fzh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Dzh_con_info"
-    "-Wl,-u,ghczmprim_GHCziTypes_Wzh_con_info"
-    "-Wl,-u,base_GHCziPtr_Ptr_con_info"
-    "-Wl,-u,base_GHCziPtr_FunPtr_con_info"
-    "-Wl,-u,base_GHCziInt_I8zh_con_info"
-    "-Wl,-u,base_GHCziInt_I16zh_con_info"
-    "-Wl,-u,base_GHCziInt_I32zh_con_info"
-    "-Wl,-u,base_GHCziInt_I64zh_con_info"
-    "-Wl,-u,base_GHCziWord_W8zh_con_info"
-    "-Wl,-u,base_GHCziWord_W16zh_con_info"
-    "-Wl,-u,base_GHCziWord_W32zh_con_info"
-    "-Wl,-u,base_GHCziWord_W64zh_con_info"
-    "-Wl,-u,base_GHCziStable_StablePtr_con_info"
-    "-Wl,-u,hs_atomic_add8" "-Wl,-u,hs_atomic_add16"
-    "-Wl,-u,hs_atomic_add32" "-Wl,-u,hs_atomic_sub8"
-    "-Wl,-u,hs_atomic_sub16" "-Wl,-u,hs_atomic_sub32"
-    "-Wl,-u,hs_atomic_and8" "-Wl,-u,hs_atomic_and16"
-    "-Wl,-u,hs_atomic_and32" "-Wl,-u,hs_atomic_nand8"
-    "-Wl,-u,hs_atomic_nand16" "-Wl,-u,hs_atomic_nand32"
-    "-Wl,-u,hs_atomic_or8" "-Wl,-u,hs_atomic_or16"
-    "-Wl,-u,hs_atomic_or32" "-Wl,-u,hs_atomic_xor8"
-    "-Wl,-u,hs_atomic_xor16" "-Wl,-u,hs_atomic_xor32"
-    "-Wl,-u,hs_cmpxchg8" "-Wl,-u,hs_cmpxchg16" "-Wl,-u,hs_cmpxchg32"
-    "-Wl,-u,hs_cmpxchg64" "-Wl,-u,hs_xchg8" "-Wl,-u,hs_xchg16"
-    "-Wl,-u,hs_xchg32" "-Wl,-u,hs_xchg64" "-Wl,-u,hs_atomicread8"
-    "-Wl,-u,hs_atomicread16" "-Wl,-u,hs_atomicread32"
-    "-Wl,-u,hs_atomicwrite8" "-Wl,-u,hs_atomicwrite16"
-    "-Wl,-u,hs_atomicwrite32"
-    "-Wl,-u,base_GHCziStackziCloneStack_StackSnapshot_closure"
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/rts-1.0.2/include
 haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/rts-1.0.2/rts.haddock
 haddock-html:         ${pkgroot}/../../doc/html/libraries/rts-1.0.2
 ---
@@ -1819,27 +1749,14 @@ exposed-modules:
     Control.Concurrent.STM.TSem Control.Concurrent.STM.TVar
     Control.Monad.STM
 hidden-modules:       Control.Sequential.STM
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/stm-2.5.1.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/stm-2.5.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/stm-2.5.1.0
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/stm-2.5.1.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/stm-2.5.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/stm-2.5.1.0
 hs-libraries:         HSstm-2.5.1.0
 depends:              array-0.5.5.0 base-4.18.0.0
 haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/stm-2.5.1.0/stm.haddock
 haddock-html:         ${pkgroot}/../../doc/html/libraries/stm-2.5.1.0
----
-name:                 system-cxx-std-lib
-version:              1.0
-visibility:           public
-id:                   system-cxx-std-lib-1.0
-key:                  system-cxx-std-lib-1.0
-synopsis:
-    A placeholder for the system's C++ standard library implementation.
-category:             System
-exposed:              True
-library-dirs:
-dynamic-library-dirs:
-extra-libraries:      stdc++
 ---
 name:                 template-haskell
 version:              2.20.0.0
@@ -1866,12 +1783,12 @@ hidden-modules:
     Language.Haskell.TH.Lib.Map System.FilePath System.FilePath.Posix
     System.FilePath.Windows
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/template-haskell-2.20.0.0
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/template-haskell-2.20.0.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/template-haskell-2.20.0.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/template-haskell-2.20.0.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/template-haskell-2.20.0.0
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/template-haskell-2.20.0.0
 hs-libraries:         HStemplate-haskell-2.20.0.0
 depends:
     base-4.18.0.0 ghc-boot-th-9.6.1 ghc-prim-0.10.0 pretty-1.1.3.6
@@ -1879,43 +1796,6 @@ haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/template-haskell-2.20.0.0/template-haskell.haddock
 haddock-html:
     ${pkgroot}/../../doc/html/libraries/template-haskell-2.20.0.0
----
-name:                 terminfo
-version:              0.4.1.6
-visibility:           public
-id:                   terminfo-0.4.1.6
-key:                  terminfo-0.4.1.6
-license:              BSD-3-Clause
-copyright:            (c) Judah Jacobson
-maintainer:           Judah Jacobson <judah.jacobson@gmail.com>
-author:               Judah Jacobson
-stability:            Stable
-homepage:             https://github.com/judah/terminfo
-synopsis:             Haskell bindings to the terminfo library.
-description:
-    This library provides an interface to the terminfo database (via bindings to the
-    curses library).  <http://en.wikipedia.org/wiki/Terminfo Terminfo> allows POSIX
-    systems to interact with a variety of terminals using a standard set of capabilities.
-category:             User Interfaces
-exposed:              True
-exposed-modules:
-    System.Console.Terminfo System.Console.Terminfo.Base
-    System.Console.Terminfo.Color System.Console.Terminfo.Cursor
-    System.Console.Terminfo.Edit System.Console.Terminfo.Effects
-    System.Console.Terminfo.Keys
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/terminfo-0.4.1.6
-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/terminfo-0.4.1.6
-dynamic-library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/terminfo-0.4.1.6
-hs-libraries:         HSterminfo-0.4.1.6
-extra-libraries:      tinfo
-include-dirs:
-depends:              base-4.18.0.0
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/terminfo-0.4.1.6/terminfo.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/terminfo-0.4.1.6
 ---
 name:                 text
 version:              2.0.2
@@ -1982,10 +1862,10 @@ exposed-modules:
     Data.Text.Lazy.IO Data.Text.Lazy.Internal Data.Text.Lazy.Read
     Data.Text.Read Data.Text.Unsafe
 hidden-modules:       Data.Text.Show
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/text-2.0.2
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/text-2.0.2
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/text-2.0.2
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/text-2.0.2
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/text-2.0.2
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/text-2.0.2
 hs-libraries:         HStext-2.0.2
 depends:
     array-0.5.5.0 base-4.18.0.0 binary-0.8.9.1 bytestring-0.11.4.0
@@ -2036,13 +1916,13 @@ hidden-modules:
     Data.Time.Format.Locale Data.Time.Format.Format.Class
     Data.Time.Format.Format.Instances Data.Time.Format.Parse.Class
     Data.Time.Format.Parse.Instances
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/time-1.12.2
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/time-1.12.2
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/time-1.12.2
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/time-1.12.2
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/time-1.12.2
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/time-1.12.2
 hs-libraries:         HStime-1.12.2
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/time-1.12.2/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/time-1.12.2/include
 depends:              base-4.18.0.0 deepseq-1.4.8.1
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/time-1.12.2/time.haddock
@@ -2091,12 +1971,12 @@ exposed-modules:
     Control.Monad.Trans.Writer.Lazy Control.Monad.Trans.Writer.Strict
     Data.Functor.Constant Data.Functor.Reverse
 import-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/transformers-0.6.1.0
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/transformers-0.6.1.0
 library-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/transformers-0.6.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/transformers-0.6.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
 data-dir:
-    ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/transformers-0.6.1.0
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/transformers-0.6.1.0
 hs-libraries:         HStransformers-0.6.1.0
 depends:              base-4.18.0.0
 haddock-interfaces:
@@ -2150,13 +2030,13 @@ hidden-modules:
     System.Posix.Files.Common System.Posix.IO.Common
     System.Posix.Process.Common System.Posix.Terminal.Common
     System.Posix.User.Common
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/unix-2.8.1.0
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/unix-2.8.1.0
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/unix-2.8.1.0
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/unix-2.8.1.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/unix-2.8.1.0
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/unix-2.8.1.0
 hs-libraries:         HSunix-2.8.1.0
 include-dirs:
-    ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/unix-2.8.1.0/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/unix-2.8.1.0/include
 includes:             HsUnix.h execvpe.h
 depends:
     base-4.18.0.0 bytestring-0.11.4.0 filepath-1.4.100.1 time-1.12.2
@@ -2192,12 +2072,25 @@ hidden-modules:
     Text.XHtml.Frameset.Attributes Text.XHtml.Frameset.Elements
     Text.XHtml.Transitional.Attributes Text.XHtml.Transitional.Elements
     Text.XHtml.BlockTable Text.XHtml.Extras Text.XHtml.Internals
-import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/xhtml-3000.2.2.1
-library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1/xhtml-3000.2.2.1
-dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.6.1
-data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.6.1/xhtml-3000.2.2.1
+import-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/xhtml-3000.2.2.1
+library-dirs:
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1/xhtml-3000.2.2.1
+dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.6.1
+data-dir:
+    ${pkgroot}/../share/javascript-ghcjs-ghc-9.6.1/xhtml-3000.2.2.1
 hs-libraries:         HSxhtml-3000.2.2.1
 depends:              base-4.18.0.0
 haddock-interfaces:
     ${pkgroot}/../../doc/html/libraries/xhtml-3000.2.2.1/xhtml.haddock
 haddock-html:         ${pkgroot}/../../doc/html/libraries/xhtml-3000.2.2.1
+---
+name:       system-cxx-std-lib
+version:    1.0
+visibility: public
+id:         system-cxx-std-lib-1.0
+key:        system-cxx-std-lib-1.0
+synopsis:
+    A placeholder for the system's C++ standard library implementation.
+category:   System
+exposed:    True
