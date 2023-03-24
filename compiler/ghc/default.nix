@@ -20,7 +20,8 @@ let self =
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
-, useLLVM ? !stdenv.targetPlatform.isx86 && !stdenv.targetPlatform.isGhcjs
+, # we don't need LLVM for x86, aarch64, or ghcjs
+  useLLVM ? with stdenv.targetPlatform; !(isx86 || isAarch64 || isGhcjs)
 , # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
