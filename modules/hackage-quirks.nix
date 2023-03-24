@@ -63,7 +63,7 @@ in [
             + lib.optionalString (!__elem config.compiler-nix-name ["ghc901" "ghc902"]) " -hlint"
         }
         constraints: hls-fourmolu-plugin <1.1.1.0, hls-rename-plugin <1.0.2.0, hls-stan-plugin <1.0.1.0
-      '';
+      '');
     }
   )
 
