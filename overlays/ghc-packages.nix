@@ -66,9 +66,10 @@ let
       ghc-prim     = "libraries/ghc-prim";
       hpc          = "libraries/hpc";
       integer-gmp  = "libraries/integer-gmp";
-      libiserv     = "libraries/libiserv";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
+    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9.6" < 0) {
+      libiserv     = "libraries/libiserv";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.6" > 0) {
       Cabal        = "libraries/Cabal/Cabal";
       Cabal-syntax = "libraries/Cabal/Cabal-syntax";

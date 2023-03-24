@@ -1,0 +1,287 @@
+From 0af1146dd805ba11c38529ad043b461883046989 Mon Sep 17 00:00:00 2001
+From: Bodigrim <andrew.lelechenko@gmail.com>
+Date: Mon, 23 Jan 2023 20:56:10 +0000
+Subject: [PATCH] Assorted changes to avoid Data.List.{head,tail}
+
+---
+ compiler/GHC/CmmToAsm/BlockLayout.hs    |  2 +-
+ compiler/GHC/Core/Opt/Simplify/Utils.hs |  2 +-
+ compiler/GHC/JS/Make.hs                 |  7 +++----
+ compiler/GHC/StgToJS/Linker/Linker.hs   |  5 +++--
+ compiler/GHC/Utils/Misc.hs              |  2 +-
+ libraries/base/Data/Data.hs             | 19 +++++++++----------
+ utils/check-exact/ExactPrint.hs         |  9 +++++----
+ utils/check-exact/Main.hs               |  7 ++++---
+ utils/check-exact/Preprocess.hs         |  4 ++--
+ utils/check-exact/Transform.hs          |  2 +-
+ utils/check-exact/Utils.hs              |  4 ++--
+ 11 files changed, 32 insertions(+), 31 deletions(-)
+
+diff --git a/compiler/GHC/CmmToAsm/BlockLayout.hs b/compiler/GHC/CmmToAsm/BlockLayout.hs
+index 56afdfb668..ebbbf5bbd3 100644
+--- a/compiler/GHC/CmmToAsm/BlockLayout.hs
++++ b/compiler/GHC/CmmToAsm/BlockLayout.hs
+@@ -14,6 +14,7 @@ module GHC.CmmToAsm.BlockLayout
+ where
+ 
+ import GHC.Prelude hiding (head, init, last, tail)
++import qualified GHC.Prelude as Partial (head, tail)
+ 
+ import GHC.Platform
+ 
+@@ -41,7 +42,6 @@ import GHC.Utils.Panic.Plain
+ import GHC.Utils.Misc
+ 
+ import Data.List (sortOn, sortBy, nub)
+-import qualified Data.List as Partial (head, tail)
+ import Data.List.NonEmpty (nonEmpty)
+ import qualified Data.List.NonEmpty as NE
+ import Data.Foldable (toList)
+diff --git a/compiler/GHC/Core/Opt/Simplify/Utils.hs b/compiler/GHC/Core/Opt/Simplify/Utils.hs
+index cef65eb2b1..c8c42d3fbf 100644
+--- a/compiler/GHC/Core/Opt/Simplify/Utils.hs
++++ b/compiler/GHC/Core/Opt/Simplify/Utils.hs
+@@ -43,6 +43,7 @@ module GHC.Core.Opt.Simplify.Utils (
+     ) where
+ 
+ import GHC.Prelude hiding (head, init, last, tail)
++import qualified GHC.Prelude as Partial (head)
+ 
+ import GHC.Core
+ import GHC.Types.Literal ( isLitRubbish )
+@@ -83,7 +84,6 @@ import GHC.Utils.Panic.Plain
+ 
+ import Control.Monad    ( when )
+ import Data.List        ( sortBy )
+-import qualified Data.List as Partial ( head )
+ 
+ {- *********************************************************************
+ *                                                                      *
+diff --git a/compiler/GHC/JS/Make.hs b/compiler/GHC/JS/Make.hs
+index fc30d0d915..6dee4cec93 100644
+--- a/compiler/GHC/JS/Make.hs
++++ b/compiler/GHC/JS/Make.hs
+@@ -141,7 +141,6 @@ import Control.Arrow ((***))
+ 
+ import Data.Array
+ import qualified Data.Map as M
+-import qualified Data.List as List
+ 
+ import GHC.Utils.Outputable (Outputable (..))
+ import GHC.Data.FastString
+@@ -277,21 +276,21 @@ jVar f = UnsatBlock . IS $ do
+ jForIn :: ToSat a => JExpr -> (JExpr -> a)  -> JStat
+ jForIn e f = UnsatBlock . IS $ do
+                (block, is) <- runIdentSupply $ toSat_ f []
+-               let i = List.head is
++               let i = head is
+                return $ decl i `mappend` ForInStat False i e block
+ 
+ -- | As with "jForIn" but creating a \"for each in\" statement.
+ jForEachIn :: ToSat a => JExpr -> (JExpr -> a) -> JStat
+ jForEachIn e f = UnsatBlock . IS $ do
+                (block, is) <- runIdentSupply $ toSat_ f []
+-               let i = List.head is
++               let i = head is
+                return $ decl i `mappend` ForInStat True i e block
+ 
+ -- | As with "jForIn" but creating a \"for each in\" statement.
+ jTryCatchFinally :: (ToSat a) => JStat -> a -> JStat -> JStat
+ jTryCatchFinally s f s2 = UnsatBlock . IS $ do
+                      (block, is) <- runIdentSupply $ toSat_ f []
+-                     let i = List.head is
++                     let i = head is
+                      return $ TryStat s i block s2
+ 
+ -- | construct a JS variable reference
+diff --git a/compiler/GHC/StgToJS/Linker/Linker.hs b/compiler/GHC/StgToJS/Linker/Linker.hs
+index 4de9bd8a15..0739c73204 100644
+--- a/compiler/GHC/StgToJS/Linker/Linker.hs
++++ b/compiler/GHC/StgToJS/Linker/Linker.hs
+@@ -84,9 +84,10 @@ import Data.Function            (on)
+ import Data.IntSet              (IntSet)
+ import qualified Data.IntSet              as IS
+ import Data.IORef
+-import Data.List  ( partition, nub, intercalate, group, sort
++import Data.List  ( partition, nub, intercalate, sort
+                   , groupBy, intersperse,
+                   )
++import qualified Data.List.NonEmpty       as NE
+ import Data.Map.Strict          (Map)
+ import qualified Data.Map.Strict          as M
+ import Data.Maybe
+@@ -228,7 +229,7 @@ computeLinkDependencies cfg logger target unit_env units objFiles extraStaticDep
+   (objDepsMap, objRequiredUnits) <- loadObjDeps objFiles
+ 
+   let roots    = S.fromList . filter isRootFun $ concatMap (M.keys . depsHaskellExported . fst) (M.elems objDepsMap)
+-      rootMods = map (moduleNameString . moduleName . head) . group . sort . map funModule . S.toList $ roots
++      rootMods = map (moduleNameString . moduleName . NE.head) . NE.group . sort . map funModule . S.toList $ roots
+       objPkgs  = map moduleUnitId $ nub (M.keys objDepsMap)
+ 
+   when (logVerbAtLeast logger 2) $ void $ do
+diff --git a/compiler/GHC/Utils/Misc.hs b/compiler/GHC/Utils/Misc.hs
+index a115c61336..97791954f7 100644
+--- a/compiler/GHC/Utils/Misc.hs
++++ b/compiler/GHC/Utils/Misc.hs
+@@ -121,6 +121,7 @@ module GHC.Utils.Misc (
+     ) where
+ 
+ import GHC.Prelude.Basic hiding ( head, init, last, tail )
++import qualified GHC.Prelude.Basic as Partial ( head )
+ 
+ import GHC.Utils.Exception
+ import GHC.Utils.Panic.Plain
+@@ -129,7 +130,6 @@ import GHC.Utils.Fingerprint
+ 
+ import Data.Data
+ import qualified Data.List as List
+-import qualified Data.List as Partial ( head )
+ import Data.List.NonEmpty  ( NonEmpty(..), last, nonEmpty )
+ import qualified Data.List.NonEmpty as NE
+ 
+diff --git a/libraries/base/Data/Data.hs b/libraries/base/Data/Data.hs
+index 1a081484a9..5fcecc867a 100644
+--- a/libraries/base/Data/Data.hs
++++ b/libraries/base/Data/Data.hs
+@@ -704,10 +704,9 @@ readConstr dt str =
+ 
+     -- Traverse list of algebraic datatype constructors
+     idx :: [Constr] -> Maybe Constr
+-    idx cons = let fit = filter ((==) str . showConstr) cons
+-                in if fit == []
+-                     then Nothing
+-                     else Just (head fit)
++    idx cons = case filter ((==) str . showConstr) cons of
++                [] -> Nothing
++                hd : _ -> Just hd
+ 
+     ffloat :: Double -> Constr
+     ffloat =  mkPrimCon dt str . FloatConstr . toRational
+@@ -850,17 +849,17 @@ isNorepType dt = case datarep dt of
+ -- drop *.*.*... before name
+ --
+ tyconUQname :: String -> String
+-tyconUQname x = let x' = dropWhile (not . (==) '.') x
+-                 in if x' == [] then x else tyconUQname (tail x')
++tyconUQname x = case dropWhile (not . (==) '.') x of
++                  [] -> x
++                  _ : tl -> tyconUQname tl
+ 
+ 
+ -- | Gets the module of a type constructor:
+ -- take *.*.*... before name
+ tyconModule :: String -> String
+-tyconModule x = let (a,b) = break ((==) '.') x
+-                 in if b == ""
+-                      then b
+-                      else a ++ tyconModule' (tail b)
++tyconModule x = case break ((==) '.') x of
++                  (_, "") -> ""
++                  (a, _ : tl) -> a ++ tyconModule' tl
+   where
+     tyconModule' y = let y' = tyconModule y
+                       in if y' == "" then "" else ('.':y')
+diff --git a/utils/check-exact/ExactPrint.hs b/utils/check-exact/ExactPrint.hs
+index a8d179700f..71874d4c1f 100644
+--- a/utils/check-exact/ExactPrint.hs
++++ b/utils/check-exact/ExactPrint.hs
+@@ -3691,12 +3691,13 @@ exactVanillaDeclHead :: (Monad m, Monoid w)
+ exactVanillaDeclHead thing tvs@(HsQTvs { hsq_explicit = tyvars }) fixity context = do
+   let
+     exact_tyvars (varl:varsr)
+-      | fixity == Infix && length varsr > 1 = do
++      | hvarsr : tvarsr@(_ : _) <- varsr
++      , fixity == Infix = do
+           varl' <- markAnnotated varl
+           thing' <- markAnnotated thing
+-          hvarsr <- markAnnotated (head varsr)
+-          tvarsr <- markAnnotated (tail varsr)
+-          return (thing', varl':hvarsr:tvarsr)
++          hvarsr' <- markAnnotated hvarsr
++          tvarsr' <- markAnnotated tvarsr
++          return (thing', varl':hvarsr':tvarsr')
+       | fixity == Infix = do
+           varl' <- markAnnotated varl
+           thing' <- markAnnotated thing
+diff --git a/utils/check-exact/Main.hs b/utils/check-exact/Main.hs
+index cde677603b..a573471271 100644
+--- a/utils/check-exact/Main.hs
++++ b/utils/check-exact/Main.hs
+@@ -576,11 +576,11 @@ changeWhereIn3b :: Changer
+ changeWhereIn3b _libdir (L l p) = do
+   let decls0 = hsmodDecls p
+       (decls,_,w) = runTransform (balanceCommentsList decls0)
+-      (de0:_:de1:d2:_) = decls
++      (de0:tdecls@(_:de1:d2:_)) = decls
+       de0' = setEntryDP de0 (DifferentLine 2 0)
+       de1' = setEntryDP de1 (DifferentLine 2 0)
+       d2' = setEntryDP d2 (DifferentLine 2 0)
+-      decls' = d2':de1':de0':(tail decls)
++      decls' = d2':de1':de0':tdecls
+   debugM $ unlines w
+   debugM $ "changeWhereIn3b:de1':" ++ showAst de1'
+   let p2 = p { hsmodDecls = decls'}
+@@ -798,8 +798,9 @@ rmDecl5 _libdir lp = do
+           go :: HsExpr GhcPs -> Transform (HsExpr GhcPs)
+           go (HsLet a tkLet lb tkIn expr) = do
+             decs <- hsDeclsValBinds lb
++            let hdecs : _ = decs
+             let dec = last decs
+-            _ <- transferEntryDP (head decs) dec
++            _ <- transferEntryDP hdecs dec
+             lb' <- replaceDeclsValbinds WithoutWhere lb [dec]
+             return (HsLet a tkLet lb' tkIn expr)
+           go x = return x
+diff --git a/utils/check-exact/Preprocess.hs b/utils/check-exact/Preprocess.hs
+index 756dc18984..55d84763f5 100644
+--- a/utils/check-exact/Preprocess.hs
++++ b/utils/check-exact/Preprocess.hs
+@@ -192,7 +192,7 @@ stripPreprocessorDirectives :: GHC.StringBuffer -> GHC.StringBuffer
+ stripPreprocessorDirectives buf = buf'
+   where
+     srcByLine = lines $ sbufToString buf
+-    noDirectivesLines = map (\line -> if line /= [] && head line == '#' then "" else line) srcByLine
++    noDirectivesLines = map (\line -> case line of '#' : _ -> ""; _ -> line) srcByLine
+     buf' = GHC.stringToStringBuffer $ unlines noDirectivesLines
+ 
+ -- ---------------------------------------------------------------------
+@@ -259,7 +259,7 @@ fingerprintStrings ss = GHC.fingerprintFingerprints $ map GHC.fingerprintString
+ getPreprocessorAsComments :: FilePath -> IO [(GHC.Located GHC.Token, String)]
+ getPreprocessorAsComments srcFile = do
+   fcontents <- readFileGhc srcFile
+-  let directives = filter (\(_lineNum,line) -> line /= [] && head line == '#')
++  let directives = filter (\(_lineNum,line) -> case line of '#' : _ -> True; _ -> False)
+                     $ zip [1..] (lines fcontents)
+ 
+   let mkTok (lineNum,line) = (GHC.L l (GHC.ITlineComment line (makeBufSpan l)),line)
+diff --git a/utils/check-exact/Transform.hs b/utils/check-exact/Transform.hs
+index 13c089eb71..7d961db06a 100644
+--- a/utils/check-exact/Transform.hs
++++ b/utils/check-exact/Transform.hs
+@@ -322,7 +322,7 @@ setEntryDP (L (SrcSpanAnn (EpAnn (Anchor r _) an cs) l) a) dp
+                l) a
+               where
+                 cs'' = setPriorComments cs (L (Anchor (anchor ca) (MovedAnchor dp)) c:cs')
+-                lc = head $ reverse $ (L ca c:cs')
++                lc = last $ (L ca c:cs')
+                 delta = tweakDelta $ ss2delta (ss2pos $ anchor $ getLoc lc) r
+                 line = getDeltaLine delta
+                 col = deltaColumn delta
+diff --git a/utils/check-exact/Utils.hs b/utils/check-exact/Utils.hs
+index 91d9cd5827..dc0112f590 100644
+--- a/utils/check-exact/Utils.hs
++++ b/utils/check-exact/Utils.hs
+@@ -439,8 +439,8 @@ glast  info []    = error $ "glast " ++ info ++ " []"
+ glast _info h     = last h
+ 
+ gtail :: String -> [a] -> [a]
+-gtail  info []   = error $ "gtail " ++ info ++ " []"
+-gtail _info h    = tail h
++gtail  info []    = error $ "gtail " ++ info ++ " []"
++gtail _info (_:t) = t
+ 
+ gfromJust :: String -> Maybe a -> a
+ gfromJust _info (Just h) = h
+-- 
+2.37.1 (Apple Git-137.1)
+
