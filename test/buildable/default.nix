@@ -27,7 +27,7 @@ in recurseIntoAttrs {
 
     meta = {
       platforms = platforms.all;
-      broken = lib.stdenv.isGhcjs;
+      broken = stdenv.isGhcjs;
     };
 
     passthru = {
