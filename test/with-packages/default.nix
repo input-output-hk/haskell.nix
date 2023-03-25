@@ -94,9 +94,10 @@ in recurseIntoAttrs {
 
     dontInstall = true;
 
-    meta = {
-      platforms = platforms.all;
-      disabled = stdenv.hostPlatform.isMusl;
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"]) || stdenv.hostPlatform.isMusl;
+      disabled = broken;
     };
 
     passthru = {
