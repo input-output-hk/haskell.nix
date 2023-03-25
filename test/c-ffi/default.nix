@@ -55,7 +55,10 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta = {
+      platforms = platforms.all;
+      broken = lib.stdenv.isGhcjs;
+    };
 
     passthru = {
       # Used for debugging with nix repl
