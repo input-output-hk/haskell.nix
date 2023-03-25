@@ -55,9 +55,10 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta = {
+    meta = rec {
       platforms = platforms.all;
       broken = stdenv.hostPlatform.isGhcjs;
+      disabled = broken;
     };
 
     passthru = {
