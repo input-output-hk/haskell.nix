@@ -107,7 +107,7 @@
     builtins.mapAttrs
       (k: v:
        let o = f k v;
-       in o // { recurseForDerivations = o.recurseForDerivations or true; }
+       in o
       )
       attrs
     // { meta.dimension.name = name; };

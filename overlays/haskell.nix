@@ -714,7 +714,7 @@ final: prev: {
           }));
          in rawProject:
           makeExtensible (final: prev: {}) (project':
-            let project = project' // { recurseForDerivations = false; };
+            let project = project';
             in rawProject // rec {
               # It is often handy to be able to get nix pkgs from the project.
               pkgs = final;
@@ -723,7 +723,7 @@ final: prev: {
                 if package' == null
                   then null
                   else
-                    let package = package' // { recurseForDerivations = false; };
+                    let package = package';
                     in package' // rec {
                       components = final.lib.mapAttrs (n: v:
                         if n == "library" || n == "all"
@@ -767,7 +767,7 @@ final: prev: {
                 (rawProject.projectFunction pkgs.haskell-nix rawProject.projectModule)
                 # Re-apply overlay from original project:
                 .extend project.__overlay__
-              ) final.pkgsCross) // { recurseForDerivations = false; };
+              ) final.pkgsCross);
 
             # attribute set of variant (with an extra module applied) for the project,
             # mapped from `flake.variants` config values.
