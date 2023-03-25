@@ -32,7 +32,16 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = project.shellFor { tools = { cabal = "latest"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"]; };
+  test-shell = (project.shellFor {
+      tools = { cabal = "latest"; };
+      withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"];
+    }).overrideAttrs (_: _: {
+      meta = rec {
+        platforms = lib.platforms.all;
+        broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+        disabled = broken;
+      };
+    });
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
@@ -64,7 +73,11 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+      disabled = broken;
+    };
 
     passthru = {
       # Used for debugging with nix repl
