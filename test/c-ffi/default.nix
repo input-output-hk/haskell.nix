@@ -56,7 +56,7 @@ in recurseIntoAttrs {
     '';
 
     meta = rec {
-      platforms = platforms.all;
+      platforms = lib.platforms.all;
       broken = stdenv.hostPlatform.isGhcjs;
       disabled = broken;
     };
