@@ -692,7 +692,7 @@ final: prev: {
                   inherit (pkg-set.config) hsPkgs;
                   inherit pkg-set;
                   plan-nix = callProjectResults.projectNix;
-                  inherit (callProjectResults) index-state;
+                  inherit (callProjectResults) index-state-max;
                   tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
