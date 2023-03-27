@@ -1,6 +1,28 @@
 This file contains a summary of changes to Haskell.nix and `nix-tools`
 that will impact users.
 
+## Mar 27, 2023
+
+Haskell.nix will no longer parse the `cabal.project` file to
+determine the `index-state`. This decision was made due to
+the function's inability to handle more than one `index-state`
+or a qualified `index-state` as the first `index-state`
+field in the file.
+
+As a result, there will be some drawbacks:
+
+* There will no longer be a warning in the trace output
+  if an index state is not found.
+
+* Even if the `index-state:` in the `cabal.project` has not changed,
+  the plan will be recomputed when hackage.nix is bumped. However, this
+  is not expected to be a problem since plan recomputations are typically
+  quick.
+
+* `project.index-state` cannot be used to obtain the found `index-state`.
+  However, the parse function is still available if required
+  (haskell-nix.haskellLib.parseIndexState).  
+
 ## Jul 27, 2022
 * Removed reliance on `builtins.currentSystem`.  It was used it to provide
   `pkgs.evalPackages` via an overlay that it used to run derivations

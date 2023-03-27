@@ -19,7 +19,8 @@
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;
-                evalSystem = "EVAL_SYSTEM";
+                # uncomment with your current system for `nix flake show` to work:
+                #evalSystem = "EVAL_SYSTEM";
               };
           })
         ];

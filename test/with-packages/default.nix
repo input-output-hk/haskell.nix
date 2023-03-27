@@ -39,10 +39,22 @@ let
 in recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
-  test-shell = addCabalInstall library.shell;
+  test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+      disabled = broken;
+    };
+  });
 
   # A variant of test-shell with the component option doExactConfig enabled
-  test-shell-dec = addCabalInstall decLibrary.shell;
+  test-shell-dec = (addCabalInstall decLibrary.shell).overrideAttrs (_: _: {
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+      disabled = broken;
+    };
+  });
 
   run = stdenv.mkDerivation {
     name = "with-packages-test";
@@ -94,9 +106,10 @@ in recurseIntoAttrs {
 
     dontInstall = true;
 
-    meta = {
-      platforms = platforms.all;
-      disabled = stdenv.hostPlatform.isMusl;
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"]) || stdenv.hostPlatform.isMusl;
+      disabled = broken;
     };
 
     passthru = {
