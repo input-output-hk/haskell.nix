@@ -1,4 +1,4 @@
-{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, inputMap }:
+{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler }:
 
 let
   # Builds a single component of a package.
@@ -85,7 +85,7 @@ in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
   build-package = haskellLib.weakCallPackage pkgs ./hspkg-builder.nix {
-    inherit haskellLib ghc compiler-nix-name comp-builder setup-builder inputMap;
+    inherit haskellLib ghc compiler-nix-name comp-builder setup-builder;
   };
 
   inherit shellFor makeConfigFiles;
