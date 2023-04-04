@@ -46,12 +46,8 @@ in [
   ({config, lib, pkgs, ...}:
     { _file = "haskell.nix/overlays/hackage-quirks.nix#haskell-language-server"; } //
     lib.mkIf (config.name == "haskell-language-server") {
-      # TODO remove this when `dependent-sum-0.7.1.0` constraint on `some` has been updated.
-      # See https://github.com/haskell/haskell-language-server/issues/2969
-      # and https://github.com/obsidiansystems/dependent-sum/issues/71
       cabalProject = lib.mkDefault (''
         packages: .
-        constraints: dependent-sum >=0.7.1.0
       ''
       # TODO remove once these the plugins have been updated in hackage
       + lib.optionalString (config.version == "1.8.0.0") ''
@@ -63,6 +59,34 @@ in [
             + lib.optionalString (!__elem config.compiler-nix-name ["ghc901" "ghc902"]) " -hlint"
         }
         constraints: hls-fourmolu-plugin <1.1.1.0, hls-rename-plugin <1.0.2.0, hls-stan-plugin <1.0.1.0
+      '' + lib.optionalString (config.version == "1.10.0.0") ''
+        -- These have been copied from:
+        -- https://github.com/haskell/haskell-language-server/blob/1d07fbec5ad67242e4417232333a7af66776cf5a/cabal.project#L60-L79
+        constraints:
+          -- For GHC 9.4, older versions of entropy fail to build on Windows
+          entropy >= 0.4.1.10,
+          -- For GHC 9.4
+          basement >= 0.0.15,
+          -- For GHC 9.4
+          hw-prim >= 0.6.3.2,
+          hyphenation +embed,
+          -- remove this when hlint sets ghc-lib to true by default
+          -- https://github.com/ndmitchell/hlint/issues/1376
+          hlint +ghc-lib,
+          ghc-check -ghc-check-use-package-abis,
+          ghc-lib-parser-ex -auto,
+          stylish-haskell +ghc-lib,
+          fourmolu -fixity-th,
+          setup.happy == 1.20.1.1,
+          happy == 1.20.1.1,
+          filepath installed
+      '' + lib.optionalString (__elem config.compiler-nix-name ["ghc8107"]) ''
+        constraints:
+          -- for ghc 8.10, stm-hamt 1.2.0.10 doesn't build
+          stm-hamt < 1.2.0.10
+      '' + lib.optionalString (config.version == "1.10.0.0" && __elem config.compiler-nix-name ["ghc8107"]) ''
+        package haskell-language-server
+          flags: -tactic
       '');
     }
   )
