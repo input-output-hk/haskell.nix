@@ -46,9 +46,9 @@ in rec {
       };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0) {
       stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
-      "hls-1.9.0.0" = tool compiler-nix-name "haskell-language-server" {
+      "hls-1.9.1.0" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        version = "1.9.0.0";
+        version = "1.9.1.0";
       };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0) {
       "hls-1.8.0.0" = tool compiler-nix-name "haskell-language-server" {
