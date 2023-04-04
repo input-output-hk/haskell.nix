@@ -164,6 +164,9 @@ in [
         constraints:
           -- for ghc 8.10, stm-hamt 1.2.0.10 doesn't build
           stm-hamt < 1.2.0.10
+      '' + lib.optionalString (config.version == "1.10.0.0" && __elem config.compiler-nix-name ["ghc944"]) ''
+        package haskell-language-server
+          flags: -floskell -stylishhaskell -rename
       '' + lib.optionalString (config.version == "1.10.0.0" && __elem config.compiler-nix-name ["ghc8107"]) ''
         package haskell-language-server
           flags: -tactic
