@@ -44,7 +44,7 @@ in rec {
         inherit evalPackages;
         version = "latest";
       };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0) {
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
       stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
       "hls-1.9.1.0" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
