@@ -54,6 +54,7 @@ in [
           package haskell-language-server
             flags: -floskell -stylishhaskell -rename
         if impl(ghc ^>=8.10.1)
+          constraints: stm-hamt <1.2.0.10
           package haskell-language-server
             flags: -tactic
       '';
