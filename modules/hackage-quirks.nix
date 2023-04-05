@@ -43,24 +43,6 @@ in [
     }
   )
 
-  ({config, lib, pkgs, ...}:
-    { _file = "haskell.nix/overlays/hackage-quirks.nix#haskell-language-server"; } //
-    lib.mkIf (config.name == "haskell-language-server" && config.version == "github-1.10") {
-      configureArgs = "--disable-tests --disable-benchmarks";
-      src = lib.mkForce pkgs.haskell-nix.sources."hls-1.10";
-      cabalProjectLocal = ''
-        -- Plugins that are broken for some compilers
-        if impl(ghc ^>=9.4.1)
-          package haskell-language-server
-            flags: -floskell -stylishhaskell -rename
-        if impl(ghc ^>=8.10.1)
-          constraints: stm-hamt <1.2.0.10
-          package haskell-language-server
-            flags: -tactic
-      '';
-    }
-  )
-
   # The latest version of stack (2.9.1) in hackage fails to build because the
   # of version of rio-prettyprint (recently released 0.1.4.0) chosen by cabal.
   # https://github.com/commercialhaskell/stack/issues/5963

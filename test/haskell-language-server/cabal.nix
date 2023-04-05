@@ -1,8 +1,11 @@
 { stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, recurseIntoAttrs }:
 let
-  inherit (haskell-nix.tool compiler-nix-name "haskell-language-server" {
-    version = "github-1.10";
-    inherit evalPackages; }) project;
+  project = haskell-nix.cabalProject' {
+    inherit compiler-nix-name evalPackages;
+    name = "haskell-language-server";
+    src = haskell-nix.sources."hls-1.10";
+    sha256map."https://github.com/pepeiborra/ekg-json"."7a0af7a8fd38045fd15fb13445bdcc7085325460" = "sha256-fVwKxGgM0S4Kv/4egVAAiAjV7QB5PBqMVMCfsv7otIQ=";
+  };
 in recurseIntoAttrs {
   ifdInputs = {
     inherit (project) plan-nix;
