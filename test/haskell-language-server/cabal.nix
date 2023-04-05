@@ -1,10 +1,7 @@
 { stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, recurseIntoAttrs }:
 let
   inherit (haskell-nix.tool compiler-nix-name "haskell-language-server" {
-    version =
-      if __compareVersions haskell-nix.compiler.${compiler-nix-name}.version "9.0" < 0
-        then "1.8.0.0"
-        else "latest";
+    version = "github-1.10";
     inherit evalPackages; }) project;
 in recurseIntoAttrs {
   ifdInputs = {

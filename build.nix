@@ -42,12 +42,10 @@ in rec {
       };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0) {
       stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
       hls-latest = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        version =
-          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0
-            then "1.8.0.0"
-            else "latest";
+        version = "github-1.10";
       };
     })
   );
