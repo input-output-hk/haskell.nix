@@ -89,7 +89,7 @@ in {
       "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc810420210212"
     ]) [
       (fromUntil "1.7.0.0" "1.8.0.0" ../patches/ghcide-1.7-unboxed-tuple-fix-issue-1455.patch)
-      (fromUntil "1.8.0.0" "1.9.0.0" ../patches/ghcide-1.8-unboxed-tuple-fix-issue-1455.patch)
+      (fromUntil "1.8.0.0" "1.11.0.0" ../patches/ghcide-1.8-unboxed-tuple-fix-issue-1455.patch)
     ]
     # This is needed for a patch only applied to ghc810420210212
     ++ pkgs.lib.optional (__elem config.compiler.nix-name [

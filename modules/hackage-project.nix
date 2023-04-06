@@ -43,7 +43,7 @@ in {
           inherit (rev) sha256;
         };
         revSuffix = lib.optionalString (rev.revNum > 0) "-r${toString rev.revNum}";
-      in config.evalPackages.runCommand "${name}-${version}${revSuffix}-src" {} (''
+      in lib.mkOverride 1100 (config.evalPackages.runCommand "${name}-${version}${revSuffix}-src" {} (''
           tmp=$(mktemp -d)
           cd $tmp
           tar xzf ${tarball}
@@ -56,6 +56,6 @@ in {
           # the same `alex`, `happy` and `hscolour` are used to build GHC.  It also means that
           # that `tools` in the shell will be built the same.
           filterPath = { path, ... }: path;
-        };
+        });
   };
 }

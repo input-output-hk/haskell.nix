@@ -42,12 +42,12 @@ in rec {
       };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0) {
       stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
-      hls-latest = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+      hls-latest = tool compiler-nix-name "haskell-language-server" rec {
         inherit evalPackages;
-        version =
-          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0
-            then "1.8.0.0"
-            else "latest";
+        src = pkgs.haskell-nix.sources."hls-1.10";
+        cabalProject = __readFile (src + "/cabal.project");
+        sha256map."https://github.com/pepeiborra/ekg-json"."7a0af7a8fd38045fd15fb13445bdcc7085325460" = "sha256-fVwKxGgM0S4Kv/4egVAAiAjV7QB5PBqMVMCfsv7otIQ=";
       };
     })
   );
