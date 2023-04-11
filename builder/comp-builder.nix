@@ -42,9 +42,9 @@ let self =
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
-               # on x86 we'll use shared libraries, even with musl m(
-               # ghc's internal linker seems to be broken on x86.
-               && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
+               # We'll include shared libraries for musl.
+               # Without them TH currently fails.
+               # TODO consider adding `&& !stdenv.hostPlatform.isMusl`.
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
 

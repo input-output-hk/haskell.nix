@@ -13,6 +13,7 @@ let
 in
 { stdenv
 , lib
+, haskellLib
 , writeScriptBin
 , qemu
 , qemuSuffix ? (qemuByHostPlatform hostPlatform)
@@ -27,7 +28,7 @@ in
 let
 
   # we want this to hold only for arm (32 and 64bit) for now.
-  isLinuxCross = buildPlatform != hostPlatform && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64);
+  isLinuxCross = haskellLib.isCrossHost && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64);
   qemuIservWrapper = writeScriptBin "iserv-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
