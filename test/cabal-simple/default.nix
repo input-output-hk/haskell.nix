@@ -28,7 +28,7 @@ let
 
   ldd = if haskellLib.isCrossHost && stdenv.hostPlatform.isLinux && (stdenv.hostPlatform.isAarch32 || stdenv.hostPlatform.isAarch64)
     then "${pkgsBuildBuild.qemu}/bin/qemu-${haskellLib.haskellLib.qemuByHostPlatform stdenv.hostPlatform} ${iconv}/bin/ldd"
-    else "ldd"
+    else "ldd";
 
 in recurseIntoAttrs {
   ifdInputs = {
