@@ -21,7 +21,7 @@ import Distribution.Package
 import qualified System.FilePath.Posix as FilePath.Posix
          ( joinPath, splitDirectories )
 import Network.URI
-         ( URI(uriAuthority, uriPath), URIAuth(..), parseURI )
+         ( URI(uriAuthority, uriPath, uriScheme), URIAuth(..), parseURI )
 
 import Distribution.Types.CondTree
 import Distribution.Types.Library
@@ -221,14 +221,35 @@ toNixPackageDescription isLocal detailLevel pd = mkNonRecSet $
 srcToNix :: PackageIdentifier -> Src -> NExpr
 srcToNix _ (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
 srcToNix pi' (Repo url mHash)
-  = mkNonRecSet
-    [ "src" $= applyMkDefault (mkSym pkgs @. "fetchurl" @@ mkNonRecSet
-      [ "url" $= mkStr (fromString . show $ mkPrivateHackageUrl url pi')
-      , "sha256" $= case mHash of
-                      Nothing -> mkSym "config" @. "sha256"
-                      Just hash -> mkStr (fromString hash)
-      ])
-    ]
+  = let uri = mkPrivateHackageUrl url pi'
+    in if "file:" == uriScheme uri
+    then 
+      -- It's a file: URL. In principle curl can fetch file URLs, but in 
+      -- practice fetchurl can't. This is (I believe) because the Nix sandbox
+      -- is relaxed to allow fetchurl to access the internet, but _not_ to
+      -- let is access random files, even if it has a hash specified.
+      -- But builtins.path can do that, so we just use that instead.
+      mkNonRecSet
+        [ "src" $= applyMkDefault (mkSym "builtins" @. "path" @@ mkNonRecSet
+          [ "path" $= mkStr (fromString $ uriPath uri)
+          , "sha256" $= case mHash of
+                          Nothing -> mkSym "config" @. "sha256"
+                          Just hash -> mkStr (fromString hash)
+          -- needed for the hash to match what you would use for fetchurl
+          , "recursive" $= mkBool False
+          ])
+        ]
+    else 
+      -- It's some other kind of URL, just use fetchurl and hope curl
+      -- can fetch it.
+      mkNonRecSet
+        [ "src" $= applyMkDefault (mkSym pkgs @. "fetchurl" @@ mkNonRecSet
+          [ "url" $= mkStr (fromString . show $ uri)
+          , "sha256" $= case mHash of
+                          Nothing -> mkSym "config" @. "sha256"
+                          Just hash -> mkStr (fromString hash)
+          ])
+        ]
 srcToNix _ (Git url rev mbSha256 mbPath)
   = mkNonRecSet $
     [ "src" $= applyMkDefault (mkSym pkgs @. "fetchgit" @@ mkNonRecSet
