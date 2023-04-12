@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, pkgsBuildBuild, iconv }:
 
 with lib;
 
@@ -25,6 +25,10 @@ let
   };
 
   packages = project.hsPkgs;
+
+  ldd = if haskellLib.isCrossHost && stdenv.hostPlatform.isLinux && (stdenv.hostPlatform.isAarch32 || stdenv.hostPlatform.isAarch64)
+    then "${pkgsBuildBuild.qemu}/bin/qemu-${haskellLib.haskellLib.qemuByHostPlatform stdenv.hostPlatform} ${iconv}/bin/ldd"
+    else "ldd"
 
 in recurseIntoAttrs {
   ifdInputs = {
@@ -58,7 +62,7 @@ in recurseIntoAttrs {
     '' + (if stdenv.hostPlatform.isMusl
       then ''
         printf "checking that executable is statically linked... " >& 2
-        (ldd $exe 2>&1 || true) | grep -i "not a"
+        (${ldd} $exe 2>&1 || true) | grep -i "not a"
       ''
       else
         # Skip this on aarch as we do not have an `ldd` tool
