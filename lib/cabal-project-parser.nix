@@ -196,7 +196,10 @@ let
         '');
       # Directory to `lndir` when constructing a suitable $HOME/.cabal dir
       repo = {
-        ${name} = repoContents;
+        # Strings used as attrset keys can't have contet. This can cause problems if the cabal.project file has antiquoted strings
+        # in it. Discarding the context here works, and because 'name' is used elsewhere, we don't actually lose the string content,
+        # which can matter!
+        ${builtins.unsafeDiscardStringContext name} = repoContents;
       };
     };
 
