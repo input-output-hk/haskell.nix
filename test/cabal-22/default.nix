@@ -39,7 +39,7 @@ in recurseIntoAttrs {
     optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString (stdenv.isLinux && !stdenv.hostPlatform.isMusl) ''
-      ldd $exe | grep 'libc[.]so'
+      ${haskellLib.lddForTests} $exe | grep 'libc[.]so'
     '' + optionalString stdenv.isDarwin ''
       otool -L $exe | grep "libSystem.B"
     '' + ''
@@ -54,7 +54,7 @@ in recurseIntoAttrs {
     '' + optionalString (!stdenv.hostPlatform.isMusl) (''
       printf "checking that dynamic library is dynamically linked to prim... " >& 2
     '' + optionalString stdenv.isLinux ''
-      ldd $sofile | grep libHSghc-prim
+      ${haskellLib.lddForTests} $sofile | grep libHSghc-prim
     '' + optionalString stdenv.isDarwin ''
       otool -L $sofile | grep libHSghc-prim
     '')) + ''
