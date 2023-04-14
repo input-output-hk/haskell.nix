@@ -241,12 +241,20 @@ let
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/ghc8107/hadrian-ghc94
         else ../../materialized/ghc8107/hadrian-ghc96;
+      modules = [{
+        # Apply the patches in a way that does not require using somethin
+        # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
+        # on a platform at eval time.
+        packages.hadrian.prePatch = ''
+          cd ..
+        '';
+        packages.hadrian.patches = ghc-patches;
+        packages.hadrian.postPatch = ''
+          cd hadrian
+        '';
+      }];        
       src = haskell-nix.haskellLib.cleanSourceWith {
-        src = buildPackages.srcOnly {
-          name = "hadrian";
-          inherit src;
-          patches = ghc-patches;
-        };
+        inherit src;
         subDir = "hadrian";
       };
     };
