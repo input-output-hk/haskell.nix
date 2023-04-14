@@ -231,8 +231,7 @@ let
   # value for us.
   installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
 
-  inherit ((buildPackages.haskell-nix.cabalProject {
-      compiler-nix-name = "ghc8107";
+  hadrian = buildPackages.haskell-nix.tool "ghc8107" "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
@@ -250,7 +249,7 @@ let
         };
         subDir = "hadrian";
       };
-    }).hsPkgs.hadrian.components.exes) hadrian;
+    };
 
   # For a discription of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
