@@ -50,6 +50,7 @@ let
               name = "${pname}-${vnum}-r${toString rev.revNum}.cabal";
               url = "https://hackage.haskell.org/package/${pname}-${vnum}/revision/${toString rev.revNum}.cabal";
               sha256 = rev.sha256;
+              preferLocalBuild = false;
             }));
     in
     {
