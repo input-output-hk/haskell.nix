@@ -587,7 +587,5 @@ in {
     else abort "Don't know which QEMU to use for hostPlatform ${hostPlatform.config}. Please provide qemuSuffix";
 
   # How to run ldd when checking for static linking
-  lddForTests = if haskellLib.isCrossHost && stdenv.hostPlatform.isLinux && (stdenv.hostPlatform.isAarch32 || stdenv.hostPlatform.isAarch64)
-    then "${pkgs.pkgsBuildBuild.qemu}/bin/qemu-${haskellLib.qemuByHostPlatform stdenv.hostPlatform} ${pkgs.iconv}/bin/ldd"
-    else "ldd";
+  lddForTests = "${pkgs.pkgsBuildBuild.glibc.bin}/bin/ldd";
 }
