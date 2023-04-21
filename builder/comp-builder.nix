@@ -43,9 +43,6 @@ let self =
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
-               # We'll include shared libraries for musl.
-               # Without them TH currently fails.
-               # TODO consider adding `&& !stdenv.hostPlatform.isMusl`.
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
 
