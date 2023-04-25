@@ -15,7 +15,14 @@ If you think you are doing all of these and you still find you're building GHC, 
 ### Why am I building lots of Haskell packages?
 
 We don't generally cache much of Hackage (there's a lot of it!), except for the parts which are used by our tests.
-So this is expected, unfortunately.
+So this is expected, unfortunately. However, if you are building from a recent branch without significant dependencies 
+changes, most of those dependencies should be cached and you should not be building core things like `Cabal` or `ghc-lib`.
+
+If this happens, chances are nix cache are either:
+* Incorrectly configured: Check the aforementioned links,
+* Overriding global configuration in `/etc/nix/nix.conf` with local `~/.config/nix/nix.conf`. This can happen if for example
+  one project is using `nix flake` with some locally configured repositories, while another project is not. 
+  Use `nix show-config` to check which caches are defined, then update or remove `~/.config/nix/nix.conf`.
 
 ### How do I prevent the evaluation-time dependencies of my project from being garbage-collected?
 
