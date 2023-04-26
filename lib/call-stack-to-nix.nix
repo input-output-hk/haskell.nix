@@ -31,7 +31,7 @@ let
     src = src.origSrc or src;
     filter = path: type: (!(src ? filter) || src.filter path type) && (
       type == "directory" ||
-      evalPackages.lib.any (i: (evalPackages.lib.hasSuffix i path)) [ stackYaml ".cabal" "package.yaml" ]); });
+      evalPackages.lib.any (i: (evalPackages.lib.hasSuffix i path)) [ stackYaml ".cabal" ".yaml" ]); });
 
   stackToNixArgs = builtins.concatStringsSep " " [
     "--full"

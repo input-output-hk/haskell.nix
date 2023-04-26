@@ -303,7 +303,7 @@ in {
         then src # if there was no subdir use the original src
         else
           # Use `cleanSourceWith` to make sure the `filter` is still used
-          if src ? origSrc && src ? filter
+          if false
             then haskellLib.cleanSourceWith {
               name = src.name or "source" + "-root";
               src = src.origSrc;
