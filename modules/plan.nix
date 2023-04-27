@@ -310,6 +310,8 @@ in {
 
     evalPackages = mkOption {
       type = unspecified;
+      default = pkgs.pkgsBuildBuild;
+      defaultText = "pkgs.pkgsBuildBuild";
       description = ''
         The `evalPackages` that will be used when building `hoogle` and shell tools.
       '';
