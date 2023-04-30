@@ -26,7 +26,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc96020230302" "ghc961"];
+  meta.disabled = __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc96020230302" "ghc961"];
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -43,14 +43,14 @@ in recurseIntoAttrs {
     '' + (if stdenv.hostPlatform.isMusl
       then ''
         printf "checking that executable is statically linked... " >& 2
-        (ldd $exe 2>&1 || true) | grep -i "not a"
+        (${haskellLib.lddForTests} $exe 2>&1 || true) | grep -i "not a"
       ''
       else
         # Skip this on aarch as we do not have an `ldd` tool
         optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
           printf "checking that executable is dynamically linked to system libraries... " >& 2
         '' + optionalString stdenv.isLinux ''
-          ldd $exe | grep 'libc\.so'
+          ${haskellLib.lddForTests} $exe | grep 'libc\.so'
         '' + optionalString stdenv.isDarwin ''
           otool -L $exe |grep .dylib
       '')) + ''

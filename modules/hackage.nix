@@ -27,7 +27,8 @@ let
   #           { r0 = { nix = import ../hackage/...;
   #                    sha256 = $packageVersionSha256;
   #                    revision = $revNum;
-  #                    revisionSha256 = $revisionSha256; };
+  #                    revisionSha256 = $revisionSha256;
+  #                    package-description-override = ... optional revised cabal file from hackage ...; };
   #             default = revisions.r0;
   #             $revisionSha256 = revisions.r0; };
   #         };
@@ -35,31 +36,62 @@ let
   #   };
   # }
 
+  rev2Config =
+    { pname, vnum, sha256 }:
+    rev:
+    { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs:
+    let
+      package-description-override =
+        # we don't need to fetch cabal file revision zero because that's the one included in the source distribution
+        if rev.revNum == 0 then null
+        else
+          builtins.readFile (config.evalPackages.fetchurl (
+            {
+              name = "${pname}-${vnum}-r${toString rev.revNum}.cabal";
+              url = "https://hackage.haskell.org/package/${pname}-${vnum}/revision/${toString rev.revNum}.cabal";
+              sha256 = rev.sha256;
+              preferLocalBuild = false;
+            }));
+    in
+    {
+      inherit sha256;
+      inherit package-description-override;
+      revision = rev.revNum;
+      revisionSha256 = rev.sha256;
+    } // (x: (rev.nix or (import rev)) x) modArgs;
+
+  makeContentAddressed = revisions:
+    let
+      f = revName: acc:
+        let rev = revisions.${revName};
+        in
+        acc // {
+          # The original revsion attribute
+          ${revName} = rev;
+          # The revision keyed by its sha256
+          # Note: if there's a collision (e.g. a revision was reverted), pick
+          # the one with the smaller revNum. They're identical, but if the
+          # smaller one is r0 then we don't have to download a cabal file.
+          ${rev.sha256} =
+            if lib.hasAttr rev.sha256 acc && acc.${rev.sha256}.revNum < rev.revNum
+            then acc.${rev.sha256}
+            else rev;
+        };
+    in
+    lib.foldr f { } (builtins.attrNames revisions);
+
   hackageConfigs =
     lib.flip lib.mapAttrs config.hackage.db
       (pname: lib.mapAttrs
         (vnum: version: version // {
           revisions =
-            let
-              rev2Config = rev: { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs, ... }@modArgs: {
-                inherit (version) sha256;
-                revision = rev.revNum;
-                revisionSha256 = rev.sha256;
-              } // (x: (rev.nix or (import rev)) x) modArgs;
-              f = rev: acc: acc // {
-                # If there's a collision (e.g. a revision was
-                # reverted), pick the one with the smaller
-                # revNum. They're identical, but if the smaller one is
-                # r0 then we don't have to download a cabal file.
-                ${rev.sha256} = if lib.hasAttr rev.sha256 acc && acc.${rev.sha256}.revNum < rev.revNum
-                  then acc.${rev.sha256}
-                  else rev;
-              };
-              contentAddressedRevs = lib.foldr f {} (builtins.attrValues version.revisions);
-            in lib.mapAttrs (_: rev2Config) (version.revisions // contentAddressedRevs);
+            lib.mapAttrs
+              (_: rev2Config { inherit pname vnum; inherit (version) sha256; })
+              (makeContentAddressed version.revisions);
         }));
 
-in {
+in
+{
   options.ghc.package = lib.mkOption {
     type = lib.types.package;
     # obtain the compiler from the haskell packages.
@@ -85,5 +117,5 @@ in {
   # be built by GHC's build system.  However it may show up in stackage
   # snapshots. As such we just null it out.
   config.hackage.configs = hackageConfigs
-                        // { rts."1.0".revisions.default = null; };
+    // { rts."1.0".revisions.default = null; };
 }

@@ -14,6 +14,7 @@ let self =
 
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
 , configureFlags ? component.configureFlags
+, prePatch ? component.prePatch, postPatch ? component.postPatch
 , preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
 , setupBuildFlags ? component.setupBuildFlags
 , preBuild ? component.preBuild , postBuild ? component.postBuild
@@ -43,9 +44,6 @@ let self =
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
-               # on x86 we'll use shared libraries, even with musl m(
-               # ghc's internal linker seems to be broken on x86.
-               && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
 
@@ -290,7 +288,7 @@ let
             lib.optionalString (cabal-generator == "hpack") ''
               ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
             ''
-        );
+        ) + lib.optionalString (prePatch != null) "\n${prePatch}";
     }
     # patches can (if they like) depend on the version of the package.
     // lib.optionalAttrs (patches != []) {
@@ -302,7 +300,7 @@ let
     }
     // haskellLib.optionalHooks {
       # These are hooks are needed to set up the source for building and running haddock
-      inherit preUnpack postUnpack preConfigure postConfigure;
+      inherit preUnpack postUnpack postPatch preConfigure postConfigure;
     }
     // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
       LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
