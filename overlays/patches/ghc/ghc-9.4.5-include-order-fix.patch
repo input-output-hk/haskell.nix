@@ -1,0 +1,44 @@
+diff --git a/rts/sm/HeapAlloc.h b/rts/sm/HeapAlloc.h
+index 75543e9bc3..14a20fe756 100644
+--- a/rts/sm/HeapAlloc.h
++++ b/rts/sm/HeapAlloc.h
+@@ -10,6 +10,14 @@
+ 
+ #include "BeginPrivate.h"
+ 
++#if defined(THREADED_RTS)
++// needed for HEAP_ALLOCED below
++extern SpinLock gc_alloc_block_sync;
++#endif
++
++#define ACQUIRE_ALLOC_BLOCK_SPIN_LOCK() ACQUIRE_SPIN_LOCK(&gc_alloc_block_sync)
++#define RELEASE_ALLOC_BLOCK_SPIN_LOCK() RELEASE_SPIN_LOCK(&gc_alloc_block_sync)
++
+ /* -----------------------------------------------------------------------------
+    The HEAP_ALLOCED() test.
+ 
+diff --git a/rts/sm/Storage.h b/rts/sm/Storage.h
+index e380dc26f3..4a47b845d3 100644
+--- a/rts/sm/Storage.h
++++ b/rts/sm/Storage.h
+@@ -8,6 +8,9 @@
+ 
+ #pragma once
+ 
++#define ACQUIRE_ALLOC_BLOCK_SPIN_LOCK() ACQUIRE_SPIN_LOCK(&gc_alloc_block_sync)
++#define RELEASE_ALLOC_BLOCK_SPIN_LOCK() RELEASE_SPIN_LOCK(&gc_alloc_block_sync)
++
+ #include "Capability.h"
+ 
+ #include "BeginPrivate.h"
+@@ -48,10 +51,6 @@ extern Mutex sm_mutex;
+ extern SpinLock gc_alloc_block_sync;
+ #endif
+ 
+-#define ACQUIRE_ALLOC_BLOCK_SPIN_LOCK() ACQUIRE_SPIN_LOCK(&gc_alloc_block_sync)
+-#define RELEASE_ALLOC_BLOCK_SPIN_LOCK() RELEASE_SPIN_LOCK(&gc_alloc_block_sync)
+-
+-
+ /* -----------------------------------------------------------------------------
+    The write barrier for MVARs and TVARs
+    -------------------------------------------------------------------------- */

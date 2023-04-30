@@ -189,6 +189,14 @@ let
       type = nullOr uniqueStr;
       default = getDefaultOrNull def "postUnpack";
     };
+    prePatch = mkOption {
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "prePatch";
+    };
+    postPatch = mkOption {
+      type = nullOr uniqueStr;
+      default = getDefaultOrNull def "postPatch";
+    };
     preConfigure = mkOption {
       type = nullOr uniqueStr;
       default = getDefaultOrNull def "preConfigure";
@@ -302,6 +310,8 @@ in {
 
     evalPackages = mkOption {
       type = unspecified;
+      default = pkgs.pkgsBuildBuild;
+      defaultText = "pkgs.pkgsBuildBuild";
       description = ''
         The `evalPackages` that will be used when building `hoogle` and shell tools.
       '';

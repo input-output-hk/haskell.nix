@@ -45,11 +45,12 @@ let
         # we don't need to fetch cabal file revision zero because that's the one included in the source distribution
         if rev.revNum == 0 then null
         else
-          builtins.readFile (pkgs.fetchurl (
+          builtins.readFile (config.evalPackages.fetchurl (
             {
               name = "${pname}-${vnum}-r${toString rev.revNum}.cabal";
               url = "https://hackage.haskell.org/package/${pname}-${vnum}/revision/${toString rev.revNum}.cabal";
               sha256 = rev.sha256;
+              preferLocalBuild = false;
             }));
     in
     {

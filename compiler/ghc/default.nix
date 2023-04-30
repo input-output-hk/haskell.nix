@@ -231,8 +231,7 @@ let
   # value for us.
   installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
 
-  inherit ((buildPackages.haskell-nix.cabalProject {
-      compiler-nix-name = "ghc8107";
+  hadrian = buildPackages.haskell-nix.tool "ghc8107" "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
@@ -242,15 +241,23 @@ let
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/ghc8107/hadrian-ghc94
         else ../../materialized/ghc8107/hadrian-ghc96;
+      modules = [{
+        # Apply the patches in a way that does not require using somethin
+        # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
+        # on a platform at eval time.
+        packages.hadrian.prePatch = ''
+          cd ..
+        '';
+        packages.hadrian.patches = ghc-patches;
+        packages.hadrian.postPatch = ''
+          cd hadrian
+        '';
+      }];        
       src = haskell-nix.haskellLib.cleanSourceWith {
-        src = buildPackages.srcOnly {
-          name = "hadrian";
-          inherit src;
-          patches = ghc-patches;
-        };
+        inherit src;
         subDir = "hadrian";
       };
-    }).hsPkgs.hadrian.components.exes) hadrian;
+    };
 
   # For a discription of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md

@@ -7,6 +7,7 @@ final: prev:
         withTH = import ./linux-cross.nix {
           inherit (pkgs.stdenv) hostPlatform buildPlatform;
           inherit (pkgs) stdenv lib writeScriptBin;
+          inherit (pkgs.haskell-nix) haskellLib;
           # qemu for linux
           # Using `buildPackages.buildPackages` here fixes `python3Packages.pygobject3` issue.
           qemu = pkgs.buildPackages.buildPackages.qemu;

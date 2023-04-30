@@ -1,21 +1,9 @@
-let
-  # Here we try to figure out which qemu to use based on the host platform.
-  # This guess can be overridden by passing qemuSuffix
-  qemuByHostPlatform = hostPlatform:
-    # I'd prefer this was a dictionary lookup, with a fall through into abort,
-    # that would make this more readable I guess.  I think there is some similar
-    # mapping somewhere in haskell.nix
-    if hostPlatform.isAarch32
-    then "arm"
-    else if hostPlatform.isAarch64
-    then "aarch64"
-    else abort "Don't know which QEMU to use for hostPlatform ${hostPlatform.config}. Please provide qemuSuffix";
-in
 { stdenv
 , lib
+, haskellLib
 , writeScriptBin
 , qemu
-, qemuSuffix ? (qemuByHostPlatform hostPlatform)
+, qemuSuffix ? (haskellLib.qemuByHostPlatform hostPlatform)
 , iserv-proxy
 , iserv-proxy-interpreter
 , gmp
@@ -27,7 +15,7 @@ in
 let
 
   # we want this to hold only for arm (32 and 64bit) for now.
-  isLinuxCross = buildPlatform != hostPlatform && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64);
+  isLinuxCross = haskellLib.isCrossHost && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64);
   qemuIservWrapper = writeScriptBin "iserv-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
