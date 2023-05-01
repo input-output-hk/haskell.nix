@@ -313,7 +313,7 @@ stdenv.mkDerivation (rec {
 
   # configure was run by configured-src already.
   phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
+            ++ lib.optional (ghc-patches != [] && !stdenv.targetPlatform.isGhcjs) "autoreconfPhase" # autoreconf can replace config.sub with one that is missing ghcjs
             ++ [ "configurePhase" "buildPhase"
              "checkPhase" "installPhase"
              "fixupPhase"
