@@ -252,7 +252,13 @@ let
         packages.hadrian.postPatch = ''
           cd hadrian
         '';
-      }];        
+      }];
+      cabalProject = ''
+        packages:
+          .
+      '';
+      cabalProjectLocal = null;
+      cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
         inherit src;
         subDir = "hadrian";

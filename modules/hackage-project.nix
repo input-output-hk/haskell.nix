@@ -24,14 +24,6 @@ in {
     };
   };
   config = {
-    # Avoid readDir and readFile IFD functions looking for these files in the hackage source
-    # `mkOverride 1100` means this will be used in preference to the mkOption default,
-    # but a `mkDefault` can still override this.
-    cabalProject = lib.mkOverride 1100 ''
-      packages: .
-    '';
-    cabalProjectLocal = lib.mkOverride 1100 null;
-    cabalProjectFreeze = lib.mkOverride 1100 null;
     src =
       let
         tarball = config.evalPackages.fetchurl {
@@ -43,7 +35,10 @@ in {
           inherit (rev) sha256;
         };
         revSuffix = lib.optionalString (rev.revNum > 0) "-r${toString rev.revNum}";
-      in lib.mkOverride 1100 (config.evalPackages.runCommand "${name}-${version}${revSuffix}-src" {} (''
+      in lib.mkOverride 1100 (config.evalPackages.runCommand "${name}-${version}${revSuffix}-src" {
+          # Avoid readDir and readFile IFD functions looking for these project files in the hackage source
+          passthru.lookForCabalProject = false;
+        } (''
           tmp=$(mktemp -d)
           cd $tmp
           tar xzf ${tarball}
