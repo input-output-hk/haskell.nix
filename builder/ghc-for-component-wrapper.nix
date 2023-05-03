@@ -154,7 +154,7 @@ let
     inherit script targetPrefix;
     inherit (ghc) version meta;
   };
-  propagatedBuildInputs = configFiles.libDeps;
+  # propagatedBuildInputs = configFiles.libDeps;
   nativeBuildInputs = [ghc];
 } (''
     mkdir -p $out/configFiles
