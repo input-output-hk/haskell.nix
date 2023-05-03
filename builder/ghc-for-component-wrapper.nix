@@ -19,6 +19,11 @@
 let
   ghc = if enableDWARF then defaults.ghc.dwarf else defaults.ghc;
 
+  uniqueWithName = list:
+    lib.concatMap lib.unique (
+      builtins.attrValues (
+        builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") list));
+
   inherit (configFiles) targetPrefix ghcCommand ghcCommandCaps packageCfgDir;
   libDir         = "$wrappedGhc/${configFiles.libDir}";
   docDir         = "$wrappedGhc/share/doc/ghc/html";
@@ -154,7 +159,7 @@ let
     inherit script targetPrefix;
     inherit (ghc) version meta;
   };
-  # propagatedBuildInputs = configFiles.libDeps;
+  propagatedBuildInputs = uniqueWithName configFiles.libDeps;
   nativeBuildInputs = [ghc];
 } (''
     mkdir -p $out/configFiles
