@@ -168,10 +168,12 @@ in
   mkShell (mkDrvArgs // {
     inherit name;
 
-    buildInputs = systemInputs
+    buildInputs = (builtins.trace ("systemInputs size: " + builtins.toString (builtins.length systemInputs)) systemInputs)
+      #systemInputs
       ++ mkDrvArgs.buildInputs or [];
     nativeBuildInputs = [ ghcEnv.drv ]
-      ++ nativeBuildInputs
+      ++ (builtins.trace ("nativeBuildInputs sise: " + builtins.toString (builtins.length nativeBuildInputs)) nativeBuildInputs)
+      #++ nativeBuildInputs
       ++ mkDrvArgs.nativeBuildInputs or []
       ++ lib.attrValues (buildPackages.haskell-nix.tools' evalPackages compiler.nix-name tools)
       # If this shell is a cross compilation shell include
