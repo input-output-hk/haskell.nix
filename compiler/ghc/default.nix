@@ -274,10 +274,10 @@ let
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
       # we don't handle in the RTS properly yet. Until we figure out how to _properly_ deal
       # with the RTS_SYMBOLS in GHC, we are better off disableing the out of line atomics.
-      + lib.optionalString (targetPlatform.isLinux && targetPlatform.isAarch64) " '*.rts.ghc.c.opts += -optc-mno-outline-atomics'"
+      + lib.optionalString (targetPlatform.isLinux && targetPlatform.isAarch64) " '*.*.ghc.c.opts += -optc-mno-outline-atomics'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older 
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
-      # + lib.optionalString (targetPlatform.???) "\"*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc\""
+      # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
       ;
 
   # When installation is done by copying the stage1 output the directory layout
