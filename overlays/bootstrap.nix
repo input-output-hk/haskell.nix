@@ -1033,7 +1033,10 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
-        compilerSelection = p: p.haskell-nix.compiler // p.haskell.compiler;
+        compilerSelection = p: p.haskell-nix.compiler // p.haskell.compiler
+          # Avoid ghc961 from nixpkgs for now as the files in it are not
+          # where we expect them.
+          // { inherit (p.haskell-nix.compiler) ghc961; };
         version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";

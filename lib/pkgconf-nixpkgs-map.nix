@@ -2552,10 +2552,10 @@ pkgs:
     "libavc1394" = [ "libavc1394" ];
     "libavif" = [ "libavif" ];
     "ayatana-appindicator3-0.1" = [ "libayatana-appindicator" ];
-    "ayatana-appindicator-0.1" = [ "libayatana-appindicator-gtk2" ];
+#    "ayatana-appindicator-0.1" = [ "libayatana-appindicator-gtk2" ];
 #    "ayatana-appindicator3-0.1" = [ "libayatana-appindicator-gtk3" ];
     "ayatana-indicator3-0.4" = [ "libayatana-indicator" ];
-    "ayatana-indicator-0.4" = [ "libayatana-indicator-gtk2" ];
+#    "ayatana-indicator-0.4" = [ "libayatana-indicator-gtk2" ];
 #    "ayatana-indicator3-0.4" = [ "libayatana-indicator-gtk3" ];
     "libb2" = [ "libb2" ];
     "baseencode" = [ "libbaseencode" ];
