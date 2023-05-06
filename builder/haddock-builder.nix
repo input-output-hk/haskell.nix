@@ -76,7 +76,7 @@ let
          haskellLib.uniqueWithName (map lib.getDev (builtins.concatLists pkgconfig))
       ++ configFiles.libDeps);
 
-    buildInputs = haskellLib.checkUnique "${fullName} buildInputs" component.libs;
+    buildInputs = haskellLib.uniqueWithName (lib.flatten component.libs);
 
     nativeBuildInputs =
       [ ghc buildPackages.removeReferencesTo ]
