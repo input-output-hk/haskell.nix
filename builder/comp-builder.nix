@@ -383,12 +383,12 @@ let
       ++ haskellLib.uniqueWithName (map pkgs.lib.getDev (builtins.concatLists pkgconfig))
       # These only need to be propagated for library components (otherwise they
       # will be in `buildInputs`)
-      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps
+      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
       ++ lib.optionals (stdenv.hostPlatform.isWindows)
         (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
     buildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} buildInputs" (
-      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps
+      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
       ++ lib.optionals (!stdenv.hostPlatform.isWindows)
         (haskellLib.uniqueWithName (lib.flatten component.libs)));
 

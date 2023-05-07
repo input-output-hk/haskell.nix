@@ -74,7 +74,7 @@ let
 
     propagatedBuildInputs = haskellLib.checkUnique "${fullName} propagatedBuildInputs" (
          haskellLib.uniqueWithName (map lib.getDev (builtins.concatLists pkgconfig))
-      ++ configFiles.libDeps);
+      ++ configFiles.libDeps); # libDeps is already deduplicated
 
     buildInputs = haskellLib.uniqueWithName (lib.flatten component.libs);
 
