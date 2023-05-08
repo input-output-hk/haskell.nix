@@ -22,7 +22,7 @@ cabal new-update
 
 echo
 echo "+++ Run stable version of make-install-plan and plan-to-nix"
-nix build --impure --expr '(let haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}; in (import haskellNix.sources.nixpkgs haskellNix.nixpkgsArgs).haskell-nix.nix-tools.ghc8107)' -o nt
+nix build --impure --expr '(let haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz") {}; in (import haskellNix.sources.nixpkgs-2211 haskellNix.nixpkgsArgs).haskell-nix.nix-tools.ghc8107)' -o nt
 ./nt/bin/make-install-plan
 rm -rf .buildkite/nix1
 ./nt/bin/plan-to-nix --output .buildkite/nix1 --plan-json dist-newstyle/cache/plan.json
