@@ -1,6 +1,10 @@
 #! /usr/bin/env nix-shell
 #! nix-shell -I "nixpkgs=channel:nixos-22.11" -i bash -p nixUnstable cabal-install ghc git nix-prefetch-git cacert
 
+# This file uses nixpkgs 22.11 to make our GHA runners happy
+# Using `nixpkgs-unstable` currently results in:
+#   version `GLIBCXX_3.4.30' not found
+
 # The `nix-shell` is set to run without `--pure`.
 # It is possible to use `--pure` if we need to, but it requires setting these.
 #  export LANG=en_US.UTF-8
