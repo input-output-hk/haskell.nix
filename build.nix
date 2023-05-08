@@ -89,13 +89,7 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    # Forcing nixpkgs-unstable here because this test makes a script
-    # that when run will build `aeson` (used by `tests/cabal-simple`)
-    # and we currently do not build that on hydra for nixpkgs-2205 (used by `pkgs`).
-    # Using nixpkgs-unstable should allow buildkite to find what it needs
-    # in the hydra cache when it runs the script.
-    check-path-support = (import haskellNix.sources.nixpkgs-unstable nixpkgsArgs)
-        .buildPackages.callPackage ./scripts/check-path-support.nix {
+    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {
       inherit compiler-nix-name;
     };
   };
