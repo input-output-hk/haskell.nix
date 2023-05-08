@@ -51,10 +51,12 @@ let
   libDir         = ghc.libDir or "lib/${ghcCommand}-${ghc.version}";
   packageCfgDir  = "${libDir}/package.conf.d";
 
-  libDeps = map chooseDrv (
-    (if enableDWARF then (x: map (p: p.dwarf or p) x) else x: x)
-    ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
-    (map haskellLib.dependToLib component.depends))
+  libDeps = haskellLib.uniqueWithName (
+    map chooseDrv (
+      (if enableDWARF then (x: map (p: p.dwarf or p) x) else x: x)
+      ((if needsProfiling then (x: map (p: p.profiled or p) x) else x: x)
+      (map haskellLib.dependToLib component.depends))
+    )
   );
   script = ''
     ${target-pkg} init $configFiles/${packageCfgDir}

@@ -72,11 +72,11 @@ let
     outputs = ["out" "configFiles" "ghc"]
     ++ lib.optional doHaddock' "doc";
 
-    propagatedBuildInputs =
-         builtins.concatLists pkgconfig
-      ++ configFiles.libDeps;
+    propagatedBuildInputs = haskellLib.checkUnique "${fullName} propagatedBuildInputs" (
+         haskellLib.uniqueWithName (map lib.getDev (builtins.concatLists pkgconfig))
+      ++ configFiles.libDeps); # libDeps is already deduplicated
 
-    buildInputs = component.libs;
+    buildInputs = haskellLib.uniqueWithName (lib.flatten component.libs);
 
     nativeBuildInputs =
       [ ghc buildPackages.removeReferencesTo ]

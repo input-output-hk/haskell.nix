@@ -376,21 +376,21 @@ let
       mainProgram = exeName;
     };
 
-    propagatedBuildInputs =
-         frameworks # Frameworks will be needed at link time
+    propagatedBuildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} propagatedBuildInputs" (
+         haskellLib.uniqueWithName frameworks # Frameworks will be needed at link time
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
-      ++ map pkgs.lib.getDev (builtins.concatLists pkgconfig)
+      ++ haskellLib.uniqueWithName (map pkgs.lib.getDev (builtins.concatLists pkgconfig))
       # These only need to be propagated for library components (otherwise they
       # will be in `buildInputs`)
-      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps
+      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
       ++ lib.optionals (stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs);
+        (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
-    buildInputs =
-      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps
+    buildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} buildInputs" (
+      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
       ++ lib.optionals (!stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs);
+        (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
