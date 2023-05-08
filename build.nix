@@ -6,8 +6,11 @@
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , evalPackages ? import nixpkgs nixpkgsArgs
-, nixpkgsForHydra ? haskellNix.sources.nixpkgs-2211
-, pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
+# This version is used to make our GHA runners happy
+# Using `nixpkgs-unstable` currently results in:
+#   version `GLIBCXX_3.4.30' not found
+, nixpkgsForGHA ? haskellNix.sources.nixpkgs-2211
+, pkgsForGHA ? import nixpkgsForGHA (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 , haskellNix ? (import ./default.nix {})
@@ -75,12 +78,7 @@ in rec {
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };
     };
-    # Because this is going to be used to test caching on hydra, it must not
-    # use the darcs package from the haskell.nix we are testing.  For that reason
-    # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
-    # (We could pull in darcs from a known good haskell.nix for hydra to
-    # use)
-    check-hydra = pkgsForHydra.buildPackages.callPackage ./scripts/check-hydra.nix {};
+    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       # Includes cabal-install since this is commonly used.
       nix-tools = pkgs.linkFarm "common-tools" [
@@ -89,7 +87,7 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    check-path-support = pkgsForHydra.buildPackages.callPackage ./scripts/check-path-support.nix {
+    check-path-support = pkgsForGHA.buildPackages.callPackage ./scripts/check-path-support.nix {
       inherit compiler-nix-name;
     };
   };
@@ -97,7 +95,7 @@ in rec {
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs (
-      (pkgs.lib.optionalAttrs (pkgsForHydra.system == "x86_64-linux") {
+      (pkgs.lib.optionalAttrs (pkgs.system == "x86_64-linux") {
         inherit (maintainer-scripts) check-hydra;
       })
     // (pkgs.lib.optionalAttrs (ifdLevel > 2) {
