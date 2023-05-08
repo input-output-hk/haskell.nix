@@ -6,7 +6,7 @@
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , evalPackages ? import nixpkgs nixpkgsArgs
-, nixpkgsForHydra ? haskellNix.sources.nixpkgs-2105
+, nixpkgsForHydra ? haskellNix.sources.nixpkgs-2211
 , pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
@@ -89,7 +89,7 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    check-path-support = pkgs.buildPackages.callPackage ./scripts/check-path-support.nix {
+    check-path-support = pkgsForHydra.buildPackages.callPackage ./scripts/check-path-support.nix {
       inherit compiler-nix-name;
     };
   };
