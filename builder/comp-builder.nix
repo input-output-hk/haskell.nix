@@ -201,7 +201,11 @@ let
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals haskellLib.isCrossHost (
         map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
-        ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
+        ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${
+           # Older ghcjs patched config.sub to support "js-unknown-ghcjs" (not "javascript-unknown-ghcjs")
+           if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9" < 0
+             then "js-unknown-ghcjs"
+             else stdenv.hostPlatform.config}" )
       ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
@@ -373,21 +377,21 @@ let
       mainProgram = exeName;
     };
 
-    propagatedBuildInputs =
-         frameworks # Frameworks will be needed at link time
+    propagatedBuildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} propagatedBuildInputs" (
+         haskellLib.uniqueWithName frameworks # Frameworks will be needed at link time
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
-      ++ map pkgs.lib.getDev (builtins.concatLists pkgconfig)
+      ++ haskellLib.uniqueWithName (map pkgs.lib.getDev (builtins.concatLists pkgconfig))
       # These only need to be propagated for library components (otherwise they
       # will be in `buildInputs`)
-      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps
+      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
       ++ lib.optionals (stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs);
+        (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
-    buildInputs =
-      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps
+    buildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} buildInputs" (
+      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
       ++ lib.optionals (!stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs);
+        (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]

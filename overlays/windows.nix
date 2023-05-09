@@ -4,17 +4,15 @@
 # and not end up with the expected changes we want.
 final: prev:
 {
-   # on windows we have this habit of putting libraries
-   # into `bin`, whereas on unix it's usually `lib`. For
-   # this confuses nix easily. So we'll just move the
-   # .dll's from `bin` into `$out/lib`. Such that they
-   # are trivially found.
-  #  openssl = prev.openssl.overrideAttrs (drv: {
-  #   #  postInstall = with prev.stdenv; drv.postInstall + lib.optionalString hostPlatform.isWindows ''
-  #   #    cp $bin/bin/*.dll $out/lib/
-  #   #  '';
-  #   postFixup = "";
-  #  });
+  # Work around for https://github.com/NixOS/nixpkgs/pull/229465
+  openssl = if !prev.stdenv.hostPlatform.isWindows then prev.openssl else prev.openssl.overrideAttrs (drv: {
+    nativeBuildInputs = final.lib.filter (x: x.name or "" != "make-shell-wrapper-hook") drv.nativeBuildInputs;
+    postInstall = ''
+      function makeWrapper () {
+        echo Skipping makeWrapper
+      }
+    '' + drv.postInstall;
+  });
 } // prev.lib.optionalAttrs (prev ? mfpr) {
    mfpr = if !prev.stdenv.hostPlatform.isWindows then prev.mpfr else prev.mfpr.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
