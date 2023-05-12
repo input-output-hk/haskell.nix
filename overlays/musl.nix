@@ -28,7 +28,7 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
     # this is needed because postgresql links against libicu
     # which we build only statically (for musl), and that then
     # needs -lstdc++ as well.
-    NIX_LDFLAGS = "-lstdc++";
+    env.NIX_LDFLAGS = "-lstdc++";
   });
   
   openssl = prev.openssl.override { static = true; };
