@@ -27,6 +27,8 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
     .override { enableSystemd = false; gssSupport = false; };
   openssl = prev.openssl.override { static = true; };
 
+  icu = (prev.icu.overrideAttrs (old: { configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ]; }));
+
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });
 } // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.trivial.release "20.03") {
