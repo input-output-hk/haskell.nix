@@ -29,6 +29,13 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
 
   icu = (prev.icu.overrideAttrs (old: { configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ]; }));
 
+  # this is needed because postgresql links against libicu
+  # which we build only statically (for musl), and that then
+  # needs -lstdc++ as well.
+  postgresql = prev.postgresql.overrideAttrs (old: {
+    NIX_LDFLAGS = "-lstdc++";
+  });
+          
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });
 } // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.trivial.release "20.03") {
