@@ -23,19 +23,18 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   numactl = prev.numactl.overrideAttrs (_: { configureFlags = ["--enable-static"];});
 
   # See https://github.com/input-output-hk/haskell.nix/issues/948
-  postgresql = (prev.postgresql.overrideAttrs (old: { dontDisableStatic = true; }))
-    .override { enableSystemd = false; gssSupport = false; };
+  postgresql = (prev.postgresql.overrideAttrs (old: {
+    dontDisableStatic = true;
+    # this is needed because postgresql links against libicu
+    # which we build only statically (for musl), and that then
+    # needs -lstdc++ as well.
+    NIX_LDFLAGS = "-lstdc++";
+  })).override { enableSystemd = false; gssSupport = false; };
+  
   openssl = prev.openssl.override { static = true; };
 
   icu = (prev.icu.overrideAttrs (old: { configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ]; }));
 
-  # this is needed because postgresql links against libicu
-  # which we build only statically (for musl), and that then
-  # needs -lstdc++ as well.
-  postgresql = prev.postgresql.overrideAttrs (old: {
-    NIX_LDFLAGS = "-lstdc++";
-  });
-          
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });
 } // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.trivial.release "20.03") {
