@@ -1,8 +1,5 @@
 # `haskell.nix` is infrastructure for building Haskell packages with Nix
 
-[![](https://badge.buildkite.com/d453edcd29bd2f8f3f3b32c9b7d6777a33773d9671c37a6ccc.svg?branch=master)](https://buildkite.com/input-output-hk/haskell-dot-nix)
-[![](https://img.shields.io/buildkite/c8d5a20d3ff0f440f82adb9190b43c16c91e5e47e8adfa867a/master.svg?label=nightly%20updates)](https://buildkite.com/input-output-hk/haskell-dot-nix-nightly-updates)
-
 `haskell.nix` can automatically translate your Cabal or Stack project and
 its dependencies into Nix code.
 
