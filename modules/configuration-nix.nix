@@ -157,4 +157,8 @@ in {
   packages.bitvec.patches = [
     (fromUntil "1.1.3.0" "1.1.3.0.1" ../patches/bitvec-gmp-fix.patch)
   ];
+
+  # ghc-paths stores the path of the GHC compiler used to build the component.
+  # we need to keep it in the store so that it will remain valid.
+  packages.ghc-paths.components.library.keepGhc = true;
 }

@@ -168,6 +168,18 @@ let
       default = (def.profilingDetail or "default");
     };
 
+    keepConfigFiles = mkOption {
+      type = bool;
+      default = (def.keepConfigFiles or false);
+      description = "Keep component configFiles in the store in a `configFiles` output";
+    };
+
+    keepGhc = mkOption {
+      type = bool;
+      default = (def.keepGhc or false);
+      description = "Keep component wrapped ghc in the store in a `ghc` output";
+    };
+
     keepSource = mkOption {
       type = bool;
       default = (def.keepSource or false);
