@@ -55,6 +55,15 @@ let self =
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 , quickjump ? component.doQuickjump # Generate an index for interactive documentation navigation
+
+# Keep the configFiles as a derivation output (otherwise they are in a temp directory)
+# We need this for `cabal-doctest` to work, but it is also likely
+, keepConfigFiles ? component.keepConfigFiles || configureAllComponents
+
+# Keep the ghc wrapper as a `ghc` derivation output (otherwise it is in a temp directory)
+# This is used for the `ghc-paths` package in `modules/configuration.nix`
+, keepGhc ? component.keepGhc
+
 , keepSource ? component.keepSource || configureAllComponents # Build from `source` output in the store then delete `dist`
 , setupHaddockFlags ? component.setupHaddockFlags
 
@@ -397,7 +406,9 @@ let
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends;
 
-    outputs = ["out" "configFiles" "ghc"]
+    outputs = ["out"]
+      ++ (lib.optional keepConfigFiles "configFiles")
+      ++ (lib.optional keepGhc "ghc")
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source")
       ++ (lib.optional writeHieFiles "hie");
@@ -416,9 +427,22 @@ let
         chmod -R +w .
       '') + commonAttrs.prePatch;
 
-    configurePhase = ''
-      mkdir -p $configFiles
-      mkdir -p $ghc
+    configurePhase =
+      (
+        if keepConfigFiles then ''
+          mkdir -p $configFiles
+        ''
+        else ''
+          configFiles=$(mktemp -d)
+        ''
+      ) + (
+        if keepGhc then ''
+          mkdir -p $ghc
+        ''
+        else ''
+          ghc=$(mktemp -d)
+        ''
+      ) + ''
       wrappedGhc=$ghc
       ${configFiles.script}
       ${shellWrappers.script}
