@@ -12,10 +12,6 @@
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     flake-utils = { url = "github:hamishmack/flake-utils/hkm/nested-hydraJobs"; };
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
-    tullia = {
-      url = "github:input-output-hk/tullia";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -187,9 +183,7 @@
                 ) (names nixpkgsJobs)
               ) (names allJobs));
 
-      ciJobs = allJobs;
-
-      hydraJobs = ciJobs;
+      hydraJobs = allJobs;
 
       devShells = with self.legacyPackages.${system}; {
         default =
@@ -216,7 +210,7 @@
             "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
             "ghc901"
             "ghc921" "ghc922" "ghc923"]);
-    } // tullia.fromSimple system (import ./tullia.nix)));
+    }));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
