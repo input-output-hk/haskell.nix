@@ -161,4 +161,6 @@ in {
   # ghc-paths stores the path of the GHC compiler used to build the component.
   # we need to keep it in the store so that it will remain valid.
   packages.ghc-paths.components.library.keepGhc = true;
+  # It can also store a symlink to the package DB directory
+  packages.ghc-paths.components.library.keepConfigFiles = true;
 }
