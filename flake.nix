@@ -64,7 +64,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, ... }@inputs:
     let compiler = "ghc927";
       config = import ./config.nix;
 
