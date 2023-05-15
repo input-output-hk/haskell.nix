@@ -161,4 +161,10 @@ in {
   # ghc-paths stores the path of the GHC compiler used to build the component.
   # we need to keep it in the store so that it will remain valid.
   packages.ghc-paths.components.library.keepGhc = true;
+
+  # There seems to be an issue building gi-gtk with ghc 9.6.1.
+  # https://gitlab.haskell.org/ghc/ghc/-/issues/23392
+  # Using -j1 works around the issue.
+  packages.gi-gtk.components.library.ghcOptions =
+    pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961"]) "-j1";
 }
