@@ -40,6 +40,10 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
   { name = "${prefix}-musl";          value = (pkgs.pkgsCross.musl64.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-hello-musl";    value = pkgs.pkgsCross.musl64.haskell-nix.tool compiler-nix-name "hello" {}; }
+] ++ eval.lib.optionals (system == "aarch64-linux"
+         && !__elem compiler-nix-name ["ghc881"]) [
+  { name = "${prefix}-musl";          value = (pkgs.pkgsCross.aarch64-multiplatform-musl64.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
+  { name = "${prefix}-hello-musl";    value = pkgs.pkgsCross.aarch64-multiplatform-musl64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux" && !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc901" "ghc921" "ghc941" "ghc942" "ghc943"]) [
   { name = "${prefix}-arm";           value = (pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-hello-arm";     value = pkgs.pkgsCross.aarch64-multiplatform.haskell-nix.tool compiler-nix-name "hello" {}; }
