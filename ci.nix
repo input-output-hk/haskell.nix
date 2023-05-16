@@ -78,9 +78,9 @@
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc945" "ghc961"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
-    inherit (lib.systems.examples) musl64 aarch64-multiplatform;
+    inherit (lib.systems.examples) musl64 aarch64-multiplatform aarch64-multiplatform-musl;
   } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc945" "ghc961"]) {
-    inherit (lib.systems.examples) aarch64-multiplatform-musl64;
+    inherit (lib.systems.examples) aarch64-multiplatform-musl;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc927"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
