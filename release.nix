@@ -26,7 +26,7 @@ let
             (n == "latest" && include "ghc8107")
             || (ghcMatch != null && include (__head ghcMatch))) jobs) system));
 
-  jobs = lib.getAttrs supportedSystems (filterCiJobs defaultNix.ciJobs);
+  jobs = lib.getAttrs supportedSystems (filterCiJobs defaultNix.hydraJobs);
 
   windows-secp256k1 =
     let
