@@ -163,4 +163,10 @@ in {
   packages.ghc-paths.components.library.keepGhc = true;
   # It can also store a symlink to the package DB directory
   packages.ghc-paths.components.library.keepConfigFiles = true;
+
+  # There seems to be an issue building gi-gtk with ghc 9.6.1.
+  # https://gitlab.haskell.org/ghc/ghc/-/issues/23392
+  # Using -j1 works around the issue.
+  packages.gi-gtk.components.library.ghcOptions =
+    pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961"]) "-j1";
 }
