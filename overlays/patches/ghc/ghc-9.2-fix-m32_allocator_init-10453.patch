@@ -1,0 +1,1432 @@
+diff --git a/rts/ExecPage.c b/rts/ExecPage.c
+index 6f5b6e281ab5151dd478f1965876d3d965d3f4e2..0f83c8e1f597cbdbcefb25b2020d8bad5c602ff6 100644
+--- a/rts/ExecPage.c
++++ b/rts/ExecPage.c
+@@ -6,8 +6,8 @@
+  */
+ 
+ #include "Rts.h"
+-#include "LinkerInternals.h"
+ #include "sm/OSMem.h"
++#include "linker/MMap.h"
+ 
+ ExecPage *allocateExecPage() {
+     ExecPage *page = (ExecPage *) mmapAnonForLinker(getPageSize());
+@@ -15,7 +15,7 @@ ExecPage *allocateExecPage() {
+ }
+ 
+ void freezeExecPage(ExecPage *page) {
+-    mmapForLinkerMarkExecutable(page, getPageSize());
++    mprotectForLinker(page, getPageSize(), MEM_READ_EXECUTE);
+     flushExec(getPageSize(), page);
+ }
+ 
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 3bbe4b8340afcae6481f49ffe750012dbb0c7124..19545fd3db5100d8930669f1ee7d92e08aabb987 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -31,8 +31,10 @@
+ #include "linker/M32Alloc.h"
+ #include "linker/CacheFlush.h"
+ #include "linker/SymbolExtras.h"
++#include "linker/MMap.h"
+ #include "PathUtils.h"
+ #include "CheckUnload.h" // createOCSectionIndices
++#include "ReportMemoryMap.h"
+ 
+ #if !defined(mingw32_HOST_OS)
+ #include "posix/Signals.h"
+@@ -198,63 +200,6 @@ Mutex linker_mutex;
+ /* Generic wrapper function to try and Resolve and RunInit oc files */
+ int ocTryLoad( ObjectCode* oc );
+ 
+-/* Link objects into the lower 2Gb on x86_64 and AArch64.  GHC assumes the
+- * small memory model on this architecture (see gcc docs,
+- * -mcmodel=small).
+- *
+- * MAP_32BIT not available on OpenBSD/amd64
+- */
+-#if defined(MAP_32BIT) && (defined(x86_64_HOST_ARCH) || (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH)))
+-#define MAP_LOW_MEM
+-#define TRY_MAP_32BIT MAP_32BIT
+-#else
+-#define TRY_MAP_32BIT 0
+-#endif
+-
+-#if defined(aarch64_HOST_ARCH)
+-// On AArch64 MAP_32BIT is not available but we are still bound by the small
+-// memory model. Consequently we still try using the MAP_LOW_MEM allocation
+-// strategy.
+-#define MAP_LOW_MEM
+-#endif
+-
+-/*
+- * Note [MAP_LOW_MEM]
+- * ~~~~~~~~~~~~~~~~~~
+- * Due to the small memory model (see above), on x86_64 and AArch64 we have to
+- * map all our non-PIC object files into the low 2Gb of the address space (why
+- * 2Gb and not 4Gb?  Because all addresses must be reachable using a 32-bit
+- * signed PC-relative offset). On x86_64 Linux we can do this using the
+- * MAP_32BIT flag to mmap(), however on other OSs (e.g. *BSD, see #2063, and
+- * also on Linux inside Xen, see #2512), we can't do this.  So on these
+- * systems, we have to pick a base address in the low 2Gb of the address space
+- * and try to allocate memory from there.
+- *
+- * The same holds for aarch64, where the default, even with PIC, model
+- * is 4GB. The linker is free to emit AARCH64_ADR_PREL_PG_HI21
+- * relocations.
+- *
+- * We pick a default address based on the OS, but also make this
+- * configurable via an RTS flag (+RTS -xm)
+- */
+-
+-#if (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))
+-// Try to use stg_upd_frame_info as the base. We need to be within +-4GB of that
+-// address, otherwise we violate the aarch64 memory model. Any object we load
+-// can potentially reference any of the ones we bake into the binary (and list)
+-// in RtsSymbols. Thus we'll need to be within +-4GB of those,
+-// stg_upd_frame_info is a good candidate as it's referenced often.
+-#define MMAP_32BIT_BASE_DEFAULT (void*)&stg_upd_frame_info;
+-#elif defined(MAP_32BIT) || DEFAULT_LINKER_ALWAYS_PIC
+-// Try to use MAP_32BIT
+-#define MMAP_32BIT_BASE_DEFAULT 0
+-#else
+-// A guess: 1Gb.
+-#define MMAP_32BIT_BASE_DEFAULT 0x40000000
+-#endif
+-
+-static void *mmap_32bit_base = (void *)MMAP_32BIT_BASE_DEFAULT;
+-
+ static void ghciRemoveSymbolTable(StrHashTable *table, const SymbolName* key,
+     ObjectCode *owner)
+ {
+@@ -1103,217 +1048,6 @@ resolveSymbolAddr (pathchar* buffer, int size,
+ #endif /* OBJFORMAT_PEi386 */
+ }
+ 
+-#if defined(mingw32_HOST_OS)
+-
+-//
+-// Returns NULL on failure.
+-//
+-void *
+-mmapAnonForLinker (size_t bytes)
+-{
+-  return VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+-}
+-
+-void
+-munmapForLinker (void *addr, size_t bytes, const char *caller)
+-{
+-  if (VirtualFree(addr, 0, MEM_RELEASE) == 0) {
+-    sysErrorBelch("munmapForLinker: %s: Failed to unmap %zd bytes at %p",
+-                  caller, bytes, addr);
+-  }
+-}
+-
+-void
+-mmapForLinkerMarkExecutable(void *start, size_t len)
+-{
+-  DWORD old;
+-  if (len == 0) {
+-    return;
+-  }
+-  if (VirtualProtect(start, len, PAGE_EXECUTE_READ, &old) == 0) {
+-    sysErrorBelch("mmapForLinkerMarkExecutable: failed to protect %zd bytes at %p",
+-                  len, start);
+-    ASSERT(false);
+-  }
+-}
+-
+-#elif RTS_LINKER_USE_MMAP
+-//
+-// Returns NULL on failure.
+-//
+-void *
+-mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset)
+-{
+-   void *map_addr = NULL;
+-   void *result;
+-   size_t size;
+-   uint32_t tryMap32Bit = RtsFlags.MiscFlags.linkerAlwaysPic
+-     ? 0
+-     : TRY_MAP_32BIT;
+-   static uint32_t fixed = 0;
+-
+-   IF_DEBUG(linker, debugBelch("mmapForLinker: start\n"));
+-   size = roundUpToPage(bytes);
+-
+-#if defined(MAP_LOW_MEM)
+-mmap_again:
+-#endif
+-
+-   if (mmap_32bit_base != NULL) {
+-       map_addr = mmap_32bit_base;
+-   }
+-
+-   IF_DEBUG(linker,
+-            debugBelch("mmapForLinker: \tprotection %#0x\n", prot));
+-   IF_DEBUG(linker,
+-            debugBelch("mmapForLinker: \tflags      %#0x\n",
+-                       MAP_PRIVATE | tryMap32Bit | fixed | flags));
+-   IF_DEBUG(linker,
+-            debugBelch("mmapForLinker: \tsize       %#0zx\n", bytes));
+-   IF_DEBUG(linker,
+-            debugBelch("mmapForLinker: \tmap_addr   %p\n", map_addr));
+-
+-   result = mmap(map_addr, size, prot,
+-                 MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
+-
+-   if (result == MAP_FAILED) {
+-       sysErrorBelch("mmap %" FMT_Word " bytes at %p",(W_)size,map_addr);
+-       errorBelch("Try specifying an address with +RTS -xm<addr> -RTS");
+-       return NULL;
+-   }
+-
+-#if defined(MAP_LOW_MEM)
+-   if (RtsFlags.MiscFlags.linkerAlwaysPic) {
+-       /* make no attempt at mapping low memory if we are assuming PIC */
+-   } else if (mmap_32bit_base != NULL) {
+-       if (result != map_addr) {
+-           if ((W_)result > 0x80000000) {
+-               // oops, we were given memory over 2Gb
+-               munmap(result,size);
+-#if defined(freebsd_HOST_OS)  || \
+-    defined(kfreebsdgnu_HOST_OS) || \
+-    defined(dragonfly_HOST_OS)
+-               // Some platforms require MAP_FIXED.  This is normally
+-               // a bad idea, because MAP_FIXED will overwrite
+-               // existing mappings.
+-               fixed = MAP_FIXED;
+-               goto mmap_again;
+-#else
+-               errorBelch("mmapForLinker: failed to mmap() memory below 2Gb; "
+-                          "asked for %lu bytes at %p. "
+-                          "Try specifying an address with +RTS -xm<addr> -RTS",
+-                          size, map_addr);
+-               return NULL;
+-#endif
+-           } else {
+-               // hmm, we were given memory somewhere else, but it's
+-               // still under 2Gb so we can use it.
+-           }
+-       }
+-   } else {
+-       if ((W_)result > 0x80000000) {
+-           // oops, we were given memory over 2Gb
+-           // ... try allocating memory somewhere else?;
+-           debugTrace(DEBUG_linker,
+-                      "MAP_32BIT didn't work; gave us %lu bytes at 0x%p",
+-                      bytes, result);
+-           munmap(result, size);
+-
+-           // Set a base address and try again... (guess: 1Gb)
+-           mmap_32bit_base = (void*)0x40000000;
+-           goto mmap_again;
+-       }
+-   }
+-#elif (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))
+-    // for aarch64 we need to make sure we stay within 4GB of the
+-    // mmap_32bit_base, and we also do not want to update it.
+-    if (result != map_addr) {
+-        // upper limit 4GB - size of the object file - 1mb wiggle room.
+-        if(llabs((uintptr_t)result - (uintptr_t)&stg_upd_frame_info) > (2<<32) - size - (2<<20)) {
+-            // not within range :(
+-            debugTrace(DEBUG_linker,
+-                        "MAP_32BIT didn't work; gave us %lu bytes at 0x%p",
+-                        bytes, result);
+-            munmap(result, size);
+-            // TODO: some abort/mmap_32bit_base recomputation based on
+-            //       if mmap_32bit_base is changed, or still at stg_upd_frame_info
+-            goto mmap_again;
+-        }
+-    }
+-#endif
+-
+-    if (mmap_32bit_base != NULL) {
+-       // Next time, ask for memory right after our new mapping to maximize the
+-       // chance that we get low memory.
+-        mmap_32bit_base = (void*) ((uintptr_t)result + size);
+-    }
+-
+-    IF_DEBUG(linker,
+-            debugBelch("mmapForLinker: mapped %" FMT_Word
+-                        " bytes starting at %p\n", (W_)size, result));
+-    IF_DEBUG(linker,
+-             debugBelch("mmapForLinker: done\n"));
+-
+-    return result;
+-}
+-
+-/*
+- * Map read/write pages in low memory. Returns NULL on failure.
+- */
+-void *
+-mmapAnonForLinker (size_t bytes)
+-{
+-  return mmapForLinker (bytes, PROT_READ|PROT_WRITE, MAP_ANONYMOUS, -1, 0);
+-}
+-
+-void munmapForLinker (void *addr, size_t bytes, const char *caller)
+-{
+-  int r = munmap(addr, bytes);
+-  if (r == -1) {
+-    // Should we abort here?
+-    sysErrorBelch("munmap: %s", caller);
+-  }
+-}
+-
+-/* Note [Memory protection in the linker]
+- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- * For many years the linker would simply map all of its memory
+- * with PROT_READ|PROT_WRITE|PROT_EXEC. However operating systems have been
+- * becoming increasingly reluctant to accept this practice (e.g. #17353,
+- * #12657) and for good reason: writable code is ripe for exploitation.
+- *
+- * Consequently mmapForLinker now maps its memory with PROT_READ|PROT_WRITE.
+- * After the linker has finished filling/relocating the mapping it must then
+- * call mmapForLinkerMarkExecutable on the sections of the mapping which
+- * contain executable code.
+- *
+- * Note that the m32 allocator handles protection of its allocations. For this
+- * reason the caller to m32_alloc() must tell the allocator whether the
+- * allocation needs to be executable. The caller must then ensure that they
+- * call m32_allocator_flush() after they are finished filling the region, which
+- * will cause the allocator to change the protection bits to
+- * PROT_READ|PROT_EXEC.
+- *
+- */
+-
+-/*
+- * Mark an portion of a mapping previously reserved by mmapForLinker
+- * as executable (but not writable).
+- */
+-void mmapForLinkerMarkExecutable(void *start, size_t len)
+-{
+-    if (len == 0) {
+-      return;
+-    }
+-    IF_DEBUG(linker,
+-             debugBelch("mmapForLinkerMarkExecutable: protecting %" FMT_Word
+-                        " bytes starting at %p\n", (W_)len, start));
+-    if (mprotect(start, len, PROT_READ|PROT_EXEC) == -1) {
+-       barf("mmapForLinkerMarkExecutable: mprotect: %s\n", strerror(errno));
+-    }
+-}
+-#endif
+-
+ /*
+  * Remove symbols from the symbol table, and free oc->symbols.
+  * This operation is idempotent.
+@@ -1619,10 +1353,9 @@ preloadObjectFile (pathchar *path)
+     * See also the misalignment logic for darwin below.
+     */
+ #if defined(darwin_HOST_OS) || defined(openbsd_HOST_OS)
+-   image = mmapForLinker(fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
++   image = mmapForLinker(fileSize, MEM_READ_WRITE, MAP_PRIVATE, fd, 0);
+ #else
+-   image = mmapForLinker(fileSize, PROT_READ|PROT_WRITE|PROT_EXEC,
+-                MAP_PRIVATE, fd, 0);
++   image = mmapForLinker(fileSize, MEM_READ_WRITE_EXECUTE, MAP_PRIVATE, fd, 0);
+ #endif
+ 
+    if (image == MAP_FAILED) {
+@@ -1661,7 +1394,7 @@ preloadObjectFile (pathchar *path)
+ 
+    image = stgMallocBytes(fileSize, "loadObj(image)");
+ 
+-#endif
++#endif /* !defined(darwin_HOST_OS) */
+ 
+    int n;
+    n = fread ( image, 1, fileSize, f );
+@@ -1706,6 +1439,15 @@ static HsInt loadObj_ (pathchar *path)
+        return 1; // success
+    }
+ 
++   if (isArchive(path)) {
++       if (loadArchive_(path)) {
++            return 1; // success
++       } else {
++            IF_DEBUG(linker,
++                        debugBelch("tried and failed to load %" PATH_FMT " as an archive\n", path));
++       }
++   }
++
+    ObjectCode *oc = preloadObjectFile(path);
+    if (oc == NULL) return 0;
+ 
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index 7058ad355b62313834dc90501a3addeb04617297..f2c36e057a039be272b90512fb4d34d8693171f0 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -374,11 +374,6 @@ void exitLinker( void );
+ void freeObjectCode (ObjectCode *oc);
+ SymbolAddr* loadSymbol(SymbolName *lbl, RtsSymbolInfo *pinfo);
+ 
+-void *mmapAnonForLinker (size_t bytes);
+-void *mmapForLinker (size_t bytes, uint32_t prot, uint32_t flags, int fd, int offset);
+-void mmapForLinkerMarkExecutable (void *start, size_t len);
+-void munmapForLinker (void *addr, size_t bytes, const char *caller);
+-
+ void addProddableBlock ( ObjectCode* oc, void* start, int size );
+ void checkProddableBlock (ObjectCode *oc, void *addr, size_t size );
+ void freeProddableBlocks (ObjectCode *oc);
+@@ -412,6 +407,10 @@ pathchar*
+ resolveSymbolAddr (pathchar* buffer, int size,
+                    SymbolAddr* symbol, uintptr_t* top);
+ 
++/* defined in LoadArchive.c */
++bool isArchive (pathchar *path);
++HsInt loadArchive_ (pathchar *path);
++
+ /*************************************************
+  * Various bits of configuration
+  *************************************************/
+@@ -433,6 +432,7 @@ resolveSymbolAddr (pathchar* buffer, int size,
+ #define USE_CONTIGUOUS_MMAP 0
+ #endif
+ 
++
+ HsInt isAlreadyLoaded( pathchar *path );
+ OStatus getObjectLoadStatus_ (pathchar *path);
+ HsInt loadOc( ObjectCode* oc );
+@@ -444,20 +444,4 @@ ObjectCode* mkOc( ObjectType type, pathchar *path, char *image, int imageSize,
+ void initSegment(Segment *s, void *start, size_t size, SegmentProt prot, int n_sections);
+ void freeSegments(ObjectCode *oc);
+ 
+-/* MAP_ANONYMOUS is MAP_ANON on some systems,
+-   e.g. OS X (before Sierra), OpenBSD etc */
+-#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+-#define MAP_ANONYMOUS MAP_ANON
+-#endif
+-
+-/* In order to simplify control flow a bit, some references to mmap-related
+-   definitions are blocked off by a C-level if statement rather than a CPP-level
+-   #if statement. Since those are dead branches when !RTS_LINKER_USE_MMAP, we
+-   just stub out the relevant symbols here
+-*/
+-#if !RTS_LINKER_USE_MMAP
+-#define munmap(x,y) /* nothing */
+-#define MAP_ANONYMOUS 0
+-#endif
+-
+ #include "EndPrivate.h"
+diff --git a/rts/ReportMemoryMap.c b/rts/ReportMemoryMap.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..c30c80070ee5441ec75b132afdec003bee92c782
+--- /dev/null
++++ b/rts/ReportMemoryMap.c
+@@ -0,0 +1,138 @@
++/* -----------------------------------------------------------------------------
++ *
++ * (c) The GHC Team, 1998-2004
++ *
++ * Memory-map dumping.
++ *
++ * This is intended to be used for reporting the process memory-map
++ * in diagnostics when the RTS fails to map a block of memory.
++ *
++ * ---------------------------------------------------------------------------*/
++
++#include "PosixSource.h"
++#include "Rts.h"
++
++#include <string.h>
++
++#if defined(darwin_HOST_OS)
++#include <mach/mach.h>
++#include <mach/mach_vm.h>
++#include <mach/vm_region.h>
++#include <mach/vm_statistics.h>
++#endif
++
++#include "ReportMemoryMap.h"
++
++#if defined(mingw32_HOST_OS)
++
++void reportMemoryMap() {
++    debugBelch("\nMemory map:\n");
++    uint8_t *addr = NULL;
++    while (true) {
++        MEMORY_BASIC_INFORMATION info;
++        int res = VirtualQuery(addr, &info, sizeof(info));
++        if (!res && GetLastError() == ERROR_INVALID_PARAMETER) {
++            return;
++        } else if (!res) {
++            sysErrorBelch("VirtualQuery failed");
++            return;
++        }
++
++        if (info.State & MEM_FREE) {
++            // free range
++        } else {
++            const char *protection;
++            switch (info.Protect) {
++            case PAGE_EXECUTE:           protection = "--x"; break;
++            case PAGE_EXECUTE_READ:      protection = "r-x"; break;
++            case PAGE_EXECUTE_READWRITE: protection = "rwx"; break;
++            case PAGE_EXECUTE_WRITECOPY: protection = "rcx"; break;
++            case PAGE_NOACCESS:          protection = "---"; break;
++            case PAGE_READONLY:          protection = "r--"; break;
++            case PAGE_READWRITE:         protection = "rw-"; break;
++            case PAGE_WRITECOPY:         protection = "rc-"; break;
++            default:                     protection = "???"; break;
++            }
++
++            const char *type;
++            switch (info.Type) {
++            case MEM_IMAGE:   type = "image"; break;
++            case MEM_MAPPED:  type = "mapped"; break;
++            case MEM_PRIVATE: type = "private"; break;
++            default:          type = "unknown"; break;
++            }
++
++            debugBelch("%08llx-%08llx %8zuK %3s (%s)\n",
++                       (uintptr_t) info.BaseAddress,
++                       (uintptr_t) info.BaseAddress + info.RegionSize,
++                       (size_t) info.RegionSize,
++                       protection, type);
++        }
++        addr = (uint8_t *) info.BaseAddress + info.RegionSize;
++    }
++}
++
++#elif defined(darwin_HOST_OS)
++
++void reportMemoryMap() {
++    // Inspired by MacFUSE /proc implementation
++    debugBelch("\nMemory map:\n");
++    while (true) {
++        vm_size_t vmsize;
++        vm_address_t address;
++        vm_region_basic_info_data_t info;
++        vm_region_flavor_t flavor = VM_REGION_BASIC_INFO;
++        memory_object_name_t object;
++        mach_msg_type_number_t info_count = VM_REGION_BASIC_INFO_COUNT;
++        kern_return_t kr =
++            mach_vm_region(mach_task_self(), &address, &vmsize, flavor,
++                           (vm_region_info_t)&info, &info_count, &object);
++        if (kr == KERN_SUCCESS) {
++            debugBelch("%08lx-%08lx %8zuK %c%c%c/%c%c%c\n",
++                       address, (address + vmsize), (vmsize >> 10),
++                       (info.protection & VM_PROT_READ)        ? 'r' : '-',
++                       (info.protection & VM_PROT_WRITE)       ? 'w' : '-',
++                       (info.protection & VM_PROT_EXECUTE)     ? 'x' : '-',
++                       (info.max_protection & VM_PROT_READ)    ? 'r' : '-',
++                       (info.max_protection & VM_PROT_WRITE)   ? 'w' : '-',
++                       (info.max_protection & VM_PROT_EXECUTE) ? 'x' : '-');
++            address += vmsize;
++        } else if (kr == KERN_INVALID_ADDRESS) {
++            // We presumably reached the end of address space
++            break;
++        } else {
++            debugBelch("  Error: %s\n", mach_error_string(kr));
++            break;
++        }
++    }
++}
++
++#else
++
++// Linux et al.
++void reportMemoryMap() {
++    debugBelch("\nMemory map:\n");
++    FILE *f = fopen("/proc/self/maps", "r");
++    if (f == NULL) {
++        debugBelch("  Could not open /proc/self/maps\n");
++        return;
++    }
++
++    while (true) {
++        char buf[256];
++        size_t n = fread(buf, 1, sizeof(buf)-1, f);
++        if (n <= 0) {
++            debugBelch("  Error: %s\n", strerror(errno));
++            break;
++        }
++        buf[n] = '\0';
++        debugBelch("%s", buf);
++        if (n < sizeof(buf)-1) {
++            break;
++        }
++    }
++    debugBelch("\n");
++    fclose(f);
++}
++
++#endif
+diff --git a/rts/ReportMemoryMap.h b/rts/ReportMemoryMap.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d2c4a58b1d05b6357c2f9b0cb6fdaecda76e435
+--- /dev/null
++++ b/rts/ReportMemoryMap.h
+@@ -0,0 +1,13 @@
++/* -----------------------------------------------------------------------------
++ *
++ * (c) The GHC Team, 1998-2004
++ *
++ * Memory-map dumping.
++ *
++ * This is intended to be used for reporting the process memory-map
++ * in diagnostics when the RTS fails to map a block of memory.
++ *
++ * ---------------------------------------------------------------------------*/
++
++void reportMemoryMap(void);
++
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index f6a1754257a053f2abe634ae14845f139cb15143..9ae8b43cc4d4e5ec1c7af34a6d8722063797e168 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -17,6 +17,7 @@
+ #include "RtsSymbolInfo.h"
+ #include "CheckUnload.h"
+ #include "LinkerInternals.h"
++#include "linker/MMap.h"
+ #include "linker/Elf.h"
+ #include "linker/CacheFlush.h"
+ #include "linker/M32Alloc.h"
+@@ -652,7 +653,7 @@ mapObjectFileSection (int fd, Elf_Word offset, Elf_Word size,
+ 
+     pageOffset = roundDownToPage(offset);
+     pageSize = roundUpToPage(offset-pageOffset+size);
+-    p = mmapForLinker(pageSize, PROT_READ | PROT_WRITE, 0, fd, pageOffset);
++    p = mmapForLinker(pageSize, MEM_READ_WRITE, 0, fd, pageOffset);
+     if (p == NULL) return NULL;
+     *mapped_size = pageSize;
+     *mapped_offset = pageOffset;
+@@ -1877,7 +1878,7 @@ ocMprotect_Elf( ObjectCode *oc )
+             if (section->alloc != SECTION_M32) {
+                 // N.B. m32 handles protection of its allocations during
+                 // flushing.
+-                mmapForLinkerMarkExecutable(section->mapped_start, section->mapped_size);
++                mprotectForLinker(section->mapped_start, section->mapped_size, MEM_READ_EXECUTE);
+             }
+             break;
+         default:
+diff --git a/rts/linker/LoadArchive.c b/rts/linker/LoadArchive.c
+index 041ebef4b61f9d454e713a70676c365d7f85eaf2..9804db3872844aa21f56cc89fb31339aa99f2b10 100644
+--- a/rts/linker/LoadArchive.c
++++ b/rts/linker/LoadArchive.c
+@@ -7,6 +7,7 @@
+ #include "LinkerInternals.h"
+ #include "CheckUnload.h" // loaded_objects, insertOCSectionIndices
+ #include "linker/M32Alloc.h"
++#include "linker/MMap.h"
+ 
+ /* Platform specific headers */
+ #if defined(OBJFORMAT_PEi386)
+@@ -240,7 +241,7 @@ lookupGNUArchiveIndex(int gnuFileIndexSize, char **fileName_,
+     return true;
+ }
+ 
+-static HsInt loadArchive_ (pathchar *path)
++HsInt loadArchive_ (pathchar *path)
+ {
+     char *image = NULL;
+     HsInt retcode = 0;
+@@ -630,3 +631,21 @@ HsInt loadArchive (pathchar *path)
+    RELEASE_LOCK(&linker_mutex);
+    return r;
+ }
++
++bool isArchive (pathchar *path)
++{
++    static const char ARCHIVE_HEADER[] = "!<arch>\n";
++    char buffer[10];
++    FILE *f = pathopen(path, WSTR("rb"));
++    if (f == NULL) {
++        return false;
++    }
++
++    size_t ret = fread(buffer, 1, sizeof(buffer), f);
++    if (ret < sizeof(buffer)) {
++        return false;
++    }
++    fclose(f);
++    return strncmp(ARCHIVE_HEADER, buffer, sizeof(ARCHIVE_HEADER)-1) == 0;
++}
++
+diff --git a/rts/linker/M32Alloc.c b/rts/linker/M32Alloc.c
+index e7c697bf60b841b562b7d466c35db7f38c27af22..2592599d92bf4f01bd68f8a145424582a73195b8 100644
+--- a/rts/linker/M32Alloc.c
++++ b/rts/linker/M32Alloc.c
+@@ -10,7 +10,8 @@
+ #include "sm/OSMem.h"
+ #include "RtsUtils.h"
+ #include "linker/M32Alloc.h"
+-#include "LinkerInternals.h"
++#include "linker/MMap.h"
++#include "ReportMemoryMap.h"
+ 
+ #include <inttypes.h>
+ #include <stdlib.h>
+@@ -135,6 +136,11 @@ The allocator is *not* thread-safe.
+ 
+ */
+ 
++// Enable internal consistency checking
++#if defined(DEBUG)
++#define M32_DEBUG
++#endif
++
+ #define ROUND_UP(x,size) ((x + size - 1) & ~(size - 1))
+ #define ROUND_DOWN(x,size) (x & ~(size - 1))
+ 
+@@ -147,7 +153,21 @@ The allocator is *not* thread-safe.
+ /* How many pages should we map at once when re-filling the free page pool? */
+ #define M32_MAP_PAGES 32
+ /* Upper bound on the number of pages to keep in the free page pool */
+-#define M32_MAX_FREE_PAGE_POOL_SIZE 64
++#define M32_MAX_FREE_PAGE_POOL_SIZE 256
++
++/* A utility to verify that a given address is "acceptable" for use by m32. */
++static bool
++is_okay_address(void *p) {
++  int8_t *here = LINKER_LOAD_BASE;
++  ssize_t displacement = (int8_t *) p - here;
++  return (displacement > -0x7fffffff) && (displacement < 0x7fffffff);
++}
++
++enum m32_page_type {
++  FREE_PAGE,    // a page in the free page pool
++  NURSERY_PAGE, // a nursery page
++  FILLED_PAGE,  // a page on the filled list
++};
+ 
+ /**
+  * Page header
+@@ -161,8 +181,7 @@ struct m32_page_t {
+     // unprotected_list or protected_list are linked together with this field.
+     struct {
+       uint32_t size;
+-      uint32_t next; // this is a m32_page_t*, truncated to 32-bits. This is safe
+-                     // as we are only allocating in the bottom 32-bits
++      struct m32_page_t *next;
+     } filled_page;
+ 
+     // Pages in the small-allocation nursery encode their current allocation
+@@ -174,21 +193,64 @@ struct m32_page_t {
+       struct m32_page_t *next;
+     } free_page;
+   };
++#if defined(M32_DEBUG)
++  enum m32_page_type type;
++#endif
++  uint8_t contents[];
+ };
+ 
++/* Consistency-checking infrastructure */
++#if defined(M32_DEBUG)
++static void ASSERT_PAGE_ALIGNED(void *page) {
++  const size_t pgsz = getPageSize();
++  if ((((uintptr_t) page) & (pgsz-1)) != 0) {
++    barf("m32: invalid page alignment");
++  }
++}
++static void ASSERT_VALID_PAGE(struct m32_page_t *page) {
++  ASSERT_PAGE_ALIGNED(page);
++  switch (page->type) {
++  case FREE_PAGE:
++  case NURSERY_PAGE:
++  case FILLED_PAGE:
++    break;
++  default:
++    barf("m32: invalid page state\n");
++  }
++}
++static void ASSERT_PAGE_TYPE(struct m32_page_t *page, enum m32_page_type ty) {
++  if (page->type != ty) { barf("m32: unexpected page type"); }
++}
++static void ASSERT_PAGE_NOT_FREE(struct m32_page_t *page) {
++  if (page->type == FREE_PAGE) { barf("m32: unexpected free page"); }
++}
++static void SET_PAGE_TYPE(struct m32_page_t *page, enum m32_page_type ty) {
++  page->type = ty;
++}
++#else
++#define ASSERT_PAGE_ALIGNED(page)
++#define ASSERT_VALID_PAGE(page)
++#define ASSERT_PAGE_NOT_FREE(page)
++#define ASSERT_PAGE_TYPE(page, ty)
++#define SET_PAGE_TYPE(page, ty)
++#endif
++
++/* Accessors */
+ static void
+ m32_filled_page_set_next(struct m32_page_t *page, struct m32_page_t *next)
+ {
+-  if (next > (struct m32_page_t *) 0xffffffff) {
+-    barf("m32_filled_page_set_next: Page not in lower 32-bits");
++  ASSERT_PAGE_TYPE(page, FILLED_PAGE);
++  if (next != NULL && ! is_okay_address(next)) {
++    barf("m32_filled_page_set_next: Page %p not within 4GB of program text", next);
+   }
+-  page->filled_page.next = (uint32_t) (uintptr_t) next;
++  page->filled_page.next = next;
+ }
+ 
+ static struct m32_page_t *
+ m32_filled_page_get_next(struct m32_page_t *page)
+ {
+-    return (struct m32_page_t *) (uintptr_t) page->filled_page.next;
++  ASSERT_PAGE_TYPE(page, FILLED_PAGE);
++  return (struct m32_page_t *) (uintptr_t) page->filled_page.next;
+ }
+ 
+ /**
+@@ -213,21 +275,42 @@ struct m32_allocator_t {
+  * We keep a small pool of free pages around to avoid fragmentation.
+  */
+ struct m32_page_t *m32_free_page_pool = NULL;
++/** Number of pages in free page pool */
+ unsigned int m32_free_page_pool_size = 0;
+-// TODO
+ 
+ /**
+- * Free a page or, if possible, place it in the free page pool.
++ * Free a filled page or, if possible, place it in the free page pool.
+  */
+ static void
+ m32_release_page(struct m32_page_t *page)
+ {
+-  if (m32_free_page_pool_size < M32_MAX_FREE_PAGE_POOL_SIZE) {
+-    page->free_page.next = m32_free_page_pool;
+-    m32_free_page_pool = page;
+-    m32_free_page_pool_size ++;
+-  } else {
+-    munmapForLinker((void *) page, getPageSize(), "m32_release_page");
++  // Some sanity-checking
++  ASSERT_VALID_PAGE(page);
++  ASSERT_PAGE_NOT_FREE(page);
++
++  const size_t pgsz = getPageSize();
++  ssize_t sz = page->filled_page.size;
++  IF_DEBUG(sanity, memset(page, 0xaa, sz));
++
++  // Break the page, which may be a large multi-page allocation, into
++  // individual pages for the page pool
++  while (sz > 0) {
++    if (m32_free_page_pool_size < M32_MAX_FREE_PAGE_POOL_SIZE) {
++      mprotectForLinker(page, pgsz, MEM_READ_WRITE);
++      SET_PAGE_TYPE(page, FREE_PAGE);
++      page->free_page.next = m32_free_page_pool;
++      m32_free_page_pool = page;
++      m32_free_page_pool_size ++;
++    } else {
++      break;
++    }
++    page = (struct m32_page_t *) ((uint8_t *) page + pgsz);
++    sz -= pgsz;
++  }
++
++  // The free page pool is full, release the rest back to the system
++  if (sz > 0) {
++    munmapForLinker((void *) page, ROUND_UP(sz, pgsz), "m32_release_page");
+   }
+ }
+ 
+@@ -244,14 +327,18 @@ m32_alloc_page(void)
+      * pages.
+      */
+     const size_t pgsz = getPageSize();
+-    uint8_t *chunk = mmapAnonForLinker(pgsz * M32_MAP_PAGES);
+-    if (chunk > (uint8_t *) 0xffffffff) {
+-      barf("m32_alloc_page: failed to get allocation in lower 32-bits");
++    const size_t map_sz = pgsz * M32_MAP_PAGES;
++    uint8_t *chunk = mmapAnonForLinker(map_sz);
++    if (! is_okay_address(chunk + map_sz)) {
++      reportMemoryMap();
++      barf("m32_alloc_page: failed to allocate pages within 4GB of program text (got %p)", chunk);
+     }
++    IF_DEBUG(sanity, memset(chunk, 0xaa, map_sz));
+ 
+ #define GET_PAGE(i) ((struct m32_page_t *) (chunk + (i) * pgsz))
+     for (int i=0; i < M32_MAP_PAGES; i++) {
+       struct m32_page_t *page = GET_PAGE(i);
++      SET_PAGE_TYPE(page, FREE_PAGE);
+       page->free_page.next = GET_PAGE(i+1);
+     }
+ 
+@@ -264,6 +351,7 @@ m32_alloc_page(void)
+   struct m32_page_t *page = m32_free_page_pool;
+   m32_free_page_pool = page->free_page.next;
+   m32_free_page_pool_size --;
++  ASSERT_PAGE_TYPE(page, FREE_PAGE);
+   return page;
+ }
+ 
+@@ -289,8 +377,9 @@ static void
+ m32_allocator_unmap_list(struct m32_page_t *head)
+ {
+   while (head != NULL) {
++    ASSERT_VALID_PAGE(head);
+     struct m32_page_t *next = m32_filled_page_get_next(head);
+-    munmapForLinker((void *) head, head->filled_page.size, "m32_allocator_unmap_list");
++    m32_release_page(head);
+     head = next;
+   }
+ }
+@@ -305,10 +394,9 @@ void m32_allocator_free(m32_allocator *alloc)
+   m32_allocator_unmap_list(alloc->protected_list);
+ 
+   /* free partially-filled pages */
+-  const size_t pgsz = getPageSize();
+   for (int i=0; i < M32_MAX_PAGES; i++) {
+     if (alloc->pages[i]) {
+-      munmapForLinker(alloc->pages[i], pgsz, "m32_allocator_free");
++      m32_release_page(alloc->pages[i]);
+     }
+   }
+ 
+@@ -321,6 +409,8 @@ void m32_allocator_free(m32_allocator *alloc)
+ static void
+ m32_allocator_push_filled_list(struct m32_page_t **head, struct m32_page_t *page)
+ {
++  ASSERT_PAGE_TYPE(page, FILLED_PAGE);
++    // N.B. it's the caller's responsibility to set the pagetype to FILLED_PAGE
+   m32_filled_page_set_next(page, *head);
+   *head = page;
+ }
+@@ -347,6 +437,7 @@ m32_allocator_flush(m32_allocator *alloc) {
+        m32_release_page(alloc->pages[i]);
+      } else {
+        // the page contains data, move it to the unprotected list
++       SET_PAGE_TYPE(alloc->pages[i], FILLED_PAGE);
+        m32_allocator_push_filled_list(&alloc->unprotected_list, alloc->pages[i]);
+      }
+      alloc->pages[i] = NULL;
+@@ -356,9 +447,10 @@ m32_allocator_flush(m32_allocator *alloc) {
+    if (alloc->executable) {
+      struct m32_page_t *page = alloc->unprotected_list;
+      while (page != NULL) {
++       ASSERT_PAGE_TYPE(page, FILLED_PAGE);
+        struct m32_page_t *next = m32_filled_page_get_next(page);
+        m32_allocator_push_filled_list(&alloc->protected_list, page);
+-       mmapForLinkerMarkExecutable(page, page->filled_page.size);
++       mprotectForLinker(page, page->filled_page.size, MEM_READ_EXECUTE);
+        page = next;
+      }
+      alloc->unprotected_list = NULL;
+@@ -392,10 +484,12 @@ m32_alloc(struct m32_allocator_t *alloc, size_t size, size_t alignment)
+       if (page == NULL) {
+           sysErrorBelch("m32_alloc: Failed to map pages for %zd bytes", size);
+           return NULL;
+-      } else if (page > (struct m32_page_t *) 0xffffffff) {
+-          debugBelch("m32_alloc: warning: Allocation of %zd bytes resulted in pages above 4GB (%p)",
+-                     size, page);
++      } else if (! is_okay_address(page)) {
++          reportMemoryMap();
++          barf("m32_alloc: warning: Allocation of %zd bytes resulted in pages above 4GB (%p)",
++               size, page);
+       }
++      SET_PAGE_TYPE(page, FILLED_PAGE);
+       page->filled_page.size = alsize + size;
+       m32_allocator_push_filled_list(&alloc->unprotected_list, (struct m32_page_t *) page);
+       return (char*) page + alsize;
+@@ -414,6 +508,8 @@ m32_alloc(struct m32_allocator_t *alloc, size_t size, size_t alignment)
+       }
+ 
+       // page can contain the buffer?
++      ASSERT_VALID_PAGE(alloc->pages[i]);
++      ASSERT_PAGE_TYPE(alloc->pages[i], NURSERY_PAGE);
+       size_t alsize = ROUND_UP(alloc->pages[i]->current_size, alignment);
+       if (size <= pgsz - alsize) {
+          void * addr = (char*)alloc->pages[i] + alsize;
+@@ -431,6 +527,7 @@ m32_alloc(struct m32_allocator_t *alloc, size_t size, size_t alignment)
+ 
+    // If we haven't found an empty page, flush the most filled one
+    if (empty == -1) {
++      SET_PAGE_TYPE(alloc->pages[most_filled], FILLED_PAGE);
+       m32_allocator_push_filled_list(&alloc->unprotected_list, alloc->pages[most_filled]);
+       alloc->pages[most_filled] = NULL;
+       empty = most_filled;
+@@ -441,6 +538,7 @@ m32_alloc(struct m32_allocator_t *alloc, size_t size, size_t alignment)
+    if (page == NULL) {
+       return NULL;
+    }
++   SET_PAGE_TYPE(page, NURSERY_PAGE);
+    alloc->pages[empty]               = page;
+    // Add header size and padding
+    alloc->pages[empty]->current_size =
+diff --git a/rts/linker/MMap.c b/rts/linker/MMap.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..941dc86452c4fae88263348037512823e36d5931
+--- /dev/null
++++ b/rts/linker/MMap.c
+@@ -0,0 +1,305 @@
++#include "Rts.h"
++
++#include "sm/OSMem.h"
++#include "linker/MMap.h"
++#include "Trace.h"
++#include "ReportMemoryMap.h"
++
++#if RTS_LINKER_USE_MMAP
++#include <sys/mman.h>
++#endif
++
++/* Link objects into the lower 2Gb on x86_64 and AArch64.  GHC assumes the
++ * small memory model on this architecture (see gcc docs,
++ * -mcmodel=small).
++ *
++ * MAP_32BIT not available on OpenBSD/amd64
++ */
++#if defined(MAP_32BIT) && (defined(x86_64_HOST_ARCH) || (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH)))
++#define MAP_LOW_MEM
++#define TRY_MAP_32BIT MAP_32BIT
++#else
++#define TRY_MAP_32BIT 0
++#endif
++
++/* MAP_ANONYMOUS is MAP_ANON on some systems,
++   e.g. OS X (before Sierra), OpenBSD etc */
++#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
++#define MAP_ANONYMOUS MAP_ANON
++#endif
++
++/* In order to simplify control flow a bit, some references to mmap-related
++   definitions are blocked off by a C-level if statement rather than a CPP-level
++   #if statement. Since those are dead branches when !RTS_LINKER_USE_MMAP, we
++   just stub out the relevant symbols here
++*/
++#if !RTS_LINKER_USE_MMAP
++#define munmap(x,y) /* nothing */
++#define MAP_ANONYMOUS 0
++#endif
++
++void *mmap_32bit_base = LINKER_LOAD_BASE;
++
++static const char *memoryAccessDescription(MemoryAccess mode)
++{
++  switch (mode) {
++  case MEM_NO_ACCESS:    return "no-access";
++  case MEM_READ_ONLY:    return "read-only";
++  case MEM_READ_WRITE:   return "read-write";
++  case MEM_READ_EXECUTE: return "read-execute";
++  case MEM_READ_WRITE_EXECUTE:
++                         return "read-write-execute";
++  default: barf("invalid MemoryAccess");
++  }
++}
++
++#if defined(mingw32_HOST_OS)
++
++static DWORD
++memoryAccessToProt(MemoryAccess access)
++{
++  switch (access) {
++  case MEM_NO_ACCESS:    return PAGE_NOACCESS;
++  case MEM_READ_ONLY:    return PAGE_READONLY;
++  case MEM_READ_WRITE:   return PAGE_READWRITE;
++  case MEM_READ_EXECUTE: return PAGE_EXECUTE_READ;
++  case MEM_READ_WRITE_EXECUTE:
++                         return PAGE_EXECUTE_READWRITE;
++  default: barf("invalid MemoryAccess");
++  }
++}
++
++//
++// Returns NULL on failure.
++//
++void *
++mmapAnonForLinker (size_t bytes)
++{
++  return VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
++}
++
++void
++munmapForLinker (void *addr, size_t bytes, const char *caller)
++{
++  if (VirtualFree(addr, 0, MEM_RELEASE) == 0) {
++    sysErrorBelch("munmapForLinker: %s: Failed to unmap %zd bytes at %p",
++                  caller, bytes, addr);
++  }
++}
++
++/**
++ * Change the allowed access modes of a region of memory previously allocated
++ * with mmapAnonForLinker.
++ */
++void
++mprotectForLinker(void *start, size_t len, MemoryAccess mode)
++{
++  DWORD old;
++  if (len == 0) {
++    return;
++  }
++  DWORD prot = memoryAccessToProt(mode);
++
++  if (VirtualProtect(start, len, prot, &old) == 0) {
++    sysErrorBelch("mprotectForLinker: failed to protect %zd bytes at %p as %s",
++                  len, start, memoryAccessDescription(mode));
++    ASSERT(false);
++  }
++}
++
++#elif RTS_LINKER_USE_MMAP
++
++static int
++memoryAccessToProt(MemoryAccess access)
++{
++    switch (access) {
++    case MEM_NO_ACCESS:    return 0;
++    case MEM_READ_ONLY:    return PROT_READ;
++    case MEM_READ_WRITE:   return PROT_READ | PROT_WRITE;
++    case MEM_READ_EXECUTE: return PROT_READ | PROT_EXEC;
++    case MEM_READ_WRITE_EXECUTE:
++                           return PROT_READ | PROT_WRITE | PROT_EXEC;
++    default: barf("invalid MemoryAccess");
++    }
++}
++
++//
++// Returns NULL on failure.
++//
++void *
++mmapForLinker (size_t bytes, MemoryAccess access, uint32_t flags, int fd, int offset)
++{
++   void *map_addr = NULL;
++   void *result;
++   size_t size;
++   uint32_t tryMap32Bit = RtsFlags.MiscFlags.linkerAlwaysPic
++     ? 0
++     : TRY_MAP_32BIT;
++   static uint32_t fixed = 0;
++   int prot = memoryAccessToProt(access);
++
++   IF_DEBUG(linker, debugBelch("mmapForLinker: start\n"));
++   size = roundUpToPage(bytes);
++
++#if defined(MAP_LOW_MEM)
++mmap_again:
++#endif
++
++   if (mmap_32bit_base != NULL) {
++       map_addr = mmap_32bit_base;
++   }
++
++   IF_DEBUG(linker,
++            debugBelch("mmapForLinker: \tprotection %#0x\n", prot));
++   IF_DEBUG(linker,
++            debugBelch("mmapForLinker: \tflags      %#0x\n",
++                       MAP_PRIVATE | tryMap32Bit | fixed | flags));
++   IF_DEBUG(linker,
++            debugBelch("mmapForLinker: \tsize       %#0zx\n", bytes));
++   IF_DEBUG(linker,
++            debugBelch("mmapForLinker: \tmap_addr   %p\n", map_addr));
++
++   result = mmap(map_addr, size, prot,
++                 MAP_PRIVATE|tryMap32Bit|fixed|flags, fd, offset);
++
++   if (result == MAP_FAILED) {
++       reportMemoryMap();
++       sysErrorBelch("mmap %" FMT_Word " bytes at %p",(W_)size,map_addr);
++       errorBelch("Try specifying an address with +RTS -xm<addr> -RTS");
++       return NULL;
++   }
++
++#if defined(MAP_LOW_MEM)
++   if (RtsFlags.MiscFlags.linkerAlwaysPic) {
++       /* make no attempt at mapping low memory if we are assuming PIC */
++   } else if (mmap_32bit_base != NULL) {
++       if (result != map_addr) {
++           if ((W_)result > 0x80000000) {
++               // oops, we were given memory over 2Gb
++               munmap(result,size);
++#if defined(MAP_TRYFIXED)
++               // Some platforms require MAP_FIXED. We use MAP_TRYFIXED since
++               // MAP_FIXED will overwrite existing mappings.
++               fixed = MAP_TRYFIXED;
++               goto mmap_again;
++#else
++               reportMemoryMap();
++               errorBelch("mmapForLinker: failed to mmap() memory below 2Gb; "
++                          "asked for %lu bytes at %p. "
++                          "Try specifying an address with +RTS -xm<addr> -RTS",
++                          size, map_addr);
++               return NULL;
++#endif
++           } else {
++               // hmm, we were given memory somewhere else, but it's
++               // still under 2Gb so we can use it.
++           }
++       }
++   } else {
++       if ((W_)result > 0x80000000) {
++           // oops, we were given memory over 2Gb
++           // ... try allocating memory somewhere else?;
++           debugTrace(DEBUG_linker,
++                      "MAP_32BIT didn't work; gave us %lu bytes at 0x%p",
++                      bytes, result);
++           munmap(result, size);
++
++           // Set a base address and try again... (guess: 1Gb)
++           mmap_32bit_base = (void*)0x40000000;
++           goto mmap_again;
++       }
++   }
++#elif (defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH))
++    // for aarch64 we need to make sure we stay within 4GB of the
++    // mmap_32bit_base, and we also do not want to update it.
++    if (result != map_addr) {
++        // upper limit 4GB - size of the object file - 1mb wiggle room.
++        if(llabs((uintptr_t)result - (uintptr_t)&stg_upd_frame_info) > (2<<32) - size - (2<<20)) {
++            // not within range :(
++            debugTrace(DEBUG_linker,
++                        "MAP_32BIT didn't work; gave us %lu bytes at 0x%p",
++                        bytes, result);
++            munmap(result, size);
++            // TODO: some abort/mmap_32bit_base recomputation based on
++            //       if mmap_32bit_base is changed, or still at stg_upd_frame_info
++            goto mmap_again;
++        }
++    }
++#endif
++
++    if (mmap_32bit_base != NULL) {
++       // Next time, ask for memory right after our new mapping to maximize the
++       // chance that we get low memory.
++        mmap_32bit_base = (void*) ((uintptr_t)result + size);
++    }
++
++    IF_DEBUG(linker,
++             debugBelch("mmapForLinker: mapped %" FMT_Word
++                        " bytes starting at %p\n", (W_)size, result));
++    IF_DEBUG(linker,
++             debugBelch("mmapForLinker: done\n"));
++
++    return result;
++}
++
++/*
++ * Map read/write pages in low memory. Returns NULL on failure.
++ */
++void *
++mmapAnonForLinker (size_t bytes)
++{
++  return mmapForLinker (bytes, MEM_READ_WRITE, MAP_ANONYMOUS, -1, 0);
++}
++
++void munmapForLinker (void *addr, size_t bytes, const char *caller)
++{
++  int r = munmap(addr, bytes);
++  if (r == -1) {
++    // Should we abort here?
++    sysErrorBelch("munmap: %s", caller);
++  }
++}
++
++/* Note [Memory protection in the linker]
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * For many years the linker would simply map all of its memory
++ * with PROT_READ|PROT_WRITE|PROT_EXEC. However operating systems have been
++ * becoming increasingly reluctant to accept this practice (e.g. #17353,
++ * #12657) and for good reason: writable code is ripe for exploitation.
++ *
++ * Consequently mmapForLinker now maps its memory with PROT_READ|PROT_WRITE.
++ * After the linker has finished filling/relocating the mapping it must then
++ * call mprotectForLinker on the sections of the mapping which
++ * contain executable code.
++ *
++ * Note that the m32 allocator handles protection of its allocations. For this
++ * reason the caller to m32_alloc() must tell the allocator whether the
++ * allocation needs to be executable. The caller must then ensure that they
++ * call m32_allocator_flush() after they are finished filling the region, which
++ * will cause the allocator to change the protection bits to
++ * PROT_READ|PROT_EXEC.
++ *
++ */
++
++/*
++ * Mark an portion of a mapping previously reserved by mmapForLinker
++ * as executable (but not writable).
++ */
++void mprotectForLinker(void *start, size_t len, MemoryAccess mode)
++{
++    if (len == 0) {
++      return;
++    }
++    IF_DEBUG(linker,
++             debugBelch("mprotectForLinker: protecting %" FMT_Word
++                        " bytes starting at %p as %s\n",
++                        (W_)len, start, memoryAccessDescription(mode)));
++
++    int prot = memoryAccessToProt(mode);
++
++    if (mprotect(start, len, prot) == -1) {
++        sysErrorBelch("mprotectForLinker: failed to protect %zd bytes at %p as %s",
++                      len, start, memoryAccessDescription(mode));
++    }
++}
++#endif
+diff --git a/rts/linker/MMap.h b/rts/linker/MMap.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..9eebc3c4b20fdf4578ee49412e46092649ea0a76
+--- /dev/null
++++ b/rts/linker/MMap.h
+@@ -0,0 +1,80 @@
++#pragma once
++
++#include "BeginPrivate.h"
++
++#if defined(aarch64_HOST_ARCH)
++// On AArch64 MAP_32BIT is not available but we are still bound by the small
++// memory model. Consequently we still try using the MAP_LOW_MEM allocation
++// strategy.
++#define MAP_LOW_MEM
++#endif
++
++/*
++ * Note [MAP_LOW_MEM]
++ * ~~~~~~~~~~~~~~~~~~
++ * Due to the small memory model (see above), on x86_64 and AArch64 we have to
++ * map all our non-PIC object files into the low 2Gb of the address space (why
++ * 2Gb and not 4Gb?  Because all addresses must be reachable using a 32-bit
++ * signed PC-relative offset). On x86_64 Linux we can do this using the
++ * MAP_32BIT flag to mmap(), however on other OSs (e.g. *BSD, see #2063, and
++ * also on Linux inside Xen, see #2512), we can't do this.  So on these
++ * systems, we have to pick a base address in the low 2Gb of the address space
++ * and try to allocate memory from there.
++ *
++ * The same holds for aarch64, where the default, even with PIC, model
++ * is 4GB. The linker is free to emit AARCH64_ADR_PREL_PG_HI21
++ * relocations.
++ *
++ * We pick a default address based on the OS, but also make this
++ * configurable via an RTS flag (+RTS -xm)
++ */
++
++#if defined(aarch64_TARGET_ARCH) || defined(aarch64_HOST_ARCH)
++// Try to use stg_upd_frame_info as the base. We need to be within +-4GB of that
++// address, otherwise we violate the aarch64 memory model. Any object we load
++// can potentially reference any of the ones we bake into the binary (and list)
++// in RtsSymbols. Thus we'll need to be within +-4GB of those,
++// stg_upd_frame_info is a good candidate as it's referenced often.
++#define LINKER_LOAD_BASE ((void *) &stg_upd_frame_info)
++#elif defined(x86_64_HOST_ARCH) && defined(mingw32_HOST_OS)
++// On Windows (which now uses high-entropy ASLR by default) we need to ensure
++// that we map code near the executable image. We use stg_upd_frame_info as a
++// proxy for the image location.
++#define LINKER_LOAD_BASE ((void *) &stg_upd_frame_info)
++#elif defined(MAP_32BIT) || DEFAULT_LINKER_ALWAYS_PIC
++// Try to use MAP_32BIT
++#define LINKER_LOAD_BASE ((void *) 0x0)
++#else
++// A guess: 1 GB.
++#define LINKER_LOAD_BASE ((void *) 0x40000000)
++#endif
++
++/** Access modes for mprotectForLinker */
++typedef enum {
++    MEM_NO_ACCESS,
++    MEM_READ_ONLY,
++    MEM_READ_WRITE,
++    MEM_READ_EXECUTE,
++    MEM_READ_WRITE_EXECUTE,
++} MemoryAccess;
++
++extern void *mmap_32bit_base;
++
++// Map read/write anonymous memory.
++void *mmapAnonForLinker (size_t bytes);
++
++// Change protection of previous mapping memory.
++void mprotectForLinker(void *start, size_t len, MemoryAccess mode);
++
++// Release a mapping.
++void munmapForLinker (void *addr, size_t bytes, const char *caller);
++
++#if !defined(mingw32_HOST_OS)
++// Map a file.
++//
++// Note that this not available on Windows since file mapping on Windows is
++// sufficiently different to warrant its own interface.
++void *mmapForLinker (size_t bytes, MemoryAccess prot, uint32_t flags, int fd, int offset);
++#endif
++
++#include "EndPrivate.h"
+diff --git a/rts/linker/MachO.c b/rts/linker/MachO.c
+index 1a18ee6a7407836ba9e1bdf7ddb7f943a362ad4a..805731ba56c06094c3fe2096a7443d15102ddd56 100644
+--- a/rts/linker/MachO.c
++++ b/rts/linker/MachO.c
+@@ -1210,7 +1210,7 @@ ocGetNames_MachO(ObjectCode* oc)
+                 unsigned nstubs = numberOfStubsForSection(oc, sec_idx);
+                 unsigned stub_space = STUB_SIZE * nstubs;
+ 
+-                void * mem = mmapForLinker(section->size+stub_space, PROT_READ | PROT_WRITE, MAP_ANON, -1, 0);
++                void * mem = mmapForLinker(section->size+stub_space, MEM_READ_WRITE, MAP_ANON, -1, 0);
+ 
+                 if( mem == MAP_FAILED ) {
+                     sysErrorBelch("failed to mmap allocated memory to load section %d. "
+@@ -1428,7 +1428,7 @@ ocMprotect_MachO( ObjectCode *oc )
+         if(segment->size == 0) continue;
+ 
+         if(segment->prot == SEGMENT_PROT_RX) {
+-            mmapForLinkerMarkExecutable(segment->start, segment->size);
++            mprotectForLinker(segment->start, segment->size, MEM_READ_EXECUTE);
+         }
+     }
+ 
+@@ -1443,7 +1443,7 @@ ocMprotect_MachO( ObjectCode *oc )
+         if(section->alloc == SECTION_M32) continue;
+         switch (section->kind) {
+         case SECTIONKIND_CODE_OR_RODATA: {
+-            mmapForLinkerMarkExecutable(section->mapped_start, section->mapped_size);
++            mprotectForLinker(section->mapped_start, section->mapped_size, MEM_READ_EXECUTE);
+             break;
+         }
+         default:
+diff --git a/rts/linker/SymbolExtras.c b/rts/linker/SymbolExtras.c
+index ddb58e4a4e84d08c46341fa0e82b0d2898298d45..88192d43d9cb8157f3af11a335be8e050cf06be4 100644
+--- a/rts/linker/SymbolExtras.c
++++ b/rts/linker/SymbolExtras.c
+@@ -10,6 +10,7 @@
+  */
+ 
+ #include "LinkerInternals.h"
++#include "linker/MMap.h"
+ 
+ #if defined(NEED_SYMBOL_EXTRAS)
+ #if !defined(x86_64_HOST_ARCH) || !defined(mingw32_HOST_OS)
+@@ -142,7 +143,7 @@ void ocProtectExtras(ObjectCode* oc)
+      * non-executable.
+      */
+   } else if (USE_CONTIGUOUS_MMAP || RtsFlags.MiscFlags.linkerAlwaysPic) {
+-    mmapForLinkerMarkExecutable(oc->symbol_extras, sizeof(SymbolExtra) * oc->n_symbol_extras);
++    mprotectForLinker(oc->symbol_extras, sizeof(SymbolExtra) * oc->n_symbol_extras, MEM_READ_EXECUTE);
+   } else {
+     /*
+      * The symbol extras were allocated via m32. They will be protected when
+diff --git a/rts/linker/elf_got.c b/rts/linker/elf_got.c
+index ae75329295ba286e1a6fa70694ce3a137f616756..eefdae34c68e3ee7d0b8b360f9352d51fbec0dd0 100644
+--- a/rts/linker/elf_got.c
++++ b/rts/linker/elf_got.c
+@@ -1,5 +1,6 @@
+ #include "Rts.h"
+ #include "elf_got.h"
++#include "linker/MMap.h"
+ 
+ #include <string.h>
+ 
+diff --git a/rts/rts.cabal.in b/rts/rts.cabal.in
+index a2acf27cb5bcb3c5ef671492c8a263c750c71eda..0a06414d95fc3640d66c5be9d246388b5431a634 100644
+--- a/rts/rts.cabal.in
++++ b/rts/rts.cabal.in
+@@ -475,6 +475,7 @@ library
+                Libdw.c
+                LibdwPool.c
+                Linker.c
++               ReportMemoryMap.c
+                Messages.c
+                OldARMAtomic.c
+                PathUtils.c
+@@ -532,6 +533,7 @@ library
+                linker/Elf.c
+                linker/LoadArchive.c
+                linker/M32Alloc.c
++               linker/MMap.c
+                linker/MachO.c
+                linker/macho/plt.c
+                linker/macho/plt_aarch64.c
