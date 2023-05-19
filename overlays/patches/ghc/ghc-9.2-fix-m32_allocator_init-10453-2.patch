@@ -1,0 +1,12 @@
+diff --git a/rts/linker/MachO.c b/rts/linker/MachO.c
+index 805731ba56..e54e7e44ac 100644
+--- a/rts/linker/MachO.c
++++ b/rts/linker/MachO.c
+@@ -11,6 +11,7 @@
+ #include "linker/MachO.h"
+ #include "linker/CacheFlush.h"
+ #include "linker/SymbolExtras.h"
++#include "linker/MMap.h"
+ 
+ #include <string.h>
+ #include <regex.h>
