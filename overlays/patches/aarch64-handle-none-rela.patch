@@ -1,0 +1,20 @@
+diff --git a/rts/linker/elf_reloc_aarch64.c b/rts/linker/elf_reloc_aarch64.c
+index 0e11585..652be56 100644
+--- a/rts/linker/elf_reloc_aarch64.c
++++ b/rts/linker/elf_reloc_aarch64.c
+@@ -322,15 +322,18 @@ relocateObjectCodeAarch64(ObjectCode * oc) {
+
+         for(unsigned i=0; i < relaTab->n_relocations; i++) {
+
+             Elf_Rela *rel = &relaTab->relocations[i];
+
++            if(ELF64_R_TYPE(rel->r_info) == COMPAT_R_AARCH64_NONE)
++                continue;
++
+             ElfSymbol *symbol =
+                     findSymbol(oc,
+                                relaTab->sectionHeader->sh_link,
+-                               ELF64_R_SYM((Elf64_Xword)rel->r_info));
++                               ELF64_R_SYM(rel->r_info));
+
+             assert(0x0 != symbol);
