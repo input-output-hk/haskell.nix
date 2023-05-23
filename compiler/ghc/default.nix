@@ -274,7 +274,8 @@ let
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString enableDWARF "+debug_info"
-          + lib.optionalString targetPlatform.isGhcjs "+native_bignum+no_profiled_libs"
+          + lib.optionalString (enableNativeBignum || targetPlatform.isGhcjs) "+native_bignum"
+          + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
