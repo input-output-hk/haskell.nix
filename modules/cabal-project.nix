@@ -96,8 +96,7 @@ in {
     };
     sha256map = mkOption {
       type = nullOr (attrsOf (either str (attrsOf str)));
-      # Default needed for haskell-language-server 1.10
-      default."https://github.com/pepeiborra/ekg-json"."7a0af7a8fd38045fd15fb13445bdcc7085325460" = "sha256-fVwKxGgM0S4Kv/4egVAAiAjV7QB5PBqMVMCfsv7otIQ=";
+      default = null;
       description = ''
         An alternative to adding `--sha256` comments into the
         cabal.project file:
