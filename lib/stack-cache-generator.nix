@@ -82,8 +82,10 @@ concatMap (dep:
         let
             is-private = private dep.url;
             sha256 =
-              if dep.sha256 != null then dep.sha256
-              else if sha256map != null then sha256map."${dep.url}"."${dep.rev}"
+              if dep.sha256 != null
+                then dep.sha256
+              else if sha256map != null && sha256map ? ${dep.url}
+                then sha256map.${dep.url}.${dep.rev}
               else null;
             branch = lookupBranch {
               location = dep.url;
