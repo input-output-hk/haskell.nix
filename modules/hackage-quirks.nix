@@ -43,6 +43,14 @@ in [
     }
   )
 
+  ({config, lib, pkgs, ...}:
+    { _file = "haskell.nix/overlays/hackage-quirks.nix#haskell-language-server"; } //
+    lib.mkIf (config.name == "haskell-language-server") {
+      # Default needed for haskell-language-server 1.10
+      sha256map."https://github.com/pepeiborra/ekg-json"."7a0af7a8fd38045fd15fb13445bdcc7085325460" = "sha256-fVwKxGgM0S4Kv/4egVAAiAjV7QB5PBqMVMCfsv7otIQ=";
+    }
+  )
+
   # The latest version of stack (2.9.1) in hackage fails to build because the
   # of version of rio-prettyprint (recently released 0.1.4.0) chosen by cabal.
   # https://github.com/commercialhaskell/stack/issues/5963
