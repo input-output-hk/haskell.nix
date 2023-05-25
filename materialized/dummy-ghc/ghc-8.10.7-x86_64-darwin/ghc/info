@@ -13,8 +13,6 @@
  ,("Merge objects flags","-r")
  ,("ar flags","qcls")
  ,("ar supports at file","NO")
- ,("otool command","otool")
- ,("install_name_tool command","install_name_tool")
  ,("touch command","touch")
  ,("dllwrap command","/bin/false")
  ,("windres command","/bin/false")
