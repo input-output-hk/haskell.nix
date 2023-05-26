@@ -242,7 +242,7 @@ let
           then ../../materialized/ghc8107/hadrian-ghc94
         else ../../materialized/ghc8107/hadrian-ghc96;
       modules = [{
-        # Apply the patches in a way that does not require using somethin
+        # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
         # on a platform at eval time.
         packages.hadrian.prePatch = ''
@@ -260,7 +260,13 @@ let
       cabalProjectLocal = null;
       cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
-        inherit src;
+        src = {
+          outPath = buildPackages.srcOnly {
+            name = "hadrian";
+            inherit src;
+          };
+          filterPath = { path, ... }: path;
+        };
         subDir = "hadrian";
       };
     };
@@ -274,7 +280,8 @@ let
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString enableDWARF "+debug_info"
-          + lib.optionalString targetPlatform.isGhcjs "+native_bignum+no_profiled_libs"
+          + lib.optionalString (enableNativeBignum || targetPlatform.isGhcjs) "+native_bignum"
+          + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
@@ -317,7 +324,7 @@ let
     # Same goes for strip.
     strip =
       # TODO(@sternenseemann): also use wrapper if linker == "bfd" or "gold"
-      if stdenv.targetPlatform.isAarch64 && stdenv.targetPlatform.isDarwin
+      if stdenv.targetPlatform.isAarch64
       then targetCC.bintools
       else targetCC.bintools.bintools;
   };
