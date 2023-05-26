@@ -11,7 +11,7 @@
     flags = { native = false; ffi = false; gmp = false; check = false; };
     package = {
       specVersion = "2.0";
-      identifier = { name = "ghc-bignum"; version = "1.2"; };
+      identifier = { name = "ghc-bignum"; version = "1.3"; };
       license = "BSD-3-Clause";
       copyright = "";
       maintainer = "libraries@haskell.org";

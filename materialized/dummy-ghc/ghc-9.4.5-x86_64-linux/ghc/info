@@ -50,7 +50,7 @@
  ,("Project Patch Level","5")
  ,("Project Patch Level1","5")
  ,("Project Patch Level2","0")
- ,("Booter version","9.4.3")
+ ,("Booter version","9.4.5")
  ,("Stage","2")
  ,("Build platform","x86_64-unknown-linux")
  ,("Host platform","x86_64-unknown-linux")
