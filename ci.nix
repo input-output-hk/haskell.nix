@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 1
+{ ifdLevel ? 0
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false
