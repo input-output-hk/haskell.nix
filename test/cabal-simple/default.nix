@@ -19,7 +19,7 @@ let
     cabalProject = ''
       packages: .
       allow-newer: aeson:*
-    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
+    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961" "ghc962"]) ''
       allow-newer: *:base, *:ghc-prim, *:template-haskell
     '';
   };
@@ -38,7 +38,7 @@ in recurseIntoAttrs {
     }).overrideAttrs (_: _: {
       meta = rec {
         platforms = lib.platforms.all;
-        broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+        broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
         disabled = broken;
       };
     });
@@ -75,7 +75,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
       disabled = broken;
     };
 

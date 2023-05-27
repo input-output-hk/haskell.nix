@@ -41,7 +41,7 @@ in
     # to work with GHC 9 and above.
     # Does not work for GHCJS
     # We can probably enable ghc961 again once Cabal 3.10 is in hackage
-    meta.disabled = stdenv.hostPlatform.isGhcjs || __elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927" "ghc961"];
+    meta.disabled = stdenv.hostPlatform.isGhcjs || __elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927" "ghc928" "ghc961" "ghc962"];
     
 
     passthru = {
