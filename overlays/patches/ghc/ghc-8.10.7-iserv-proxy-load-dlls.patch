@@ -1,7 +1,7 @@
 diff --git a/utils/iserv-proxy/src/Main.hs b/utils/iserv-proxy/src/Main.hs
 index 364a2af..68d7307 100644
---- a/utils/iserv-proxy/src/Main.hs
-+++ b/utils/iserv-proxy/src/Main.hs
+--- a/src/Main.hs
++++ b/src/Main.hs
 @@ -283,8 +283,15 @@ proxy verbose local remote = loop
          LoadDLL path@('C':':':_) -> do
            fwdCall msg' >>= reply >> loop
