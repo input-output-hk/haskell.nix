@@ -43,8 +43,18 @@ in rec {
             "ghc8107" = "3.4.1";
           }.${compiler-nix-name} or "latest";
       };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0) {
-      stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+      stack =
+        tool compiler-nix-name "stack" {
+          cabalProjectLocal = ''
+            constraints: optparse-applicative <0.18
+          '';
+          version =
+            if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.2" < 0
+              then "2.9.3"
+              else "2.11.1";
+          inherit evalPackages;
+        };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
       hls-latest = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;

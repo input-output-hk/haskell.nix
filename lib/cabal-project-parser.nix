@@ -84,8 +84,8 @@ let
     url = repo.location;
     "${refOrRev}" = repo.tag;
     sha256 = repo."--sha256" or (
-      if sha256map != null
-        then sha256map."${repo.location}"."${repo.tag}"
+      if sha256map != null && sha256map ? ${repo.location}
+        then sha256map.${repo.location}.${repo.tag}
         else null);
     subdirs = if repo ? subdir
       then pkgs.lib.filter (x: x != "") (pkgs.lib.splitString " " repo.subdir)
@@ -136,7 +136,7 @@ let
       attrs = parseBlockLines x.fst;
       sha256 = attrs."--sha256" or (
         if sha256map != null
-          then sha256map."${attrs.url}"
+          then sha256map.${attrs.url} or null
           else null);
     in rec {
       # This is `some-name` from the `repository some-name` line in the `cabal.project` file.

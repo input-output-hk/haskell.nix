@@ -7,7 +7,7 @@ let
   project = doExactConfig: cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "with-packages";
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961" "ghc962"]) ''
       allow-newer: *:base, *:ghc-prim, *:template-haskell
     '';
     modules = [
@@ -42,7 +42,7 @@ in recurseIntoAttrs {
   test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
       disabled = broken;
     };
   });
@@ -51,7 +51,7 @@ in recurseIntoAttrs {
   test-shell-dec = (addCabalInstall decLibrary.shell).overrideAttrs (_: _: {
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"];
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
       disabled = broken;
     };
   });
@@ -108,7 +108,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961"]) || stdenv.hostPlatform.isMusl;
+      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"]) || stdenv.hostPlatform.isMusl;
       disabled = broken;
     };
 

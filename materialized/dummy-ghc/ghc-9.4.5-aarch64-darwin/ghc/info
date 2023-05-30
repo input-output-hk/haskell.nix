@@ -50,7 +50,7 @@
  ,("Project Patch Level","5")
  ,("Project Patch Level1","5")
  ,("Project Patch Level2","0")
- ,("Booter version","9.4.3")
+ ,("Booter version","9.4.5")
  ,("Stage","2")
  ,("Build platform","aarch64-apple-darwin")
  ,("Host platform","aarch64-apple-darwin")
