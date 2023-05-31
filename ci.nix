@@ -14,6 +14,7 @@
   nixpkgsVersions = {
     "R2205" = "nixpkgs-2205";
     "R2211" = "nixpkgs-2211";
+    "R2305" = "nixpkgs-2305";
     "unstable" = "nixpkgs-unstable";
   };
   haskellNix = compat { inherit checkMaterialization system; };
@@ -52,6 +53,12 @@
         ghc902 = false;
         ghc928 = false;
         ghc945 = false;
+      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2305") {
+        ghc8107 = false;
+        ghc902 = false;
+        ghc928 = false;
+        ghc945 = false;
+        ghc962 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc884 = false;
         ghc8107 = true;
