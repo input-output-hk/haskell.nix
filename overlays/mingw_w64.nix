@@ -28,6 +28,8 @@ let
       writeScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
         #!${stdenv.shell}
         set -euo pipefail
+        ISERV_ARGS=''${ISERV_ARGS:-}
+        PROXY_ARGS=''${PROXY_ARGS:-}
         # unset the configureFlags.
         # configure should have run already
         # without restting it, wine might fail
@@ -36,7 +38,7 @@ let
         PORT=$((5000 + $RANDOM % 5000))
         (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
         REMOTE_ISERV=$(mktemp -d)
-        ln -s ${interpreter}/bin/* $REMOTE_ISERV
+        ln -s ${interpreter.override { enableDebugRTS = true; }}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
         for p in $pkgsHostTargetAsString; do
           find "$p" -iname '*.dll' -exec ln -sf {} $REMOTE_ISERV \;
@@ -53,10 +55,10 @@ let
         )
         # Not sure why this `unset` helps.  It might avoids some kind of overflow issue.  We see `wine` fail to start when building `cardano-wallet-cli` test `unit`.
         unset pkgsHostTargetAsString
-        WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp $PORT &
+        WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
         (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
         RISERV_PID="$!"
-        ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
+        ISERV_TARGET=WINE ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" $PROXY_ARGS
         (>&2 echo "---> killing ${interpreter.exeName}...")
         kill $RISERV_PID
       '';
