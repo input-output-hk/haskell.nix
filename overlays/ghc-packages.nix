@@ -250,7 +250,10 @@ in rec {
                        + "/${ghc-extra-projects-type proj.ghc}/${ghcName}";
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
-      modules = [{ reinstallableLibGhc = false; }];
+      modules = [{
+        packages.iserv-proxy.patches = [./patches/ghc/ghc-8.10.7-iserv-proxy-load-dlls.patch];
+        reinstallableLibGhc = false;
+      }];
     }))
     ghc-extra-pkgs-cabal-projects;
 
