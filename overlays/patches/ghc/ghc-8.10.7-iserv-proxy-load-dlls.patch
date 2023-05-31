@@ -1,0 +1,22 @@
+diff --git a/utils/iserv-proxy/src/Main.hs b/utils/iserv-proxy/src/Main.hs
+index 364a2af..68d7307 100644
+--- a/src/Main.hs
++++ b/src/Main.hs
+@@ -283,8 +283,15 @@ proxy verbose local remote = loop
+         LoadDLL path@('C':':':_) -> do
+           fwdCall msg' >>= reply >> loop
+         LoadDLL path | isAbsolute path -> do
+-          resp <- fwdLoadCall verbose local remote msg'
+-          reply resp
++          target <- lookupEnv "ISERV_TARGET"
++          case target of
++            Just "WINE" -> do
++              let path' = 'Z':':':'\\':map (\c -> if c == '/' then '\\' else c) path
++              resp <- fwdCall (LoadDLL path')
++              reply resp
++            Nothing -> do
++              resp <- fwdLoadCall verbose local remote msg'
++              reply resp
+           loop
+         Shutdown{}    -> fwdCall msg' >> return ()
+         _other        -> fwdCall msg' >>= reply >> loop

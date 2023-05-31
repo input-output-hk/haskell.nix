@@ -14,6 +14,15 @@ in {
     compiler-nix-name = mkOption {
       type = str;
       description = "The name of the ghc compiler to use eg. \"ghc884\"";
+      # Map short version names to the latest GHC version.
+      # TODO: perhaps combine this with the `latestVer` mapping in `overlays/boostrap.nix`.
+      apply = v: {
+          ghc810 = "ghc8107";
+          ghc90 = "ghc902";
+          ghc92 = "ghc928";
+          ghc94 = "ghc945";
+          ghc96 = "ghc962";
+        }.${v} or v;
     };
     compilerSelection = mkOption {
       type = unspecified;
