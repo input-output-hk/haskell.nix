@@ -1,0 +1,21 @@
+From 28607c22f968587177c8a0d25f2e7a64b4ae5be8 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 31 May 2023 12:30:39 +0800
+Subject: [PATCH] Update PEi386.c
+
+---
+ rts/linker/PEi386.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index b5134235b02..682b4ec7e83 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -2038,6 +2038,7 @@ ocResolve_PEi386 ( ObjectCode* oc )
+                }
+             case 2: /* R_X86_64_32 (ELF constant 10) - IMAGE_REL_AMD64_ADDR32 (PE constant 2) */
+             case 3: /* IMAGE_REL_AMD64_ADDR32NB (PE constant 3) */
++            case 14: /* R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14) */
+             case 17: /* R_X86_64_32S ELF constant, no PE mapping. See note [ELF constant in PE file] */
+                {
+                    uint64_t v;
