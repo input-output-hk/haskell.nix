@@ -15,9 +15,9 @@ let
       "8.8" = "8.8.4";
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
-      "9.2" = "9.2.7";
-      "9.4" = "9.4.4";
-      "9.6" = "9.6.1";
+      "9.2" = "9.2.8";
+      "9.4" = "9.4.5";
+      "9.6" = "9.6.2";
     };
     traceWarnOld = v: x:
       let
@@ -154,7 +154,10 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.2.1"  && versionLessThan "9.3" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.2-3434.patch
 
                 ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-acrt-iob-func.patch
-                ++ fromUntil "8.10.1" "9.4"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
+                ++ fromUntil "8.10.1" "9.2"    ./patches/ghc/ghc-mprotect-nonzero-len.patch
+                ++ fromUntil "9.2"    "9.2.8"  ./patches/ghc/ghc-9.2-fix-m32_allocator_init-10453.patch # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/10453
+                ++ fromUntil "9.2"    "9.2.8"  ./patches/ghc/ghc-9.2-fix-m32_allocator_init-10453-2.patch
+                ++ fromUntil "9.2"    "9.4"    ./patches/ghc/ghc-9.2-bignum-expose-backendName.patch # https://gitlab.haskell.org/ghc/ghc/-/commit/bc498fdfa482dfe796e3a12ac8f9d71913930740
 
                 ++ fromUntil "8.10.1" "8.10.3" ./patches/ghc/ghc-8.10-ubxt.patch
                 ++ fromUntil "8.10.3" "8.10.5" ./patches/ghc/ghc-8.10.3-ubxt.patch
@@ -184,12 +187,13 @@ in {
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.5"  ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
                 ++ fromUntil "9.4.5"  "9.4.6"  ./patches/ghc/ghc-9.4.5-include-order-fix.patch
+                ++ fromUntil "9.6.2"  "9.8"    ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/MR10116.patch
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.4.1" "9.6" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.6.1" "9.8" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.2"    ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.2"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.2"    ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
@@ -202,6 +206,10 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/libc-memory-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/android-base-needs-iconv.patch
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.4" && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-make-stage-1-lib-ghc.patch
+                ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-better-symbol-addr-debug.patch
+                ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-8.10-aarch64-handle-none-rela.patch
+                ++ final.lib.optional (versionAtLeast "9.0"                             && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.0-better-symbol-addr-debug.patch
+                ++ final.lib.optional (versionAtLeast "9.0"                             && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
@@ -648,6 +656,25 @@ in {
 
                 ghc-patches = ghc-patches "9.2.7";
             });
+            ghc928 = final.callPackage ../compiler/ghc (traceWarnOld "9.2" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc928; };
+
+                bootPkgs = bootPkgs // {
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.2.8";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-XxPReGv0/RL0tF+qN6vttbs/NtXlj32lMH6L/oilZ6E=";
+                };
+
+                ghc-patches = ghc-patches "9.2.8";
+            });
             ghc941 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc941; };
 
@@ -801,6 +828,28 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.6.1";
+            });
+            ghc962 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc962; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.6.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-G1EMX4dTw7okhRcCxsnafYHcXkf+Pst685x8JhOr8XA=";
+                };
+
+                ghc-patches = ghc-patches "9.6.2";
             });
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {

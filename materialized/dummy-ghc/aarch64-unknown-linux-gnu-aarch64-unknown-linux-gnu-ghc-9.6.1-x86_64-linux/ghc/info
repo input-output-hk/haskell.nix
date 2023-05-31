@@ -31,6 +31,8 @@
  ,("target has libm","YES")
  ,("Unregisterised","NO")
  ,("LLVM target","aarch64-unknown-linux")
+ ,("LLVM llc command","llc")
+ ,("LLVM opt command","opt")
  ,("LLVM clang command","clang")
  ,("Use inplace MinGW toolchain","NO")
  ,("Use interpreter","YES")

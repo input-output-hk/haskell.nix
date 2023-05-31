@@ -1,0 +1,97 @@
+diff --git a/libraries/ghc-bignum/changelog.md b/libraries/ghc-bignum/changelog.md
+index 68f98d3adc0c597f3565eb4b6d0f2dd9b02be7fa..015721d40bfb281cd3dfe550d2507aa59554fee8 100644
+--- a/libraries/ghc-bignum/changelog.md
++++ b/libraries/ghc-bignum/changelog.md
+@@ -1,5 +1,9 @@
+ # Changelog for `ghc-bignum` package
+ 
++## 1.3
++
++- Expose backendName
++
+ ## 1.2
+ 
+ - Moved naturalToDouble# and naturalToFloat# to `base` package
+diff --git a/libraries/ghc-bignum/ghc-bignum.cabal b/libraries/ghc-bignum/ghc-bignum.cabal
+index 468c2a042a2cf1ccc0bbaca799034e001b17290c..59ba8472724a3f190d305fe1c85078a494f074c5 100644
+--- a/libraries/ghc-bignum/ghc-bignum.cabal
++++ b/libraries/ghc-bignum/ghc-bignum.cabal
+@@ -1,6 +1,6 @@
+ cabal-version:       2.0
+ name:                ghc-bignum
+-version:             1.2
++version:             1.3
+ synopsis:            GHC BigNum library
+ license:             BSD3
+ license-file:        LICENSE
+diff --git a/libraries/ghc-bignum/src/GHC/Num/Backend/Check.hs b/libraries/ghc-bignum/src/GHC/Num/Backend/Check.hs
+index b23fd1cb21965faf9cf0d16e14fc681a7f5e7ee0..00930a62bfd17a724dc085607ab32f74337cfdc3 100644
+--- a/libraries/ghc-bignum/src/GHC/Num/Backend/Check.hs
++++ b/libraries/ghc-bignum/src/GHC/Num/Backend/Check.hs
+@@ -12,6 +12,7 @@
+ -- | Check Native implementation against another backend
+ module GHC.Num.Backend.Check where
+ 
++import GHC.CString
+ import GHC.Prim
+ import GHC.Types
+ import GHC.Num.WordArray
+@@ -27,6 +28,12 @@ import qualified GHC.Num.Backend.Selected as Other
+ 
+ default ()
+ 
++-- | ghc-bignum backend name
++backendName :: [Char]
++backendName = unpackAppendCString# "check-"# Other.backendName
++  -- we don't have (++) at our disposal, so we directly use
++  -- `unpackAppendCString#`
++
+ bignat_compare
+    :: WordArray#
+    -> WordArray#
+diff --git a/libraries/ghc-bignum/src/GHC/Num/Backend/FFI.hs b/libraries/ghc-bignum/src/GHC/Num/Backend/FFI.hs
+index 21d74ee3e49b236f81ddc07ef322f7d96083069f..30fcc576cbb8e46e5efe7c4dd1220ada0d725fee 100644
+--- a/libraries/ghc-bignum/src/GHC/Num/Backend/FFI.hs
++++ b/libraries/ghc-bignum/src/GHC/Num/Backend/FFI.hs
+@@ -25,6 +25,10 @@ import {-# SOURCE #-} GHC.Num.Integer
+ 
+ default ()
+ 
++-- | ghc-bignum backend name
++backendName :: [Char]
++backendName = "ffi"
++
+ -- | Compare two non-zero BigNat of the same length
+ --
+ -- Return:
+diff --git a/libraries/ghc-bignum/src/GHC/Num/Backend/GMP.hs b/libraries/ghc-bignum/src/GHC/Num/Backend/GMP.hs
+index 3fd4394bcf367a6e0c616a73a0a62b6224fa602e..48f5f8a90e9df51da99007967dfb0d8ab3440469 100644
+--- a/libraries/ghc-bignum/src/GHC/Num/Backend/GMP.hs
++++ b/libraries/ghc-bignum/src/GHC/Num/Backend/GMP.hs
+@@ -32,6 +32,10 @@ import {-# SOURCE #-} GHC.Num.Natural
+ 
+ default ()
+ 
++-- | ghc-bignum backend name
++backendName :: [Char]
++backendName = "gmp"
++
+ ----------------------------------------------------------------------------
+ -- type definitions
+ 
+diff --git a/libraries/ghc-bignum/src/GHC/Num/Backend/Native.hs b/libraries/ghc-bignum/src/GHC/Num/Backend/Native.hs
+index 723096544a0bc12064821625c425d434fd4464a0..da08c55dd19bea27ed3c1a5ea323ef09c4e27133 100644
+--- a/libraries/ghc-bignum/src/GHC/Num/Backend/Native.hs
++++ b/libraries/ghc-bignum/src/GHC/Num/Backend/Native.hs
+@@ -30,6 +30,11 @@ import GHC.Types
+ 
+ default ()
+ 
++-- | ghc-bignum backend name
++backendName :: [Char]
++backendName = "native"
++
++
+ count_words_bits :: Word# -> (# Word#, Word# #)
+ count_words_bits n = (# nw, nb #)
+    where

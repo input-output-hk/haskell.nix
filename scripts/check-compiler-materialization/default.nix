@@ -23,7 +23,7 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   # This set of derivations should be enough to ensure all the materialized files for a
   # given GHC version are checked.
   { name = "${prefix}-dummy-ghc-data"; value = pkgs.haskell-nix.compiler.${compiler-nix-name}.dummy-ghc-data; }
-  { name = "${prefix}-nixpkgs-dummy-ghc-data"; value = pkgs.haskell.compiler.${compiler-nix-name}.dummy-ghc-datai or {}; }
+  { name = "${prefix}-nixpkgs-dummy-ghc-data"; value = pkgs.haskell.compiler.${compiler-nix-name}.dummy-ghc-data or {}; }
   { name = "${prefix}-cabal-install"; value = pkgs.haskell-nix.cabal-install.${compiler-nix-name}; }
   { name = "${prefix}-nix-tools";     value = pkgs.haskell-nix.nix-tools.${compiler-nix-name}; }
   { name = "${prefix}-extra";         value = (pkgs.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
@@ -53,7 +53,7 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
      || (system == "aarch64-linux"  && __elem compiler-nix-name ["ghc961"])
      || (system == "x86_64-darwin"  && __elem compiler-nix-name ["ghc8107" "ghc961"])
      || (system == "aarch64-darwin" && __elem compiler-nix-name ["ghc961"])) [
-  { name = "${prefix}-boot-ghcjs";    value = pkgs.pkgsCross.ghcjs.ghc-boot-packages-nix.${compiler-nix-name}; }
+#  { name = "${prefix}-boot-ghcjs";    value = pkgs.pkgsCross.ghcjs.ghc-boot-packages-nix.${compiler-nix-name}; }
   { name = "${prefix}-ghcjs";         value = (pkgs.pkgsCross.ghcjs.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-hello-ghcjs";   value = pkgs.pkgsCross.ghcjs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ])) compiler-nix-names) systems)
