@@ -56,12 +56,12 @@ in rec {
           inherit evalPackages;
         };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
-      "hls-1.10" = tool compiler-nix-name "haskell-language-server" {
+      "hls-110" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-1.10";
       };
     } // {
-      "hls-2.0" = tool compiler-nix-name "haskell-language-server" {
+      "hls-20" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.0";
       };
