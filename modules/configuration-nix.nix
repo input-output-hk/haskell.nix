@@ -83,18 +83,31 @@ in {
 
   # See https://github.com/input-output-hk/haskell.nix/issues/1455
   # This is a work around to make `ghcide` and `haskell-language-server` build with the unboxed tuple patch.
-  packages.ghcide.patches =
-    # Work out if we have applied the unboxed tupple patch in overlays/bootstrap.nix
-    pkgs.lib.optionals (__elem config.compiler.nix-name [
-      "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc810420210212"
-    ]) [
-      (fromUntil "1.7.0.0" "1.8.0.0" ../patches/ghcide-1.7-unboxed-tuple-fix-issue-1455.patch)
-      (fromUntil "1.8.0.0" "2.1.0.0" ../patches/ghcide-1.8-unboxed-tuple-fix-issue-1455.patch)
-    ]
-    # This is needed for a patch only applied to ghc810420210212
-    ++ pkgs.lib.optional (__elem config.compiler.nix-name [
-      "ghc810420210212"
-    ]) (from "1.7.0.0" ../patches/ghcide-1.7-plutus-ghc.patch);
+  packages.ghcide = pkgs.lib.mkIf (__elem config.compiler.nix-name [
+        # Work out if we have applied the unboxed tupple patch in overlays/bootstrap.nix
+        "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc810420210212"
+      ]) {
+    patches =
+       [
+        (fromUntil "1.7.0.0" "1.8.0.0" ../patches/ghcide-1.7-unboxed-tuple-fix-issue-1455.patch)
+        (fromUntil "1.8.0.0" "2.1.0.0" ../patches/ghcide-1.8-unboxed-tuple-fix-issue-1455.patch)
+      ]
+      # This is needed for a patch only applied to ghc810420210212
+      ++ pkgs.lib.optional (__elem config.compiler.nix-name [
+        "ghc810420210212"
+      ]) (from "1.7.0.0" ../patches/ghcide-1.7-plutus-ghc.patch);
+      flags = {
+        # This flag has enables an additional work around that normally
+        # is only enabled for ghc >=9.2.
+        ghc-patched-unboxed-bytecode = true;
+      };
+    };
+
+  # Fix for https://github.com/input-output-hk/haskell.nix/issues/1961
+  packages.haskell-language-server.components.exes.haskell-language-server = {
+    keepGhc = pkgs.stdenv.hostPlatform.isDarwin;
+    keepConfigFiles = pkgs.stdenv.hostPlatform.isDarwin;
+  };
 
   packages.language-c.patches = [
     # See https://github.com/visq/language-c/pull/89
