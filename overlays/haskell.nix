@@ -648,57 +648,94 @@ final: prev: {
         # This function is like `cabalProject` but it makes the plan-nix available
         # separately from the hsPkgs.  The advantage is that the you can get the
         # plan-nix without building the project.
-        cabalProject' =
-          projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, compilerSelection, evalPackages, ... }@args:
-            let
-              callProjectResults = callCabalProjectToNix args;
-              plan-pkgs = importAndFilterProject {
-                inherit (callProjectResults) projectNix sourceRepos src;
-              };
-              buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                then final.buildPackages.haskell-nix.cabalProject' projectModule
-                else project;
-              pkg-set = if plan-pkgs ? configurationError
-                then {
-                  inherit (plan-pkgs) configurationError;
-                  config = {
-                    compiler.nix-name = compiler-nix-name;
-                    hsPkgs = {};
-                    inherit evalPackages;
+        cabalProject' = projectModule:
+          (final.lib.evalModules {
+            modules = 
+              (if builtins.isList projectModule then projectModule else [ projectModule ]) ++
+              [ (import ../modules/project-common.nix)
+                (import ../modules/cabal-project.nix)
+                # Pass the pkgs and the buildProject to the modules
+                ({ config, lib, ... }: {
+                  _module.args = {
+                    pkgs = final;
+                    # to make it easy to depends on build packages in, eg., shell definition:
+                    inherit (config.project) buildProject;
                   };
-                }
-                else mkCabalProjectPkgSet
-                { inherit compiler-nix-name compilerSelection plan-pkgs;
-                  pkg-def-extras = args.pkg-def-extras or [];
-                  modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; } ]
-                    ++ (args.modules or [])
-                    ++ [ {
-                      ghc.package =
-                        if args.ghcOverride != null
-                          then args.ghcOverride
-                        else if args.ghc != null
-                          then args.ghc
-                        else
-                          final.lib.mkDefault (args.compilerSelection final.buildPackages).${compiler-nix-name};
-                      compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
-                      evalPackages = final.lib.mkDefault evalPackages;
-                    } ];
-                  extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
-                };
+                  inherit (config.project) hsPkgs;
+                })
+                #
+                ({ config, lib, pkgs, ... }:
+                  let
+                    callProjectResults = callCabalProjectToNix config;
 
-              project = addProjectAndPackageAttrs rec {
-                  inherit (pkg-set.config) hsPkgs;
-                  inherit pkg-set;
-                  plan-nix = callProjectResults.projectNix;
-                  inherit (callProjectResults) index-state-max;
-                  tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
-                  tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
-                  projectFunction = haskell-nix: haskell-nix.cabalProject';
-                  inherit projectModule buildProject args;
-                };
-            in project);
+                    plan-pkgs = importAndFilterProject {
+                      inherit (callProjectResults) projectNix sourceRepos src;
+                    };
+
+                    buildProject = if pkgs.stdenv.hostPlatform != pkgs.stdenv.buildPlatform
+                      then pkgs.buildPackages.haskell-nix.cabalProject' projectModule
+                      else project;
+
+                    pkg-set =
+                      if plan-pkgs ? configurationError then
+                        {
+                          inherit (plan-pkgs) configurationError;
+                          config = {
+                            compiler.nix-name = config.compiler-nix-name;
+                            hsPkgs = {};
+                            inherit (config) evalPackages;
+                          };
+                        }
+                      else
+                        mkCabalProjectPkgSet {
+                          pkg-def-extras = config.pkg-def-extras or [];
+
+                          inherit (config) compiler-nix-name compilerSelection;
+                          inherit plan-pkgs;
+
+                          modules =
+                            [ { _module.args.buildModules = lib.mkForce buildProject.pkg-set; } ] ++
+                            config.modules or [] ++
+                            [ {
+                                ghc.package =
+                                  if config.ghcOverride != null
+                                    then config.ghcOverride
+                                  else if config.ghc != null
+                                    then config.ghc
+                                  else
+                                    lib.mkDefault (config.compilerSelection pkgs.buildPackages).${config.compiler-nix-name};
+
+                                compiler.nix-name = lib.mkForce config.compiler-nix-name;
+                            } ] ++
+                            [ { evalPackages = lib.mkDefault config.evalPackages; } ];
+
+                          extra-hackages = config.extra-hackages or [] ++ callProjectResults.extra-hackages;
+                        };
+
+                    project = addProjectAndPackageAttrs {
+                        args = config;
+                        projectFunction = haskell-nix: haskell-nix.cabalProject';
+
+                        inherit pkg-set;
+                        inherit (pkg-set.config) hsPkgs;
+
+                        inherit projectModule buildProject;
+
+                        tool = pkgs.buildPackages.haskell-nix.tool' config.evalPackages pkg-set.config.compiler.nix-name;
+                        tools = pkgs.buildPackages.haskell-nix.tools' config.evalPackages pkg-set.config.compiler.nix-name;
+                        roots = pkgs.haskell-nix.roots pkg-set.config.compiler.nix-name;
+
+                        # specific to cabalProject
+                        plan-nix = callProjectResults.projectNix;
+                        inherit (callProjectResults) index-state-max;
+                      };
+                  in {
+                    options.project = lib.mkOption { type = lib.types.unspecified; };
+                    config.project = project;
+                  }
+                )
+              ];
+          }).config.project;
 
         # Take `hsPkgs` from the `rawProject` and update all the packages and
         # components so they have a `.project` attribute and as well as
@@ -923,40 +960,74 @@ final: prev: {
         cabalProject = args: let p = cabalProject' args;
             in p.hsPkgs // p;
 
-        stackProject' =
-          projectModule: haskellLib.evalProjectModule ../modules/stack-project.nix projectModule (
-            { src, evalPackages, ... }@args:
-            let callProjectResults = callStackToNix (args
-                  // final.lib.optionalAttrs (args.cache == null) { inherit cache; });
-                generatedCache = genStackCache args;
-                cache = if args.cache != null then args.cache else generatedCache;
-            in let
-              buildProject = if final.stdenv.hostPlatform != final.stdenv.buildPlatform
-                then final.buildPackages.haskell-nix.stackProject' projectModule
-                else project;
-              pkg-set = mkStackPkgSet
-                { stack-pkgs = importAndFilterProject callProjectResults;
-                  pkg-def-extras = (args.pkg-def-extras or []);
-                  modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
-                      (mkCacheModule cache) ]
-                    ++ (args.modules or [])
-                    ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
-                    ++ final.lib.optional (args.compiler-nix-name != null)
-                        { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; }
-                    ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
-                };
+        stackProject' = projectModule:
+            (final.lib.evalModules {
+              modules =
+                (if builtins.isList m then m else [m]) ++
+                [ (import ../modules/project-common.nix)
+                  (import ../modules/stack-project.nix)
+                  # Pass the pkgs and the buildProject to the modules
+                  ({ config, lib, ... }: {
+                    _module.args = {
+                      pkgs = final;
+                      # to make it easy to depends on build packages in, eg., shell definition:
+                      inherit (config.project) buildProject;
+                    };
+                    inherit (config.project) hsPkgs;
+                  })
+                  #
+                  ({ config, lib, ... }:
+                    let
+                      callProjectResults = callStackToNix (config // lib.optionalAttrs (config.cache == null) { inherit cache; });
+                      generatedCache = genStackCache config;
+                      cache = if config.cache != null then config.cache else generatedCache;
 
-                project = addProjectAndPackageAttrs {
-                  inherit (pkg-set.config) hsPkgs;
-                  inherit pkg-set;
-                  stack-nix = callProjectResults.projectNix;
-                  tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
-                  tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
-                  roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
-                  projectFunction = haskell-nix: haskell-nix.stackProject';
-                  inherit projectModule buildProject args;
-                };
-            in project);
+                    in let
+                      buildProject = if pkgs.stdenv.hostPlatform != pkgs.stdenv.buildPlatform
+                        then pkgs.buildPackages.haskell-nix.stackProject' projectModule
+                        else project;
+
+                      pkg-set = mkStackPkgSet {
+                        stack-pkgs = importAndFilterProject {
+                          inherit (callProjectResults) projectNix sourceRepos src;
+                        };
+
+                        pkg-def-extras = config.pkg-def-extras or [];
+
+                        modules =
+                          [ { _module.args.buildModules = lib.mkForce buildProject.pkg-set; }
+                            (mkCacheModule cache)
+                          ] ++
+                          config.modules or [] ++
+                          lib.optional (config.ghc != null)
+                            { ghc.package = config.ghc; } ++
+                          lib.optional (config.compiler-nix-name != null)
+                            { compiler.nix-name = lib.mkForce config.compiler-nix-name; } ++
+                          [ { evalPackages = lib.mkDefault evalPackages; } ];
+                      };
+
+                      project = addProjectAndPackageAttrs {
+                        args = config;
+                        projectFunction = haskell-nix: haskell-nix.stackProject';
+
+                        inherit pkg-set;
+                        inherit (pkg-set.config) hsPkgs;
+
+                        inherit projectModule buildProject;
+
+                        tool = pkgs.buildPackages.haskell-nix.tool' config.evalPackages pkg-set.config.compiler.nix-name;
+                        tools = pkgs.buildPackages.haskell-nix.tools' config.evalPackages pkg-set.config.compiler.nix-name;
+                        roots = pkgs.haskell-nix.roots pkg-set.config.compiler.nix-name;
+
+                        stack-nix = callProjectResults.projectNix;
+                      };
+                    in {
+                      options.project = lib.mkOptions { type = lib.types.unspecified; };
+                      config.project = project;
+                    }
+                  )
+                ];
+            }).config.project;
 
         stackProject = args: let p = stackProject' args;
             in p.hsPkgs // p;
