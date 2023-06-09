@@ -5,7 +5,7 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-project-nix-path";
     cabalProject = ''
-      packages: ${(tool compiler-nix-name "hello" {}).project.args.src}
+      packages: ${(tool compiler-nix-name "hello" { inherit evalPackages; }).project.args.src}
     '';
   };
 
