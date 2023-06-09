@@ -496,6 +496,9 @@ let
           --exclude '*' \
           $tmp/ $out/
 
+    # Make sure the subDir' exists even if it did not contain any cabal files
+    mkdir -p $out${subDir'}
+
     # make sure the path's in the plan.json are relative to $out instead of $tmp
     # this is necessary so that plan-to-nix relative path logic can work.
     substituteInPlace $tmp${subDir'}/dist-newstyle/cache/plan.json --replace "$tmp" "$out"
