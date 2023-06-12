@@ -83,7 +83,7 @@ with lib.types;
         are found in the projects package src.  If you have added
         `/nix/store` paths to the `cabal.project` or `stack.yaml`
         file add path here as well this allows it to be treated correctly
-        with out using `builtins.appendContext`.
+        without using `builtins.appendContext`.
       '';
     };
     hsPkgs = lib.mkOption {
