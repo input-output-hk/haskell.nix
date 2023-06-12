@@ -462,7 +462,7 @@ stdenv.mkDerivation (rec {
   checkTarget = "test";
 
   hardeningDisable = [ "format" ]
-                   ++ lib.optional stdenv.targetPlatform.isAarch32 "pic"
+                   ++ lib.optional (stdenv.targetPlatform.isAarch32 || enableRelocatedStaticLibs) "pic"
                    ++ lib.optional stdenv.targetPlatform.isMusl "pie";
 
   postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux) ''
