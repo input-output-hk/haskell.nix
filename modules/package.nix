@@ -307,7 +307,15 @@ in {
       #   do not know how to unpack source archive /nix/store/...
       apply = v:
         if isString v && __getContext v == {} && hasPrefix builtins.storeDir v
-          then __appendContext v { ${v} = { path = true; }; }
+          then
+            let storePath = __filter (x: hasPrefix (toString x) v) parentConfig.storePaths;
+            in if storePath == []
+              then __appendContext v { ${v} = { path = true; }; }
+              else
+                let
+                  s = __head storePath;
+                  sLen = __stringLength (toString s);
+                in s + __substring sLen (__stringLength v - sLen) v
           else v;
     };
     package-description-override = mkOption {
