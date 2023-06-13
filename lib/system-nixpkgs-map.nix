@@ -52,6 +52,8 @@ in
   bz2 = [ bzip2 ];
   util = [ utillinux ];
   magic = [ file ];
+  pgcommon = [ postgresql ];
+  pgport = [ postgresql] ;
   pq = [ postgresql ];
   libpq = [ postgresql ];
   iconv = [ libiconv ];
