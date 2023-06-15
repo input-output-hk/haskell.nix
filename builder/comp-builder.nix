@@ -361,7 +361,7 @@ let
       });
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
       dwarf = self (drvArgs // { enableDWARF = true; });
-    } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
+    } // lib.optionalAttrs (haskellLib.isLibrary componentId || haskellLib.isTest componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`
       } // lib.optionalAttrs (haddock ? doc) {

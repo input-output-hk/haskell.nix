@@ -23,7 +23,7 @@
 
 let
   doHaddock' = doHaddock
-    && (haskellLib.isLibrary componentId)
+    && (haskellLib.isLibrary componentId || haskellLib.isTest componentId)
     && !haskellLib.isCrossHost;
 
   # the target dir for haddock documentation
@@ -111,6 +111,7 @@ let
       [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
       $SETUP_HS haddock \
         "--html" \
+        ${lib.optionalString (haskellLib.isTest componentId) "--tests"} \
         ${lib.optionalString doHoogle "--hoogle"} \
         ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
         ${lib.optionalString quickjump "--quickjump"} \
