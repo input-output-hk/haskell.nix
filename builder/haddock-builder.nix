@@ -130,7 +130,7 @@ let
            # Ensure that libraries are not pulled into the docs closure.
            # As an example, the prettified source code of a
            # Paths_package module will contain store paths of the library package.
-           for x in "$html/src/"*.html; do
+           for x in $(find "$html" -name "*.html"); do
              remove-references-to -t $out $x
              remove-references-to -t ${componentDrv} $x
            done
