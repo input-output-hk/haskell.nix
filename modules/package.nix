@@ -306,8 +306,9 @@ in {
       # cannot see the input and fail with the error:
       #   do not know how to unpack source archive /nix/store/...
       apply = v:
-        if isString v && __getContext v == {} && hasPrefix builtins.storeDir v
-          then __appendContext v { ${v} = { path = true; }; }
+        let storeDirMatch = __match "(${builtins.storeDir}/[^/]+).*" v;
+        in if isString v && __getContext v == {} && storeDirMatch != null
+          then __appendContext v { ${__head storeDirMatch} = { path = true; }; }
           else v;
     };
     package-description-override = mkOption {
