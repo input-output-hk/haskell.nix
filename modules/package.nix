@@ -306,7 +306,7 @@ in {
       # cannot see the input and fail with the error:
       #   do not know how to unpack source archive /nix/store/...
       apply = v:
-        let storeDirMatch = __match "(${builtins.storeDir}/[^/]+).*" v;
+        let storeDirMatch = __match "(${__storeDir}/[^/]+).*" v;
         in if isString v && __getContext v == {} && storeDirMatch != null
           then __appendContext v { ${__head storeDirMatch} = { path = true; }; }
           else v;
