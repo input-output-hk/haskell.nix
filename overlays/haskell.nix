@@ -650,7 +650,7 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, compilerSelection, evalPackages, storePaths, ... }@args:
+            { src, compiler-nix-name, compilerSelection, evalPackages, ... }@args:
             let
               callProjectResults = callCabalProjectToNix args;
               plan-pkgs = importAndFilterProject {
@@ -683,7 +683,6 @@ final: prev: {
                           final.lib.mkDefault (args.compilerSelection final.buildPackages).${compiler-nix-name};
                       compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
-                      storePaths = final.lib.mkDefault storePaths;
                     } ];
                   extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
@@ -926,7 +925,7 @@ final: prev: {
 
         stackProject' =
           projectModule: haskellLib.evalProjectModule ../modules/stack-project.nix projectModule (
-            { src, evalPackages, storePaths, ... }@args:
+            { src, evalPackages, ... }@args:
             let callProjectResults = callStackToNix (args
                   // final.lib.optionalAttrs (args.cache == null) { inherit cache; });
                 generatedCache = genStackCache args;
@@ -944,10 +943,7 @@ final: prev: {
                     ++ final.lib.optional (args.ghc != null) { ghc.package = args.ghc; }
                     ++ final.lib.optional (args.compiler-nix-name != null)
                         { compiler.nix-name = final.lib.mkForce args.compiler-nix-name; }
-                    ++ [ {
-                      evalPackages = final.lib.mkDefault evalPackages;
-                      storePaths = final.lib.mkDefault storePaths;
-                    } ];
+                    ++ [ { evalPackages = final.lib.mkDefault evalPackages; } ];
                 };
 
                 project = addProjectAndPackageAttrs {

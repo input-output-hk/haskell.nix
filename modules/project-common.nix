@@ -75,17 +75,6 @@ with lib.types;
           };
       '';
     };
-    storePaths = mkOption {
-      type = listOf (either path package);
-      default = [];
-      description = ''
-        A list of `/nix/store` paths to use to add context when they
-        are found in the projects package src.  If you have added
-        `/nix/store` paths to the `cabal.project` or `stack.yaml`
-        file add path here as well this allows it to be treated correctly
-        without using `builtins.appendContext`.
-      '';
-    };
     hsPkgs = lib.mkOption {
       type = lib.types.unspecified;
     };
