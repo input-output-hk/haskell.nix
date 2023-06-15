@@ -301,6 +301,15 @@ in {
       type = either path package;
       default = pkgs.fetchurl { url = "mirror://hackage/${config.name}.tar.gz"; inherit (config) sha256; };
       defaultText = "pkgs.fetchurl { url = \"mirror://hackage/\${config.name}.tar.gz\"; inherit (config) sha256; };";
+      # Make sure paths have a context so they will be included in the derivation
+      # inputs for the component derivations.  Without this sandbox builds fail
+      # cannot see the input and fail with the error:
+      #   do not know how to unpack source archive /nix/store/...
+      apply = v:
+        let storeDirMatch = __match "(${__storeDir}/[^/]+).*" v;
+        in if isString v && __getContext v == {} && storeDirMatch != null
+          then __appendContext v { ${__head storeDirMatch} = { path = true; }; }
+          else v;
     };
     package-description-override = mkOption {
       type = nullOr str;
