@@ -26,8 +26,8 @@ let
     && (haskellLib.isLibrary componentId || haskellLib.isTest componentId)
     && !haskellLib.isCrossHost;
 
-  # the target dir for haddock documentation
-  docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
+  # The target dir for haddock documentation
+  docdir = docoutput: docoutput + "/share/doc/" + package.identifier.name;
 
   packageCfgDir = configFiles.packageCfgDir;
 
