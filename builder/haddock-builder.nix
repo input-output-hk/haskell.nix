@@ -23,11 +23,11 @@
 
 let
   doHaddock' = doHaddock
-    && (haskellLib.isLibrary componentId)
+    && (haskellLib.isLibrary componentId || haskellLib.isTest componentId)
     && !haskellLib.isCrossHost;
 
-  # the target dir for haddock documentation
-  docdir = docoutput: docoutput + "/share/doc/" + componentId.cname;
+  # The target dir for haddock documentation
+  docdir = docoutput: docoutput + "/share/doc/" + package.identifier.name;
 
   packageCfgDir = configFiles.packageCfgDir;
 
@@ -111,6 +111,7 @@ let
       [[ -n $(find . -name "*.hs" -o -name "*.lhs") ]] && {
       $SETUP_HS haddock \
         "--html" \
+        ${lib.optionalString (haskellLib.isTest componentId) "--tests"} \
         ${lib.optionalString doHoogle "--hoogle"} \
         ${lib.optionalString hyperlinkSource "--hyperlink-source"} \
         ${lib.optionalString quickjump "--quickjump"} \
@@ -129,7 +130,7 @@ let
            # Ensure that libraries are not pulled into the docs closure.
            # As an example, the prettified source code of a
            # Paths_package module will contain store paths of the library package.
-           for x in "$html/src/"*.html; do
+           for x in $(find "$html" -name "*.html"); do
              remove-references-to -t $out $x
              remove-references-to -t ${componentDrv} $x
            done
