@@ -13,10 +13,11 @@ final: prev: {
 
         # Additional user-provided mappings to augment ./../lib/pkgconf-nixpkgs-map.nix
         extraPkgconfigMappings = {};
+
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
         # Or `nix-shell -p nixUnstable --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
-        sources = sources;
+        inherit sources;
 
         # We provide a `callPackage` function to consumers for
         # convenience.  We will however refrain from using it
@@ -105,7 +106,7 @@ final: prev: {
             { stack-pkgs  # Path to the output of stack-to-nix
             , pkg-def-extras ? []
             , modules ? []
-            }@args:
+            }:
             let
                 # The Stackage release referenced in the stack config
                 pkg-def = stackage.${stack-pkgs.resolver} or (throw ''
@@ -238,7 +239,7 @@ final: prev: {
           })
         ];
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }@args:
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }:
             let
               # NOTE: root-keys: aaa is because key-threshold: 0 does not seem to be enough by itself
               bootstrapIndexTarball = name: index: final.runCommand "cabal-bootstrap-index-tarball-${name}" {
@@ -500,7 +501,7 @@ final: prev: {
               then
                 # It doesn't make sense to specify sha256 on a private repo
                 # because it is not used by buitins.fetchGit.
-                assert isNull sha256;
+                assert sha256 == null;
                 builtins.fetchGit
                   ({ inherit url rev; } //
                       final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
@@ -510,12 +511,8 @@ final: prev: {
                 assert sha256 != null;
                 # pkgs.fetchgit doesn't have any way of fetching from a given
                 # ref.
-                assert isNull ref;
-                final.fetchgit {
-                  url = url;
-                  rev = rev;
-                  sha256 = sha256;
-                };
+                assert ref == null;
+                final.fetchgit { inherit url rev sha256; };
 
             # This is basically entireRepo, but focused on the subdir if it is specified.
             repoWithSubdir =
@@ -537,7 +534,7 @@ final: prev: {
               else
                 throw "Unknown type '${type}` for a cache entry";
 
-            sha256String = if isNull sha256 then final.buildPackages.lib.fakeSha256 else sha256;
+            sha256String = if sha256 == null then final.buildPackages.lib.fakeSha256 else sha256;
 
           in {
             line = "${url} ${rev} ${subdir} ${sha256String} ${name}";
@@ -612,14 +609,14 @@ final: prev: {
         callCabalProjectToNix = import ../lib/call-cabal-project-to-nix.nix {
             index-state-hashes = import indexStateHashesPath;
             inherit (final.buildPackages.haskell-nix) haskellLib;
-            pkgs = final.buildPackages.pkgs;
+            inherit (final.buildPackages) pkgs;
             inherit (final.buildPackages.pkgs) runCommand cacert;
         };
 
         # Loads a plan and filters the package directories using cleanSourceWith
         importAndFilterProject = import ../lib/import-and-filter-project.nix {
             inherit (final.buildPackages.haskell-nix) haskellLib;
-            pkgs = final.buildPackages.pkgs;
+            inherit (final.buildPackages) pkgs;
         };
 
         # References to the unpacked sources, for caching in a Hydra jobset.
@@ -742,16 +739,16 @@ final: prev: {
                             then components.library
                             else components.${haskellLib.prefixComponent.${builtins.elemAt m 0}}.${builtins.elemAt m 1};
 
-                      coverageReport = haskellLib.coverageReport (rec {
+                      coverageReport = haskellLib.coverageReport {
                         name = package.identifier.name + "-" + package.identifier.version;
                         # Include the checks for a single package.
-                        checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);
+                        checks = final.lib.filter final.lib.isDerivation (final.lib.attrValues package'.checks);
                         # Checks from that package may provide coverage information for any library in the project.
                         mixLibraries = final.lib.concatMap
                           (pkg: final.lib.optional (pkg.components ? library) pkg.components.library)
                             (final.lib.attrValues (haskellLib.selectProjectPackages project.hsPkgs));
                         ghc = project.pkg-set.config.ghc.package;
-                      });
+                      };
                     }
                 ) (builtins.removeAttrs rawProject.hsPkgs
                   # These are functions not packages
@@ -937,7 +934,7 @@ final: prev: {
                 else project;
               pkg-set = mkStackPkgSet
                 { stack-pkgs = importAndFilterProject callProjectResults;
-                  pkg-def-extras = (args.pkg-def-extras or []);
+                  pkg-def-extras = args.pkg-def-extras or [];
                   modules = [ { _module.args.buildModules = final.lib.mkForce buildProject.pkg-set; }
                       (mkCacheModule cache) ]
                     ++ (args.modules or [])
@@ -1122,9 +1119,9 @@ final: prev: {
             # The internal versions of nix-tools and cabal-install are occasionally used,
             # but definitely need to be cached in case they are used.
             nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
-            internal-nix-tools = final.buildPackages.haskell-nix.internal-nix-tools;
+            inherit (final.buildPackages.haskell-nix) internal-nix-tools;
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
-            internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;
+            inherit (final.buildPackages.haskell-nix) internal-cabal-install;
           } // final.lib.optionalAttrs (ifdLevel > 1
             && final.haskell-nix.haskellLib.isCrossHost
             # GHCJS builds its own template haskell runner.
