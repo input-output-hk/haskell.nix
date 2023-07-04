@@ -57,86 +57,86 @@ let
          };
          configureFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = (def.configureFlags or []);
+            default = def.configureFlags or [];
           };
           setupBuildFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = (def.setupBuildFlags or []);
+            default = def.setupBuildFlags or [];
           };
           testFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = (def.testFlags or []);
+            default = def.testFlags or [];
           };
           setupInstallFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = (def.setupInstallFlags or []);
+            default = def.setupInstallFlags or [];
           };
           setupHaddockFlags = mkOption {
             type = listOfFilteringNulls str;
-            default = (def.setupHaddockFlags or []);
+            default = def.setupHaddockFlags or [];
           };
           doExactConfig = mkOption {
             type = bool;
-            default = (def.doExactConfig or false);
+            default = def.doExactConfig or false;
           };
           doCheck = mkOption {
             type = bool;
-            default = (def.doCheck or true);
+            default = def.doCheck or true;
           };
           doCrossCheck = mkOption {
             description = "Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.";
             type = bool;
-            default = (def.doCrossCheck or false);
+            default = def.doCrossCheck or false;
           };
           doHaddock = mkOption {
             description = "Enable building of the Haddock documentation from the annotated Haskell source code.";
             type = bool;
-            default = (def.doHaddock or true);
+            default = def.doHaddock or true;
           };
           doHoogle = mkOption {
             description = "Also build a hoogle index.";
             type = bool;
-            default = (def.doHoogle or true);
+            default = def.doHoogle or true;
           };
           doHyperlinkSource = mkOption {
             description = "Link documentation to the source code.";
             type = bool;
-            default = (def.doHyperlinkSource or true);
+            default = def.doHyperlinkSource or true;
           };
           doQuickjump = mkOption {
             description = "Generate an index for interactive documentation navigation.";
             type = bool;
-            default = (def.doQuickjump or true);
+            default = def.doQuickjump or true;
           };
           doCoverage = mkOption {
             description = "Enable production of test coverage reports.";
             type = bool;
-            default = (def.doCoverage or false);
+            default = def.doCoverage or false;
           };
           dontPatchELF = mkOption {
             description = "If set, the patchelf command is not used to remove unnecessary RPATH entries. Only applies to Linux.";
             type = bool;
-            default = (def.dontPatchELF or true);
+            default = def.dontPatchELF or true;
           };
           dontStrip = mkOption {
             description = "If set, libraries and executables are not stripped.";
             type = bool;
-            default = (def.dontStrip or true);
+            default = def.dontStrip or true;
           };
           enableDeadCodeElimination = mkOption {
             description = "If set, enables split sections for link-time dead-code stripping. Only applies to Linux";
             type = bool;
-            default = (def.enableDeadCodeElimination or true);
+            default = def.enableDeadCodeElimination or true;
           };
           enableStatic = mkOption {
             description = "If set, enables building static libraries and executables.";
             type = bool;
-            default = (def.enableStatic or true);
+            default = def.enableStatic or true;
           };
           enableShared = mkOption {
             description = "If set, enables building shared libraries.";
             type = bool;
-            default = (def.enableShared or true);
+            default = def.enableShared or true;
           };
           configureAllComponents = mkOption {
             description = "If set all the components in the package are configured (useful for cabal-doctest).";
@@ -146,56 +146,56 @@ let
           shellHook = mkOption {
             description = "Hook to run when entering a shell";
             type = unspecified; # Can be either a string or a function
-            default = (def.shellHook or "");
+            default = def.shellHook or "";
           };
     enableLibraryProfiling = mkOption {
       type = bool;
-      default = (def.enableLibraryProfiling or false);
+      default = def.enableLibraryProfiling or false;
     };
 
     enableSeparateDataOutput = mkOption {
       type = bool;
-      default = (def.enableSeparateDataOutput or true);
+      default = def.enableSeparateDataOutput or true;
     };
 
     enableProfiling = mkOption {
       type = bool;
-      default = (def.enableProfiling or false);
+      default = def.enableProfiling or false;
     };
 
     profilingDetail = mkOption {
       type = nullOr uniqueStr;
-      default = (def.profilingDetail or "default");
+      default = def.profilingDetail or "default";
     };
 
     keepConfigFiles = mkOption {
       type = bool;
-      default = (def.keepConfigFiles or false);
+      default = def.keepConfigFiles or false;
       description = "Keep component configFiles in the store in a `configFiles` output";
     };
 
     keepGhc = mkOption {
       type = bool;
-      default = (def.keepGhc or false);
+      default = def.keepGhc or false;
       description = "Keep component wrapped ghc in the store in a `ghc` output";
     };
 
     keepSource = mkOption {
       type = bool;
-      default = (def.keepSource or false);
+      default = def.keepSource or false;
       description = "Keep component source in the store in a `source` output";
     };
 
     writeHieFiles = mkOption {
       type = bool;
-      default = (def.writeHieFiles or false);
+      default = def.writeHieFiles or false;
       description = "Write component `.hie` files in the store in a `hie` output";
     };
   };
   packageOptions = def: componentOptions def // {
     preUnpack = mkOption {
       type = nullOr lines;
-      default = (def.preUnpack or null);
+      default = def.preUnpack or null;
     };
     postUnpack = mkOption {
       type = nullOr uniqueStr;
@@ -258,7 +258,7 @@ let
     };
     hardeningDisable = mkOption {
       type = listOfFilteringNulls str;
-      default = (def.hardeningDisable or []);
+      default = def.hardeningDisable or [];
     };
     ghcOptions = mkOption {
       type = listOfFilteringNulls str;
@@ -266,7 +266,7 @@ let
     };
     contentAddressed = mkOption {
       type = bool;
-      default = (def.contentAddressed or false);
+      default = def.contentAddressed or false;
       description = ''
         Build content addressed derivation, requires Nix to have experimental feature
         `ca-derivations` enabled.
