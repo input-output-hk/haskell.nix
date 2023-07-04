@@ -18,6 +18,7 @@ let
       "9.2" = "9.2.8";
       "9.4" = "9.4.5";
       "9.6" = "9.6.2";
+      "9.8" = "9.8.1";
     };
     traceWarnOld = v: x:
       let
@@ -850,6 +851,33 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.6.2";
+            });
+            ghc981 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc981; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc981
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec.file = final.fetchFromGitLab {
+                    domain = "gitlab.haskell.org";
+                    owner = "ghc";
+                    repo = "ghc";
+                    fetchSubmodules = true;
+                    rev = "c18658545ce45254a4679c13de5dcc56a4c8373f";
+                    sha256 = "sha256-gaklMn9Y1HzunHrg51Ue9Pmyy33YH2J/S6uKcDvnAvA=";
+                };
+                src-spec.version = "9.8.1";
+
+                ghc-patches = ghc-patches "9.8.1";
+                ghc-version = "9.8.20230704";
             });
             # ghc 8.10.4 with patches needed by plutus
             ghc810420210212 = final.callPackage ../compiler/ghc {

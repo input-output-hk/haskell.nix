@@ -86,7 +86,7 @@ assert enableNativeBignum -> !enableIntegerSimple;
 assert enableIntegerSimple -> !enableNativeBignum;
 
 let
-  src = src-spec.file or fetchurl { inherit (src-spec) url sha256; };
+  src = src-spec.file or (fetchurl { inherit (src-spec) url sha256; });
 
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
@@ -240,7 +240,9 @@ let
           then ../../materialized/ghc8107/hadrian-ghc92
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/ghc8107/hadrian-ghc94
-        else ../../materialized/ghc8107/hadrian-ghc96;
+        else if builtins.compareVersions ghc-version "9.8" < 0
+          then ../../materialized/ghc8107/hadrian-ghc96
+        else ../../materialized/ghc8107/hadrian-ghc98;
       modules = [{
         # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
@@ -421,7 +423,7 @@ stdenv.mkDerivation (rec {
         echo '${ghc-version-date}' > VERSION_DATE
     ''
       # The official ghc 9.2.3 tarball requires booting.
-      + lib.optionalString (ghc-version == "9.2.3") ''
+      + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704") ''
         ./boot
     '';
 
