@@ -852,12 +852,12 @@ in {
 
                 ghc-patches = ghc-patches "9.6.2";
             });
-            ghc981 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc981; };
+            ghc9820230704 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9820230704; };
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc981
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
                     else final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
@@ -1114,7 +1114,7 @@ in {
           # Avoid ghc961 from nixpkgs for now as the files in it are not
           # where we expect them.
           // { inherit (p.haskell-nix.compiler) ghc961; };
-        version = "3.8.1.0";
+        version = if compiler-nix-name == "ghc9820230704" then "3.10.1.0" else "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args));

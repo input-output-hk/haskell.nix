@@ -713,7 +713,7 @@ stdenv.mkDerivation (rec {
   '';
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
-  '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs) ''
+  '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc-version "9.8" < 0) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
