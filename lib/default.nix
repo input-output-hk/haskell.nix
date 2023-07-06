@@ -427,35 +427,24 @@ in {
   # Flake package names that are flat and match the cabal component names.
   mkFlakePackages = haskellPackages: builtins.listToAttrs (
     lib.concatLists (lib.mapAttrsToList (packageName: package:
-        lib.optional (package.components ? library)
-            { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:lib:${n}"; value = v; })
-          (package.components.sublibs)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = v; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = v; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:bench:${n}"; value = v; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+      builtins.groupBy
+        (c: c.passthru.identifier.component-id)
+        ((lib.optional (package.components ? library) package.components.library)
+          ++ package.components.sublibs
+          ++ package.components.exes
+          ++ package.components.tests
+          ++ package.components.benchmarks)
+      ) haskellPackages));
 
   # Flake package names that are flat and match the cabal component names.
   mkFlakeApps = haskellPackages: builtins.listToAttrs (
     lib.concatLists (lib.mapAttrsToList (packageName: package:
-      lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+      builtins.groupBy
+        (c: c.passthru.identifier.component-id)
+        (package.components.exes
+          ++ package.components.tests
+          ++ package.components.benchmarks)
+      ) haskellPackages));
 
   # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
   mkFlakeChecks = allChecks: builtins.listToAttrs (
