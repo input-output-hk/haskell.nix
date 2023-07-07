@@ -248,6 +248,19 @@ let
     };
   };
 
+  package = submodule [
+    {
+      _module.args = {
+        inherit pkgs pkgconfPkgs haskellLib;
+        inherit (config) hsPkgs errorHandler;
+        inherit (config.cabal) system compiler;
+      };
+    }
+    (import ./package.nix {
+      inherit componentOptions packageOptions;
+      parentConfig = config;
+    })
+  ];
 
 in {
   # Global options. These are passed down to the package level, and from there to the
@@ -257,17 +270,7 @@ in {
   options = (packageOptions {}) // {
 
     packages = mkOption {
-      type =
-        let mod_args = {
-          inherit pkgs pkgconfPkgs haskellLib;
-          inherit (config) hsPkgs errorHandler;
-          inherit (config.cabal) system compiler;
-        }; in
-          attrsOf (submodule (import ./package.nix {
-            inherit mod_args;
-            inherit componentOptions packageOptions;
-            parentConfig = config;
-           }));
+      type = attrsOf package;
     };
 
     compiler = {
