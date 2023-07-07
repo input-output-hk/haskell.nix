@@ -340,9 +340,8 @@ stdenv.mkDerivation (rec {
   patches = ghc-patches;
 
   # configure was run by configured-src already.
-  phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != [] && !stdenv.targetPlatform.isGhcjs) "autoreconfPhase" # autoreconf can replace config.sub with one that is missing ghcjs
-            ++ [ "configurePhase" "buildPhase"
+  phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+             "configurePhase" "buildPhase"
              "checkPhase" "installPhase"
              "fixupPhase"
              "installCheckPhase"
@@ -356,11 +355,14 @@ stdenv.mkDerivation (rec {
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
-    '' + lib.optionalString (targetPlatform.isGhcjs) ''
+    ''
+    # Use emscripten and the `config.sub` saved by `postPatch`
+    + lib.optionalString (targetPlatform.isGhcjs) ''
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
         export EM_CACHE=$(mktemp -d)
+        mv config.sub.ghcjs config.sub
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
@@ -424,7 +426,7 @@ stdenv.mkDerivation (rec {
     ''
       # The official ghc 9.2.3 tarball requires booting.
       + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704") ''
-        ./boot
+        python3 ./boot
     '';
 
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
@@ -669,6 +671,12 @@ stdenv.mkDerivation (rec {
   # Needed for `haddock` to work on source that includes non ASCII chars
   LANG = "en_US.UTF-8";
   LC_ALL = "en_US.UTF-8";
+} // lib.optionalAttrs targetPlatform.isGhcjs {
+  # Backup the config.sub that knows what `ghcjs` is in case
+  # `autoreconfPhase` replaces it
+  postPatch = ''
+    cp config.sub config.sub.ghcjs
+  '';
 } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
   LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
 } // lib.optionalAttrs targetPlatform.useAndroidPrebuilt {
