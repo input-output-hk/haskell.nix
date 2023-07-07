@@ -13,7 +13,7 @@
 #    tests = { "..." = { depends = ... }; ... };
 #  };
 
-{ parentConfig, mod_args, listOfFilteringNulls, componentOptions, packageOptions }:
+{ parentConfig, mod_args, componentOptions, packageOptions }:
 { lib, config, pkgs, haskellLib, ... }:
 
 with lib;
@@ -22,6 +22,8 @@ with types;
 # Work around issue that can cause _lots_ of files to be copied into the store.
 # See https://github.com/NixOS/nixpkgs/pull/64691
 let
+  inherit (haskellLib.types) listOfFilteringNulls;
+
   path = types.path // { check = x: types.path.check (x.origSrc or x); };
 
   componentType = submodule {
