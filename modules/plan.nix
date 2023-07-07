@@ -18,149 +18,12 @@ with types;
 let
   inherit (haskellLib.types) getDefaultOrNull listOfFilteringNulls uniqueStr;
 
-  componentOptions = def: {
-    buildable = mkOption {
-      type = bool;
-      default = true;
-    };
-    configureFlags = mkOption {
-      type = listOfFilteringNulls str;
-      default = def.configureFlags or [ ];
-    };
-    setupBuildFlags = mkOption {
-      type = listOfFilteringNulls str;
-      default = def.setupBuildFlags or [ ];
-    };
-    testFlags = mkOption {
-      type = listOfFilteringNulls str;
-      default = def.testFlags or [ ];
-    };
-    setupInstallFlags = mkOption {
-      type = listOfFilteringNulls str;
-      default = def.setupInstallFlags or [ ];
-    };
-    setupHaddockFlags = mkOption {
-      type = listOfFilteringNulls str;
-      default = def.setupHaddockFlags or [ ];
-    };
-    doExactConfig = mkOption {
-      type = bool;
-      default = def.doExactConfig or false;
-    };
-    doCheck = mkOption {
-      type = bool;
-      default = def.doCheck or true;
-    };
-    doCrossCheck = mkOption {
-      description = "Run doCheck also in cross compilation settings. This can be tricky as the test logic must know how to run the tests on the target.";
-      type = bool;
-      default = def.doCrossCheck or false;
-    };
-    doHaddock = mkOption {
-      description = "Enable building of the Haddock documentation from the annotated Haskell source code.";
-      type = bool;
-      default = def.doHaddock or true;
-    };
-    doHoogle = mkOption {
-      description = "Also build a hoogle index.";
-      type = bool;
-      default = def.doHoogle or true;
-    };
-    doHyperlinkSource = mkOption {
-      description = "Link documentation to the source code.";
-      type = bool;
-      default = def.doHyperlinkSource or true;
-    };
-    doQuickjump = mkOption {
-      description = "Generate an index for interactive documentation navigation.";
-      type = bool;
-      default = def.doQuickjump or true;
-    };
-    doCoverage = mkOption {
-      description = "Enable production of test coverage reports.";
-      type = bool;
-      default = def.doCoverage or false;
-    };
-    dontPatchELF = mkOption {
-      description = "If set, the patchelf command is not used to remove unnecessary RPATH entries. Only applies to Linux.";
-      type = bool;
-      default = def.dontPatchELF or true;
-    };
-    dontStrip = mkOption {
-      description = "If set, libraries and executables are not stripped.";
-      type = bool;
-      default = def.dontStrip or true;
-    };
-    enableDeadCodeElimination = mkOption {
-      description = "If set, enables split sections for link-time dead-code stripping. Only applies to Linux";
-      type = bool;
-      default = def.enableDeadCodeElimination or true;
-    };
-    enableStatic = mkOption {
-      description = "If set, enables building static libraries and executables.";
-      type = bool;
-      default = def.enableStatic or true;
-    };
-    enableShared = mkOption {
-      description = "If set, enables building shared libraries.";
-      type = bool;
-      default = def.enableShared or true;
-    };
-    configureAllComponents = mkOption {
-      description = "If set all the components in the package are configured (useful for cabal-doctest).";
-      type = bool;
-      default = false;
-    };
-    shellHook = mkOption {
-      description = "Hook to run when entering a shell";
-      type = unspecified; # Can be either a string or a function
-      default = def.shellHook or "";
-    };
-    enableLibraryProfiling = mkOption {
-      type = bool;
-      default = def.enableLibraryProfiling or false;
-    };
+  # NOTE:
+  # higher up settings work as default for the lower levels
+  # so project level doExactConfig sets the default for packages
+  # and package doExactConfig sets the default for its components
 
-    enableSeparateDataOutput = mkOption {
-      type = bool;
-      default = def.enableSeparateDataOutput or true;
-    };
-
-    enableProfiling = mkOption {
-      type = bool;
-      default = def.enableProfiling or false;
-    };
-
-    profilingDetail = mkOption {
-      type = nullOr uniqueStr;
-      default = def.profilingDetail or "default";
-    };
-
-    keepConfigFiles = mkOption {
-      type = bool;
-      default = def.keepConfigFiles or false;
-      description = "Keep component configFiles in the store in a `configFiles` output";
-    };
-
-    keepGhc = mkOption {
-      type = bool;
-      default = def.keepGhc or false;
-      description = "Keep component wrapped ghc in the store in a `ghc` output";
-    };
-
-    keepSource = mkOption {
-      type = bool;
-      default = def.keepSource or false;
-      description = "Keep component source in the store in a `source` output";
-    };
-
-    writeHieFiles = mkOption {
-      type = bool;
-      default = def.writeHieFiles or false;
-      description = "Write component `.hie` files in the store in a `hie` output";
-    };
-  };
-  packageOptions = def: componentOptions def // {
+  packageOptions = def: {
     preUnpack = mkOption {
       type = nullOr lines;
       default = def.preUnpack or null;
@@ -260,16 +123,19 @@ let
       inherit packageOptions;
       parentConfig = config;
     })
+    # pass down common options as default values
+    ({ lib, options, ... }: lib.mkDefault (lib.filterAttrs (n: _v: builtins.hasAttr n options) config))
   ];
 
 in
 {
+  imports = [ ./component-options.nix ];
+
   # Global options. These are passed down to the package level, and from there to the
   # component level, unless specifically overridden.  Depending on the flag flags are
   # combined or replaced. We seed the package Options with an empty set forcing the
   # default values.
   options = (packageOptions { }) // {
-
     packages = mkOption {
       type = attrsOf package;
     };
@@ -304,19 +170,14 @@ in
 
   config = let module = config.plan.pkg-def config.hackage.configs; in {
     inherit (module) compiler;
-    packages = lib.mapAttrs
-      (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, errorHandler, pkgconfPkgs, ... }@modArgs:
+    packages = lib.mapAttrs (name: { revision, ... }@revArgs: { system, compiler, flags, pkgs, hsPkgs, errorHandler, pkgconfPkgs, ... }@modArgs:
 
-        let
-          m =
-            if revision == null
-            then (abort "${name} has no revision!")
-            else revision (modArgs // { hsPkgs = hsPkgs // (mapAttrs (l: _: hsPkgs.${name}.components.sublibs.${l}) (m.components.sublibs or { })); });
-        in
-        m // {
-          flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or { });
-        }
-      )
-      (lib.filterAttrs (n: v: v == null || v.revision != null) module.packages);
+      let m = if revision == null
+              then (abort "${name} has no revision!")
+              else revision (modArgs // { hsPkgs = hsPkgs // (mapAttrs (l: _: hsPkgs.${name}.components.sublibs.${l}) (m.components.sublibs or {})); });
+      in
+        m // { flags = lib.mapAttrs (_: lib.mkDefault) (m.flags // revArgs.flags or {});
+             }
+    ) (lib.filterAttrs (n: v: v == null || v.revision != null ) module.packages);
   };
 }

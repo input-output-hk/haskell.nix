@@ -26,103 +26,108 @@ let
 
   path = types.path // { check = x: types.path.check (x.origSrc or x); };
 
-  componentType = submodule {
-    # add the shared componentOptions
-    options = (packageOptions config) // {
-      buildable = mkOption {
-        type = bool;
-        default = true;
-      };
-      plugins = mkOption {
-        type = listOf (submodule {
-          options = {
-            library = mkOption {
-              type = unspecified;
+  componentType = submodule [
+    {
+      imports = [ ./component-options.nix ];
+      options = (packageOptions config) // {
+        plugins = mkOption {
+          type = listOf (submodule {
+            options = {
+              library = mkOption {
+                type = unspecified;
+              };
+              moduleName = mkOption {
+                type = str;
+              };
+              args = mkOption {
+                type = listOf str;
+                default = [ ];
+              };
             };
-            moduleName = mkOption {
-              type = str;
-            };
-            args = mkOption {
-              type = listOf str;
-              default = [ ];
-            };
-          };
-        });
-        default = [ ];
+          });
+          default = [ ];
+        };
+        depends = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        libs = mkOption {
+          type = listOfFilteringNulls (either (nullOr package) (listOfFilteringNulls package));
+          default = [ ];
+        };
+        frameworks = mkOption {
+          type = listOfFilteringNulls package;
+          default = [ ];
+        };
+        pkgconfig = mkOption {
+          type = listOf (listOfFilteringNulls package);
+          default = [ ];
+        };
+        build-tools = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        modules = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        asmSources = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        cmmSources = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        cSources = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        cxxSources = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        jsSources = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        hsSourceDirs = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ "." ];
+        };
+        includeDirs = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        includes = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        mainPath = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        extraSrcFiles = mkOption {
+          type = listOfFilteringNulls unspecified;
+          default = [ ];
+        };
+        platforms = mkOption {
+          type = nullOr (listOfFilteringNulls unspecified);
+          default = null;
+        };
       };
-      depends = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
+      config = {
+        _module.args = { inherit haskellLib; };
       };
-      libs = mkOption {
-        type = listOfFilteringNulls (either (nullOr package) (listOfFilteringNulls package));
-        default = [ ];
-      };
-      frameworks = mkOption {
-        type = listOfFilteringNulls package;
-        default = [ ];
-      };
-      pkgconfig = mkOption {
-        type = listOf (listOfFilteringNulls package);
-        default = [ ];
-      };
-      build-tools = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      modules = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      asmSources = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      cmmSources = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      cSources = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      cxxSources = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      jsSources = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      hsSourceDirs = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ "." ];
-      };
-      includeDirs = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      includes = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      mainPath = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      extraSrcFiles = mkOption {
-        type = listOfFilteringNulls unspecified;
-        default = [ ];
-      };
-      platforms = mkOption {
-        type = nullOr (listOfFilteringNulls unspecified);
-        default = null;
-      };
-    };
-  };
+    }
+    # pass down common options as default values
+    ({ lib, options, ... }: lib.mkDefault (lib.filterAttrs (n: _v: builtins.hasAttr n options) config))
+  ];
 
 in
 {
+  imports = [ ./component-options.nix ];
+
   # This is how the Nix expressions generated by *-to-nix receive
   # their flags argument.
   config._module.args = { inherit (config) flags; };
