@@ -94,6 +94,7 @@ let
   inherit (bootPkgs) ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
+  hadrianHasNativeBignumFlavour = builtins.compareVersions ghc-version "9.6" >= 0;
 
   bignumSpec =
     assert ghcHasNativeBignum -> !enableIntegerSimple;
@@ -282,7 +283,7 @@ let
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
           + lib.optionalString enableDWARF "+debug_info"
-          + lib.optionalString (enableNativeBignum || targetPlatform.isGhcjs) "+native_bignum"
+          + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
           + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
       } --docs=no-sphinx -j --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
@@ -297,6 +298,9 @@ let
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older 
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
       # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
+      # For GHC versions in the 9.x range that don't support the +native_bignum flavour transformer yet
+      + lib.optionalString ((enableNativeBignum && !hadrianHasNativeBignumFlavour))
+        " --bignum=native"
       ;
 
   # When installation is done by copying the stage1 output the directory layout
