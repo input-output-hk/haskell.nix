@@ -1,118 +1,103 @@
-# package descriptions in hackage will look like:
-# { system, compiler, flags, pkgs, hsPkgs, pkgconfPkgs }:
-# { flags = { flag1 = false; flags2 = true; ... };
-#   package = { specVersion = "X.Y"; identifier = { name = "..."; version = "a.b.c.d"; };
-#               license = "..."; copyright = "..."; maintainer = "..."; author = "...";
-#               homepage = "..."; url = "..."; synopsis = "..."; description = "...";
-#               buildType = "Simple"; # or Custom, Autoconf, ...
-#             };
-#  components = {
-#    "..." = { depends = [ (hsPkgs.base) ... ]; };
-#    exes = { "..." = { depends = ... };
-#             "..." = { depends = ... }; };
-#    tests = { "..." = { depends = ... }; ... };
-#  };
-
-{ parentConfig, packageOptions, ... }:
 { lib, config, pkgs, haskellLib, ... }:
-
-with lib;
-with types;
 
 # Work around issue that can cause _lots_ of files to be copied into the store.
 # See https://github.com/NixOS/nixpkgs/pull/64691
 let
   inherit (haskellLib.types) listOfFilteringNulls;
+  inherit (lib) types;
 
   path = types.path // { check = x: types.path.check (x.origSrc or x); };
 
-  componentType = submodule [
+  componentType = types.submodule [
     {
-      imports = [ ./component-options.nix ];
-      options = (packageOptions config) // {
-        plugins = mkOption {
-          type = listOf (submodule {
+      imports = [
+        ./component-options.nix
+        ./package-options.nix
+      ];
+      options = {
+        plugins = lib.mkOption {
+          type = types.listOf (types.submodule {
             options = {
-              library = mkOption {
-                type = unspecified;
+              library = lib.mkOption {
+                type = types.unspecified;
               };
-              moduleName = mkOption {
-                type = str;
+              moduleName = lib.mkOption {
+                type = types.str;
               };
-              args = mkOption {
-                type = listOf str;
+              args = lib.mkOption {
+                type = types.listOf types.str;
                 default = [ ];
               };
             };
           });
           default = [ ];
         };
-        depends = mkOption {
-          type = listOfFilteringNulls unspecified;
+        depends = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        libs = mkOption {
-          type = listOfFilteringNulls (either (nullOr package) (listOfFilteringNulls package));
+        libs = lib.mkOption {
+          type = listOfFilteringNulls (types.either (types.nullOr types.package) (listOfFilteringNulls types.package));
           default = [ ];
         };
-        frameworks = mkOption {
-          type = listOfFilteringNulls package;
+        frameworks = lib.mkOption {
+          type = listOfFilteringNulls types.package;
           default = [ ];
         };
-        pkgconfig = mkOption {
-          type = listOf (listOfFilteringNulls package);
+        pkgconfig = lib.mkOption {
+          type = types.listOf (listOfFilteringNulls types.package);
           default = [ ];
         };
-        build-tools = mkOption {
-          type = listOfFilteringNulls unspecified;
+        build-tools = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        modules = mkOption {
-          type = listOfFilteringNulls unspecified;
+        modules = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        asmSources = mkOption {
-          type = listOfFilteringNulls unspecified;
+        asmSources = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        cmmSources = mkOption {
-          type = listOfFilteringNulls unspecified;
+        cmmSources = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        cSources = mkOption {
-          type = listOfFilteringNulls unspecified;
+        cSources = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        cxxSources = mkOption {
-          type = listOfFilteringNulls unspecified;
+        cxxSources = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        jsSources = mkOption {
-          type = listOfFilteringNulls unspecified;
+        jsSources = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        hsSourceDirs = mkOption {
-          type = listOfFilteringNulls unspecified;
+        hsSourceDirs = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ "." ];
         };
-        includeDirs = mkOption {
-          type = listOfFilteringNulls unspecified;
+        includeDirs = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        includes = mkOption {
-          type = listOfFilteringNulls unspecified;
+        includes = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        mainPath = mkOption {
-          type = listOfFilteringNulls unspecified;
+        mainPath = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        extraSrcFiles = mkOption {
-          type = listOfFilteringNulls unspecified;
+        extraSrcFiles = lib.mkOption {
+          type = listOfFilteringNulls types.unspecified;
           default = [ ];
         };
-        platforms = mkOption {
-          type = nullOr (listOfFilteringNulls unspecified);
+        platforms = lib.mkOption {
+          type = types.nullOr (listOfFilteringNulls types.unspecified);
           default = null;
         };
       };
@@ -126,130 +111,133 @@ let
 
 in
 {
-  imports = [ ./component-options.nix ];
+  imports = [
+    ./component-options.nix
+    ./package-options.nix
+  ];
 
   # This is how the Nix expressions generated by *-to-nix receive
   # their flags argument.
   config._module.args = { inherit (config) flags; };
 
-  options = (packageOptions parentConfig) // {
+  options = {
     # TODO: Add descriptions to everything.
-    flags = mkOption {
-      type = attrsOf bool;
+    flags = lib.mkOption {
+      type = types.attrsOf types.bool;
     };
     package = {
-      specVersion = mkOption {
-        type = str;
+      specVersion = lib.mkOption {
+        type = types.str;
       };
 
-      identifier.name = mkOption {
-        type = str;
+      identifier.name = lib.mkOption {
+        type = types.str;
       };
 
-      identifier.version = mkOption {
-        type = str;
+      identifier.version = lib.mkOption {
+        type = types.str;
       };
 
-      license = mkOption {
-        type = str;
+      license = lib.mkOption {
+        type = types.str;
       };
 
-      copyright = mkOption {
-        type = str;
+      copyright = lib.mkOption {
+        type = types.str;
       };
 
-      maintainer = mkOption {
-        type = str;
+      maintainer = lib.mkOption {
+        type = types.str;
       };
 
-      author = mkOption {
-        type = str;
+      author = lib.mkOption {
+        type = types.str;
       };
 
-      homepage = mkOption {
-        type = str;
+      homepage = lib.mkOption {
+        type = types.str;
       };
 
-      url = mkOption {
-        type = str;
+      url = lib.mkOption {
+        type = types.str;
       };
 
-      synopsis = mkOption {
-        type = str;
+      synopsis = lib.mkOption {
+        type = types.str;
       };
 
-      description = mkOption {
-        type = str;
+      description = lib.mkOption {
+        type = types.str;
       };
 
-      buildType = mkOption {
-        type = str;
+      buildType = lib.mkOption {
+        type = types.str;
       };
 
-      setup-depends = mkOption {
-        type = listOfFilteringNulls unspecified;
+      setup-depends = lib.mkOption {
+        type = listOfFilteringNulls types.unspecified;
         default = [ ];
       };
 
-      detailLevel = mkOption {
-        type = str;
+      detailLevel = lib.mkOption {
+        type = types.str;
         default = "MinimalDetails";
       };
 
-      licenseFiles = mkOption {
-        type = listOfFilteringNulls unspecified;
+      licenseFiles = lib.mkOption {
+        type = listOfFilteringNulls types.unspecified;
         default = [ ];
       };
 
-      dataDir = mkOption {
-        type = str;
+      dataDir = lib.mkOption {
+        type = types.str;
         default = "";
       };
 
-      dataFiles = mkOption {
-        type = listOfFilteringNulls unspecified;
+      dataFiles = lib.mkOption {
+        type = listOfFilteringNulls types.unspecified;
         default = [ ];
       };
 
-      extraSrcFiles = mkOption {
-        type = listOfFilteringNulls unspecified;
+      extraSrcFiles = lib.mkOption {
+        type = listOfFilteringNulls types.unspecified;
         default = [ ];
       };
 
-      extraTmpFiles = mkOption {
-        type = listOfFilteringNulls unspecified;
+      extraTmpFiles = lib.mkOption {
+        type = listOfFilteringNulls types.unspecified;
         default = [ ];
       };
 
-      extraDocFiles = mkOption {
-        type = listOfFilteringNulls unspecified;
+      extraDocFiles = lib.mkOption {
+        type = listOfFilteringNulls types.unspecified;
         default = [ ];
       };
 
-      cleanHpack = mkOption {
-        type = bool;
+      cleanHpack = lib.mkOption {
+        type = types.bool;
         default = false;
       };
 
-      isLocal = mkOption {
-        type = bool;
+      isLocal = lib.mkOption {
+        type = types.bool;
         default = false;
       };
 
-      isProject = mkOption {
-        type = bool;
+      isProject = lib.mkOption {
+        type = types.bool;
         default = false;
       };
 
-      buildable = mkOption {
-        type = bool;
+      buildable = lib.mkOption {
+        type = types.bool;
         default = true;
       };
     };
 
     components = {
-      setup = mkOption {
-        type = nullOr componentType;
+      setup = lib.mkOption {
+        type = types.nullOr componentType;
         default = {
           depends = [ ];
           libs = [ ];
@@ -270,43 +258,43 @@ in
           platforms = null;
         };
       };
-      library = mkOption {
-        type = nullOr componentType;
+      library = lib.mkOption {
+        type = types.nullOr componentType;
         default = null;
       };
-      sublibs = mkOption {
-        type = attrsOf componentType;
+      sublibs = lib.mkOption {
+        type = types.attrsOf componentType;
         default = { };
       };
-      foreignlibs = mkOption {
-        type = attrsOf componentType;
+      foreignlibs = lib.mkOption {
+        type = types.attrsOf componentType;
         default = { };
       };
-      exes = mkOption {
-        type = attrsOf componentType;
+      exes = lib.mkOption {
+        type = types.attrsOf componentType;
         default = { };
       };
-      tests = mkOption {
-        type = attrsOf componentType;
+      tests = lib.mkOption {
+        type = types.attrsOf componentType;
         default = { };
       };
-      benchmarks = mkOption {
-        type = attrsOf componentType;
+      benchmarks = lib.mkOption {
+        type = types.attrsOf componentType;
         default = { };
       };
     };
 
-    name = mkOption {
-      type = str;
+    name = lib.mkOption {
+      type = types.str;
       default = "${config.package.identifier.name}-${config.package.identifier.version}";
       defaultText = "\${config.package.identifier.name}-\${config.package.identifier.version}";
     };
-    sha256 = mkOption {
-      type = nullOr str;
+    sha256 = lib.mkOption {
+      type = types.nullOr types.str;
       default = null;
     };
-    src = mkOption {
-      type = either path package;
+    src = lib.mkOption {
+      type = types.either path types.package;
       default = pkgs.fetchurl { url = "mirror://hackage/${config.name}.tar.gz"; inherit (config) sha256; };
       defaultText = "pkgs.fetchurl { url = \"mirror://hackage/\${config.name}.tar.gz\"; inherit (config) sha256; };";
       # Make sure paths have a context so they will be included in the derivation
@@ -314,38 +302,38 @@ in
       # cannot see the input and fail with the error:
       #   do not know how to unpack source archive /nix/store/...
       apply = v:
-        let storeDirMatch = __match "(${__storeDir}/[^/]+).*" v;
-        in if isString v && __getContext v == { } && storeDirMatch != null
-        then __appendContext v { ${__head storeDirMatch} = { path = true; }; }
+        let storeDirMatch = builtins.match "(${builtins.storeDir}/[^/]+).*" v;
+        in if builtins.isString v && builtins.getContext v == { } && storeDirMatch != null
+        then builtins.appendContext v { ${builtins.head storeDirMatch} = { path = true; }; }
         else v;
     };
-    package-description-override = mkOption {
-      type = nullOr str;
+    package-description-override = lib.mkOption {
+      type = types.nullOr types.str;
       default = null;
       description = "Cabal file to use instead of the one shipped inside the package source distribution.";
     };
-    cabal-generator = mkOption {
-      type = nullOr str;
+    cabal-generator = lib.mkOption {
+      type = types.nullOr types.str;
       default = null;
     };
-    revision = mkOption {
-      type = nullOr int;
+    revision = lib.mkOption {
+      type = types.nullOr types.int;
       default = null;
     };
-    revisionSha256 = mkOption {
-      type = nullOr str;
+    revisionSha256 = lib.mkOption {
+      type = types.nullOr types.str;
       default = null;
     };
-    patches = mkOption {
-      type = listOf (either unspecified path);
+    patches = lib.mkOption {
+      type = types.listOf (types.either types.unspecified path);
       default = [ ];
     };
     # This used to be `components.all` but it has been added back as `allComponent` to
     # to avoid confusion.  It is not mapped by `builder/hspkg-builder.nix` to anything
     # you can build.  Instead it is used internally when `configureAllComponents`
     # is set or for tests whe on `cabal-doctest` is in the `setup-depends` of the package.
-    allComponent = mkOption {
-      type = componentType;
+    allComponent = lib.mkOption {
+      type = types.componentType;
       apply = all: all // {
         # TODO: Should this check for the entire component
         # definition to match, rather than just the identifier?
