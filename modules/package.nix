@@ -13,7 +13,7 @@
 #    tests = { "..." = { depends = ... }; ... };
 #  };
 
-{ parentConfig, componentOptions, packageOptions }:
+{ parentConfig, packageOptions, ... }:
 { lib, config, pkgs, haskellLib, ... }:
 
 with lib;

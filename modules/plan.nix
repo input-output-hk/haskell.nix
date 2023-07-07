@@ -257,7 +257,7 @@ let
       };
     }
     (import ./package.nix {
-      inherit componentOptions packageOptions;
+      inherit packageOptions;
       parentConfig = config;
     })
   ];
