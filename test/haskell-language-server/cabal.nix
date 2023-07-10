@@ -4,6 +4,7 @@ let
     inherit compiler-nix-name evalPackages;
     name = "haskell-language-server";
     src = haskell-nix.sources."hls-2.0";
+    configureArgs = "--disable-benchmarks --disable-tests";
   };
 in recurseIntoAttrs {
   ifdInputs = {
