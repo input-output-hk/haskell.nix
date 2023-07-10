@@ -1405,7 +1405,7 @@ pkgs:
     "libbeidpkcs11" = [ "eid-mw" ];
     "eigen3" = [ "eigen" ];
     "eigen2" = [ "eigen2" ];
-    "plannercore" = [ "elementary-planner" ];
+#    "plannercore" = [ "elementary-planner" ];
 #    "libbitcoinconsensus" = [ "elements" ];
 #    "libbitcoinconsensus" = [ "elementsd" ];
     "libdw" = [ "elfutils" ];
@@ -2927,7 +2927,7 @@ pkgs:
     "modsecurity" = [ "libmodsecurity" ];
     "libmodule" = [ "libmodule" ];
     "modulemd-2.0" = [ "libmodulemd" ];
-    "libmongo-client" = [ "libmongo-client" ];
+#    "libmongo-client" = [ "libmongo-client" ];
     "libmowgli-2" = [ "libmowgli" ];
     "libmp3splt" = [ "libmp3splt" ];
     "mpack" = [ "libmpack" ];
@@ -4466,7 +4466,7 @@ pkgs:
     "r_util" = [ "radare2" ];
     "raft" = [ "raft-canonical" ];
     "RapidJSON" = [ "rapidjson" ];
-    "rarian" = [ "rarian" ];
+#    "rarian" = [ "rarian" ];
     "raul-1" = [ "raul" ];
     "rav1e" = [ "rav1e" ];
     "raylib" = [ "raylib" ];
