@@ -33,8 +33,8 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   { name = "${prefix}-hello";         value = pkgs.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (!__elem system ["aarch64-darwin" "aarch64-linux"]
          && !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883"]) [
-  { name = "${prefix}-windows";       value = (pkgsForWindows.pkgsCross.mingwW64.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
-  { name = "${prefix}-hello-windows"; value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
+#  { name = "${prefix}-windows";       value = (pkgsForWindows.pkgsCross.mingwW64.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
+#  { name = "${prefix}-hello-windows"; value = pkgsForWindows.pkgsCross.mingwW64.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (system == "x86_64-linux"
          && !__elem compiler-nix-name ["ghc881"]) [
   # In some cased you may need comment out one or more of these if the GHC version needed cannot be built.
