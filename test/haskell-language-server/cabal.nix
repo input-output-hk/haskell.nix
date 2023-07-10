@@ -3,7 +3,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     name = "haskell-language-server";
-    src = haskell-nix.sources."hls-1.10";
+    src = haskell-nix.sources."hls-2.0";
   };
 in recurseIntoAttrs {
   ifdInputs = {
