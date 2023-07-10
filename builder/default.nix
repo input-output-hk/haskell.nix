@@ -68,6 +68,9 @@ let
         inherit evalPackages;
         version = "5.0.18.3";
         index-state = pkgs.haskell-nix.internalHackageIndexState;
+        cabalProjectLocal = ''
+          constraint: aeson < 2.2
+        '';
       }
     }:
     let
