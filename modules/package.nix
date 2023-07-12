@@ -26,11 +26,12 @@ in
   # their flags argument.
   config._module.args = { inherit (config) flags; };
 
+  # TODO: Add descriptions to everything.
   options = {
-    # TODO: Add descriptions to everything.
     flags = lib.mkOption {
       type = types.attrsOf types.bool;
     };
+
     package = {
       specVersion = lib.mkOption {
         type = types.str;
@@ -164,26 +165,32 @@ in
           platforms = null;
         };
       };
+
       library = lib.mkOption {
         type = types.nullOr componentType;
         default = null;
       };
+
       sublibs = lib.mkOption {
         type = types.attrsOf componentType;
         default = { };
       };
+
       foreignlibs = lib.mkOption {
         type = types.attrsOf componentType;
         default = { };
       };
+
       exes = lib.mkOption {
         type = types.attrsOf componentType;
         default = { };
       };
+
       tests = lib.mkOption {
         type = types.attrsOf componentType;
         default = { };
       };
+
       benchmarks = lib.mkOption {
         type = types.attrsOf componentType;
         default = { };
@@ -195,14 +202,25 @@ in
       default = "${config.package.identifier.name}-${config.package.identifier.version}";
       defaultText = "\${config.package.identifier.name}-\${config.package.identifier.version}";
     };
+
     sha256 = lib.mkOption {
       type = types.nullOr types.str;
       default = null;
     };
+
     src = lib.mkOption {
       type = types.either path types.package;
-      default = pkgs.fetchurl { url = "mirror://hackage/${config.name}.tar.gz"; inherit (config) sha256; };
-      defaultText = "pkgs.fetchurl { url = \"mirror://hackage/\${config.name}.tar.gz\"; inherit (config) sha256; };";
+      default =
+        pkgs.fetchurl {
+          url = "mirror://hackage/${config.name}.tar.gz";
+          inherit (config) sha256;
+        };
+      defaultText = ''
+        pkgs.fetchurl {
+          url = "mirror://hackage/${config.name}.tar.gz";
+          inherit (config) sha256;
+        };
+      '';
       # Make sure paths have a context so they will be included in the derivation
       # inputs for the component derivations.  Without this sandbox builds fail
       # cannot see the input and fail with the error:
@@ -213,27 +231,33 @@ in
         then builtins.appendContext v { ${builtins.head storeDirMatch} = { path = true; }; }
         else v;
     };
+
     package-description-override = lib.mkOption {
       type = types.nullOr types.str;
       default = null;
       description = "Cabal file to use instead of the one shipped inside the package source distribution.";
     };
+
     cabal-generator = lib.mkOption {
       type = types.nullOr types.str;
       default = null;
     };
+
     revision = lib.mkOption {
       type = types.nullOr types.int;
       default = null;
     };
+
     revisionSha256 = lib.mkOption {
       type = types.nullOr types.str;
       default = null;
     };
+
     patches = lib.mkOption {
       type = types.listOf (types.either types.unspecified path);
       default = [ ];
     };
+
     # This used to be `components.all` but it has been added back as `allComponent` to
     # to avoid confusion.  It is not mapped by `builder/hspkg-builder.nix` to anything
     # you can build.  Instead it is used internally when `configureAllComponents`
