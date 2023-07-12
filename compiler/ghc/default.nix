@@ -630,9 +630,8 @@ stdenv.mkDerivation (rec {
         mkdir $doc
         mkdir $generated
       '';
-      phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
-            ++ [ "configurePhase" "installPhase"];
+      phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+                 "configurePhase" "installPhase"];
      } // lib.optionalAttrs useHadrian {
       postConfigure = ''
         for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
@@ -652,6 +651,12 @@ stdenv.mkDerivation (rec {
         substituteInPlace hadrian/cfg/system.config \
           --replace 'cross-compiling       = YES' \
                     'cross-compiling       = NO'
+      '';
+    } // lib.optionalAttrs targetPlatform.isGhcjs {
+      # Backup the config.sub that knows what `ghcjs` is in case
+      # `autoreconfPhase` replaces it
+      postPatch = ''
+        cp config.sub config.sub.ghcjs
       '';
     });
 
