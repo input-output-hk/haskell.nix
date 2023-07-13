@@ -35,7 +35,7 @@ in {
   ];
 
   foldrAttrVals = f: z: attrs:
-    lib.foldr (g: acc: g acc) z (lib.mapAttrsToList (_name: f) attrs);
+    lib.foldr f z (builtins.attrValues attrs);
 
   foldComponents = tys: f: z: conf:
     let
@@ -91,18 +91,17 @@ in {
        isExe componentId
     || isTest componentId
     || isBenchmark componentId;
-  mayHaveExecutable = componentId:
-       isExecutableType componentId;
+  mayHaveExecutable = isExecutableType;
 
   # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
   # This is used to make the default `packages` list for `shellFor`.
   isLocalPackage = p: p.isLocal or false;
-  selectLocalPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p) ps;
+  selectLocalPackages = lib.filterAttrs (n: p: p != null && isLocalPackage p);
 
   # if it's a project package it has a src attribute set with an origSubDir attribute.
   # project packages are a subset of localPackages
   isProjectPackage = p: p.isProject or false;
-  selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
+  selectProjectPackages = lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p);
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
@@ -133,7 +132,7 @@ in {
   ## flatLibDepends :: Component -> [Package]
   flatLibDepends = component:
     let
-      makePairs = map (p: rec { key=val.name; val=(p.components.library or p); });
+      makePairs = map (p: rec { key=val.name; val=p.components.library or p; });
       closure = builtins.genericClosure {
         startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;
@@ -427,35 +426,24 @@ in {
   # Flake package names that are flat and match the cabal component names.
   mkFlakePackages = haskellPackages: builtins.listToAttrs (
     lib.concatLists (lib.mapAttrsToList (packageName: package:
-        lib.optional (package.components ? library)
-            { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:lib:${n}"; value = v; })
-          (package.components.sublibs)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = v; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = v; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:bench:${n}"; value = v; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+      builtins.groupBy
+        (c: c.passthru.identifier.component-id)
+        ((lib.optional (package.components ? library) package.components.library)
+          ++ package.components.sublibs
+          ++ package.components.exes
+          ++ package.components.tests
+          ++ package.components.benchmarks)
+      ) haskellPackages));
 
   # Flake package names that are flat and match the cabal component names.
   mkFlakeApps = haskellPackages: builtins.listToAttrs (
     lib.concatLists (lib.mapAttrsToList (packageName: package:
-      lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+      builtins.groupBy
+        (c: c.passthru.identifier.component-id)
+        (package.components.exes
+          ++ package.components.tests
+          ++ package.components.benchmarks)
+      ) haskellPackages));
 
   # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
   mkFlakeChecks = allChecks: builtins.listToAttrs (
@@ -464,7 +452,7 @@ in {
       lib.optionals (lib.isAttrs checks) (
         lib.mapAttrsToList (n: v:
           { name = "${packageName}:test:${n}"; value = v; })
-        (lib.filterAttrs (_: v: lib.isDerivation v) checks))
+        (lib.filterAttrs (_: lib.isDerivation) checks))
     ) allChecks));
 
   removeRecurseForDerivations = x:
@@ -494,11 +482,11 @@ in {
     }
     # Build the plan-nix and check it if materialized
     // lib.optionalAttrs (checkedProject ? plan-nix) {
-      plan-nix = checkedProject.plan-nix;
+      inherit (checkedProject) plan-nix;
     }
     # Build the stack-nix and check it if materialized
     // lib.optionalAttrs (checkedProject ? stack-nix) {
-      stack-nix = checkedProject.stack-nix;
+      inherit (checkedProject) stack-nix;
     };
 
   mkFlake = project: {
