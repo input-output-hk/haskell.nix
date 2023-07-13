@@ -239,7 +239,7 @@ in
     # you can build.  Instead it is used internally when `configureAllComponents`
     # is set or for tests whe on `cabal-doctest` is in the `setup-depends` of the package.
     allComponent = lib.mkOption {
-      type = types.componentType;
+      type = componentType;
       apply = all: all // {
         # TODO: Should this check for the entire component
         # definition to match, rather than just the identifier?
