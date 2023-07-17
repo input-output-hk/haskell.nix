@@ -90,7 +90,7 @@ let
             echo "Updating $FLAKE/flake.nix and deleting old $FLAKE/flake.lock"
             rm $FLAKE/flake.lock
           else
-            echo "Updating $FLAKE/flake.nix" 
+            echo "Updating $FLAKE/flake.nix"
           fi
           cp $HIX_FLAKE $FLAKE/flake.nix
           chmod +w $FLAKE/flake.nix

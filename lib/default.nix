@@ -213,7 +213,7 @@ in {
   #
   # See docs/user-guide/clean-git.md for details of how to use this
   # with `cabalProject`.
-  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }@args:
+  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }:
     let
       # List of filters, one for each git directory.
       filters = builtins.map (subDir:
