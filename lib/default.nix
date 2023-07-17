@@ -465,8 +465,7 @@ in {
           acc
           package)
       { }
-      # Remove `recurseForDerivations`
-      (lib.filterAttrsRecursive (n: v: n != "recurseForDerivations") allChecks);
+      (removeRecurseForDerivations allChecks);
 
   removeRecurseForDerivations = x:
     let clean = builtins.removeAttrs x ["recurseForDerivations"];
