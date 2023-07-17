@@ -39,17 +39,19 @@ in {
 
   foldComponents = tys: f: z: conf:
     let
-      comps = conf.components or {};
+      comps = conf.components or { };
       # ensure that comps.library exists and is not null.
-      libComp = acc: if (comps.library or null) != null then f comps.library acc else acc;
+      libComp = acc:
+        if comps ? library then f comps.library acc else acc;
       subComps = acc:
         lib.foldr
-          (ty: acc': foldrAttrVals f acc' (comps.${ty} or {}))
+          (ty: acc': foldrAttrVals f acc' (comps.${ty} or { }))
           acc
           tys;
-    in libComp (subComps z);
+    in
+    libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc: [ c ] ++ acc) [ ];
 
   componentPrefix = {
     sublibs = "lib";
@@ -424,36 +426,47 @@ in {
       }]) (packageNames coverageProject));
 
   # Flake package names that are flat and match the cabal component names.
-  mkFlakePackages = haskellPackages: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: package:
-      builtins.groupBy
-        (c: c.passthru.identifier.component-id)
-        ((lib.optional (package.components ? library) package.components.library)
-          ++ package.components.sublibs
-          ++ package.components.exes
-          ++ package.components.tests
-          ++ package.components.benchmarks)
-      ) haskellPackages));
+  mkFlakePackages =
+    foldrAttrVals
+      (package: acc:
+        foldComponents
+          subComponentTypes
+          (component: a: a // {
+            ${component.passthru.identifier.component-id} = component;
+          })
+          acc
+          package)
+      { };
 
   # Flake package names that are flat and match the cabal component names.
-  mkFlakeApps = haskellPackages: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: package:
-      builtins.groupBy
-        (c: c.passthru.identifier.component-id)
-        (package.components.exes
-          ++ package.components.tests
-          ++ package.components.benchmarks)
-      ) haskellPackages));
+  mkFlakeApps =
+    foldrAttrVals
+      (package: acc:
+        foldComponents
+          [ "exes" "tests" "benchmarks" ]
+          (component: a: a // {
+            ${component.passthru.identifier.component-id} = {
+              type = "app";
+              program = component.exePath;
+            };
+          })
+          acc
+          package)
+      { };
 
   # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
-  mkFlakeChecks = allChecks: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: checks:
-      # Avoid `recurseForDerivations` issues
-      lib.optionals (lib.isAttrs checks) (
-        lib.mapAttrsToList (n: v:
-          { name = "${packageName}:test:${n}"; value = v; })
-        (lib.filterAttrs (_: lib.isDerivation) checks))
-    ) allChecks));
+  mkFlakeChecks = allChecks:
+    foldrAttrVals
+      (package: acc:
+        foldrAttrVals
+          (check: a: a // {
+            ${check.passthru.identifier.component-id} = check;
+          })
+          acc
+          package)
+      { }
+      # Remove `recurseForDerivations`
+      (lib.filterAttrsRecursive (n: v: n != "recurseForDerivations") allChecks);
 
   removeRecurseForDerivations = x:
     let clean = builtins.removeAttrs x ["recurseForDerivations"];
