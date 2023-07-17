@@ -217,7 +217,7 @@ in
         };
       defaultText = ''
         pkgs.fetchurl {
-          url = "mirror://hackage/${config.name}.tar.gz";
+          url = "mirror://hackage/$'{config.name}.tar.gz";
           inherit (config) sha256;
         };
       '';
