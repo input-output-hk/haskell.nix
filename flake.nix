@@ -73,7 +73,7 @@
       traceNames = prefix: builtins.mapAttrs (n: v:
         if builtins.isAttrs v
           then if v ? type && v.type == "derivation"
-            then __trace (prefix + n) v
+            then builtins.trace (prefix + n) v
             else traceNames (prefix + n + ".") v
           else v);
 
@@ -103,7 +103,7 @@
             # flake outputs so that we can incorporate the args passed
             # to the compat layer (e.g. sourcesOverride).
             overlays = [ allOverlays.combined ]
-              ++ (if checkMaterialization == true then
+              ++ (if checkMaterialization then
                 [
                   (final: prev: {
                     haskell-nix = prev.haskell-nix // {
@@ -161,7 +161,7 @@
       # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
       roots = legacyPackagesUnstable.haskell-nix.roots compiler;
 
-      packages = ((self.internal.compat { inherit system; }).hix).apps;
+      packages = (self.internal.compat { inherit system; }).hix.apps;
 
       allJobs =
         let
@@ -180,15 +180,14 @@
                 let nixpkgsJobs = allJobs.${nixpkgsVer};
                 in lib.concatMap (compiler-nix-name:
                   let ghcJobs = nixpkgsJobs.${compiler-nix-name};
-                  in (
-                    builtins.map (crossPlatform: {
+                  in builtins.map (crossPlatform: {
                       name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
                       value = legacyPackages.releaseTools.aggregate {
                         name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
                         meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
-                        constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${crossPlatform};
+                        constituents = lib.collect lib.isDerivation ghcJobs.${crossPlatform};
                       };
-                   }) (names ghcJobs))
+                   }) (names ghcJobs)
                 ) (names nixpkgsJobs)
               ) (names allJobs));
 
