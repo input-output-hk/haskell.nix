@@ -43,16 +43,13 @@ in [
     }
   )
 
-  # The latest version of stack (2.9.1) in hackage fails to build because the
-  # of version of rio-prettyprint (recently released 0.1.4.0) chosen by cabal.
-  # https://github.com/commercialhaskell/stack/issues/5963
+  # Avoid pantry 0.9 in versions without https://github.com/commercialhaskell/stack/pull/6187
+  # Also avoid optparse-applicative 0.18
   ({config, lib, pkgs, ...}:
     { _file = "haskell.nix/overlays/hackage-quirks.nix#stack"; } //
-    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.9.3" <= 0) {
+    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.11.1" <= 0) {
       cabalProjectLocal = ''
-        constraints: unix-compat <0.7${
-          lib.optionalString (builtins.compareVersions config.version "2.9.1" <= 0)
-            " rio-prettyprint <0.1.4.0"}
+        constraints: pantry <0.9, optparse-applicative <0.18
       '';
     }
   )
