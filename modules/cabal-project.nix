@@ -2,9 +2,12 @@
 with lib;
 with types;
 let readIfExists = src: fileName:
+      # Using origSrcSubDir bypasses any cleanSourceWith.
+      # `lookForCabalProject` allows us to avoid looking in source from hackage
+      # for cabal.project files.  It is set in `modules/hackage-project.nix`.
       let origSrcDir = src.origSrcSubDir or src;
       in
-        if builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
+        if (src.lookForCabalProject or true) && builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
           then __readFile (origSrcDir + "/${fileName}")
           else null;
 in {
