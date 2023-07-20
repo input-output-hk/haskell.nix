@@ -2,10 +2,10 @@
 
 `haskell.nix` is an alternative to:
 - `Stack` or `cabal-install` build tools
-- [Nixpkgs Haskell infrastructure for Nix](https://haskell4nix.readthedocs.io/)
+- [Nixpkgs Haskell infrastructure for nix](https://haskell4nix.readthedocs.io/)
 
-Using Nix instead of Stack or cabal-install gives us all the niceties of Nix:
-deterministic and hermetic builds, caching... Nix allows us to be very precise
+Using `nix` instead of Stack or cabal-install gives us all the niceties of `nix`:
+deterministic and hermetic builds, caching... `nix` allows us to be very precise
 about the GHC compiler to use which only Stack allows to some extent.
 
 To properly compare with nixpkgs we need to get more into the technical details
@@ -46,19 +46,20 @@ Stackage snapshots).
 - `nixpkgs` provides its own curated set of packages which might or might not
   work for the project we work on.
 
-- `haskell.nix` allow any form of package set.
+- `haskell.nix` allows any form of package set.
 
-[hackage.nix](https://github.com/input-output-hk/hackage.nix) exposes the `nix`
-expressions of every revision of every package from Hackage.
-As the Hackage index is an ever growing repository of Haskell packages, it is
-possible to pin it to a specific date and to let Cabal's solver resolve the
-dependencies in a reproducible way.
+First [hackage.nix](https://github.com/input-output-hk/hackage.nix) exposes the
+`nix` expressions of every revision of every package from Hackage.
 
+As the Hackage index is an ever growing repository of Haskell packages,
+`haskell.nix` supports pinning the Hackage index to a specific revision
+and letting Cabal's solver resolve the dependencies in a reproducible way.
+
+An alternative is to start with a curated package set. For example,
 [stackage.nix](https://github.com/input-output-hk/stackage.nix) exposes the
-`nix` expressions of every Stackage Snapshot and it is also possible to specify
-dependencies from these snapshots
+`nix` expressions of every Stackage Snapshot.
 
-Finally, it's also possible to explicitly specify a package version and
+In addition, it is possible to explicitly specify a package version and
 revision, or even to fetch its sources (e.g. using Git).
 
 ## Granularity and performance: per component level control
