@@ -1082,10 +1082,6 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
-        compilerSelection = p: p.haskell-nix.compiler // p.haskell.compiler
-          # Avoid ghc961 from nixpkgs for now as the files in it are not
-          # where we expect them.
-          // { inherit (p.haskell-nix.compiler) ghc961; };
         version = "3.8.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
@@ -1162,7 +1158,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
             then compiler-nix-name
-            else "ghc8107";
+            else "ghc928";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
     nix-tools = final.lib.mapAttrs (compiler-nix-name: _:
@@ -1174,7 +1170,7 @@ in {
           # a version of GHC for which there will be.
           if __pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
             then compiler-nix-name
-            else "ghc8107";
+            else "ghc928";
         checkMaterialization = false;
       }) final.haskell-nix.compiler;
 
