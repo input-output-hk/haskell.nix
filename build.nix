@@ -46,12 +46,9 @@ in rec {
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
       stack =
         tool compiler-nix-name "stack" {
-          cabalProjectLocal = ''
-            constraints: optparse-applicative <0.18
-          '';
           version =
             if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.2" < 0
-              then "2.9.3"
+              then "2.9.3.1"
               else "2.11.1";
           inherit evalPackages;
         };

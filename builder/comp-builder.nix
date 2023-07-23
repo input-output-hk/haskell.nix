@@ -171,7 +171,7 @@ let
     ) ++ [ "$(cat $configFiles/configure-flags)"
     ] ++ commonConfigureFlags);
 
-  commonConfigureFlags = ([
+  commonConfigureFlags = [
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
@@ -208,7 +208,7 @@ let
       ++ lib.optional (enableLibraryProfiling || enableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals haskellLib.isCrossHost (
-        map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
+        map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals stdenv.hostPlatform.isWindows ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${
            # Older ghcjs patched config.sub to support "js-unknown-ghcjs" (not "javascript-unknown-ghcjs")
            if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9" < 0
@@ -222,7 +222,7 @@ let
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
-      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${o}"'') ghcOptions
+      ++ map (o: ''--ghc${lib.optionalString stdenv.hostPlatform.isGhcjs "js"}-options="${o}"'') ghcOptions
       ++ lib.optional (
         # GHC 9.2 cross compiler built with older versions of GHC seem to have problems
         # with unique conters.  Perhaps because the name changed for the counters.
@@ -230,15 +230,14 @@ let
         haskellLib.isCrossHost
           && builtins.compareVersions defaults.ghc.version "9.2.1" >= 0
           && builtins.compareVersions defaults.ghc.version "9.3" < 0)
-        "--ghc-options=-j1"
-    );
+        "--ghc-options=-j1";
 
   # the build-tools version might be depending on the version of the package, similarly to patches
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c])
-      (builtins.filter (x: !(isNull x)
+      (builtins.filter (x: x != null
         # We always exclude hsc2hs from build-tools because it is unecessary as it is provided by ghc
         # and hsc2hs from ghc is first in PATH so the one from build-tools is never used.
         && x.identifier.name or "" != "hsc2hs")
@@ -347,7 +346,11 @@ let
     inherit dontPatchELF dontStrip;
 
     passthru = {
-      inherit (package) identifier;
+      identifier = package.identifier // {
+        component-id = "${package.identifier.name}:${componentId.ctype}:${componentId.cname}";
+        component-name = componentId.cname;
+        component-type = componentId.ctype;
+      };
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
@@ -393,7 +396,7 @@ let
       # These only need to be propagated for library components (otherwise they
       # will be in `buildInputs`)
       ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
-      ++ lib.optionals (stdenv.hostPlatform.isWindows)
+      ++ lib.optionals stdenv.hostPlatform.isWindows
         (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
     buildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} buildInputs" (
@@ -414,7 +417,7 @@ let
 
     prePatch =
       # emcc is very slow if it cannot cache stuff in $HOME
-      (lib.optionalString (stdenv.hostPlatform.isGhcjs) ''
+      (lib.optionalString stdenv.hostPlatform.isGhcjs ''
       export HOME=$(mktemp -d)
       '') +
       (lib.optionalString (!canCleanSource) ''
