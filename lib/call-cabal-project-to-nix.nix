@@ -423,7 +423,7 @@ let
               hpack $hpackFile
             ''
             else ''
-              echo WARNING $hpackFile has no .cabal file and `supportHpack` was not set.
+              echo "WARNING $hpackFile has no .cabal file and \`supportHpack\` was not set."
             ''
           }
         fi
