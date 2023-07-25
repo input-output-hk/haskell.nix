@@ -603,4 +603,6 @@ in {
         __toJSON (__attrNames (lib.filterAttrs (_: v: __length v > 1) (
           builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") x)))
       }";
+
+  types = import ./types.nix { inherit lib; };
 }
