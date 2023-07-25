@@ -27,7 +27,8 @@ let
 
 in recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
+  meta.disabled = stdenv.hostPlatform.isGhcjs
+    || __elem compiler-nix-name ["ghc9820230704"]; # lens is currently broken
   run = stdenv.mkDerivation {
     name = "coverage-test";
 

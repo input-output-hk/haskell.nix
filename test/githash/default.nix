@@ -59,7 +59,7 @@ in recurseIntoAttrs {
       exe="${githash-test}/bin/githash-test${stdenv.hostPlatform.extensions.executable}"
       echo Checking that the error message is generated and that it came from the right place:
       (${toString githash-test.config.testWrapper} $exe || true) 2>&1 \
-        | grep "error, called at src/Main.hs:5:13 in main:Main"
+        | grep "error, called at src/Main.hs:5:13 in .*:Main"
       touch $out
     '';
 
