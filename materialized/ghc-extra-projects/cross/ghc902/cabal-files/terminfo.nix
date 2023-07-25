@@ -11,7 +11,7 @@
     flags = {};
     package = {
       specVersion = "1.10";
-      identifier = { name = "terminfo"; version = "0.4.1.5"; };
+      identifier = { name = "terminfo"; version = "0.4.1.6"; };
       license = "BSD-3-Clause";
       copyright = "(c) Judah Jacobson";
       maintainer = "Judah Jacobson <judah.jacobson@gmail.com>";
@@ -30,9 +30,9 @@
       };
     } // {
     src = (pkgs.lib).mkDefault (pkgs.fetchurl {
-      url = "http://hackage.haskell.org/package/terminfo-0.4.1.5.tar.gz";
-      sha256 = "b160211246cfed10b920c859569e8e0f1952013b8d2d4527fd554342ed2c1d68";
+      url = "http://hackage.haskell.org/package/terminfo-0.4.1.6.tar.gz";
+      sha256 = "63d54abe02fe07723e8a12f39d668478ea56ad78c9ef69613064420ba3c0a04f";
       });
     }) // {
-    package-description-override = "Name:           terminfo\r\nCabal-Version:  >=1.10\r\nVersion:        0.4.1.5\r\nx-revision: 1\r\nCategory:       User Interfaces\r\nLicense:        BSD3\r\nLicense-File:   LICENSE\r\nCopyright:      (c) Judah Jacobson\r\nAuthor:         Judah Jacobson\r\nMaintainer:     Judah Jacobson <judah.jacobson@gmail.com>\r\nSynopsis:       Haskell bindings to the terminfo library.\r\nDescription:    This library provides an interface to the terminfo database (via bindings to the\r\n                curses library).  <http://en.wikipedia.org/wiki/Terminfo Terminfo> allows POSIX\r\n                systems to interact with a variety of terminals using a standard set of capabilities.\r\nHomepage:       https://github.com/judah/terminfo\r\nBug-Reports:    https://github.com/judah/terminfo/issues\r\nStability:      Stable\r\nBuild-type:     Configure\r\n\r\nextra-source-files: configure.ac configure terminfo.buildinfo.in Changelog\r\nextra-tmp-files: config.log config.status autom4te.cache terminfo.buildinfo\r\n\r\nSource-Repository head\r\n    type:     git\r\n    location: https://github.com/judah/terminfo.git\r\n\r\nLibrary\r\n    default-language: Haskell2010\r\n    other-extensions: CPP, DeriveDataTypeable, FlexibleInstances, ScopedTypeVariables\r\n    if impl(ghc>=7.3)\r\n      other-extensions: Safe, Trustworthy\r\n    build-depends:    base >= 4.9 && < 4.18\r\n    ghc-options:      -Wall\r\n    exposed-modules:\r\n                    System.Console.Terminfo\r\n                    System.Console.Terminfo.Base\r\n                    System.Console.Terminfo.Cursor\r\n                    System.Console.Terminfo.Color\r\n                    System.Console.Terminfo.Edit\r\n                    System.Console.Terminfo.Effects\r\n                    System.Console.Terminfo.Keys\r\n";
+    package-description-override = "Name:           terminfo\nCabal-Version:  >=1.10\nVersion:        0.4.1.6\nCategory:       User Interfaces\nLicense:        BSD3\nLicense-File:   LICENSE\nCopyright:      (c) Judah Jacobson\nAuthor:         Judah Jacobson\nMaintainer:     Judah Jacobson <judah.jacobson@gmail.com>\nSynopsis:       Haskell bindings to the terminfo library.\nDescription:    This library provides an interface to the terminfo database (via bindings to the\n                curses library).  <http://en.wikipedia.org/wiki/Terminfo Terminfo> allows POSIX\n                systems to interact with a variety of terminals using a standard set of capabilities.\nHomepage:       https://github.com/judah/terminfo\nBug-Reports:    https://github.com/judah/terminfo/issues\nStability:      Stable\nBuild-type:     Configure\n\nextra-source-files: configure.ac configure terminfo.buildinfo.in Changelog\nextra-tmp-files: config.log config.status autom4te.cache terminfo.buildinfo\n\nSource-Repository head\n    type:     git\n    location: https://github.com/judah/terminfo.git\n\nLibrary\n    default-language: Haskell2010\n    other-extensions: CPP, DeriveDataTypeable, FlexibleInstances, ScopedTypeVariables\n    if impl(ghc>=7.3)\n      other-extensions: Safe, Trustworthy\n    build-depends:    base >= 4.9 && < 4.19\n    ghc-options:      -Wall\n    exposed-modules:\n                    System.Console.Terminfo\n                    System.Console.Terminfo.Base\n                    System.Console.Terminfo.Cursor\n                    System.Console.Terminfo.Color\n                    System.Console.Terminfo.Edit\n                    System.Console.Terminfo.Effects\n                    System.Console.Terminfo.Keys\n";
     }

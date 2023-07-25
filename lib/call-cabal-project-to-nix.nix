@@ -1,14 +1,4 @@
 { pkgs, runCommand, cacert, index-state-hashes, haskellLib }@defaults:
-let readIfExists = src: fileName:
-      # Using origSrcSubDir bypasses any cleanSourceWith.
-      # `lookForCabalProject` allows us to avoid looking in source from hackage
-      # for cabal.project files.  It is set in `modules/hackage-project.nix`.
-      let origSrcDir = src.origSrcSubDir or src;
-      in
-        if (src.lookForCabalProject or true) && builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
-          then __readFile (origSrcDir + "/${fileName}")
-          else null;
-in
 { name          ? src.name or null # optional name for better error messages
 , src
 , materialized-dir ? ../materialized
@@ -19,9 +9,9 @@ in
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , cabalProjectFileName ? "cabal.project"
-, cabalProject         ? readIfExists src cabalProjectFileName
-, cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
-, cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
+, cabalProject         ? null
+, cabalProjectLocal    ? null
+, cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
 , compilerSelection    ? p: p.haskell-nix.compiler
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
@@ -433,7 +423,7 @@ let
               hpack $hpackFile
             ''
             else ''
-              echo WARNING $hpackFile has no .cabal file and `supportHpack` was not set.
+              echo "WARNING $hpackFile has no .cabal file and \`supportHpack\` was not set."
             ''
           }
         fi

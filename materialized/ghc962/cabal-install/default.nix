@@ -39,6 +39,8 @@
         ed25519.revision = import ./cabal-files/ed25519.nix;
         ed25519.flags.test-hlint = true;
         ed25519.flags.test-properties = true;
+        ed25519.flags.no-donna = true;
+        ed25519.flags.test-doctests = true;
         containers.revision = (((hackage.containers)."0.6.7").revisions).default;
         stm.revision = (((hackage.stm)."2.5.1.0").revisions).default;
         regex-posix.revision = import ./cabal-files/regex-posix.nix;
