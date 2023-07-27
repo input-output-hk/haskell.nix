@@ -202,6 +202,13 @@ let
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ] ++ lib.optionals (targetPlatform.isDarwin && builtins.compareVersions ghc-version "9.6" >= 0) [
+        # From https://github.com/NixOS/nixpkgs/commit/6454fb1bc0b5884d0c11c98a8a99735ef5a0cae8
+        # Darwin uses llvm-ar. GHC will try to use `-L` with `ar` when it is `llvm-ar`
+        # but it doesn’t currently work because Cabal never uses `-L` on Darwin. See:
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/23188
+        # https://github.com/haskell/cabal/issues/8882
+        "fp_cv_prog_ar_supports_dash_l=no"
     ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs"; # TODO use configurePlatforms once tripple is updated in nixpkgs
 
   # Splicer will pull out correct variations
@@ -285,7 +292,7 @@ let
           + lib.optionalString enableDWARF "+debug_info"
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
           + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
-      } --docs=no-sphinx -j --verbose"
+      } --docs=no-sphinx -j1 --verbose"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
       # we don't handle in the RTS properly yet. Until we figure out how to _properly_ deal
