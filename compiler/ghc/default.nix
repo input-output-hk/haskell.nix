@@ -722,6 +722,10 @@ stdenv.mkDerivation (rec {
       substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
     fi
   '';
+  # Same hack as 'preBuild'
+  preInstall = lib.optionalString stdenv.buildPlatform.isDarwin ''
+    export XATTR=$(mktemp -d)/nothing
+  '';
 } // lib.optionalAttrs useHadrian {
   postConfigure = lib.optionalString stdenv.isDarwin ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
@@ -774,6 +778,7 @@ stdenv.mkDerivation (rec {
           --replace ',("windres command", "/bin/false")' ',("windres command", "${targetCC.bintools.targetPrefix}windres")'
       ''
       else ''
+        runHook preInstall
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
