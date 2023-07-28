@@ -1,8 +1,21 @@
-index-state: 2023-07-16T00:00:00Z
+index-state: 2023-07-28T13:46:58Z
+
+with-compiler: ghc-9.2.8
 
 packages: .
 
-allow-newer: hackage-db:base, hackage-db:Cabal, hpack:Cabal, hnix:base, hnix:template-haskell, hnix:aeson, hnix:relude, hnix-store-core:base, hnix-store-core:memory, hnix-store-core:cryptonite, hnix-store-core:bytestring
+allow-newer:
+    hackage-db:base,
+    hackage-db:Cabal,
+    hpack:Cabal,
+    hnix:base,
+    hnix:template-haskell,
+    hnix:aeson,
+    hnix:relude,
+    hnix-store-core:base,
+    hnix-store-core:memory,
+    hnix-store-core:cryptonite,
+    hnix-store-core:bytestring
 
 source-repository-package
     type: git

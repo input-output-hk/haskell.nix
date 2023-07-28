@@ -1,42 +1,87 @@
 {
-  # This is a template created by `hix init`
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
-  inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-  inputs.flake-utils.follows = "haskellNix/flake-utils";
-  outputs = { self, nixpkgs, flake-utils, haskellNix }:
-    let
-      ci = (builtins.fromTOML (__readFile ./ci.toml)).dimensions;
-    in
-      flake-utils.lib.eachSystem ci.os (system:
-      let
-        compilers = builtins.filter
-          (x: !__elem "${system}.${x}" ci.disable)
-          (ci.compiler);
-        overlays = [ haskellNix.overlay
-          (final: prev: {
-            hixProject =
-              final.haskell-nix.hix.project {
-                src = ./.;
-                compiler-nix-name = __head compilers;
-              };
-          })
-        ];
-        pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-        flake = pkgs.hixProject.flake {
-          variants = pkgs.lib.genAttrs (__tail compilers)
-            (x: { compiler-nix-name = pkgs.lib.mkForce x; });
-        };
-      in flake // {
-        legacyPackages = pkgs;
-      });
 
-  # --- Flake Local Nix Configuration ----------------------------
+  outputs = { nixpkgs, haskellNix, ... }:
+    let
+      systems = [
+        "x86_64-linux"
+        "x86_64-darwin"
+        # TODO switch back on when ci.iog.io has builders for aarch64-linux
+        # "aarch64-linux"
+        "aarch64-darwin"
+      ];
+
+      inherit (nixpkgs) lib;
+
+      # A simple thing but hard to do without screwing up lazyness.
+      # We don't want packages.x to trigger evaluation of packages.y
+      forEachSystem = f:
+        let
+          perSystem = lib.genAttrs systems f;
+        in
+        lib.genAttrs
+          [ "apps" "checks" "ciJobs" "devShells" "hydraJobs" "packages" ]
+          (attrName: lib.genAttrs systems (system: perSystem.${system}.${attrName}))
+      ;
+    in
+    forEachSystem (system:
+      let
+        pkgs = haskellNix.legacyPackages.${system};
+
+        project = pkgs.haskell-nix.cabalProject' {
+          src = ./.;
+          compiler-nix-name = "ghc928";
+        };
+
+        mkTarball = package:
+          let
+            name = "${package.identifier.name}-${package.identifier.version}";
+            paths = builtins.attrValues package.components.exes;
+          in
+          pkgs.runCommand name
+            { preferLocalBuild = true; }
+            ''
+              mkdir -p ${name}
+              cp --verbose --target-directory ${name} \
+                ${pkgs.lib.concatMapStringsSep "  \\\n  " (p: "${p}/bin/*") paths}
+
+              mkdir -p $out
+              tar cvzf $out/${name}.tar.gz ${name}
+
+              mkdir -p $out/nix-support
+              echo "file binary-dist $out/${name}.tar.gz" >> $out/nix-support/hydra-build-products
+              # Propagate the release name of the source tarball.  This is
+              # to get nice package names in channels.
+              echo "${name}" >> $out/nix-support/hydra-release-name
+            '';
+      in
+      lib.recursiveUpdate
+        project.flake'
+        (
+          lib.optionalAttrs (system == "x86_64-linux")
+            {
+              hydraJobs.binary-tarball = mkTarball
+                project.projectCross.musl64.hsPkgs.nix-tools;
+            }
+          //
+          lib.optionalAttrs (system == "aarch64-linux")
+            {
+              hydraJobs.binary-tarball = mkTarball
+                project.projectCross.aarch64-multiplatform-musl.hsPkgs.nix-tools;
+            }
+        )
+    );
+
   nixConfig = {
-    # This sets the flake to use the IOG nix cache.
-    # Nix should ask for permission before using it,
-    # but remove it here if you do not want it to.
-    extra-substituters = ["https://cache.iog.io"];
-    extra-trusted-public-keys = ["hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="];
+    extra-substituters = [
+      "https://cache.iog.io"
+      "https://cache.zw3rk.com"
+    ];
+    extra-trusted-public-keys = [
+      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+      "loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk="
+    ];
     allow-import-from-derivation = "true";
   };
 }
