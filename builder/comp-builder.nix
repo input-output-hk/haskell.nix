@@ -417,8 +417,12 @@ let
 
     prePatch =
       # emcc is very slow if it cannot cache stuff in $HOME
+      # Newer nixpkgs default the cache dir to nix store path.
+      # This seems to cause problems as it is not writeable.
+      # Setting EM_CACHE explicitly avoids this problem.
       (lib.optionalString stdenv.hostPlatform.isGhcjs ''
       export HOME=$(mktemp -d)
+      export EM_CACHE=$(mktemp -d)
       '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
