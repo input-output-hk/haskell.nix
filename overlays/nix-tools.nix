@@ -33,13 +33,14 @@ final: prev:
 
     nix-tools-set = { compiler-nix-name, ... }@args:
       let
-        compiler-nix-name = "ghc8107";
-        compilerSelection = p: p.haskell.compiler;
         project =
           final.haskell-nix.hix.project ({
             evalPackages = final.buildPackages;
             src = ../nix-tools;
-          } // args // { inherit compiler-nix-name compilerSelection; });
+          } // args // {
+            compiler-nix-name = "ghc8107";
+            compilerSelection = p: p.haskell.compiler;
+          });
         exes =
           let
             package = project.getPackage "nix-tools";
