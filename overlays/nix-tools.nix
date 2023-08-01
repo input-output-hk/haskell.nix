@@ -62,7 +62,6 @@ final: prev:
           final.buildPackages.nix
           # Double buildPackages is intentional, see comment in lib/default.nix for details.
           final.buildPackages.buildPackages.gitMinimal
-          final.buildPackages.buildPackages.nix-prefetch-git
         ];
       in
       (final.buildPackages.symlinkJoin {
@@ -70,7 +69,7 @@ final: prev:
         paths = exes;
         buildInputs = [ final.buildPackages.makeWrapper ];
         meta.platforms = final.lib.platforms.all;
-        # We wrap the -to-nix executables with the executables from `tools` (e.g. nix-prefetch-git)
+        # We wrap the -to-nix executables with the executables from `tools` (e.g. git)
         # so that consumers of `nix-tools` won't have to provide those tools.
         postBuild = ''
           for prog in stack-to-nix cabal-to-nix plan-to-nix; do
