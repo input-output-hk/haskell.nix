@@ -1,44 +1,38 @@
 final: prev:
+
+let
+  mk-nix-tools = { checkMaterialization ? true }:
+    let
+      toolset = final.haskell-nix.nix-tools-set {
+        compiler-nix-name = "ghc8107";
+        inherit checkMaterialization;
+      };
+      warning = final.lib.mapAttrs
+        (_: _:
+          final.lib.warn
+            ''
+              nix-tools are now compiled with a single GHC version.
+              You can use the nix-tools-set function to use a specific compiler: nix-tools-set { compiler-nix-name = " "ghcXYZ" "; }
+            ''
+            toolset
+        )
+        final.haskell-nix.compiler;
+    in
+    toolset // warning;
+
+in
 {
   haskell-nix = prev.haskell-nix // {
-    # Memoize the cabal-install and nix-tools derivations by adding:
-    #   haskell-nix.cabal-install.ghcXXX
-    #   haskell-nix.cabal-install-unchecked.ghcXXX
-    #   haskell-nix.nix-tools.ghcXXX
-    #   haskell-nix.nix-tools-unchecked.ghcXXX
-    # Using these avoids unnecessary calls to mkDerivation.
-    # For cabal projects we match the versions used to the compiler
-    # selected for the project to avoid the chance of a dependency
-    # another GHC version (particularly useful on macOS where
-    # executables are dynamically linked to GHC itself, which means
-    # that if you use a tool built with a different GHC you will get
-    # that GHC itself in your closure).
-    nix-tools = final.lib.mapAttrs
-      (compiler-nix-name: _:
-        final.haskell-nix.nix-tools-set { inherit compiler-nix-name; })
-      final.haskell-nix.compiler;
+    nix-tools = mk-nix-tools { };
+    nix-tools-unchecked = mk-nix-tools { checkMaterialization = false; };
 
-    nix-tools-unchecked = final.lib.mapAttrs
-      (compiler-nix-name: _:
-        final.haskell-nix.nix-tools-set {
-          compiler-nix-name =
-            # If there is no materialized version for this GHC version fall back on
-            # a version of GHC for which there will be.
-            if builtins.pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
-            then compiler-nix-name
-            else "ghc928";
-          checkMaterialization = false;
-        })
-      final.haskell-nix.compiler;
-
-    nix-tools-set = { compiler-nix-name, ... }@args:
+    nix-tools-set = args:
       let
         project =
           final.haskell-nix.hix.project ({
             evalPackages = final.buildPackages;
             src = ../nix-tools;
           } // args // {
-            compiler-nix-name = "ghc8107";
             compilerSelection = p: p.haskell.compiler;
           });
         exes =
