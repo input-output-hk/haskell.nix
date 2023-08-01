@@ -56,22 +56,25 @@
               echo "${name}" >> $out/nix-support/hydra-release-name
             '';
       in
-      lib.recursiveUpdate
-        project.flake'
-        (
-          lib.optionalAttrs (system == "x86_64-linux")
-            {
-              hydraJobs.binary-tarball = mkTarball
-                project.projectCross.musl64.hsPkgs.nix-tools;
-            }
-          //
-          lib.optionalAttrs (system == "aarch64-linux")
-            {
-              hydraJobs.binary-tarball = mkTarball
-                project.projectCross.aarch64-multiplatform-musl.hsPkgs.nix-tools;
-            }
-        )
-    );
+      builtins.foldl' lib.recursiveUpdate { } [
+        {
+          inherit (project.flake') "checks" "ciJobs" "devShells" "hydraJobs";
+          packages =
+            lib.mapAttrs'
+              (n: v: { name = v.exeName; value = v; })
+              project.flake'.packages;
+        }
+        (lib.optionalAttrs (system == "x86_64-linux")
+          {
+            hydraJobs.binary-tarball =
+              mkTarball project.projectCross.musl64.hsPkgs.nix-tools;
+          })
+        (lib.optionalAttrs (system == "aarch64-linux")
+          {
+            hydraJobs.binary-tarball =
+              mkTarball project.projectCross.aarch64-multiplatform-musl.hsPkgs.nix-tools;
+          })
+      ]);
 
   nixConfig = {
     extra-substituters = [
