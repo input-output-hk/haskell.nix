@@ -3,9 +3,8 @@
 let
   overlays = {
     wine = import ./wine.nix;
-    #ghcjs = import ./ghcjs-asterius-triple.nix;
-    #python = import ./python.nix;
     haskell = import ./haskell.nix args;
+    nix-tools = import ./nix-tools.nix;
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
@@ -43,6 +42,7 @@ let
     })
     wine
     haskell
+    nix-tools
     bootstrap
     ghc
     ghc-packages
