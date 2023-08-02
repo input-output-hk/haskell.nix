@@ -22,7 +22,7 @@
         in
         lib.genAttrs
           [ "apps" "checks" "ciJobs" "devShells" "hydraJobs" "packages" ]
-          (attrName: lib.genAttrs systems (system: perSystem.${system}.${attrName}))
+          (attrName: lib.genAttrs systems (system: perSystem.${system}.${attrName} or {}))
       ;
     in
     forEachSystem (system:
