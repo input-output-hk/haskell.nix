@@ -237,4 +237,4 @@ jobs:
   nix-tools:
     runs-on: [self-hosted, linux]
     steps:
-      - run: nix build github:$GITHUB_REPOSITORY/$GITHUB_SHA#checks.truncate-index
+      - run: nix build github:$GITHUB_REPOSITORY/$GITHUB_SHA#checks.truncate-index --accept-flake-config
