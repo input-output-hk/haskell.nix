@@ -11,8 +11,11 @@ let
         (_: _:
           final.lib.warn
             ''
-              nix-tools are now compiled with a single GHC version.
-              You can use the nix-tools-set function to use a specific compiler: nix-tools-set { compiler-nix-name = " "ghcXYZ" "; }
+              The package nix-tools is now compiled with a single GHC version.
+              You can use the function nix-tools-set to compile nix-tools using a specific compiler: 
+
+                nix-tools-set { compiler-nix-name = " "ghcXYZ" "; }
+
             ''
             toolset
         )
