@@ -78,6 +78,8 @@
         cmdargs.flags.quotation = true;
         cmdargs.flags.testprog = false;
         parsec.revision = (((hackage.parsec)."3.1.14.0").revisions).default;
+        tasty.revision = import ./cabal-files/tasty.nix;
+        tasty.flags.unix = true;
         streaming-commons.revision = import ./cabal-files/streaming-commons.nix;
         streaming-commons.flags.use-bytestring-builder = false;
         some.revision = import ./cabal-files/some.nix;
@@ -135,6 +137,7 @@
         network-uri.revision = import ./cabal-files/network-uri.nix;
         pretty-show.revision = import ./cabal-files/pretty-show.nix;
         base.revision = (((hackage.base)."4.14.3.0").revisions).default;
+        typed-process.revision = import ./cabal-files/typed-process.nix;
         time.revision = (((hackage.time)."1.9.3").revisions).default;
         lens-family-core.revision = import ./cabal-files/lens-family-core.nix;
         pem.revision = import ./cabal-files/pem.nix;
@@ -200,6 +203,7 @@
         distributive.flags.semigroups = true;
         haskell-lexer.revision = import ./cabal-files/haskell-lexer.nix;
         rts.revision = (((hackage.rts)."1.0.1").revisions).default;
+        temporary.revision = import ./cabal-files/temporary.nix;
         monadlist.revision = import ./cabal-files/monadlist.nix;
         aeson-pretty.revision = import ./cabal-files/aeson-pretty.nix;
         aeson-pretty.flags.lib-only = false;
@@ -208,6 +212,8 @@
         template-haskell.revision = (((hackage.template-haskell)."2.16.0.0").revisions).default;
         mono-traversable.revision = import ./cabal-files/mono-traversable.nix;
         binary.revision = (((hackage.binary)."0.8.8.0").revisions).default;
+        tasty-golden.revision = import ./cabal-files/tasty-golden.nix;
+        tasty-golden.flags.build-example = false;
         indexed-traversable-instances.revision = import ./cabal-files/indexed-traversable-instances.nix;
         ansi-wl-pprint.revision = import ./cabal-files/ansi-wl-pprint.nix;
         ansi-wl-pprint.flags.example = false;
@@ -410,6 +416,7 @@
           "Cabal".components.library.planned = lib.mkOverride 900 true;
           "gitrev".components.library.planned = lib.mkOverride 900 true;
           "bytestring".components.library.planned = lib.mkOverride 900 true;
+          "tasty-golden".components.library.planned = lib.mkOverride 900 true;
           "nix-tools".components.exes."hashes-to-nix".planned = lib.mkOverride 900 true;
           "mono-traversable".components.library.planned = lib.mkOverride 900 true;
           "zlib".components.library.planned = lib.mkOverride 900 true;
@@ -437,6 +444,7 @@
           "relude".components.library.planned = lib.mkOverride 900 true;
           "splitmix".components.library.planned = lib.mkOverride 900 true;
           "rts".components.library.planned = lib.mkOverride 900 true;
+          "temporary".components.library.planned = lib.mkOverride 900 true;
           "tagged".components.library.planned = lib.mkOverride 900 true;
           "unix".components.library.planned = lib.mkOverride 900 true;
           "monadlist".components.library.planned = lib.mkOverride 900 true;
@@ -491,6 +499,7 @@
           "regex-posix".components.library.planned = lib.mkOverride 900 true;
           "memory".components.library.planned = lib.mkOverride 900 true;
           "pem".components.library.planned = lib.mkOverride 900 true;
+          "typed-process".components.library.planned = lib.mkOverride 900 true;
           "base-compat-batteries".components.library.planned = lib.mkOverride 900 true;
           "hnix".components.library.planned = lib.mkOverride 900 true;
           "split".components.library.planned = lib.mkOverride 900 true;
@@ -526,6 +535,7 @@
           "crypton-x509-system".components.library.planned = lib.mkOverride 900 true;
           "iproute".components.library.planned = lib.mkOverride 900 true;
           "nix-tools".components.exes."lts-to-nix".planned = lib.mkOverride 900 true;
+          "nix-tools".components.tests."tests".planned = lib.mkOverride 900 true;
           "th-compat".components.library.planned = lib.mkOverride 900 true;
           "tls".components.library.planned = lib.mkOverride 900 true;
           "crypton-x509-store".components.library.planned = lib.mkOverride 900 true;
@@ -568,6 +578,7 @@
           "Glob".components.library.planned = lib.mkOverride 900 true;
           "crypton".components.library.planned = lib.mkOverride 900 true;
           "integer-gmp".components.library.planned = lib.mkOverride 900 true;
+          "tasty".components.library.planned = lib.mkOverride 900 true;
           "transformers-compat".components.library.planned = lib.mkOverride 900 true;
           "monad-control".components.library.planned = lib.mkOverride 900 true;
           "streaming-commons".components.library.planned = lib.mkOverride 900 true;

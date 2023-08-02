@@ -10,7 +10,7 @@
   {
     flags = {};
     package = {
-      specVersion = "1.10";
+      specVersion = "3.8";
       identifier = { name = "nix-tools"; version = "0.1.0.0"; };
       license = "BSD-3-Clause";
       copyright = "";
@@ -26,7 +26,7 @@
       licenseFiles = [ "LICENSE" ];
       dataDir = ".";
       dataFiles = [];
-      extraSrcFiles = [ "ChangeLog.md" ];
+      extraSrcFiles = [];
       extraTmpFiles = [];
       extraDocFiles = [];
       };
@@ -233,32 +233,43 @@
         "make-install-plan" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
-            (hsPkgs."aeson" or (errorHandler.buildDepError "aeson"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
             (hsPkgs."cabal-install" or (errorHandler.buildDepError "cabal-install"))
             (hsPkgs."cabal-install-solver" or (errorHandler.buildDepError "cabal-install-solver"))
             (hsPkgs."Cabal-syntax" or (errorHandler.buildDepError "Cabal-syntax"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-            (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
-            (hsPkgs."extra" or (errorHandler.buildDepError "extra"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."hnix" or (errorHandler.buildDepError "hnix"))
-            (hsPkgs."hpack" or (errorHandler.buildDepError "hpack"))
-            (hsPkgs."microlens" or (errorHandler.buildDepError "microlens"))
-            (hsPkgs."microlens-aeson" or (errorHandler.buildDepError "microlens-aeson"))
             (hsPkgs."nix-tools" or (errorHandler.buildDepError "nix-tools"))
-            (hsPkgs."optparse-applicative" or (errorHandler.buildDepError "optparse-applicative"))
             (hsPkgs."prettyprinter" or (errorHandler.buildDepError "prettyprinter"))
             (hsPkgs."text" or (errorHandler.buildDepError "text"))
-            (hsPkgs."transformers" or (errorHandler.buildDepError "transformers"))
-            (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
-            (hsPkgs."vector" or (errorHandler.buildDepError "vector"))
             ];
           buildable = true;
           modules = [ "Freeze" ];
           hsSourceDirs = [ "make-install-plan" "plan2nix" ];
           mainPath = [ "MakeInstallPlan.hs" ];
+          };
+        };
+      tests = {
+        "tests" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
+            (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
+            (hsPkgs."extra" or (errorHandler.buildDepError "extra"))
+            (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
+            (hsPkgs."process" or (errorHandler.buildDepError "process"))
+            (hsPkgs."tasty" or (errorHandler.buildDepError "tasty"))
+            (hsPkgs."tasty-golden" or (errorHandler.buildDepError "tasty-golden"))
+            ];
+          build-tools = [
+            (hsPkgs.buildPackages.nix-tools.components.exes.make-install-plan or (pkgs.buildPackages.make-install-plan or (errorHandler.buildToolDepError "nix-tools:make-install-plan")))
+            (hsPkgs.buildPackages.nix-tools.components.exes.plan-to-nix or (pkgs.buildPackages.plan-to-nix or (errorHandler.buildToolDepError "nix-tools:plan-to-nix")))
+            ];
+          buildable = true;
+          hsSourceDirs = [ "tests" ];
+          mainPath = [ "Tests.hs" ];
           };
         };
       };
