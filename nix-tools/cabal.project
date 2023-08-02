@@ -4,6 +4,8 @@ with-compiler: ghc-9.2.8
 
 packages: .
 
+test-show-details: direct
+
 allow-newer:
     hackage-db:base,
     hackage-db:Cabal,
