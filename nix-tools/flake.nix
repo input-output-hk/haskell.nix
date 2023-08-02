@@ -21,8 +21,8 @@
           perSystem = lib.genAttrs systems f;
         in
         lib.genAttrs
-          [ "apps" "checks" "ciJobs" "devShells" "hydraJobs" "packages" ]
-          (attrName: lib.genAttrs systems (system: perSystem.${system}.${attrName} or {}))
+          [ "apps" "checks" "devShells" "hydraJobs" "packages" ]
+          (attrName: lib.genAttrs systems (system: perSystem.${system}.${attrName} or { }))
       ;
     in
     forEachSystem (system:
@@ -58,7 +58,8 @@
       in
       builtins.foldl' lib.recursiveUpdate { } [
         {
-          inherit (project.flake') "checks" "ciJobs" "devShells" "hydraJobs";
+          inherit (project.flake') "checks" "devShells" "hydraJobs";
+
           packages =
             lib.mapAttrs'
               (n: v: { name = v.exeName; value = v; })
@@ -74,6 +75,22 @@
             hydraJobs.binary-tarball =
               mkTarball project.projectCross.aarch64-multiplatform-musl.hsPkgs.nix-tools;
           })
+        ({
+          checks.truncate-index =
+            let
+              hash = "0z2jc4fibfxz88pfgjq3wk5j3v7sn34xkwb8h60hbwfwhhy63vx6";
+              index-state = "2020-01-10T00:00:00Z";
+            in
+            pkgs.runCommand "nix-tools-test-truncate-index"
+              {
+                outputHashAlgo = "sha256";
+                outputHash = hash;
+                buildInputs = [ pkgs.wget ];
+              } ''
+              wget http://hackage.haskell.org/01-index.tar.gz
+              ${project.hsPkgs.nix-tools.components.exes.truncate-index}/bin/truncate-index -o $out -i 01-index.tar.gz -s ${index-state}
+            '';
+        })
       ]);
 
   nixConfig = {
