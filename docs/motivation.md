@@ -10,14 +10,21 @@ Using `haskell.nix` instead of `Stack` or `cabal-install` gives us deterministic
 and hermetic builds, caching... `haskell.nix` allows us to be very precise about
 the GHC compiler to use which only `Stack` allows to some extent.
 
-By design `haskell.nix` reuses the same configuration files as usual Haskell
-tools. It can convert the following files into `nix` expressions:
+In addition, `haskell.nix` has better support for cross-compilation (e.g.
+compiling Haskell code on Linux that will be run on Windows). It does this by
+carefully distinguishing the GHC compiler for the build platform (used to
+compile `Cabal`'s `Setup.hs` files for Linux in our example) and the GHC
+compiler for the host platform (GHC cross-compiler targeting Windows in our
+example).
+
+By design `haskell.nix` reuses configuration files from other tools and convert
+them into `nix` expressions:
 - `.cabal` files
 - `Stack`'s `stack.yaml`
 - `cabal-install`'s `cabal.project`...
 
-As such, `haskell.nix` doesn't require more work from you if your projects
-already build with `Stack` or `cabal-install`.
+As such it doesn't require more work from you if your projects already build
+with `Stack` or `cabal-install`.
 
 `haskell.nix` can also be used to provide developer environments including
 common Haskell tools: GHC, cabal-install, HLS (Haskell Language Server), hlint,
