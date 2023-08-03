@@ -1,4 +1,4 @@
-{ stdenv, lib, haskell-nix, haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, runCommand, gitMinimal, buildPackages }:
+{ stdenv, lib, haskell-nix, haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, runCommand, gitReallyMinimal, buildPackages }:
 
 with lib;
 
@@ -9,9 +9,9 @@ let
     # seem to cross compile (so this test is disabled for cross compilation in
     # the test/default.nix file).
     # Using buildPackages here is not right, but at least gets musl64 test to pass.
-    if stdenv.hostPlatform != stdenv.buildPlatform
+    if stdenv.hostPlatform != stdenv.buildPlatform && !stdenv.hostPlatform.isMusl
       then buildPackages.buildPackages.gitReallyMinimal
-      else gitMinimal;
+      else gitReallyMinimal;
   project = haskell-nix.cabalProject' {
     inherit src;
     # When haskell.nix has come from the store (e.g. on hydra) we need to provide

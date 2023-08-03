@@ -202,6 +202,13 @@ let
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ] ++ lib.optionals (targetPlatform.isDarwin && builtins.compareVersions ghc-version "9.6" >= 0) [
+        # From https://github.com/NixOS/nixpkgs/commit/6454fb1bc0b5884d0c11c98a8a99735ef5a0cae8
+        # Darwin uses llvm-ar. GHC will try to use `-L` with `ar` when it is `llvm-ar`
+        # but it doesn’t currently work because Cabal never uses `-L` on Darwin. See:
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/23188
+        # https://github.com/haskell/cabal/issues/8882
+        "fp_cv_prog_ar_supports_dash_l=no"
     ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs"; # TODO use configurePlatforms once tripple is updated in nixpkgs
 
   # Splicer will pull out correct variations
@@ -722,6 +729,10 @@ stdenv.mkDerivation (rec {
       substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
     fi
   '';
+  # Same hack as 'preBuild'
+  preInstall = lib.optionalString stdenv.buildPlatform.isDarwin ''
+    export XATTR=$(mktemp -d)/nothing
+  '';
 } // lib.optionalAttrs useHadrian {
   postConfigure = lib.optionalString stdenv.isDarwin ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
@@ -774,6 +785,7 @@ stdenv.mkDerivation (rec {
           --replace ',("windres command", "/bin/false")' ',("windres command", "${targetCC.bintools.targetPrefix}windres")'
       ''
       else ''
+        runHook preInstall
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}

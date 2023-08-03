@@ -48,7 +48,11 @@ let
   ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
   ghcCommand     = "${ghc.targetPrefix}${ghcCommand'}";
   ghcCommandCaps = lib.toUpper ghcCommand';
-  libDir         = ghc.libDir or "lib/${ghcCommand}-${ghc.version}";
+  libDir         = ghc.libDir or
+    # nixpkgs versions of `ghc` do not have a `.libDir`.  So this
+    # default is for them.
+    ("lib/${ghcCommand}-${ghc.version}"
+      + lib.optionalString (__compareVersions ghc.version "9.6.1" >= 0) "/lib");
   packageCfgDir  = "${libDir}/package.conf.d";
 
   libDeps = haskellLib.uniqueWithName (
@@ -81,9 +85,14 @@ let
         find $unwrappedGhc/${packageCfgDir} -name $p'*.conf' -exec cp -f {} $configFiles/${packageCfgDir} \;
       done
     ''}
+    ${ # From GHC 9.6 the nixpkgs ghc derviations now use ${pkgroot} in their `.conf` files.
+    ''
+      sed -i 's|''${pkgroot}/../../../../|/nix/store/|' $configFiles/${packageCfgDir}/*.conf
+      sed -i 's|''${pkgroot}|${ghc}/${packageCfgDir}/..|' $configFiles/${packageCfgDir}/*.conf
+    ''}
 
     for l in "''${pkgsHostTarget[@]}"; do
-      if [ -d "$l/${packageCfgDir}" ]; then
+      if [ -d "$l/${packageCfgDir}" ] && [[ "$l" != "${ghc}" ]]; then
         files=("$l/${packageCfgDir}/"*.conf)
         if (( ''${#files[@]} )); then
           cp -f "''${files[@]}" $configFiles/${packageCfgDir}
