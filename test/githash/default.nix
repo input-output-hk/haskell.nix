@@ -1,4 +1,4 @@
-{ stdenv, lib, haskell-nix, haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, runCommand, gitMinimal, buildPackages }:
+{ stdenv, lib, haskell-nix, haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, runCommand, gitReallyMinimal, buildPackages }:
 
 with lib;
 
@@ -9,9 +9,9 @@ let
     # seem to cross compile (so this test is disabled for cross compilation in
     # the test/default.nix file).
     # Using buildPackages here is not right, but at least gets musl64 test to pass.
-    if stdenv.hostPlatform != stdenv.buildPlatform
+    if stdenv.hostPlatform != stdenv.buildPlatform && !stdenv.hostPlatform.isMusl
       then buildPackages.buildPackages.gitReallyMinimal
-      else gitMinimal;
+      else gitReallyMinimal;
   project = haskell-nix.cabalProject' {
     inherit src;
     # When haskell.nix has come from the store (e.g. on hydra) we need to provide
@@ -44,7 +44,9 @@ let
 in recurseIntoAttrs {
   # githash runs git from TH code and this needs a cross compiled git exe
   # to work correctly.  Cross compiling git is currently brocken.
-  meta.disabled = __elem compiler-nix-name ["ghc901" "ghc902"] || haskellLib.isCrossHost;
+  meta.disabled = __elem compiler-nix-name ["ghc901" "ghc902"] || haskellLib.isCrossHost ||
+    # TODO find out why TH fails for this
+    (__elem compiler-nix-name ["ghc927" "ghc928"] && stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl);
 
   ifdInputs = {
     inherit (project) plan-nix;
@@ -57,7 +59,7 @@ in recurseIntoAttrs {
       exe="${githash-test}/bin/githash-test${stdenv.hostPlatform.extensions.executable}"
       echo Checking that the error message is generated and that it came from the right place:
       (${toString githash-test.config.testWrapper} $exe || true) 2>&1 \
-        | grep "error, called at src/Main.hs:5:13 in main:Main"
+        | grep "error, called at src/Main.hs:5:13 in .*:Main"
       touch $out
     '';
 

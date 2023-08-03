@@ -2,7 +2,7 @@
   # This is a template created by `hix init`
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.flake-utils.follows = "haskellNix/flake-utils";
   outputs = { self, nixpkgs, flake-utils, haskellNix }:
     let
       supportedSystems = [
@@ -19,7 +19,8 @@
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;
-                evalSystem = "EVAL_SYSTEM";
+                # uncomment with your current system for `nix flake show` to work:
+                #evalSystem = "EVAL_SYSTEM";
               };
           })
         ];

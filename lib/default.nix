@@ -35,21 +35,23 @@ in {
   ];
 
   foldrAttrVals = f: z: attrs:
-    lib.foldr (g: acc: g acc) z (lib.mapAttrsToList (_name: f) attrs);
+    lib.foldr f z (builtins.attrValues attrs);
 
   foldComponents = tys: f: z: conf:
     let
-      comps = conf.components or {};
+      comps = conf.components or { };
       # ensure that comps.library exists and is not null.
-      libComp = acc: if (comps.library or null) != null then f comps.library acc else acc;
+      libComp = acc:
+        if comps ? library then f comps.library acc else acc;
       subComps = acc:
         lib.foldr
-          (ty: acc': foldrAttrVals f acc' (comps.${ty} or {}))
+          (ty: acc': foldrAttrVals f acc' (comps.${ty} or { }))
           acc
           tys;
-    in libComp (subComps z);
+    in
+    libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc: [ c ] ++ acc) [ ];
 
   componentPrefix = {
     sublibs = "lib";
@@ -91,18 +93,17 @@ in {
        isExe componentId
     || isTest componentId
     || isBenchmark componentId;
-  mayHaveExecutable = componentId:
-       isExecutableType componentId;
+  mayHaveExecutable = isExecutableType;
 
   # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
   # This is used to make the default `packages` list for `shellFor`.
   isLocalPackage = p: p.isLocal or false;
-  selectLocalPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p) ps;
+  selectLocalPackages = lib.filterAttrs (n: p: p != null && isLocalPackage p);
 
   # if it's a project package it has a src attribute set with an origSubDir attribute.
   # project packages are a subset of localPackages
   isProjectPackage = p: p.isProject or false;
-  selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
+  selectProjectPackages = lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p);
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
@@ -133,7 +134,7 @@ in {
   ## flatLibDepends :: Component -> [Package]
   flatLibDepends = component:
     let
-      makePairs = map (p: rec { key=val.name; val=(p.components.library or p); });
+      makePairs = map (p: rec { key=val.name; val=p.components.library or p; });
       closure = builtins.genericClosure {
         startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;
@@ -212,7 +213,7 @@ in {
   #
   # See docs/user-guide/clean-git.md for details of how to use this
   # with `cabalProject`.
-  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }@args:
+  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }:
     let
       # List of filters, one for each git directory.
       filters = builtins.map (subDir:
@@ -425,47 +426,46 @@ in {
       }]) (packageNames coverageProject));
 
   # Flake package names that are flat and match the cabal component names.
-  mkFlakePackages = haskellPackages: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: package:
-        lib.optional (package.components ? library)
-            { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:lib:${n}"; value = v; })
-          (package.components.sublibs)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = v; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = v; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:bench:${n}"; value = v; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+  mkFlakePackages =
+    foldrAttrVals
+      (package: acc:
+        foldComponents
+          subComponentTypes
+          (component: a: a // {
+            ${component.passthru.identifier.component-id} = component;
+          })
+          acc
+          package)
+      { };
 
   # Flake package names that are flat and match the cabal component names.
-  mkFlakeApps = haskellPackages: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: package:
-      lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+  mkFlakeApps =
+    foldrAttrVals
+      (package: acc:
+        foldComponents
+          [ "exes" "tests" "benchmarks" ]
+          (component: a: a // {
+            ${component.passthru.identifier.component-id} = {
+              type = "app";
+              program = component.exePath;
+            };
+          })
+          acc
+          package)
+      { };
 
   # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
-  mkFlakeChecks = allChecks: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: checks:
-      # Avoid `recurseForDerivations` issues
-      lib.optionals (lib.isAttrs checks) (
-        lib.mapAttrsToList (n: v:
-          { name = "${packageName}:test:${n}"; value = v; })
-        (lib.filterAttrs (_: v: lib.isDerivation v) checks))
-    ) allChecks));
+  mkFlakeChecks = allChecks:
+    foldrAttrVals
+      (package: acc:
+        foldrAttrVals
+          (check: a: a // {
+            ${check.passthru.identifier.component-id} = check;
+          })
+          acc
+          package)
+      { }
+      (removeRecurseForDerivations allChecks);
 
   removeRecurseForDerivations = x:
     let clean = builtins.removeAttrs x ["recurseForDerivations"];
@@ -494,11 +494,11 @@ in {
     }
     # Build the plan-nix and check it if materialized
     // lib.optionalAttrs (checkedProject ? plan-nix) {
-      plan-nix = checkedProject.plan-nix;
+      inherit (checkedProject) plan-nix;
     }
     # Build the stack-nix and check it if materialized
     // lib.optionalAttrs (checkedProject ? stack-nix) {
-      stack-nix = checkedProject.stack-nix;
+      inherit (checkedProject) stack-nix;
     };
 
   mkFlake = project: {
@@ -573,4 +573,36 @@ in {
     inherit pkgs;
     inherit (pkgs.buildPackages.buildPackages) runCommand;
   };
+
+  # Here we try to figure out which qemu to use based on the host platform.
+  # This guess can be overridden by passing qemuSuffix
+  qemuByHostPlatform = hostPlatform:
+    # I'd prefer this was a dictionary lookup, with a fall through into abort,
+    # that would make this more readable I guess.  I think there is some similar
+    # mapping somewhere in haskell.nix
+    if hostPlatform.isAarch32
+    then "arm"
+    else if hostPlatform.isAarch64
+    then "aarch64"
+    else abort "Don't know which QEMU to use for hostPlatform ${hostPlatform.config}. Please provide qemuSuffix";
+
+  # How to run ldd when checking for static linking
+  lddForTests = "${pkgs.pkgsBuildBuild.glibc.bin}/bin/ldd";
+
+  # Version of `lib.unique` that should be fast if the name attributes are unique
+  uniqueWithName = list:
+    lib.concatMap lib.unique (
+      builtins.attrValues (
+        builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") list));
+
+  # Assert that each item in the list is unique
+  checkUnique = msg: x:
+    if __length x == __length (uniqueWithName x)
+      then x
+      else builtins.throw "Duplicate items found in ${msg} ${
+        __toJSON (__attrNames (lib.filterAttrs (_: v: __length v > 1) (
+          builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") x)))
+      }";
+
+  types = import ./types.nix { inherit lib; };
 }

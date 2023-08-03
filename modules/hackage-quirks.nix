@@ -30,7 +30,7 @@ in [
         # See https://github.com/haskell/cabal/issues/8370
         + lib.optionalString (builtins.compareVersions config.version "3.7" < 0) ''
           constraints: Cabal-syntax <0
-        '' + lib.optionalString (__elem config.compiler-nix-name ["ghc961" "ghc96020230302"] && __elem config.version ["3.8.1.0" "3.10.1.0"]) ''
+        '' + lib.optionalString (__elem config.compiler-nix-name ["ghc961" "ghc962" "ghc96020230302"] && __elem config.version ["3.8.1.0" "3.10.1.0"]) ''
           allow-newer: *:base, *:template-haskell
       '');
       modules = [
@@ -43,45 +43,13 @@ in [
     }
   )
 
-  ({config, lib, pkgs, ...}:
-    { _file = "haskell.nix/overlays/hackage-quirks.nix#haskell-language-server"; } //
-    lib.mkIf (config.name == "haskell-language-server") {
-      # TODO remove this when `dependent-sum-0.7.1.0` constraint on `some` has been updated.
-      # See https://github.com/haskell/haskell-language-server/issues/2969
-      # and https://github.com/obsidiansystems/dependent-sum/issues/71
-      cabalProject = lib.mkDefault (''
-        packages: .
-        constraints: dependent-sum >=0.7.1.0
-      ''
-      # TODO remove once these the plugins have been updated in hackage
-      + lib.optionalString (config.version == "1.8.0.0") ''
-        package haskell-language-server
-          flags: -qualifyimportednames${
-            # Stylish haskell is broken for GHC 9.2
-            lib.optionalString (__elem config.compiler-nix-name ["ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"]) " -stylishhaskell"
-            # Hlint with this HLS only compiles for GHC 9.0
-            + lib.optionalString (!__elem config.compiler-nix-name ["ghc901" "ghc902"]) " -hlint"
-        }
-        constraints: hls-fourmolu-plugin <1.1.1.0, hls-rename-plugin <1.0.2.0, hls-stan-plugin <1.0.1.0
-      ''
-      # TODO Remove this flag once the hls-call-hierarchy-plugin is updated in hackage to work with ghc 9.2
-      + lib.optionalString (__elem config.compiler-nix-name ["ghc8107" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"]) ''
-        package haskell-language-server
-          flags: -callhierarchy
-      '');
-    }
-  )
-
-  # The latest version of stack (2.9.1) in hackage fails to build because the
-  # of version of rio-prettyprint (recently released 0.1.4.0) chosen by cabal.
-  # https://github.com/commercialhaskell/stack/issues/5963
+  # Avoid pantry 0.9 in versions without https://github.com/commercialhaskell/stack/pull/6187
+  # Also avoid optparse-applicative 0.18
   ({config, lib, pkgs, ...}:
     { _file = "haskell.nix/overlays/hackage-quirks.nix#stack"; } //
-    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.9.3" <= 0) {
+    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.11.1" <= 0) {
       cabalProjectLocal = ''
-        constraints: unix-compat <0.7${
-          lib.optionalString (builtins.compareVersions config.version "2.9.1" <= 0)
-            " rio-prettyprint <0.1.4.0"}
+        constraints: pantry <0.9, optparse-applicative <0.18
       '';
     }
   )

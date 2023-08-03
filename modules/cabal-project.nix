@@ -2,9 +2,12 @@
 with lib;
 with types;
 let readIfExists = src: fileName:
+      # Using origSrcSubDir bypasses any cleanSourceWith.
+      # `lookForCabalProject` allows us to avoid looking in source from hackage
+      # for cabal.project files.  It is set in `modules/hackage-project.nix`.
       let origSrcDir = src.origSrcSubDir or src;
       in
-        if builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
+        if (src.lookForCabalProject or true) && builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
           then __readFile (origSrcDir + "/${fileName}")
           else null;
 in {
@@ -14,6 +17,15 @@ in {
     compiler-nix-name = mkOption {
       type = str;
       description = "The name of the ghc compiler to use eg. \"ghc884\"";
+      # Map short version names to the latest GHC version.
+      # TODO: perhaps combine this with the `latestVer` mapping in `overlays/boostrap.nix`.
+      apply = v: {
+          ghc810 = "ghc8107";
+          ghc90 = "ghc902";
+          ghc92 = "ghc928";
+          ghc94 = "ghc945";
+          ghc96 = "ghc962";
+        }.${v} or v;
     };
     compilerSelection = mkOption {
       type = unspecified;
@@ -96,7 +108,8 @@ in {
     };
     sha256map = mkOption {
       type = nullOr (attrsOf (either str (attrsOf str)));
-      default = null;
+      # Default needed for haskell-language-server 1.10
+      default."https://github.com/pepeiborra/ekg-json"."7a0af7a8fd38045fd15fb13445bdcc7085325460" = "sha256-fVwKxGgM0S4Kv/4egVAAiAjV7QB5PBqMVMCfsv7otIQ=";
       description = ''
         An alternative to adding `--sha256` comments into the
         cabal.project file:
@@ -111,6 +124,7 @@ in {
       description = ''
         Specifies the contents of urls in the cabal.project file.
         The `.rev` attribute is checked against the `tag` for `source-repository-packages`.
+        # FIXME is the following still relevant?
         For `revision` blocks the `inputMap.<url>` will be used and
         they `.tar.gz` for the `packages` used will also be looked up
         in the `inputMap`.

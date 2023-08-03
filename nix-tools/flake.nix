@@ -2,7 +2,7 @@
   # This is a template created by `hix init`
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.flake-utils.follows = "haskellNix/flake-utils";
   outputs = { self, nixpkgs, flake-utils, haskellNix }:
     let
       ci = (builtins.fromTOML (__readFile ./ci.toml)).dimensions;
@@ -17,7 +17,6 @@
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;
-                evalSystem = "x86_64-darwin";
                 compiler-nix-name = __head compilers;
               };
           })

@@ -70,7 +70,7 @@ installPlanAction verbosity cliConfig = do
     establishProjectBaseContext verbosity cliConfig OtherCommand
 
   (_improvedPlan, elaboratedPlan, elaboratedSharedConfig, totalIndexState, activeRepos) <-
-    rebuildInstallPlan verbosity distDirLayout cabalDirLayout projectConfig localPackages
+    rebuildInstallPlan verbosity distDirLayout cabalDirLayout projectConfig localPackages Nothing
 
   -- Write plan.json
   Cabal.notice verbosity $ "Writing plan.json to " ++ distProjectCacheFile distDirLayout "plan.json"

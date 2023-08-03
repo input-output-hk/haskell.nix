@@ -7,11 +7,12 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-debug";
-    cabalProject = ''
-      packages: .
-      allow-newer: aeson:*
-    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
+      source-repository-package
+        type: git
+        location: https://github.com/glguy/th-abstraction.git
+        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
+        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
     '';
   };
 
@@ -20,7 +21,7 @@ let
 in recurseIntoAttrs {
   # DWARF only works on linux with GHC 8.10.2 and newer
   # GHC 9.2.1 disabled because of https://github.com/input-output-hk/haskell.nix/issues/1332
-  meta.disabled = __elem compiler-nix-name ["ghc865" "ghc884" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927" "ghc941" "ghc942" "ghc943" "ghc944"]
+  meta.disabled = __elem compiler-nix-name ["ghc865" "ghc884" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"]
     || !stdenv.hostPlatform.isLinux || haskellLib.isCrossHost || stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isAarch64;
   ifdInputs = {
     inherit (project) plan-nix;

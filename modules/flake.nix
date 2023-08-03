@@ -18,11 +18,11 @@
         Anything you can pass to `project.addModule` can be used.
         For instance to include variants using ghc 9.2.6:
         ```
-          flake.variants.ghc927.compiler-nix-name = pkgs.lib.mkForce "ghc927";
+          flake.variants.ghc928.compiler-nix-name = pkgs.lib.mkForce "ghc928";
         ```
         Then use it with:
         ```
-          nix build .#ghc927:hello:exe:hello
+          nix build .#ghc928:hello:exe:hello
         ```
       '';
     };

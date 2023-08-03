@@ -14,6 +14,7 @@ let self =
 
 , preUnpack ? component.preUnpack, postUnpack ? component.postUnpack
 , configureFlags ? component.configureFlags
+, prePatch ? component.prePatch, postPatch ? component.postPatch
 , preConfigure ? component.preConfigure, postConfigure ? component.postConfigure
 , setupBuildFlags ? component.setupBuildFlags
 , preBuild ? component.preBuild , postBuild ? component.postBuild
@@ -42,9 +43,6 @@ let self =
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
-               # on x86 we'll use shared libraries, even with musl m(
-               # ghc's internal linker seems to be broken on x86.
-               && !(stdenv.hostPlatform.isMusl && !stdenv.hostPlatform.isx86)
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
 
@@ -56,6 +54,15 @@ let self =
 , doHoogle ? component.doHoogle # Also build a hoogle index
 , hyperlinkSource ? component.doHyperlinkSource # Link documentation to the source code
 , quickjump ? component.doQuickjump # Generate an index for interactive documentation navigation
+
+# Keep the configFiles as a derivation output (otherwise they are in a temp directory)
+# We need this for `cabal-doctest` to work, but it is also likely
+, keepConfigFiles ? component.keepConfigFiles || configureAllComponents
+
+# Keep the ghc wrapper as a `ghc` derivation output (otherwise it is in a temp directory)
+# This is used for the `ghc-paths` package in `modules/configuration.nix`
+, keepGhc ? component.keepGhc
+
 , keepSource ? component.keepSource || configureAllComponents # Build from `source` output in the store then delete `dist`
 , setupHaddockFlags ? component.setupHaddockFlags
 
@@ -164,7 +171,7 @@ let
     ) ++ [ "$(cat $configFiles/configure-flags)"
     ] ++ commonConfigureFlags);
 
-  commonConfigureFlags = ([
+  commonConfigureFlags = [
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
@@ -201,8 +208,12 @@ let
       ++ lib.optional (enableLibraryProfiling || enableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals haskellLib.isCrossHost (
-        map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
-        ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${stdenv.hostPlatform.config}" )
+        map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals stdenv.hostPlatform.isWindows ["--via-asm"])
+        ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${
+           # Older ghcjs patched config.sub to support "js-unknown-ghcjs" (not "javascript-unknown-ghcjs")
+           if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9" < 0
+             then "js-unknown-ghcjs"
+             else stdenv.hostPlatform.config}" )
       ++ configureFlags
       ++ (ghc.extraConfigureFlags or [])
       ++ lib.optional enableDebugRTS "--ghc-option=-debug"
@@ -211,7 +222,7 @@ let
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
-      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${o}"'') ghcOptions
+      ++ map (o: ''--ghc${lib.optionalString stdenv.hostPlatform.isGhcjs "js"}-options="${o}"'') ghcOptions
       ++ lib.optional (
         # GHC 9.2 cross compiler built with older versions of GHC seem to have problems
         # with unique conters.  Perhaps because the name changed for the counters.
@@ -219,15 +230,14 @@ let
         haskellLib.isCrossHost
           && builtins.compareVersions defaults.ghc.version "9.2.1" >= 0
           && builtins.compareVersions defaults.ghc.version "9.3" < 0)
-        "--ghc-options=-j1"
-    );
+        "--ghc-options=-j1";
 
   # the build-tools version might be depending on the version of the package, similarly to patches
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c])
-      (builtins.filter (x: !(isNull x)
+      (builtins.filter (x: x != null
         # We always exclude hsc2hs from build-tools because it is unecessary as it is provided by ghc
         # and hsc2hs from ghc is first in PATH so the one from build-tools is never used.
         && x.identifier.name or "" != "hsc2hs")
@@ -289,7 +299,7 @@ let
             lib.optionalString (cabal-generator == "hpack") ''
               ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
             ''
-        );
+        ) + lib.optionalString (prePatch != null) "\n${prePatch}";
     }
     # patches can (if they like) depend on the version of the package.
     // lib.optionalAttrs (patches != []) {
@@ -301,7 +311,7 @@ let
     }
     // haskellLib.optionalHooks {
       # These are hooks are needed to set up the source for building and running haddock
-      inherit preUnpack postUnpack preConfigure postConfigure;
+      inherit preUnpack postUnpack postPatch preConfigure postConfigure;
     }
     // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
       LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
@@ -336,7 +346,11 @@ let
     inherit dontPatchELF dontStrip;
 
     passthru = {
-      inherit (package) identifier;
+      identifier = package.identifier // {
+        component-id = "${package.identifier.name}:${componentId.ctype}:${componentId.cname}";
+        component-name = componentId.cname;
+        component-type = componentId.ctype;
+      };
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
@@ -350,7 +364,7 @@ let
       });
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
       dwarf = self (drvArgs // { enableDWARF = true; });
-    } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
+    } // lib.optionalAttrs (haskellLib.isLibrary componentId || haskellLib.isTest componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`
       } // lib.optionalAttrs (haddock ? doc) {
@@ -374,35 +388,41 @@ let
       mainProgram = exeName;
     };
 
-    propagatedBuildInputs =
-         frameworks # Frameworks will be needed at link time
+    propagatedBuildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} propagatedBuildInputs" (
+         haskellLib.uniqueWithName frameworks # Frameworks will be needed at link time
       # Not sure why pkgconfig needs to be propagatedBuildInputs but
       # for gi-gtk-hs it seems to help.
-      ++ map pkgs.lib.getDev (builtins.concatLists pkgconfig)
+      ++ haskellLib.uniqueWithName (map pkgs.lib.getDev (builtins.concatLists pkgconfig))
       # These only need to be propagated for library components (otherwise they
       # will be in `buildInputs`)
-      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps
-      ++ lib.optionals (stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs);
+      ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
+      ++ lib.optionals stdenv.hostPlatform.isWindows
+        (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
-    buildInputs =
-      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps
+    buildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} buildInputs" (
+      lib.optionals (!haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
       ++ lib.optionals (!stdenv.hostPlatform.isWindows)
-        (lib.flatten component.libs);
+        (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
     nativeBuildInputs =
       [ghc buildPackages.removeReferencesTo]
       ++ executableToolDepends;
 
-    outputs = ["out" "configFiles" "ghc"]
+    outputs = ["out"]
+      ++ (lib.optional keepConfigFiles "configFiles")
+      ++ (lib.optional keepGhc "ghc")
       ++ (lib.optional enableSeparateDataOutput "data")
       ++ (lib.optional keepSource "source")
       ++ (lib.optional writeHieFiles "hie");
 
     prePatch =
       # emcc is very slow if it cannot cache stuff in $HOME
-      (lib.optionalString (stdenv.hostPlatform.isGhcjs) ''
+      # Newer nixpkgs default the cache dir to nix store path.
+      # This seems to cause problems as it is not writeable.
+      # Setting EM_CACHE explicitly avoids this problem.
+      (lib.optionalString stdenv.hostPlatform.isGhcjs ''
       export HOME=$(mktemp -d)
+      export EM_CACHE=$(mktemp -d)
       '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
@@ -413,9 +433,22 @@ let
         chmod -R +w .
       '') + commonAttrs.prePatch;
 
-    configurePhase = ''
-      mkdir -p $configFiles
-      mkdir -p $ghc
+    configurePhase =
+      (
+        if keepConfigFiles then ''
+          mkdir -p $configFiles
+        ''
+        else ''
+          configFiles=$(mktemp -d)
+        ''
+      ) + (
+        if keepGhc then ''
+          mkdir -p $ghc
+        ''
+        else ''
+          ghc=$(mktemp -d)
+        ''
+      ) + ''
       wrappedGhc=$ghc
       ${configFiles.script}
       ${shellWrappers.script}
@@ -574,7 +607,10 @@ let
         for p in ${lib.concatStringsSep " " ([ libffi gmp ] ++
               # Also include C++ and mcfgthreads DLLs for GHC 9.4.1 and newer
               lib.optionals (builtins.compareVersions defaults.ghc.version "9.4.1" >= 0)
-                [ buildPackages.gcc-unwrapped windows.mcfgthreads ])}; do
+                [ buildPackages.gcc-unwrapped
+                  # Find the versions of mfcgthreads used by stdenv.cc
+                  (pkgs.threadsCrossFor or (x: windows.mfcgthreads) stdenv.cc.version).package
+                ])}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
         ''

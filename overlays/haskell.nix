@@ -446,7 +446,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2023-02-19T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
+        internalHackageIndexState = "2023-07-03T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
@@ -650,7 +650,7 @@ final: prev: {
         # plan-nix without building the project.
         cabalProject' =
           projectModule: haskellLib.evalProjectModule ../modules/cabal-project.nix projectModule (
-            { src, compiler-nix-name, compilerSelection, evalPackages, inputMap, ... }@args:
+            { src, compiler-nix-name, compilerSelection, evalPackages, ... }@args:
             let
               callProjectResults = callCabalProjectToNix args;
               plan-pkgs = importAndFilterProject {
@@ -683,7 +683,6 @@ final: prev: {
                           final.lib.mkDefault (args.compilerSelection final.buildPackages).${compiler-nix-name};
                       compiler.nix-name = final.lib.mkForce args.compiler-nix-name;
                       evalPackages = final.lib.mkDefault evalPackages;
-                      inputMap = final.lib.mkDefault inputMap;
                     } ];
                   extra-hackages = args.extra-hackages or [] ++ callProjectResults.extra-hackages;
                 };
@@ -692,7 +691,7 @@ final: prev: {
                   inherit (pkg-set.config) hsPkgs;
                   inherit pkg-set;
                   plan-nix = callProjectResults.projectNix;
-                  inherit (callProjectResults) index-state;
+                  inherit (callProjectResults) index-state-max;
                   tool = final.buildPackages.haskell-nix.tool' evalPackages pkg-set.config.compiler.nix-name;
                   tools = final.buildPackages.haskell-nix.tools' evalPackages pkg-set.config.compiler.nix-name;
                   roots = final.haskell-nix.roots pkg-set.config.compiler.nix-name;
@@ -1053,10 +1052,6 @@ final: prev: {
                     inherit (iservProxyPin) url rev;
                     sha256 = iservProxyPin.narHash;
                   };
-                cabalProjectLocal = ''
-                  allow-newer: *:libiserv, *:ghci
-                  allow-older: *:libiserv, *:ghci
-                '';
                 index-state = final.haskell-nix.internalHackageIndexState;
                 materialized =../materialized/iserv-proxy + "/${
                   if pkgs.stdenv.hostPlatform.isWindows

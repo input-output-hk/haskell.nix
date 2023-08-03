@@ -23,9 +23,17 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   numactl = prev.numactl.overrideAttrs (_: { configureFlags = ["--enable-static"];});
 
   # See https://github.com/input-output-hk/haskell.nix/issues/948
-  postgresql = (prev.postgresql.overrideAttrs (old: { dontDisableStatic = true; }))
-    .override { enableSystemd = false; gssSupport = false; };
+  postgresql = (prev.postgresql.overrideAttrs (old: {
+      dontDisableStatic = true;
+      # the following is needed becuase libicu links against stdc++
+      NIX_LDFLAGS = "--push-state --as-needed -lstdc++ --pop-state";
+      # without this collate.icu.utf8, and foreign_data will fail.
+      LC_CTYPE = "C";
+    })).override { enableSystemd = false; gssSupport = false; };
+
   openssl = prev.openssl.override { static = true; };
+
+  icu = (prev.icu.overrideAttrs (old: { configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ]; }));
 
   # Fails on cross compile
   nix = prev.nix.overrideAttrs (_: { doInstallCheck = false; });

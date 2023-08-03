@@ -6,8 +6,11 @@
 , nixpkgsArgs ? haskellNix.nixpkgsArgs
 , pkgs ? import nixpkgs nixpkgsArgs
 , evalPackages ? import nixpkgs nixpkgsArgs
-, nixpkgsForHydra ? haskellNix.sources.nixpkgs-2105
-, pkgsForHydra ? import nixpkgsForHydra (nixpkgsArgs // { inherit (pkgs) system; })
+# This version is used to make our GitHub Action runners happy
+# Using `nixpkgs-unstable` currently results in:
+#   version `GLIBCXX_3.4.30' not found
+, nixpkgsForGitHubAction ? haskellNix.sources.nixpkgs-2211
+, pkgsForGitHubAction ? import nixpkgsForGitHubAction (nixpkgsArgs // { inherit (pkgs) system; })
 , ifdLevel ? 1000
 , compiler-nix-name ? throw "No `compiler-nix-name` passed to build.nix"
 , haskellNix ? (import ./default.nix {})
@@ -40,14 +43,24 @@ in rec {
             "ghc8107" = "3.4.1";
           }.${compiler-nix-name} or "latest";
       };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.4" < 0) {
-      stack = tool compiler-nix-name "stack" { version = "2.9.3"; inherit evalPackages; };
-      hls-latest = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+      stack =
+        tool compiler-nix-name "stack" {
+          version =
+            if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.2" < 0
+              then "2.9.3.1"
+              else "2.11.1";
+          inherit evalPackages;
+        };
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+      "hls-110" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        version =
-          if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0
-            then "1.8.0.0"
-            else "latest";
+        src = pkgs.haskell-nix.sources."hls-1.10";
+      };
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
+      "hls-20" = tool compiler-nix-name "haskell-language-server" {
+        inherit evalPackages;
+        src = pkgs.haskell-nix.sources."hls-2.0";
       };
     })
   );
@@ -77,12 +90,7 @@ in rec {
     update-docs = pkgs.buildPackages.callPackage ./scripts/update-docs.nix {
       generatedOptions = pkgs.callPackage ./scripts/options-doc.nix { };
     };
-    # Because this is going to be used to test caching on hydra, it must not
-    # use the darcs package from the haskell.nix we are testing.  For that reason
-    # it uses `pkgs.buildPackages.callPackage` not `haskell.callPackage`
-    # (We could pull in darcs from a known good haskell.nix for hydra to
-    # use)
-    check-hydra = pkgsForHydra.buildPackages.callPackage ./scripts/check-hydra.nix {};
+    check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       # Includes cabal-install since this is commonly used.
       nix-tools = pkgs.linkFarm "common-tools" [
@@ -91,13 +99,7 @@ in rec {
       ];
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
-    # Forcing nixpkgs-unstable here because this test makes a script
-    # that when run will build `aeson` (used by `tests/cabal-simple`)
-    # and we currently do not build that on hydra for nixpkgs-2205 (used by `pkgs`).
-    # Using nixpkgs-unstable should allow buildkite to find what it needs
-    # in the hydra cache when it runs the script.
-    check-path-support = (import haskellNix.sources.nixpkgs-unstable nixpkgsArgs)
-        .buildPackages.callPackage ./scripts/check-path-support.nix {
+    check-path-support = pkgsForGitHubAction.buildPackages.callPackage ./scripts/check-path-support.nix {
       inherit compiler-nix-name;
     };
   };
@@ -105,7 +107,7 @@ in rec {
   # These are pure parts of maintainer-script so they can be built by hydra
   # and added to the cache to speed up buildkite.
   maintainer-script-cache = pkgs.recurseIntoAttrs (
-      (pkgs.lib.optionalAttrs (pkgsForHydra.system == "x86_64-linux") {
+      (pkgs.lib.optionalAttrs (pkgs.system == "x86_64-linux") {
         inherit (maintainer-scripts) check-hydra;
       })
     // (pkgs.lib.optionalAttrs (ifdLevel > 2) {

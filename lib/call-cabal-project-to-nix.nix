@@ -1,12 +1,4 @@
 { pkgs, runCommand, cacert, index-state-hashes, haskellLib }@defaults:
-let readIfExists = src: fileName:
-      # Using origSrcSubDir bypasses any cleanSourceWith.
-      let origSrcDir = src.origSrcSubDir or src;
-      in
-        if builtins.elem ((__readDir origSrcDir)."${fileName}" or "") ["regular" "symlink"]
-          then __readFile (origSrcDir + "/${fileName}")
-          else null;
-in
 { name          ? src.name or null # optional name for better error messages
 , src
 , materialized-dir ? ../materialized
@@ -17,9 +9,9 @@ in
 , materialized  ? null # Location of a materialized copy of the nix files
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , cabalProjectFileName ? "cabal.project"
-, cabalProject         ? readIfExists src cabalProjectFileName
-, cabalProjectLocal    ? readIfExists src "${cabalProjectFileName}.local"
-, cabalProjectFreeze   ? readIfExists src "${cabalProjectFileName}.freeze"
+, cabalProject         ? null
+, cabalProjectLocal    ? null
+, cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
 , compilerSelection    ? p: p.haskell-nix.compiler
 , ghc           ? null # Deprecated in favour of `compiler-nix-name`
@@ -151,46 +143,29 @@ in let
     }
   '';
 
-  cabalProjectIndexState = pkgs.haskell-nix.haskellLib.parseIndexState rawCabalProject;
-
-  index-state-found =
+  index-state-max =
     if index-state != null
     then index-state
-    else if cabalProjectIndexState != null
-    then cabalProjectIndexState
-    else
-      let latest-index-state = pkgs.lib.last (builtins.attrNames index-state-hashes);
-      in builtins.trace ("No index state specified" + (if name == null then "" else " for " + name) + ", using the latest index state that we know about (${latest-index-state})!") latest-index-state;
-
-  index-state-pinned = index-state != null || cabalProjectIndexState != null;
+    else pkgs.lib.last (builtins.attrNames index-state-hashes);
 
   pkgconfPkgs = import ./pkgconf-nixpkgs-map.nix pkgs;
 
-in
-  assert (if index-state-found == null
-    then throw "No index state passed and none found in ${cabalProjectFileName}" else true);
-
-  assert (if index-sha256 == null && !(pkgs.lib.hasSuffix "Z" index-state-found)
-    then throw "Index state found was ${index-state-found} and no `index-sha256` was provided. "
-      "The index hash lookup code requires zulu time zone (ends in a Z)" else true);
-
-let
   # If a hash was not specified find a suitable cached index state to
   # use that will contain all the packages we need.  By using the
   # first one after the desired index-state we can avoid recalculating
   # when new index-state-hashes are added.
   # See https://github.com/input-output-hk/haskell.nix/issues/672
   cached-index-state = if index-sha256 != null
-    then index-state-found
+    then index-state-max
     else
       let
         suitable-index-states =
           builtins.filter
-            (s: s >= index-state-found) # This compare is why we need zulu time
+            (s: s >= index-state-max) # This compare is why we need zulu time
             (builtins.attrNames index-state-hashes);
       in
         if builtins.length suitable-index-states == 0
-          then index-state-found
+          then index-state-max
           else pkgs.lib.head suitable-index-states;
 
   # Lookup hash for the index state we found
@@ -200,7 +175,7 @@ let
 
 in
   assert (if index-sha256-found == null
-    then throw "Unknown index-state ${index-state-found}, the latest index-state I know about is ${pkgs.lib.last (builtins.attrNames index-state-hashes)}. You may need to update to a newer hackage.nix." else true);
+    then throw "Unknown index-state ${index-state-max}, the latest index-state I know about is ${pkgs.lib.last (builtins.attrNames index-state-hashes)}. You may need to update to a newer hackage.nix." else true);
 
 let
   # Deal with source-repository-packages in a way that will work in
@@ -392,11 +367,6 @@ let
     sha256 = plan-sha256;
     sha256Arg = "plan-sha256";
     this = "project.plan-nix" + (if name != null then " for ${name}" else "");
-    # Before pinning stuff down we need an index state to use
-    reasonNotSafe =
-      if !index-state-pinned
-        then "index-state is not pinned by an argument or the cabal project file"
-        else null;
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
@@ -453,7 +423,7 @@ let
               hpack $hpackFile
             ''
             else ''
-              echo WARNING $hpackFile has no .cabal file and `supportHpack` was not set.
+              echo "WARNING $hpackFile has no .cabal file and \`supportHpack\` was not set."
             ''
           }
         fi
@@ -470,12 +440,11 @@ let
     export SSL_CERT_FILE=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
     export GIT_SSL_CAINFO=${evalPackages.cacert}/etc/ssl/certs/ca-bundle.crt
 
-    echo "Using index-state ${index-state-found}"
     CABAL_DIR=${
       # This creates `.cabal` directory that is as it would have
       # been at the time `cached-index-state`.  We may include
-      # some packages that will be excluded by `index-state-found`
-      # which is used by cabal (cached-index-state >= index-state-found).
+      # some packages that will be excluded by `index-state-max`
+      # which is used by cabal (cached-index-state >= index-state-max).
       dotCabal {
         inherit cabal-install nix-tools extra-hackage-tarballs;
         extra-hackage-repos = fixedProject.repos;
@@ -485,7 +454,7 @@ let
     } make-install-plan ${
           # Setting the desired `index-state` here in case it is not
           # in the cabal.project file. This will further restrict the
-          # packages used by the solver (cached-index-state >= index-state-found).
+          # packages used by the solver (cached-index-state >= index-state-max).
           pkgs.lib.optionalString (index-state != null) "--index-state=${index-state}"
         } \
         -w ${
@@ -516,6 +485,9 @@ let
           --include '*/' --include '*.cabal' --include 'package.yaml' \
           --exclude '*' \
           $tmp/ $out/
+
+    # Make sure the subDir' exists even if it did not contain any cabal files
+    mkdir -p $out${subDir'}
 
     # make sure the path's in the plan.json are relative to $out instead of $tmp
     # this is necessary so that plan-to-nix relative path logic can work.
@@ -548,7 +520,6 @@ let
   '');
 in {
   projectNix = plan-nix;
-  index-state = index-state-found;
-  inherit src;
+  inherit index-state-max src;
   inherit (fixedProject) sourceRepos extra-hackages;
 }

@@ -9,11 +9,12 @@ let
     inherit compiler-nix-name evalPackages;
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
-    cabalProject = ''
-      packages: .
-      allow-newer: aeson:*
-    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
+      source-repository-package
+        type: git
+        location: https://github.com/glguy/th-abstraction.git
+        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
+        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
     '';
   };
   pkgSet = mkCabalProjectPkgSet {
@@ -40,7 +41,11 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      disabled = broken;
+    };
 
     passthru = {
       # Attributes used for debugging with nix repl

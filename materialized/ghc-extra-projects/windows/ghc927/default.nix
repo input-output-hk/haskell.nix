@@ -8,7 +8,7 @@
         filepath.revision = (((hackage.filepath)."1.4.2.2").revisions).default;
         network.revision = import ./cabal-files/network.nix;
         mtl.revision = (((hackage.mtl)."2.2.2").revisions).default;
-        ghc-bignum.revision = (((hackage.ghc-bignum)."1.2").revisions).default;
+        ghc-bignum.revision = (((hackage.ghc-bignum)."1.3").revisions).default;
         ghc-prim.revision = (((hackage.ghc-prim)."0.8.0").revisions).default;
         ghc-heap.revision = (((hackage.ghc-heap)."9.2.7").revisions).default;
         containers.revision = (((hackage.containers)."0.6.5.1").revisions).default;
@@ -42,7 +42,7 @@
           "ghc-prim" = "0.8.0";
           "ghc-boot-th" = "9.2.7";
           "base" = "4.16.4.0";
-          "ghc-bignum" = "1.2";
+          "ghc-bignum" = "1.3";
           "exceptions" = "0.10.4";
           "rts" = "1.0.2";
           "transformers" = "0.5.6.2";

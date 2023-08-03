@@ -1,4 +1,19 @@
-{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler, inputMap }:
+# While creating the nix build plan, we take care to create package derivations
+# that do not include any reference to the plan itself or how it is created.
+#
+# This allows haskell.nix to share packages between plans (at least when they
+# have identical dependencies). If the package derivations included the hash of
+# the plan derivation, different plans would always produce different packages
+# and there could not be any sharing of packages between plans.
+#
+# Any wrangling of the project dependencies (e.g. fetching package indices,
+# source-repository-packages or any other asset required for building) *has* to
+# be performed during planning. The nix build plan will import any remote asset
+# through a fixed-output derivations (i.e. a call to a fetcher).
+#
+# tl;dr: the builder must not re-introduce any reference to the build plan.
+
+{ pkgs, buildPackages, evalPackages, stdenv, lib, haskellLib, ghc, compiler-nix-name, fetchurl, nonReinstallablePkgs, hsPkgs, compiler }:
 
 let
   # Builds a single component of a package.
@@ -49,10 +64,11 @@ let
       then pkgs.path
       else pkgs.haskell-nix.sources.nixpkgs-2205;
     nixpkgsHoogle = import (nixpkgs + /pkgs/development/haskell-modules/hoogle.nix);
-  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "ghc8107" "hoogle" {
+  in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "ghc928" "hoogle" {
         inherit evalPackages;
         version = "5.0.18.3";
-        index-state = pkgs.haskell-nix.internalHackageIndexState;
+        # index-state = pkgs.haskell-nix.internalHackageIndexState;
+        index-state = "2023-06-05T00:00:00Z";
       }
     }:
     let
@@ -85,7 +101,7 @@ in {
   # Build a Haskell package from its config.
   # TODO: this pkgs is the adjusted pkgs, but pkgs.pkgs is unadjusted
   build-package = haskellLib.weakCallPackage pkgs ./hspkg-builder.nix {
-    inherit haskellLib ghc compiler-nix-name comp-builder setup-builder inputMap;
+    inherit haskellLib ghc compiler-nix-name comp-builder setup-builder;
   };
 
   inherit shellFor makeConfigFiles;

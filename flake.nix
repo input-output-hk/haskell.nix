@@ -8,13 +8,12 @@
     nixpkgs-2111 = { url = "github:NixOS/nixpkgs/nixpkgs-21.11-darwin"; };
     nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
+    nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     flake-utils = { url = "github:hamishmack/flake-utils/hkm/nested-hydraJobs"; };
-    tullia = {
-      url = "github:input-output-hk/tullia";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
+    "hls-2.0" = { url = "github:haskell/haskell-language-server/2.0.0.1"; flake = false; };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -67,14 +66,14 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, flake-utils, tullia, ... }@inputs:
-    let compiler = "ghc927";
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, nixpkgs-2305, flake-utils, ... }@inputs:
+    let compiler = "ghc928";
       config = import ./config.nix;
 
       traceNames = prefix: builtins.mapAttrs (n: v:
         if builtins.isAttrs v
           then if v ? type && v.type == "derivation"
-            then __trace (prefix + n) v
+            then builtins.trace (prefix + n) v
             else traceNames (prefix + n + ".") v
           else v);
 
@@ -104,7 +103,7 @@
             # flake outputs so that we can incorporate the args passed
             # to the compat layer (e.g. sourcesOverride).
             overlays = [ allOverlays.combined ]
-              ++ (if checkMaterialization == true then
+              ++ (if checkMaterialization then
                 [
                   (final: prev: {
                     haskell-nix = prev.haskell-nix // {
@@ -127,6 +126,8 @@
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-2211 = import nixpkgs-2211
               (nixpkgsArgs // { localSystem = { inherit system; }; });
+            pkgs-2305 = import nixpkgs-2305
+              (nixpkgsArgs // { localSystem = { inherit system; }; });
             pkgs-unstable = import nixpkgs-unstable
               (nixpkgsArgs // { localSystem = { inherit system; }; });
             hix = import ./hix/default.nix { inherit pkgs; };
@@ -138,7 +139,12 @@
       # supported by haskell.nix, e.g. with remote builders, in order to check this flake.
       # If you want to run the tests for just your platform, run `./test/tests.sh` or
       # `nix-build -A checks.$PLATFORM`
-    } // flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ] (system: rec {
+    } // flake-utils.lib.eachSystem [
+        "x86_64-linux"
+        "x86_64-darwin"
+        # TODO switch back on when ci.iog.io has builders for aarch64-linux
+        # "aarch64-linux"
+        "aarch64-darwin" ] (system: rec {
       legacyPackages = (self.internal.compat { inherit system; }).pkgs;
       legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
 
@@ -155,7 +161,7 @@
       # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
       roots = legacyPackagesUnstable.haskell-nix.roots compiler;
 
-      packages = ((self.internal.compat { inherit system; }).hix).apps;
+      packages = (self.internal.compat { inherit system; }).hix.apps;
 
       allJobs =
         let
@@ -174,21 +180,18 @@
                 let nixpkgsJobs = allJobs.${nixpkgsVer};
                 in lib.concatMap (compiler-nix-name:
                   let ghcJobs = nixpkgsJobs.${compiler-nix-name};
-                  in (
-                    builtins.map (crossPlatform: {
+                  in builtins.map (crossPlatform: {
                       name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
                       value = legacyPackages.releaseTools.aggregate {
                         name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
                         meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
-                        constituents = lib.collect (d: lib.isDerivation d) ghcJobs.${crossPlatform};
+                        constituents = lib.collect lib.isDerivation ghcJobs.${crossPlatform};
                       };
-                   }) (names ghcJobs))
+                   }) (names ghcJobs)
                 ) (names nixpkgsJobs)
               ) (names allJobs));
 
-      ciJobs = allJobs;
-
-      hydraJobs = ciJobs;
+      hydraJobs = allJobs;
 
       devShells = with self.legacyPackages.${system}; {
         default =
@@ -215,7 +218,7 @@
             "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
             "ghc901"
             "ghc921" "ghc922" "ghc923"]);
-    } // tullia.fromSimple system (import ./tullia.nix)));
+    }));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

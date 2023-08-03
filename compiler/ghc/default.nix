@@ -20,7 +20,8 @@ let self =
 , # GHC can be built with system libffi or a bundled one.
   libffi ? null
 
-, useLLVM ? !stdenv.targetPlatform.isx86
+, # we don't need LLVM for x86, aarch64, or ghcjs
+  useLLVM ? with stdenv.targetPlatform; !(isx86 || isAarch64 || isGhcjs)
 , # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
@@ -85,7 +86,7 @@ assert enableNativeBignum -> !enableIntegerSimple;
 assert enableIntegerSimple -> !enableNativeBignum;
 
 let
-  src = src-spec.file or fetchurl { inherit (src-spec) url sha256; };
+  src = src-spec.file or (fetchurl { inherit (src-spec) url sha256; });
 
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
@@ -93,6 +94,7 @@ let
   inherit (bootPkgs) ghc;
 
   ghcHasNativeBignum = builtins.compareVersions ghc-version "9.0" >= 0;
+  hadrianHasNativeBignumFlavour = builtins.compareVersions ghc-version "9.6" >= 0;
 
   bignumSpec =
     assert ghcHasNativeBignum -> !enableIntegerSimple;
@@ -121,8 +123,10 @@ let
 
   # TODO(@Ericson2314) Make unconditional
   targetPrefix = lib.optionalString
-    (targetPlatform != hostPlatform)
-    "${targetPlatform.config}-";
+    (targetPlatform != hostPlatform) (
+      if useHadrian && targetPlatform.isGhcjs
+        then "javascript-unknown-ghcjs-"
+        else "${targetPlatform.config}-");
 
   buildMK = ''
     BuildFlavour = ${ghcFlavour}
@@ -179,13 +183,13 @@ let
   # `--with` flags for libraries needed for RTS linker
   configureFlags = [
         "--datadir=$doc/share/doc/ghc"
-        "--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
-    ] ++ lib.optionals (targetLibffi != null) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
-    ] ++ lib.optionals (!enableIntegerSimple) [
+    ] ++ lib.optionals (!targetPlatform.isGhcjs) ["--with-curses-includes=${targetPackages.ncurses.dev}/include" "--with-curses-libraries=${targetPackages.ncurses.out}/lib"
+    ] ++ lib.optionals (targetLibffi != null && !targetPlatform.isGhcjs) ["--with-system-libffi" "--with-ffi-includes=${targetLibffi.dev}/include" "--with-ffi-libraries=${targetLibffi.out}/lib"
+    ] ++ lib.optionals (!enableIntegerSimple && !targetPlatform.isGhcjs) [
         "--with-gmp-includes=${targetGmp.dev}/include" "--with-gmp-libraries=${targetGmp.out}/lib"
     ] ++ lib.optionals (targetPlatform == hostPlatform && hostPlatform.libc != "glibc" && !targetPlatform.isWindows) [
         "--with-iconv-includes=${libiconv}/include" "--with-iconv-libraries=${libiconv}/lib"
-    ] ++ lib.optionals (targetPlatform != hostPlatform) [
+    ] ++ lib.optionals (targetPlatform != hostPlatform && !targetPlatform.isGhcjs) [
         "--with-iconv-includes=${targetIconv}/include" "--with-iconv-libraries=${targetIconv}/lib"
     ] ++ lib.optionals (targetPlatform != hostPlatform) [
         "--enable-bootstrap-with-devel-snapshot"
@@ -202,12 +206,19 @@ let
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
     ] ++ lib.optionals (targetPlatform.isDarwin) [
         "--without-libcharset"
-    ];
+    ] ++ lib.optionals (targetPlatform.isDarwin && builtins.compareVersions ghc-version "9.6" >= 0) [
+        # From https://github.com/NixOS/nixpkgs/commit/6454fb1bc0b5884d0c11c98a8a99735ef5a0cae8
+        # Darwin uses llvm-ar. GHC will try to use `-L` with `ar` when it is `llvm-ar`
+        # but it doesn’t currently work because Cabal never uses `-L` on Darwin. See:
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/23188
+        # https://github.com/haskell/cabal/issues/8882
+        "fp_cv_prog_ar_supports_dash_l=no"
+    ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs"; # TODO use configurePlatforms once tripple is updated in nixpkgs
 
   # Splicer will pull out correct variations
-  libDeps = platform: lib.optional enableTerminfo [ targetPackages.ncurses targetPackages.ncurses.dev ]
-    ++ [targetLibffi]
-    ++ lib.optional (!enableIntegerSimple) gmp
+  libDeps = platform: lib.optional (enableTerminfo && !targetPlatform.isGhcjs) [ targetPackages.ncurses targetPackages.ncurses.dev ]
+    ++ lib.optional (!targetPlatform.isGhcjs) targetLibffi
+    ++ lib.optional (!enableIntegerSimple && !targetPlatform.isGhcjs) gmp
     ++ lib.optional (platform.libc != "glibc" && !targetPlatform.isWindows) libiconv
     ++ lib.optional (enableNUMA && platform.isLinux && !platform.isAarch32 && !platform.isAndroid) numactl
     # Even with terminfo disabled some older ghc cross arm and windows compilers do not build unless `ncurses` is found and they seem to want the buildPlatform version
@@ -215,8 +226,10 @@ let
     ++ lib.optional enableDWARF (lib.getLib elfutils);
 
   toolsForTarget =
-    if hostPlatform == buildPlatform then
-      [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
+    if targetPlatform.isGhcjs
+      then [ buildPackages.emscripten ]
+    else if hostPlatform == buildPlatform
+      then [ targetPackages.stdenv.cc ] ++ lib.optional useLLVM llvmPackages.llvm
     else assert targetPlatform == hostPlatform; # build != host == target
       [ stdenv.cc ] ++ lib.optional useLLVM buildLlvmPackages.llvm;
 
@@ -230,8 +243,7 @@ let
   # value for us.
   installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
 
-  inherit ((buildPackages.haskell-nix.cabalProject {
-      compiler-nix-name = "ghc8107";
+  hadrian = buildPackages.haskell-nix.tool "ghc8107" "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
@@ -240,26 +252,67 @@ let
           then ../../materialized/ghc8107/hadrian-ghc92
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/ghc8107/hadrian-ghc94
-        else ../../materialized/ghc8107/hadrian-ghc96;
+        else if builtins.compareVersions ghc-version "9.8" < 0
+          then ../../materialized/ghc8107/hadrian-ghc96
+        else ../../materialized/ghc8107/hadrian-ghc98;
+      modules = [{
+        # Apply the patches in a way that does not require using something
+        # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
+        # on a platform at eval time.
+        packages.hadrian.prePatch = ''
+          cd ..
+        '';
+        packages.hadrian.patches = ghc-patches;
+        packages.hadrian.postPatch = ''
+          cd hadrian
+        '';
+      }];
+      cabalProject = ''
+        packages:
+          .
+      '';
+      cabalProjectLocal = null;
+      cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
-        src = buildPackages.srcOnly {
-          name = "hadrian";
-          inherit src;
-          patches = ghc-patches;
+        src = {
+          outPath = buildPackages.srcOnly {
+            name = "hadrian";
+            inherit src;
+          };
+          filterPath = { path, ... }: path;
         };
         subDir = "hadrian";
       };
-    }).hsPkgs.hadrian.components.exes) hadrian;
+    };
 
   # For a discription of hadrian command line args
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/README.md
   # For build flavours and flavour transformers
   # see https://gitlab.haskell.org/ghc/ghc/blob/master/hadrian/doc/flavours.md
   hadrianArgs = "--flavour=${
-        "default"
+        (if targetPlatform.isGhcjs then "quick" else "default")
           + lib.optionalString (!enableShared) "+no_dynamic_ghc"
           + lib.optionalString useLLVM "+llvm"
-      } --docs=no-sphinx -j --verbose";
+          + lib.optionalString enableDWARF "+debug_info"
+          + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
+          + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
+      } --docs=no-sphinx -j --verbose"
+      # This is needed to prevent $GCC from emitting out of line atomics.
+      # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
+      # we don't handle in the RTS properly yet. Until we figure out how to _properly_ deal
+      # with the RTS_SYMBOLS in GHC, we are better off disableing the out of line atomics.
+      + lib.optionalString ( hostPlatform.isAarch64 && targetPlatform.isLinux && targetPlatform.isAarch64)
+        " '*.*.ghc.c.opts += -optc-mno-outline-atomics'"
+      # For cross compilers only the RTS should be built with -mno-outline-atomics
+      + lib.optionalString (!hostPlatform.isAarch64 && targetPlatform.isLinux && targetPlatform.isAarch64)
+        " '*.rts.ghc.c.opts += -optc-mno-outline-atomics'"
+      # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older 
+      # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
+      # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
+      # For GHC versions in the 9.x range that don't support the +native_bignum flavour transformer yet
+      + lib.optionalString ((enableNativeBignum && !hadrianHasNativeBignumFlavour))
+        " --bignum=native"
+      ;
 
   # When installation is done by copying the stage1 output the directory layout
   # is different.
@@ -288,7 +341,7 @@ let
     # Same goes for strip.
     strip =
       # TODO(@sternenseemann): also use wrapper if linker == "bfd" or "gold"
-      if stdenv.targetPlatform.isAarch64 && stdenv.targetPlatform.isDarwin
+      if stdenv.targetPlatform.isAarch64
       then targetCC.bintools
       else targetCC.bintools.bintools;
   };
@@ -302,9 +355,8 @@ stdenv.mkDerivation (rec {
   patches = ghc-patches;
 
   # configure was run by configured-src already.
-  phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
-            ++ [ "configurePhase" "buildPhase"
+  phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+             "configurePhase" "buildPhase"
              "checkPhase" "installPhase"
              "fixupPhase"
              "installCheckPhase"
@@ -319,9 +371,17 @@ stdenv.mkDerivation (rec {
         export "''${env#TARGET_}=''${!env}"
         done
     ''
+    # Use emscripten and the `config.sub` saved by `postPatch`
+    + lib.optionalString (targetPlatform.isGhcjs) ''
+        export CC="${targetCC}/bin/emcc"
+        export CXX="${targetCC}/bin/em++"
+        export LD="${targetCC}/bin/emcc"
+        export EM_CACHE=$(mktemp -d)
+        mv config.sub.ghcjs config.sub
+    ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
-    + ''
+    + lib.optionalString (!targetPlatform.isGhcjs) (''
         export CC="${targetCC}/bin/${targetCC.targetPrefix}cc"
         export CXX="${targetCC}/bin/${targetCC.targetPrefix}c++"
     ''
@@ -337,7 +397,7 @@ stdenv.mkDerivation (rec {
     '' + lib.optionalString (stdenv.targetPlatform.linker == "cctools") ''
         export OTOOL="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}otool"
         export INSTALL_NAME_TOOL="${bintoolsFor.install_name_tool}/bin/${bintoolsFor.install_name_tool.targetPrefix}install_name_tool"
-    '' + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
+    '') + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
         export LD="${targetCC.bintools}/bin/ld.gold"
@@ -383,11 +443,11 @@ stdenv.mkDerivation (rec {
         echo '${ghc-version-date}' > VERSION_DATE
     ''
       # The official ghc 9.2.3 tarball requires booting.
-      + lib.optionalString (ghc-version == "9.2.3") ''
-        ./boot
+      + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704") ''
+        python3 ./boot
     '';
 
-  configurePlatforms = [ "build" "host" "target" ];
+  configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
 
   enableParallelBuilding = true;
   postPatch = "patchShebangs .";
@@ -410,8 +470,8 @@ stdenv.mkDerivation (rec {
 
   buildInputs = [ perl bash ] ++ (libDeps hostPlatform);
 
-  depsTargetTarget = map lib.getDev (libDeps targetPlatform);
-  depsTargetTargetPropagated = map (lib.getOutput "out") (libDeps targetPlatform);
+  depsTargetTarget = lib.optionals (!targetPlatform.isGhcjs) (map lib.getDev (libDeps targetPlatform));
+  depsTargetTargetPropagated = lib.optionals (!targetPlatform.isGhcjs) (map (lib.getOutput "out") (libDeps targetPlatform));
 
   # required, because otherwise all symbols from HSffi.o are stripped, and
   # that in turn causes GHCi to abort
@@ -449,7 +509,7 @@ stdenv.mkDerivation (rec {
       # The ghcprog fixup is for musl (where runhaskell script just needs to point to the correct
       # ghc program to work).
       sed -i \
-        -e '2i export PATH="$PATH:${lib.makeBinPath [ targetPackages.stdenv.cc.bintools coreutils ]}"' \
+        -e '2i export PATH="$PATH:${lib.makeBinPath (lib.optionals (!targetPlatform.isGhcjs) [ targetPackages.stdenv.cc.bintools coreutils ])}"' \
         -e 's/ghcprog="ghc-/ghcprog="${targetPrefix}ghc-/' \
         $i
     done
@@ -584,13 +644,17 @@ stdenv.mkDerivation (rec {
         mkdir $doc
         mkdir $generated
       '';
-      phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
-            ++ [ "configurePhase" "installPhase"];
+      phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+                 "configurePhase" "installPhase"];
      } // lib.optionalAttrs useHadrian {
       postConfigure = ''
         for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
           ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
+        done
+      '' + lib.optionalString (builtins.compareVersions ghc-version "9.8.1" >= 0) ''
+        for a in bytearray-access-ops.txt.pp addr-access-ops.txt.pp primops.txt; do
+          ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
+          cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
         done
       '' + lib.optionalString stdenv.isDarwin ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
@@ -601,6 +665,12 @@ stdenv.mkDerivation (rec {
         substituteInPlace hadrian/cfg/system.config \
           --replace 'cross-compiling       = YES' \
                     'cross-compiling       = NO'
+      '';
+    } // lib.optionalAttrs targetPlatform.isGhcjs {
+      # Backup the config.sub that knows what `ghcjs` is in case
+      # `autoreconfPhase` replaces it
+      postPatch = ''
+        cp config.sub config.sub.ghcjs
       '';
     });
 
@@ -629,6 +699,12 @@ stdenv.mkDerivation (rec {
   # Needed for `haddock` to work on source that includes non ASCII chars
   LANG = "en_US.UTF-8";
   LC_ALL = "en_US.UTF-8";
+} // lib.optionalAttrs targetPlatform.isGhcjs {
+  # Backup the config.sub that knows what `ghcjs` is in case
+  # `autoreconfPhase` replaces it
+  postPatch = ''
+    cp config.sub config.sub.ghcjs
+  '';
 } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
   LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
 } // lib.optionalAttrs targetPlatform.useAndroidPrebuilt {
@@ -660,6 +736,10 @@ stdenv.mkDerivation (rec {
       substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
     fi
   '';
+  # Same hack as 'preBuild'
+  preInstall = lib.optionalString stdenv.buildPlatform.isDarwin ''
+    export XATTR=$(mktemp -d)/nothing
+  '';
 } // lib.optionalAttrs useHadrian {
   postConfigure = lib.optionalString stdenv.isDarwin ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
@@ -673,12 +753,16 @@ stdenv.mkDerivation (rec {
   '';
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
-  '' + lib.optionalString installStage1 ''
+  '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc-version "9.8" < 0) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage2:exe:iserv
+    # I don't seem to be able to build _build/stage1/lib/bin/ghc-iserv-prof
+    # by asking hadrian for this. The issue is likely that the profiling way
+    # is probably missing from hadrian m(
+    ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage1/lib/bin/ghc-iserv-prof
     pushd _build/stage1/bin
     for exe in *; do
       mv $exe ${targetPrefix}$exe
@@ -708,6 +792,7 @@ stdenv.mkDerivation (rec {
           --replace ',("windres command", "/bin/false")' ',("windres command", "${targetCC.bintools.targetPrefix}windres")'
       ''
       else ''
+        runHook preInstall
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}

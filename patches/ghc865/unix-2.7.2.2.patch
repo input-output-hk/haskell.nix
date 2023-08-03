@@ -96,16 +96,3 @@ index ea0475d..a3897ae 100644
    int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
  		       && LARGE_OFF_T % 2147483647 == 1)
  		      ? 1 : -1];
-diff --git a/unix.cabal b/unix.cabal
-index cf44068..bb3155f 100644
---- a/unix.cabal
-+++ b/unix.cabal
-@@ -62,7 +62,7 @@ library
-         buildable: False
- 
-     build-depends:
--        base        >= 4.5     && < 4.11,
-+        base        >= 4.5     && < 4.13,
-         bytestring  >= 0.9.2   && < 0.11,
-         time        >= 1.2     && < 1.9
- 

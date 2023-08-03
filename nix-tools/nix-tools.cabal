@@ -28,10 +28,10 @@ library
                      , Stack2nix.External.Resolve
                      , Stack2nix.Project
                      , Stack2nix.Stack
-  build-depends:       base          >= 4    && <4.16
-                     , Cabal         >= 3.8  && <3.9
-                     , Cabal-syntax  >= 3.8  && <3.9
-                     , aeson         >= 2.0  && <2.2
+  build-depends:       base          >= 4    && <4.18
+                     , Cabal         >= 3.10 && <3.11
+                     , Cabal-syntax  >= 3.10 && <3.11
+                     , aeson         >= 2.0  && <2.3
                      , aeson-pretty
                      , base16-bytestring
                      , bytestring
@@ -210,10 +210,10 @@ executable make-install-plan
   build-depends:       base
                      , aeson
                      , bytestring
-                     , Cabal         >= 3.8
-                     , cabal-install >= 3.8
-                     , cabal-install-solver >= 3.8
-                     , Cabal-syntax  >= 3.8
+                     , Cabal         >= 3.10
+                     , cabal-install >= 3.10
+                     , cabal-install-solver >= 3.10
+                     , Cabal-syntax  >= 3.10
                      , containers
                      , directory
                      , extra

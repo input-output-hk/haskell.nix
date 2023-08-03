@@ -16,11 +16,12 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple";
     inherit modules;
-    cabalProject = ''
-      packages: .
-      allow-newer: aeson:*
-    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
+      source-repository-package
+        type: git
+        location: https://github.com/glguy/th-abstraction.git
+        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
+        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
     '';
   };
 
@@ -32,7 +33,16 @@ in recurseIntoAttrs {
   };
 
   # Used for testing externally with nix-shell (../tests.sh).
-  test-shell = project.shellFor { tools = { cabal = "latest"; }; withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"]; };
+  test-shell = (project.shellFor {
+      tools = { cabal = "latest"; };
+      withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"];
+    }).overrideAttrs (_: _: {
+      meta = rec {
+        platforms = lib.platforms.all;
+        broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+        disabled = broken;
+      };
+    });
 
   run = stdenv.mkDerivation {
     name = "cabal-simple-test";
@@ -49,14 +59,14 @@ in recurseIntoAttrs {
     '' + (if stdenv.hostPlatform.isMusl
       then ''
         printf "checking that executable is statically linked... " >& 2
-        (ldd $exe 2>&1 || true) | grep -i "not a"
+        (${haskellLib.lddForTests} $exe 2>&1 || true) | grep -i "not a"
       ''
       else
         # Skip this on aarch as we do not have an `ldd` tool
         optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64) (''
           printf "checking that executable is dynamically linked to system libraries... " >& 2
         '' + optionalString stdenv.isLinux ''
-          ldd $exe | grep 'libc\.so'
+          ${haskellLib.lddForTests} $exe | grep 'libc\.so'
         '' + optionalString stdenv.isDarwin ''
           otool -L $exe |grep .dylib
       '')) + ''
@@ -64,7 +74,11 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      disabled = broken;
+    };
 
     passthru = {
       # Used for debugging with nix repl

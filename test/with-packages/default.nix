@@ -7,8 +7,12 @@ let
   project = doExactConfig: cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "with-packages";
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
+      source-repository-package
+        type: git
+        location: https://github.com/glguy/th-abstraction.git
+        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
+        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
     '';
     modules = [
       # overrides to fix the build
@@ -39,10 +43,24 @@ let
 in recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
-  test-shell = addCabalInstall library.shell;
+  test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"])
+        || __elem compiler-nix-name ["ghc9820230704"]; # lens is currently broken
+      disabled = broken;
+    };
+  });
 
   # A variant of test-shell with the component option doExactConfig enabled
-  test-shell-dec = addCabalInstall decLibrary.shell;
+  test-shell-dec = (addCabalInstall decLibrary.shell).overrideAttrs (_: _: {
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"]
+        || __elem compiler-nix-name ["ghc9820230704"]; # lens is currently broken
+      disabled = broken;
+    };
+  });
 
   run = stdenv.mkDerivation {
     name = "with-packages-test";
@@ -94,9 +112,11 @@ in recurseIntoAttrs {
 
     dontInstall = true;
 
-    meta = {
-      platforms = platforms.all;
-      disabled = stdenv.hostPlatform.isMusl;
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"]) || stdenv.hostPlatform.isMusl
+        || __elem compiler-nix-name ["ghc9820230704"]; # lens is currently broken
+      disabled = broken;
     };
 
     passthru = {

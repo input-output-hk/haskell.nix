@@ -17,11 +17,12 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-sublib";
     inherit modules;
-    cabalProject = ''
-      packages: .
-      allow-newer: aeson:*
-    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
+      source-repository-package
+        type: git
+        location: https://github.com/glguy/th-abstraction.git
+        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
+        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
     '';
   };
 
@@ -49,7 +50,7 @@ in recurseIntoAttrs {
     optionalString (!stdenv.hostPlatform.isAarch32 && !stdenv.hostPlatform.isAarch64 && !stdenv.hostPlatform.isMusl) (''
       printf "checking that executable is dynamically linked to system libraries... " >& 2
     '' + optionalString (stdenv.isLinux && !stdenv.hostPlatform.isMusl) ''
-      ldd $exe | grep 'libc[.]so'
+      ${haskellLib.lddForTests} $exe | grep 'libc[.]so'
     '' + optionalString stdenv.isDarwin ''
       otool -L $exe |grep .dylib
     '') + ''
@@ -57,7 +58,11 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta.platforms = platforms.all;
+    meta = rec {
+      platforms = lib.platforms.all;
+      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      disabled = broken;
+    };
 
     passthru = {
       # Used for debugging with nix repl
