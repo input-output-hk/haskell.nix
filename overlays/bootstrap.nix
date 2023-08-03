@@ -1126,7 +1126,7 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
-        version = if compiler-nix-name == "ghc9820230704" then "3.10.1.0" else "3.8.1.0";
+        version = "3.10.1.0";
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args));
