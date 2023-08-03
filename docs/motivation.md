@@ -2,16 +2,35 @@
 
 `haskell.nix` is an alternative to:
 - `Stack` or `cabal-install` build tools
-- [Nixpkgs Haskell infrastructure for nix](https://haskell4nix.readthedocs.io/)
+- [nixpkgs](https://haskell4nix.readthedocs.io/): Haskell infrastructure for `nix`
 
-Using `nix` instead of Stack or cabal-install gives us all the niceties of `nix`:
-deterministic and hermetic builds, caching... `nix` allows us to be very precise
-about the GHC compiler to use which only Stack allows to some extent.
+## Comparison with `Stack` and `cabal-install`
 
-To properly compare with nixpkgs we need to get more into the technical details
+Using `haskell.nix` instead of `Stack` or `cabal-install` gives us deterministic
+and hermetic builds, caching... `haskell.nix` allows us to be very precise about
+the GHC compiler to use which only `Stack` allows to some extent.
+
+By design `haskell.nix` reuses the same configuration files as usual Haskell
+tools. It can convert the following files into `nix` expressions:
+- `.cabal` files
+- `Stack`'s `stack.yaml`
+- `cabal-install`'s `cabal.project`...
+
+As such, `haskell.nix` doesn't require more work from you if your projects
+already build with `Stack` or `cabal-install`.
+
+`haskell.nix` can also be used to provide developer environments including
+common Haskell tools: GHC, cabal-install, HLS (Haskell Language Server), hlint,
+etc. With these environments, you don't need to use `ghcup` nor to pass programs
+explicitly (e.g. as in `cabal -w ghc-9.2.2`).
+
+
+## Comparison with `nixpkgs`
+
+To properly compare with `nixpkgs` we need to get more into the technical details
 of both solutions.
 
-## Cross compilation
+### Cross compilation
 
 `haskell.nix` has more maintainable support for cross-compilation (e.g.
 compiling Haskell code on a Linux machine to produce a program that runs on
@@ -30,13 +49,13 @@ The difference is that:
 The drawback of the `nixpkgs` approach is that managing so many different `nix`
 expressions for a single `.cabal` file becomes a maintenance burden over time.
 
-## Performance: build-type
+### Performance: build-type
 
 When `haskell.nix` converts a `.cabal` file into a `nix` expression, it keeps
 track of the `build-type` value. All the `.cabal` files that use `build-type:
 simple` reuse the same `Setup` program that is built once and cached.
 
-## Dependencies: package sets
+### Dependencies: package sets
 
 Not all Haskell packages work well together. As it is cumbersome to pinpoint
 every package version explicitly, it is common to rely on curated sets of
@@ -62,7 +81,7 @@ An alternative is to start with a curated package set. For example,
 In addition, it is possible to explicitly specify a package version and
 revision, or even to fetch its sources (e.g. using Git).
 
-## Granularity and performance: per component level control
+### Granularity and performance: per component level control
 
 Haskell packages can contain several *components*: libraries, executables,
 testsuites...
@@ -93,7 +112,7 @@ The `nixpkgs` approach leads to some issues:
   parallel building.  In an ideal scenario this will reduce build times close to
   the optimum.
 
-## More logic in nix
+### More logic in nix
 
 The `cabal2nix` tool has a resolver that resolves system dependencies
 and licenses to values in `nixpkgs`.  This logic ends up being a simple
@@ -103,7 +122,7 @@ do into nix, and as such if changes are necessary (or needed to be
 performed ad hoc) there is no need to rebuild the conversion tool and
 subsequently mark every derived expression as out of date.
 
-## Decoupling
+### Decoupling
 
 Finally, by treating `haskell.nix` and `nixpkgs` as separate entities we
 can decouple the Haskell packages and infrastructure from the `nixpkgs`
