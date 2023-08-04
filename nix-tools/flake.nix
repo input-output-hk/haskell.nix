@@ -32,6 +32,8 @@
         project = pkgs.haskell-nix.cabalProject' {
           src = ./.;
           compiler-nix-name = "ghc928";
+          # tests need to fetch hackage
+          configureArgs = "--disable-tests";
         };
 
         mkTarball = package:

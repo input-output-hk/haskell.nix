@@ -3,9 +3,11 @@ import qualified Data.ByteString as BS
 import Data.Maybe (isNothing)
 import System.Directory (copyFile, createDirectoryIfMissing, removeDirectoryRecursive, withCurrentDirectory)
 import System.Directory.Extra (findExecutable, listFiles)
+import System.Environment (setEnv)
 import System.FilePath (replaceExtension, takeBaseName, takeExtensions, (</>))
+import System.IO.Extra (newTempDir)
 import System.Process (callCommand)
-import Test.Tasty (defaultMain, testGroup)
+import Test.Tasty (defaultMain, testGroup, withResource)
 import Test.Tasty.Golden.Advanced (goldenTest2)
 import Test.Tasty.Providers
 
@@ -14,13 +16,26 @@ main = goldenTests >>= defaultMain
 
 goldenTests :: IO TestTree
 goldenTests = do
+  -- Use a temporary CABAL_DIR
   checkRequiredProgram "make-install-plan"
   checkRequiredProgram "plan-to-nix"
-  checkRequiredProgram "truncate-index"
 
   -- NOTE: we want these paths to be like "tests/golden/test1.project"
   projectFiles <- findFilesWithExtension ".project" "tests/golden"
-  return $ testGroup "Tests" (map testProject projectFiles)
+  return $
+    withHackageIndex $
+      testGroup "Tests" (map testProject projectFiles)
+  where
+    withHackageIndex t =
+      withResource
+        ( do
+            (cabalDir, cleanup) <- newTempDir
+            setEnv "CABAL_DIR" cabalDir
+            callCommand "cabal update -v"
+            return cleanup
+        )
+        id
+        (const t)
 
 testProject :: FilePath -> TestTree
 testProject projectFile = test
