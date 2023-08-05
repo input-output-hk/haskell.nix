@@ -2,7 +2,7 @@
   pkgs = hackage:
     {
       packages = {
-        Cabal-syntax.revision = (((hackage.Cabal-syntax)."3.8.1.0").revisions).default;
+        Cabal-syntax.revision = import ./cabal-files/Cabal-syntax.nix;
         bytestring.revision = (((hackage.bytestring)."0.11.4.0").revisions).default;
         safe-exceptions.revision = import ./cabal-files/safe-exceptions.nix;
         echo.revision = import ./cabal-files/echo.nix;
@@ -31,7 +31,7 @@
         parsec.revision = (((hackage.parsec)."3.1.16.1").revisions).default;
         lukko.revision = import ./cabal-files/lukko.nix;
         lukko.flags.ofd-locking = true;
-        Cabal.revision = (((hackage.Cabal)."3.8.1.0").revisions).default;
+        Cabal.revision = import ./cabal-files/Cabal.nix;
         splitmix.revision = import ./cabal-files/splitmix.nix;
         splitmix.flags.optimised-mixer = false;
         ed25519.revision = import ./cabal-files/ed25519.nix;
@@ -92,8 +92,6 @@
           "pretty" = "1.1.3.6";
           "text" = "2.0.2";
           "array" = "0.5.4.0";
-          "Cabal-syntax" = "3.8.1.0";
-          "Cabal" = "3.8.1.0";
           "mtl" = "2.2.2";
           "parsec" = "3.1.16.1";
           "bytestring" = "0.11.4.0";
