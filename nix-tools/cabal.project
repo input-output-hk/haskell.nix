@@ -2,7 +2,7 @@ index-state: 2023-07-28T13:46:58Z
 
 with-compiler: ghc-9.2.8
 
-packages: .
+packages: nix-tools
 
 test-show-details: direct
 
