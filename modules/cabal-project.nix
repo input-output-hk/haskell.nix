@@ -25,6 +25,8 @@ in {
           ghc92 = "ghc928";
           ghc94 = "ghc945";
           ghc96 = "ghc962";
+          ghc980 = "ghc980${__substring 0 8 pkgs.haskell-nix.sources.ghc980.lastModifiedDate}";
+          ghc99 = "ghc99${__substring 0 8 pkgs.haskell-nix.sources.ghc99.lastModifiedDate}";
         }.${v} or v;
     };
     compilerSelection = mkOption {

@@ -1,4 +1,4 @@
-name: "Update pins for hackage.nix and stackage.nix"
+name: "Update pins for ghc, hackage.nix and stackage.nix"
 
 on:
   workflow_dispatch:
@@ -20,6 +20,8 @@ jobs:
         run: |
           nix flake lock --update-input hackage
           nix flake lock --update-input stackage
+          nix flake lock --update-input ghc980
+          nix flake lock --update-input ghc99
       - name: Commit and push changes
         run: |
           git config --local user.email "devops+nix-tools@iohk.io"

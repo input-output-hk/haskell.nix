@@ -920,7 +920,43 @@ in {
                 # Avoid clashes with normal ghc8104
                 ghc-version = "8.10.4.20210212";
             };
-        } // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
+        } // (__listToAttrs (final.lib.mapAttrsToList (source-name: ver:
+          let
+            src = final.haskell-nix.sources.${source-name};
+            version-date = __substring 0 8 src.lastModifiedDate;
+            compiler-nix-name = "${source-name}${version-date}";
+            version = "${ver}.${version-date}";
+          in {
+            name = compiler-nix-name;
+            value = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec.file = src;
+                src-spec.version = version;
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches version;
+                ghc-version-date = version-date;
+                ghc-commit-id = src.rev;
+            };
+          }) {
+              ghc980 = "9.8.0";
+              ghc99 = "9.9";
+            }))
+        // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
          if final.stdenv.hostPlatform.isGhcjs
            then throw "An attempt was made to build ghcjs with ghcjs (perhaps use `buildPackages` when refering to ghc)"
            else

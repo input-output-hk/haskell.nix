@@ -133,6 +133,43 @@
         "type": "github"
       }
     },
+    "ghc980": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1690479793,
+        "narHash": "sha256-m6/WcPqFhsH3nYYimdBJFDyhHWRwEs37iEP8Hvpt5xk=",
+        "ref": "ghc-9.8",
+        "rev": "62cb821ef2ef0d47c4cf88a6f2aeb7f75106d361",
+        "revCount": 61521,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/ghc/ghc"
+      },
+      "original": {
+        "ref": "ghc-9.8",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/ghc/ghc"
+      }
+    },
+    "ghc99": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1691477269,
+        "narHash": "sha256-gUdkzIEoV1D0E1Bz9mdsDRqJRddC3OO7+M9HFUTrzZQ=",
+        "ref": "refs/heads/master",
+        "rev": "3b373838e08e2e2b43fab9f0a008fb60325d31e0",
+        "revCount": 61713,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/ghc/ghc"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/ghc/ghc"
+      }
+    },
     "hackage": {
       "flake": false,
       "locked": {
@@ -446,6 +483,8 @@
         "flake-compat": "flake-compat",
         "flake-utils": "flake-utils",
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk",
+        "ghc980": "ghc980",
+        "ghc99": "ghc99",
         "hackage": "hackage",
         "hls-1.10": "hls-1.10",
         "hls-2.0": "hls-2.0",

@@ -35,7 +35,7 @@ let
         reasonNotSafe = null;
       } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
         inherit checkMaterialization;
-      }) (
+      } // { checkMaterialization = true; }) (
     runCommand ("dummy-data-" + ghc.name) {
       nativeBuildInputs = [ ghc ];
     } ''
