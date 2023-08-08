@@ -11,9 +11,9 @@
     flags = { native-dns = true; lukko = true; };
     package = {
       specVersion = "2.2";
-      identifier = { name = "cabal-install"; version = "3.8.1.0"; };
+      identifier = { name = "cabal-install"; version = "3.10.1.0"; };
       license = "BSD-3-Clause";
-      copyright = "2003-2022, Cabal Development Team";
+      copyright = "2003-2023, Cabal Development Team";
       maintainer = "Cabal Development Team <cabal-devel@haskell.org>";
       author = "Cabal Development Team (see AUTHORS file)";
       homepage = "http://www.haskell.org/cabal/";
@@ -32,7 +32,7 @@
       };
     components = {
       "library" = {
-        depends = (([
+        depends = ((([
           (hsPkgs."base" or (errorHandler.buildDepError "base"))
           (hsPkgs."Cabal" or (errorHandler.buildDepError "Cabal"))
           (hsPkgs."Cabal-syntax" or (errorHandler.buildDepError "Cabal-syntax"))
@@ -77,7 +77,7 @@
             ]
           else [
             (hsPkgs."unix" or (errorHandler.buildDepError "unix"))
-            ])) ++ (pkgs.lib).optional (flags.lukko) (hsPkgs."lukko" or (errorHandler.buildDepError "lukko"));
+            ])) ++ (pkgs.lib).optional (flags.lukko) (hsPkgs."lukko" or (errorHandler.buildDepError "lukko"))) ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).ge "8.2") (hsPkgs."process" or (errorHandler.buildDepError "process"));
         buildable = true;
         modules = [
           "Distribution/Deprecated/ParseUtils"
@@ -97,6 +97,7 @@
           "Distribution/Client/CmdExec"
           "Distribution/Client/CmdFreeze"
           "Distribution/Client/CmdHaddock"
+          "Distribution/Client/CmdHaddockProject"
           "Distribution/Client/CmdInstall"
           "Distribution/Client/CmdInstall/ClientInstallFlags"
           "Distribution/Client/CmdInstall/ClientInstallTargetSelector"
@@ -112,7 +113,6 @@
           "Distribution/Client/Compat/ExecutablePath"
           "Distribution/Client/Compat/Orphans"
           "Distribution/Client/Compat/Prelude"
-          "Distribution/Client/Compat/Process"
           "Distribution/Client/Compat/Semaphore"
           "Distribution/Client/Config"
           "Distribution/Client/Configure"
@@ -180,6 +180,7 @@
           "Distribution/Client/Security/HTTP"
           "Distribution/Client/Setup"
           "Distribution/Client/SetupWrapper"
+          "Distribution/Client/Signal"
           "Distribution/Client/SolverInstallPlan"
           "Distribution/Client/SourceFiles"
           "Distribution/Client/SrcDist"

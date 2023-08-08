@@ -8,7 +8,7 @@
         echo.revision = import ./cabal-files/echo.nix;
         echo.flags.example = false;
         exceptions.revision = (((hackage.exceptions)."0.10.4").revisions).default;
-        directory.revision = (((hackage.directory)."1.3.6.1").revisions).default;
+        directory.revision = import ./cabal-files/directory.nix;
         tar.revision = import ./cabal-files/tar.nix;
         tar.flags.old-bytestring = false;
         tar.flags.old-time = false;
@@ -69,6 +69,7 @@
         ghc-bignum-orphans.revision = import ./cabal-files/ghc-bignum-orphans.nix;
         process.revision = import ./cabal-files/process.nix;
         unix.revision = (((hackage.unix)."2.7.2.2").revisions).default;
+        data-array-byte.revision = import ./cabal-files/data-array-byte.nix;
         transformers.revision = (((hackage.transformers)."0.5.6.2").revisions).default;
         cabal-install-solver.revision = import ./cabal-files/cabal-install-solver.nix;
         cabal-install-solver.flags.debug-conflict-sets = false;
@@ -81,7 +82,6 @@
         resolv.revision = import ./cabal-files/resolv.nix;
         pretty.revision = (((hackage.pretty)."1.1.3.6").revisions).default;
         hashable.revision = import ./cabal-files/hashable.nix;
-        hashable.flags.containers = true;
         hashable.flags.random-initial-seed = false;
         hashable.flags.integer-gmp = true;
         cryptohash-sha256.revision = import ./cabal-files/cryptohash-sha256.nix;
@@ -105,7 +105,6 @@
           "base" = "4.15.0.0";
           "time" = "1.9.3";
           "ghc-bignum" = "1.0";
-          "directory" = "1.3.6.1";
           "exceptions" = "0.10.4";
           "rts" = "1.0";
           "transformers" = "0.5.6.2";
@@ -167,6 +166,7 @@
           "network-uri".components.library.planned = lib.mkOverride 900 true;
           "regex-posix".components.library.planned = lib.mkOverride 900 true;
           "HTTP".components.library.planned = lib.mkOverride 900 true;
+          "data-array-byte".components.library.planned = lib.mkOverride 900 true;
           "process".components.library.planned = lib.mkOverride 900 true;
           "template-haskell".components.library.planned = lib.mkOverride 900 true;
           "stm".components.library.planned = lib.mkOverride 900 true;

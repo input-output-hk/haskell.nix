@@ -66,6 +66,7 @@ main = do
   (inp, src) <- case rest of
                  [tarball, url, hash] -> return (tarball, Just $ Repo url (Just hash))
                  [tarball, url] -> return (tarball, Just $ Repo url Nothing)
+                 [tarball] -> return (tarball, Nothing)
                  [] -> hackageTarball >>= \tarball -> return (tarball, Nothing)
 
   db    <- U.readTarball Nothing inp

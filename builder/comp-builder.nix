@@ -417,8 +417,12 @@ let
 
     prePatch =
       # emcc is very slow if it cannot cache stuff in $HOME
+      # Newer nixpkgs default the cache dir to nix store path.
+      # This seems to cause problems as it is not writeable.
+      # Setting EM_CACHE explicitly avoids this problem.
       (lib.optionalString stdenv.hostPlatform.isGhcjs ''
       export HOME=$(mktemp -d)
+      export EM_CACHE=$(mktemp -d)
       '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
@@ -603,7 +607,10 @@ let
         for p in ${lib.concatStringsSep " " ([ libffi gmp ] ++
               # Also include C++ and mcfgthreads DLLs for GHC 9.4.1 and newer
               lib.optionals (builtins.compareVersions defaults.ghc.version "9.4.1" >= 0)
-                [ buildPackages.gcc-unwrapped windows.mcfgthreads ])}; do
+                [ buildPackages.gcc-unwrapped
+                  # Find the versions of mfcgthreads used by stdenv.cc
+                  (pkgs.threadsCrossFor or (x: windows.mfcgthreads) stdenv.cc.version).package
+                ])}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
         ''
