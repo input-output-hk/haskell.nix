@@ -136,38 +136,38 @@
     "ghc980": {
       "flake": false,
       "locked": {
-        "lastModified": 1690479793,
-        "narHash": "sha256-m6/WcPqFhsH3nYYimdBJFDyhHWRwEs37iEP8Hvpt5xk=",
+        "lastModified": 1691513927,
+        "narHash": "sha256-G6rZnemarndDk3Zt2Z2ZWvDKNSW3LTN2dReF8iQN0Nc=",
         "ref": "ghc-9.8",
-        "rev": "62cb821ef2ef0d47c4cf88a6f2aeb7f75106d361",
-        "revCount": 61521,
+        "rev": "fc09110bf5e2e3ee34df8ba277e920e0783d3b31",
+        "revCount": 61544,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/ghc/ghc"
+        "url": "https://gitlab.haskell.org/ghc/ghc"
       },
       "original": {
         "ref": "ghc-9.8",
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/ghc/ghc"
+        "url": "https://gitlab.haskell.org/ghc/ghc"
       }
     },
     "ghc99": {
       "flake": false,
       "locked": {
-        "lastModified": 1691477269,
-        "narHash": "sha256-gUdkzIEoV1D0E1Bz9mdsDRqJRddC3OO7+M9HFUTrzZQ=",
+        "lastModified": 1691544490,
+        "narHash": "sha256-Hu8osxL6Ueq98Ix6PQ7VYYZIhxm7sX51WKlYMRgJgJ0=",
         "ref": "refs/heads/master",
-        "rev": "3b373838e08e2e2b43fab9f0a008fb60325d31e0",
-        "revCount": 61713,
+        "rev": "6eab07b26ee46813683a8409871132d740805ec6",
+        "revCount": 61716,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/ghc/ghc"
+        "url": "https://gitlab.haskell.org/ghc/ghc"
       },
       "original": {
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/ghc/ghc"
+        "url": "https://gitlab.haskell.org/ghc/ghc"
       }
     },
     "hackage": {
