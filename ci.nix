@@ -66,8 +66,8 @@
         ghc928 = true;
         ghc945 = true;
         ghc962 = true;
-        ghc980 = true;
-        ghc99 = true;
+        "ghc980${__substring 0 8 sources.ghc980.lastModifiedDate}" = true;
+        "ghc99${__substring 0 8 sources.ghc99.lastModifiedDate}" = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
