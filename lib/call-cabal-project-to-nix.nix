@@ -75,7 +75,7 @@ let
     else evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
   cabal-install = if args.cabal-install or null != null
     then args.cabal-install
-    else evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
+    else evalPackages.haskell-nix.internal-cabal-install;
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
