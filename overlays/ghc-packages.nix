@@ -103,7 +103,7 @@ let
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.2.1" >= 0) {
       deepseq      = "libraries/deepseq";
       pretty       = "libraries/pretty";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.8" >= 0) {
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" >= 0) {
       ghc-platform = "libraries/ghc-platform";
     };
 
