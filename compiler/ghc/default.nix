@@ -651,11 +651,6 @@ stdenv.mkDerivation (rec {
         for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
           ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
         done
-      '' + lib.optionalString (builtins.compareVersions ghc-version "9.8.1" >= 0) ''
-        for a in bytearray-access-ops.txt.pp addr-access-ops.txt.pp primops.txt; do
-          ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
-          cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
-        done
       '' + lib.optionalString stdenv.isDarwin ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
