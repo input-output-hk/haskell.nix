@@ -30,8 +30,8 @@ in [
         # See https://github.com/haskell/cabal/issues/8370
         + lib.optionalString (builtins.compareVersions config.version "3.7" < 0) ''
           constraints: Cabal-syntax <0
-        '' + lib.optionalString (__elem config.compiler-nix-name ["ghc961" "ghc962" "ghc96020230302"] && __elem config.version ["3.8.1.0" "3.10.1.0"]) ''
-          allow-newer: *:base, *:template-haskell
+        '' + lib.optionalString (__compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.6.1" >= 0 && __elem config.version ["3.8.1.0" "3.10.1.0"]) ''
+          allow-newer: *:base, *:template-haskell, *:deepseq
       '');
       modules = [
         # Version of of cabal-install in hackage is broken for GHC 8.10.1

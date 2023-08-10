@@ -66,6 +66,7 @@
         ghc928 = true;
         ghc945 = true;
         ghc962 = true;
+        ghc9820230704 = true;
         "ghc980${__substring 0 8 sources.ghc980.lastModifiedDate}" = true;
         "ghc99${__substring 0 8 sources.ghc99.lastModifiedDate}" = true;
       }));
