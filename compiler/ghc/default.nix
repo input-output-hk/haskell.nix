@@ -259,7 +259,6 @@ let
         else if builtins.compareVersions ghc-version "9.9" < 0
           then ../../materialized/${compiler-nix-name}/hadrian-ghc98
         else ../../materialized/${compiler-nix-name}/hadrian-ghc99;
-      checkMaterialization = true;
       modules = [{
         # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
