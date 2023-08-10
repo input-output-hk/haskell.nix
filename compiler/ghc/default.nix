@@ -242,7 +242,7 @@ let
 
   hadrian =
     let
-      compiler-nix-name = if buildPackages.haskell-nix.compiler ? "ghc928"
+      compiler-nix-name = if buildPackages.haskell.compiler ? "ghc928"
         then "ghc928"
         else "ghc8107";
     in buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
