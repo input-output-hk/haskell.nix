@@ -103,6 +103,8 @@ let
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.2.1" >= 0) {
       deepseq      = "libraries/deepseq";
       pretty       = "libraries/pretty";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.8" >= 0) {
+      ghc-platform = "libraries/ghc-platform";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on
