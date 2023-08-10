@@ -240,20 +240,25 @@ let
   # value for us.
   installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
 
-  hadrian = buildPackages.haskell-nix.tool "ghc928" "hadrian" {
-      compilerSelection = p: p.haskell-nix.compiler // p.haskell.compiler;
+  hadrian =
+    let
+      compiler-nix-name = if buildPackages.haskell-nix.compilers ? "ghc928"
+        then "ghc928"
+        else "ghc8107";
+    in buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
+      compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
       materialized =
         if builtins.compareVersions ghc-version "9.4" < 0
-          then ../../materialized/ghc928/hadrian-ghc92
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc92
         else if builtins.compareVersions ghc-version "9.6" < 0
-          then ../../materialized/ghc928/hadrian-ghc94
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc94
         else if builtins.compareVersions ghc-version "9.8" < 0
-          then ../../materialized/ghc928/hadrian-ghc96
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc96
         else if builtins.compareVersions ghc-version "9.9" < 0
-          then ../../materialized/ghc928/hadrian-ghc98
-        else ../../materialized/ghc928/hadrian-ghc99;
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc98
+        else ../../materialized/${compiler-nix-name}/hadrian-ghc99;
       checkMaterialization = true;
       modules = [{
         # Apply the patches in a way that does not require using something
