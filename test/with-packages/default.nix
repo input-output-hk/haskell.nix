@@ -1,4 +1,4 @@
-{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages, cabalProjectLocal }:
+{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 with util;
