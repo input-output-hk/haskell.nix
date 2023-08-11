@@ -26,7 +26,7 @@ let
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc96020230302" "ghc961" "ghc962" "ghc9820230704"];
+  meta.disabled = __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4.0" >= 0;
   ifdInputs = {
     inherit (project) plan-nix;
   };

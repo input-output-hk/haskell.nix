@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabal-install, cabalProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -6,8 +6,8 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "shell-for-setup-deps";
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
+      allow-newer: *:*
     '';
     modules = [{
       # Package has no exposed modules which causes
