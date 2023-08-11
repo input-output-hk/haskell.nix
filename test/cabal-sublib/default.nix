@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -17,12 +17,8 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-sublib";
     inherit modules;
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
-      source-repository-package
-        type: git
-        location: https://github.com/glguy/th-abstraction.git
-        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
-        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
+    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
+      allow-newer: *:*
     '';
   };
 
