@@ -1,4 +1,4 @@
-{ stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, recurseIntoAttrs }:
+{ stdenv, testSrc, haskell-nix, compiler-nix-name, evalPackages, recurseIntoAttrs, buildPackages }:
 let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;

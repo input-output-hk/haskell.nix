@@ -182,4 +182,8 @@ in {
   # Using -j1 works around the issue.
   packages.gi-gtk.components.library.ghcOptions =
     pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961" "ghc962"]) "-j1";
+
+  # https://github.com/ekmett/lens/issues/1043
+  packages.lens.patches = pkgs.lib.optional (builtins.compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler.nix-name}.version "9.8.0" >= 0)
+    (fromUntil "5.2.2" "5.2.2.1" ../patches/lens-5.2.2.patch);
 }
