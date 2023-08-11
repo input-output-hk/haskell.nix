@@ -5,7 +5,7 @@ with util;
 
 let
   project = doExactConfig: cabalProject' {
-    inherit compiler-nix-name evalPackages cabalProjectLocal;
+    inherit compiler-nix-name evalPackages;
     src = testSrc "with-packages";
     modules = [
       # overrides to fix the build
