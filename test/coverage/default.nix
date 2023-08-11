@@ -6,9 +6,6 @@ let
   projectArgs = {
     inherit evalPackages;
     src = testSrc "coverage";
-    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
-      allow-newer: *:*
-    '';
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)

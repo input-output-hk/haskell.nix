@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages, cabalProjectLocal }:
 
 with lib;
 
@@ -16,9 +16,6 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple";
     inherit modules;
-    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
-      allow-newer: *:*
-    '';
   };
 
   packages = project.hsPkgs;

@@ -1,15 +1,12 @@
-{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages, cabalProjectLocal }:
 
 with lib;
 with util;
 
 let
   project = doExactConfig: cabalProject' {
-    inherit compiler-nix-name evalPackages;
+    inherit compiler-nix-name evalPackages cabalProjectLocal;
     src = testSrc "with-packages";
-    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
-      allow-newer: *:*
-    '';
     modules = [
       # overrides to fix the build
       {

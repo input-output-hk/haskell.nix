@@ -1163,11 +1163,9 @@ in {
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
         version = "3.10.1.0";
+      } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" < 0) {
         index-state = final.haskell-nix.internalHackageIndexState;
-        materialized =
-          if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" < 0
-            then ../materialized + "/${compiler-nix-name}/cabal-install"
-            else null;
+        materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args));
     nix-tools-set = { compiler-nix-name, ... }@args:
       let

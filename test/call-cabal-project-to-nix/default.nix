@@ -9,9 +9,6 @@ let
     inherit compiler-nix-name evalPackages;
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
-    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
-      allow-newer: *:*
-    '';
   };
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = importAndFilterProject {

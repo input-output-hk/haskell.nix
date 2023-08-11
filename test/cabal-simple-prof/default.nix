@@ -19,9 +19,6 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-prof";
     inherit modules;
-    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
-      allow-newer: *:*
-    '';
   };
 
 in recurseIntoAttrs {
