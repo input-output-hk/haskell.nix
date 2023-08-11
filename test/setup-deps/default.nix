@@ -7,8 +7,8 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../..; name = "setup-deps"; subDir = "test/setup-deps"; };
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
+    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
+      allow-newer: *:*
     '';
     modules = [{
       # Package has no exposed modules which causes

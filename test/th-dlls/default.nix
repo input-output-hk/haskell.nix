@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -7,6 +7,9 @@ let
   project = externalInterpreter: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls";
+    cabalProjectLocal = lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
+      allow-newer: *:*
+    '';
     modules = [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls.components.library.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
