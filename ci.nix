@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 3
+{ ifdLevel ? 0
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
 , restrictEval ? false
 , checkMaterialization ? false
@@ -17,6 +17,8 @@
     "R2305" = "nixpkgs-2305";
     "unstable" = "nixpkgs-unstable";
   };
+  ghc980X = ghc980${__substring 0 8 sources.ghc980.lastModifiedDate};
+  ghc99X = ghc99${__substring 0 8 sources.ghc99.lastModifiedDate};
   haskellNix = compat { inherit checkMaterialization system; };
   nixpkgsArgs = haskellNix.nixpkgsArgs // {
     # Needed for dwarf tests
@@ -67,32 +69,32 @@
         ghc945 = true;
         ghc962 = true;
         ghc9820230704 = true;
-        "ghc980${__substring 0 8 sources.ghc980.lastModifiedDate}" = true;
-        "ghc99${__substring 0 8 sources.ghc99.lastModifiedDate}" = true;
+        ${ghc980X} = true;
+        ${ghc99X} = true;
       }));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc980" "ghc99"])
-       || (system == "aarch64-linux" && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc980" "ghc99"])
-       || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc980" "ghc99"])
-       || (system == "aarch64-darwin" && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc980" "ghc99"])
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc962" ghc980X ghc99X])
+       || (system == "aarch64-linux" && __elem compiler-nix-name ["ghc8107" "ghc962" ghc980X ghc99X])
+       || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107" "ghc962" ghc980X ghc99X])
+       || (system == "aarch64-darwin" && __elem compiler-nix-name ["ghc8107" "ghc962" ghc980X ghc99X])
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc945" "ghc962" "ghc980" "ghc99"])
+      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc945" "ghc962" ghc980X ghc99X])
        || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc945" "ghc962" "ghc980" "ghc99"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc945" "ghc962" ghc980X ghc99X]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc927" "ghc928"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
-  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc927" "ghc928" "ghc945" "ghc962" "ghc980" "ghc99"]) {
+  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc927" "ghc928" "ghc945" "ghc962" ghc980X ghc99X]) {
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
   };
   isDisabled = d: d.meta.disabled or false;
