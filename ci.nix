@@ -17,8 +17,8 @@
     "R2305" = "nixpkgs-2305";
     "unstable" = "nixpkgs-unstable";
   };
-  ghc980X = ghc980${__substring 0 8 sources.ghc980.lastModifiedDate};
-  ghc99X = ghc99${__substring 0 8 sources.ghc99.lastModifiedDate};
+  ghc980X = "ghc980${__substring 0 8 sources.ghc980.lastModifiedDate}";
+  ghc99X = "ghc99${__substring 0 8 sources.ghc99.lastModifiedDate}";
   haskellNix = compat { inherit checkMaterialization system; };
   nixpkgsArgs = haskellNix.nixpkgsArgs // {
     # Needed for dwarf tests
