@@ -9,7 +9,7 @@ let
     inherit compiler-nix-name evalPackages;
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
-    cabalProjectLocal = optionalString (__compareVersions buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.8.0" >= 0) ''
+    cabalProjectLocal = optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
       allow-newer: *:*
 
       repository head.hackage.ghc.haskell.org

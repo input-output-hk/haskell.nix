@@ -21,9 +21,9 @@ in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs ||
     # TH breaks for ghc 9.4.3 cross compile for windows if the library even
     # just depends on the `text` package (this may be related to the C++ dependency).
-    (stdenv.hostPlatform.isWindows && __compareVersions buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.4.0" >= 0) ||
+    (stdenv.hostPlatform.isWindows && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4.0" >= 0) ||
     # Similar problem on macOS
-    (stdenv.hostPlatform.isDarwin && __compareVersions buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.8.0" >= 0) ||
+    (stdenv.hostPlatform.isDarwin && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ||
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl);
 
