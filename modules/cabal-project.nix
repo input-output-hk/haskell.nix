@@ -1,4 +1,4 @@
-{ lib, config, pkgs, haskellLib, ... }:
+{ lib, config, pkgs, ... }:
 with lib;
 with types;
 let readIfExists = src: fileName:
@@ -12,6 +12,9 @@ let readIfExists = src: fileName:
           else null;
 in {
   _file = "haskell.nix/modules/cabal-project.nix";
+
+  imports = [ ./cabal-project/repository.nix ];
+
   options = {
     # Used by callCabalProjectToNix
     compiler-nix-name = mkOption {
