@@ -928,11 +928,11 @@ in {
           in {
             name = compiler-nix-name;
             value = final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc962; };
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}; };
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.${compiler-nix-name}
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
                     else final.buildPackages.buildPackages.haskell.compiler.ghc962
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
                           or final.buildPackages.buildPackages.haskell.compiler.ghc944
