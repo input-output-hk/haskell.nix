@@ -1214,7 +1214,7 @@ in {
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
                 modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                nix-tools = config.evalPackages.haskell-nix.nix-tools;
                 cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args);
             alex = final.haskell-nix.bootstrap.packages.alex-tool {};
@@ -1226,7 +1226,7 @@ in {
                 inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
                 modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                nix-tools = config.evalPackages.haskell-nix.nix-tools;
                 cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
               } // args);
             happy = final.haskell-nix.bootstrap.packages.happy-tool {};
@@ -1244,7 +1244,7 @@ in {
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
                 modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                nix-tools = config.evalPackages.haskell-nix.nix-tools;
                 cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args)).getComponent "exe:HsColour";
             hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {};
