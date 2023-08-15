@@ -5,10 +5,13 @@ let
     wine = import ./wine.nix;
     haskell = import ./haskell.nix args;
     nix-tools = (final: prev: {
-      haskell-nix = prev.haskell-nix //  {
-        inherit (import ../nix-tools/overlay.nix final prev)
-          nix-tools nix-tools-unchecked nix-tools-set;
-      };
+      haskell-nix = 
+        let nix-tools-pkgs = import ../nix-tools/overlay.nix final prev;
+        in prev.haskell-nix // {
+          inherit (nix-tools-pkgs) nix-tools nix-tools-unchecked nix-tools-set;
+          # FIXME: is this needed?
+          internal-nix-tools = nix-tools-pkgs.nix-tools;
+        };
     });
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
