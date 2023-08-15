@@ -5,8 +5,9 @@ let
     wine = import ./wine.nix;
     haskell = import ./haskell.nix args;
     nix-tools = (final: prev: {
-      haskell-nix = prev.haskell-nix // {
-        nix-tools = import ../nix-tools/overlay.nix final prev;
+      haskell-nix = prev.haskell-nix //  {
+        inherit (import ../nix-tools/overlay.nix final prev)
+          nix-tools nix-tools-unchecked nix-tools-set;
       };
     });
     bootstrap = import ./bootstrap.nix;
