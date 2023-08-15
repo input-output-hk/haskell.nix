@@ -1,4 +1,4 @@
-{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }@defaults:
+{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }:
 { name          ? src.name or null # optional name for better error messages
 , src
 , materialized-dir ? ../materialized
