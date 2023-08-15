@@ -75,8 +75,7 @@
           pkgs.nix-tools.project.flake'.packages);
 
       checks = forAllSystems (pkgs:
-        pkgs.nix-tools.project.flake'.checks
-        // {
+        pkgs.nix-tools.project.flake'.checks // {
           truncate-index = import ./tests/truncate-index.nix { inherit pkgs; };
         });
 
