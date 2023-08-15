@@ -8,7 +8,7 @@
         echo.revision = import ./cabal-files/echo.nix;
         echo.flags.example = false;
         exceptions.revision = (((hackage.exceptions)."0.10.4").revisions).default;
-        directory.revision = (((hackage.directory)."1.3.6.2").revisions).default;
+        directory.revision = import ./cabal-files/directory.nix;
         tar.revision = import ./cabal-files/tar.nix;
         tar.flags.old-bytestring = false;
         tar.flags.old-time = false;
@@ -21,7 +21,7 @@
         HTTP.flags.network-uri = true;
         HTTP.flags.conduit10 = false;
         HTTP.flags.warn-as-error = false;
-        ghc-bignum.revision = (((hackage.ghc-bignum)."1.2").revisions).default;
+        ghc-bignum.revision = (((hackage.ghc-bignum)."1.3").revisions).default;
         zlib.revision = import ./cabal-files/zlib.nix;
         zlib.flags.non-blocking-ffi = false;
         zlib.flags.bundled-c-zlib = false;
@@ -65,7 +65,7 @@
         binary.revision = (((hackage.binary)."0.8.9.0").revisions).default;
         base64-bytestring.revision = import ./cabal-files/base64-bytestring.nix;
         regex-base.revision = import ./cabal-files/regex-base.nix;
-        process.revision = (((hackage.process)."1.6.16.0").revisions).default;
+        process.revision = import ./cabal-files/process.nix;
         unix.revision = (((hackage.unix)."2.7.2.2").revisions).default;
         data-array-byte.revision = import ./cabal-files/data-array-byte.nix;
         transformers.revision = (((hackage.transformers)."0.5.6.2").revisions).default;
@@ -102,9 +102,7 @@
           "ghc-boot-th" = "9.2.7";
           "base" = "4.16.4.0";
           "time" = "1.11.1.1";
-          "process" = "1.6.16.0";
-          "ghc-bignum" = "1.2";
-          "directory" = "1.3.6.2";
+          "ghc-bignum" = "1.3";
           "exceptions" = "0.10.4";
           "rts" = "1.0.2";
           "transformers" = "0.5.6.2";

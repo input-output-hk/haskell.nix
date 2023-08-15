@@ -86,7 +86,7 @@ assert enableNativeBignum -> !enableIntegerSimple;
 assert enableIntegerSimple -> !enableNativeBignum;
 
 let
-  src = src-spec.file or fetchurl { inherit (src-spec) url sha256; };
+  src = src-spec.file or (fetchurl { inherit (src-spec) url sha256; });
 
   inherit (stdenv) buildPlatform hostPlatform targetPlatform;
   inherit (haskell-nix.haskellLib) isCrossTarget;
@@ -202,6 +202,13 @@ let
         "--enable-dwarf-unwind"
         "--with-libdw-includes=${lib.getDev elfutils}/include"
         "--with-libdw-libraries=${lib.getLib elfutils}/lib"
+    ] ++ lib.optionals (targetPlatform.isDarwin && builtins.compareVersions ghc-version "9.6" >= 0) [
+        # From https://github.com/NixOS/nixpkgs/commit/6454fb1bc0b5884d0c11c98a8a99735ef5a0cae8
+        # Darwin uses llvm-ar. GHC will try to use `-L` with `ar` when it is `llvm-ar`
+        # but it doesn’t currently work because Cabal never uses `-L` on Darwin. See:
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/23188
+        # https://github.com/haskell/cabal/issues/8882
+        "fp_cv_prog_ar_supports_dash_l=no"
     ] ++ lib.optional (targetPlatform.isGhcjs) "--target=javascript-unknown-ghcjs"; # TODO use configurePlatforms once tripple is updated in nixpkgs
 
   # Splicer will pull out correct variations
@@ -241,7 +248,9 @@ let
           then ../../materialized/ghc8107/hadrian-ghc92
         else if builtins.compareVersions ghc-version "9.6" < 0
           then ../../materialized/ghc8107/hadrian-ghc94
-        else ../../materialized/ghc8107/hadrian-ghc96;
+        else if builtins.compareVersions ghc-version "9.8" < 0
+          then ../../materialized/ghc8107/hadrian-ghc96
+        else ../../materialized/ghc8107/hadrian-ghc98;
       modules = [{
         # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
@@ -342,9 +351,8 @@ stdenv.mkDerivation (rec {
   patches = ghc-patches;
 
   # configure was run by configured-src already.
-  phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != [] && !stdenv.targetPlatform.isGhcjs) "autoreconfPhase" # autoreconf can replace config.sub with one that is missing ghcjs
-            ++ [ "configurePhase" "buildPhase"
+  phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+             "configurePhase" "buildPhase"
              "checkPhase" "installPhase"
              "fixupPhase"
              "installCheckPhase"
@@ -358,11 +366,14 @@ stdenv.mkDerivation (rec {
         for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
         export "''${env#TARGET_}=''${!env}"
         done
-    '' + lib.optionalString (targetPlatform.isGhcjs) ''
+    ''
+    # Use emscripten and the `config.sub` saved by `postPatch`
+    + lib.optionalString (targetPlatform.isGhcjs) ''
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
         export EM_CACHE=$(mktemp -d)
+        mv config.sub.ghcjs config.sub
     ''
     # GHC is a bit confused on its cross terminology, as these would normally be
     # the *host* tools.
@@ -425,8 +436,8 @@ stdenv.mkDerivation (rec {
         echo '${ghc-version-date}' > VERSION_DATE
     ''
       # The official ghc 9.2.3 tarball requires booting.
-      + lib.optionalString (ghc-version == "9.2.3") ''
-        ./boot
+      + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704") ''
+        python3 ./boot
     '';
 
   configurePlatforms = [ "build" "host" ] ++ lib.optional (!targetPlatform.isGhcjs) "target";
@@ -626,13 +637,17 @@ stdenv.mkDerivation (rec {
         mkdir $doc
         mkdir $generated
       '';
-      phases = [ "unpackPhase" "patchPhase" ]
-            ++ lib.optional (ghc-patches != []) "autoreconfPhase"
-            ++ [ "configurePhase" "installPhase"];
+      phases = [ "unpackPhase" "patchPhase" "autoreconfPhase"
+                 "configurePhase" "installPhase"];
      } // lib.optionalAttrs useHadrian {
       postConfigure = ''
         for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
           ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
+        done
+      '' + lib.optionalString (builtins.compareVersions ghc-version "9.8.1" >= 0) ''
+        for a in bytearray-access-ops.txt.pp addr-access-ops.txt.pp primops.txt; do
+          ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
+          cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
         done
       '' + lib.optionalString stdenv.isDarwin ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
@@ -643,6 +658,12 @@ stdenv.mkDerivation (rec {
         substituteInPlace hadrian/cfg/system.config \
           --replace 'cross-compiling       = YES' \
                     'cross-compiling       = NO'
+      '';
+    } // lib.optionalAttrs targetPlatform.isGhcjs {
+      # Backup the config.sub that knows what `ghcjs` is in case
+      # `autoreconfPhase` replaces it
+      postPatch = ''
+        cp config.sub config.sub.ghcjs
       '';
     });
 
@@ -671,6 +692,12 @@ stdenv.mkDerivation (rec {
   # Needed for `haddock` to work on source that includes non ASCII chars
   LANG = "en_US.UTF-8";
   LC_ALL = "en_US.UTF-8";
+} // lib.optionalAttrs targetPlatform.isGhcjs {
+  # Backup the config.sub that knows what `ghcjs` is in case
+  # `autoreconfPhase` replaces it
+  postPatch = ''
+    cp config.sub config.sub.ghcjs
+  '';
 } // lib.optionalAttrs (stdenv.buildPlatform.libc == "glibc") {
   LOCALE_ARCHIVE = "${buildPackages.glibcLocales}/lib/locale/locale-archive";
 } // lib.optionalAttrs targetPlatform.useAndroidPrebuilt {
@@ -702,6 +729,10 @@ stdenv.mkDerivation (rec {
       substituteInPlace rts/win32/ThrIOManager.c --replace rts\\OSThreads.h rts/OSThreads.h
     fi
   '';
+  # Same hack as 'preBuild'
+  preInstall = lib.optionalString stdenv.buildPlatform.isDarwin ''
+    export XATTR=$(mktemp -d)/nothing
+  '';
 } // lib.optionalAttrs useHadrian {
   postConfigure = lib.optionalString stdenv.isDarwin ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
@@ -715,7 +746,7 @@ stdenv.mkDerivation (rec {
   '';
   buildPhase = ''
     ${hadrian}/bin/hadrian ${hadrianArgs}
-  '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs) ''
+  '' + lib.optionalString (installStage1 && !stdenv.targetPlatform.isGhcjs && builtins.compareVersions ghc-version "9.8" < 0) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:libiserv
   '' + lib.optionalString targetPlatform.isMusl ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
@@ -754,6 +785,7 @@ stdenv.mkDerivation (rec {
           --replace ',("windres command", "/bin/false")' ',("windres command", "${targetCC.bintools.targetPrefix}windres")'
       ''
       else ''
+        runHook preInstall
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
