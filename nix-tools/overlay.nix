@@ -3,7 +3,7 @@ final: prev:
 let
   compiler-nix-name = "ghc928";
 
-  args = {
+  defaultArgs = {
     inherit compiler-nix-name;
     compilerSelection = p: p.haskell.compiler;
 
@@ -14,10 +14,10 @@ let
     materialized = ./materialized;
   };
 
-  nix-tools = nix-tools-set args;
+  nix-tools = nix-tools-set defaultArgs;
 
   nix-tools-unchecked = nix-tools-set (
-    args // { checkMaterialization = false; }
+    defaultArgs // { checkMaterialization = false; }
   );
 
   nix-tools-set = args:
