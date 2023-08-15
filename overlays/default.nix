@@ -4,7 +4,11 @@ let
   overlays = {
     wine = import ./wine.nix;
     haskell = import ./haskell.nix args;
-    nix-tools = import ./nix-tools.nix;
+    nix-tools = (final: prev: {
+      haskell-nix = prev.haskell-nix // {
+        nix-tools = import ../nix-tools/overlay.nix final prev;
+      };
+    });
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
