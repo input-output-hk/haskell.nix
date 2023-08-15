@@ -101,9 +101,10 @@ let
             wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
           done
         '';
+        passthru = { inherit project exes; };
       };
     in
-    toolset // { inherit project exes; } // warning;
+    toolset // warning;
 in
 {
   inherit nix-tools nix-tools-unchecked nix-tools-set;
