@@ -7,7 +7,7 @@ let
       # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
       # infinite recursion (so using nix-tools-unchecked).
-      final.buildPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}
+      final.buildPackages.haskell-nix.nix-tools-unchecked
     ];
     phases = [ "unpackPhase" "buildPhase" ];
 
