@@ -586,7 +586,7 @@ let
               '')
         }
       ''}
-      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
+      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || (haskellLib.isExe componentId && stdenv.hostPlatform.isGhcjs)) ''
         mkdir -p $out/bin
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
