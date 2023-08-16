@@ -1,4 +1,4 @@
-{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 with util;
@@ -39,7 +39,7 @@ in recurseIntoAttrs {
   test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      broken = stdenv.hostPlatform.isGhcjs && __compareVersion buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
       disabled = broken;
     };
   });
@@ -48,7 +48,7 @@ in recurseIntoAttrs {
   test-shell-dec = (addCabalInstall decLibrary.shell).overrideAttrs (_: _: {
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      broken = stdenv.hostPlatform.isGhcjs && __compareVersion buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
       disabled = broken;
     };
   });
@@ -105,7 +105,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"]) || stdenv.hostPlatform.isMusl;
+      broken = (stdenv.hostPlatform.isGhcjs && __compareVersion buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0) || stdenv.hostPlatform.isMusl;
       disabled = broken;
     };
 

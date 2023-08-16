@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -32,7 +32,7 @@ in recurseIntoAttrs {
     }).overrideAttrs (_: _: {
       meta = rec {
         platforms = lib.platforms.all;
-        broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+        broken = stdenv.hostPlatform.isGhcjs && __compareVersion buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
         disabled = broken;
       };
     });
@@ -69,7 +69,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      broken = stdenv.hostPlatform.isGhcjs && __compareVersion buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
       disabled = broken;
     };
 
