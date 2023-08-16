@@ -231,6 +231,7 @@ in {
   # Check a test component
   check = import ./check.nix {
     inherit stdenv lib haskellLib;
+    inherit (pkgs) buildPackages;
   };
 
   # Do coverage of a package

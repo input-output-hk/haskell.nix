@@ -591,8 +591,8 @@ let
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
           ${lib.optionalString stdenv.buildPlatform.isLinux "sync"}
-          ${if stdenv.hostPlatform.isGhcjs then ''
-            cat <(echo \#!${lib.getBin buildPackages.nodejs-18_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+          ${if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" < 0 then ''
+            cat <(echo \#!/usr/bin/env node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
           '' else ''
              cp -r ${testExecutable} $(dirname $out/bin/${exeName})

@@ -3,13 +3,6 @@ final: prev:
   haskell-nix = prev.haskell-nix // ({
     defaultModules = prev.haskell-nix.defaultModules ++ final.lib.optional final.stdenv.hostPlatform.isGhcjs (
       ({ pkgs, buildModules, config, lib, ... }: {
-        testWrapper = [((final.writeScriptBin "node-wrapper" ''
-          set -euo pipefail
-          exe=$1
-          shift
-          ${final.buildPackages.nodejs-18_x}/bin/node $exe $@
-        '') + "/bin/node-wrapper")];
-
         # Apply the patches that came with `ghcjs`
         # Also add a "Keep alive" message to prevent hydra timeouts when hsc2hs runs
         packages = pkgs.lib.genAttrs (pkgs.lib.optionals (__elem config.compiler.nix-name ["ghc865" "ghc884" "ghc8107"]) ["base" "directory" "filepath" "ghc-prim" "integer-gmp" "process" "template-haskell" "time" "unix" "Win32" ])

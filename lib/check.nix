@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib }:
+{ stdenv, lib, haskellLib, buildPackages }:
 drv:
 
 let
@@ -30,7 +30,10 @@ in stdenv.mkDerivation ((
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env exeName;
   };
 
-  inherit (drv) meta LANG LC_ALL buildInputs nativeBuildInputs;
+  inherit (drv) meta LANG LC_ALL buildInputs;
+
+  nativeBuildInputs = drv.nativeBuildInputs
+      ++ lib.optional (stdenv.hostPlatform.isGhcjs) buildPackages.nodejs-18_x;
 
   inherit (component) doCheck doCrossCheck;
 
