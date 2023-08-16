@@ -50,7 +50,7 @@ in stdenv.mkDerivation ((
     lndir ${drv} $drv
     rm $drv/bin/${drv.exeName}
     cp ${drv}/bin/${drv.exeName} $drv/bin/${drv.exeName}
-    patchShebangs --build $(dirname $drv/bin${drv.exeName})
+    patchShebangs --build $(dirname $drv/bin/${drv.exeName})
     ${toString component.testWrapper} $drv/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out/test-stdout
 
     # Copy over tix files, if they exist
