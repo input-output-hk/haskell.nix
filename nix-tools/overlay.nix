@@ -1,7 +1,7 @@
 final: prev:
 
 let
-  compiler-nix-name = "ghc928";
+  compiler-nix-name = "ghc8107";
 
   defaultArgs = {
     inherit compiler-nix-name;
