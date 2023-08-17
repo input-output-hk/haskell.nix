@@ -86,12 +86,17 @@
         # project's hydraJobs
         pkgs.nix-tools.project.flake'.hydraJobs
         # tarballs with static builds.
-        // lib.optionalAttrs (pkgs.buildPlatform.system == "x86_64-linux") {
-          binary-tarball = pkgs.nix-tools.project.projectCross.musl64.mkTarball "nix-tools";
-        }
-        // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux") {
-          binary-tarball = pkgs.nix-tools.project.projectCross.aarch64-multiplatform-musl.mkTarball "nix-tools";
-        });
+
+        #
+        # FIXME: temporarily disable
+        #
+        # // lib.optionalAttrs (pkgs.buildPlatform.system == "x86_64-linux") {
+        #   binary-tarball = pkgs.nix-tools.project.projectCross.musl64.mkTarball "nix-tools";
+        # }
+        # // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux") {
+        #   binary-tarball = pkgs.nix-tools.project.projectCross.aarch64-multiplatform-musl.mkTarball "nix-tools";
+        # }
+        );
     };
 
   nixConfig = {
