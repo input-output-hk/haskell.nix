@@ -11,7 +11,7 @@
     flags = {};
     package = {
       specVersion = "1.12";
-      identifier = { name = "hpack"; version = "0.35.2"; };
+      identifier = { name = "hpack"; version = "0.35.3"; };
       license = "MIT";
       copyright = "";
       maintainer = "Simon Hengel <sol@typeful.net>";
@@ -32,7 +32,7 @@
           (hsPkgs."bifunctors" or (errorHandler.buildDepError "bifunctors"))
           (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-          (hsPkgs."cryptonite" or (errorHandler.buildDepError "cryptonite"))
+          (hsPkgs."crypton" or (errorHandler.buildDepError "crypton"))
           (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
           (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
           (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
@@ -47,7 +47,7 @@
           (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
           (hsPkgs."vector" or (errorHandler.buildDepError "vector"))
           (hsPkgs."yaml" or (errorHandler.buildDepError "yaml"))
-          ];
+          ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).ge "9.4.5" && system.isWindows) (hsPkgs."network" or (errorHandler.buildDepError "network"));
         buildable = true;
         };
       exes = {
@@ -60,7 +60,7 @@
             (hsPkgs."bifunctors" or (errorHandler.buildDepError "bifunctors"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-            (hsPkgs."cryptonite" or (errorHandler.buildDepError "cryptonite"))
+            (hsPkgs."crypton" or (errorHandler.buildDepError "crypton"))
             (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
@@ -76,7 +76,7 @@
             (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
             (hsPkgs."vector" or (errorHandler.buildDepError "vector"))
             (hsPkgs."yaml" or (errorHandler.buildDepError "yaml"))
-            ];
+            ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).ge "9.4.5" && system.isWindows) (hsPkgs."network" or (errorHandler.buildDepError "network"));
           buildable = true;
           };
         };
@@ -92,7 +92,7 @@
             (hsPkgs."bifunctors" or (errorHandler.buildDepError "bifunctors"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-            (hsPkgs."cryptonite" or (errorHandler.buildDepError "cryptonite"))
+            (hsPkgs."crypton" or (errorHandler.buildDepError "crypton"))
             (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
             (hsPkgs."directory" or (errorHandler.buildDepError "directory"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
@@ -112,7 +112,7 @@
             (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
             (hsPkgs."vector" or (errorHandler.buildDepError "vector"))
             (hsPkgs."yaml" or (errorHandler.buildDepError "yaml"))
-            ];
+            ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).ge "9.4.5" && system.isWindows) (hsPkgs."network" or (errorHandler.buildDepError "network"));
           build-tools = [
             (hsPkgs.buildPackages.hspec-discover.components.exes.hspec-discover or (pkgs.buildPackages.hspec-discover or (errorHandler.buildToolDepError "hspec-discover:hspec-discover")))
             ];
@@ -122,9 +122,9 @@
       };
     } // {
     src = (pkgs.lib).mkDefault (pkgs.fetchurl {
-      url = "http://hackage.haskell.org/package/hpack-0.35.2.tar.gz";
-      sha256 = "03b7013d18dc2280fe3d134d80a68fa95125c456e660b52ae5a873b7662b90ec";
+      url = "http://hackage.haskell.org/package/hpack-0.35.3.tar.gz";
+      sha256 = "24cdb20a4ce8486873862a0e122b256a2f060c26b96326e1386e7822a1d805ce";
       });
     }) // {
-    package-description-override = "cabal-version: 1.12\r\n\r\n-- This file has been generated from package.yaml by hpack version 0.35.1.\r\n--\r\n-- see: https://github.com/sol/hpack\r\n\r\nname:           hpack\r\nversion:        0.35.2\r\nx-revision: 2\r\nsynopsis:       A modern format for Haskell packages\r\ndescription:    See README at <https://github.com/sol/hpack#readme>\r\ncategory:       Development\r\nhomepage:       https://github.com/sol/hpack#readme\r\nbug-reports:    https://github.com/sol/hpack/issues\r\nmaintainer:     Simon Hengel <sol@typeful.net>\r\nlicense:        MIT\r\nlicense-file:   LICENSE\r\nbuild-type:     Simple\r\nextra-source-files:\r\n    CHANGELOG.md\r\n    resources/test/hpack.cabal\r\n\r\nsource-repository head\r\n  type: git\r\n  location: https://github.com/sol/hpack\r\n\r\nlibrary\r\n  hs-source-dirs:\r\n      src\r\n  ghc-options: -Wall -fno-warn-incomplete-uni-patterns\r\n  build-depends:\r\n      Cabal >=3.0.0.0 && <3.11\r\n    , Glob >=0.9.0\r\n    , aeson >=1.4.3.0 && <2.2.0.0\r\n    , base >=4.9 && <5\r\n    , bifunctors\r\n    , bytestring\r\n    , containers\r\n    , cryptonite\r\n    , deepseq\r\n    , directory >=1.2.5.0\r\n    , filepath\r\n    , http-client\r\n    , http-client-tls <0.3.6.2\r\n    , http-types\r\n    , infer-license >=0.2.0 && <0.3\r\n    , pretty\r\n    , scientific\r\n    , text\r\n    , transformers\r\n    , unordered-containers\r\n    , vector\r\n    , yaml >=0.10.0\r\n  exposed-modules:\r\n      Hpack\r\n      Hpack.Config\r\n      Hpack.Render\r\n      Hpack.Yaml\r\n      Hpack.Error\r\n  other-modules:\r\n      Data.Aeson.Config.FromValue\r\n      Data.Aeson.Config.Key\r\n      Data.Aeson.Config.KeyMap\r\n      Data.Aeson.Config.Parser\r\n      Data.Aeson.Config.Types\r\n      Data.Aeson.Config.Util\r\n      Hpack.CabalFile\r\n      Hpack.Defaults\r\n      Hpack.Haskell\r\n      Hpack.License\r\n      Hpack.Module\r\n      Hpack.Options\r\n      Hpack.Render.Dsl\r\n      Hpack.Render.Hints\r\n      Hpack.Syntax.BuildTools\r\n      Hpack.Syntax.Defaults\r\n      Hpack.Syntax.Dependencies\r\n      Hpack.Syntax.DependencyVersion\r\n      Hpack.Syntax.Git\r\n      Hpack.Syntax.ParseDependencies\r\n      Hpack.Utf8\r\n      Hpack.Util\r\n      Imports\r\n      Path\r\n      Paths_hpack\r\n  default-language: Haskell2010\r\n\r\nexecutable hpack\r\n  main-is: Main.hs\r\n  hs-source-dirs:\r\n      driver\r\n  ghc-options: -Wall -fno-warn-incomplete-uni-patterns\r\n  build-depends:\r\n      Cabal >=3.0.0.0 && <3.11\r\n    , Glob >=0.9.0\r\n    , aeson >=1.4.3.0 && <2.2.0.0\r\n    , base >=4.9 && <5\r\n    , bifunctors\r\n    , bytestring\r\n    , containers\r\n    , cryptonite\r\n    , deepseq\r\n    , directory >=1.2.5.0\r\n    , filepath\r\n    , hpack\r\n    , http-client\r\n    , http-client-tls <0.3.6.2\r\n    , http-types\r\n    , infer-license >=0.2.0 && <0.3\r\n    , pretty\r\n    , scientific\r\n    , text\r\n    , transformers\r\n    , unordered-containers\r\n    , vector\r\n    , yaml >=0.10.0\r\n  other-modules:\r\n      Paths_hpack\r\n  default-language: Haskell2010\r\n\r\ntest-suite spec\r\n  type: exitcode-stdio-1.0\r\n  main-is: Spec.hs\r\n  hs-source-dirs:\r\n      test\r\n      src\r\n  ghc-options: -Wall -fno-warn-incomplete-uni-patterns\r\n  cpp-options: -DTEST\r\n  build-depends:\r\n      Cabal >=3.0.0.0 && <3.11\r\n    , Glob >=0.9.0\r\n    , HUnit >=1.6.0.0\r\n    , QuickCheck\r\n    , aeson >=1.4.3.0 && <2.2.0.0\r\n    , base >=4.9 && <5\r\n    , bifunctors\r\n    , bytestring\r\n    , containers\r\n    , cryptonite\r\n    , deepseq\r\n    , directory >=1.2.5.0\r\n    , filepath\r\n    , hspec ==2.*\r\n    , http-client\r\n    , http-client-tls <0.3.6.2\r\n    , http-types\r\n    , infer-license >=0.2.0 && <0.3\r\n    , interpolate\r\n    , mockery >=0.3\r\n    , pretty\r\n    , scientific\r\n    , template-haskell\r\n    , temporary\r\n    , text\r\n    , transformers\r\n    , unordered-containers\r\n    , vector\r\n    , yaml >=0.10.0\r\n  build-tool-depends:\r\n      hspec-discover:hspec-discover\r\n  other-modules:\r\n      Data.Aeson.Config.FromValueSpec\r\n      Data.Aeson.Config.TypesSpec\r\n      Data.Aeson.Config.UtilSpec\r\n      EndToEndSpec\r\n      Helper\r\n      Hpack.CabalFileSpec\r\n      Hpack.ConfigSpec\r\n      Hpack.DefaultsSpec\r\n      Hpack.HaskellSpec\r\n      Hpack.LicenseSpec\r\n      Hpack.ModuleSpec\r\n      Hpack.OptionsSpec\r\n      Hpack.Render.DslSpec\r\n      Hpack.Render.HintsSpec\r\n      Hpack.RenderSpec\r\n      Hpack.Syntax.BuildToolsSpec\r\n      Hpack.Syntax.DefaultsSpec\r\n      Hpack.Syntax.DependenciesSpec\r\n      Hpack.Syntax.GitSpec\r\n      Hpack.Utf8Spec\r\n      Hpack.UtilSpec\r\n      HpackSpec\r\n      Data.Aeson.Config.FromValue\r\n      Data.Aeson.Config.Key\r\n      Data.Aeson.Config.KeyMap\r\n      Data.Aeson.Config.Parser\r\n      Data.Aeson.Config.Types\r\n      Data.Aeson.Config.Util\r\n      Hpack\r\n      Hpack.CabalFile\r\n      Hpack.Config\r\n      Hpack.Defaults\r\n      Hpack.Error\r\n      Hpack.Haskell\r\n      Hpack.License\r\n      Hpack.Module\r\n      Hpack.Options\r\n      Hpack.Render\r\n      Hpack.Render.Dsl\r\n      Hpack.Render.Hints\r\n      Hpack.Syntax.BuildTools\r\n      Hpack.Syntax.Defaults\r\n      Hpack.Syntax.Dependencies\r\n      Hpack.Syntax.DependencyVersion\r\n      Hpack.Syntax.Git\r\n      Hpack.Syntax.ParseDependencies\r\n      Hpack.Utf8\r\n      Hpack.Util\r\n      Hpack.Yaml\r\n      Imports\r\n      Path\r\n      Paths_hpack\r\n  default-language: Haskell2010\r\n";
+    package-description-override = "cabal-version: 1.12\n\n-- This file has been generated from package.yaml by hpack version 0.35.2.\n--\n-- see: https://github.com/sol/hpack\n\nname:           hpack\nversion:        0.35.3\nsynopsis:       A modern format for Haskell packages\ndescription:    See README at <https://github.com/sol/hpack#readme>\ncategory:       Development\nhomepage:       https://github.com/sol/hpack#readme\nbug-reports:    https://github.com/sol/hpack/issues\nmaintainer:     Simon Hengel <sol@typeful.net>\nlicense:        MIT\nlicense-file:   LICENSE\nbuild-type:     Simple\nextra-source-files:\n    CHANGELOG.md\n    resources/test/hpack.cabal\n\nsource-repository head\n  type: git\n  location: https://github.com/sol/hpack\n\nlibrary\n  hs-source-dirs:\n      src\n  ghc-options: -Wall -fno-warn-incomplete-uni-patterns\n  build-depends:\n      Cabal >=3.0.0.0 && <3.11\n    , Glob >=0.9.0\n    , aeson >=1.4.3.0\n    , base >=4.13 && <5\n    , bifunctors\n    , bytestring\n    , containers\n    , crypton\n    , deepseq\n    , directory >=1.2.5.0\n    , filepath\n    , http-client\n    , http-client-tls >=0.3.6.2\n    , http-types\n    , infer-license >=0.2.0 && <0.3\n    , pretty\n    , scientific\n    , text\n    , transformers\n    , unordered-containers\n    , vector\n    , yaml >=0.10.0\n  exposed-modules:\n      Hpack\n      Hpack.Config\n      Hpack.Render\n      Hpack.Yaml\n      Hpack.Error\n  other-modules:\n      Data.Aeson.Config.FromValue\n      Data.Aeson.Config.Key\n      Data.Aeson.Config.KeyMap\n      Data.Aeson.Config.Parser\n      Data.Aeson.Config.Types\n      Data.Aeson.Config.Util\n      Hpack.CabalFile\n      Hpack.Defaults\n      Hpack.Haskell\n      Hpack.License\n      Hpack.Module\n      Hpack.Options\n      Hpack.Render.Dsl\n      Hpack.Render.Hints\n      Hpack.Syntax.BuildTools\n      Hpack.Syntax.Defaults\n      Hpack.Syntax.Dependencies\n      Hpack.Syntax.DependencyVersion\n      Hpack.Syntax.Git\n      Hpack.Syntax.ParseDependencies\n      Hpack.Utf8\n      Hpack.Util\n      Imports\n      Path\n      Paths_hpack\n  default-language: Haskell2010\n  if impl(ghc >= 9.4.5) && os(windows)\n    build-depends:\n        network >=3.1.2.9\n\nexecutable hpack\n  main-is: Main.hs\n  hs-source-dirs:\n      driver\n  ghc-options: -Wall -fno-warn-incomplete-uni-patterns\n  build-depends:\n      Cabal >=3.0.0.0 && <3.11\n    , Glob >=0.9.0\n    , aeson >=1.4.3.0\n    , base >=4.13 && <5\n    , bifunctors\n    , bytestring\n    , containers\n    , crypton\n    , deepseq\n    , directory >=1.2.5.0\n    , filepath\n    , hpack\n    , http-client\n    , http-client-tls >=0.3.6.2\n    , http-types\n    , infer-license >=0.2.0 && <0.3\n    , pretty\n    , scientific\n    , text\n    , transformers\n    , unordered-containers\n    , vector\n    , yaml >=0.10.0\n  other-modules:\n      Paths_hpack\n  default-language: Haskell2010\n  if impl(ghc >= 9.4.5) && os(windows)\n    build-depends:\n        network >=3.1.2.9\n\ntest-suite spec\n  type: exitcode-stdio-1.0\n  main-is: Spec.hs\n  hs-source-dirs:\n      test\n      src\n  ghc-options: -Wall -fno-warn-incomplete-uni-patterns\n  cpp-options: -DTEST\n  build-depends:\n      Cabal >=3.0.0.0 && <3.11\n    , Glob >=0.9.0\n    , HUnit >=1.6.0.0\n    , QuickCheck\n    , aeson >=1.4.3.0\n    , base >=4.13 && <5\n    , bifunctors\n    , bytestring\n    , containers\n    , crypton\n    , deepseq\n    , directory >=1.2.5.0\n    , filepath\n    , hspec ==2.*\n    , http-client\n    , http-client-tls >=0.3.6.2\n    , http-types\n    , infer-license >=0.2.0 && <0.3\n    , interpolate\n    , mockery >=0.3\n    , pretty\n    , scientific\n    , template-haskell\n    , temporary\n    , text\n    , transformers\n    , unordered-containers\n    , vector\n    , yaml >=0.10.0\n  build-tool-depends:\n      hspec-discover:hspec-discover\n  other-modules:\n      Data.Aeson.Config.FromValueSpec\n      Data.Aeson.Config.TypesSpec\n      Data.Aeson.Config.UtilSpec\n      EndToEndSpec\n      Helper\n      Hpack.CabalFileSpec\n      Hpack.ConfigSpec\n      Hpack.DefaultsSpec\n      Hpack.HaskellSpec\n      Hpack.LicenseSpec\n      Hpack.ModuleSpec\n      Hpack.OptionsSpec\n      Hpack.Render.DslSpec\n      Hpack.Render.HintsSpec\n      Hpack.RenderSpec\n      Hpack.Syntax.BuildToolsSpec\n      Hpack.Syntax.DefaultsSpec\n      Hpack.Syntax.DependenciesSpec\n      Hpack.Syntax.GitSpec\n      Hpack.Utf8Spec\n      Hpack.UtilSpec\n      HpackSpec\n      Data.Aeson.Config.FromValue\n      Data.Aeson.Config.Key\n      Data.Aeson.Config.KeyMap\n      Data.Aeson.Config.Parser\n      Data.Aeson.Config.Types\n      Data.Aeson.Config.Util\n      Hpack\n      Hpack.CabalFile\n      Hpack.Config\n      Hpack.Defaults\n      Hpack.Error\n      Hpack.Haskell\n      Hpack.License\n      Hpack.Module\n      Hpack.Options\n      Hpack.Render\n      Hpack.Render.Dsl\n      Hpack.Render.Hints\n      Hpack.Syntax.BuildTools\n      Hpack.Syntax.Defaults\n      Hpack.Syntax.Dependencies\n      Hpack.Syntax.DependencyVersion\n      Hpack.Syntax.Git\n      Hpack.Syntax.ParseDependencies\n      Hpack.Utf8\n      Hpack.Util\n      Hpack.Yaml\n      Imports\n      Path\n      Paths_hpack\n  default-language: Haskell2010\n  if impl(ghc >= 9.4.5) && os(windows)\n    build-depends:\n        network >=3.1.2.9\n";
     }
