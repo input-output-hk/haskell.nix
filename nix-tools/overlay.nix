@@ -10,7 +10,6 @@ let
     # tests need to fetch hackage
     configureArgs = "--disable-tests";
 
-    checkMaterialization = true;
     materialized = ./materialized;
   };
 
