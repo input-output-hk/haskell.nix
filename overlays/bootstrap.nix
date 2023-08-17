@@ -30,7 +30,7 @@ let
       else if x.src-spec.version == "8.8.3" && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.buildPlatform.isAarch64)
         then x
       else if builtins.compareVersions x.src-spec.version latestVer.${v} < 0
-        then __trace
+        then builtins.trace
           "WARNING: ${x.src-spec.version} is out of date, consider using ${latestVer.${v}}." x
       else x;
     errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVer.${up}}";
@@ -38,7 +38,7 @@ in {
   haskell-nix = prev.haskell-nix // {
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
-        let bootPkgs = with final.buildPackages; {
+        let bootPkgs = {
                 ghc = final.buildPackages.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
                 alex = final.haskell-nix.bootstrap.packages.alex-unchecked;
                 happy = final.haskell-nix.bootstrap.packages.happy-unchecked;
@@ -59,18 +59,12 @@ in {
                 };
             };
             sphinx = with final.buildPackages; (python3Packages.sphinx_1_7_9 or python3Packages.sphinx);
-            hsc2hs-align-conditionals-patch = final.fetchpatch {
-                url = "https://git.haskell.org/hsc2hs.git/patch/738f3666c878ee9e79c3d5e819ef8b3460288edf";
-                sha256 = "0plzsbfaq6vb1023lsarrjglwgr9chld4q3m99rcfzx0yx5mibp3";
-                extraPrefix = "utils/hsc2hs/";
-                stripLen = 1;
-            };
             D5123-patch = final.fetchpatch rec { # https://phabricator.haskell.org/D5123
                 url = "http://tarballs.nixos.org/sha256/${sha256}";
                 name = "D5123.diff";
                 sha256 = "0nhqwdamf2y4gbwqxcgjxs0kqx23w9gv5kj0zv6450dq19rji82n";
             };
-            haddock-900-patch = final.fetchpatch rec { # https://github.com/haskell/haddock/issues/900
+            haddock-900-patch = final.fetchpatch { # https://github.com/haskell/haddock/issues/900
                 url = "https://patch-diff.githubusercontent.com/raw/haskell/haddock/pull/983.diff";
                 name = "loadpluginsinmodules.diff";
                 sha256 = "0bvvv0zsfq2581zsir97zfkggc1kkircbbajc2fz3b169ycpbha1";
@@ -1130,56 +1124,6 @@ in {
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args));
-    nix-tools-set = { compiler-nix-name, ... }@args:
-      let
-        compiler-nix-name = "ghc8107";
-        compilerSelection = p: p.haskell.compiler;
-        project =
-          final.haskell-nix.hix.project ({
-            evalPackages = final.buildPackages;
-            src = ../nix-tools;
-          } // args // { inherit compiler-nix-name compilerSelection; });
-        exes =
-          let
-            package = project.getPackage "nix-tools";
-          in (builtins.map (name: package.getComponent "exe:${name}") [
-            "cabal-to-nix"
-            "hashes-to-nix"
-            "plan-to-nix"
-            "hackage-to-nix"
-            "lts-to-nix"
-            "stack-to-nix"
-            "truncate-index"
-            "stack-repos"
-            "cabal-name"
-            "make-install-plan"
-          ]) ++ [
-            (project.getComponent "hpack:exe:hpack")
-          ];
-        tools = [
-          final.buildPackages.nix
-          # Double buildPackages is intentional, see comment in lib/default.nix for details.
-          final.buildPackages.buildPackages.gitMinimal
-          final.buildPackages.buildPackages.nix-prefetch-git ];
-    in
-      (final.buildPackages.symlinkJoin {
-        name = "nix-tools";
-        paths = exes;
-        buildInputs = [ final.buildPackages.makeWrapper ];
-        meta.platforms = final.lib.platforms.all;
-        # We wrap the -to-nix executables with the executables from `tools` (e.g. nix-prefetch-git)
-        # so that consumers of `nix-tools` won't have to provide those tools.
-        postBuild = ''
-          for prog in stack-to-nix cabal-to-nix plan-to-nix; do
-            wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
-          done
-        '';
-      }) // {
-        inherit project;
-        exes = project.hsPkgs.nix-tools.components.exes // {
-          hpack = project.hsPkgs.hpack.components.exes.hpack;
-        };
-      };
 
     # Memoize the cabal-install and nix-tools derivations by adding:
     #   haskell-nix.cabal-install.ghcXXX
@@ -1200,19 +1144,7 @@ in {
         compiler-nix-name =
           # If there is no materialized version for this GHC version fall back on
           # a version of GHC for which there will be.
-          if __pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
-            then compiler-nix-name
-            else "ghc928";
-        checkMaterialization = false;
-      }) final.haskell-nix.compiler;
-    nix-tools = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.nix-tools-set { inherit compiler-nix-name; }) final.haskell-nix.compiler;
-    nix-tools-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.nix-tools-set {
-        compiler-nix-name =
-          # If there is no materialized version for this GHC version fall back on
-          # a version of GHC for which there will be.
-          if __pathExists (../materialized + "/${compiler-nix-name}/nix-tools/default.nix")
+          if builtins.pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
             then compiler-nix-name
             else "ghc928";
         checkMaterialization = false;
@@ -1228,7 +1160,6 @@ in {
     # (stack projects on macOS may see a significant change in the
     # closure size of their build dependencies due to dynamic linking).
     internal-cabal-install = final.haskell-nix.cabal-install.ghc8107;
-    internal-nix-tools = final.haskell-nix.nix-tools.ghc8107;
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose
@@ -1254,16 +1185,14 @@ in {
     #
     # hence we'll use 844 for bootstrapping for now.
 
-
-    # the bootstrap infra structure (pre-compiled ghc; bootstrapped cabal-install, ...)
-    bootstrap = with final.haskell-nix;
+    # the bootstrap infrastructure (pre-compiled ghc; bootstrapped cabal-install, ...)
+    bootstrap =
       let
         # This compiler-nix-name will only be used to build nix-tools and cabal-install
         # when checking materialization of alex, happy and hscolour.
         compiler-nix-name = buildBootstrapper.compilerNixName;
         # The ghc boot compiler to use to compile alex, happy and hscolour
-        ghc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
-        ghcOverride = ghc;
+        ghcOverride = final.buildPackages.haskell-nix.bootstrap.compiler.${compiler-nix-name};
         index-state = final.haskell-nix.internalHackageIndexState;
       in {
         compiler = final.haskell.compiler;
@@ -1278,34 +1207,34 @@ in {
             # building ghc itself (since GHC is a dependency
             # of the materialization check it would cause
             # infinite recursion).
-            alex-tool = args: tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
+            alex-tool = args: final.haskell-nix.tool buildBootstrapper.compilerNixName "alex" ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 version = "3.2.4";
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
                 modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                nix-tools = config.evalPackages.haskell-nix.nix-tools;
                 cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args);
-            alex = bootstrap.packages.alex-tool {};
-            alex-unchecked = bootstrap.packages.alex-tool { checkMaterialization = false; };
-            happy-tool = { version ? "1.19.12", ... }@args: tool buildBootstrapper.compilerNixName "happy"
+            alex = final.haskell-nix.bootstrap.packages.alex-tool {};
+            alex-unchecked = final.haskell-nix.bootstrap.packages.alex-tool { checkMaterialization = false; };
+            happy-tool = { version ? "1.19.12", ... }@args: final.haskell-nix.tool buildBootstrapper.compilerNixName "happy"
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
                 inherit version ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
                 modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                nix-tools = config.evalPackages.haskell-nix.nix-tools;
                 cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
               } // args);
-            happy = bootstrap.packages.happy-tool {};
-            happy-unchecked = bootstrap.packages.happy-tool { checkMaterialization = false; };
+            happy = final.haskell-nix.bootstrap.packages.happy-tool {};
+            happy-unchecked = final.haskell-nix.bootstrap.packages.happy-tool { checkMaterialization = false; };
             # Older version needed when building ghc 8.6.5
-            happy-old = bootstrap.packages.happy-tool { version = "1.19.11"; };
-            happy-old-unchecked = bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
-            hscolour-tool = args: (hackage-package
+            happy-old = final.haskell-nix.bootstrap.packages.happy-tool { version = "1.19.11"; };
+            happy-old-unchecked = final.haskell-nix.bootstrap.packages.happy-tool { version = "1.19.11"; checkMaterialization = false; };
+            hscolour-tool = args: (final.haskell-nix.hackage-package
               ({config, pkgs, ...}: {
                 compilerSelection = p: p.haskell.compiler;
                 evalPackages = pkgs.buildPackages;
@@ -1315,11 +1244,11 @@ in {
                 inherit ghcOverride index-state;
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
                 modules = [{ reinstallableLibGhc = false; }];
-                nix-tools = config.evalPackages.haskell-nix.nix-tools.${compiler-nix-name};
+                nix-tools = config.evalPackages.haskell-nix.nix-tools;
                 cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args)).getComponent "exe:HsColour";
-            hscolour = bootstrap.packages.hscolour-tool {};
-            hscolour-unchecked = bootstrap.packages.hscolour-tool { checkMaterialization = false; };
+            hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {};
+            hscolour-unchecked = final.haskell-nix.bootstrap.packages.hscolour-tool { checkMaterialization = false; };
         };
     };
   };

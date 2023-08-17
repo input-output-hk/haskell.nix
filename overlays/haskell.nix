@@ -1116,7 +1116,7 @@ final: prev: {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             # The internal versions of nix-tools and cabal-install are occasionally used,
             # but definitely need to be cached in case they are used.
-            nix-tools = final.buildPackages.haskell-nix.nix-tools.${compiler-nix-name};
+            nix-tools = final.buildPackages.haskell-nix.nix-tools;
             internal-nix-tools = final.buildPackages.haskell-nix.internal-nix-tools;
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
             internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;

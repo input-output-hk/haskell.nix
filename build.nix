@@ -94,7 +94,7 @@ in rec {
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
       # Includes cabal-install since this is commonly used.
       nix-tools = pkgs.linkFarm "common-tools" [
-        { name = "nix-tools";     path = haskell.nix-tools.${compiler-nix-name}; }
+        { name = "nix-tools";     path = haskell.nix-tools; }
         { name = "cabal-install"; path = haskell.cabal-install.${compiler-nix-name}; }
       ];
     };
