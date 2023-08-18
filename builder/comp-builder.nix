@@ -189,8 +189,12 @@ let
       ]
     ) # Starting with ghc 9.10 the `ld command` will no longer be in the GHC `settings` file.
       # We need to start passing it explicitly to setup like we do for `ar` and `strip`.
-      ++ lib.optional (builtins.compareVersions defaults.ghc.version "9.8" >= 0)
+      ++ lib.optional (!stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" >= 0)
         "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
+      ++ lib.optionals (stdenv.hostPlatform.isGhcjs) [
+        "--with-gcc=${buildPackages.emscripten}/bin/emcc"
+        "--with-ld=${buildPackages.emscripten}/bin/emcc"
+      ]
       ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")
