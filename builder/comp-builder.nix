@@ -187,7 +187,11 @@ let
         "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
         "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       ]
-    ) ++ [ # other flags
+    ) # Starting with ghc 9.10 the `ld command` will no longer be in the GHC `settings` file.
+      # We need to start passing it explicitly to setup like we do for `ar` and `strip`.
+      ++ lib.optional (builtins.compareVersions defaults.ghc.version "9.8" >= 0)
+        "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
+      ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")
       (enableFeature enableLibraryProfiling "library-profiling")
