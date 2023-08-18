@@ -8,12 +8,18 @@ let
 in [
   # Avoid pantry 0.9 in versions without https://github.com/commercialhaskell/stack/pull/6187
   # Also avoid optparse-applicative 0.18
+  # http-download 0.2.1 https://github.com/commercialhaskell/stack/issues/6210
   ({config, lib, pkgs, ...}:
     { _file = "haskell.nix/overlays/hackage-quirks.nix#stack"; } //
-    lib.mkIf (config.name == "stack" && builtins.compareVersions config.version "2.11.1" <= 0) {
-      cabalProjectLocal = ''
-        constraints: pantry <0.9, optparse-applicative <0.18
-      '';
+    lib.mkIf (config.name == "stack") {
+      cabalProjectLocal =
+        if builtins.compareVersions config.version "2.11.1" <= 0 then ''
+          constraints: pantry <0.9, optparse-applicative <0.18, http-download <0.2.1
+        ''
+        else if builtins.compareVersions config.version "2.11.1.1" <= 0 then ''
+          constraints: http-download <0.2.1
+        ''
+        else "";
     }
   )
 

@@ -25,7 +25,7 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
   { name = "${prefix}-dummy-ghc-data"; value = pkgs.haskell-nix.compiler.${compiler-nix-name}.dummy-ghc-data; }
   { name = "${prefix}-nixpkgs-dummy-ghc-data"; value = pkgs.haskell.compiler.${compiler-nix-name}.dummy-ghc-data or {}; }
   { name = "${prefix}-cabal-install"; value = pkgs.haskell-nix.cabal-install.${compiler-nix-name}; }
-  { name = "${prefix}-nix-tools";     value = pkgs.haskell-nix.nix-tools.${compiler-nix-name}; }
+  { name = "${prefix}-nix-tools";     value = pkgs.haskell-nix.nix-tools; }
   { name = "${prefix}-extra";         value = (pkgs.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
   { name = "${prefix}-boot";          value = pkgs.ghc-boot-packages-nix.${compiler-nix-name}; }
   { name = "${prefix}-iserv";         value = pkgs.haskell-nix.iserv-proxy-exes.${compiler-nix-name}.iserv-proxy.project.plan-nix; }

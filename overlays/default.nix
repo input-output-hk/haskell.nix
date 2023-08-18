@@ -3,9 +3,16 @@
 let
   overlays = {
     wine = import ./wine.nix;
-    #ghcjs = import ./ghcjs-asterius-triple.nix;
-    #python = import ./python.nix;
     haskell = import ./haskell.nix args;
+    nix-tools = (final: prev: {
+      haskell-nix = 
+        let nix-tools-pkgs = import ../nix-tools/overlay.nix final prev;
+        in prev.haskell-nix // {
+          inherit (nix-tools-pkgs) nix-tools nix-tools-unchecked nix-tools-set;
+          # FIXME: is this needed?
+          internal-nix-tools = nix-tools-pkgs.nix-tools;
+        };
+    });
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
@@ -44,6 +51,7 @@ let
     })
     wine
     haskell
+    nix-tools
     bootstrap
     ghc
     ghc-packages

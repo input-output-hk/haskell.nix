@@ -234,9 +234,8 @@ jobs:
       - name: "Check hix -- run github:haskell/cabal/3.10#cabal-install:exe:cabal -- --version"
         run: "HIX_DIR=$(mktemp -d) nix run .#hix --accept-flake-config -- run github:haskell/cabal/3.10#cabal-install:exe:cabal --accept-flake-config --override-input haskellNix . -- --version"
 
-  nix-tools-build:
+  nix-tools:
     runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v3
-      - name: "nix-tools build"
-        run: cd ./nix-tools && .buildkite/nix-tools-build.sh
+      - run: nix build ./nix-tools#checks.x86_64-linux.truncate-index --accept-flake-config
