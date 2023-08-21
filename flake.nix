@@ -153,11 +153,12 @@
       # `nix-build -A checks.$PLATFORM`
     } // flake-utils.lib.eachSystem systems (system:
       let
+        legacyPackages = (self.internal.compat { inherit system; }).pkgs;
         nix-tools-hydraJobs =
-          let cf = callFlake { inherit system; src = ./nix-tools; };
+          let cf = callFlake { pkgs = legacyPackages; inherit system; src = ./nix-tools; };
           in cf.defaultNix.hydraJobs;
       in rec {
-        legacyPackages = (self.internal.compat { inherit system; }).pkgs;
+        inherit legacyPackages;
         legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
 
         # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
