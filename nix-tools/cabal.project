@@ -4,6 +4,13 @@ with-compiler: ghc-9.2.8
 
 packages: nix-tools
 
+-- haskell.nix expects nix-tools to provide the cabal and hpack executables
+-- so we put these two packages here, so they will be present even if nix-tools
+-- dependencies change
+extra-packages:
+    cabal-install
+    hpack
+
 test-show-details: direct
 
 allow-newer:

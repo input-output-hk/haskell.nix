@@ -19,15 +19,36 @@
         nixpkgs.lib.genAttrs systems (system:
           f (haskellNix.legacyPackages.${system}.extend self.overlays.default));
 
-      mkTarball = pkgs: cross:
+      mkTarball = pkgs: crossSystem:
         let
           # Use haskell.nix compilers here
-          prj = pkgs.nix-tools.project.appendModule
-            ({ lib, ... }:
-              { compilerSelection = lib.mkForce (p: p.haskell-nix.compiler); });
-          nix-tools = prj.projectCross.${cross}.hsPkgs.nix-tools;
-          pkgId = "${nix-tools.identifier.name}-${nix-tools.identifier.version}";
-          exes = builtins.attrValues nix-tools.components.exes;
+          prj =
+            (pkgs.nix-tools.project.appendModule {
+              compilerSelection = lib.mkForce (p: p.haskell-nix.compiler);
+            }).projectCross.${crossSystem};
+
+          # pick the package name and version from the nix-tools cabal package, not that it really matters ...
+          pkgId = "${prj.hsPkgs.nix-tools.identifier.name}-${prj.hsPkgs.nix-tools.identifier.version}";
+
+          exes = builtins.attrValues {
+            inherit (prj.hsPkgs.cabal-install.components.exes)
+              cabal;
+
+            inherit (prj.hsPkgs.nix-tools.components.exes)
+              cabal-name
+              cabal-to-nix
+              hackage-to-nix
+              hashes-to-nix
+              lts-to-nix
+              make-install-plan
+              plan-to-nix
+              stack-repos
+              stack-to-nix
+              truncate-index;
+
+            inherit (prj.hsPkgs.hpack.components.exes)
+              hpack;
+          };
         in
         pkgs.runCommand pkgId
           { preferLocalBuild = true; }
