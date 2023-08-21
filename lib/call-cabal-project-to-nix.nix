@@ -369,8 +369,8 @@ let
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
     nativeBuildInputs = [
-      nix-tools.exes.make-install-plan
-      nix-tools.exes.plan-to-nix
+      nix-tools.exes.make-install-plan or nix-tools
+      nix-tools.exes.plan-to-nix or null
       dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ]
       ++ pkgs.lib.optional supportHpack nix-tools.exes.hpack;
     # Needed or stack-to-nix will die on unicode inputs

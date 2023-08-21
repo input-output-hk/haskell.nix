@@ -7,10 +7,17 @@ let
     nix-tools = (final: prev: {
       haskell-nix = 
         let nix-tools-pkgs = import ../nix-tools/overlay.nix final prev;
+          nix-tools-unchecked = if final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64
+            then final.fetchzip {
+              url = "https://ci.zw3rk.com/build/2911393/download/1/nix-tools-0.1.0.0.tar.gz";
+              sha256 = "sha256-SybFs5DesGd7/iZ9I+6BxNrXAslVsUY+KLRNzdYvz/I=";
+            }
+            else nix-tools-pkgs.nix-tools;
         in prev.haskell-nix // {
-          inherit (nix-tools-pkgs) nix-tools nix-tools-unchecked nix-tools-set;
+          inherit nix-tools-unchecked;
+          inherit (nix-tools-pkgs) nix-tools nix-tools-set;
           # FIXME: is this needed?
-          internal-nix-tools = nix-tools-pkgs.nix-tools;
+          internal-nix-tools = nix-tools-unchecked;
         };
     });
     bootstrap = import ./bootstrap.nix;
