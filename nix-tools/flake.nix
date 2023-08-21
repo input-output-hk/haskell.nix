@@ -32,8 +32,8 @@
         pkgs.runCommand pkgId
           { preferLocalBuild = true; }
           ''
-            mkdir -p ${pkgId}
-            cp --verbose --target-directory ${pkgId} ${pkgs.lib.concatMapStringsSep " " (p: "${p}/bin/*") exes}
+            mkdir -p ${pkgId}/bin
+            cp --verbose --target-directory ${pkgId}/bin ${pkgs.lib.concatMapStringsSep " " (p: "${p}/bin/*") exes}
 
             mkdir -p $out
             tar cvzf $out/${pkgId}.tar.gz ${pkgId}
