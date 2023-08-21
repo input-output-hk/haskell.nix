@@ -57,29 +57,6 @@ let
           hpack;
       };
 
-      tools = [
-        final.buildPackages.nix
-
-        # Why `final.buildPackages.buildPackages.gitMinimal`?
-        # Why not just final.buildPackages.gitMinimal?
-        #
-        # It turns out `git` depends on `gdb` in a round about way:
-        #  git -> openssh -> libfido2 -> systemd -> python libxml -> Cython -> gdb
-        # Somewhere in that chain there should perhaps be a `buildPackages` so
-        # that the `gdb` that is used is not the one for debugging code in
-        # the `final` (but instead the one for debugging code in
-        # `final.buildPackages`).
-        #
-        # Using `final.buildPackages.git` causes two problems:
-        #
-        #   * Multiple versions of `git` (and that dependency chain
-        #     to `gdb` are needed when cross compiling).
-        #   * When `gdb` does not exist for `js`, so when cross
-        #     compiling with ghcjs `final.buildPackages.git` fails
-        #     to build at all.
-        final.buildPackages.buildPackages.gitMinimal
-      ];
-
       warning = final.lib.mapAttrs
         (_: _:
           final.lib.warn
@@ -98,13 +75,6 @@ let
         paths = builtins.attrValues exes;
         buildInputs = [ final.buildPackages.makeWrapper ];
         meta.platforms = final.lib.platforms.all;
-        # We wrap the -to-nix executables with the executables from `tools` (e.g. git)
-        # so that consumers of `nix-tools` won't have to provide those tools.
-        postBuild = ''
-          for prog in stack-to-nix cabal-to-nix plan-to-nix; do
-            wrapProgram "$out/bin/$prog" --prefix PATH : "${final.lib.makeBinPath tools}"
-          done
-        '';
         passthru = { inherit project exes; };
       };
     in
