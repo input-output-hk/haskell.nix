@@ -368,11 +368,18 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [
-      nix-tools.exes.make-install-plan or nix-tools
-      nix-tools.exes.plan-to-nix or null
-      dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ]
-      ++ pkgs.lib.optional supportHpack (nix-tools.exes.hpack or null);
+    nativeBuildInputs = (
+      # Use the prebuilt musl64 tarball of tools if possible
+      if nix-tools.isTarball or false
+        then [nix-tools]
+        else
+          # The things needed from the tarball
+          [
+            nix-tools.exes.make-install-plan
+            nix-tools.exes.plan-to-nix
+          ] ++ pkgs.lib.optional supportHpack nix-tools.exes.hpack
+      )
+      ++ [dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
