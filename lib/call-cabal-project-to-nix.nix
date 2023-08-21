@@ -1,4 +1,4 @@
-{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }@defaults:
+{ pkgs, runCommand, cacert, index-state-hashes, haskellLib }:
 { name          ? src.name or null # optional name for better error messages
 , src
 , materialized-dir ? ../materialized
@@ -66,13 +66,13 @@
 let
   inherit (evalPackages.haskell-nix) materialize dotCabal;
 
-  # These defaults are hear rather than in modules/cabal-project.nix to make them
+  # These defaults are here rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
   # Using null as the default also improves performance as they are not forced by the
   # nix module system for `nix-tools-unchecked` and `cabal-install-unchecked`.
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
-    else evalPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name};
+    else evalPackages.haskell-nix.nix-tools-unchecked;
   cabal-install = if args.cabal-install or null != null
     then args.cabal-install
     else evalPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name};
@@ -147,8 +147,6 @@ in let
     if index-state != null
     then index-state
     else pkgs.lib.last (builtins.attrNames index-state-hashes);
-
-  pkgconfPkgs = import ./pkgconf-nixpkgs-map.nix pkgs;
 
   # If a hash was not specified find a suitable cached index state to
   # use that will contain all the packages we need.  By using the
