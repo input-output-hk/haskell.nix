@@ -9,8 +9,8 @@ let
         let nix-tools-pkgs = import ../nix-tools/overlay.nix final prev;
           nix-tools-unchecked = if final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64
             then (final.fetchzip {
-              url = "https://ci.zw3rk.com/build/2911393/download/1/nix-tools-0.1.0.0.tar.gz";
-              sha256 = "sha256-SybFs5DesGd7/iZ9I+6BxNrXAslVsUY+KLRNzdYvz/I=";
+              url = "https://ci.zw3rk.com/build/2912545/download/1/nix-tools-0.1.0.0.tar.gz";
+              sha256 = "sha256-uBQmQLbvbuLTtK5LTgzRjkzYRXj9Zp56qAvheM6V8Mc=";
             }) // { isTarball = true; }
             else nix-tools-pkgs.nix-tools;
         in prev.haskell-nix // {
