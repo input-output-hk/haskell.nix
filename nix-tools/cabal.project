@@ -7,9 +7,7 @@ packages: nix-tools
 -- haskell.nix expects nix-tools to provide the cabal and hpack executables
 -- so we put these two packages here, so they will be present even if nix-tools
 -- dependencies change
-extra-packages:
-    cabal-install
-    hpack
+extra-packages: cabal-install, hpack
 
 test-show-details: direct
 

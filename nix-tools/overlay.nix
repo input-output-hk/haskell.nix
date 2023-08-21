@@ -3,31 +3,30 @@ final: prev:
 let
   compiler-nix-name = "ghc8107";
 
-  defaultArgs = {
-    inherit compiler-nix-name;
-    compilerSelection = p: p.haskell.compiler;
-
-    # tests need to fetch hackage
-    configureArgs = "--disable-tests";
-
+  nix-tools = nix-tools-set {
     materialized = ./materialized;
   };
 
-  nix-tools = nix-tools-set defaultArgs;
-
-  nix-tools-unchecked = nix-tools-set (
-    defaultArgs // { checkMaterialization = false; }
-  );
+  nix-tools-unchecked = nix-tools-set {
+    materialized = ./materialized;
+    checkMaterialization = false;
+  };
 
   nix-tools-set = args:
     let
       project = final.haskell-nix.cabalProject'
         [
           {
-            evalPackages = final.buildPackages;
-
             name = "nix-tools";
             src = ./.;
+
+            compiler-nix-name = final.lib.mkDefault compiler-nix-name;
+            compilerSelection = p: p.haskell.compiler;
+
+            # tests need to fetch hackage
+            configureArgs = final.lib.mkDefault "--disable-tests";
+
+            evalPackages = final.buildPackages;
 
             # Tools to include in the development shell
             shell.tools.cabal = "latest";
@@ -35,18 +34,24 @@ let
           args
         ];
 
+      # pick the version from the nix-tools cabal package, not that it really matters ...
+      name = "nix-tools-${project.hsPkgs.nix-tools.identifier.version}";
+
       exes = {
+        inherit (project.hsPkgs.cabal-install.components.exes)
+          cabal;
+
         inherit (project.hsPkgs.nix-tools.components.exes)
-          cabal-to-nix
-          hashes-to-nix
-          plan-to-nix
-          hackage-to-nix
-          lts-to-nix
-          stack-to-nix
-          truncate-index
-          stack-repos
           cabal-name
-          make-install-plan;
+          cabal-to-nix
+          hackage-to-nix
+          hashes-to-nix
+          lts-to-nix
+          make-install-plan
+          plan-to-nix
+          stack-repos
+          stack-to-nix
+          truncate-index;
 
         inherit (project.hsPkgs.hpack.components.exes)
           hpack;
@@ -89,7 +94,7 @@ let
         final.haskell-nix.compiler;
 
       toolset = final.buildPackages.symlinkJoin {
-        name = "nix-tools";
+        inherit name;
         paths = builtins.attrValues exes;
         buildInputs = [ final.buildPackages.makeWrapper ];
         meta.platforms = final.lib.platforms.all;

@@ -19,48 +19,26 @@
         nixpkgs.lib.genAttrs systems (system:
           f (haskellNix.legacyPackages.${system}.extend self.overlays.default));
 
-      mkTarball = pkgs: crossSystem:
+      mkTarball = pkgs:
         let
-          # Use haskell.nix compilers here
-          prj =
-            (pkgs.nix-tools.project.appendModule {
-              compilerSelection = lib.mkForce (p: p.haskell-nix.compiler);
-            }).projectCross.${crossSystem};
+          toolset =
+            let pkgs' = pkgs.extend self.overlays.default; in
+            # We need to use haskell.nix compilers here
+            pkgs'.nix-tools-set { compilerSelection = lib.mkForce (p: p.haskell-nix.compiler); };
 
-          # pick the package name and version from the nix-tools cabal package, not that it really matters ...
-          pkgId = "${prj.hsPkgs.nix-tools.identifier.name}-${prj.hsPkgs.nix-tools.identifier.version}";
-
-          exes = builtins.attrValues {
-            inherit (prj.hsPkgs.cabal-install.components.exes)
-              cabal;
-
-            inherit (prj.hsPkgs.nix-tools.components.exes)
-              cabal-name
-              cabal-to-nix
-              hackage-to-nix
-              hashes-to-nix
-              lts-to-nix
-              make-install-plan
-              plan-to-nix
-              stack-repos
-              stack-to-nix
-              truncate-index;
-
-            inherit (prj.hsPkgs.hpack.components.exes)
-              hpack;
-          };
+          inherit (toolset) name;
         in
-        pkgs.runCommand pkgId
+        pkgs.runCommand "${name}-${pkgs.hostPlatform.config}.tar.gz"
           { preferLocalBuild = true; }
           ''
-            mkdir -p ${pkgId}/bin
-            cp --verbose --target-directory ${pkgId}/bin ${pkgs.lib.concatMapStringsSep " " (p: "${p}/bin/*") exes}
+            mkdir -p ${name}/bin
+            cp --verbose --target-directory ${name}/bin ${toolset}/bin/*
 
             mkdir -p $out
-            tar cvzf $out/${pkgId}.tar.gz ${pkgId}
+            tar cvzf $out/${name}.tar.gz ${name}
 
             mkdir -p $out/nix-support
-            echo "file binary-dist $out/${pkgId}.tar.gz" >> $out/nix-support/hydra-build-products
+            echo "file binary-dist $out/${name}.tar.gz" >> $out/nix-support/hydra-build-products
           '';
     in
     {
@@ -90,9 +68,9 @@
           pkgs.nix-tools.project.flake'.hydraJobs
           # tarballs with static builds.
           // lib.optionalAttrs (pkgs.buildPlatform.system == "x86_64-linux")
-            { binary-tarball = mkTarball pkgs "musl64"; }
+            { binary-tarball = mkTarball pkgs.pkgsCross.musl64; }
           // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux")
-            { binary-tarball = mkTarball pkgs "aarch64-multiplatform-musl"; }
+            { binary-tarball = mkTarball pkgs.pkgsCross.aarch64-multiplatform-musl; }
         );
     };
 
