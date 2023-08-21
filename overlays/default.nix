@@ -9,7 +9,8 @@ let
         let
           nix-tools-pkgs = import ../nix-tools/overlay.nix final prev;
           nix-tools-unchecked =
-            if final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64
+            # FIXME: temporarily disable the tarball
+            if false && final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64
             then
               let
                 tarball = final.fetchzip {
