@@ -23,8 +23,6 @@ let
         in prev.haskell-nix // {
           inherit nix-tools-unchecked;
           inherit (nix-tools-pkgs) nix-tools nix-tools-set;
-          # FIXME: is this needed?
-          internal-nix-tools = nix-tools-unchecked;
         };
     });
     bootstrap = import ./bootstrap.nix;

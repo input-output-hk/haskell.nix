@@ -74,7 +74,7 @@ in rec {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nixFlakes gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
-      nix-tools = haskell.internal-nix-tools;
+      nix-tools = haskell.unchecked-nix-tools;
       cabal-install = haskell.internal-cabal-install;
       inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
@@ -82,7 +82,7 @@ in rec {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nixFlakes gawk bash curl findutils;
       # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
-      nix-tools = haskell.internal-nix-tools;
+      nix-tools = haskell.unchecked-nix-tools;
       cabal-install = haskell.internal-cabal-install;
       inherit (haskell) cabal-issue-8352-workaround;
     };

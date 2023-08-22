@@ -294,10 +294,8 @@ let
         (if cabalFile != null
           then ''cp -v $cabalFilePath ${package.identifier.name}.cabal''
           else
-            # When building hpack package we use the internal nix-tools
-            # (compiled with a fixed GHC version)
             lib.optionalString (cabal-generator == "hpack") ''
-              ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
+              ${buildPackages.haskell-nix.unchecked-nix-tools}/bin/hpack
             ''
         ) + lib.optionalString (prePatch != null) "\n${prePatch}";
     }

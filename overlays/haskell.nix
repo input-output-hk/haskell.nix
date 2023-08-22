@@ -461,7 +461,7 @@ final: prev: {
             inherit (final.haskell-nix) indexStateHashesPath;
             inherit (final) coreutils nix writeShellScriptBin stdenv lib curl;
             # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
-            nix-tools = final.haskell-nix.internal-nix-tools;
+            nix-tools = final.haskell-nix.unchecked-nix-tools;
         };
 
         # Function to call stackToNix
@@ -472,8 +472,8 @@ final: prev: {
         callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
             final.buildPackages.pkgs.runCommand "${name}.nix" {
                 # This function is only used when building stack projects (via mkCacheLine and mkCacheFile)
-                # When building stack projects we use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
-                nativeBuildInputs = [ final.buildPackages.haskell-nix.internal-nix-tools ];
+                # When building stack projects we use the unchecked nix-tools and cabal-install (compiled with a fixed GHC version)
+                nativeBuildInputs = [ final.buildPackages.haskell-nix.unchecked-nix-tools ];
 
                 LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";
                 LANG = "en_US.UTF-8";
@@ -1117,7 +1117,7 @@ final: prev: {
             # The internal versions of nix-tools and cabal-install are occasionally used,
             # but definitely need to be cached in case they are used.
             nix-tools = final.buildPackages.haskell-nix.nix-tools;
-            internal-nix-tools = final.buildPackages.haskell-nix.internal-nix-tools;
+            unchecked-nix-tools = final.buildPackages.haskell-nix.unchecked-nix-tools;
             cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
             internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;
           } // final.lib.optionalAttrs (ifdLevel > 1
