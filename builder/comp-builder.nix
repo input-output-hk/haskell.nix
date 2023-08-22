@@ -295,7 +295,7 @@ let
           then ''cp -v $cabalFilePath ${package.identifier.name}.cabal''
           else
             lib.optionalString (cabal-generator == "hpack") ''
-              ${buildPackages.haskell-nix.unchecked-nix-tools}/bin/hpack
+              ${buildPackages.haskell-nix.nix-tools-unchecked}/bin/hpack
             ''
         ) + lib.optionalString (prePatch != null) "\n${prePatch}";
     }
