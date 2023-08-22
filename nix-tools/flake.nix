@@ -26,19 +26,20 @@
             # We need to use haskell.nix compilers here
             pkgs'.nix-tools-set { compilerSelection = lib.mkForce (p: p.haskell-nix.compiler); };
 
-          inherit (toolset) name;
+          # tarball filename e.g. nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz
+          tarball-filename = "${toolset.name}-${pkgs.hostPlatform.config}.tar.gz";
         in
-        pkgs.runCommand "${name}-${pkgs.hostPlatform.config}.tar.gz"
+        pkgs.runCommand tarball-filename
           { preferLocalBuild = true; }
           ''
-            mkdir -p ${name}/bin
-            cp --verbose --target-directory ${name}/bin ${toolset}/bin/*
+            mkdir -p ${toolset.name}/bin
+            cp --verbose --target-directory ${toolset.name}/bin ${toolset}/bin/*
 
             mkdir -p $out
-            tar cvzf $out/${name}.tar.gz ${name}
+            tar cvzf $out/${tarball-filename} ${toolset.name}
 
             mkdir -p $out/nix-support
-            echo "file binary-dist $out/${name}.tar.gz" >> $out/nix-support/hydra-build-products
+            echo "file binary-dist $out/${tarball-filename}" >> $out/nix-support/hydra-build-products
           '';
     in
     {
