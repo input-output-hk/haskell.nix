@@ -1259,7 +1259,6 @@ in {
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/alex";
                 modules = [{ reinstallableLibGhc = false; }];
                 nix-tools = config.evalPackages.haskell-nix.nix-tools;
-                cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args);
             alex = final.haskell-nix.bootstrap.packages.alex-tool {};
             alex-unchecked = final.haskell-nix.bootstrap.packages.alex-tool { checkMaterialization = false; };
@@ -1271,7 +1270,6 @@ in {
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/happy-${version}";
                 modules = [{ reinstallableLibGhc = false; }];
                 nix-tools = config.evalPackages.haskell-nix.nix-tools;
-                cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
               } // args);
             happy = final.haskell-nix.bootstrap.packages.happy-tool {};
             happy-unchecked = final.haskell-nix.bootstrap.packages.happy-tool { checkMaterialization = false; };
@@ -1289,7 +1287,6 @@ in {
                 materialized = ../materialized/bootstrap + "/${buildBootstrapper.compilerNixName}/hscolour";
                 modules = [{ reinstallableLibGhc = false; }];
                 nix-tools = config.evalPackages.haskell-nix.nix-tools;
-                cabal-install = config.evalPackages.haskell-nix.cabal-install.${compiler-nix-name};
             } // args)).getComponent "exe:HsColour";
             hscolour = final.haskell-nix.bootstrap.packages.hscolour-tool {};
             hscolour-unchecked = final.haskell-nix.bootstrap.packages.hscolour-tool { checkMaterialization = false; };

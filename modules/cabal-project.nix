@@ -113,11 +113,6 @@ in {
       default = null;
       description = "nix-tools to use when converting the `plan.json` to nix";
     };
-    cabal-install = mkOption {
-      type = nullOr package;
-      default = null;
-      description = "cabal-install to use when running `cabal configure`";
-    };
     configureArgs = mkOption {
       type = nullOr (separatedString " ");
       default = "";

@@ -73,9 +73,7 @@ let
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
     else evalPackages.haskell-nix.nix-tools-unchecked;
-  cabal-install = if args.cabal-install or null != null
-    then args.cabal-install
-    else evalPackages.haskell-nix.internal-cabal-install;
+  cabal-install = nix-tools.exes.cabal;
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
@@ -368,11 +366,14 @@ let
   } // pkgs.lib.optionalAttrs (checkMaterialization != null) {
     inherit checkMaterialization;
   }) (evalPackages.runCommand (nameAndSuffix "plan-to-nix-pkgs") {
-    nativeBuildInputs = [
-      nix-tools.exes.make-install-plan
-      nix-tools.exes.plan-to-nix
-      dummy-ghc dummy-ghc-pkg cabal-install evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ]
-      ++ pkgs.lib.optional supportHpack nix-tools.exes.hpack;
+    nativeBuildInputs =
+      # The things needed from nix-tools
+      [ nix-tools.exes.make-install-plan
+        nix-tools.exes.plan-to-nix
+        nix-tools.exes.cabal
+      ]
+      ++ pkgs.lib.optional supportHpack nix-tools.exes.hpack
+      ++ [dummy-ghc dummy-ghc-pkg evalPackages.rsync evalPackages.gitMinimal evalPackages.allPkgConfigWrapper ];
     # Needed or stack-to-nix will die on unicode inputs
     LOCALE_ARCHIVE = pkgs.lib.optionalString (evalPackages.stdenv.buildPlatform.libc == "glibc") "${evalPackages.glibcLocales}/lib/locale/locale-archive";
     LANG = "en_US.UTF-8";
