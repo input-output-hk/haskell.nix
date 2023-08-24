@@ -183,7 +183,7 @@ in {
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.5"  ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.1"  "9.10"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
-                ++ fromUntil "9.4.5"  "9.4.6"  ./patches/ghc/ghc-9.4.5-include-order-fix.patch
+                ++ fromUntil "9.4.5"  "9.4.7"  ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.2"  "9.8"    ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.1"  "9.10"   ./patches/ghc/MR10116.patch
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.4.1" "9.6" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
@@ -787,6 +787,29 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.4.5";
+            });
+            ghc947 = final.callPackage ../compiler/ghc (traceWarnOld "9.4" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc947; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc947
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc947
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.4.7";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-BndaUrTROsCe3G2rwpn9EeWdiIa7yuRQrzZ7ruJoTI8=";
+                };
+
+                ghc-patches = ghc-patches "9.4.7";
             });
             ghc96020230302 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc96020230302; };
