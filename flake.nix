@@ -11,7 +11,6 @@
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
-    flake-utils = { url = "github:hamishmack/flake-utils/hkm/nested-hydraJobs"; };
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
     "hls-2.0" = { url = "github:haskell/haskell-language-server/2.0.0.1"; flake = false; };
     hydra.url = "hydra";
@@ -66,12 +65,14 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, nixpkgs-2305, flake-compat, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, nixpkgs-2305, flake-compat, ... }@inputs:
     let
       callFlake = import flake-compat;
 
       compiler = "ghc928";
       config = import ./config.nix;
+
+      inherit (nixpkgs) lib;
 
       traceNames = prefix: builtins.mapAttrs (n: v:
         if builtins.isAttrs v
@@ -91,6 +92,7 @@
         "aarch64-darwin"
       ];
 
+      forEachSystem = lib.genAttrs systems;
     in traceHydraJobs ({
       inherit config;
       overlay = self.overlays.combined;
@@ -104,10 +106,15 @@
         sources = inputs;
 
         overlaysOverrideable = import ./overlays;
+
         # Compatibility with old default.nix
-        compat = { checkMaterialization ?
-            false # Allows us to easily switch on materialization checking
-          , system, sourcesOverride ? { }, ... }@args: rec {
+        compat =
+          { checkMaterialization ? false # Allows us to easily switch on materialization checking
+          , system
+          , sourcesOverride ? { }
+          , ...
+          }@args:
+          rec {
             sources = inputs // sourcesOverride;
             allOverlays = import ./overlays (args // { inherit sources; });
             inherit config;
@@ -115,16 +122,12 @@
             # flake outputs so that we can incorporate the args passed
             # to the compat layer (e.g. sourcesOverride).
             overlays = [ allOverlays.combined ]
-              ++ (if checkMaterialization then
-                [
+              ++ lib.optional checkMaterialization
                   (final: prev: {
                     haskell-nix = prev.haskell-nix // {
                       checkMaterialization = true;
                     };
-                  })
-                ]
-              else
-                [ ]);
+                  });
             nixpkgsArgs = {
               inherit config overlays;
             };
@@ -146,74 +149,90 @@
           };
       };
 
+      legacyPackages = forEachSystem (system:
+        (self.internal.compat { inherit system; }).pkgs);
+
+      legacyPackagesUnstable = forEachSystem (system:
+        (self.internal.compat { inherit system; }).pkgs-unstable);
+
+      # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
+      roots = forEachSystem (system:
+        self.legacyPackagesUnstable.${system}.haskell-nix.roots compiler);
+
       # Note: `nix flake check` evaluates outputs for all platforms, and haskell.nix
       # uses IFD heavily, you have to have the ability to build for all platforms
       # supported by haskell.nix, e.g. with remote builders, in order to check this flake.
       # If you want to run the tests for just your platform, run `./test/tests.sh` or
       # `nix-build -A checks.$PLATFORM`
-    } // flake-utils.lib.eachSystem systems (system:
-      let
-        legacyPackages = (self.internal.compat { inherit system; }).pkgs;
-        nix-tools-hydraJobs =
-          let cf = callFlake { pkgs = legacyPackages; inherit system; src = ./nix-tools; };
-          in cf.defaultNix.hydraJobs;
-      in rec {
-        inherit legacyPackages;
-        legacyPackagesUnstable = (self.internal.compat { inherit system; }).pkgs-unstable;
+      # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
+      # (and maybe other tests) import projects that use builtins.currentSystem
+      checks = forEachSystem (system:
+        builtins.listToAttrs (
+          map
+            (pkg: { name = pkg.name; value = pkg; })
+            (lib.collect
+              lib.isDerivation
+              (import ./test
+                rec {
+                  haskellNix = self.internal.compat { inherit system; };
+                  compiler-nix-name = compiler;
+                  pkgs = haskellNix.pkgs;
+                })
+              )
+            )
+        );
 
-        # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
-        # (and maybe other tests) import projects that use builtins.currentSystem
-        checks = builtins.listToAttrs (map (pkg: {
-          name = pkg.name;
-          value = pkg;
-        }) (nixpkgs.lib.collect nixpkgs.lib.isDerivation (import ./test rec {
-          haskellNix = self.internal.compat { inherit system; };
-          compiler-nix-name = compiler;
-          pkgs = haskellNix.pkgs;
-        })));
-        # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
-        roots = legacyPackagesUnstable.haskell-nix.roots compiler;
+      packages = forEachSystem (system:
+        (self.internal.compat { inherit system; }).hix.apps
+      );
 
-        packages = (self.internal.compat { inherit system; }).hix.apps;
+      allJobs = forEachSystem (system:
+        let
+          inherit (import ./ci-lib.nix { pkgs = self.legacyPackagesUnstable.${system}; }) stripAttrsForHydra filterDerivations;
+          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
+        in stripAttrsForHydra (filterDerivations ci));
 
-        allJobs =
-          let
-            inherit (import ./ci-lib.nix { pkgs = legacyPackagesUnstable; }) stripAttrsForHydra filterDerivations;
-            ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
-          in stripAttrsForHydra (filterDerivations ci);
+      requiredJobs = forEachSystem (system:
+        let
+          inherit (self.legacyPackages.${system}) lib;
+          names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
+              (builtins.attrNames x);
+        in
+          builtins.listToAttrs (
+              lib.concatMap (nixpkgsVer:
+                let nixpkgsJobs = self.allJobs.${system}.${nixpkgsVer};
+                in lib.concatMap (compiler-nix-name:
+                  let ghcJobs = nixpkgsJobs.${compiler-nix-name};
+                  in builtins.map (crossPlatform: {
+                      name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                      value = self.legacyPackages.${system}.releaseTools.aggregate {
+                        name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                        meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
+                        constituents = lib.collect lib.isDerivation ghcJobs.${crossPlatform};
+                      };
+                  }) (names ghcJobs)
+                ) (names nixpkgsJobs)
+              ) (names self.allJobs.${system})));
 
-        requiredJobs =
-          let
-            inherit (legacyPackages) lib;
-            names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
-                (builtins.attrNames x);
-          in
-            builtins.listToAttrs (
-                lib.concatMap (nixpkgsVer:
-                  let nixpkgsJobs = allJobs.${nixpkgsVer};
-                  in lib.concatMap (compiler-nix-name:
-                    let ghcJobs = nixpkgsJobs.${compiler-nix-name};
-                    in builtins.map (crossPlatform: {
-                        name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
-                        value = legacyPackages.releaseTools.aggregate {
-                          name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
-                          meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
-                          constituents = lib.collect lib.isDerivation ghcJobs.${crossPlatform};
-                        };
-                    }) (names ghcJobs)
-                  ) (names nixpkgsJobs)
-                ) (names allJobs));
-
-        hydraJobs =
-          allJobs
+      hydraJobs = forEachSystem (system:
+        self.allJobs.${system}
+        //
+        {
           # Include hydraJobs from nix-tools subflake.
           # NOTE: These derivations do not depend on the haskell.nix in ./. but
           # on the version of haskell.nix locked in the subflake. They are
           # evaluated within their own flake and independently of anything
           # else. Here we only expose them in the main flake.
-          // { nix-tools = nix-tools-hydraJobs.${system} or {}; };
+          nix-tools = (callFlake {
+            inherit system;
+            pkgs = self.legacyPackages.${system};
+            src = ./nix-tools;
+          }).defaultNix.hydraJobs or {};
+        });
 
-        devShells = with self.legacyPackages.${system}; {
+      devShells = forEachSystem (system:
+        let inherit (self.legacyPackages.${system}) mkShell nixUnstable cabal-install haskell-nix;
+        in {
           default =
             mkShell {
               buildInputs = [
@@ -222,7 +241,7 @@
                 haskell-nix.compiler.${compiler}
               ];
             };
-        } // __mapAttrs (compiler-nix-name: compiler:
+        } // builtins.mapAttrs (compiler-nix-name: compiler:
             mkShell {
               buildInputs = [
                 compiler
@@ -237,8 +256,9 @@
               "ghc881" "ghc882" "ghc883"
               "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
               "ghc901"
-              "ghc921" "ghc922" "ghc923"]);
-    }));
+              "ghc921" "ghc922" "ghc923"])
+      );
+    });
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
