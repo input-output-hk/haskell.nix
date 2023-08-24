@@ -98,6 +98,7 @@
       };
 
       forEachSystem = lib.genAttrs systems;
+      forEachSystem' = f: lib.genAttrs systems (system: f self.legacyPackages.${system});
 
     in traceHydraJobs ({
       overlay = self.overlays.combined;
@@ -129,7 +130,7 @@
       # `nix-build -A checks.$PLATFORM`
       # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
       # (and maybe other tests) import projects that use builtins.currentSystem
-      checks = forEachSystem (system:
+      checks = forEachSystem' (pkgs:
         builtins.listToAttrs (
           map
             (pkg: { name = pkg.name; value = pkg; })
@@ -139,14 +140,14 @@
                 haskellNix.sources = inputs;
                 haskellNix.nixpkgsArgs = nixpkgsArgs;
                 compiler-nix-name = compiler;
-                pkgs = self.legacyPackages.${system};
+                inherit pkgs;
               })
               )
             )
         );
 
-      packages = forEachSystem (system:
-        (import ./hix/default.nix { pkgs = self.legacyPackages.${system}; }).apps
+      packages = forEachSystem' (pkgs:
+        (import ./hix/default.nix { inherit pkgs; }).apps
       );
 
       allJobs = forEachSystem (system:
@@ -239,8 +240,8 @@
           }).defaultNix.hydraJobs or {};
         });
 
-      devShells = forEachSystem (system:
-        let inherit (self.legacyPackages.${system}) mkShell nixUnstable cabal-install haskell-nix;
+      devShells = forEachSystem' (pkgs:
+        let inherit (pkgs) mkShell nixUnstable cabal-install haskell-nix;
         in {
           default =
             mkShell {
@@ -250,22 +251,24 @@
                 haskell-nix.compiler.${compiler}
               ];
             };
-        } // builtins.mapAttrs (compiler-nix-name: compiler:
+        }
+        //
+        builtins.mapAttrs
+          (compiler-nix-name: compiler:
             mkShell {
               buildInputs = [
                 compiler
                 haskell-nix.cabal-install.${compiler-nix-name}
               ];
-            }
-        ) (
-          # Exclude old versions of GHC to speed up `nix flake check`
-          builtins.removeAttrs haskell-nix.compiler
-            [ "ghc844"
-              "ghc861" "ghc862" "ghc863" "ghc864"
-              "ghc881" "ghc882" "ghc883"
-              "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
-              "ghc901"
-              "ghc921" "ghc922" "ghc923"])
+            })
+          ( # Exclude old versions of GHC to speed up `nix flake check`
+            builtins.removeAttrs haskell-nix.compiler
+              [ "ghc844"
+                "ghc861" "ghc862" "ghc863" "ghc864"
+                "ghc881" "ghc882" "ghc883"
+                "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc810420210212"
+                "ghc901"
+                "ghc921" "ghc922" "ghc923"])
       );
     });
 
