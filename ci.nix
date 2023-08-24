@@ -2,7 +2,6 @@
 # on a machine with e.g. no way to build the Darwin IFDs you need!
 { ifdLevel ? 3
 # Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
-, restrictEval ? false
 , checkMaterialization ? false
 , compat
 , system

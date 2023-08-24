@@ -92,69 +92,32 @@
         "aarch64-darwin"
       ];
 
-      forEachSystem = lib.genAttrs systems;
-    in traceHydraJobs ({
-      inherit config;
-      overlay = self.overlays.combined;
-      overlays = import ./overlays { sources = inputs; };
-      internal = {
-        nixpkgsArgs = {
-          inherit config;
-          overlays = [ self.overlay ];
-        };
-
-        sources = inputs;
-
-        overlaysOverrideable = import ./overlays;
-
-        # Compatibility with old default.nix
-        compat =
-          { checkMaterialization ? false # Allows us to easily switch on materialization checking
-          , system
-          , sourcesOverride ? { }
-          , ...
-          }@args:
-          rec {
-            sources = inputs // sourcesOverride;
-            allOverlays = import ./overlays (args // { inherit sources; });
-            inherit config;
-            # We are overriding 'overlays' and 'nixpkgsArgs' from the
-            # flake outputs so that we can incorporate the args passed
-            # to the compat layer (e.g. sourcesOverride).
-            overlays = [ allOverlays.combined ]
-              ++ lib.optional checkMaterialization
-                  (final: prev: {
-                    haskell-nix = prev.haskell-nix // {
-                      checkMaterialization = true;
-                    };
-                  });
-            nixpkgsArgs = {
-              inherit config overlays;
-            };
-            pkgs = import nixpkgs
-              (nixpkgsArgs // { localSystem = { inherit system; }; });
-            pkgs-2105 = import nixpkgs-2105
-              (nixpkgsArgs // { localSystem = { inherit system; }; });
-            pkgs-2111 = import nixpkgs-2111
-              (nixpkgsArgs // { localSystem = { inherit system; }; });
-            pkgs-2205 = import nixpkgs-2205
-              (nixpkgsArgs // { localSystem = { inherit system; }; });
-            pkgs-2211 = import nixpkgs-2211
-              (nixpkgsArgs // { localSystem = { inherit system; }; });
-            pkgs-2305 = import nixpkgs-2305
-              (nixpkgsArgs // { localSystem = { inherit system; }; });
-            pkgs-unstable = import nixpkgs-unstable
-              (nixpkgsArgs // { localSystem = { inherit system; }; });
-            hix = import ./hix/default.nix { inherit pkgs; };
-          };
+      nixpkgsArgs = {
+        inherit config;
+        overlays = [ self.overlay ];
       };
 
+      forEachSystem = lib.genAttrs systems;
+
+    in traceHydraJobs ({
+      overlay = self.overlays.combined;
+      overlays = import ./overlays { sources = inputs; };
+
       legacyPackages = forEachSystem (system:
-        (self.internal.compat { inherit system; }).pkgs);
+        import nixpkgs {
+          inherit config;
+          overlays = [ self.overlay ];
+          localSystem = { inherit system; };
+        });
 
       legacyPackagesUnstable = forEachSystem (system:
-        (self.internal.compat { inherit system; }).pkgs-unstable);
+        import nixpkgs-unstable {
+          inherit config;
+          overlays = [ self.overlay ];
+          localSystem = { inherit system; };
+        });
 
+      # FIXME: buildkite is gone
       # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
       roots = forEachSystem (system:
         self.legacyPackagesUnstable.${system}.haskell-nix.roots compiler);
@@ -172,29 +135,75 @@
             (pkg: { name = pkg.name; value = pkg; })
             (lib.collect
               lib.isDerivation
-              (import ./test
-                rec {
-                  haskellNix = self.internal.compat { inherit system; };
-                  compiler-nix-name = compiler;
-                  pkgs = haskellNix.pkgs;
-                })
+              (import ./test {
+                haskellNix.sources = inputs;
+                haskellNix.nixpkgsArgs = nixpkgsArgs;
+                compiler-nix-name = compiler;
+                pkgs = self.legacyPackages.${system};
+              })
               )
             )
         );
 
       packages = forEachSystem (system:
-        (self.internal.compat { inherit system; }).hix.apps
+        (import ./hix/default.nix { pkgs = self.legacyPackages.${system}; }).apps
       );
 
       allJobs = forEachSystem (system:
         let
-          inherit (import ./ci-lib.nix { pkgs = self.legacyPackagesUnstable.${system}; }) stripAttrsForHydra filterDerivations;
-          ci = import ./ci.nix { inherit (self.internal) compat; inherit system; };
+          inherit
+            (import ./ci-lib.nix { pkgs = self.legacyPackagesUnstable.${system}; })
+            stripAttrsForHydra
+            filterDerivations;
+
+          # Compatibility with old default.nix
+          ci = import ./ci.nix {
+            inherit system;
+            compat =
+              { checkMaterialization ? false # Allows us to easily switch on materialization checking
+              , system
+              }:
+              let
+                # We are overriding 'overlays' and 'nixpkgsArgs' from the
+                # flake outputs so that we can incorporate the args passed
+                # to the compat layer (e.g. sourcesOverride).
+                overlays = [ self.overlay ]
+                  ++ lib.optional checkMaterialization
+                      (final: prev: {
+                        haskell-nix = prev.haskell-nix // {
+                          checkMaterialization = true;
+                        };
+                      });
+                pkgs = import nixpkgs
+                  (nixpkgsArgs // { localSystem = { inherit system; }; });
+              in
+              {
+                inherit config overlays;
+                sources = inputs;
+                allOverlays = overlays;
+                nixpkgsArgs = {
+                  inherit config overlays;
+                };
+                inherit pkgs;
+                pkgs-2105 = import nixpkgs-2105
+                  (nixpkgsArgs // { localSystem = { inherit system; }; });
+                pkgs-2111 = import nixpkgs-2111
+                  (nixpkgsArgs // { localSystem = { inherit system; }; });
+                pkgs-2205 = import nixpkgs-2205
+                  (nixpkgsArgs // { localSystem = { inherit system; }; });
+                pkgs-2211 = import nixpkgs-2211
+                  (nixpkgsArgs // { localSystem = { inherit system; }; });
+                pkgs-2305 = import nixpkgs-2305
+                  (nixpkgsArgs // { localSystem = { inherit system; }; });
+                pkgs-unstable = import nixpkgs-unstable
+                  (nixpkgsArgs // { localSystem = { inherit system; }; });
+                hix = import ./hix/default.nix { inherit pkgs; };
+              };
+          };
         in stripAttrsForHydra (filterDerivations ci));
 
       requiredJobs = forEachSystem (system:
         let
-          inherit (self.legacyPackages.${system}) lib;
           names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
               (builtins.attrNames x);
         in
