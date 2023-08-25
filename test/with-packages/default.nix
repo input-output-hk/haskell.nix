@@ -37,19 +37,15 @@ in recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
   test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {
-    meta = rec {
+    meta = {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
-      disabled = broken;
     };
   });
 
   # A variant of test-shell with the component option doExactConfig enabled
   test-shell-dec = (addCabalInstall decLibrary.shell).overrideAttrs (_: _: {
-    meta = rec {
+    meta = {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
-      disabled = broken;
     };
   });
 
@@ -105,7 +101,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = (stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0) || stdenv.hostPlatform.isMusl;
+      broken = stdenv.hostPlatform.isMusl;
       disabled = broken;
     };
 
