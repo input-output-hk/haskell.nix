@@ -65,7 +65,18 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-2105, nixpkgs-2111, nixpkgs-2205, nixpkgs-2211, nixpkgs-2305, flake-compat, ... }@inputs:
+  outputs =
+    { self
+    , nixpkgs
+    , nixpkgs-unstable
+    , nixpkgs-2105
+    , nixpkgs-2111
+    , nixpkgs-2205
+    , nixpkgs-2211
+    , nixpkgs-2305
+    , flake-compat
+    , ...
+    }@inputs:
     let
       callFlake = import flake-compat;
 
@@ -101,8 +112,73 @@
       forEachSystem' = f: lib.genAttrs systems (system: f self.legacyPackages.${system});
 
     in traceHydraJobs ({
+      inherit config;
       overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
+
+      internal = {
+        nixpkgsArgs = {
+          inherit config;
+          overlays = [ self.overlay ];
+        };
+
+        sources = inputs;
+
+        overlaysOverrideable = import ./overlays;
+
+        # Compatibility with old default.nix
+        compat =
+          { # Allows us to easily switch on materialization checking
+            checkMaterialization ? false
+          , system
+          , sourcesOverride ? { }
+          , ...
+          }:
+          let
+            sources = inputs // sourcesOverride;
+            allOverlays = import ./overlays { inherit sources; };
+            # We are overriding 'overlays' and 'nixpkgsArgs' from the
+            # flake outputs so that we can incorporate the args passed
+            # to the compat layer (e.g. sourcesOverride).
+            overlays = [ allOverlays.combined ]
+              ++ lib.optional checkMaterialization
+              (final: prev: {
+                haskell-nix = prev.haskell-nix // {
+                  checkMaterialization = true;
+                };
+              });
+            nixpkgsArgs = {
+              inherit config overlays;
+            };
+            pkgs = import nixpkgs (nixpkgsArgs // {
+              localSystem = { inherit system; };
+            });
+          in
+          {
+            inherit sources;
+            inherit allOverlays overlays;
+            inherit config nixpkgsArgs pkgs;
+            pkgs-2105 = import nixpkgs-2105 (nixpkgsArgs // {
+              localSystem = { inherit system; };
+            });
+            pkgs-2111 = import nixpkgs-2111 (nixpkgsArgs // {
+              localSystem = { inherit system; };
+            });
+            pkgs-2205 = import nixpkgs-2205 (nixpkgsArgs // {
+              localSystem = { inherit system; };
+            });
+            pkgs-2211 = import nixpkgs-2211 (nixpkgsArgs // {
+              localSystem = { inherit system; };
+            });
+            pkgs-2305 = import nixpkgs-2305 (nixpkgsArgs // {
+              localSystem = { inherit system; };
+            });
+            pkgs-unstable = import nixpkgs-unstable (nixpkgsArgs // {
+              localSystem = { inherit system; };
+            });
+            hix = import ./hix/default.nix { inherit pkgs; };
+          };
+      };
 
       legacyPackages = forEachSystem (system:
         import nixpkgs {
