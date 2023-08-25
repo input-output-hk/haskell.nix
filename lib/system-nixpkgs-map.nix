@@ -138,7 +138,7 @@ in
      bcrypt = null;
    }
 # -- mingw32
-// { mingwx = null;
+// { mingwex = null;
 }
 # -- os x
 # NB: these map almost 1:1 to the framework names
