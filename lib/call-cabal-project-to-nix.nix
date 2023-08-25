@@ -11,6 +11,7 @@
 , cabalProjectFileName ? "cabal.project"
 , cabalProject         ? null
 , cabalProjectLocal    ? null
+, cabalProjectCompiler ? null
 , cabalProjectFreeze   ? null
 , caller               ? "callCabalProjectToNix" # Name of the calling function for better warning messages
 , compilerSelection    ? p: p.haskell-nix.compiler
@@ -137,6 +138,10 @@ in let
       pkgs.lib.optionalString (cabalProjectLocal != null) ''
         -- Added from `cabalProjectLocal` argument to the `cabalProject` function
         ${cabalProjectLocal}
+      ''
+      + pkgs.lib.optionalString (cabalProjectCompiler != null) ''
+        -- Added from `cabalProjectCompiler` argument to the `cabalProject` function
+        ${cabalProjectCompiler}
       ''
     }
   '';

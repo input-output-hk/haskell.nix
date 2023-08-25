@@ -6,31 +6,8 @@ let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
     inherit compiler-nix-name evalPackages;
-    cabalProjectLocal = (if stdenv.hostPlatform.isGhcjs then ''
-        repository ghcjs-overlay
-          url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32
-          secure: True
-          root-keys:
-          key-threshold: 0
-          --sha256: sha256-y1vQnXI1XzkjnC4h66tVDmu2TZjZPcMrZEnE3m0XOfg=
-      ''
-      else ''
-        allow-newer: *:*
-      '')
-      + lib.optionalString (__compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) ''
-        allow-newer: *:*
-
-        repository head.hackage.ghc.haskell.org
-          url: https://ghc.gitlab.haskell.org/head.hackage/
-          secure: True
-          key-threshold: 3
-          root-keys:
-            f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
-            26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
-            7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-          --sha256: sha256-yMzVCP7DLb1Ztif1KCGk4RfREoROjtb6QBBtrSFy4OQ=
-
-        active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override${lib.optionalString stdenv.hostPlatform.isGhcjs ", ghcjs-overlay:override"}
+    cabalProjectLocal = ''
+      allow-newer: *:*
     '';
     # Alternative to the --sha256 comment in cabal.project
     # sha256map = {
