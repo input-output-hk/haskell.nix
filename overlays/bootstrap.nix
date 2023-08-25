@@ -796,7 +796,8 @@ in {
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc947
                     else final.buildPackages.buildPackages.haskell.compiler.ghc947
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc944;
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
                 };
                 inherit sphinx;
 
