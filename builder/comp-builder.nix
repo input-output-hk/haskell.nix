@@ -203,7 +203,7 @@ let
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
       (enableFeature doCoverage "coverage")
-      (enableFeature enableLibraryForGhci "library-for-ghci")
+      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs) "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
