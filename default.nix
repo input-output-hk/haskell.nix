@@ -1,7 +1,7 @@
 {...}@args:
 
 let
-  pins = (__fromJSON (__readFile ./flake.lock)).nodes;
+  pins = (builtins.fromJSON (builtins.readFile ./flake.lock)).nodes;
   nixpkgsPin = pins.nixpkgs-2211.locked;
   flakeCompatPin = pins.flake-compat.locked;
   nixpkgsSrc =
