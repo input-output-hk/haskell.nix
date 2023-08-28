@@ -11,7 +11,7 @@
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
-    flake-utils = { url = "github:hamishmack/flake-utils/hkm/nested-hydraJobs"; };
+    flake-utils = { url = "github:numtide/flake-utils"; };
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
     "hls-2.0" = { url = "github:haskell/haskell-language-server/2.0.0.1"; flake = false; };
     hydra.url = "hydra";
