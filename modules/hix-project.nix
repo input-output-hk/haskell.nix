@@ -44,6 +44,6 @@
   # Stack projects do not require a default as the `resolver` in the `stack.yaml`
   # specifies one.
   config = lib.mkIf (!config ? "stackYaml") {
-    compiler-nix-name = lib.mkDefault "ghc945";
+    compiler-nix-name = lib.mkDefault "ghc947";
   };
 }
