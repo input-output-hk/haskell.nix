@@ -101,17 +101,19 @@
       }
     },
     "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
       "locked": {
-        "lastModified": 1679360468,
-        "narHash": "sha256-LGnza3cfXF10Biw3ZTg0u9o9t7s680Ww200t5KkHTh8=",
-        "owner": "hamishmack",
+        "lastModified": 1692799911,
+        "narHash": "sha256-3eihraek4qL744EvQXsK1Ha6C3CR7nnT8X2qWap4RNk=",
+        "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "e1ea268ff47ad475443dbabcd54744b4e5b9d4f5",
+        "rev": "f9e7cf818399d17d347f847525c5a5a8032e4e44",
         "type": "github"
       },
       "original": {
-        "owner": "hamishmack",
-        "ref": "hkm/nested-hydraJobs",
+        "owner": "numtide",
         "repo": "flake-utils",
         "type": "github"
       }
@@ -136,11 +138,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1692923015,
-        "narHash": "sha256-5S3Hb/ErJjRMwHcMDLL+V8ApnzkdORqcPn+owFCbxEs=",
+        "lastModified": 1693182531,
+        "narHash": "sha256-OejogS2E745biMj8NuUYatN7uoMRsg7giVnRQwfiays=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "4b093ba708708264ef5f7fd35c052ae7c14c1b06",
+        "rev": "34cd9fe31d210f2ff041f490eaa4029f6b2812c4",
         "type": "github"
       },
       "original": {
@@ -469,16 +471,31 @@
     "stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1692922135,
-        "narHash": "sha256-Wdfcx2hupy/jrOXBMnfXWf7MrGM5rgOzYTd/eoK9RKY=",
+        "lastModified": 1693181390,
+        "narHash": "sha256-SWcgiVwyYfbd/ypwhkEmjJ92tCCsqQ179vwKH1m2lZE=",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "e85a380ead8995d0fb997f33a545ec2b39c1fe03",
+        "rev": "6479adae3f7559a300d3ee94af92ed9da5030794",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
         "repo": "stackage.nix",
+        "type": "github"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
         "type": "github"
       }
     }
