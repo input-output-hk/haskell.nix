@@ -5,6 +5,7 @@ let
 
   nix-tools = nix-tools-set {
     materialized = ./materialized;
+    nix-tools = nix-tools-unchecked;
   };
 
   nix-tools-unchecked = nix-tools-set {
