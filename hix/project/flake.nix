@@ -4,7 +4,7 @@
   description = "Default hix flake";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-  inputs.flake-utils.url = "github:hamishmack/flake-utils/hkm/nested-hydraJobs";
+  inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.src.flake = false;
   outputs = { self, src, nixpkgs, flake-utils, haskellNix }:
     flake-utils.lib.eachSystem [ "EVAL_SYSTEM" ] (system:
