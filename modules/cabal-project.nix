@@ -79,15 +79,7 @@ in {
         in
           if pkgs.stdenv.hostPlatform.isGhcjs || useHeadHackage
             then
-              optionalString pkgs.stdenv.hostPlatform.isGhcjs ''
-                repository ghcjs-overlay
-                  url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/91f4ce9bea0e7f739b7495647c3f72a308ed1c6f
-                  secure: True
-                  root-keys:
-                  key-threshold: 0
-                  --sha256: sha256-mZT7c+xR5cUTjLdCqOxpprjYL3kr/+9rmumtXvWAQlM=
-              ''
-              + optionalString useHeadHackage ''
+              optionalString useHeadHackage ''
                 allow-newer: *:*
 
                 repository head.hackage.ghc.haskell.org
@@ -99,6 +91,14 @@ in {
                      26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
                      7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
                   --sha256: sha256-yMzVCP7DLb1Ztif1KCGk4RfREoROjtb6QBBtrSFy4OQ=
+              ''
+              + optionalString pkgs.stdenv.hostPlatform.isGhcjs ''
+                repository ghcjs-overlay
+                  url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/91f4ce9bea0e7f739b7495647c3f72a308ed1c6f
+                  secure: True
+                  root-keys:
+                  key-threshold: 0
+                  --sha256: sha256-mZT7c+xR5cUTjLdCqOxpprjYL3kr/+9rmumtXvWAQlM=
               ''
               + ''
                 active-repositories: hackage.haskell.org${
