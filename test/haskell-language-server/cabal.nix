@@ -3,7 +3,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     name = "haskell-language-server";
-    src = haskell-nix.sources."hls-2.0";
+    src = haskell-nix.sources."hls-2.2";
     configureArgs = "--disable-benchmarks --disable-tests";
   };
 in recurseIntoAttrs {
