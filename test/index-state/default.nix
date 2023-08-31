@@ -15,6 +15,7 @@ let
         package cabal-install
           flags: -native-dns
       '';
+      cabalProjectDefaults = null; # Need to leave out `constraints: Cabal >=3.10`
     }).project.getPackage "hackage-security").components.library.version;
   version-before = version-used-at "2020-04-06T20:54:34Z";
   version-after = version-used-at "2020-04-06T20:54:35Z";

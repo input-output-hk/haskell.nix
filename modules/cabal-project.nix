@@ -78,6 +78,8 @@ in {
           useHeadHackage = __compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.8.0" >= 0;
         in ''
           constraints: setup.Cabal >=3.10
+          allow-newer: entropy:Cabal
+
           ${ optionalString useHeadHackage ''
               allow-newer: *:*
 
