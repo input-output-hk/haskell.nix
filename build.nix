@@ -55,11 +55,13 @@ in rec {
       "hls-110" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-1.10";
+        cabalProjectDefaults = null; # Need to leave out `constraints: setup.Cabal >=3.10`
       };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       "hls-20" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.0";
+        cabalProjectDefaults = null; # Need to leave out `constraints: setup.Cabal >=3.10`
       };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       "hls-22" = tool compiler-nix-name "haskell-language-server" {
