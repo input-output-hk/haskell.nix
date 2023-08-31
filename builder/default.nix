@@ -67,6 +67,9 @@ let
   in { packages ? [], hoogle ? pkgs.buildPackages.haskell-nix.tool "ghc928" "hoogle" {
         inherit evalPackages;
         version = "5.0.18.3";
+        cabalProjectLocal = ''
+          constraints: setup.Cabal >=3.10
+        '';
         # index-state = pkgs.haskell-nix.internalHackageIndexState;
         index-state = "2023-06-05T00:00:00Z";
       }
