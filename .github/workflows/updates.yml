@@ -20,8 +20,6 @@ jobs:
         run: |
           nix flake lock --update-input hackage
           nix flake lock --update-input stackage
-          nix flake lock --update-input ghc980
-          nix flake lock --update-input ghc99
       - name: Commit and push changes
         run: |
           git config --local user.email "devops+nix-tools@iohk.io"
