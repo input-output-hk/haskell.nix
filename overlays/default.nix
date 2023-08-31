@@ -43,16 +43,31 @@ let
             # add the missing exes attributes to the tarball derivation
             tarball // { exes = final.lib.genAttrs nix-tools-provided-exes (_: tarball); };
 
-        # Are we going to use the tarball?
-        use-tarball = final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64;
+        # Version of nix-tools built with a pinned version of haskell.nix.
+        pinned-nix-tools-lib = (import (final.haskell-nix.sources.flake-compat) {
+            pkgs = final;
+            inherit (final) system;
+            src = ../nix-tools;
+            override-inputs = {
+              # Avoid downloading another `hackage.nix`.
+              inherit (final.haskell-nix.sources) hackage;
+            };
+          }).defaultNix.lib;
       in
       {
         haskell-nix =
           prev.haskell-nix // {
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
-            nix-tools-unchecked = if use-tarball then static-nix-tools else nix-tools-pkgs.nix-tools;
+            nix-tools-unchecked =
+              # If possible use the static nix-tools tarball
+              if final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64
+                then static-nix-tools
+                else pinned-nix-tools-lib.nix-tools final.system;
           };
+        # For use building hadrian.  This way updating anything that modifies the
+        # way hadrian is built will not cause a GHC rebuild.
+        pinned-haskell-nix = pinned-nix-tools-lib.haskell-nix final.system;
       });
 
     bootstrap = import ./bootstrap.nix;
