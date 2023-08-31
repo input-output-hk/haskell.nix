@@ -121,7 +121,7 @@ final: prev: {
                   else module;
                 removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
-                pkg-def = excludeBootPackages null pkg-def;
+                pkg-def = excludeBootPackages compiler.nix-name pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
                                    final.ghc-boot-packages.${compiler.nix-name}
                                  ]
