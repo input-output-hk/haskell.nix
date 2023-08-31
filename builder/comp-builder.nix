@@ -231,7 +231,7 @@ let
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
-      ++ map (o: ''--ghc${lib.optionalString stdenv.hostPlatform.isGhcjs "js"}-options="${o}"'') ghcOptions
+      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9" < 0) "js"}-options="${o}"'') ghcOptions
       ++ lib.optional (
         # GHC 9.2 cross compiler built with older versions of GHC seem to have problems
         # with unique conters.  Perhaps because the name changed for the counters.
