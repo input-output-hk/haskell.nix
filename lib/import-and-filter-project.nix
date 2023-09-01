@@ -17,7 +17,9 @@ let
   projectSubDir'' = if projectSubDir == "" then "" else projectSubDir + "/"; # With trailing /
   project = import "${projectNix}${projectSubDir'}";
 in project // {
-    extras = hackage: let old = (project.extras hackage).packages; in {
+    extras = hackage: let
+      old = project.extras hackage;
+    in old // {
       packages = pkgs.lib.attrsets.mapAttrs (name: value:
         if builtins.isFunction value
           then value
@@ -56,6 +58,6 @@ in project // {
               package = oldPkg.package // {
                 isProject = (pkgs.lib).mkDefault packageInfo.isProject;
               };
-            }) old;
+            }) old.packages;
     };
   }

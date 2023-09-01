@@ -49,15 +49,15 @@
     nixpkgs.lib.filterAttrs (compiler-nix-name: _:
         # We have less x86_64-darwin build capacity so build fewer GhC versions
         (system != "x86_64-darwin" || (
-           !builtins.elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
+           !__elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-darwin requires ghc 8.10.7
         (system != "aarch64-darwin" || (
-           !builtins.elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
+           !__elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
       &&
         # aarch64-linux requires ghc 8.8.4
         (system != "aarch64-linux" || (
-           !builtins.elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
+           !__elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
         )))
     (builtins.mapAttrs (compiler-nix-name: runTests: {
       inherit runTests;

@@ -13,6 +13,7 @@
     flake-compat = { url = "github:input-output-hk/flake-compat/hkm/gitlab-fix"; flake = false; };
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
     "hls-2.0" = { url = "github:haskell/haskell-language-server/2.0.0.1"; flake = false; };
+    "hls-2.2" = { url = "github:haskell/haskell-language-server/2.2.0.0"; flake = false; };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -111,6 +112,21 @@
       forEachSystem = lib.genAttrs systems;
       forEachSystemPkgs = f: forEachSystem (system: f self.legacyPackages.${system});
 
+      # Include hydraJobs from nix-tools subflake.
+      # NOTE: These derivations do not depend on the haskell.nix in ./. but
+      # on the version of haskell.nix locked in the subflake. They are
+      # evaluated within their own flake and independently of anything
+      # else. Here we only expose them in the main flake.
+      nix-tools-hydraJobs =
+        let cf = callFlake {
+          src = ./nix-tools;
+          override-inputs = {
+            # Avoid downloading another `hackage.nix`.
+            inherit (inputs) hackage;
+          };
+        };
+        in cf.defaultNix.hydraJobs;
+
     in traceHydraJobs ({
       inherit config;
       overlay = self.overlays.combined;
@@ -161,8 +177,6 @@
       # supported by haskell.nix, e.g. with remote builders, in order to check this flake.
       # If you want to run the tests for just your platform, run `./test/tests.sh` or
       # `nix-build -A checks.$PLATFORM`
-      # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
-      # (and maybe other tests) import projects that use builtins.currentSystem
       checks = forEachSystemPkgs (pkgs:
         builtins.listToAttrs (
           map
@@ -221,20 +235,8 @@
               ) (names self.allJobs.${system})));
 
       hydraJobs = forEachSystem (system:
-        self.allJobs.${system}
-        //
-        {
-          # Include hydraJobs from nix-tools subflake.
-          # NOTE: These derivations do not depend on the haskell.nix in ./. but
-          # on the version of haskell.nix locked in the subflake. They are
-          # evaluated within their own flake and independently of anything
-          # else. Here we only expose them in the main flake.
-          nix-tools = (callFlake {
-            inherit system;
-            pkgs = self.legacyPackages.${system};
-            src = ./nix-tools;
-          }).defaultNix.hydraJobs or {};
-        });
+        self.allJobs.${system} // { nix-tools = nix-tools-hydraJobs.${system} or {}; }
+      );
 
       devShells = forEachSystemPkgs (pkgs:
         let inherit (pkgs) mkShell nixUnstable cabal-install haskell-nix;

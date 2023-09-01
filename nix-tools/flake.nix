@@ -7,8 +7,7 @@
       systems = [
         "x86_64-linux"
         "x86_64-darwin"
-        # TODO switch back on when ci.iog.io has builders for aarch64-linux
-        # "aarch64-linux"
+        "aarch64-linux"
         "aarch64-darwin"
       ];
 
@@ -48,6 +47,10 @@
 
       legacyPackages = forAllSystems (pkgs: pkgs);
 
+      lib = {
+        nix-tools = system: (haskellNix.legacyPackages.${system}.extend self.overlays.default).nix-tools;
+        haskell-nix = system: (haskellNix.legacyPackages.${system}.extend self.overlays.default).haskell-nix;
+      };
       project = forAllSystems (pkgs: pkgs.nix-tools.project);
 
       packages = forAllSystems (pkgs:

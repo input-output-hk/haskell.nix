@@ -9,10 +9,10 @@ final: prev: {
         # Default modules, these will always be included.
         # They are here to be overridden/added to by other
         # overlays.
-        defaultModules = [];
+        defaultModules = prev.haskell-nix.defaultModules or [];
 
         # Additional user-provided mappings to augment ./../lib/pkgconf-nixpkgs-map.nix
-        extraPkgconfigMappings = {};
+        extraPkgconfigMappings = prev.haskell-nix.extraPkgconfigMappings or {};
         # Nix Flake based source pins.
         # To update all inputs, get unstable Nix and then `nix flake update --recreate-lock-file`
         # Or `nix-shell -p nixUnstable --run "nix --experimental-features 'nix-command flakes' flake update --recreate-lock-file"`
@@ -121,7 +121,7 @@ final: prev: {
                   else module;
                 removeSpecialPackages = ps: removeAttrs ps [ "$locals" "$targets" "$everything" ];
             in mkPkgSet {
-                pkg-def = excludeBootPackages null pkg-def;
+                pkg-def = excludeBootPackages compiler.nix-name pkg-def;
                 pkg-def-extras = [ stack-pkgs.extras
                                    final.ghc-boot-packages.${compiler.nix-name}
                                  ]
