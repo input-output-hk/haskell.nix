@@ -223,6 +223,8 @@
             )
         );
 
+      # NOTE: these are the hix cli utilities, which is a separate thing from
+      # the hix.nix overlays (which extends haskell.nix with hixProject).
       packages = forEachSystemPkgs (pkgs:
         (import ./hix/default.nix { inherit pkgs; }).apps
       );

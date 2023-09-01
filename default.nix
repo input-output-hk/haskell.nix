@@ -1,20 +1,20 @@
-{...}@args:
+{ ... }@args:
 
 let
-  pins = (builtins.fromJSON (builtins.readFile ./flake.lock)).nodes;
-  nixpkgsPin = pins.nixpkgs-2211.locked;
-  flakeCompatPin = pins.flake-compat.locked;
-  nixpkgsSrc =
-    builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/${nixpkgsPin.rev}.tar.gz";
-      sha256 = nixpkgsPin.narHash;
-    };
-  pkgs = args.pkgs or (import nixpkgsSrc {});
+  lock = builtins.fromJSON (builtins.readFile ./flake.lock);
   flake-compat =
-    pkgs.fetchzip {
-      url = "https://github.com/input-output-hk/flake-compat/archive/${flakeCompatPin.rev}.tar.gz";
-      sha256 = flakeCompatPin.narHash;
+    with lock.nodes.flake-compat.locked;
+    builtins.fetchTarball {
+      url = "https://github.com/input-output-hk/flake-compat/archive/${rev}.tar.gz";
+      sha256 = narHash;
     };
+  nixpkgs =
+    with lock.nodes.nixpkgs-2211.locked;
+    builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+      sha256 = narHash;
+    };
+  pkgs = args.pkgs or (import nixpkgs { });
   self = import flake-compat {
     # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
     # repo.
