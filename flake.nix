@@ -112,6 +112,11 @@
       forEachSystem = lib.genAttrs systems;
       forEachSystemPkgs = f: forEachSystem (system: f self.legacyPackages.${system});
 
+      inherit
+        (import ./ci-lib.nix { inherit lib; })
+        stripAttrsForHydra
+        filterDerivations;
+
       # Include hydraJobs from nix-tools subflake.
       # NOTE: These derivations do not depend on the haskell.nix in ./. but
       # on the version of haskell.nix locked in the subflake. They are
@@ -200,18 +205,12 @@
       );
 
       allJobs = forEachSystem (system:
-        let
-          inherit
-            (import ./ci-lib.nix { inherit lib; })
-            stripAttrsForHydra
-            filterDerivations;
-
+        stripAttrsForHydra (filterDerivations (
           # This is awkward.
-          ci = import ./ci.nix {
+          import ./ci.nix {
             inherit system;
             haskellNix = self;
-          };
-        in stripAttrsForHydra (filterDerivations ci));
+          })));
 
       requiredJobs = forEachSystem (system:
         let
