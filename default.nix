@@ -8,13 +8,6 @@ let
       url = "https://github.com/input-output-hk/flake-compat/archive/${rev}.tar.gz";
       sha256 = narHash;
     };
-  nixpkgs =
-    with lock.nodes.nixpkgs-2211.locked;
-    builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
-      sha256 = narHash;
-    };
-  pkgs = args.pkgs or (import nixpkgs { });
   self = import flake-compat {
     # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
     # repo.
@@ -26,7 +19,6 @@ let
     #   in `test/default.nix`).  If `flake-compat` copies the whole git repo, any change to the
     #   repo causes a change of input for all tests.
     src = { outPath = ./.; };
-    inherit pkgs;
   };
 in self.defaultNix // (self.defaultNix.internal.compat
-({ system = args.pkgs.system or builtins.currentSystem; } // args))
+({ system = builtins.currentSystem; } // args))
