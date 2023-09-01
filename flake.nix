@@ -194,8 +194,9 @@
           localSystem = { inherit system; };
         });
 
-      # FIXME: buildkite is gone
-      # Exposed so that buildkite can check that `allow-import-from-derivation=false` works for core of haskell.nix
+      # Exposed so CI can check that `allow-import-from-derivation=false` works
+      # for core of haskell.nix E.g. this should always work:
+      #   nix build .#roots.x86_64-linux --accept-flake-config --option allow-import-from-derivation false
       roots = forEachSystem (system:
         self.legacyPackagesUnstable.${system}.haskell-nix.roots compiler);
 
