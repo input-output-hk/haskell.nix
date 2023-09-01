@@ -214,24 +214,26 @@
 
       requiredJobs = forEachSystem (system:
         let
-          names = x: lib.filter (n: n != "recurseForDerivations" && n != "meta")
-              (builtins.attrNames x);
+          inherit (self.legacyPackages.${system}) releaseTools;
         in
-          builtins.listToAttrs (
-              lib.concatMap (nixpkgsVer:
-                let nixpkgsJobs = self.allJobs.${system}.${nixpkgsVer};
-                in lib.concatMap (compiler-nix-name:
-                  let ghcJobs = nixpkgsJobs.${compiler-nix-name};
-                  in builtins.map (crossPlatform: {
-                      name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
-                      value = self.legacyPackages.${system}.releaseTools.aggregate {
-                        name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
-                        meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
-                        constituents = lib.collect lib.isDerivation ghcJobs.${crossPlatform};
-                      };
-                  }) (names ghcJobs)
-                ) (names nixpkgsJobs)
-              ) (names self.allJobs.${system})));
+          lib.concatMapAttrs (nixpkgsVer:
+            lib.concatMapAttrs (compiler-nix-name:
+              lib.concatMapAttrs (crossPlatform: ghcJobs:
+                let
+                  name = "required-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                  value = releaseTools.aggregate {
+                      name = "haskell.nix-${nixpkgsVer}-${compiler-nix-name}-${crossPlatform}";
+                      meta.description = "All ${nixpkgsVer} ${compiler-nix-name} ${crossPlatform} jobs";
+                      constituents = lib.collect lib.isDerivation ghcJobs;
+                  };
+                in
+                lib.optionalAttrs
+                  (crossPlatform != "recurseForDerivations" && crossPlatform != "meta")
+                  { ${name} = value; })
+              )
+            )
+            self.allJobs.${system}
+          );
 
       hydraJobs = forEachSystem (system:
         self.allJobs.${system} // { nix-tools = nix-tools-hydraJobs.${system} or {}; }
