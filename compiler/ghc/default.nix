@@ -245,7 +245,7 @@ let
       compiler-nix-name = if buildPackages.haskell.compiler ? "ghc928"
         then "ghc928"
         else "ghc8107";
-    in buildPackages.haskell-nix.tool compiler-nix-name "hadrian" {
+    in buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
