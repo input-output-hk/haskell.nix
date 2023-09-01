@@ -109,7 +109,7 @@
       };
 
       forEachSystem = lib.genAttrs systems;
-      forEachSystem' = f: lib.genAttrs systems (system: f self.legacyPackages.${system});
+      forEachSystemPkgs = f: forEachSystem (system: f self.legacyPackages.${system});
 
     in traceHydraJobs ({
       inherit config;
@@ -207,7 +207,7 @@
       # `nix-build -A checks.$PLATFORM`
       # FIXME: Currently `nix flake check` requires `--impure` because coverage-golden
       # (and maybe other tests) import projects that use builtins.currentSystem
-      checks = forEachSystem' (pkgs:
+      checks = forEachSystemPkgs (pkgs:
         builtins.listToAttrs (
           map
             (pkg: { name = pkg.name; value = pkg; })
@@ -223,7 +223,7 @@
             )
         );
 
-      packages = forEachSystem' (pkgs:
+      packages = forEachSystemPkgs (pkgs:
         (import ./hix/default.nix { inherit pkgs; }).apps
       );
 
@@ -317,7 +317,7 @@
           }).defaultNix.hydraJobs or {};
         });
 
-      devShells = forEachSystem' (pkgs:
+      devShells = forEachSystemPkgs (pkgs:
         let inherit (pkgs) mkShell nixUnstable cabal-install haskell-nix;
         in {
           default =
