@@ -76,11 +76,7 @@ in {
       default =
         let
           useHeadHackage = __compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.8.0" >= 0;
-        in ''
-          constraints: setup.Cabal >=3.10
-          allow-newer: entropy:Cabal
-
-          ${ optionalString useHeadHackage ''
+        in optionalString useHeadHackage ''
               allow-newer: *:*
 
               repository head.hackage.ghc.haskell.org
@@ -106,8 +102,7 @@ in {
                   optionalString useHeadHackage ", head.hackage.ghc.haskell.org:override"
                 + optionalString pkgs.stdenv.hostPlatform.isGhcjs ", ghcjs-overlay:override"
                 + concatMapStrings (name: ", ${name}:override") (builtins.attrNames config.extra-hackage-tarballs)}
-            ''
-          }'';
+            '';
     };
     cabalProjectFreeze = mkOption {
       type = nullOr lines;
