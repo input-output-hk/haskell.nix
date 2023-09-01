@@ -188,14 +188,14 @@
       allJobs = forEachSystem (system:
         let
           inherit
-            (import ./ci-lib.nix { pkgs = self.legacyPackagesUnstable.${system}; })
+            (import ./ci-lib.nix { inherit lib; })
             stripAttrsForHydra
             filterDerivations;
 
-          # Compatibility with old default.nix
+          # This is awkward.
           ci = import ./ci.nix {
             inherit system;
-            compat = import ./default.nix;
+            haskellNix = self;
           };
         in stripAttrsForHydra (filterDerivations ci));
 

@@ -2,26 +2,48 @@
 # on a machine with e.g. no way to build the Darwin IFDs you need!
 { ifdLevel ? 3
 , checkMaterialization ? false
-, compat
-, system
-, evalSystem ? builtins.currentSystem or "x86_64-linux"
-, pkgs ? (compat { inherit system; }).pkgs }:
+, system ? builtins.currentSystem
+, evalSystem ? system
+  # NOTE: we apply checkMaterialization when defining nixpkgsArgs
+, haskellNix ? import ./default.nix { inherit system ; }
+}:
  let
-  inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
-  inherit (pkgs.haskell-nix) sources;
+  inherit (haskellNix) inputs;
+  inherit (inputs.nixpkgs) lib;
+  inherit
+    (import ./ci-lib.nix { inherit lib; })
+    dimension
+    platformFilterGeneric
+    filterAttrsOnlyRecursive;
+
+  # short names for nixpkgs versions
   nixpkgsVersions = {
-    "R2205" = "nixpkgs-2205";
-    "R2211" = "nixpkgs-2211";
-    "R2305" = "nixpkgs-2305";
-    "unstable" = "nixpkgs-unstable";
+    "R2205" = inputs.nixpkgs-2205;
+    "R2211" = inputs.nixpkgs-2211;
+    "R2305" = inputs.nixpkgs-2305;
+    "unstable" = inputs.nixpkgs-unstable;
   };
-  haskellNix = compat { inherit checkMaterialization system; };
-  nixpkgsArgs = haskellNix.nixpkgsArgs // {
+
+  nixpkgsArgs = {
+    # set checkMaterialization as per top-level argument
+    overlays = [
+      haskellNix.overlay
+      (final: prev: {
+        haskell-nix = prev.haskell-nix // {
+          inherit checkMaterialization;
+        };
+      })
+    ];
     # Needed for dwarf tests
-    config = haskellNix.nixpkgsArgs.config // {
-      permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
+    config = haskellNix.config // {
+      permittedInsecurePackages = [
+        "libdwarf-20210528"
+        "libdwarf-20181024"
+        "dwarfdump-20181024"
+      ];
     };
   };
+
   compilerNixNames = nixpkgsName: nixpkgs:
     # Include only the GHC versions that are supported by haskell.nix
     nixpkgs.lib.filterAttrs (compiler-nix-name: _:
@@ -93,9 +115,8 @@
   };
   isDisabled = d: d.meta.disabled or false;
 in
-dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
-  let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
-      evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
+dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
+  let evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
   in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };
