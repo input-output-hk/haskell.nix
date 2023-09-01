@@ -124,7 +124,10 @@
 
         sources = inputs;
 
-        overlaysOverrideable = import ./overlays;
+        overlaysOverrideable =
+          lib.warn
+            "Using this attribute is deprecated. Import ${./overlays} directly or use the flake overlays output with override-inut."
+            (import ./overlays);
 
         # Compatibility with old default.nix
         compat =
