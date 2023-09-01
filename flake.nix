@@ -156,7 +156,15 @@
       let
         legacyPackages = (self.internal.compat { inherit system; }).pkgs;
         nix-tools-hydraJobs =
-          let cf = callFlake { pkgs = legacyPackages; inherit system; src = ./nix-tools; };
+          let cf = callFlake {
+            pkgs = legacyPackages;
+            inherit system;
+            src = ./nix-tools;
+            override-inputs = {
+              # Avoid downloading another `hackage.nix`.
+              inherit (inputs) hackage;
+            };
+          };
           in cf.defaultNix.hydraJobs;
       in rec {
         inherit legacyPackages;
