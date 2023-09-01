@@ -131,16 +131,13 @@
           { # Allows us to easily switch on materialization checking
             checkMaterialization ? false
           , system
-          , sourcesOverride ? { }
           , ...
           }:
           let
-            sources = inputs // sourcesOverride;
-            allOverlays = import ./overlays { inherit sources; };
             # We are overriding 'overlays' and 'nixpkgsArgs' from the
             # flake outputs so that we can incorporate the args passed
             # to the compat layer (e.g. sourcesOverride).
-            overlays = [ allOverlays.combined ]
+            overlays = [ self.overlay ]
               ++ lib.optional checkMaterialization
               (final: prev: {
                 haskell-nix = prev.haskell-nix // {
@@ -155,9 +152,9 @@
             });
           in
           {
-            inherit sources;
-            inherit allOverlays overlays;
-            inherit config nixpkgsArgs pkgs;
+            inherit overlays config nixpkgsArgs pkgs;
+            sources = inputs;
+            allOverlays = self.overlays;
             pkgs-2105 = import nixpkgs-2105 (nixpkgsArgs // {
               localSystem = { inherit system; };
             });

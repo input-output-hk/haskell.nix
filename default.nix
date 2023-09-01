@@ -1,4 +1,8 @@
-{ ... }@args:
+{ system ? builtins.currentSystem
+, sourcesOverride ? { }
+, checkMaterialization ? false
+, ...
+}:
 
 let
   lock = builtins.fromJSON (builtins.readFile ./flake.lock);
@@ -19,6 +23,10 @@ let
     #   in `test/default.nix`).  If `flake-compat` copies the whole git repo, any change to the
     #   repo causes a change of input for all tests.
     src = { outPath = ./.; };
+    override-inputs = sourcesOverride;
   };
-in self.defaultNix // (self.defaultNix.internal.compat
-({ system = builtins.currentSystem; } // args))
+in
+self.defaultNix // (
+  self.defaultNix.internal.compat {
+    inherit system checkMaterialization;
+  })
