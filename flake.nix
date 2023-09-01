@@ -131,53 +131,9 @@
 
         # Compatibility with old default.nix
         compat =
-          { # Allows us to easily switch on materialization checking
-            checkMaterialization ? false
-          , system
-          , ...
-          }:
-          let
-            # We are overriding 'overlays' and 'nixpkgsArgs' from the
-            # flake outputs so that we can incorporate the args passed
-            # to the compat layer (e.g. sourcesOverride).
-            overlays = [ self.overlay ]
-              ++ lib.optional checkMaterialization
-              (final: prev: {
-                haskell-nix = prev.haskell-nix // {
-                  checkMaterialization = true;
-                };
-              });
-            nixpkgsArgs = {
-              inherit config overlays;
-            };
-            pkgs = import nixpkgs (nixpkgsArgs // {
-              localSystem = { inherit system; };
-            });
-          in
-          {
-            inherit overlays config nixpkgsArgs pkgs;
-            sources = inputs;
-            allOverlays = self.overlays;
-            pkgs-2105 = import nixpkgs-2105 (nixpkgsArgs // {
-              localSystem = { inherit system; };
-            });
-            pkgs-2111 = import nixpkgs-2111 (nixpkgsArgs // {
-              localSystem = { inherit system; };
-            });
-            pkgs-2205 = import nixpkgs-2205 (nixpkgsArgs // {
-              localSystem = { inherit system; };
-            });
-            pkgs-2211 = import nixpkgs-2211 (nixpkgsArgs // {
-              localSystem = { inherit system; };
-            });
-            pkgs-2305 = import nixpkgs-2305 (nixpkgsArgs // {
-              localSystem = { inherit system; };
-            });
-            pkgs-unstable = import nixpkgs-unstable (nixpkgsArgs // {
-              localSystem = { inherit system; };
-            });
-            hix = import ./hix/default.nix { inherit pkgs; };
-          };
+          lib.warn
+            "Using this attribute is deprecated. You can pass the same arguments to ${./default.nix} instead"
+            (import ./default.nix);
       };
 
       legacyPackages = forEachSystem (system:
@@ -239,46 +195,7 @@
           # Compatibility with old default.nix
           ci = import ./ci.nix {
             inherit system;
-            compat =
-              { checkMaterialization ? false # Allows us to easily switch on materialization checking
-              , system
-              }:
-              let
-                # We are overriding 'overlays' and 'nixpkgsArgs' from the
-                # flake outputs so that we can incorporate the args passed
-                # to the compat layer (e.g. sourcesOverride).
-                overlays = [ self.overlay ]
-                  ++ lib.optional checkMaterialization
-                      (final: prev: {
-                        haskell-nix = prev.haskell-nix // {
-                          checkMaterialization = true;
-                        };
-                      });
-                pkgs = import nixpkgs
-                  (nixpkgsArgs // { localSystem = { inherit system; }; });
-              in
-              {
-                inherit config overlays;
-                sources = inputs;
-                allOverlays = overlays;
-                nixpkgsArgs = {
-                  inherit config overlays;
-                };
-                inherit pkgs;
-                pkgs-2105 = import nixpkgs-2105
-                  (nixpkgsArgs // { localSystem = { inherit system; }; });
-                pkgs-2111 = import nixpkgs-2111
-                  (nixpkgsArgs // { localSystem = { inherit system; }; });
-                pkgs-2205 = import nixpkgs-2205
-                  (nixpkgsArgs // { localSystem = { inherit system; }; });
-                pkgs-2211 = import nixpkgs-2211
-                  (nixpkgsArgs // { localSystem = { inherit system; }; });
-                pkgs-2305 = import nixpkgs-2305
-                  (nixpkgsArgs // { localSystem = { inherit system; }; });
-                pkgs-unstable = import nixpkgs-unstable
-                  (nixpkgsArgs // { localSystem = { inherit system; }; });
-                hix = import ./hix/default.nix { inherit pkgs; };
-              };
+            compat = import ./default.nix;
           };
         in stripAttrsForHydra (filterDerivations ci));
 

@@ -12,7 +12,7 @@ let
       url = "https://github.com/input-output-hk/flake-compat/archive/${rev}.tar.gz";
       sha256 = narHash;
     };
-  self = import flake-compat {
+  self = (import flake-compat {
     # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
     # repo.
     # This is done for 3 reasons:
@@ -24,9 +24,48 @@ let
     #   repo causes a change of input for all tests.
     src = { outPath = ./.; };
     override-inputs = sourcesOverride;
+  }).defaultNix;
+
+  inherit (self.inputs.nixpkgs) lib;
+
+  # coming from internal.compat
+  overlays = [ self.overlay ]
+    ++ lib.optional checkMaterialization
+    (final: prev: {
+      haskell-nix = prev.haskell-nix // {
+        checkMaterialization = true;
+      };
+    });
+  nixpkgsArgs = {
+    inherit overlays;
+    inherit (self) config;
   };
+  pkgs = import self.inputs.nixpkgs (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
 in
-self.defaultNix // (
-  self.defaultNix.internal.compat {
-    inherit system checkMaterialization;
-  })
+self // {
+  inherit nixpkgsArgs pkgs;
+  inherit (nixpkgsArgs) config overlays;
+  sources = self.inputs;
+  allOverlays = self.overlays;
+  pkgs-2105 = import self.inputs.nixpkgs-2105 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2111 = import self.inputs.nixpkgs-2111 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2205 = import self.inputs.nixpkgs-2205 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2211 = import self.inputs.nixpkgs-2211 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2305 = import self.inputs.nixpkgs-2305 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-unstable = import self.inputs.nixpkgs-unstable (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  hix = import ./hix/default.nix { inherit pkgs; };
+}
