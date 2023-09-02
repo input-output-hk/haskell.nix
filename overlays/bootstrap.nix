@@ -210,7 +210,6 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.0"                             && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.0-aarch64-handle-none-rela.patch
 
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.9.0"  "9.10" ./patches/ghc/ghc-9.9-mingw-tooldir-fix-11094.patch) # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/11094
-                ++ fromUntil "9.9.0"  "9.10" ./patches/ghc/ghc-9.9-mv-stack-c-file.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
