@@ -377,6 +377,7 @@ stdenv.mkDerivation (rec {
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
+        export NM="${targetCC}/share/emscripten/emnm"
         export EM_CACHE=$(mktemp -d)
         mv config.sub.ghcjs config.sub
     ''

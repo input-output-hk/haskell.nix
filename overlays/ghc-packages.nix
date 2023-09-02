@@ -105,6 +105,7 @@ let
       pretty       = "libraries/pretty";
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" >= 0) {
       ghc-platform = "libraries/ghc-platform";
+      ghc-internal = "libraries/ghc-internal";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on
