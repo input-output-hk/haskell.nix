@@ -3,7 +3,7 @@
 { ifdLevel ? 3
 , checkMaterialization ? false
 , system ? builtins.currentSystem
-, evalSystem ? system
+, evalSystem ? builtins.currentSystem or "x86_64-linux"
   # NOTE: we apply checkMaterialization when defining nixpkgsArgs
 , haskellNix ? import ./default.nix { inherit system ; }
 }:
