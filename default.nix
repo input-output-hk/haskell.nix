@@ -6,13 +6,37 @@
 
 let
   lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+
+  # NOTE: This has to be whitelisted in restricted evaluation mode
   flake-compat =
     with lock.nodes.flake-compat.locked;
     builtins.fetchTarball {
       url = "https://github.com/input-output-hk/flake-compat/archive/${rev}.tar.gz";
       sha256 = narHash;
     };
+
+  # With flake-compat you will end up fetching the flake inputs with
+  # builtins.fetchTarball. This is simply because you don't have access to any
+  # nixpkgs before fetching the inputs.
+  #
+  # This won't work in restricted evaluation mode.
+  #
+  # Under the mild assumtion that https://github.com/NixOS is whitelisted, we
+  # can manually fetch nixpkgs and let flake-compat fetch the rest of the
+  # inputs with the nixpkgs just fetched.
+  #
+  # Manually fetch nixpkgs
+  nixpkgs =
+    with lock.nodes.nixpkgs.locked;
+    builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+      sha256 = narHash;
+    };
+  #
+  # Instantiate the flake fetching the other inputs with the nixpkgs already
+  # fetched
   self = (import flake-compat {
+    pkgs = import nixpkgs { };
     # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
     # repo.
     # This is done for 3 reasons:
