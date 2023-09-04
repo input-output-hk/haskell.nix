@@ -17,7 +17,7 @@
 with pkgs;
 
 let
-  inherit (import ../ci-lib.nix { lib = pkgs.lib; }) filterAttrsOnlyRecursive;
+  inherit (import ../ci-lib.nix { inherit lib; }) filterAttrsOnlyRecursive;
   isDisabled = d: d.meta.disabled or false;
 
   # Set recurseForDerivations for both children and grand-children values in
