@@ -32,13 +32,11 @@ in {
         inherit name;
         value = final.fetchFromGitLab {
                     domain = "gitlab.haskell.org";
-                    owner = "ghc";
+                    owner = "hamishmack";
                     repo = "ghc";
                     fetchSubmodules = true;
                     inherit (lockFile.nodes.${name}.locked) rev;
                     sha256 = lockFile.nodes.${name}.locked.narHash;
-                    # rev = "62cb821ef2ef0d47c4cf88a6f2aeb7f75106d361";
-                    # sha256 = "sha256-m6/WcPqFhsH3nYYimdBJFDyhHWRwEs37iEP8Hvpt5xk=";
                 } // {
                   lastModifiedDate = formatSecondsSinceEpoch lockFile.nodes.${name}.locked.lastModified;
                 };
