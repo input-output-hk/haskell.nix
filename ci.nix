@@ -24,8 +24,8 @@
     "unstable" = inputs.nixpkgs-unstable;
   };
 
-  ghc980X = "ghc980${__substring 0 8 sources.ghc980.lastModifiedDate}";
-  ghc99X = "ghc99${__substring 0 8 sources.ghc99.lastModifiedDate}";
+  ghc980X = "ghc980${__substring 0 8 inputs.ghc980.lastModifiedDate}";
+  ghc99X = "ghc99${__substring 0 8 inputs.ghc99.lastModifiedDate}";
 
   nixpkgsArgs = {
     # set checkMaterialization as per top-level argument
