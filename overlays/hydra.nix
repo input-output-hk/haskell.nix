@@ -1,4 +1,4 @@
-{ sources, ...}:
+{ sources }:
 # This hydra overlay is required to circumvent problems with builtins.path
 # in restricted eval mode.
 # This can be removed once hydra in nixpkgs is based on a recent enough nix,

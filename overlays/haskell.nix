@@ -1,4 +1,4 @@
-{ sources, ... }:
+{ sources }:
 # The haskell.nix infrastructure
 #
 # for hygienic reasons we'll use haskell-nix as a prefix.
@@ -105,7 +105,7 @@ final: prev: {
             { stack-pkgs  # Path to the output of stack-to-nix
             , pkg-def-extras ? []
             , modules ? []
-            }@args:
+            }:
             let
                 # The Stackage release referenced in the stack config
                 pkg-def = stackage.${stack-pkgs.resolver} or (throw ''
@@ -238,7 +238,7 @@ final: prev: {
           })
         ];
 
-        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }@args:
+        dotCabal = { index-state, sha256, cabal-install, extra-hackage-tarballs ? {}, extra-hackage-repos ? {}, nix-tools, ... }:
             let
               # NOTE: root-keys: aaa is because key-threshold: 0 does not seem to be enough by itself
               bootstrapIndexTarball = name: index: final.runCommand "cabal-bootstrap-index-tarball-${name}" {
@@ -741,7 +741,7 @@ final: prev: {
                             then components.library
                             else components.${haskellLib.prefixComponent.${builtins.elemAt m 0}}.${builtins.elemAt m 1};
 
-                      coverageReport = haskellLib.coverageReport (rec {
+                      coverageReport = haskellLib.coverageReport ({
                         name = package.identifier.name + "-" + package.identifier.version;
                         # Include the checks for a single package.
                         checks = final.lib.filter (final.lib.isDerivation) (final.lib.attrValues package'.checks);

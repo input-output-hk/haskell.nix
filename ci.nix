@@ -1,29 +1,49 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
 { ifdLevel ? 3
-# Whether or not we are evaluating in restricted mode. This is true in Hydra, but not in Hercules.
-, restrictEval ? false
 , checkMaterialization ? false
-, compat
-, system
+, system ? builtins.currentSystem
 , evalSystem ? builtins.currentSystem or "x86_64-linux"
-, pkgs ? (compat { inherit system; }).pkgs }:
+  # NOTE: we apply checkMaterialization when defining nixpkgsArgs
+, haskellNix ? import ./default.nix { inherit system ; }
+}:
  let
-  inherit (import ./ci-lib.nix { inherit pkgs; }) dimension platformFilterGeneric filterAttrsOnlyRecursive;
-  inherit (pkgs.haskell-nix) sources;
+  inherit (haskellNix) inputs;
+  inherit (inputs.nixpkgs) lib;
+  inherit
+    (import ./ci-lib.nix { inherit lib; })
+    dimension
+    platformFilterGeneric
+    filterAttrsOnlyRecursive;
+
+  # short names for nixpkgs versions
   nixpkgsVersions = {
-    "R2205" = "nixpkgs-2205";
-    "R2211" = "nixpkgs-2211";
-    "R2305" = "nixpkgs-2305";
-    "unstable" = "nixpkgs-unstable";
+    "R2205" = inputs.nixpkgs-2205;
+    "R2211" = inputs.nixpkgs-2211;
+    "R2305" = inputs.nixpkgs-2305;
+    "unstable" = inputs.nixpkgs-unstable;
   };
-  haskellNix = compat { inherit checkMaterialization system; };
-  nixpkgsArgs = haskellNix.nixpkgsArgs // {
+
+  nixpkgsArgs = {
+    # set checkMaterialization as per top-level argument
+    overlays = [
+      haskellNix.overlay
+      (final: prev: {
+        haskell-nix = prev.haskell-nix // {
+          inherit checkMaterialization;
+        };
+      })
+    ];
     # Needed for dwarf tests
-    config = haskellNix.nixpkgsArgs.config // {
-      permittedInsecurePackages = ["libdwarf-20210528" "libdwarf-20181024" "dwarfdump-20181024"];
+    config = haskellNix.config // {
+      permittedInsecurePackages = [
+        "libdwarf-20210528"
+        "libdwarf-20181024"
+        "dwarfdump-20181024"
+      ];
     };
   };
+
   compilerNixNames = nixpkgsName: nixpkgs:
     # Include only the GHC versions that are supported by haskell.nix
     nixpkgs.lib.filterAttrs (compiler-nix-name: _:
@@ -73,31 +93,30 @@
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
-       || (system == "aarch64-linux" && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
-       || (system == "x86_64-darwin" && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
-       || (system == "aarch64-darwin" && __elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
+      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
+       || (system == "aarch64-linux" && builtins.elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
+       || (system == "x86_64-darwin" && builtins.elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
+       || (system == "aarch64-darwin" && builtins.elem compiler-nix-name ["ghc8107" "ghc962" "ghc9820230704"])
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" "ghc9820230704"])
-       || (system == "x86_64-darwin" && __elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
+      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" "ghc9820230704"])
+       || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" "ghc9820230704"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" "ghc9820230704"]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc927" "ghc928"]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
-  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && __elem compiler-nix-name ["ghc927" "ghc928" "ghc947" "ghc962" "ghc9820230704"]) {
+  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928" "ghc947" "ghc962" "ghc9820230704"]) {
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
   };
   isDisabled = d: d.meta.disabled or false;
 in
-dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: nixpkgs-pin:
-  let pinnedNixpkgsSrc = sources.${nixpkgs-pin};
-      evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
+dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
+  let evalPackages = import pinnedNixpkgsSrc (nixpkgsArgs // { system = evalSystem; });
   in dimension "GHC version" (compilerNixNames nixpkgsName evalPackages) (compiler-nix-name: {runTests}:
       let pkgs = import pinnedNixpkgsSrc (nixpkgsArgs // { inherit system; });
           build = import ./build.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name haskellNix; };

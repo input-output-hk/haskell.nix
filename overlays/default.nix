@@ -1,9 +1,8 @@
-{ sources, ...}@args:
-
+{ sources }:
 let
   overlays = {
     wine = import ./wine.nix;
-    haskell = import ./haskell.nix args;
+    haskell = import ./haskell.nix { inherit sources; };
 
     # Here is where we import nix-tools into the overlays that haskell.nix is
     # going to use. To cut the evaluation time of nix-tools (which would itself
@@ -73,7 +72,7 @@ let
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
-    hydra = import ./hydra.nix args;
+    hydra = import ./hydra.nix { inherit sources; };
     darwin = import ./darwin.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
