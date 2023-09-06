@@ -77,17 +77,15 @@ in rec {
     update-hackage = import ./scripts/update-hackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nixFlakes gawk bash curl findutils;
-      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+      # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
-      cabal-install = haskell.internal-cabal-install;
       inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nixFlakes gawk bash curl findutils;
-      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+      # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
       nix-tools = haskell.nix-tools-unchecked;
-      cabal-install = haskell.internal-cabal-install;
       inherit (haskell) cabal-issue-8352-workaround;
     };
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
