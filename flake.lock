@@ -139,11 +139,11 @@
     "ghc99": {
       "flake": false,
       "locked": {
-        "lastModified": 1693928019,
-        "narHash": "sha256-MaX5ObhrO/6iNpxQhz2S4B0nK2vbI7oBtUN6SyZDyQg=",
+        "lastModified": 1693974777,
+        "narHash": "sha256-r+uFw44X9XVPdDtxylfBuFL+l+5q5cX+vDVT7SCTHB8=",
         "ref": "hkm/bump-Cabal",
-        "rev": "fe62c3c1b705e98976d307562e7ae726721e719e",
-        "revCount": 61878,
+        "rev": "b2bddd0b8214ac1db6239cc25f7c0aabeb2ebb70",
+        "revCount": 61879,
         "submodules": true,
         "type": "git",
         "url": "https://gitlab.haskell.org/hamishmack/ghc"
