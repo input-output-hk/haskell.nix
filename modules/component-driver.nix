@@ -59,16 +59,13 @@ in
       # ghcjs custom packages
       "ghcjs-prim" "ghcjs-th"
     ]
-    # TODO make this unconditional
-    ++ lib.optionals (
-      !__elem config.compiler.nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107"])
-      (["ghc-bignum"]
-        # stm and exceptions are needed by the GHC package since 9.0.1
-        ++ lib.optionals (!config.reinstallableLibGhc) ["stm" "exceptions"])
-    ++ lib.optionals (
-      !__elem config.compiler.nix-name ["ghc865" "ghc881" "ghc882" "ghc883" "ghc884" "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc901" "ghc902"]) [
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
+      "ghc-bignum"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.1" >= 0) [
       "system-cxx-std-lib" ]
-    ++ lib.optionals (!config.reinstallableLibGhc) [
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.9" >= 0) [
+      "ghc-internal" ]
+    ++ lib.optionals (!config.reinstallableLibGhc) ([
       "ghc-boot"
       "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
       "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
@@ -76,8 +73,11 @@ in
       "hpc"
       "mtl" "parsec" "process" "text" "time" "transformers"
       "unix" "xhtml" "terminfo"
-      # "stm"
     ]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
+      # stm and exceptions are needed by the GHC package since 9.0.1
+      "stm" "exceptions"]
+    )
     ++ lib.optionals (!config.reinstallableLibGhc || __elem config.compiler.nix-name ["ghc865"]) [
       "ghc-heap"
     ];
