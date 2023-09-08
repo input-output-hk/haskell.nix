@@ -191,11 +191,11 @@ in {
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
                 # thus leading to broken code.  E.g. the handles we create and hand to wine will all be busted, because they come from one and are processed
                 # by another crt.
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "8.10"   "9.10"   ./patches/ghc/win-linker-no-ucrt.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "8.10"   "9.8"   ./patches/ghc/win-linker-no-ucrt.patch)
                 # Nixos/nixpkgs is mscvrt for now, thus we must disable ucrt in ghc, otherwise we end up with broken linking.
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.10"   ./patches/ghc/no-ucrt.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.8"   ./patches/ghc/no-ucrt.patch)
                 # the following is needed for cardano-prelude as it uses closure_sizeW :-/
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.10"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.8"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
                 ++ fromUntil "9.4.5"  "9.4.8"  ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.2"  "9.8"    ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.1"  "9.10"   ./patches/ghc/MR10116.patch
