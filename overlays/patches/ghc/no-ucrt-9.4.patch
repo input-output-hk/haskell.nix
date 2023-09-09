@@ -6,7 +6,7 @@ index 5393363..4f5db98 100644
          --          mingw32 which is required by mingwex.
          -- user32: provides access to apis to modify user components (UI etc)
          --         on Windows. Required because of mingw32.
--        extra-libraries: user32, mingw32, ucrt
+-        extra-libraries: user32, mingw32, mingwex, ucrt
 +        extra-libraries: user32, mingw32, mingwex, msvcrt
 
      if os(linux)
