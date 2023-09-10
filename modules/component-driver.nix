@@ -62,9 +62,9 @@ in
     ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
       "ghc-bignum"]
     ++ lib.optionals (builtins.compareVersions config.compiler.version "9.1" >= 0) [
-      "system-cxx-std-lib" ]
+      "system-cxx-std-lib"]
     ++ lib.optionals (builtins.compareVersions config.compiler.version "9.9" >= 0) [
-      "ghc-internal" ]
+      "ghc-internal" "bytestring" "containers"]
     ++ lib.optionals (!config.reinstallableLibGhc) ([
       "ghc-boot"
       "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
