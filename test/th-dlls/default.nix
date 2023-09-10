@@ -22,9 +22,7 @@ in recurseIntoAttrs {
     # TH breaks for ghc 9.4.3 cross compile for windows if the library even
     # just depends on the `text` package (this may be related to the C++ dependency).
     (stdenv.hostPlatform.isWindows && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc947" "ghc96020230302" "ghc961" "ghc962" "ghc9820230704"]) ||
-    # Similar problem on macOS
-    (stdenv.hostPlatform.isDarwin && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc947" "ghc96020230302" "ghc961" "ghc962" "ghc9820230704"]) ||
-    # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
+    # On aarch64 this test breaks form musl builds (including cross compiles on x86_64-linux)
     (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl);
 
   ifdInputs = {
