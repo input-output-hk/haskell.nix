@@ -31,9 +31,11 @@ in {
             ghc99 = "ghc99${__substring 0 8 pkgs.haskell-nix.sources.ghc99.lastModifiedDate}";
           };
           fullName = shortNameMap.${name} or name;
-        in if fullName == shortNameMap.ghc99 && config.name == "cabal-install" && config.version == "3.10.1.0"
-          then "ghc962"
-          else fullName;
+        in
+          # cabal-install from hackage (3.10.1.0) does not build with GHC HEAD
+          if fullName == shortNameMap.ghc99 && config.name == "cabal-install" && config.version == "3.10.1.0"
+            then "ghc962"
+            else fullName;
     };
     compilerSelection = mkOption {
       type = unspecified;
@@ -82,7 +84,13 @@ in {
       default =
         let
           useHeadHackage = __compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.8.0" >= 0;
-        in optionalString useHeadHackage ''
+        in
+          # When building ghc 9.8 and ghc HEAD projects we need to include the
+          # `head.hackage` repository to get the patched versions of packages
+          # that are needed for those versions of GHC.
+          # TODO Currently the sha256 here will need regular updating as
+          # there is no way to pin `head.hackage`.
+          optionalString useHeadHackage ''
               allow-newer: *:*
 
               repository head.hackage.ghc.haskell.org
@@ -95,6 +103,8 @@ in {
                    7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
                 --sha256: sha256-7BB/TeaP4wsQZggI08hZrhdxL7KzUjSyOrMEmuciUas=
             ''
+            # When building to JS we need the patched versions of packages
+            # included in `hackage-overlay-ghcjs`.
             + optionalString pkgs.stdenv.hostPlatform.isGhcjs ''
               repository ghcjs-overlay
                 url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/91f4ce9bea0e7f739b7495647c3f72a308ed1c6f
