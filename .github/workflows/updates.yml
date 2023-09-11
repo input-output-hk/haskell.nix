@@ -1,4 +1,4 @@
-name: "Update pins for ghc, hackage.nix and stackage.nix"
+name: "Update pins for hackage.nix and stackage.nix"
 
 on:
   workflow_dispatch:
