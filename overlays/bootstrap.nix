@@ -202,7 +202,7 @@ in {
                 # the following is needed for cardano-prelude as it uses closure_sizeW :-/
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.10"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/win-linker-no-null-deref-9.4.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-add-msvcrt-to-base.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-drop-mingwex-from-base.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.10"   ./patches/ghc/win-linker-no-null-deref.patch)
                 ++ fromUntil "9.4.5"  "9.4.8"  ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.2"  "9.8"    ./patches/ghc/ghc-9.4.5-include-order-fix.patch
@@ -212,7 +212,7 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.8.1"  "9.10"    ./patches/ghc/ghc-9.8-js-support-this-unit-id-10819.patch) # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/10819
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.8.1"  "9.10"   ./patches/ghc/ghc-9.8-js-support-this-unit-id-10819.patch) # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/10819
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
