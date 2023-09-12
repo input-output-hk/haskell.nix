@@ -1,7 +1,7 @@
-diff --git a/libraries/ghc-prim/ghc-prim.cabal b/libraries/ghc-prim/ghc-prim.cabal
+diff --git a/libraries/ghc-prim/ghc-prim.cabal b/libraries/ghc-prim/ghc-prim.cabal.in
 index 5393363..4f5db98 100644
---- a/libraries/ghc-prim/ghc-prim.cabal
-+++ b/libraries/ghc-prim/ghc-prim.cabal
+--- a/libraries/ghc-prim/ghc-prim.cabal.in
++++ b/libraries/ghc-prim/ghc-prim.cabal.in
 @@ -73,7 +73,7 @@ Library
          --          mingw32 which is required by mingwex.
          -- user32: provides access to apis to modify user components (UI etc)
