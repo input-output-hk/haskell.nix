@@ -20,7 +20,7 @@ let
 in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs ||
     # the macOS linker tries to load `clang++` :facepalm:
-    (stdenv.hostPlatform.isDarwin && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc947" "ghc96020230302" "ghc961" "ghc962" "ghc9820230704"]) ||
+    (stdenv.hostPlatform.isDarwin && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4.0" >= 0) ||
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl);
 
