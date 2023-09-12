@@ -265,6 +265,14 @@ let
         # on a platform at eval time.
         packages.hadrian.prePatch = ''
           cd ..
+        ''
+        # One of the windows cross compile patches will try to patch
+        # a file that are only present for booted source.
+        # This file is not needed for building hadrian though.
+        + lib.optionalString (src-spec.needsBooting or false && targetPlatform.isWindows) ''
+          if [ ! -f libraries/ghc-prim/ghc-prim.cabal ]; then
+            cp libraries/ghc-prim/ghc-prim.cabal.in libraries/ghc-prim/ghc-prim.cabal
+          fi
         '';
         packages.hadrian.patches = ghc-patches;
         packages.hadrian.postPatch = ''

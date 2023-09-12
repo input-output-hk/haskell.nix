@@ -194,10 +194,9 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "8.10"   "9.8"   ./patches/ghc/win-linker-no-ucrt.patch)
                 # Nixos/nixpkgs is mscvrt for now, thus we must disable ucrt in ghc, otherwise we end up with broken linking.
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/no-ucrt-9.4.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/no-ucrt.patch)
-                # it appears as if this patch only didn't apply between 9.6 and 9.8
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.1"  "9.10"   ./patches/ghc/no-ucrt-9.4.patch)
-                # This one is needed to bring back the msvcrt symbols in RtsSymbols.
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/no-ucrt-9.6.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8"    "9.9"    ./patches/ghc/no-ucrt-9.8.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.9"    "9.10"   ./patches/ghc/no-ucrt-9.9.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.5"    ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.0"  "9.10"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
                 # the following is needed for cardano-prelude as it uses closure_sizeW :-/
