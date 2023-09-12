@@ -113,7 +113,7 @@ in {
                 key-threshold: 0
                 --sha256: sha256-mZT7c+xR5cUTjLdCqOxpprjYL3kr/+9rmumtXvWAQlM=
             ''
-            + ''
+            + optionalString (useHeadHackage || pkgs.stdenv.hostPlatform.isGhcjs)  ''
               active-repositories: hackage.haskell.org${
                   optionalString useHeadHackage ", head.hackage.ghc.haskell.org:override"
                 + optionalString pkgs.stdenv.hostPlatform.isGhcjs ", ghcjs-overlay:override"
