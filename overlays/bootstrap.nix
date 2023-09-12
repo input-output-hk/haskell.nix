@@ -182,8 +182,8 @@ in {
                 ++ fromUntil "9.2.2"  "9.3"    ./patches/ghc/ghc-9.2.2-fix-warnings-building-with-self.patch # https://gitlab.haskell.org/ghc/ghc/-/commit/c41c478eb9003eaa9fc8081a0039652448124f5d
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.5"  ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.4.8"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.1"  "9.10"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.4.8"  ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.0"  "9.10"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
                 # support R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14), which seems to appear with 9.6 more frequently, and
                 # results in "unhandled PEi386 relocation type 14".
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.10"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
@@ -191,7 +191,7 @@ in {
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
                 # thus leading to broken code.  E.g. the handles we create and hand to wine will all be busted, because they come from one and are processed
                 # by another crt.
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "8.10"   "9.10"   ./patches/ghc/win-linker-no-ucrt.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "8.10"   "9.8"   ./patches/ghc/win-linker-no-ucrt.patch)
                 # Nixos/nixpkgs is mscvrt for now, thus we must disable ucrt in ghc, otherwise we end up with broken linking.
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/no-ucrt-9.4.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/no-ucrt.patch)
@@ -212,7 +212,6 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.8.1"  "9.10"   ./patches/ghc/ghc-9.8-js-support-this-unit-id-10819.patch) # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/10819
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
@@ -960,7 +959,43 @@ in {
                 # Avoid clashes with normal ghc8104
                 ghc-version = "8.10.4.20210212";
             };
-        } // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
+        } // (__listToAttrs (final.lib.mapAttrsToList (source-name: ver:
+          let
+            src = final.haskell-nix.sources.${source-name};
+            version-date = __substring 0 8 src.lastModifiedDate;
+            compiler-nix-name = "${source-name}${version-date}";
+            version = "${ver}.${version-date}";
+          in {
+            name = compiler-nix-name;
+            value = final.callPackage ../compiler/ghc {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec.file = src;
+                src-spec.version = version;
+                src-spec.needsBooting = true;
+
+                ghc-patches = ghc-patches version;
+                ghc-version-date = version-date;
+                ghc-commit-id = src.rev;
+            };
+          }) {
+              ghc980 = "9.8.0";
+              ghc99 = "9.9";
+            }))
+        // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
          if final.stdenv.hostPlatform.isGhcjs
            then throw "An attempt was made to build ghcjs with ghcjs (perhaps use `buildPackages` when refering to ghc)"
            else
@@ -1167,6 +1202,7 @@ in {
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
         version = "3.10.1.0";
+      } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" < 0) {
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
       } // args));
@@ -1205,7 +1241,12 @@ in {
     # there should be no difference in the behaviour of these tools.
     # (stack projects on macOS may see a significant change in the
     # closure size of their build dependencies due to dynamic linking).
-    internal-cabal-install = final.haskell-nix.cabal-install.ghc8107;
+    internal-cabal-install =
+      final.haskell-nix.cabal-install-tool {
+        compiler-nix-name = "ghc8107";
+        compilerSelection = p: p.haskell.compiler;
+        checkMaterialization = false;
+      };
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose

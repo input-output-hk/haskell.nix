@@ -460,7 +460,7 @@ final: prev: {
         update-index-state-hashes = import ../scripts/update-index-state-hashes.nix {
             inherit (final.haskell-nix) indexStateHashesPath;
             inherit (final) coreutils nix writeShellScriptBin stdenv lib curl;
-            # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
+            # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
             nix-tools = final.haskell-nix.nix-tools-unchecked;
         };
 
@@ -472,7 +472,7 @@ final: prev: {
         callCabalToNix = { name, src, cabal-file ? "${name}.cabal" }:
             final.buildPackages.pkgs.runCommand "${name}.nix" {
                 # This function is only used when building stack projects (via mkCacheLine and mkCacheFile)
-                # When building stack projects we use the unchecked nix-tools and cabal-install (compiled with a fixed GHC version)
+                # When building stack projects we use the unchecked nix-tools (compiled with a fixed GHC version)
                 nativeBuildInputs = [ final.buildPackages.haskell-nix.nix-tools-unchecked ];
 
                 LOCALE_ARCHIVE = final.lib.optionalString (final.stdenv.buildPlatform.libc == "glibc") "${final.buildPackages.glibcLocales}/lib/locale/locale-archive";
@@ -1053,14 +1053,6 @@ final: prev: {
                     sha256 = iservProxyPin.narHash;
                   };
                 index-state = final.haskell-nix.internalHackageIndexState;
-                materialized =../materialized/iserv-proxy + "/${
-                  if pkgs.stdenv.hostPlatform.isWindows
-                    then "windows"
-                    else if pkgs.stdenv.hostPlatform.isGhcjs
-                      then "ghcjs"
-                        else if pkgs.haskell-nix.haskellLib.isCrossHost
-                         then "cross"
-                         else "default"}/${compiler-nix-name}";
                 modules = [{
                   config = {
                     reinstallableLibGhc = false;
@@ -1073,7 +1065,22 @@ final: prev: {
                     apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
-              })).hsPkgs.iserv-proxy.components.exes;
+              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0
+                then {
+                  materialized =../materialized/iserv-proxy + "/${
+                    if pkgs.stdenv.hostPlatform.isWindows
+                      then "windows"
+                      else if pkgs.stdenv.hostPlatform.isGhcjs
+                        then "ghcjs"
+                          else if pkgs.haskell-nix.haskellLib.isCrossHost
+                            then "cross"
+                            else "default"}/${compiler-nix-name}";
+                }
+                else {
+                  cabalProjectLocal = ''
+                    allow-newer: *:base
+                  '';
+                }))).hsPkgs.iserv-proxy.components.exes;
             in {
               # We need the proxy for the build system and the interpreter for the target
               inherit (exes final.pkgsBuildBuild) iserv-proxy;
@@ -1114,12 +1121,12 @@ final: prev: {
               ghc-extra-projects-nix = final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
           }) // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            # The internal versions of nix-tools and cabal-install are occasionally used,
-            # but definitely need to be cached in case they are used.
             nix-tools = final.buildPackages.haskell-nix.nix-tools;
             nix-tools-unchecked = final.buildPackages.haskell-nix.nix-tools-unchecked;
-            cabal-install = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name};
-            internal-cabal-install = final.buildPackages.haskell-nix.internal-cabal-install;
+            # This is the setup using the prefered Cabal library.
+            default-setup = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.defaultSetupFor "some-package";
+            # This is the one used when that one is not allowed.
+            setup-cabal-from-ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.defaultSetup.useCabalFromGHC;
           } // final.lib.optionalAttrs (ifdLevel > 1
             && final.haskell-nix.haskellLib.isCrossHost
             # GHCJS builds its own template haskell runner.

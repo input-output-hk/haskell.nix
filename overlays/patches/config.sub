@@ -1183,6 +1183,7 @@ case $cpu-$vendor in
 			| i370 | i*86 | i860 | i960 | ia16 | ia64 \
 			| ip2k | iq2000 \
 			| js \
+			| javascript \
 			| k1om \
 			| le32 | le64 \
 			| lm32 \

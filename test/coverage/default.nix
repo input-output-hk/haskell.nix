@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -27,8 +27,7 @@ let
 
 in recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
-  meta.disabled = stdenv.hostPlatform.isGhcjs
-    || __elem compiler-nix-name ["ghc9820230704"]; # lens is currently broken
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {
     name = "coverage-test";
 

@@ -19,13 +19,23 @@ in {
       description = "The name of the ghc compiler to use eg. \"ghc884\"";
       # Map short version names to the latest GHC version.
       # TODO: perhaps combine this with the `latestVer` mapping in `overlays/boostrap.nix`.
-      apply = v: {
-          ghc810 = "ghc8107";
-          ghc90 = "ghc902";
-          ghc92 = "ghc928";
-          ghc94 = "ghc947";
-          ghc96 = "ghc962";
-        }.${v} or v;
+      apply = name:
+        let
+          shortNameMap = {
+            ghc810 = "ghc8107";
+            ghc90 = "ghc902";
+            ghc92 = "ghc928";
+            ghc94 = "ghc947";
+            ghc96 = "ghc962";
+            ghc980 = "ghc980${__substring 0 8 pkgs.haskell-nix.sources.ghc980.lastModifiedDate}";
+            ghc99 = "ghc99${__substring 0 8 pkgs.haskell-nix.sources.ghc99.lastModifiedDate}";
+          };
+          fullName = shortNameMap.${name} or name;
+        in
+          # cabal-install from hackage (3.10.1.0) does not build with GHC HEAD
+          if fullName == shortNameMap.ghc99 && config.name == "cabal-install" && config.version == "3.10.1.0"
+            then "ghc962"
+            else fullName;
     };
     compilerSelection = mkOption {
       type = unspecified;
@@ -68,6 +78,47 @@ in {
     cabalProjectLocal = mkOption {
       type = nullOr lines;
       default = readIfExists config.src "${config.cabalProjectFileName}.local";
+    };
+    cabalProjectDefaults = mkOption {
+      type = nullOr lines;
+      default =
+        let
+          useHeadHackage = __compareVersions pkgs.buildPackages.haskell-nix.compiler.${config.compiler-nix-name}.version "9.8.0" >= 0;
+        in
+          # When building ghc 9.8 and ghc HEAD projects we need to include the
+          # `head.hackage` repository to get the patched versions of packages
+          # that are needed for those versions of GHC.
+          # TODO Currently the sha256 here will need regular updating as
+          # there is no way to pin `head.hackage`.
+          optionalString useHeadHackage ''
+              allow-newer: *:*
+
+              repository head.hackage.ghc.haskell.org
+                url: https://ghc.gitlab.haskell.org/head.hackage/
+                secure: True
+                key-threshold: 3
+                root-keys:
+                   f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
+                   26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
+                   7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
+                --sha256: sha256-7BB/TeaP4wsQZggI08hZrhdxL7KzUjSyOrMEmuciUas=
+            ''
+            # When building to JS we need the patched versions of packages
+            # included in `hackage-overlay-ghcjs`.
+            + optionalString pkgs.stdenv.hostPlatform.isGhcjs ''
+              repository ghcjs-overlay
+                url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/91f4ce9bea0e7f739b7495647c3f72a308ed1c6f
+                secure: True
+                root-keys:
+                key-threshold: 0
+                --sha256: sha256-mZT7c+xR5cUTjLdCqOxpprjYL3kr/+9rmumtXvWAQlM=
+            ''
+            + ''
+              active-repositories: hackage.haskell.org${
+                  optionalString useHeadHackage ", head.hackage.ghc.haskell.org:override"
+                + optionalString pkgs.stdenv.hostPlatform.isGhcjs ", ghcjs-overlay:override"
+                + concatMapStrings (name: ", ${name}:override") (builtins.attrNames config.extra-hackage-tarballs)}
+            '';
     };
     cabalProjectFreeze = mkOption {
       type = nullOr lines;
