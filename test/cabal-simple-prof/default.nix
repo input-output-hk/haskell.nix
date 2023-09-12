@@ -19,13 +19,6 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-prof";
     inherit modules;
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
-      source-repository-package
-        type: git
-        location: https://github.com/glguy/th-abstraction.git
-        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
-        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
-    '';
   };
 
 in recurseIntoAttrs {
