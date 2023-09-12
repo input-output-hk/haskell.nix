@@ -83,7 +83,7 @@ let
       then ghcOverride
       else
         if ghc != null
-          then __trace ("WARNING: A `ghc` argument was passed" + forName
+          then builtins.trace ("WARNING: A `ghc` argument was passed" + forName
             + " this has been deprecated in favour of `compiler-nix-name`. "
             + "Using `ghc` will break cross compilation setups, as haskell.nix cannot "
             + "pick the correct `ghc` package from the respective buildPackages. "
@@ -138,10 +138,6 @@ in let
       pkgs.lib.optionalString (cabalProjectLocal != null) ''
         -- Added from `cabalProjectLocal` argument to the `cabalProject` function
         ${cabalProjectLocal}
-      ''
-      + pkgs.lib.optionalString (cabalProjectDefaults != null) ''
-        -- Added from `cabalProjectDefaults` argument to the `cabalProject` function
-        ${cabalProjectDefaults}
       ''
     }
   '';
