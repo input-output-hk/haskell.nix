@@ -16,6 +16,7 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple";
     inherit modules;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
 
   packages = project.hsPkgs;
