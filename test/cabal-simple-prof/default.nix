@@ -18,6 +18,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-prof";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     inherit modules;
   };
 

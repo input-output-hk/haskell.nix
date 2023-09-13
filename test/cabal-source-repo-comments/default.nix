@@ -6,6 +6,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-source-repo-comments";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
   packages = project.hsPkgs;
 in recurseIntoAttrs {
