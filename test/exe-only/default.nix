@@ -7,6 +7,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-only";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
 
   packages = project.hsPkgs;
