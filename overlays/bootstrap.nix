@@ -1194,6 +1194,7 @@ in {
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
         version = "3.10.1.0";
+        cabalProjectLocal = builtins.readFile ../test/cabal.project.local;
       } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" < 0) {
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
