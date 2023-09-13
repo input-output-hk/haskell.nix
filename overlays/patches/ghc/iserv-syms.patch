@@ -28,7 +28,7 @@ index 7eb0409..d538cad 100644
 +     * symbol in the rts, that can be overrided by linking in an object with
 +     * a corresponding definition later.
 +     */
-+    if(iserv_syms) for(const RtsSymbolVal *sym = iserv_syms(); sym->lbl != NULL; sym++) {
++    if(iserv_syms && iserv_syms() != NULL) for(RtsSymbolVal *sym = iserv_syms(); sym->lbl != NULL; sym++) {
 +        if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"),
 +                                    symhash, sym->lbl, sym->addr,
 +                                    sym->strength, sym->type, NULL)) {
