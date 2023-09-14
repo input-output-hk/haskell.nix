@@ -335,7 +335,7 @@ in {
             inherit (project) hsPkgs;
           })
         ];
-      }).config;
+      });
     in project;
 
   # Converts from a `compoent.depends` value to a library derivation.
