@@ -9,8 +9,8 @@ with pkgs;
 let
   # On windows systems we need these to be propagatedBuildInputs so that the DLLs will be found.
   gcclibs = if pkgs.stdenv.hostPlatform.isWindows then [
-    # Find the versions of mfcgthreads used by stdenv.cc
-    (pkgs.threadsCrossFor or (x: pkgs.windows.mfcgthreads) pkgs.stdenv.cc.version).package
+    # Find the versions of mcfgthreads used by stdenv.cc
+    (pkgs.threadsCrossFor or (x: pkgs.windows.mcfgthreads) pkgs.stdenv.cc.version).package
     # If we just use `pkgs.buildPackages.gcc.cc` here it breaks the `th-dlls` test. TODO figure out why exactly.
     (pkgs.buildPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.buildPackages.xorg.lndir ]; } ''
       mkdir $out
