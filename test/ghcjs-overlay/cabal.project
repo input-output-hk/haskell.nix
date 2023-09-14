@@ -1,2 +1,7 @@
 packages: *.cabal
 
+-- TODO remove this one `double-conversion` is updated in ghcjs-overlay
+if os(ghcjs)
+  allow-newer: double-conversion:text, double-conversion:bytestring
+else
+  allow-newer: ghcjs-overlay-test:double-conversion
