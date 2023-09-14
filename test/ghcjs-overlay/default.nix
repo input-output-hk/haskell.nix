@@ -6,9 +6,13 @@ let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
     inherit compiler-nix-name evalPackages;
-    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
-      allow-newer: double-conversion:text, double-conversion:bytestring
-    '';
+    cabalProjectLocal = builtins.readFile ../cabal.project.local + (if stdenv.hostPlatform.isGhcjs
+      then ''
+        allow-newer: double-conversion:text, double-conversion:bytestring
+      ''
+      else ''
+        allow-newer: ghcjs-overlay-test:double-conversion
+      '');
   };
   packages = project.hsPkgs;
 
