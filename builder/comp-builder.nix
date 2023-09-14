@@ -619,8 +619,8 @@ let
               # Also include C++ and mcfgthreads DLLs for GHC 9.4.1 and newer
               lib.optionals (builtins.compareVersions defaults.ghc.version "9.4.1" >= 0)
                 [ buildPackages.gcc-unwrapped
-                  # Find the versions of mfcgthreads used by stdenv.cc
-                  (pkgs.threadsCrossFor or (x: windows.mfcgthreads) stdenv.cc.version).package
+                  # Find the versions of mcfgthreads used by stdenv.cc
+                  (pkgs.threadsCrossFor or (x: windows.mcfgthreads) stdenv.cc.version).package
                 ])}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
