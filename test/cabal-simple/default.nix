@@ -28,7 +28,7 @@ in recurseIntoAttrs {
 
   # Used for testing externally with nix-shell (../tests.sh).
   test-shell = (project.shellFor {
-      tools = { cabal = "latest"; };
+      tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
       withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"];
     }).overrideAttrs (_: _: {
       meta = rec {
