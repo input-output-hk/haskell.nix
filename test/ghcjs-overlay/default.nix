@@ -6,7 +6,9 @@ let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
     inherit compiler-nix-name evalPackages;
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local + ''
+      allow-newer: double-conversion:text, double-conversion:bytestring
+    '';
   };
   packages = project.hsPkgs;
 
