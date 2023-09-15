@@ -17,8 +17,8 @@ You can configure Nix to use our binary cache, which is pushed to by CI, so shou
 You need to add the following sections to `/etc/nix/nix.conf` or, if you are a trusted user, `~/.config/nix/nix.conf` (if you don't know what a "trusted user" is, you probably want to do the former). `[...]` denote any existing entries.
 
 ```
-trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
-substituters = [...] https://cache.iog.io [...]
+extra-trusted-public-keys = [...] hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= [...]
+extra-substituters = [...] https://cache.iog.io [...]
 ```
 
 If you're running NixOS, you need to add/update the following in your `/etc/nixos/configuration.nix` files instead.
