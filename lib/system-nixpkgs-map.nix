@@ -136,6 +136,7 @@ in
      Crypt32 = null;
      mswsock = null;
      bcrypt = null;
+     dnsapi = null;
    }
 # -- mingw32
 // { mingwex = null;
