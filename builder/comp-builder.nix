@@ -620,7 +620,7 @@ let
               lib.optionals (builtins.compareVersions defaults.ghc.version "9.4.1" >= 0)
                 [ buildPackages.gcc-unwrapped
                   # Find the versions of mcfgthreads used by stdenv.cc
-                  (pkgs.threadsCrossFor or (x: windows.mcfgthreads) stdenv.cc.version).package
+                  (pkgs.threadsCrossFor or (x: { package = pkgs.windows.mcfgthreads; }) pkgs.stdenv.cc.version).package
                 ])}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
