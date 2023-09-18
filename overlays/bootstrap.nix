@@ -1202,6 +1202,26 @@ in {
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
         version = "3.10.1.0";
+      } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) {
+        # It is important not to include this when not needed as it
+        # introduces a eval time dependency on the `buildPackages`
+        # version of nix-tools (on platforms where we cannot use the
+        # static nix-tools).
+        cabalProjectLocal = ''
+          allow-newer: *:*
+
+          repository head.hackage.ghc.haskell.org
+            url: https://ghc.gitlab.haskell.org/head.hackage/
+            secure: True
+            key-threshold: 3
+            root-keys:
+               f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
+               26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
+               7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
+            --sha256: sha256-DXv6ZLGdD17ppJdww7NUYdKnKtEAMOIayvK/hO4+DL8=
+
+          active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
+        '';
       } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" < 0) {
         index-state = final.haskell-nix.internalHackageIndexState;
         materialized = ../materialized + "/${compiler-nix-name}/cabal-install";

@@ -64,11 +64,7 @@ in
     ++ lib.optionals (builtins.compareVersions config.compiler.version "9.1" >= 0) [
       "system-cxx-std-lib"]
     ++ lib.optionals (builtins.compareVersions config.compiler.version "9.9" >= 0) [
-      "ghc-internal"
-      # TODO Remove "bytestring" "containers" if they are added to `head.hackage` or
-      # once there are new versions in hackage.
-      # See https://gitlab.haskell.org/ghc/head.hackage/-/merge_requests/325#note_524658
-      "bytestring" "containers"]
+      "ghc-internal"]
     ++ lib.optionals (!config.reinstallableLibGhc) ([
       "ghc-boot"
       "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"

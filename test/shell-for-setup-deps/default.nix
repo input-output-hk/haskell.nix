@@ -6,6 +6,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "shell-for-setup-deps";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
