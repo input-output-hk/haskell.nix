@@ -99,7 +99,7 @@ then
         caller = "cleanGit";
         name = (if name == null then "" else name + "-") + "gitSubmoduleFiles";
         inherit src;
-        filter = path: type:
+        filter = path: _type:
             elem path pathsNeeded
           ||
             lib.any (i: (lib.hasSuffix i path)) [
@@ -184,7 +184,7 @@ then
           path == origSrcSubDir + "/.git"
         || lib.hasPrefix (origSrcSubDir + "/.git/") path;
 
-    filter = path: type:
+    filter = path: _type:
          hasAttr (toString path) whitelist_set
       || (keepGitDir && isGitDirPath path);
   in

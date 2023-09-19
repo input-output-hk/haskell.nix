@@ -31,7 +31,7 @@
     # set checkMaterialization as per top-level argument
     overlays = [
       haskellNix.overlay
-      (final: prev: {
+      (_final: prev: {
         haskell-nix = prev.haskell-nix // {
           inherit checkMaterialization;
         };
@@ -62,7 +62,7 @@
         (system != "aarch64-linux" || (
            !builtins.elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
         )))
-    (builtins.mapAttrs (compiler-nix-name: runTests: {
+    (builtins.mapAttrs (_compiler-nix-name: runTests: {
       inherit runTests;
     }) (
       # GHC version to cache and whether to run the tests against them.

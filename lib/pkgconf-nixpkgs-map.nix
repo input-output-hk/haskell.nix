@@ -5,7 +5,7 @@ pkgs:
     # Only include derivations that exist in the current pkgs.
     # This allows us to use this mapping to be used in allPkgConfigWrapper.
     # See ./overlas
-    lookupAttrsIn = x: __mapAttrs (pname: names:
+    lookupAttrsIn = x: __mapAttrs (_pname: names:
         # The first entry is should be used for the version by allPkgConfigWrapper
         # so we need it to be present.
         if __length names != 0 && x ? ${__head names}

@@ -2,7 +2,7 @@
 # non flake hydra configuration.
 {
   supportedSystems ? ["x86_64-linux" "x86_64-darwin"]
-, include ? (compiler-nix-name: true)
+, include ? (_compiler-nix-name: true)
 }:
 let
   traceNames = prefix: builtins.mapAttrs (n: v:

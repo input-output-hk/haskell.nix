@@ -47,19 +47,6 @@ let
 
   ghc = project.pkg-set.config.ghc.package;
 
-  libs = lib.unique (lib.concatMap (r: r.mixLibraries) coverageReports);
-
-  writeArr = name: arr: pkgs.writeText name (lib.concatStringsSep "\n" arr);
-
-  mixDirs =
-    map
-      (l: "${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}")
-      libs;
-  mixDirsFile = writeArr "mixdirs" mixDirs;
-
-  srcDirs = map (l: l.srcSubDirPath) libs;
-  srcDirsFile = writeArr "srcdirs" srcDirs;
-
   allCoverageReport = haskellLib.coverageReport {
     name = "all";
     checks = lib.flatten (lib.concatMap

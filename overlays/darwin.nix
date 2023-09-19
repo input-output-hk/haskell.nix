@@ -1,4 +1,4 @@
-final: prev:
+_final: prev:
 {
   haskell-nix = prev.haskell-nix // ({
     defaultModules = prev.haskell-nix.defaultModules ++ [

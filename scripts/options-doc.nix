@@ -3,7 +3,7 @@
 }:
 let
   # Provide a dummy pkg-def for the package set function
-  pkg-def = hackage: {
+  pkg-def = _hackage: {
     packages = {};
     compiler = {
       version = "";

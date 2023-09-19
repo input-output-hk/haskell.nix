@@ -34,7 +34,7 @@ final: prev:
       # `.name` but no `.version`.
       getVersion = p: p.version or (builtins.parseDrvName (p.name or "")).version;
       pkgconfigPkgs =
-        final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != "")
+        final.lib.filterAttrs (_name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
     in prev.pkg-config.overrideAttrs (attrs:
       let

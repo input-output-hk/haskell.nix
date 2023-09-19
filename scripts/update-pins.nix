@@ -1,4 +1,4 @@
-{ stdenv, lib, writeScript, coreutils, glibc, git, openssh }@args:
+{ stdenv, lib, writeScript, coreutils, glibc, git, openssh }:
 
 with lib;
 
