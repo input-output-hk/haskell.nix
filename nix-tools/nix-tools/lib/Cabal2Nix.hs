@@ -168,7 +168,7 @@ transformFst f (x:xs) = f x : xs
 capitalize :: String -> String
 capitalize "javascript" = "JavaScript"
 capitalize "Javascript" = "JavaScript"
-capitalize = transformFst toUpper
+capitalize x = transformFst toUpper x
 
 --- Turn something into a NExpr
 
