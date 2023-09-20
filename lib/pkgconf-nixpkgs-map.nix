@@ -4053,11 +4053,11 @@ pkgs:
     "pappl" = [ "pappl" ];
     "libparted-fs-resize" = [ "parted" ];
     "libparted" = [ "parted" ];
-    "Irony" = [ "pash" ];
-    "Microsoft.PowerShell.Commands.Management" = [ "pash" ];
-    "Microsoft.PowerShell.Commands.Utility" = [ "pash" ];
-    "Microsoft.PowerShell.Security" = [ "pash" ];
-    "System.Management.Automation" = [ "pash" ];
+    "Irony" = [ "powershell" ];
+    "Microsoft.PowerShell.Commands.Management" = [ "powershell" ];
+    "Microsoft.PowerShell.Commands.Utility" = [ "powershell" ];
+    "Microsoft.PowerShell.Security" = [ "powershell" ];
+    "System.Management.Automation" = [ "powershell" ];
     "libpci" = [ "pciutils" ];
     "pcl_2d-1.12" = [ "pcl" ];
     "pcl_common-1.12" = [ "pcl" ];
