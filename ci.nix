@@ -105,17 +105,17 @@
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" (ghc980X nixpkgs) (ghc980X nixpkgs)])
+      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" (ghc980X nixpkgs) (ghc99X nixpkgs)])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" (ghc980X nixpkgs) (ghc980X nixpkgs)]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc947" "ghc962" (ghc980X nixpkgs) (ghc99X nixpkgs)]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
-  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928" "ghc947" "ghc962" (ghc980X nixpkgs) (ghc980X nixpkgs)]) {
+  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928" "ghc947" "ghc962" (ghc980X nixpkgs) (ghc99X nixpkgs)]) {
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
   };
   isDisabled = d: d.meta.disabled or false;

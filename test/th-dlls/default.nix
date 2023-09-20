@@ -17,14 +17,18 @@ let
 
   packages = (project false).hsPkgs;
   packages-ei = (project true).hsPkgs;
+  compareGhc = builtins.compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version;
 
 in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs ||
-    # TH breaks for ghc 9.4.3 cross compile for windows if the library even
-    # just depends on the `text` package (this may be related to the C++ dependency).
-    (stdenv.hostPlatform.isWindows && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4.0" >= 0) ||
-    # Similar problem on macOS
-    (stdenv.hostPlatform.isDarwin && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4.0" >= 0) ||
+    # We have added patches to help loading DLLs for TH windows cross compilation.
+    # These are working for GHC 9.6.2, but changes in 9.4.7 (released after 9.6.2)
+    # and the current git ghc-9.8 and head branches result in similar issues.
+    (stdenv.hostPlatform.isWindows && (
+      (compareGhc "9.4.0" >= 0 && compareGhc "9.6" < 0) ||
+      (compareGhc "9.8.0" >= 0))) ||
+    # the macOS linker tries to load `clang++` :facepalm:
+    (stdenv.hostPlatform.isDarwin && compareGhc "9.4.0" >= 0) ||
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl);
 
