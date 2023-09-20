@@ -18,7 +18,7 @@ pkgs:
 
     # The entries that were duplicated in the generated list blow
     # have been removed.  Some that remain are old and some are
-    
+
     "adns"                               = [ "adns" ];
     "alut"                               = [ "freealut" ];
     "asound"                             = [ "alsaLib" ];
@@ -91,7 +91,7 @@ pkgs:
     "gtk-mac-integration"                = [ "gtk-mac-integration" ];
     "gtk-mac-integration-gtk2"           = [ "gtk-mac-integration-gtk2" ];
     "gtk-mac-integration-gtk3"           = [ "gtk-mac-integration-gtk3" ];
-    
+
     # List generated with scripts/find-pkg-config-all.nix
     # Deduplicated by hand (duplicates were commented out).
 #    "cbc" = [ "CoinMP" ];
@@ -645,7 +645,7 @@ pkgs:
 #    "avahi-gobject" = [ "avahi-compat" ];
 #    "avahi-libevent" = [ "avahi-compat" ];
     "avfs" = [ "avfs" ];
-    "avogadro" = [ "avogadro" ];
+#   "avogadro" = [ "avogadro" ];
     "avro-c" = [ "avro-c" ];
     "aws-cpp-sdk-accessanalyzer" = [ "aws-sdk-cpp" ];
     "aws-cpp-sdk-access-management" = [ "aws-sdk-cpp" ];
@@ -2860,7 +2860,7 @@ pkgs:
 #    "libjpeg" = [ "libjpeg_original" ];
 #    "libjpeg" = [ "libjpeg_turbo" ];
 #    "libturbojpeg" = [ "libjpeg_turbo" ];
-    "libjreen" = [ "libjreen" ];
+#   "libjreen" = [ "libjreen" ];
     "libjsonrpccpp-client" = [ "libjson-rpc-cpp" ];
     "libjsonrpccpp-common" = [ "libjson-rpc-cpp" ];
     "libjsonrpccpp-server" = [ "libjson-rpc-cpp" ];
@@ -3679,7 +3679,7 @@ pkgs:
 #    "mysqlclient" = [ "mysql57" ];
 #    "mysqlclient" = [ "mysql80" ];
     "mythes" = [ "mythes" ];
-    "libnamecoinconsensus" = [ "namecoin" ];
+#   "libnamecoinconsensus" = [ "namecoin" ];
 #    "libnamecoinconsensus" = [ "namecoind" ];
     "nanoflann" = [ "nanoflann" ];
     "nanomsg" = [ "nanomsg" ];
@@ -3805,9 +3805,9 @@ pkgs:
     "ntk_gl" = [ "ntk" ];
     "ntk_images" = [ "ntk" ];
     "ntk" = [ "ntk" ];
-    "libntrack-glib" = [ "ntrack" ];
-    "libntrack" = [ "ntrack" ];
-    "libntrack-qt4" = [ "ntrack" ];
+#   "libntrack-glib" = [ "ntrack" ];
+#   "libntrack" = [ "ntrack" ];
+#   "libntrack-qt4" = [ "ntrack" ];
     "numa" = [ "numactl" ];
     "nuspell" = [ "nuspell" ];
     "libnutclient" = [ "nut" ];
@@ -4053,11 +4053,11 @@ pkgs:
     "pappl" = [ "pappl" ];
     "libparted-fs-resize" = [ "parted" ];
     "libparted" = [ "parted" ];
-    "Irony" = [ "pash" ];
-    "Microsoft.PowerShell.Commands.Management" = [ "pash" ];
-    "Microsoft.PowerShell.Commands.Utility" = [ "pash" ];
-    "Microsoft.PowerShell.Security" = [ "pash" ];
-    "System.Management.Automation" = [ "pash" ];
+    "Irony" = [ "powershell" ];
+    "Microsoft.PowerShell.Commands.Management" = [ "powershell" ];
+    "Microsoft.PowerShell.Commands.Utility" = [ "powershell" ];
+    "Microsoft.PowerShell.Security" = [ "powershell" ];
+    "System.Management.Automation" = [ "powershell" ];
     "libpci" = [ "pciutils" ];
     "pcl_2d-1.12" = [ "pcl" ];
     "pcl_common-1.12" = [ "pcl" ];
@@ -4296,7 +4296,7 @@ pkgs:
     "qhull_r" = [ "qhull" ];
     "qhullstatic" = [ "qhull" ];
     "qhullstatic_r" = [ "qhull" ];
-    "qimageblitz" = [ "qimageblitz" ];
+#   "qimageblitz" = [ "qimageblitz" ];
     "QJson" = [ "qjson" ];
     "qmmp" = [ "qmmp" ];
     "qmmpui" = [ "qmmp" ];
@@ -5582,7 +5582,7 @@ pkgs:
 
     # This might be an old name for xscrnsaver
     "xss"                                = [ "libXScrnSaver" ];
-    
+
     # List generated with scripts/find-pkg-config-all.nix
     # Deduplicated by hand (duplicates were commented out).
     "fontutil" = [ "fontutil" ];

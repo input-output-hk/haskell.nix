@@ -1,0 +1,24 @@
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index beee293..e05ecdb 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -1818,16 +1818,10 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+
+           uint32_t targetSecNumber = getSymSectionNumber (info, targetSym);
+           Section *targetSection;
+-          switch (targetSecNumber) {
+-            case PE_SECTION_UNDEFINED:
+-            case PE_SECTION_ABSOLUTE:
+-            case PE_SECTION_DEBUG:
+-              targetSection = NULL;
+-              break;
+-            default:
+-              targetSection = &oc->sections[targetSecNumber-1];
++          if(targetSecNumber > 0) {
++            Section *targetSection = &oc->sections[targetSecNumber-1];
++            addr = (SymbolAddr*) ((size_t) targetSection->start + getSymValue(info, targetSym));
+           }
+-          addr = (SymbolAddr*) ((size_t) targetSection->start + getSymValue(info, targetSym));
+       }
+       else if (  secNumber == IMAGE_SYM_UNDEFINED && symValue > 0) {
+          /* This symbol isn't in any section at all, ie, global bss.

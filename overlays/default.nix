@@ -34,8 +34,8 @@ let
           let
             tarball = final.fetchzip {
               name = "nix-tools-0.1.0.0";
-              url = "https://ci.zw3rk.com/build/2919091/download/1/nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz";
-              sha256 = "sha256-xSTzKGpRqu0vJcY0IyTJjikCdWkXi5GcfdEh9DU9WXY=";
+              url = "https://ci.zw3rk.com/build/3108674/download/1/nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz";
+              sha256 = "sha256-KJ3BcmJqPjlN24+mIRPbmwRLS8eoMmGWz8AOh6H45bo=";
             };
             nix-tools-provided-exes = builtins.attrNames nix-tools-pkgs.nix-tools.exes;
           in
@@ -88,6 +88,7 @@ let
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
     default-setup = import ./default-setup.nix;
     dummy-ghc-data = import ./dummy-ghc-data.nix;
+    fetch-source = import ./fetch-source.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -128,6 +129,7 @@ let
     dummy-ghc-data
     cacheCompilerDeps
     default-setup
+    fetch-source
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
 in overlays // { inherit combined; }

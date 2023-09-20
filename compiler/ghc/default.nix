@@ -72,6 +72,7 @@ let self =
 
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
+, ghc-commit-id ? null
 , src-spec
 , ghc-patches ? []
 
@@ -239,18 +240,25 @@ let
   # value for us.
   installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
 
-  hadrian = buildPackages.pinned-haskell-nix.tool "ghc8107" "hadrian" {
+  hadrian =
+    let
+      compiler-nix-name = if buildPackages.haskell.compiler ? "ghc928"
+        then "ghc928"
+        else "ghc8107";
+    in buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
       materialized =
         if builtins.compareVersions ghc-version "9.4" < 0
-          then ../../materialized/ghc8107/hadrian-ghc92
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc92
         else if builtins.compareVersions ghc-version "9.6" < 0
-          then ../../materialized/ghc8107/hadrian-ghc94
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc94
         else if builtins.compareVersions ghc-version "9.8" < 0
-          then ../../materialized/ghc8107/hadrian-ghc96
-        else ../../materialized/ghc8107/hadrian-ghc98;
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc96
+        else if builtins.compareVersions ghc-version "9.9" < 0
+          then ../../materialized/${compiler-nix-name}/hadrian-ghc98
+        else ../../materialized/${compiler-nix-name}/hadrian-ghc99;
       modules = [{
         # Apply the patches in a way that does not require using something
         # like `srcOnly`. The problem with `pkgs.srcOnly` was that it had to run
@@ -263,10 +271,6 @@ let
           cd hadrian
         '';
       }];
-      cabalProject = ''
-        packages:
-          .
-      '';
       cabalProjectLocal = null;
       cabalProjectFreeze = null;
       src = haskell-nix.haskellLib.cleanSourceWith {
@@ -278,6 +282,7 @@ let
           filterPath = { path, ... }: path;
         };
         subDir = "hadrian";
+        includeSiblings = true;
       };
     };
 
@@ -372,6 +377,7 @@ stdenv.mkDerivation (rec {
         export CC="${targetCC}/bin/emcc"
         export CXX="${targetCC}/bin/em++"
         export LD="${targetCC}/bin/emcc"
+        export NM="${targetCC}/share/emscripten/emnm"
         export EM_CACHE=$(mktemp -d)
         mv config.sub.ghcjs config.sub
     ''
@@ -434,9 +440,11 @@ stdenv.mkDerivation (rec {
     '' + lib.optionalString (ghc-version-date != null) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version-date}' > VERSION_DATE
+    '' + lib.optionalString (ghc-commit-id != null) ''
+        echo '${ghc-commit-id}' > GIT_COMMIT_ID
     ''
       # The official ghc 9.2.3 tarball requires booting.
-      + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704") ''
+      + lib.optionalString (ghc-version == "9.2.3" || ghc-version == "9.8.20230704" || src-spec.needsBooting or false) ''
         python3 ./boot
     '';
 
@@ -644,7 +652,7 @@ stdenv.mkDerivation (rec {
         for a in libraries/*/*.cabal.in utils/*/*.cabal.in compiler/ghc.cabal.in; do
           ${hadrian}/bin/hadrian ${hadrianArgs} "''${a%.*}"
         done
-      '' + lib.optionalString (builtins.compareVersions ghc-version "9.8.1" >= 0) ''
+      '' + lib.optionalString (ghc-version == "9.8.20230704") ''
         for a in bytearray-access-ops.txt.pp addr-access-ops.txt.pp primops.txt; do
           ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
           cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a

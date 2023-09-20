@@ -39,6 +39,7 @@ let self =
 
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
+, dontUpdateAutotoolsGnuConfigScripts ? component.dontUpdateAutotoolsGnuConfigScripts
 , hardeningDisable ? component.hardeningDisable
 
 , enableStatic ? component.enableStatic
@@ -187,7 +188,15 @@ let
         "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
         "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       ]
-    ) ++ [ # other flags
+    ) # Starting with ghc 9.10 the `ld command` will no longer be in the GHC `settings` file.
+      # We need to start passing it explicitly to setup like we do for `ar` and `strip`.
+      ++ lib.optional (!stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" >= 0)
+        "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
+      ++ lib.optionals (stdenv.hostPlatform.isGhcjs) [
+        "--with-gcc=${buildPackages.emscripten}/bin/emcc"
+        "--with-ld=${buildPackages.emscripten}/bin/emcc"
+      ]
+      ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")
       (enableFeature enableLibraryProfiling "library-profiling")
@@ -195,7 +204,7 @@ let
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
       (enableFeature doCoverage "coverage")
-      (enableFeature enableLibraryForGhci "library-for-ghci")
+      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs) "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
@@ -222,7 +231,7 @@ let
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
-      ++ map (o: ''--ghc${lib.optionalString stdenv.hostPlatform.isGhcjs "js"}-options="${o}"'') ghcOptions
+      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9" < 0) "js"}-options="${o}"'') ghcOptions
       ++ lib.optional (
         # GHC 9.2 cross compiler built with older versions of GHC seem to have problems
         # with unique conters.  Perhaps because the name changed for the counters.
@@ -260,8 +269,9 @@ let
                      if builtins.isFunction shellHook then shellHook { inherit package shellWrappers; }
                      else abort "shellHook should be a string or a function";
 
-  exeExt = if stdenv.hostPlatform.isGhcjs then ".jsexe/all.js" else
-    stdenv.hostPlatform.extensions.executable;
+  exeExt = if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" < 0
+    then ".jsexe/all.js"
+    else stdenv.hostPlatform.extensions.executable;
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
@@ -317,6 +327,9 @@ let
     // lib.optionalAttrs stdenv.hostPlatform.isMusl {
       # This fixes musl compilation of TH code that depends on C++ (for instance TH code that uses the double-conversion package)
       LD_LIBRARY_PATH="${pkgs.buildPackages.gcc-unwrapped.lib}/x86_64-unknown-linux-musl/lib";
+    }
+    // lib.optionalAttrs dontUpdateAutotoolsGnuConfigScripts {
+      inherit dontUpdateAutotoolsGnuConfigScripts;
     };
 
   haddock = haddockBuilder {
@@ -531,7 +544,7 @@ let
               # we assume that if the SETUP_HS command fails and the following line was found in the error
               # log, that it was the only error. Hence if we do _not_ find the line, grep will fail and this derivation
               # will be marked as failure.
-              cat $SETUP_ERR | grep 'Error: Setup: No executables and no library found\. Nothing to do\.'
+              cat $SETUP_ERR | grep 'No executables and no library found\. Nothing to do\.'
             fi
             ''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
@@ -583,13 +596,13 @@ let
               '')
         }
       ''}
-      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
+      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || (haskellLib.isExe componentId && stdenv.hostPlatform.isGhcjs)) ''
         mkdir -p $out/bin
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
           ${lib.optionalString stdenv.buildPlatform.isLinux "sync"}
-          ${if stdenv.hostPlatform.isGhcjs then ''
-            cat <(echo \#!${lib.getBin buildPackages.nodejs-18_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+          ${if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" < 0 then ''
+            cat <(echo \#!/usr/bin/env node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
           '' else ''
              cp -r ${testExecutable} $(dirname $out/bin/${exeName})
@@ -606,8 +619,8 @@ let
               # Also include C++ and mcfgthreads DLLs for GHC 9.4.1 and newer
               lib.optionals (builtins.compareVersions defaults.ghc.version "9.4.1" >= 0)
                 [ buildPackages.gcc-unwrapped
-                  # Find the versions of mfcgthreads used by stdenv.cc
-                  (pkgs.threadsCrossFor or (x: windows.mfcgthreads) stdenv.cc.version).package
+                  # Find the versions of mcfgthreads used by stdenv.cc
+                  (pkgs.threadsCrossFor or (x: { package = pkgs.windows.mcfgthreads; }) pkgs.stdenv.cc.version).package
                 ])}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done

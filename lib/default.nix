@@ -231,6 +231,7 @@ in {
   # Check a test component
   check = import ./check.nix {
     inherit stdenv lib haskellLib;
+    inherit (pkgs) buildPackages;
   };
 
   # Do coverage of a package
@@ -334,7 +335,7 @@ in {
             inherit (project) hsPkgs;
           })
         ];
-      }).config;
+      });
     in project;
 
   # Converts from a `compoent.depends` value to a library derivation.

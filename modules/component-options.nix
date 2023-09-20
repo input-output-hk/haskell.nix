@@ -89,6 +89,12 @@
       default = true;
     };
 
+    dontUpdateAutotoolsGnuConfigScripts = lib.mkOption {
+      description = "If set, config.sub and config.guess will not be updated.";
+      type = lib.types.bool;
+      default = false;
+    };
+
     enableDeadCodeElimination = lib.mkOption {
       description = "If set, enables split sections for link-time dead-code stripping. Only applies to Linux";
       type = lib.types.bool;
