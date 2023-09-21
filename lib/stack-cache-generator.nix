@@ -19,7 +19,7 @@
 , nix-tools
 , evalPackages
 , ...
-}@args:
+}:
 let
     inherit (evalPackages) runCommand;
     inherit (evalPackages.haskell-nix) haskellLib;
@@ -35,7 +35,7 @@ let
     # Filter just the stack yaml file and any resolver yaml file it points to.
     maybeCleanedSource = haskellLib.cleanSourceWith {
       inherit src;
-      filter = path: type:
+      filter = path: _type:
         let
           origSrc = if src ? _isLibCleanSourceWith then src.origSrc else src;
           origSubDir = if src ? _isLibCleanSourceWithEx then src.origSubDir else "";

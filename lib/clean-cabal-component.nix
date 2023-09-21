@@ -31,7 +31,6 @@ let
       # Keep the trailing slash if there was one.
       + (if lib.hasSuffix "/" path then "/" else "");
   isAbsolutePath = path: lib.hasPrefix "/" path;
-  isRelativePath = path: !(isAbsolutePath path);
   normalizePath = path:
     (if isAbsolutePath path
       then "/"
@@ -48,13 +47,6 @@ let
       else a + "/" + b
     );
   # Like normalizePath but with a trailing / when needed
-  normalizeDir = dir:
-    let p = normalizePath dir;
-    in if p == "" || p == "/"
-      then ""
-      else if lib.hasSuffix "/" p
-        then p
-        else p + "/";
 in
   if srcStr' == null || package.detailLevel != "FullDetails"
     then src
@@ -117,7 +109,7 @@ in
               rPath = lib.strings.substring (srcStrLen + 1) (lib.strings.stringLength path - srcStrLen - 1) path;
               # This is a handy way to find out why different files are included
               # traceReason = reason: v: if v then builtins.trace (rPath + " : " + reason) true else false;
-              traceReason = reason: v: v;
+              traceReason = _reason: v: v;
             in
               traceReason "directory is needed" (
                 lib.any (d: lib.strings.hasPrefix (rPath + "/") d) dirsNeeded)

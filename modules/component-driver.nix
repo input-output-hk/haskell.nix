@@ -18,7 +18,7 @@ in
   # This seems ugly.
   options.nonReinstallablePkgs = lib.mkOption {
     type = (lib.types.listOf lib.types.str) // {
-      merge = loc: defs: lib.last (lib.getValues defs);
+      merge = _loc: defs: lib.last (lib.getValues defs);
     };
   };
 
@@ -106,6 +106,6 @@ in
       buildPackages = buildModules.config.hsPkgs;
     } //
     lib.mapAttrs
-      (name: pkg: if pkg == null then null else builder.build-package config pkg)
+      (_name: pkg: if pkg == null then null else builder.build-package config pkg)
       (config.packages // lib.genAttrs (config.nonReinstallablePkgs ++ config.bootPkgs) (_: null));
 }

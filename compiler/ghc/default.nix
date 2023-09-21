@@ -113,7 +113,7 @@ let
     let targetLibffi = targetPackages.libffi or libffi; in
     # we need to set `dontDisableStatic` for musl for libffi to work.
     if stdenv.targetPlatform.isMusl
-    then targetLibffi.overrideAttrs (old: { dontDisableStatic = true; })
+    then targetLibffi.overrideAttrs (_old: { dontDisableStatic = true; })
     else targetLibffi;
 
   targetGmp = targetPackages.gmp or gmp;

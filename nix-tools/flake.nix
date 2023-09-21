@@ -55,7 +55,7 @@
 
       packages = forAllSystems (pkgs:
         lib.mapAttrs'
-          (n: v: { name = v.exeName; value = v; })
+          (_n: v: { name = v.exeName; value = v; })
           pkgs.nix-tools.project.flake'.packages);
 
       checks = forAllSystems (pkgs:
