@@ -432,7 +432,7 @@ final: prev: {
                 repository hackage.haskell.org
                   url: http://hackage.haskell.org/
                   secure: True
-                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: repo: ''
+                ${final.lib.concatStrings (final.lib.mapAttrsToList (name: _repo: ''
                   repository ${name}
                     url: http://${name}/
                     secure: True
@@ -716,7 +716,7 @@ final: prev: {
             appendOverlays = extraOverlays: self.extend (final.lib.composeManyExtensions ([self.__overlay__] ++ extraOverlays));
           }));
          in rawProject:
-          makeExtensible (final: prev: {}) (project':
+          makeExtensible (_final: _prev: {}) (project':
             let project = project' // { recurseForDerivations = false; };
             in rawProject // rec {
               # It is often handy to be able to get nix pkgs from the project.
@@ -1034,7 +1034,7 @@ final: prev: {
         #   testProjectPlan = withInputs project.plan-nix;
         withInputs = final.recurseIntoAttrs;
 
-        iserv-proxy-exes = __mapAttrs (compiler-nix-name: ghc:
+        iserv-proxy-exes = __mapAttrs (compiler-nix-name: _ghc:
           if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.4" <0
             then {
               inherit (final.buildPackages.ghc-extra-packages.${compiler-nix-name}.iserv-proxy.components.exes) iserv-proxy;

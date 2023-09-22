@@ -76,7 +76,6 @@ in {
                 versionLessThan = ver: builtins.compareVersions ver version == 1;
                 # Returns true iff this derivation's version is greater than or equal to ver.
                 versionAtLeast = ver: !versionLessThan ver;
-                from = start: final.lib.optional (versionAtLeast start);
                 fromUntil = start: end: final.lib.optional (versionAtLeast start && versionLessThan end);
                 until = end: final.lib.optional (versionLessThan end);
                 always = final.lib.optional true;

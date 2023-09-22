@@ -1,4 +1,4 @@
-final: prev: with prev;
+_final: prev: with prev;
   # sadly we need to patch GHC a bit.
   let
     ghcDrvOverrides = drv: {

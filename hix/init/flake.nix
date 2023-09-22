@@ -15,7 +15,7 @@
       flake-utils.lib.eachSystem supportedSystems (system:
       let
         overlays = [ haskellNix.overlay
-          (final: prev: {
+          (final: _prev: {
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;

@@ -15,7 +15,7 @@ with lib.types;
     };
     crossPlatforms = mkOption {
       type = unspecified;
-      default = p: [ ];
+      default = _p: [ ];
     };
     # Default shell arguments
     shell = mkOption {

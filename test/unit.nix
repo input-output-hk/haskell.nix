@@ -36,18 +36,18 @@ in
 lib.runTests {
   # identity function for applyComponents
   test-applyComponents-id = {
-    expr = haskellLib.applyComponents (componentId: component: component) emptyConfig;
+    expr = haskellLib.applyComponents (_componentId: component: component) emptyConfig;
     expected = emptyConfig.components;
   };
 
   # map a component to its component name and check these are correct
   test-applyComponents-library = {
-    expr = haskellLib.applyComponents (componentId: component: componentId.cname) emptyConfig;
+    expr = haskellLib.applyComponents (componentId: _component: componentId.cname) emptyConfig;
     expected = emptyConfig.components // { library = "empty"; };
   };
 
   test-applyComponents-components = {
-    expr = haskellLib.applyComponents (componentId: component: component) componentsConfig;
+    expr = haskellLib.applyComponents (_componentId: component: component) componentsConfig;
     expected = componentsConfig.components;
   };
 
@@ -124,10 +124,10 @@ lib.runTests {
       # and connot be easily compared.
       removeNix = x: x // {
         hackage =
-          lib.mapAttrs (packageName: vers:
-            lib.mapAttrs (ver: data: data // {
+          lib.mapAttrs (_packageName: vers:
+            lib.mapAttrs (_ver: data: data // {
               revisions =
-                lib.mapAttrs (rev: x: x // { nix = __typeOf x.nix; }) data.revisions;
+                lib.mapAttrs (_rev: x: x // { nix = __typeOf x.nix; }) data.revisions;
             }) vers
           ) x.hackage;
       };

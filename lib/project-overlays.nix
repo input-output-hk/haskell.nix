@@ -4,14 +4,14 @@
 }: {
 
   # TODO: remove by end of 2022.
-  devshell = final: prev: {
+  devshell = final: _prev: {
     devshell = builtins.trace "WARNING: `projectOverlays.devshell` is deprecated in favor of `haskellLib.devshellFor`"
       (haskellLib.devshellFor final.shell);
   };
 
   # Provides easily accessible attrset for each type of
   # components belonging to the project packages.
-  projectComponents = final: prev: {
+  projectComponents = final: _prev: {
     # local project packages:
     packages = haskellLib.selectProjectPackages final.hsPkgs;
     # set of all exes (as first level entries):

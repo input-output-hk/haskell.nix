@@ -10,7 +10,7 @@
     flake-utils.lib.eachSystem [ "EVAL_SYSTEM" ] (system:
     let
       overlays = [ haskellNix.overlay
-        (final: prev: {
+        (final: _prev: {
           hixProject =
             final.haskell-nix.hix.project {
               inherit src;

@@ -136,7 +136,7 @@
           };
         };
       };
-  extras = hackage:
+  extras = _hackage:
     { packages = {}; };
   modules = [
     ({ lib, ... }:

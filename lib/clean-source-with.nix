@@ -90,7 +90,7 @@
       origSrcSubDir = toString origSrc + origSubDir;
       parentFilter = if isFiltered || isFilteredEx
         then path: type: src.filter path type
-        else path: type: true;
+        else _path: _type: true;
       filter' = path: type:
         # Respect the parent filter
         parentFilter path type && (
