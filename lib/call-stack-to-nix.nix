@@ -16,7 +16,7 @@
 , checkMaterialization ? null # If true the nix files will be generated used to check plan-sha256 and material
 , nix-tools
 , evalPackages
-, ... }@args:
+, ... }:
 let
   inherit (evalPackages) runCommand;
   inherit (evalPackages.haskell-nix) mkCacheFile materialize haskellLib;

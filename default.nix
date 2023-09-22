@@ -55,7 +55,7 @@ let
   # coming from internal.compat
   overlays = [ self.overlay ]
     ++ lib.optional checkMaterialization
-    (final: prev: {
+    (_final: prev: {
       haskell-nix = prev.haskell-nix // {
         checkMaterialization = true;
       };

@@ -1,4 +1,4 @@
-final: prev:
+final: _prev:
 
 let
   compiler-nix-name = "ghc8107";

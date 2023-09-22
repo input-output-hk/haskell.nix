@@ -1,6 +1,6 @@
-final: prev:
+final: _prev:
 let
-  callCabal2Nix = compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
+  callCabal2Nix = _compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
     nativeBuildInputs = [
@@ -110,7 +110,7 @@ let
 
   # The nix produced by `cabalProject` differs slightly depending on
   # what the platforms are.  There are currently 3 possible outputs.
-  ghc-extra-projects-type = ghc:
+  ghc-extra-projects-type = _ghc:
     if final.stdenv.hostPlatform.isWindows
       then "windows"
       else if final.stdenv.hostPlatform.isGhcjs

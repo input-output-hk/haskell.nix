@@ -22,7 +22,7 @@
           };
         };
       };
-  extras = hackage:
+  extras = _hackage:
     { packages = { test-haddock = ./.plan.nix/test-haddock.nix; }; };
   modules = [
     ({ lib, ... }:

@@ -37,11 +37,7 @@ let
   #            pkg id for z-{pkg name}-z-{sublib name}.  As we do not provide the
   #            sublib name to exactDep, as we don't have access to it at the call-site,
   #            we resort to a bit of globbing, which (as pkg db's should contain only
-  #            a single package) work.
-
-  getLibComponent = dep:
-       dep.components.library # Regular package dependency
-    or dep;                   # or a sublib
+  #            a single package) work.                   # or a sublib
 
   # Work our suitable packageCfgDir subdirectory
   isGhcjs        = ghc.isGhcjs or false;
