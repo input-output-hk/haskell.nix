@@ -502,7 +502,7 @@ final: prev: {
                 # because it is not used by buitins.fetchGit.
                 assert isNull sha256;
                 builtins.fetchGit
-                  ({ inherit url rev; } //
+                  ({ inherit url rev; submodules = true; } //
                       final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                   )
               else
@@ -515,6 +515,7 @@ final: prev: {
                   url = url;
                   rev = rev;
                   sha256 = sha256;
+                  submodules = true;
                 };
 
             # This is basically entireRepo, but focused on the subdir if it is specified.
@@ -593,11 +594,11 @@ final: prev: {
                         if is-private
                         then
                           builtins.fetchGit
-                            ({ inherit url rev; } //
+                            ({ inherit url rev; submodules = true; } //
                               final.buildPackages.lib.optionalAttrs (ref != null) { inherit ref; }
                             )
                         else
-                          final.fetchgit { inherit url rev sha256; };
+                          final.fetchgit { inherit url rev sha256; submodules = true; };
                     } // final.buildPackages.lib.optionalAttrs (subdir != null && subdir != ".") { postUnpack = "sourceRoot+=/${subdir}; echo source root reset to $sourceRoot"; };
                   };
 
