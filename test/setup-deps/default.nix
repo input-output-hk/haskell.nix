@@ -7,9 +7,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = evalPackages.haskell-nix.haskellLib.cleanGit { src = ../..; name = "setup-deps"; subDir = "test/setup-deps"; };
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
-    '';
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)

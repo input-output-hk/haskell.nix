@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -7,6 +7,7 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-dlls";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
 
   packages = project.hsPkgs;

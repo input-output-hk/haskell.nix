@@ -14,6 +14,7 @@ let
       else gitReallyMinimal;
   project = haskell-nix.cabalProject' {
     inherit src;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     # When haskell.nix has come from the store (e.g. on hydra) we need to provide
     # a suitable mock of the cleaned source with a .git dir.
     modules = (optional (!(src ? origSrc && __pathExists (src.origSrc + "/.git"))) {

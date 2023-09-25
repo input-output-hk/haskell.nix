@@ -2,7 +2,7 @@
   # This is a template created by `hix init`
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
-  inputs.flake-utils.follows = "haskellNix/flake-utils";
+  inputs.flake-utils.url = "github:numtide/flake-utils";
   outputs = { self, nixpkgs, flake-utils, haskellNix }:
     let
       supportedSystems = [
@@ -15,7 +15,7 @@
       flake-utils.lib.eachSystem supportedSystems (system:
       let
         overlays = [ haskellNix.overlay
-          (final: prev: {
+          (final: _prev: {
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;

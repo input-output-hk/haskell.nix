@@ -17,7 +17,7 @@
 with pkgs;
 
 let
-  inherit (import ../ci-lib.nix { inherit pkgs; }) filterAttrsOnlyRecursive;
+  inherit (import ../ci-lib.nix { inherit lib; }) filterAttrsOnlyRecursive;
   isDisabled = d: d.meta.disabled or false;
 
   # Set recurseForDerivations for both children and grand-children values in
@@ -175,6 +175,7 @@ let
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
+    stack-compiler = callTest ./stack-compiler {};
     stack-local-resolver = callTest ./stack-local-resolver {};
     stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir {};
     stack-remote-resolver = callTest ./stack-remote-resolver {};

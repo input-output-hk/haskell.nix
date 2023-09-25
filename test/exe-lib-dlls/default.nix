@@ -7,6 +7,7 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-lib-dlls";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
 
   packages = project.hsPkgs;
