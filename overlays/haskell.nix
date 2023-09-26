@@ -1085,7 +1085,7 @@ final: prev: {
                 }
                 else {
                   cabalProjectLocal = ''
-                    allow-newer: *:base
+                    allow-newer: *:base, *:bytestring
                   '';
                 }))).hsPkgs.iserv-proxy.components.exes;
             in {
