@@ -32,7 +32,7 @@ in {
         inherit name;
         value = final.fetchFromGitLab {
                     domain = "gitlab.haskell.org";
-                    owner = "hamishmack";
+                    owner = "ghc";
                     repo = "ghc";
                     fetchSubmodules = true;
                     inherit (lockFile.nodes.${name}.locked) rev;

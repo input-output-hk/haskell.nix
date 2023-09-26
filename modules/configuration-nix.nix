@@ -184,4 +184,10 @@ in {
   # Using -j1 works around the issue.
   packages.gi-gtk.components.library.ghcOptions =
     pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961" "ghc962"]) "-j1";
+
+  # With recent versions of nixpkgs fortify causes musl version of the
+  # text package to fail with:
+  #   error: inlining failed in call to ‘always_inline’ ‘void* memcpy(void*, const void*, size_t)’: target specific option mismatch
+  packages.text.components.library.hardeningDisable =
+    pkgs.lib.optionals pkgs.stdenv.hostPlatform.isMusl ["fortify"];
 }
