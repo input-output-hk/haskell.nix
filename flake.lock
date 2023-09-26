@@ -120,11 +120,11 @@
     "ghc980": {
       "flake": false,
       "locked": {
-        "lastModified": 1695215973,
-        "narHash": "sha256-Ndg1Oi18zdKnjEko78FWzrgfwcvQ0/hUB986VQrOWVk=",
+        "lastModified": 1692910316,
+        "narHash": "sha256-Qv8I3GzzIIN32RTEKI38BW5nO1f7j6Xm+dDeDUyYZWo=",
         "ref": "ghc-9.8",
-        "rev": "092332676022a4b31dcb8a7da596e47cff3147e4",
-        "revCount": 61612,
+        "rev": "249aa8193e4c5c1ee46ce29b39d2fffa57de7904",
+        "revCount": 61566,
         "submodules": true,
         "type": "git",
         "url": "https://gitlab.haskell.org/ghc/ghc"
