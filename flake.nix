@@ -107,8 +107,7 @@
       systems = [
         "x86_64-linux"
         "x86_64-darwin"
-        # TODO switch back on when ci.iog.io has builders for aarch64-linux
-        # "aarch64-linux"
+        "aarch64-linux"
         "aarch64-darwin"
       ];
 
