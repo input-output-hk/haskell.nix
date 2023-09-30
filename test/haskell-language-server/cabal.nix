@@ -3,7 +3,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     name = "haskell-language-server";
-    src = haskell-nix.sources."hls-2.2";
+    src = haskell-nix.sources."hls-2.3";
     configureArgs = "--disable-benchmarks --disable-tests";
   };
 in recurseIntoAttrs {
@@ -13,5 +13,8 @@ in recurseIntoAttrs {
   build = project.getComponent "haskell-language-server:exe:haskell-language-server";
 
   # hls does not need to be cross compiled.
-  meta.disabled = stdenv.hostPlatform != stdenv.buildPlatform || __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0;
+  meta.disabled =
+    stdenv.hostPlatform != stdenv.buildPlatform
+    || __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.0.1" < 0
+    || __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0;
 }
