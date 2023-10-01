@@ -22,6 +22,7 @@
     "hls-1.10" = { url = "github:haskell/haskell-language-server/1.10.0.0"; flake = false; };
     "hls-2.0" = { url = "github:haskell/haskell-language-server/2.0.0.1"; flake = false; };
     "hls-2.2" = { url = "github:haskell/haskell-language-server/2.2.0.0"; flake = false; };
+    "hls-2.3" = { url = "github:haskell/haskell-language-server/2.3.0.0"; flake = false; };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";
