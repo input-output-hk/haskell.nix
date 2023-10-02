@@ -84,7 +84,6 @@
         ghc928 = true;
         ghc947 = true;
         ghc962 = true;
-        ghc9820230704 = true;
         ${ghc980X nixpkgs} = true;
         ${ghc99X nixpkgs} = true;
       }));
