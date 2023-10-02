@@ -71,12 +71,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2211") {
-        ghc8107 = false;
-        ghc902 = false;
-        ghc928 = false;
-        ghc947 = false;
-      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2305") {
+      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2305") {
         ghc8107 = false;
         ghc902 = false;
         ghc928 = false;
