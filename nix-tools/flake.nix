@@ -73,8 +73,9 @@
           # tarballs with static builds.
           // lib.optionalAttrs (pkgs.buildPlatform.system == "x86_64-linux")
             { binary-tarball = mkTarball pkgs.pkgsCross.musl64; }
-          // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux")
-            { binary-tarball = mkTarball pkgs.pkgsCross.aarch64-multiplatform-musl; }
+          # aarch64-multiplatform-musl cross compile is currently broken
+          # // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux")
+          #   { binary-tarball = mkTarball pkgs.pkgsCross.aarch64-multiplatform-musl; }
         );
     };
 
