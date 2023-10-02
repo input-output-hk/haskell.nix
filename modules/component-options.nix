@@ -135,6 +135,11 @@
       default = true;
     };
 
+    enableLibraryForGhci = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+    };
+
     enableProfiling = lib.mkOption {
       type = lib.types.bool;
       default = false;
