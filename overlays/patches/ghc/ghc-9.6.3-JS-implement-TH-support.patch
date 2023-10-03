@@ -1229,7 +1229,7 @@ index 0000000000..d5f9d334f7
 +  -- Generate JS code for the incremental plan
 +  ----------------------------------------------------------------
 +
-+  tmp_out <- newTempDir logger tmpfs tmp_dir
++  tmp_out <- newTempSubDir logger tmpfs tmp_dir
 +  void $ jsLink link_cfg cfg logger tmp_out diff_plan
 +
 +  -- Code has been linked into the following files:
