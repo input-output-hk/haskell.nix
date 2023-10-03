@@ -79,7 +79,7 @@ let self =
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 
 # Prelinked ghci libraries; will make iserv faster; especially for static builds.
-, enableLibraryForGhci ? true
+, enableLibraryForGhci ? component.enableLibraryForGhci
 
 # Debug
 , enableDebugRTS ? false

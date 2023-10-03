@@ -21,21 +21,13 @@ in {
       # TODO: perhaps combine this with the `latestVer` mapping in `overlays/boostrap.nix`.
       apply = name:
         let
-          shortNameMap = {
-            ghc810 = "ghc8107";
-            ghc90 = "ghc902";
-            ghc92 = "ghc928";
-            ghc94 = "ghc947";
-            ghc96 = "ghc962";
-            ghc980 = "ghc980${__substring 0 8 pkgs.haskell-nix.sources.ghc980.lastModifiedDate}";
-            ghc99 = "ghc99${__substring 0 8 pkgs.haskell-nix.sources.ghc99.lastModifiedDate}";
-          };
-          fullName = shortNameMap.${name} or name;
+          fullName = pkgs.haskell-nix.resolve-compiler-name name;
+          ghc99FullName = pkgs.haskell-nix.resolve-compiler-name "ghc99";
         in
-          # cabal-install from hackage (3.10.1.0) does not build with GHC HEAD
-          if fullName == shortNameMap.ghc99 && config.name == "cabal-install" && config.version == "3.10.1.0"
-            then "ghc962"
-            else fullName;
+        # cabal-install from hackage (3.10.1.0) does not build with GHC HEAD
+        if fullName == ghc99FullName && config.name == "cabal-install" && config.version == "3.10.1.0"
+          then "ghc962"
+          else pkgs.haskell-nix.resolve-compiler-name name;
     };
     compilerSelection = mkOption {
       type = unspecified;

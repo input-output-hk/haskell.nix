@@ -16,10 +16,21 @@ let
       "8.10" = "8.10.7";
       "9.0" = "9.0.2";
       "9.2" = "9.2.8";
-      "9.4" = "9.4.5";
+      "9.4" = "9.4.7";
       "9.6" = "9.6.2";
-      "9.8" = "9.8.1";
     };
+    gitInputs = {
+      ghc980 = "9.8.0";
+      ghc99 = "9.9";
+    };
+    versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
+    compilerNameMap =
+      builtins.listToAttrs (map (v:
+        { name = versionToNixName v; value = versionToNixName latestVer.${v}; })
+          (builtins.attrNames latestVer)) //
+      builtins.mapAttrs (source-name: _:
+        source-name + builtins.substring 0 8 final.haskell-nix.sources.${source-name}.lastModifiedDate)
+          gitInputs;
     traceWarnOld = v: x:
       let
         bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";
@@ -36,6 +47,11 @@ let
     errorOldGhcjs = v: up: throw "ghcjs ${v} is no longer supported by haskell.nix. Consider using ${latestVer.${up}}";
 in {
   haskell-nix = prev.haskell-nix // {
+    # This can be used to map a compiler-nix-name from a shorter form.
+    # For instance it will map:
+    #   "ghc810" -> "ghc8107"
+    #   "ghc99" -> "ghc9920230909" (uses last modified date of the git repo)
+    resolve-compiler-name = name: compilerNameMap.${name} or name;
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = {
@@ -201,6 +217,7 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.0"  "9.10"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
                 # the following is needed for cardano-prelude as it uses closure_sizeW :-/
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.10"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.10"   ./patches/ghc/win-add-tzset-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/win-linker-no-null-deref-9.4.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-drop-mingwex-from-base.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.8"   ./patches/ghc/win-linker-no-null-deref.patch)
@@ -992,10 +1009,7 @@ in {
                 ghc-version-date = version-date;
                 ghc-commit-id = src.rev;
             };
-          }) {
-              ghc980 = "9.8.0";
-              ghc99 = "9.9";
-            }))
+          }) gitInputs))
         // final.lib.optionalAttrs (final.stdenv.targetPlatform.isGhcjs or false) (
          if final.stdenv.hostPlatform.isGhcjs
            then throw "An attempt was made to build ghcjs with ghcjs (perhaps use `buildPackages` when refering to ghc)"
