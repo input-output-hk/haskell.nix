@@ -35,6 +35,7 @@ let
         # without restting it, wine might fail
         # due to a too large environment.
         unset configureFlags
+        unset configurePhase
         PORT=$((5000 + $RANDOM % 5000))
         (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
         REMOTE_ISERV=$(mktemp -d)
