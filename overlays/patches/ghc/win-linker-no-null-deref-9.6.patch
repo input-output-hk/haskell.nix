@@ -1,0 +1,17 @@
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index 0789472..1682e22 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -1783,9 +1783,10 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+               targetSection = NULL;
+               break;
+             default:
+-              targetSection = &oc->sections[targetSecNumber-1];
++              targetSection = targetSecNumber > 0 ? &oc->sections[targetSecNumber-1] : NULL;
+           }
+-          addr = (SymbolAddr*) ((size_t) targetSection->start + getSymValue(info, targetSym));
++          if(NULL != targetSection)
++              addr = (SymbolAddr*) ((size_t) targetSection->start + getSymValue(info, targetSym));
+       }
+       else if (  secNumber == IMAGE_SYM_UNDEFINED && symValue > 0) {
+          /* This symbol isn't in any section at all, ie, global bss.
