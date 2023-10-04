@@ -44,6 +44,7 @@ let self =
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
+, enableExecutableDynamic ? component.enableExecutableDynamic && !stdenv.hostPlatform.isMusl
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
 
@@ -203,6 +204,7 @@ let
       (enableFeature enableProfiling "profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
+      (enableFeature enableExecutableDynamic "executable-dynamic")
       (enableFeature doCoverage "coverage")
       (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs) "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
@@ -210,7 +212,6 @@ let
       # If it uses other libraries it may be necessary for to add more
       # `--ghc-option=-optl=-L` options to the `configureFlags` of the
       # component.
-      "--disable-executable-dynamic"
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
