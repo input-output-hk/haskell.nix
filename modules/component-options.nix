@@ -89,6 +89,12 @@
       default = true;
     };
 
+    dontUpdateAutotoolsGnuConfigScripts = lib.mkOption {
+      description = "If set, config.sub and config.guess will not be updated.";
+      type = lib.types.bool;
+      default = false;
+    };
+
     enableDeadCodeElimination = lib.mkOption {
       description = "If set, enables split sections for link-time dead-code stripping. Only applies to Linux";
       type = lib.types.bool;
@@ -105,6 +111,12 @@
       description = "If set, enables building shared libraries.";
       type = lib.types.bool;
       default = true;
+    };
+
+    enableExecutableDynamic = lib.mkOption {
+      description = "If set, links executables against shared libraries.";
+      type = lib.types.bool;
+      default = false;
     };
 
     configureAllComponents = lib.mkOption {
@@ -125,6 +137,11 @@
     };
 
     enableSeparateDataOutput = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+    };
+
+    enableLibraryForGhci = lib.mkOption {
       type = lib.types.bool;
       default = true;
     };

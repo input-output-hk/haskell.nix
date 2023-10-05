@@ -122,7 +122,7 @@ linkCLib libname desc lbi = do
                 -- getTempRet0/setTempRet0 are for 64bit legalization.
                 , "-s", "EXPORTED_RUNTIME_METHODS=['printErr','addFunction','removeFunction','getTempRet0','setTempRet0']"
                 --
-                , "-s", "EXPORTED_FUNCTIONS=['" <> intercalate "', '" exfns <> "']"
+                , "-s", "EXPORTED_FUNCTIONS=[" <> intercalate ", " (map (\f -> "'" <> f <> "'") exfns) <> "]"
                 ] ++ libs ++ libDirs ++ extraLibs
 
 postBuildHook :: Args -> BuildFlags -> PackageDescription -> LocalBuildInfo -> IO ()

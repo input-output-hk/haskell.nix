@@ -19,13 +19,15 @@ in {
       description = "The name of the ghc compiler to use eg. \"ghc884\"";
       # Map short version names to the latest GHC version.
       # TODO: perhaps combine this with the `latestVer` mapping in `overlays/boostrap.nix`.
-      apply = v: {
-          ghc810 = "ghc8107";
-          ghc90 = "ghc902";
-          ghc92 = "ghc928";
-          ghc94 = "ghc945";
-          ghc96 = "ghc962";
-        }.${v} or v;
+      apply = name:
+        let
+          fullName = pkgs.haskell-nix.resolve-compiler-name name;
+          ghc99FullName = pkgs.haskell-nix.resolve-compiler-name "ghc99";
+        in
+        # cabal-install from hackage (3.10.1.0) does not build with GHC HEAD
+        if fullName == ghc99FullName && config.name == "cabal-install" && config.version == "3.10.1.0"
+          then "ghc962"
+          else pkgs.haskell-nix.resolve-compiler-name name;
     };
     compilerSelection = mkOption {
       type = unspecified;
@@ -89,11 +91,6 @@ in {
       type = nullOr package;
       default = null;
       description = "nix-tools to use when converting the `plan.json` to nix";
-    };
-    cabal-install = mkOption {
-      type = nullOr package;
-      default = null;
-      description = "cabal-install to use when running `cabal configure`";
     };
     configureArgs = mkOption {
       type = nullOr (separatedString " ");

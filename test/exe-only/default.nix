@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, haskell-nix, recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -7,6 +7,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "exe-only";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
 
   packages = project.hsPkgs;
@@ -46,7 +47,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
       disabled = broken;
     };
 

@@ -1,0 +1,17 @@
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index a5767e0..9d5acec 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -1739,8 +1739,10 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+           COFF_symbol_aux_weak_external *aux = (COFF_symbol_aux_weak_external *) (sym+1);
+           COFF_symbol* targetSym = &oc->info->symbols[aux->TagIndex];
+           int32_t targetSecNumber = getSymSectionNumber (info, targetSym);
+-          Section *targetSection = targetSecNumber > 0 ? &oc->sections[targetSecNumber-1] : NULL;
+-          addr = (SymbolAddr*) ((size_t) targetSection->start + getSymValue(info, targetSym));
++          if(targetSecNumber > 0) {
++            Section *targetSection = &oc->sections[targetSecNumber-1];
++            addr = (SymbolAddr*) ((size_t) targetSection->start + getSymValue(info, targetSym));
++          }
+       }
+       else if (  secNumber == IMAGE_SYM_UNDEFINED && symValue > 0) {
+          /* This symbol isn't in any section at all, ie, global bss.

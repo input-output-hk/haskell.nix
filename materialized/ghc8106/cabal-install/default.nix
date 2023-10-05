@@ -8,7 +8,7 @@
         echo.revision = import ./cabal-files/echo.nix;
         echo.flags.example = false;
         exceptions.revision = (((hackage.exceptions)."0.10.4").revisions).default;
-        directory.revision = (((hackage.directory)."1.3.6.0").revisions).default;
+        directory.revision = import ./cabal-files/directory.nix;
         tar.revision = import ./cabal-files/tar.nix;
         tar.flags.old-bytestring = false;
         tar.flags.old-time = false;
@@ -103,7 +103,6 @@
           "ghc-boot-th" = "8.10.6";
           "base" = "4.14.3.0";
           "time" = "1.9.3";
-          "directory" = "1.3.6.0";
           "exceptions" = "0.10.4";
           "rts" = "1.0.1";
           "transformers" = "0.5.6.2";

@@ -18,8 +18,6 @@ let
   cabalProj = (cabalProject' (projectArgs // { inherit compiler-nix-name; }));
   stackProj = (stackProject' projectArgs);
 
-  exeExt = stdenv.hostPlatform.extensions.executable;
-
 in recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
   meta.disabled = stdenv.hostPlatform.isGhcjs;

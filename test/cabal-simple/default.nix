@@ -1,5 +1,5 @@
 # Test a package set
-{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, mkCabalProjectPkgSet, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -15,14 +15,8 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     inherit modules;
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
-      source-repository-package
-        type: git
-        location: https://github.com/glguy/th-abstraction.git
-        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
-        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
-    '';
   };
 
   packages = project.hsPkgs;
@@ -34,12 +28,12 @@ in recurseIntoAttrs {
 
   # Used for testing externally with nix-shell (../tests.sh).
   test-shell = (project.shellFor {
-      tools = { cabal = "latest"; };
+      tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
       withHoogle = !__elem compiler-nix-name ["ghc901" "ghc902" "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc927"];
     }).overrideAttrs (_: _: {
       meta = rec {
         platforms = lib.platforms.all;
-        broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+        broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
         disabled = broken;
       };
     });
@@ -76,7 +70,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
       disabled = broken;
     };
 

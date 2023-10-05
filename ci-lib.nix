@@ -1,8 +1,5 @@
-{
-  # Generic nixpkgs, use *only* for lib functions that are stable across versions
-  pkgs,
-  lib ? pkgs.lib
-}: rec {
+{ lib }:
+rec {
   inherit (import ./dimension.nix) dimension;
 
   # A filter for removing packages that aren't supported on the current platform
@@ -23,7 +20,7 @@
   # Keep derivations and attrsets with 'recurseForDerivations'. This ensures that we match the
   # derivations that Hercules will see, and prevents Hydra from trying to pick up all sorts of bad stuff
   # (like attrsets that contain themselves!).
-  filterDerivations = filterAttrsOnlyRecursive (n: attrs: lib.isDerivation attrs || attrs.recurseForDerivations or false);
+  filterDerivations = filterAttrsOnlyRecursive (_n: attrs: lib.isDerivation attrs || attrs.recurseForDerivations or false);
 
   # A version of 'filterAttrsRecursive' that doesn't recurse into derivations. This prevents us from going into an infinite
   # loop with the 'out' attribute on derivations.

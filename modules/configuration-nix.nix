@@ -42,8 +42,9 @@ in {
   packages.Cabal.patches = [
     (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-drop-pkg-db-check.diff)
     (fromUntil "3.2.0.0" "3.5" ../overlays/patches/Cabal/Cabal-3.0.0.0-no-final-checks.diff)
-    (fromUntil "3.6.0.0" "3.9" ../overlays/patches/Cabal/Cabal-3.6.0.0-drop-pkg-db-check.diff)
-    (fromUntil "3.6.0.0" "3.9" ../overlays/patches/Cabal/Cabal-3.6.0.0-no-final-checks.diff)
+    (fromUntil "3.6.0.0" "3.11" ../overlays/patches/Cabal/Cabal-3.6.0.0-drop-pkg-db-check.diff)
+    (fromUntil "3.6.0.0" "3.11" ../overlays/patches/Cabal/Cabal-3.6.0.0-no-final-checks.diff)
+    (fromUntil "3.10" "3.11" ../overlays/patches/Cabal/9220.patch)
   ];
 
   # These two patches are:
@@ -91,6 +92,7 @@ in {
        [
         (fromUntil "1.7.0.0" "1.8.0.0" ../patches/ghcide-1.7-unboxed-tuple-fix-issue-1455.patch)
         (fromUntil "1.8.0.0" "2.1.0.0" ../patches/ghcide-1.8-unboxed-tuple-fix-issue-1455.patch)
+        (fromUntil "2.2.0.0" "2.3.0.0" ../patches/ghcide-2.2-unboxed-tuple-fix-issue-1455.patch)
       ]
       # This is needed for a patch only applied to ghc810420210212
       ++ pkgs.lib.optional (__elem config.compiler.nix-name [
@@ -182,4 +184,10 @@ in {
   # Using -j1 works around the issue.
   packages.gi-gtk.components.library.ghcOptions =
     pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961" "ghc962"]) "-j1";
+
+  # With recent versions of nixpkgs fortify causes musl version of the
+  # text package to fail with:
+  #   error: inlining failed in call to ‘always_inline’ ‘void* memcpy(void*, const void*, size_t)’: target specific option mismatch
+  packages.text.components.library.hardeningDisable =
+    pkgs.lib.optionals pkgs.stdenv.hostPlatform.isMusl ["fortify"];
 }

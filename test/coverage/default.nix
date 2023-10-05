@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -6,6 +6,7 @@ let
   projectArgs = {
     inherit evalPackages;
     src = testSrc "coverage";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -27,8 +28,7 @@ let
 
 in recurseIntoAttrs ({
   # Does not work on ghcjs because it needs zlib.
-  meta.disabled = stdenv.hostPlatform.isGhcjs
-    || __elem compiler-nix-name ["ghc9820230704"]; # lens is currently broken
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
   run = stdenv.mkDerivation {
     name = "coverage-test";
 

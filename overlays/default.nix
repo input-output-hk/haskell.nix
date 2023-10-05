@@ -1,15 +1,78 @@
-{ sources, ...}@args:
-
+{ sources }:
 let
   overlays = {
     wine = import ./wine.nix;
-    #ghcjs = import ./ghcjs-asterius-triple.nix;
-    #python = import ./python.nix;
-    haskell = import ./haskell.nix args;
+    haskell = import ./haskell.nix { inherit sources; };
+
+    # Here is where we import nix-tools into the overlays that haskell.nix is
+    # going to use. To cut the evaluation time of nix-tools (which would itself
+    # depend on haskell.nix), we have the option of obtaining a pre-compiled
+    # and statically-linked copy nix-tools.
+    #
+    # For the moment we do this only on x84_64-linux.
+    nix-tools = (final: prev:
+      let
+        # Import the overlay from nix-tools' subdirectory
+        nix-tools-pkgs = import ../nix-tools/overlay.nix final prev;
+
+        # The static-nix-tools tarball.
+        #
+        # Note: nix-tools provides single derivations for each of the tools it
+        # provides, and haskell.nix derivations are granual in which tools they
+        # are going to need. E.g. a derivation will have
+        #     nativeBuildInputs = [ nix-tools.exes.make-install-plan ... ];
+        #
+        # On the other hand, there is a single the binary tarball for all
+        # tools, therefore we cannot just swap nix-tools for a derivation
+        # created by fetchzip.
+        #
+        # We resolve this by adding the missing attributes to static-nix-tools,
+        # pointing back to the same static-nix-tools derivation. This allows
+        # downstram derivation to keep using `nix-tools.exes.make-install-plan`
+        # as shown above.
+        static-nix-tools =
+          let
+            tarball = final.fetchzip {
+              name = "nix-tools-0.1.0.0";
+              url = "https://ci.zw3rk.com/build/3108674/download/1/nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz";
+              sha256 = "sha256-KJ3BcmJqPjlN24+mIRPbmwRLS8eoMmGWz8AOh6H45bo=";
+            };
+            nix-tools-provided-exes = builtins.attrNames nix-tools-pkgs.nix-tools.exes;
+          in
+            # add the missing exes attributes to the tarball derivation
+            tarball // { exes = final.lib.genAttrs nix-tools-provided-exes (_: tarball); };
+
+        # Version of nix-tools built with a pinned version of haskell.nix.
+        pinned-nix-tools-lib = (import (final.haskell-nix.sources.flake-compat) {
+            pkgs = final;
+            inherit (final) system;
+            src = ../nix-tools;
+            override-inputs = {
+              # Avoid downloading another `hackage.nix`.
+              inherit (final.haskell-nix.sources) hackage;
+            };
+          }).defaultNix.lib;
+      in
+      {
+        haskell-nix =
+          prev.haskell-nix // {
+            inherit (nix-tools-pkgs) nix-tools nix-tools-set;
+            # either nix-tools from its overlay or from the tarball.
+            nix-tools-unchecked =
+              # If possible use the static nix-tools tarball
+              if final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64
+                then static-nix-tools
+                else pinned-nix-tools-lib.nix-tools final.system;
+          };
+        # For use building hadrian.  This way updating anything that modifies the
+        # way hadrian is built will not cause a GHC rebuild.
+        pinned-haskell-nix = pinned-nix-tools-lib.haskell-nix final.system;
+      });
+
     bootstrap = import ./bootstrap.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
-    hydra = import ./hydra.nix args;
+    hydra = import ./hydra.nix { inherit sources; };
     darwin = import ./darwin.nix;
     windows = import ./windows.nix;
     armv6l-linux = import ./armv6l-linux.nix;
@@ -25,6 +88,7 @@ let
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
     default-setup = import ./default-setup.nix;
     dummy-ghc-data = import ./dummy-ghc-data.nix;
+    fetch-source = import ./fetch-source.nix;
   };
 
   composeExtensions = f: g: final: prev:
@@ -43,6 +107,7 @@ let
     })
     wine
     haskell
+    nix-tools
     bootstrap
     ghc
     ghc-packages
@@ -64,6 +129,7 @@ let
     dummy-ghc-data
     cacheCompilerDeps
     default-setup
+    fetch-source
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
 in overlays // { inherit combined; }

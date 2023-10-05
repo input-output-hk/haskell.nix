@@ -121,9 +121,7 @@ let
     '';
 
     installPhase =
-      let
-        target-pkg-and-db = "${ghc.targetPrefix}ghc-pkg -v0 --package-db $out/package.conf.d";
-      in ''
+      ''
         html="dist/doc/html/${package.identifier.name}"
 
         if [ -d "$html" ]; then

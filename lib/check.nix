@@ -1,4 +1,4 @@
-{ stdenv, lib, haskellLib }:
+{ stdenv, lib, haskellLib, buildPackages }:
 drv:
 
 let
@@ -30,7 +30,11 @@ in stdenv.mkDerivation ((
     inherit (drv) identifier config configFiles executableToolDepends cleanSrc env exeName;
   };
 
-  inherit (drv) meta LANG LC_ALL buildInputs nativeBuildInputs;
+  inherit (drv) meta LANG LC_ALL buildInputs;
+
+  nativeBuildInputs = drv.nativeBuildInputs
+    ++ [buildPackages.xorg.lndir]
+    ++ lib.optional (stdenv.hostPlatform.isGhcjs) buildPackages.nodejs-18_x;
 
   inherit (component) doCheck doCrossCheck;
 
@@ -42,7 +46,12 @@ in stdenv.mkDerivation ((
     mkdir $out
     runHook preCheck
 
-    ${toString component.testWrapper} ${drv}/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out/test-stdout
+    drv=$(mktemp -d)
+    lndir ${drv} $drv
+    rm $drv/bin/${drv.exeName}
+    cp ${drv}/bin/${drv.exeName} $drv/bin/${drv.exeName}
+    patchShebangs --build $(dirname $drv/bin/${drv.exeName})
+    ${toString component.testWrapper} $drv/bin/${drv.exeName} ${lib.concatStringsSep " " component.testFlags} | tee $out/test-stdout
 
     # Copy over tix files, if they exist
     find . -iname '${drv.exeName}.tix' -exec mkdir -p $out/share/hpc/vanilla/tix/${drv.exeName} \; -exec cp {} $out/share/hpc/vanilla/tix/${drv.exeName}/ \;

@@ -1,4 +1,4 @@
-{ stdenv, lib, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -6,13 +6,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-source-repo-comments";
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc9820230704"]) ''
-      source-repository-package
-        type: git
-        location: https://github.com/glguy/th-abstraction.git
-        tag: 24b9ea9b498b182e44abeb3a755e2b4e35c48788
-        --sha256: sha256-nWWZVEek0fNVRI+P5oXkuJyrPJWts5tCphymFoYWIPg=
-    '';
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
   packages = project.hsPkgs;
 in recurseIntoAttrs {
@@ -33,7 +27,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962" "ghc9820230704"];
+      broken = stdenv.hostPlatform.isGhcjs && __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.6.1" >= 0;
       disabled = broken;
     };
   
