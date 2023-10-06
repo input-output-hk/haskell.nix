@@ -17,7 +17,7 @@ let
       "9.0" = "9.0.2";
       "9.2" = "9.2.8";
       "9.4" = "9.4.7";
-      "9.6" = "9.6.2";
+      "9.6" = "9.6.3";
     };
     gitInputs = {
       ghc980 = "9.8.0";
@@ -199,7 +199,7 @@ in {
                 ++ fromUntil "9.2"    "9.10"   ./patches/ghc/sanity-check-find-file-name.patch
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.5"  ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.4.8"  ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.0"  "9.10"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
                 # support R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14), which seems to appear with 9.6 more frequently, and
                 # results in "unhandled PEi386 relocation type 14".
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.10"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
@@ -210,25 +210,30 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "8.10"   "9.8"   ./patches/ghc/win-linker-no-ucrt.patch)
                 # Nixos/nixpkgs is mscvrt for now, thus we must disable ucrt in ghc, otherwise we end up with broken linking.
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/no-ucrt-9.4.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/no-ucrt-9.6.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/no-ucrt-9.6.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.8"    ./patches/ghc/no-ucrt-9.6.3.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8"    "9.9"    ./patches/ghc/no-ucrt-9.8.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.9"    "9.10"   ./patches/ghc/no-ucrt-9.9.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.5"    ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8.0"  "9.10"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
                 # the following is needed for cardano-prelude as it uses closure_sizeW :-/
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.10"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6"    "9.10"   ./patches/ghc/win-add-tzset-to-rtssyms.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/win-linker-no-null-deref-9.4.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.7"  ./patches/ghc/win-linker-no-null-deref.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.6"    ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-drop-mingwex-from-base.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.8"   ./patches/ghc/win-linker-no-null-deref.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/win-linker-no-null-deref.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ fromUntil "9.4.5"  "9.4.8"  ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.2"  "9.8"    ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.1"  "9.10"   ./patches/ghc/MR10116.patch
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.4.1" "9.6" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.6.1" "9.10" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.3"  "9.8"    ./patches/ghc/ghc-9.6.3-Merge-libiserv-with-ghci.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.3"  "9.8"    ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
@@ -881,7 +886,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc961
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
                           or final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -905,7 +911,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
                           or final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -922,6 +929,31 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.6.2";
+            });
+            ghc963 = final.callPackage ../compiler/ghc (traceWarnOld "9.6" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc963; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc963
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.6.3";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-383me0qlUKC4oam7gQWDXcmZ+tY5fM4z1y/VXSHrd/U=";
+                };
+
+                ghc-patches = ghc-patches "9.6.3";
             });
             ghc9820230704 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9820230704; };
