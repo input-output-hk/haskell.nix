@@ -292,6 +292,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10.7-android-bionic-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10.7-bionic-libc.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10.7-cross-dont-build-stage2-tools.patch
+                ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-9.6-hadrian-android.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
