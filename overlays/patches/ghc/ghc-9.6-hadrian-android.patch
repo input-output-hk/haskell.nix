@@ -8,3 +8,4 @@ index f5864b6..69123e1 100644
  cabalOsString "solaris2" = "solaris"
 +cabalOsString "linux_android" = "android"
  cabalOsString other      = other
+
