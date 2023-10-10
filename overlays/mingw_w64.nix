@@ -89,6 +89,8 @@ let
     export LC_ALL=en_US.UTF-8
     export WINEPREFIX=$TMP
     Path="''${Path:-}"
+    unset configureFlags
+    unset configurePhase
     for path in ''${nativeBuildInputs:-}; do
       if [ -d "$path/bin" ]; then
         Path="$Path;$(${wine}/bin/winepath -w $path/bin)";
