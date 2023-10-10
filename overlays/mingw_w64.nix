@@ -73,10 +73,8 @@ let
     "-fexternal-interpreter"
     "-pgmi" "${wineIservWrapper}/bin/iserv-wrapper"
     # TODO: this should be automatically injected based on the extraLibrary.
-    ] ++ lib.optionals (hostPlatform.libc != "ucrt") [
-      "-L${mingw_w64_pthreads}/lib"
-      "-L${mingw_w64_pthreads}/bin"
-    ] ++ [
+    "-L${mingw_w64_pthreads}/lib"
+    "-L${mingw_w64_pthreads}/bin"
     "-L${gmp}/lib"
     ]));
 
