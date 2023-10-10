@@ -18,6 +18,7 @@ let
       "9.2" = "9.2.8";
       "9.4" = "9.4.7";
       "9.6" = "9.6.3";
+      "9.8" = "9.8.1";
     };
     gitInputs = {
       ghc980 = "9.8.0";
@@ -951,6 +952,32 @@ in {
                 };
 
                 ghc-patches = ghc-patches "9.6.3";
+            });
+            ghc981 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc981; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc981
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.8.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-svjta39zN5epJDb0/24IilIJExScmpvpBGW0CtHyB1E=";
+                };
+
+                ghc-patches = ghc-patches "9.8.1";
             });
             ghc9820230704 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9820230704; };
