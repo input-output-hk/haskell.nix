@@ -251,7 +251,6 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
                 ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/MR10116.patch
                 ++ fromUntil "9.4.1"  "9.6"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch
-                ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.4" && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-make-stage-1-lib-ghc.patch
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
@@ -293,6 +292,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10.7-bionic-libc.patch
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.2" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.isAarch32) ./patches/ghc/ghc-8.10.7-cross-dont-build-stage2-tools.patch
                 ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-9.6-hadrian-android.patch
+                ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch
+                ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "10.0" && final.stdenv.targetPlatform.is32bit) ./patches/ghc/ghc-9.6-32bit-cmm.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {

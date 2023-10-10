@@ -243,7 +243,7 @@ let
   # for musl only; but I'd like to stay far away from the unnecessary
   # bindist logic as we can. It's slow, and buggy, and doesn't provide any
   # value for us.
-  installStage1 = useHadrian && (haskell-nix.haskellLib.isCrossTarget || stdenv.targetPlatform.isMusl);
+  installStage1 = useHadrian && (with haskell-nix.haskellLib; isCrossTarget || isNativeMusl);
 
   hadrian =
     let
@@ -683,7 +683,7 @@ stdenv.mkDerivation (rec {
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
-      '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
+      '' + lib.optionalString (installStage1 && haskell-nix.haskellLib.isNativeMusl) ''
         substituteInPlace hadrian/cfg/system.config \
           --replace 'cross-compiling       = YES' \
                     'cross-compiling       = NO'
@@ -768,7 +768,7 @@ stdenv.mkDerivation (rec {
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
-  '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget && stdenv.targetPlatform.isMusl) ''
+  '' + lib.optionalString (installStage1 && haskell-nix.haskellLib.isNativeMusl) ''
     substituteInPlace hadrian/cfg/system.config \
       --replace 'cross-compiling       = YES' \
                 'cross-compiling       = NO'
