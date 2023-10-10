@@ -36,11 +36,11 @@ final: prev:
       let
         withTH = import ./mingw_w64.nix {
           inherit (pkgs.stdenv) hostPlatform;
-          inherit (pkgs) stdenv lib writeScriptBin;
-          wine = pkgs.buildPackages.winePackages.minimal;
+          inherit (pkgs.pkgsBuildBuild) lib writeShellScriptBin;
+          wine = pkgs.pkgsBuildBuild.winePackages.minimal;
           inherit (pkgs.windows) mingw_w64_pthreads;
           inherit (pkgs) gmp;
-          inherit (pkgs.buildPackages) symlinkJoin;
+          inherit (pkgs.pkgsBuildBuild) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
           inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter;

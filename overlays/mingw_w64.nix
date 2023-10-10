@@ -1,8 +1,7 @@
 # Cross compilation logic.
 # Returns override fields for use with nix-tools.
-{ stdenv
-, lib
-, writeScriptBin
+{ lib
+, writeShellScriptBin
 , wine
 , mingw_w64_pthreads
 , iserv-proxy
@@ -25,8 +24,7 @@ let
           then iserv-proxy-interpreter.override { inherit enableProfiling; }
           else iserv-proxy-interpreter;
     in
-      writeScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
-        #!${stdenv.shell}
+      writeShellScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
         set -euo pipefail
         ISERV_ARGS=''${ISERV_ARGS:-}
         PROXY_ARGS=''${PROXY_ARGS:-}
@@ -41,6 +39,7 @@ let
         REMOTE_ISERV=$(mktemp -d)
         ln -s ${interpreter.override { enableDebugRTS = true; }}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
+        # TODO use `LINK_DLL_FOLDERS` here once it is in all the nixpkgs we want to support.
         for p in $pkgsHostTargetAsString; do
           find "$p" -iname '*.dll' -exec ln -sf {} $REMOTE_ISERV \;
           find "$p" -iname '*.dll.a' -exec ln -sf {} $REMOTE_ISERV \;
@@ -56,6 +55,7 @@ let
         )
         # Not sure why this `unset` helps.  It might avoids some kind of overflow issue.  We see `wine` fail to start when building `cardano-wallet-cli` test `unit`.
         unset pkgsHostTargetAsString
+        unset LINK_DLL_FOLDERS
         WINEDLLOVERRIDES="winemac.drv=d" WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag WINEPREFIX=$TMP ${wine}/bin/wine64 $REMOTE_ISERV/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
         (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
         RISERV_PID="$!"
@@ -81,8 +81,7 @@ let
   ################################################################################
   # Test logic via wine
   #
-  wineTestWrapper = writeScriptBin "test-wrapper" ''
-    #!${stdenv.shell}
+  wineTestWrapper = writeShellScriptBin "test-wrapper" ''
     set -euo pipefail
     export WINEDLLOVERRIDES="winemac.drv=d"
     export WINEDEBUG=warn-all,fixme-all,-menubuilder,-mscoree,-ole,-secur32,-winediag
@@ -91,6 +90,7 @@ let
     Path="''${Path:-}"
     unset configureFlags
     unset configurePhase
+    unset LINK_DLL_FOLDERS
     for path in ''${nativeBuildInputs:-}; do
       if [ -d "$path/bin" ]; then
         Path="$Path;$(${wine}/bin/winepath -w $path/bin)";
