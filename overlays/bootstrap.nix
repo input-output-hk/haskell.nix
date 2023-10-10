@@ -958,7 +958,7 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc981
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc963
                     else final.buildPackages.buildPackages.haskell.compiler.ghc981
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
                           or final.buildPackages.buildPackages.haskell.compiler.ghc962
@@ -979,60 +979,6 @@ in {
 
                 ghc-patches = ghc-patches "9.8.1";
             });
-            ghc9820230704 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9820230704; };
-
-                bootPkgs = bootPkgsGhc94 // {
-                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
-                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
-                };
-                inherit sphinx;
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_12;
-                llvmPackages = final.llvmPackages_12;
-
-                src-spec.file = final.fetchFromGitLab {
-                    domain = "gitlab.haskell.org";
-                    owner = "ghc";
-                    repo = "ghc";
-                    fetchSubmodules = true;
-                    rev = "c18658545ce45254a4679c13de5dcc56a4c8373f";
-                    sha256 = "sha256-gaklMn9Y1HzunHrg51Ue9Pmyy33YH2J/S6uKcDvnAvA=";
-                };
-                src-spec.version = "9.8.1";
-
-                ghc-patches = ghc-patches "9.8.1";
-                ghc-version = "9.8.20230704";
-            });
-            # ghc 8.10.4 with patches needed by plutus
-            ghc810420210212 = final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
-
-                bootPkgs = bootPkgs // {
-                  ghc = if (final.stdenv.buildPlatform.isAarch64 || final.stdenv.targetPlatform.isAarch64)
-                        then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
-                        else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
-                };
-                inherit sphinx;
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
-
-                src-spec = rec {
-                    version = "8.10.4";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
-                };
-                ghc-patches = ghc-patches "8.10.4"
-                 ++ [ ./patches/ghc/core-field.patch ./patches/ghc/external-static-8.10.4.patch ];
-
-                # Avoid clashes with normal ghc8104
-                ghc-version = "8.10.4.20210212";
-            };
         } // (__listToAttrs (final.lib.mapAttrsToList (source-name: ver:
           let
             src = final.haskell-nix.sources.${source-name};
@@ -1046,8 +992,10 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc963
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
                           or final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
