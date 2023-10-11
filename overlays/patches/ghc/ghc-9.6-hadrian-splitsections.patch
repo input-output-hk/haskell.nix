@@ -1,0 +1,17 @@
+diff --git a/compiler/GHC/CmmToAsm/Ppr.hs b/compiler/GHC/CmmToAsm/Ppr.hs
+index 45b0545..967391d 100644
+--- a/compiler/GHC/CmmToAsm/Ppr.hs
++++ b/compiler/GHC/CmmToAsm/Ppr.hs
+@@ -246,9 +246,10 @@ pprGNUSectionHeader config t suffix =
+         panic "PprBase.pprGNUSectionHeader: unknown section type"
+     flags = case t of
+       Text
+-        | OSMinGW32 <- platformOS platform
++        | OSMinGW32 <- platformOS platform, splitSections
+                     -> text ",\"xr\""
+-        | otherwise -> text ",\"ax\"," <> sectionType platform "progbits"
++        | splitSections
++                    -> text ",\"ax\"," <> sectionType platform "progbits"
+       CString
+         | OSMinGW32 <- platformOS platform
+                     -> empty
