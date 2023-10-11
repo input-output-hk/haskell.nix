@@ -260,6 +260,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-9.6-hadrian-android.patch
                 ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch
                 ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "10.0" && final.stdenv.targetPlatform.is32bit) ./patches/ghc/ghc-9.6-32bit-cmm.patch
+                # this one is to allow linking extra symbols from iserv.
+                ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/iserv-syms.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
