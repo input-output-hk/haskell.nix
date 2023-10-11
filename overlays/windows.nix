@@ -17,6 +17,11 @@ final: prev:
    mfpr = if !prev.stdenv.hostPlatform.isWindows then prev.mpfr else prev.mfpr.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
+} // prev.lib.optionalAttrs (prev.stdenv.hostPlatform.isWindows && prev.stdenv.hostPlatform.libc == "ucrt") {
+  windows = prev.windows // {
+    # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
+    mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
+  };
 } // {
    libmpc = if !prev.stdenv.hostPlatform.isWindows then prev.libmpc else prev.libmpc.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
