@@ -1,0 +1,162 @@
+From 6fb31e1c4d92629257434bf805138f8ef4d7ba60 Mon Sep 17 00:00:00 2001
+From: Hamish Mackenzie <Hamish.K.Mackenzie@gmail.com>
+Date: Mon, 25 Sep 2023 22:32:57 +1300
+Subject: [PATCH] Relax extension `.c` requirement for c-sources
+
+#9200 started filtering `.cc` files from `c-sources` and does not always issue a warning (there has to be at least one `.c` file present before it warns you it is ignoring the others).
+
+Some packages in hackage (`double-conversion` for instance) rely on the ability to include `C++` source files in `c-sources`.  This is not ideal, but we should probably continue to support these packages.
+
+This change will relax the filtering, so that only `.h` files are automatically excluded (with a warning).  It will also warn if other non `.c` files are present (suggesting the `cxx-sources` since C++ sources are the most likely to be used).
+
+The bug that prevented warnings being displayed when no `.c` files were present is fixed.
+---
+ Cabal/src/Distribution/Simple/GHC.hs          | 45 ++++++++++---------
+ .../CSourcesSanitisation/build.out            | 23 ++++++++--
+ .../CSourcesSanitisation/cbits/gwinsz.cc      |  0
+ .../CSourcesSanitisation/repro.cabal          | 11 +++++
+ 4 files changed, 56 insertions(+), 23 deletions(-)
+ create mode 100644 cabal-testsuite/PackageTests/CSourcesSanitisation/cbits/gwinsz.cc
+
+diff --git a/Cabal/src/Distribution/Simple/GHC.hs b/Cabal/src/Distribution/Simple/GHC.hs
+index 4387da26369..9d653f85829 100644
+--- a/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs
++++ b/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs
+@@ -705,19 +705,12 @@ buildOrReplLib mReplFlags verbosity numJobs pkg_descr lbi lib clbi = do
+       | filename <- cxxSources libBi]
+ 
+   -- build any C sources
+-  let (cSrcs', others) = partition (\filepath -> ".c"`isSuffixOf` filepath) (cSources libBi)
++  let libraryName = case libName lib of
++          LMainLibName -> "the main library"
++          LSubLibName name -> "library " <> prettyShow name
++  cSrcs' <- checkCSources verbosity libraryName (cSources libBi)
+   unless (not has_code || null cSrcs') $ do
+     info verbosity "Building C Sources..."
+-    unless (null others) $ do
+-      let files = intercalate ", " others
+-      let libraryName = case libName lib of
+-            LMainLibName -> "the main library"
+-            LSubLibName name -> "library " <> prettyShow name
+-      warn verbosity $ unlines
+-        [ "The following files listed in " <> libraryName <> "'s c-sources will not be used: " <> files <> "."
+-        , "Header files should be in the 'include' or 'install-include' stanza."
+-        , "See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes"
+-        ]
+     forM_ cSrcs' $ \filename -> do
+        let baseCcOpts    = Internal.componentCcGhcOptions verbosity implInfo
+                            lbi libBi clbi relLibTargetDir filename
+@@ -1537,17 +1530,9 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
+      | filename <- cxxSrcs ]
+ 
+   -- build any C sources
+-  let (cSrcs', others) = partition (\filepath -> ".c"`isSuffixOf` filepath) cSrcs
++  cSrcs' <- checkCSources verbosity (gbuildName bm) cSrcs
+   unless (null cSrcs') $ do
+     info verbosity "Building C Sources..."
+-    unless (null others) $ do
+-      let files = intercalate ", " others
+-      let currentComponentName = gbuildName bm
+-      warn verbosity $ unlines
+-        [ "The following files listed in " <> currentComponentName <> "'s c-sources will not be used: " <> files <> "."
+-        , "Header files should be in the 'include' or 'install-include' stanza."
+-        , "See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes"
+-        ]
+     forM_ cSrcs' $ \filename -> do
+       let baseCcOpts    = Internal.componentCcGhcOptions verbosity implInfo
+                               lbi bnfo clbi tmpDir filename
+@@ -2184,3 +2169,23 @@ supportsDynamicToo = Internal.ghcLookupProperty "Support dynamic-too"
+ 
+ withExt :: FilePath -> String -> FilePath
+ withExt fp ext = fp <.> if takeExtension fp /= ('.':ext) then ext else ""
++
++checkCSources :: Verbosity -> String -> [String] -> IO [String]
++checkCSources verbosity name cSrcs = do
++  let (headers, cSrcs') = partition (\filepath -> ".h" `isSuffixOf` filepath) cSrcs
++      others = filter (\filepath -> not (".c" `isSuffixOf` filepath)) cSrcs'
++  unless (null headers) $ do
++    let files = intercalate ", " headers
++    warn verbosity $ unlines
++      [ "The following header files listed in " <> name <> "'s c-sources will not be used: " <> files <> "."
++      , "Header files should be in the 'include' or 'install-include' stanza."
++      , "See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes"
++      ]
++  unless (null others) $ do
++    let files = intercalate ", " others
++    warn verbosity $ unlines
++      [ "The following files listed in " <> name <> "'s c-sources do not have the expected '.c' extension " <> files <> "."
++      , "C++ files should be in the 'cxx-sources' stanza."
++      , "See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-cxx-sources"
++      ]
++  return cSrcs'
+diff --git a/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out b/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
+index 1e423a54cb9..c66b5962369 100644
+--- a/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
++++ b/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
+@@ -5,21 +5,38 @@ In order, the following will be built:
+  - repro-0.1.0.0 (lib) (first run)
+  - repro-0.1.0.0 (exe:exec1) (first run)
+  - repro-0.1.0.0 (lib:lib2) (first run)
++ - repro-0.1.0.0 (lib:lib3) (first run)
++ - repro-0.1.0.0 (lib:lib4) (first run)
+ Configuring library for repro-0.1.0.0..
+ Preprocessing library for repro-0.1.0.0..
+ Building library for repro-0.1.0.0..
+-Warning: The following files listed in the main library's c-sources will not be used: cbits/gwinsz.h.
++Warning: The following header files listed in the main library's c-sources will not be used: cbits/gwinsz.h.
+ Header files should be in the 'include' or 'install-include' stanza.
+ See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes
+ Configuring executable 'exec1' for repro-0.1.0.0..
+ Preprocessing executable 'exec1' for repro-0.1.0.0..
+ Building executable 'exec1' for repro-0.1.0.0..
+-Warning: The following files listed in exec1's c-sources will not be used: cbits/gwinsz.h.
++Warning: The following header files listed in exec1's c-sources will not be used: cbits/gwinsz.h.
+ Header files should be in the 'include' or 'install-include' stanza.
+ See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes
+ Configuring library 'lib2' for repro-0.1.0.0..
+ Preprocessing library 'lib2' for repro-0.1.0.0..
+ Building library 'lib2' for repro-0.1.0.0..
+-Warning: The following files listed in library lib2's c-sources will not be used: cbits/gwinsz.h.
++Warning: The following header files listed in library lib2's c-sources will not be used: cbits/gwinsz.h.
+ Header files should be in the 'include' or 'install-include' stanza.
+ See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes
++Configuring library 'lib3' for repro-0.1.0.0..
++Preprocessing library 'lib3' for repro-0.1.0.0..
++Building library 'lib3' for repro-0.1.0.0..
++Warning: The following header files listed in library lib3's c-sources will not be used: cbits/gwinsz.h.
++Header files should be in the 'include' or 'install-include' stanza.
++See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes
++Warning: The following files listed in library lib3's c-sources do not have the expected '.c' extension cbits/gwinsz.cc.
++C++ files should be in the 'cxx-sources' stanza.
++See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-cxx-sources
++Configuring library 'lib4' for repro-0.1.0.0..
++Preprocessing library 'lib4' for repro-0.1.0.0..
++Building library 'lib4' for repro-0.1.0.0..
++Warning: The following files listed in library lib4's c-sources do not have the expected '.c' extension cbits/gwinsz.cc.
++C++ files should be in the 'cxx-sources' stanza.
++See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-cxx-sources
+diff --git a/cabal-testsuite/PackageTests/CSourcesSanitisation/cbits/gwinsz.cc b/cabal-testsuite/PackageTests/CSourcesSanitisation/cbits/gwinsz.cc
+new file mode 100644
+index 00000000000..e69de29bb2d
+diff --git a/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal b/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
+index 659f1510a7e..1cf6d295fb4 100644
+--- a/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
++++ b/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
+@@ -15,6 +15,17 @@ library lib2
+                       cbits/gwinsz.c
+     build-depends:    base
+ 
++library lib3
++    default-language: Haskell2010
++    c-sources:        cbits/gwinsz.h
++                      cbits/gwinsz.cc
++    build-depends:    base
++
++library lib4
++    default-language: Haskell2010
++    c-sources:        cbits/gwinsz.cc
++    build-depends:    base
++
+ executable exec1
+     main-is: Main.hs
+     default-language: Haskell2010

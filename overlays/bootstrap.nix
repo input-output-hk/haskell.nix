@@ -18,6 +18,7 @@ let
       "9.2" = "9.2.8";
       "9.4" = "9.4.7";
       "9.6" = "9.6.3";
+      "9.8" = "9.8.1";
     };
     gitInputs = {
       ghc980 = "9.8.0";
@@ -237,6 +238,7 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.3"  "9.8"    ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
+                ++ fromUntil "9.8.1"  "9.8.2"  ./patches/ghc/ghc-9.8-cabal-c-soures-fix.patch
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
@@ -957,13 +959,15 @@ in {
 
                 ghc-patches = ghc-patches "9.6.3";
             });
-            ghc9820230704 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc9820230704; };
+            ghc981 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc981; };
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc962
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc962
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc963
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
                           or final.buildPackages.buildPackages.haskell.compiler.ghc944
                           or final.buildPackages.buildPackages.haskell.compiler.ghc943;
@@ -973,44 +977,14 @@ in {
                 buildLlvmPackages = final.buildPackages.llvmPackages_12;
                 llvmPackages = final.llvmPackages_12;
 
-                src-spec.file = final.fetchFromGitLab {
-                    domain = "gitlab.haskell.org";
-                    owner = "ghc";
-                    repo = "ghc";
-                    fetchSubmodules = true;
-                    rev = "c18658545ce45254a4679c13de5dcc56a4c8373f";
-                    sha256 = "sha256-gaklMn9Y1HzunHrg51Ue9Pmyy33YH2J/S6uKcDvnAvA=";
+                src-spec = rec {
+                    version = "9.8.1";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-svjta39zN5epJDb0/24IilIJExScmpvpBGW0CtHyB1E=";
                 };
-                src-spec.version = "9.8.1";
 
                 ghc-patches = ghc-patches "9.8.1";
-                ghc-version = "9.8.20230704";
             });
-            # ghc 8.10.4 with patches needed by plutus
-            ghc810420210212 = final.callPackage ../compiler/ghc {
-                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc810420210212; };
-
-                bootPkgs = bootPkgs // {
-                  ghc = if (final.stdenv.buildPlatform.isAarch64 || final.stdenv.targetPlatform.isAarch64)
-                        then final.buildPackages.buildPackages.haskell-nix.compiler.ghc884
-                        else final.buildPackages.buildPackages.haskell-nix.compiler.ghc865;
-                };
-                inherit sphinx;
-
-                buildLlvmPackages = final.buildPackages.llvmPackages_9;
-                llvmPackages = final.llvmPackages_9;
-
-                src-spec = rec {
-                    version = "8.10.4";
-                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
-                    sha256 = "03li4k10hxgyxcdyyz2092wx09spr1599hi0sxbh4m889qdqgbsj";
-                };
-                ghc-patches = ghc-patches "8.10.4"
-                 ++ [ ./patches/ghc/core-field.patch ./patches/ghc/external-static-8.10.4.patch ];
-
-                # Avoid clashes with normal ghc8104
-                ghc-version = "8.10.4.20210212";
-            };
         } // (__listToAttrs (final.lib.mapAttrsToList (source-name: ver:
           let
             src = final.haskell-nix.sources.${source-name};
@@ -1025,7 +999,8 @@ in {
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
                     then final.buildPackages.buildPackages.haskell-nix.compiler.ghc963
-                    else final.buildPackages.buildPackages.haskell.compiler.ghc963
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
                           or final.buildPackages.buildPackages.haskell.compiler.ghc962
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
                           or final.buildPackages.buildPackages.haskell.compiler.ghc944
