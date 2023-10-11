@@ -77,6 +77,7 @@
         ghc928 = false;
         ghc947 = false;
         ghc963 = false;
+        ghc981 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
         ghc884 = false;
         ghc8107 = true;
@@ -84,6 +85,7 @@
         ghc928 = true;
         ghc947 = true;
         ghc963 = true;
+        ghc981 = true;
         ${ghc980X nixpkgs} = true;
         ${ghc99X nixpkgs} = true;
       }));
@@ -92,28 +94,28 @@
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)])
-       || (system == "aarch64-linux" && builtins.elem compiler-nix-name ["ghc8107" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)])
-       || (system == "x86_64-darwin" && builtins.elem compiler-nix-name ["ghc8107" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)])
-       || (system == "aarch64-darwin" && builtins.elem compiler-nix-name ["ghc8107" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)])
+      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)])
+       || (system == "aarch64-linux" && builtins.elem compiler-nix-name ["ghc8107" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)])
+       || (system == "x86_64-darwin" && builtins.elem compiler-nix-name ["ghc8107" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)])
+       || (system == "aarch64-darwin" && builtins.elem compiler-nix-name ["ghc8107" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)])
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc947" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)])
+      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc926" "ghc927" "ghc928" "ghc947" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc947" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)])
+      && ((system == "x86_64-linux"  && builtins.elem compiler-nix-name ["ghc947" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) ucrt64;
-  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc947" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)]) {
+  } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc8107" "ghc902" "ghc922" "ghc923" "ghc924" "ghc926" "ghc927" "ghc928" "ghc947" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)]) {
     # Musl cross only works on linux
     # aarch64 cross only works on linux
     inherit (lib.systems.examples) musl64 aarch64-multiplatform;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928"]) {
     # TODO fix this for the compilers we build with hadrian (ghc >=9.4)
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
-  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928" "ghc947" "ghc963" (ghc980X nixpkgs) (ghc99X nixpkgs)]) {
+  } // lib.optionalAttrs (system == "aarch64-linux" && nixpkgsName == "unstable" && builtins.elem compiler-nix-name ["ghc927" "ghc928" "ghc947" "ghc963" "ghc981" (ghc980X nixpkgs) (ghc99X nixpkgs)]) {
     inherit (lib.systems.examples) aarch64-multiplatform-musl;
   };
   isDisabled = d: d.meta.disabled or false;
