@@ -21,17 +21,17 @@ let
       "9.8" = "9.8.1";
     };
     gitInputs = {
-      ghc980 = "9.8.0";
+      ghc98 = "9.8.1";
       ghc99 = "9.9";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
     compilerNameMap =
-      builtins.listToAttrs (map (v:
-        { name = versionToNixName v; value = versionToNixName latestVer.${v}; })
-          (builtins.attrNames latestVer)) //
       builtins.mapAttrs (source-name: _:
         source-name + builtins.substring 0 8 final.haskell-nix.sources.${source-name}.lastModifiedDate)
-          gitInputs;
+          gitInputs //
+      builtins.listToAttrs (map (v:
+        { name = versionToNixName v; value = versionToNixName latestVer.${v}; })
+          (builtins.attrNames latestVer));
     traceWarnOld = v: x:
       let
         bootstrapGhc = final.buildPackages.haskell-nix.bootstrap.compiler."${buildBootstrapper.compilerNixName}";

@@ -10,7 +10,7 @@
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
-    ghc980 = {
+    ghc98 = {
       flake = false;
       url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.8&submodules=1";
     };
@@ -23,6 +23,7 @@
     "hls-2.0" = { url = "github:haskell/haskell-language-server/2.0.0.1"; flake = false; };
     "hls-2.2" = { url = "github:haskell/haskell-language-server/2.2.0.0"; flake = false; };
     "hls-2.3" = { url = "github:haskell/haskell-language-server/2.3.0.0"; flake = false; };
+    "hls-2.4" = { url = "github:haskell/haskell-language-server/2.4.0.0"; flake = false; };
     hydra.url = "hydra";
     hackage = {
       url = "github:input-output-hk/hackage.nix";

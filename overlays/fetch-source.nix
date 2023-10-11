@@ -40,6 +40,6 @@ in {
                 } // {
                   lastModifiedDate = formatSecondsSinceEpoch lockFile.nodes.${name}.locked.lastModified;
                 };
-    }) ["ghc980" "ghc99"]);
+    }) ["ghc98" "ghc99"]);
   };
 }
