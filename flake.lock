@@ -117,7 +117,7 @@
         "type": "github"
       }
     },
-    "ghc98": {
+    "ghc98X": {
       "flake": false,
       "locked": {
         "lastModified": 1696643148,
@@ -517,7 +517,7 @@
         "cardano-shell": "cardano-shell",
         "flake-compat": "flake-compat",
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk",
-        "ghc98": "ghc98",
+        "ghc98X": "ghc98X",
         "ghc99": "ghc99",
         "hackage": "hackage",
         "hls-1.10": "hls-1.10",

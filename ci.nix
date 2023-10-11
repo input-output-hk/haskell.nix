@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 2
+{ ifdLevel ? 1
 , checkMaterialization ? false
 , system ? builtins.currentSystem
 , evalSystem ? builtins.currentSystem or "x86_64-linux"
@@ -24,9 +24,6 @@
     "unstable" = inputs.nixpkgs-unstable;
   };
 
-  ghc98X = pkgs: "ghc98${__substring 0 8 pkgs.haskell-nix.sources.ghc98.lastModifiedDate}";
-  ghc99X = pkgs: "ghc99${__substring 0 8 pkgs.haskell-nix.sources.ghc99.lastModifiedDate}";
-
   nixpkgsArgs = {
     # set checkMaterialization as per top-level argument
     overlays = [
@@ -47,23 +44,10 @@
     };
   };
 
-  compilerNixNames = nixpkgsName: nixpkgs:
-    # Include only the GHC versions that are supported by haskell.nix
-    nixpkgs.lib.filterAttrs (compiler-nix-name: _:
-        # We have less x86_64-darwin build capacity so build fewer GhC versions
-        (system != "x86_64-darwin" || (
-           !builtins.elem compiler-nix-name ["ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
-      &&
-        # aarch64-darwin requires ghc 8.10.7
-        (system != "aarch64-darwin" || (
-           !builtins.elem compiler-nix-name ["ghc865" "ghc884" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]))
-      &&
-        # aarch64-linux requires ghc 8.8.4
-        (system != "aarch64-linux" || (
-           !builtins.elem compiler-nix-name ["ghc865" "ghc8104" "ghc810420210212" "ghc8105" "ghc8106" "ghc901" "ghc921" "ghc922"]
-        )))
-    (builtins.mapAttrs (_compiler-nix-name: runTests: {
-      inherit runTests;
+  compilerNixNames = nixpkgsName: nixpkgs: builtins.listToAttrs (
+    (lib.mapAttrsToList (compiler-nix-name: runTests: {
+      name = nixpkgs.haskell-nix.resolve-compiler-name compiler-nix-name;
+      value = { inherit runTests; };
     }) (
       # GHC version to cache and whether to run the tests against them.
       # This list of GHC versions should include everything for which we
@@ -72,23 +56,23 @@
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
       nixpkgs.lib.optionalAttrs (nixpkgsName == "R2305") {
-        ghc8107 = false;
-        ghc902 = false;
-        ghc928 = false;
-        ghc947 = false;
-        ghc963 = false;
-        ghc981 = false;
+        ghc810 = false;
+        ghc90 = false;
+        ghc92 = false;
+        ghc94 = false;
+        ghc96 = false;
+        ghc98 = false;
       } // nixpkgs.lib.optionalAttrs (nixpkgsName == "unstable") {
-        ghc884 = false;
-        ghc8107 = true;
-        ghc902 = false;
-        ghc928 = true;
-        ghc947 = true;
-        ghc963 = true;
-        ghc981 = true;
-        ${ghc98X nixpkgs} = true;
-        ${ghc99X nixpkgs} = true;
-      }));
+        ghc88 = false;
+        ghc810 = true;
+        ghc90 = false;
+        ghc92 = true;
+        ghc94 = true;
+        ghc96 = true;
+        ghc98 = true;
+        ghc98X = true;
+        ghc99 = true;
+      })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values
     # of 'lib.systems.examples' are not understood between all versions

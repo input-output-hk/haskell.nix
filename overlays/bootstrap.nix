@@ -21,13 +21,13 @@ let
       "9.8" = "9.8.1";
     };
     gitInputs = {
-      ghc98 = "9.8.1";
+      ghc98X = "9.8.1";
       ghc99 = "9.9";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
     compilerNameMap =
-      builtins.mapAttrs (source-name: _:
-        source-name + builtins.substring 0 8 final.haskell-nix.sources.${source-name}.lastModifiedDate)
+      builtins.mapAttrs (source-name: v:
+        versionToNixName "${v}.${builtins.substring 0 8 final.haskell-nix.sources.${source-name}.lastModifiedDate}")
           gitInputs //
       builtins.listToAttrs (map (v:
         { name = versionToNixName v; value = versionToNixName latestVer.${v}; })
@@ -989,8 +989,8 @@ in {
           let
             src = final.haskell-nix.sources.${source-name};
             version-date = __substring 0 8 src.lastModifiedDate;
-            compiler-nix-name = "${source-name}${version-date}";
             version = "${ver}.${version-date}";
+            compiler-nix-name = versionToNixName version;
           in {
             name = compiler-nix-name;
             value = final.callPackage ../compiler/ghc {
@@ -1243,7 +1243,7 @@ in {
                f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
                26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
                7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-            --sha256: sha256-DXv6ZLGdD17ppJdww7NUYdKnKtEAMOIayvK/hO4+DL8=
+            --sha256: sha256-aVI93DtHziicNn2mGli0YE+bC5BeT7mOQQETp2Thi68=
 
           active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
         '';
