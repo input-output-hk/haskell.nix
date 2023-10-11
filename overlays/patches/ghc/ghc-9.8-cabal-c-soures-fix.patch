@@ -20,8 +20,8 @@ The bug that prevented warnings being displayed when no `.c` files were present 
 
 diff --git a/Cabal/src/Distribution/Simple/GHC.hs b/Cabal/src/Distribution/Simple/GHC.hs
 index 4387da26369..9d653f85829 100644
---- a/libraries/cabal/Cabal/src/Distribution/Simple/GHC.hs
-+++ b/libraries/cabal/Cabal/src/Distribution/Simple/GHC.hs
+--- a/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs
++++ b/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs
 @@ -705,19 +705,12 @@ buildOrReplLib mReplFlags verbosity numJobs pkg_descr lbi lib clbi = do
        | filename <- cxxSources libBi]
  
@@ -91,8 +91,8 @@ index 4387da26369..9d653f85829 100644
 +  return cSrcs'
 diff --git a/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out b/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
 index 1e423a54cb9..c66b5962369 100644
---- a/libraries/cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
-+++ b/libraries/cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
+--- a/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
++++ b/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/build.out
 @@ -5,21 +5,38 @@ In order, the following will be built:
   - repro-0.1.0.0 (lib) (first run)
   - repro-0.1.0.0 (exe:exec1) (first run)
@@ -140,8 +140,8 @@ new file mode 100644
 index 00000000000..e69de29bb2d
 diff --git a/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal b/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
 index 659f1510a7e..1cf6d295fb4 100644
---- a/libraries/cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
-+++ b/libraries/cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
+--- a/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
++++ b/libraries/Cabal/cabal-testsuite/PackageTests/CSourcesSanitisation/repro.cabal
 @@ -15,6 +15,17 @@ library lib2
                        cbits/gwinsz.c
      build-depends:    base
