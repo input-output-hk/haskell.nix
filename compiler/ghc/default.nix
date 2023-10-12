@@ -242,9 +242,11 @@ let
 
   hadrian =
     let
-      compiler-nix-name = if buildPackages.haskell.compiler ? "ghc928"
-        then "ghc928"
-        else "ghc8107";
+      compiler-nix-name =
+        if buildPackages.haskell.compiler ? "ghc963" then "ghc963"
+        else if buildPackages.haskell.compiler ? "ghc962" then "ghc962"
+        else if buildPackages.haskell.compiler ? "ghc961" then "ghc961"
+        else throw "Expected pkgs.haskell.compiler.ghc96X for building hadrian";
     in buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
