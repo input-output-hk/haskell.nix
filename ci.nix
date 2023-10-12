@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 2
+{ ifdLevel ? 1
 , checkMaterialization ? false
 , system ? builtins.currentSystem
 , evalSystem ? builtins.currentSystem or "x86_64-linux"
