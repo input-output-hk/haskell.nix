@@ -436,9 +436,11 @@ stdenv.mkDerivation (rec {
         done
     '' + lib.optionalString (src-spec.version != ghc-version) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        substituteInPlace configure.ac --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version}' > VERSION
     '' + lib.optionalString (ghc-version-date != null) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        substituteInPlace configure.ac --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version-date}' > VERSION_DATE
     '' + lib.optionalString (ghc-commit-id != null) ''
         echo '${ghc-commit-id}' > GIT_COMMIT_ID
