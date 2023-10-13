@@ -21,8 +21,6 @@ let
 
 in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs ||
-    # the macOS linker tries to load `clang++` :facepalm:
-    (stdenv.hostPlatform.isDarwin && compareGhc "9.4.0" >= 0) ||
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl) ||
     # broken on ucrt64 windows
