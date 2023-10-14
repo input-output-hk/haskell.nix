@@ -242,9 +242,9 @@ let
 
   hadrian =
     let
-      compiler-nix-name = if buildPackages.haskell.compiler ? "ghc928"
-        then "ghc928"
-        else "ghc8107";
+      compiler-nix-name =
+        if buildPackages.haskell.compiler ? "ghc962" then "ghc962"
+        else throw "Expected pkgs.haskell.compiler.ghc962 for building hadrian";
     in buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
@@ -436,9 +436,11 @@ stdenv.mkDerivation (rec {
         done
     '' + lib.optionalString (src-spec.version != ghc-version) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        substituteInPlace configure.ac --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version}' > VERSION
     '' + lib.optionalString (ghc-version-date != null) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        substituteInPlace configure.ac --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version-date}' > VERSION_DATE
     '' + lib.optionalString (ghc-commit-id != null) ''
         echo '${ghc-commit-id}' > GIT_COMMIT_ID
