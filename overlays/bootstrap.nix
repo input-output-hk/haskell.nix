@@ -262,6 +262,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "10.0" && final.stdenv.targetPlatform.is32bit) ./patches/ghc/ghc-9.6-32bit-cmm.patch
                 # this one is to allow linking extra symbols from iserv.
                 ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/iserv-syms.patch
+                ++ final.lib.optional (versionAtLeast "9.4"                             && final.stdenv.targetPlatform.isWindows) ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
