@@ -20,13 +20,11 @@ let
   compareGhc = builtins.compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version;
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs
-    # the macOS linker tries to load `clang++` :facepalm:
-    || (stdenv.hostPlatform.isDarwin && compareGhc "9.4.0" >= 0)
+  meta.disabled = stdenv.hostPlatform.isGhcjs ||
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
-    || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
+    (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl) ||
     # broken on ucrt64 windows
-    # || (stdenv.hostPlatform.libc == "ucrt")
+    (stdenv.hostPlatform.libc == "ucrt")
     ;
 
   ifdInputs = {
