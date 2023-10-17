@@ -86,7 +86,7 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
   cwd <- getCurrentDirectory
   extrasNix <- fmap (mkNonRecSet  . concat) . forM (Map.toList extras) $ \case
     (_name, Just (Package v flags (Just (LocalPath folder)) False)) ->
-      do cabalFiles <- findCabalFiles folder
+      do cabalFiles <- findCabalFiles (argHpackUse args) folder
          forM cabalFiles $ \cabalFile ->
            let pkg = cabalFilePkgName cabalFile
                nix = ".plan.nix" </> pkg <.> "nix"
@@ -155,7 +155,7 @@ plan2nix args Plan { packages, extras, components, compilerVersion, compilerPack
   cabalFromPath url rev subdir path = do
           d <- liftIO $ doesDirectoryExist path
           unless d $ fail ("not a directory: " ++ path)
-          cabalFiles <- liftIO $ findCabalFiles path
+          cabalFiles <- liftIO $ findCabalFiles (argHpackUse args) path
           return $ \sha256 ->
             forM cabalFiles $ \cabalFile -> do
             let pkg = cabalFilePkgName cabalFile
