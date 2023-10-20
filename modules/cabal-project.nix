@@ -139,10 +139,6 @@ in {
       type = bool;
       default = false;
     };
-    ignorePackageYaml = mkOption {
-      type = bool;
-      default = false;
-    };
 
     # Used by mkCabalProjectPkgSet
     pkg-def-extras = mkOption {
