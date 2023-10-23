@@ -16,10 +16,15 @@ import qualified Hpack.Config as Hpack
 import qualified Hpack.Render as Hpack
 
 import Cabal2Nix (CabalFile(..), CabalFileGenerator(..))
+import Plan2Nix.CLI (HpackUse(..))
 
-findCabalFiles :: FilePath -> IO [CabalFile]
-findCabalFiles path = doesFileExist (path </> Hpack.packageConfig) >>= \case
-  False -> fmap (OnDisk . (path </>)) . filter (isSuffixOf ".cabal") <$> listDirectory path
+findOnlyCabalFiles :: FilePath -> IO [ CabalFile]
+findOnlyCabalFiles path = fmap (OnDisk . (path </>)) . filter (isSuffixOf ".cabal") <$> listDirectory path
+
+findCabalFiles :: HpackUse -> FilePath -> IO [CabalFile]
+findCabalFiles IgnorePackageYaml path = findOnlyCabalFiles path
+findCabalFiles UsePackageYamlFirst path = doesFileExist (path </> Hpack.packageConfig) >>= \case
+  False -> findOnlyCabalFiles path
   True -> do
     mbPkg <- Hpack.readPackageConfig Hpack.defaultDecodeOptions {Hpack.decodeOptionsTarget = path </> Hpack.packageConfig}
     case mbPkg of

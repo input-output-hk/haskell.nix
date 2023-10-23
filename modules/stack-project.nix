@@ -9,10 +9,6 @@ with types;
       type = str;
       default = "stack.yaml";
     };
-    ignorePackageYaml = mkOption {
-      type = bool;
-      default = false;
-    };
     cache = mkOption {
       type = nullOr unspecified;
       default = null;

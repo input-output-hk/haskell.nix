@@ -78,5 +78,15 @@ with lib.types;
     hsPkgs = lib.mkOption {
       type = lib.types.unspecified;
     };
+    # Used by stack and cabal projects via
+    # - ./lib/call-cabal-project-to-nix.nix
+    # - ./lib/call-stack-to-nix.nix
+    ignorePackageYaml = mkOption {
+      type = bool;
+      default = false;
+      description = ''
+        If set, prevents nix-tools from attempting to load package.yaml even if it is present.
+      '';
+    };
   };
 }
