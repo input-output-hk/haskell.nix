@@ -1,0 +1,166 @@
+diff --git a/cbits/symbols.c b/cbits/symbols.c
+new file mode 100644
+index 0000000..d447895
+--- /dev/null
++++ b/cbits/symbols.c
+@@ -0,0 +1,147 @@
++#include <stddef.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <assert.h>
++#include <math.h>
++#include <errno.h>
++#include <unistd.h>
++#include <sys/stat.h>
++#include <sys/wait.h>
++#include <sys/epoll.h>
++// #include <sys/eventfd.h>
++// #include <fcntl.h> // this includes too many overloaded items.
++#include <string.h>
++#include <ctype.h>
++#include <wchar.h>
++#include <utime.h>
++#include <poll.h>
++#include <time.h>
++
++// fnctl stubs, see above
++extern void open(void);
++extern void creat(void);
++extern void eventfd(void);
++extern void eventfd_write(void);
++extern void __stack_chk_fail(void);
++
++typedef void SymbolAddr;
++typedef char SymbolName;
++
++typedef enum _SymStrength {
++    STRENGTH_NORMAL,
++    STRENGTH_WEAK,
++    STRENGTH_STRONG,
++} SymStrength;
++
++typedef enum _SymType {
++    SYM_TYPE_CODE = 1 << 0, /* the symbol is a function and can be relocated via a jump island */
++    SYM_TYPE_DATA = 1 << 1, /* the symbol is data */
++    SYM_TYPE_INDIRECT_DATA = 1 << 2, /* see Note [_iob_func symbol] */
++    SYM_TYPE_DUP_DISCARD = 1 << 3, /* the symbol is a symbol in a BFD import library
++                                      however if a duplicate is found with a mismatching
++                                      SymType then discard this one.  */
++} SymType;
++
++typedef struct _RtsSymbolVal {
++    const SymbolName* lbl;
++    SymbolAddr* addr;
++    SymStrength strength;
++    SymType type;
++} RtsSymbolVal;
++
++#define SYM(x) { #x, (void*)(&x), STRENGTH_NORMAL, 1 }
++typedef mode_t (*umask_func_ptr_t)(mode_t);
++
++RtsSymbolVal my_iserv_syms[] = {
++    // time.h
++    SYM(clock),
++    // sys/time.h
++    SYM(gettimeofday),SYM(clock_getres),SYM(clock_gettime),SYM(localtime_r),SYM(tzset),
++    // unistd.h
++    SYM(environ),
++    SYM(ftruncate),
++    SYM(getenv),
++    SYM(putenv),
++    SYM(unsetenv),
++    SYM(read),
++    SYM(write),
++    SYM(isatty),
++    SYM(link),
++    SYM(pipe),
++    SYM(unlink),
++    // errno.h
++    SYM(__errno),
++    // math.h
++    SYM(sinhf), SYM(sinh), SYM(sinf), SYM(sin),
++    SYM(coshf), SYM(cosh), SYM(cosf), SYM(cos),
++    SYM(atanhf), SYM(atanh), SYM(atanf), SYM(atan),
++    SYM(asinhf), SYM(asinh), SYM(asinf), SYM(asin),
++    SYM(acoshf), SYM(acosh), SYM(acosf), SYM(acos),
++    SYM(log1pf), SYM(log1p), SYM(logf), SYM(log),
++    SYM(expm1f), SYM(expm1),
++    SYM(expf), SYM(exp),
++    SYM(ldexp),
++    SYM(powf), SYM(pow),
++    SYM(sqrtf), SYM(sqrt),
++    SYM(tanhf), SYM(tanh), SYM(tanf), SYM(tan),
++    // assert.h
++    SYM(__assert2),
++    // signal.h
++    SYM(raise), SYM(sigaddset), SYM(sigemptyset), SYM(sigprocmask),
++    // sys/eventfd.h
++    SYM(eventfd), SYM(eventfd_write),
++    // sys/stat.h
++    SYM(fstat),
++    SYM(lstat),
++    SYM(stat),
++    SYM(chmod),
++    SYM(mkfifo),
++    // SYM(umask),
++    { "umask", (umask_func_ptr_t)(&umask), STRENGTH_NORMAL, 1 },
++    // sys/wait.h
++    SYM(waitpid),
++    // sym/epoll.h
++    SYM(epoll_create), SYM(epoll_ctl), SYM(epoll_wait),
++    // poll.h
++    SYM(poll),
++    // fcntl.h
++    SYM(open), SYM(creat), SYM(fcntl), SYM(ioctl),
++    // string.h
++    SYM(strerror),
++    SYM(strcmp),
++    SYM(memchr),
++    // ctype.h
++    SYM(__ctype_get_mb_cur_max),
++    // wchar.h
++    SYM(mbrtowc), SYM(wcrtomb),
++    // stdlib.h
++    SYM(qsort),
++    // unistd.h
++    SYM(access), SYM(close), SYM(dup), SYM(dup2), SYM(fork), SYM(getpid),
++    SYM(lseek),
++    // utime.h
++    SYM(utime),
++    // ...
++    SYM(__stack_chk_fail),
++    SYM(memmove),
++    SYM(memcmp),
++    SYM(memcpy),
++    SYM(memset),
++    SYM(stderr),
++    SYM(realloc),
++    SYM(calloc),
++    SYM(malloc),
++    SYM(free),
++    SYM(fprintf),
++    SYM(fopen), SYM(fclose),
++    SYM(fread),
++    SYM(abort),
++    SYM(strlen),
++    { 0, 0, STRENGTH_NORMAL, 1 } /* sentinel */
++};
++
++RtsSymbolVal* iserv_syms() {
++    return my_iserv_syms;
++}
+\ No newline at end of file
+diff --git a/iserv-proxy.cabal b/iserv-proxy.cabal
+index a0eeaeb..a146108 100644
+--- a/iserv-proxy.cabal
++++ b/iserv-proxy.cabal
+@@ -101,6 +101,7 @@ Executable iserv-proxy
+ Executable iserv-proxy-interpreter
+    Default-Language: Haskell2010
+    Main-Is: Interpreter.hs
++   c-sources: cbits/symbols.c
+    Build-Depends: base       >= 4   && < 5,
+                   iserv-proxy
+
