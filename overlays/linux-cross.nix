@@ -37,14 +37,22 @@ let
   qemuIservWrapper = writeScriptBin "iserv-wrapper" ''
     #!${stdenv.shell}
     set -euo pipefail
+    ISERV_ARGS=''${ISERV_ARGS:-}
+    PROXY_ARGS=''${PROXY_ARGS:-}
     # Unset configure flags as configure should have run already
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting ${iserv-proxy-interpreter.exeName} on port $PORT")
-    ${qemu}/bin/qemu-${qemuSuffix} ${iserv-proxy-interpreter.override (lib.optionalAttrs hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ] ++ lib.optional hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";})}/bin/${iserv-proxy-interpreter.exeName} tmp $PORT &
+    ${qemu}/bin/qemu-${qemuSuffix} ${iserv-proxy-interpreter.override
+      (lib.optionalAttrs hostPlatform.isAndroid {
+        setupBuildFlags = ["--ghc-option=-optl-static" ] ++ lib.optional hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
+        patches = [ ./patches/iserv-proxy-interpreter-9.3-android.patch ];
+        enableDebugRTS = true;
+        }
+      )}/bin/${iserv-proxy-interpreter.exeName} tmp $PORT $ISERV_ARGS &
     (>&2 echo "---| ${iserv-proxy-interpreter.exeName} should have started on $PORT")
     RISERV_PID="$!"
-    ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
+    ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" $PROXY_ARGS
     (>&2 echo "---> killing ${iserv-proxy-interpreter.exeName}...")
     kill $RISERV_PID
     '';
