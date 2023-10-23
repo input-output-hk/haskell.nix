@@ -317,6 +317,8 @@ let
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
+      + lib.optionalString targetPlatform.isAndroid
+        " '*.ghc.cabal.configure.opts += --flags=-dynamic-system-linker'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
       # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
