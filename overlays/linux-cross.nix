@@ -61,7 +61,7 @@ let
     kill $RISERV_PID
     '';
   qemuIservWrapper = symlinkJoin { name = "iserv-wrapper"; paths = [ (qemuIservWrapperScript false) (qemuIservWrapperScript true) ]; };
-  configureFlags = lib.optional hostPlatform.isAarch32 "--disable-split-sections";
+  configureFlags = lib.optional (hostPlatform.isAarch32 || hostPlatform.isAndroid) "--disable-split-sections";
   setupBuildFlags = map (opt: "--ghc-option=" + opt) ((lib.optionals isLinuxCross
     [ "-fexternal-interpreter"
       "-pgmi" "${qemuIservWrapper}/bin/iserv-wrapper"
