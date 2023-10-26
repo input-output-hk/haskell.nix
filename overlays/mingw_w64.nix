@@ -7,9 +7,6 @@
 , iserv-proxy
 , iserv-proxy-interpreter
 , gmp
-# extra libraries. Their dlls are copied
-# when tests are run.
-, extra-test-libs ? []
 , hostPlatform
 , symlinkJoin
 }:
@@ -105,10 +102,6 @@ let
     echo "================================================================================"
     echo "RUNNING TESTS for $name via wine64"
     echo "================================================================================"
-    echo "Copying extra test libraries ..."
-    for p in ${lib.concatStringsSep " "extra-test-libs}; do
-      find "$p" -iname '*.dll' -exec cp {} . \;
-    done
     # copy all .dlls into the local directory.
     # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
     # to copy over dlls as needed.
