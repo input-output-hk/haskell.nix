@@ -98,24 +98,4 @@ let
   '';
   testWrapper = lib.optional hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
 
-  preCheck = lib.optionalString hostPlatform.isWindows ''
-    echo "================================================================================"
-    echo "RUNNING TESTS for $name via wine64"
-    echo "================================================================================"
-    # copy all .dlls into the local directory.
-    # we ask ghc-pkg for *all* dynamic-library-dirs and then iterate over the unique set
-    # to copy over dlls as needed.
-    echo "Copying library dependencies..."
-    for libdir in $(${hostPlatform.config}-ghc-pkg field "*" dynamic-library-dirs --simple-output|xargs|sed 's/ /\n/g'|sort -u); do
-      if [ -d "$libdir" ]; then
-        find "$libdir" -iname '*.dll' -exec cp {} . \;
-      fi
-    done
-  '';
-  postCheck = lib.optionalString hostPlatform.isWindows ''
-    echo "================================================================================"
-    echo "END RUNNING TESTS"
-    echo "================================================================================"
-  '';
-
 in { inherit preCheck testWrapper postCheck setupBuildFlags configureFlags; }
