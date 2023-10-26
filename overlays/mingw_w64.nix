@@ -98,4 +98,4 @@ let
   '';
   testWrapper = lib.optional hostPlatform.isWindows "${wineTestWrapper}/bin/test-wrapper";
 
-in { inherit preCheck testWrapper postCheck setupBuildFlags configureFlags; }
+in { inherit testWrapper setupBuildFlags configureFlags; }
