@@ -51,7 +51,7 @@ let
     ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override
       (lib.optionalAttrs hostPlatform.isAndroid {
         setupBuildFlags = ["--ghc-option=-optl-static" ] ++ lib.optional hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
-        patches = [ ./patches/iserv-proxy-interpreter-9.3-android.patch ];
+        patches = lib.optional hostPlatform.isAarch64 ./patches/iserv-proxy-interpreter-9.3-android.patch;
         enableDebugRTS = true;
         })}/bin/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
     (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
