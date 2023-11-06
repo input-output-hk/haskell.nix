@@ -1,0 +1,48 @@
+diff --git a/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs b/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs
+index 9d653f858..1fbd15318 100644
+--- a/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs
++++ b/libraries/Cabal/Cabal/src/Distribution/Simple/GHC.hs
+@@ -1861,18 +1861,12 @@ libAbiHash verbosity _pkg_descr lbi lib clbi = do
+       libBi = libBuildInfo lib
+       comp        = compiler lbi
+       platform    = hostPlatform lbi
+-      vanillaArgs0 =
++      vanillaArgs =
+         (componentGhcOptions verbosity lbi libBi clbi (componentBuildDir lbi clbi))
+         `mappend` mempty {
+           ghcOptMode         = toFlag GhcModeAbiHash,
+           ghcOptInputModules = toNubListR $ exposedModules lib
+         }
+-      vanillaArgs =
+-          -- Package DBs unnecessary, and break ghc-cabal. See #3633
+-          -- BUT, put at least the global database so that 7.4 doesn't
+-          -- break.
+-          vanillaArgs0 { ghcOptPackageDBs = [GlobalPackageDB]
+-                       , ghcOptPackages = mempty }
+       sharedArgs = vanillaArgs `mappend` mempty {
+                        ghcOptDynLinkMode = toFlag GhcDynamicOnly,
+                        ghcOptFPic        = toFlag True,
+diff --git a/libraries/Cabal/Cabal/src/Distribution/Simple/GHCJS.hs b/libraries/Cabal/Cabal/src/Distribution/Simple/GHCJS.hs
+index c8721746a..dcd5b3230 100644
+--- a/libraries/Cabal/Cabal/src/Distribution/Simple/GHCJS.hs
++++ b/libraries/Cabal/Cabal/src/Distribution/Simple/GHCJS.hs
+@@ -1573,18 +1573,12 @@ libAbiHash verbosity _pkg_descr lbi lib clbi = do
+       libBi = libBuildInfo lib
+       comp        = compiler lbi
+       platform    = hostPlatform lbi
+-      vanillaArgs0 =
++      vanillaArgs =
+         (componentGhcOptions verbosity lbi libBi clbi (componentBuildDir lbi clbi))
+         `mappend` mempty {
+           ghcOptMode         = toFlag GhcModeAbiHash,
+           ghcOptInputModules = toNubListR $ exposedModules lib
+         }
+-      vanillaArgs =
+-          -- Package DBs unnecessary, and break ghc-cabal. See #3633
+-          -- BUT, put at least the global database so that 7.4 doesn't
+-          -- break.
+-          vanillaArgs0 { ghcOptPackageDBs = [GlobalPackageDB]
+-                       , ghcOptPackages = mempty }
+       sharedArgs = vanillaArgs `mappend` mempty {
+                        ghcOptDynLinkMode = toFlag GhcDynamicOnly,
+                        ghcOptFPic        = toFlag True,
