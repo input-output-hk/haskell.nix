@@ -113,6 +113,12 @@
       default = true;
     };
 
+    enableExecutableDynamic = lib.mkOption {
+      description = "If set, links executables against shared libraries.";
+      type = lib.types.bool;
+      default = false;
+    };
+
     configureAllComponents = lib.mkOption {
       description = "If set all the components in the package are configured (useful for cabal-doctest).";
       type = lib.types.bool;
@@ -131,6 +137,11 @@
     };
 
     enableSeparateDataOutput = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+    };
+
+    enableLibraryForGhci = lib.mkOption {
       type = lib.types.bool;
       default = true;
     };

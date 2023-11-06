@@ -242,10 +242,14 @@ let
 
   hadrian =
     let
-      compiler-nix-name = if buildPackages.haskell.compiler ? "ghc928"
-        then "ghc928"
-        else "ghc8107";
-    in buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
+      compiler-nix-name =
+        if builtins.compareVersions ghc-version "9.4.7" < 0
+          then "ghc928"
+          else "ghc962";
+    in
+      assert (buildPackages.haskell.compiler ? ${compiler-nix-name}
+        || throw "Expected pkgs.haskell.compiler.${compiler-nix-name} for building hadrian");
+    buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
       # Verions of hadrian that comes with 9.6 depends on `time`
@@ -436,9 +440,11 @@ stdenv.mkDerivation (rec {
         done
     '' + lib.optionalString (src-spec.version != ghc-version) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        substituteInPlace configure.ac --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version}' > VERSION
     '' + lib.optionalString (ghc-version-date != null) ''
         substituteInPlace configure --replace 'RELEASE=YES' 'RELEASE=NO'
+        substituteInPlace configure.ac --replace 'RELEASE=YES' 'RELEASE=NO'
         echo '${ghc-version-date}' > VERSION_DATE
     '' + lib.optionalString (ghc-commit-id != null) ''
         echo '${ghc-commit-id}' > GIT_COMMIT_ID
@@ -486,7 +492,8 @@ stdenv.mkDerivation (rec {
 
   hardeningDisable = [ "format" ]
                    ++ lib.optional stdenv.targetPlatform.isAarch32 "pic"
-                   ++ lib.optional stdenv.targetPlatform.isMusl "pie";
+                   ++ lib.optional stdenv.targetPlatform.isMusl "pie"
+                   ++ lib.optional enableDWARF "fortify";
 
   postInstall = lib.optionalString (enableNUMA && targetPlatform.isLinux) ''
     # Patch rts.conf to ensure libnuma can be found

@@ -62,15 +62,27 @@ let
     ${target-pkg} init $configFiles/${packageCfgDir}
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
-      "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") (lib.flatten component.libs)
-        # On windows also include `bin` directories that may contain DLLs
-        ++ lib.optionals (stdenv.hostPlatform.isWindows)
-          (map (p: "${lib.getBin p}/bin")
-               (lib.flatten component.libs ++ lib.concatLists component.pkgconfig));
+      "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") (lib.flatten component.libs);
       "extra-include-dirs" = map (p: "${lib.getDev p}/include") (lib.flatten component.libs);
       "extra-framework-dirs" = lib.optionals (stdenv.hostPlatform.isDarwin)
         (map (p: "${p}/Library/Frameworks") component.frameworks);
     })}
+    ${
+      # On windows also include `bin` directories that may contain DLLs
+      # It might be tempting to use `builtins.pathExists` here instead of `if [ -d ]`,
+      # however that would cause this detivation to depend on the output of the
+      # library derivation.
+      lib.concatStringsSep "\n" (map (p:
+        let binDir = "${lib.getBin p}/bin";
+        in ''
+          if [ -d ${binDir} ]; then
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
+              "extra-lib-dirs" = [binDir];
+            })}
+          fi
+      '') (lib.optionals (stdenv.hostPlatform.isWindows)
+          (lib.flatten component.libs ++ lib.concatLists component.pkgconfig))
+    )}
 
     unwrappedGhc=${ghc}
     ghcDeps=${ghc.cachedDeps

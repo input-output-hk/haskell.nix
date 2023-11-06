@@ -159,7 +159,7 @@ final: prev: {
                 (package.compiler-nix-name.version
                   == plan.compiler-nix-name.version)
                 ''
-                The compiler versions for the package and the plan don't match.
+                The compiler versions for the package (${package.compiler-nix-name.version}) and the plan (${plan.compiler-nix-name.version}) don't match.
                        Make sure you didn't forget to update plan-sha256.''
               );
               mkPkgSet {
@@ -1072,7 +1072,7 @@ final: prev: {
                     apply = x: x ++ [ "ghci" "exceptions" "stm" "libiserv" ];
                   };
                 }];
-              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8" < 0
+              } // (if __compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" < 0
                 then {
                   materialized =../materialized/iserv-proxy + "/${
                     if pkgs.stdenv.hostPlatform.isWindows
@@ -1085,7 +1085,7 @@ final: prev: {
                 }
                 else {
                   cabalProjectLocal = ''
-                    allow-newer: *:base
+                    allow-newer: *:base, *:bytestring
                   '';
                 }))).hsPkgs.iserv-proxy.components.exes;
             in {

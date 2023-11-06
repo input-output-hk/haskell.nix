@@ -183,5 +183,11 @@ in {
   # https://gitlab.haskell.org/ghc/ghc/-/issues/23392
   # Using -j1 works around the issue.
   packages.gi-gtk.components.library.ghcOptions =
-    pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961" "ghc962"]) "-j1";
+    pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961" "ghc962" "ghc963"]) "-j1";
+
+  # With recent versions of nixpkgs fortify causes musl version of the
+  # text package to fail with:
+  #   error: inlining failed in call to ‘always_inline’ ‘void* memcpy(void*, const void*, size_t)’: target specific option mismatch
+  packages.text.components.library.hardeningDisable =
+    pkgs.lib.optionals pkgs.stdenv.hostPlatform.isMusl ["fortify"];
 }

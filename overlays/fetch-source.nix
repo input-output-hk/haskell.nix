@@ -32,7 +32,7 @@ in {
         inherit name;
         value = final.fetchFromGitLab {
                     domain = "gitlab.haskell.org";
-                    owner = "hamishmack";
+                    owner = "ghc";
                     repo = "ghc";
                     fetchSubmodules = true;
                     inherit (lockFile.nodes.${name}.locked) rev;
@@ -40,6 +40,6 @@ in {
                 } // {
                   lastModifiedDate = formatSecondsSinceEpoch lockFile.nodes.${name}.locked.lastModified;
                 };
-    }) ["ghc980" "ghc99"]);
+    }) ["ghc98X" "ghc99"]);
   };
 }

@@ -93,8 +93,8 @@ let
       # to build itself would cause infinite recursion.
       defaultSetupFor = packageName:
         if
-          # Cabal that comes with GHC 9.8 is newer than cabal-install
-          __compareVersions ghc.version "9.8" < 0
+          # Cabal that comes with GHC 9.6.3 is newer than cabal-install
+          __compareVersions ghc.version "9.6.3" < 0
           && (
             # `cabalFromCabalInstall` is not cross compiled
             final.stdenv.buildPlatform != final.stdenv.hostPlatform

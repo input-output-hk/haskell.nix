@@ -1,0 +1,666 @@
+From 17d8f3ddcc62ee84fbf15966fbfc5f16aa8613f4 Mon Sep 17 00:00:00 2001
+From: Sylvain Henry <sylvain@haskus.fr>
+Date: Thu, 12 Jan 2023 10:11:58 +0100
+Subject: [PATCH] Merge libiserv with ghci
+
+`libiserv` serves no purpose. As it depends on `ghci` and doesn't have
+more dependencies than the `ghci` package, its code could live in the
+`ghci` package too.
+
+This commit also moves most of the code from the `iserv` program into
+the `ghci` package as well so that it can be reused. This is especially
+useful for the implementation of TH for the JS backend (#22261, !9779).
+---
+ CODEOWNERS                                    |  1 -
+ cabal.project-reinstall                       |  1 -
+ hadrian/src/Packages.hs                       |  7 +-
+ hadrian/src/Rules/Documentation.hs            |  1 -
+ hadrian/src/Rules/Generate.hs                 |  2 -
+ hadrian/src/Settings/Default.hs               |  1 -
+ hadrian/src/Settings/Packages.hs              |  6 +-
+ .../src/IServ.hs => ghci/GHCi/Server.hs}      | 68 ++++++++++++++-
+ .../{libiserv/src => ghci}/GHCi/Utils.hsc     | 31 +++++--
+ libraries/ghci/ghci.cabal.in                  |  2 +
+ libraries/libiserv/.gitignore                 |  4 -
+ libraries/libiserv/LICENSE                    | 62 -------------
+ libraries/libiserv/Makefile                   | 15 ----
+ libraries/libiserv/cbits/iservmain.c          | 17 ----
+ libraries/libiserv/libiserv.cabal.in          | 37 --------
+ packages                                      |  1 -
+ utils/iserv/iserv.cabal.in                    |  6 +-
+ utils/iserv/src/Main.hs                       | 87 +------------------
+ utils/remote-iserv/remote-iserv.cabal.in      |  4 +-
+ 20 files changed, 104 insertions(+), 250 deletions(-)
+ rename libraries/{libiserv/src/IServ.hs => ghci/GHCi/Server.hs} (62%)
+ rename libraries/{libiserv/src => ghci}/GHCi/Utils.hsc (71%)
+ delete mode 100644 libraries/libiserv/.gitignore
+ delete mode 100644 libraries/libiserv/LICENSE
+ delete mode 100644 libraries/libiserv/Makefile
+ delete mode 100644 libraries/libiserv/cbits/iservmain.c
+ delete mode 100644 libraries/libiserv/libiserv.cabal.in
+
+diff --git a/CODEOWNERS b/CODEOWNERS
+index 3db2034392..6d5cf7d7b3 100644
+--- a/CODEOWNERS
++++ b/CODEOWNERS
+@@ -59,7 +59,6 @@
+ /libraries/template-haskell/      @rae
+ 
+ [Internal utilities and libraries]
+-/libraries/libiserv/              @angerman @simonmar
+ /utils/iserv-proxy/               @angerman @simonmar
+ /utils/iserv/                     @angerman @simonmar
+ /utils/fs/                        @Phyx
+diff --git a/cabal.project-reinstall b/cabal.project-reinstall
+index 181efe48a6..6a380bb94c 100644
+--- a/cabal.project-reinstall
++++ b/cabal.project-reinstall
+@@ -24,7 +24,6 @@ packages: ./compiler
+           ./libraries/directory
+           ./libraries/hpc
+           -- ./libraries/integer-gmp
+-          ./libraries/libiserv/
+           ./libraries/mtl/
+           ./libraries/parsec/
+           -- ./libraries/pretty/
+diff --git a/hadrian/src/Packages.hs b/hadrian/src/Packages.hs
+index 449004ed92..6dbeb6ed14 100644
+--- a/hadrian/src/Packages.hs
++++ b/hadrian/src/Packages.hs
+@@ -7,7 +7,7 @@ module Packages (
+     exceptions, filepath, genapply, genprimopcode, ghc, ghcBignum, ghcBoot, ghcBootTh,
+     ghcCompact, ghcConfig, ghcHeap, ghci, ghciWrapper, ghcPkg, ghcPrim, haddock, haskeline,
+     hsc2hs, hp2ps, hpc, hpcBin, integerGmp, integerSimple, iserv, iservProxy,
+-    libffi, libiserv, mtl, parsec, pretty, primitive, process, remoteIserv, rts,
++    libffi, mtl, parsec, pretty, primitive, process, remoteIserv, rts,
+     runGhc, stm, templateHaskell, terminfo, text, time, timeout, touchy,
+     transformers, unlit, unix, win32, xhtml,
+     lintersCommon, lintNotes, lintCommitMsg, lintSubmoduleRefs, lintWhitespace,
+@@ -38,7 +38,7 @@ ghcPackages =
+     , compareSizes, compiler, containers, deepseq, deriveConstants, directory
+     , exceptions, filepath, genapply, genprimopcode, ghc, ghcBignum, ghcBoot, ghcBootTh
+     , ghcCompact, ghcConfig, ghcHeap, ghci, ghciWrapper, ghcPkg, ghcPrim, haddock, haskeline, hsc2hs
+-    , hp2ps, hpc, hpcBin, integerGmp, integerSimple, iserv, libffi, libiserv, mtl
++    , hp2ps, hpc, hpcBin, integerGmp, integerSimple, iserv, libffi, mtl
+     , parsec, pretty, process, rts, runGhc, stm, templateHaskell
+     , terminfo, text, time, touchy, transformers, unlit, unix, win32, xhtml
+     , timeout
+@@ -54,7 +54,7 @@ array, base, binary, bytestring, cabalSyntax, cabal, checkPpr, checkExact, count
+   compareSizes, compiler, containers, deepseq, deriveConstants, directory,
+   exceptions, filepath, genapply, genprimopcode, ghc, ghcBignum, ghcBoot, ghcBootTh,
+   ghcCompact, ghcConfig, ghcHeap, ghci, ghciWrapper, ghcPkg, ghcPrim, haddock, haskeline, hsc2hs,
+-  hp2ps, hpc, hpcBin, integerGmp, integerSimple, iserv, iservProxy, remoteIserv, libffi, libiserv, mtl,
++  hp2ps, hpc, hpcBin, integerGmp, integerSimple, iserv, iservProxy, remoteIserv, libffi, mtl,
+   parsec, pretty, primitive, process, rts, runGhc, stm, templateHaskell,
+   terminfo, text, time, touchy, transformers, unlit, unix, win32, xhtml,
+   timeout,
+@@ -102,7 +102,6 @@ integerSimple       = lib  "integer-simple"
+ iserv               = util "iserv"
+ iservProxy          = util "iserv-proxy"
+ libffi              = top  "libffi"
+-libiserv            = lib  "libiserv"
+ mtl                 = lib  "mtl"
+ parsec              = lib  "parsec"
+ pretty              = lib  "pretty"
+diff --git a/hadrian/src/Rules/Documentation.hs b/hadrian/src/Rules/Documentation.hs
+index 9beef97c79..98c5ffe562 100644
+--- a/hadrian/src/Rules/Documentation.hs
++++ b/hadrian/src/Rules/Documentation.hs
+@@ -74,7 +74,6 @@ needDocDeps = do
+             [ ghcBoot
+             , ghcBootTh
+             , ghci
+-            , libiserv
+             , compiler
+             , ghcHeap
+             , templateHaskell
+diff --git a/hadrian/src/Rules/Generate.hs b/hadrian/src/Rules/Generate.hs
+index 0a27d24180..6f52115bd7 100644
+--- a/hadrian/src/Rules/Generate.hs
++++ b/hadrian/src/Rules/Generate.hs
+@@ -325,7 +325,6 @@ templateRules = do
+   templateRule "driver/ghci/ghci-wrapper.cabal" $ projectVersion
+   templateRule "ghc/ghc-bin.cabal" $ projectVersion
+   templateRule "utils/iserv/iserv.cabal" $ projectVersion
+-  templateRule "utils/iserv-proxy/iserv-proxy.cabal" $ projectVersion
+   templateRule "utils/remote-iserv/remote-iserv.cabal" $ projectVersion
+   templateRule "utils/runghc/runghc.cabal" $ projectVersion
+   templateRule "libraries/ghc-boot/ghc-boot.cabal" $ projectVersion
+@@ -333,7 +332,6 @@ templateRules = do
+   templateRule "libraries/ghci/ghci.cabal" $ projectVersion
+   templateRule "libraries/ghc-heap/ghc-heap.cabal" $ projectVersion
+   templateRule "utils/ghc-pkg/ghc-pkg.cabal" $ projectVersion
+-  templateRule "libraries/libiserv/libiserv.cabal" $ projectVersion
+   templateRule "libraries/template-haskell/template-haskell.cabal" $ projectVersion
+   templateRule "libraries/prologue.txt" $ packageVersions
+ 
+diff --git a/hadrian/src/Settings/Default.hs b/hadrian/src/Settings/Default.hs
+index 3781c3d490..5996924096 100644
+--- a/hadrian/src/Settings/Default.hs
++++ b/hadrian/src/Settings/Default.hs
+@@ -151,7 +151,6 @@ stage1Packages = do
+         [ haddock
+         , hpcBin
+         , iserv
+-        , libiserv
+         , runGhc
+         ]
+       , when (winTarget && not cross)
+diff --git a/hadrian/src/Settings/Packages.hs b/hadrian/src/Settings/Packages.hs
+index 39ba685255..e2afd72ee5 100644
+--- a/hadrian/src/Settings/Packages.hs
++++ b/hadrian/src/Settings/Packages.hs
+@@ -116,9 +116,9 @@ packageArgs = do
+           [
+           -- The use case here is that we want to build @iserv-proxy@ for the
+           -- cross compiler. That one needs to be compiled by the bootstrap
+-          -- compiler as it needs to run on the host. Hence @libiserv@ needs
+-          -- @GHCi.TH@, @GHCi.Message@ and @GHCi.Run@ from @ghci@. And those are
+-          -- behind the @-finternal-interpreter@ flag.
++          -- compiler as it needs to run on the host. Hence @iserv@ needs
++          -- @GHCi.TH@, @GHCi.Message@, @GHCi.Run@, and @GHCi.Server@ from
++          -- @ghci@. And those are behind the @-finternal-interpreter@ flag.
+           --
+           -- But it may not build if we have made some changes to ghci's
+           -- dependencies (see #16051).
+diff --git a/libraries/libiserv/src/IServ.hs b/libraries/ghci/GHCi/Server.hs
+similarity index 62%
+rename from libraries/libiserv/src/IServ.hs
+rename to libraries/ghci/GHCi/Server.hs
+index 6361a8c04c..f46060a01c 100644
+--- a/libraries/libiserv/src/IServ.hs
++++ b/libraries/ghci/GHCi/Server.hs
+@@ -1,17 +1,27 @@
+-{-# LANGUAGE RankNTypes, RecordWildCards, GADTs, ScopedTypeVariables #-}
+-module IServ (serv) where
++{-# LANGUAGE CPP, RankNTypes, RecordWildCards, GADTs, ScopedTypeVariables #-}
++module GHCi.Server
++  ( serv
++  , defaultServer
++  )
++where
+ 
++import Prelude
+ import GHCi.Run
+ import GHCi.TH
+ import GHCi.Message
++import GHCi.Signals
++import GHCi.Utils
+ 
+ import Control.DeepSeq
+ import Control.Exception
+ import Control.Monad
++import Control.Concurrent (threadDelay)
+ import Data.Binary
++import Data.IORef
+ 
+ import Text.Printf
+-import System.Environment (getProgName)
++import System.Environment (getProgName, getArgs)
++import System.Exit
+ 
+ type MessageHook = Msg -> IO Msg
+ 
+@@ -84,3 +94,55 @@ serv verbose hook pipe restore = loop
+       Left UserInterrupt -> return () >> discardCtrlC
+       Left e -> throwIO e
+       _ -> return ()
++
++-- | Default server
++defaultServer :: IO ()
++defaultServer = do
++  args <- getArgs
++  (outh, inh, rest) <-
++      case args of
++        arg0:arg1:rest -> do
++            inh  <- readGhcHandle arg1
++            outh <- readGhcHandle arg0
++            return (outh, inh, rest)
++        _ -> dieWithUsage
++
++  (verbose, rest') <- case rest of
++    "-v":rest' -> return (True, rest')
++    _ -> return (False, rest)
++
++  (wait, rest'') <- case rest' of
++    "-wait":rest'' -> return (True, rest'')
++    _ -> return (False, rest')
++
++  unless (null rest'') $
++    dieWithUsage
++
++  when verbose $
++    printf "GHC iserv starting (in: %s; out: %s)\n" (show inh) (show outh)
++  installSignalHandlers
++  lo_ref <- newIORef Nothing
++  let pipe = Pipe{pipeRead = inh, pipeWrite = outh, pipeLeftovers = lo_ref}
++
++  when wait $ do
++    when verbose $
++      putStrLn "Waiting 3s"
++    threadDelay 3000000
++
++  uninterruptibleMask $ serv verbose hook pipe
++
++  where hook = return -- empty hook
++    -- we cannot allow any async exceptions while communicating, because
++    -- we will lose sync in the protocol, hence uninterruptibleMask.
++
++dieWithUsage :: IO a
++dieWithUsage = do
++    prog <- getProgName
++    die $ prog ++ ": " ++ msg
++  where
++#if defined(WINDOWS)
++    msg = "usage: iserv <write-handle> <read-handle> [-v]"
++#else
++    msg = "usage: iserv <write-fd> <read-fd> [-v]"
++#endif
++
+diff --git a/libraries/libiserv/src/GHCi/Utils.hsc b/libraries/ghci/GHCi/Utils.hsc
+similarity index 71%
+rename from libraries/libiserv/src/GHCi/Utils.hsc
+rename to libraries/ghci/GHCi/Utils.hsc
+index 6b6613ad1b..43ab4a8550 100644
+--- a/libraries/libiserv/src/GHCi/Utils.hsc
++++ b/libraries/ghci/GHCi/Utils.hsc
+@@ -1,12 +1,15 @@
+ {-# LANGUAGE CPP #-}
+ module GHCi.Utils
+-    ( getGhcHandle
+-    ) where
++  ( getGhcHandle
++  , readGhcHandle
++  )
++where
+ 
++import Prelude
+ import Foreign.C
+ import GHC.IO.Handle (Handle())
+ #if defined(mingw32_HOST_OS)
+-import Foreign.Ptr (ptrToIntPtr)
++import Foreign.Ptr (ptrToIntPtr,wordPtrToPtr)
+ import GHC.IO (onException)
+ import GHC.IO.Handle.FD (fdToHandle)
+ import GHC.Windows (HANDLE)
+@@ -16,12 +19,13 @@ import GHC.IO.Device as IODevice
+ import GHC.IO.Encoding (getLocaleEncoding)
+ import GHC.IO.IOMode
+ import GHC.IO.Windows.Handle (fromHANDLE, Io(), NativeHandle())
++
++#include <fcntl.h>     /* for _O_BINARY */
++
+ #else
+ import System.Posix
+ #endif
+ 
+-#include <fcntl.h>     /* for _O_BINARY */
+-
+ -- | Gets a GHC Handle File description from the given OS Handle or POSIX fd.
+ 
+ #if defined(mingw32_HOST_OS)
+@@ -48,3 +52,20 @@ foreign import ccall "io.h _open_osfhandle" _open_osfhandle ::
+ getGhcHandle :: CInt -> IO Handle
+ getGhcHandle fd     = fdToHandle $ Fd fd
+ #endif
++
++-- | Read a handle passed on the command-line and prepare it to be used with the IO manager
++readGhcHandle :: String -> IO Handle
++readGhcHandle s = do
++#if defined(mingw32_HOST_OS)
++  let fd = wordPtrToPtr (Prelude.read s)
++# if defined(__IO_MANAGER_WINIO__)
++  -- register the handles we received with
++  -- our I/O manager otherwise we can't use
++  -- them correctly.
++  return () <!> associateHandle' fd
++# endif
++#else
++  let fd = Prelude.read s
++#endif
++  getGhcHandle fd
++
+diff --git a/libraries/ghci/ghci.cabal.in b/libraries/ghci/ghci.cabal.in
+index 78466a814a..700b7d62ea 100644
+--- a/libraries/ghci/ghci.cabal.in
++++ b/libraries/ghci/ghci.cabal.in
+@@ -57,6 +57,7 @@ library
+             GHCi.Signals
+             GHCi.StaticPtrTable
+             GHCi.TH
++            GHCi.Server
+ 
+     exposed-modules:
+         GHCi.BreakArray
+@@ -66,6 +67,7 @@ library
+         GHCi.RemoteTypes
+         GHCi.FFI
+         GHCi.TH.Binary
++        GHCi.Utils
+ 
+     Build-Depends:
+         rts,
+diff --git a/libraries/libiserv/.gitignore b/libraries/libiserv/.gitignore
+deleted file mode 100644
+index 89cf73d0b3..0000000000
+--- a/libraries/libiserv/.gitignore
++++ /dev/null
+@@ -1,4 +0,0 @@
+-GNUmakefile
+-/dist-install/
+-/dist/
+-ghc.mk
+diff --git a/libraries/libiserv/LICENSE b/libraries/libiserv/LICENSE
+deleted file mode 100644
+index fe00a83ea9..0000000000
+--- a/libraries/libiserv/LICENSE
++++ /dev/null
+@@ -1,62 +0,0 @@
+-This library (libraries/ghc-prim) is derived from code from several
+-sources: 
+-
+-  * Code from the GHC project which is largely (c) The University of
+-    Glasgow, and distributable under a BSD-style license (see below),
+-
+-  * Code from the Haskell 98 Report which is (c) Simon Peyton Jones
+-    and freely redistributable (but see the full license for
+-    restrictions).
+-
+-The full text of these licenses is reproduced below.  All of the
+-licenses are BSD-style or compatible.
+-
+------------------------------------------------------------------------------
+-
+-The Glasgow Haskell Compiler License
+-
+-Copyright 2004, The University Court of the University of Glasgow. 
+-All rights reserved.
+-
+-Redistribution and use in source and binary forms, with or without
+-modification, are permitted provided that the following conditions are met:
+-
+-- Redistributions of source code must retain the above copyright notice,
+-this list of conditions and the following disclaimer.
+- 
+-- Redistributions in binary form must reproduce the above copyright notice,
+-this list of conditions and the following disclaimer in the documentation
+-and/or other materials provided with the distribution.
+- 
+-- Neither name of the University nor the names of its contributors may be
+-used to endorse or promote products derived from this software without
+-specific prior written permission. 
+-
+-THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY COURT OF THE UNIVERSITY OF
+-GLASGOW AND THE CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+-INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+-UNIVERSITY COURT OF THE UNIVERSITY OF GLASGOW OR THE CONTRIBUTORS BE LIABLE
+-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+-OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+-DAMAGE.
+-
+------------------------------------------------------------------------------
+-
+-Code derived from the document "Report on the Programming Language
+-Haskell 98", is distributed under the following license:
+-
+-  Copyright (c) 2002 Simon Peyton Jones
+-
+-  The authors intend this Report to belong to the entire Haskell
+-  community, and so we grant permission to copy and distribute it for
+-  any purpose, provided that it is reproduced in its entirety,
+-  including this Notice.  Modified versions of this Report may also be
+-  copied and distributed for any purpose, provided that the modified
+-  version is clearly presented as such, and that it does not claim to
+-  be a definition of the Haskell 98 Language.
+-
+diff --git a/libraries/libiserv/Makefile b/libraries/libiserv/Makefile
+deleted file mode 100644
+index 88656e7853..0000000000
+--- a/libraries/libiserv/Makefile
++++ /dev/null
+@@ -1,15 +0,0 @@
+-# -----------------------------------------------------------------------------
+-#
+-# (c) 2009 The University of Glasgow
+-#
+-# This file is part of the GHC build system.
+-#
+-# To understand how the build system works and how to modify it, see
+-#      https://gitlab.haskell.org/ghc/ghc/wikis/building/architecture
+-#      https://gitlab.haskell.org/ghc/ghc/wikis/building/modifying
+-#
+-# -----------------------------------------------------------------------------
+-
+-dir = iserv
+-TOP = ..
+-include $(TOP)/mk/sub-makefile.mk
+diff --git a/libraries/libiserv/cbits/iservmain.c b/libraries/libiserv/cbits/iservmain.c
+deleted file mode 100644
+index 5c88018d6b..0000000000
+--- a/libraries/libiserv/cbits/iservmain.c
++++ /dev/null
+@@ -1,17 +0,0 @@
+-#include <rts/PosixSource.h>
+-#include <Rts.h>
+-
+-#include <HsFFI.h>
+-
+-int main (int argc, char *argv[])
+-{
+-    RtsConfig conf = defaultRtsConfig;
+-
+-    // We never know what symbols GHC will look up in the future, so
+-    // we must retain CAFs for running interpreted code.
+-    conf.keep_cafs = 1;
+-
+-    conf.rts_opts_enabled = RtsOptsAll;
+-    extern StgClosure ZCMain_main_closure;
+-    hs_main(argc, argv, &ZCMain_main_closure, conf);
+-}
+diff --git a/libraries/libiserv/libiserv.cabal.in b/libraries/libiserv/libiserv.cabal.in
+deleted file mode 100644
+index 6f13a3da42..0000000000
+--- a/libraries/libiserv/libiserv.cabal.in
++++ /dev/null
+@@ -1,37 +0,0 @@
+--- WARNING: libiserv.cabal is automatically generated from libiserv.cabal.in by
+--- ../../configure.  Make sure you are editing libiserv.cabal.in, not
+--- libiserv.cabal.
+-
+-Name: libiserv
+-Version: @ProjectVersionMunged@
+-Copyright: XXX
+-License: BSD3
+-License-File: LICENSE
+-Author: XXX
+-Maintainer: XXX
+-Synopsis: Provides shared functionality between iserv and iserv-proxy.
+-Description: Provides shared functionality between iserv and iserv-proxy.
+-Category: Development
+-build-type: Simple
+-cabal-version: >=1.10
+-
+-Flag network
+-    Description:   Build libiserv with over-the-network support
+-    Default:       False
+-
+-Library
+-    Default-Language: Haskell2010
+-    Hs-Source-Dirs: src
+-    Exposed-Modules: IServ
+-                   , GHCi.Utils
+-    Build-Depends: base       >= 4   && < 5,
+-                   binary     >= 0.7 && < 0.11,
+-                   bytestring >= 0.10 && < 0.12,
+-                   containers >= 0.5 && < 0.7,
+-                   deepseq    >= 1.4 && < 1.5,
+-                   ghci       == @ProjectVersionMunged@
+-
+-    if os(windows)
+-       Cpp-Options: -DWINDOWS
+-   else
+-       Build-Depends: unix   >= 2.7 && < 2.9
+diff --git a/packages b/packages
+index f9c798fc6e..2396bfdd74 100644
+--- a/packages
++++ b/packages
+@@ -52,7 +52,6 @@ libraries/directory          -           -                               ssh://g
+ libraries/filepath           -           -                               ssh://git@github.com/haskell/filepath.git
+ libraries/haskeline          -           -                               https://github.com/judah/haskeline.git
+ libraries/hpc                -           -                               -
+-libraries/libiserv           -           -                               -
+ libraries/mtl                -           -                               https://github.com/haskell/mtl.git
+ libraries/parsec             -           -                               https://github.com/haskell/parsec.git
+ libraries/pretty             -           -                               https://github.com/haskell/pretty.git
+diff --git a/utils/iserv/iserv.cabal.in b/utils/iserv/iserv.cabal.in
+index 46a0357a63..2460963d8c 100644
+--- a/utils/iserv/iserv.cabal.in
++++ b/utils/iserv/iserv.cabal.in
+@@ -18,9 +18,6 @@ Description:
+   compiling Template Haskell, by spawning a separate delegate (so
+   called runner on the javascript vm) and evaluating the splices
+   there.
+-  .
+-  To use iserv with cross compilers, please see @libraries/libiserv@
+-  and @utils/iserv-proxy@.
+ 
+ Category: Development
+ build-type: Simple
+@@ -39,8 +36,7 @@ Executable iserv
+                    bytestring >= 0.10 && < 0.12,
+                    containers >= 0.5 && < 0.7,
+                    deepseq    >= 1.4 && < 1.5,
+-                   ghci       == @ProjectVersionMunged@,
+-                   libiserv   == @ProjectVersionMunged@
++                   ghci       == @ProjectVersionMunged@
+ 
+     if os(windows)
+         Cpp-Options: -DWINDOWS
+diff --git a/utils/iserv/src/Main.hs b/utils/iserv/src/Main.hs
+index 4c622f85a9..c455ea1f01 100644
+--- a/utils/iserv/src/Main.hs
++++ b/utils/iserv/src/Main.hs
+@@ -1,5 +1,3 @@
+-{-# LANGUAGE CPP, GADTs #-}
+-
+ -- |
+ -- The Remote GHCi server.
+ --
+@@ -8,88 +6,7 @@
+ --
+ module Main (main) where
+ 
+-import IServ (serv)
+-
+-import GHCi.Message
+-import GHCi.Signals
+-import GHCi.Utils
+-
+-import Control.Exception
+-import Control.Concurrent (threadDelay)
+-import Control.Monad
+-import Data.IORef
+-import System.Environment
+-import System.Exit
+-import Text.Printf
+-#if defined(WINDOWS)
+-import Foreign.Ptr (wordPtrToPtr)
+-# if defined(__IO_MANAGER_WINIO__)
+-import GHC.IO.SubSystem ((<!>))
+-import GHC.Event.Windows (associateHandle')
+-# endif
+-#endif
+-
+-dieWithUsage :: IO a
+-dieWithUsage = do
+-    prog <- getProgName
+-    die $ prog ++ ": " ++ msg
+-  where
+-#if defined(WINDOWS)
+-    msg = "usage: iserv <write-handle> <read-handle> [-v]"
+-#else
+-    msg = "usage: iserv <write-fd> <read-fd> [-v]"
+-#endif
++import GHCi.Server (defaultServer)
+ 
+ main :: IO ()
+-main = do
+-  args <- getArgs
+-  (outh, inh, rest) <-
+-      case args of
+-        arg0:arg1:rest -> do
+-#if defined(WINDOWS)
+-            let wfd1 = wordPtrToPtr (read arg0)
+-                rfd2 = wordPtrToPtr (read arg1)
+-# if defined(__IO_MANAGER_WINIO__)
+-            -- register the handles we received with
+-            -- our I/O manager otherwise we can't use
+-            -- them correctly.
+-            return () <!> (do
+-              associateHandle' wfd1
+-              associateHandle' rfd2)
+-# endif
+-#else
+-            let wfd1 = read arg0
+-                rfd2 = read arg1
+-#endif
+-            inh  <- getGhcHandle rfd2
+-            outh <- getGhcHandle wfd1
+-            return (outh, inh, rest)
+-        _ -> dieWithUsage
+-
+-  (verbose, rest') <- case rest of
+-    "-v":rest' -> return (True, rest')
+-    _ -> return (False, rest)
+-
+-  (wait, rest'') <- case rest' of
+-    "-wait":rest'' -> return (True, rest'')
+-    _ -> return (False, rest')
+-
+-  unless (null rest'') $
+-    dieWithUsage
+-
+-  when verbose $
+-    printf "GHC iserv starting (in: %s; out: %s)\n" (show inh) (show outh)
+-  installSignalHandlers
+-  lo_ref <- newIORef Nothing
+-  let pipe = Pipe{pipeRead = inh, pipeWrite = outh, pipeLeftovers = lo_ref}
+-
+-  when wait $ do
+-    when verbose $
+-      putStrLn "Waiting 3s"
+-    threadDelay 3000000
+-
+-  uninterruptibleMask $ serv verbose hook pipe
+-
+-  where hook = return -- empty hook
+-    -- we cannot allow any async exceptions while communicating, because
+-    -- we will lose sync in the protocol, hence uninterruptibleMask.
++main = defaultServer
+diff --git a/utils/remote-iserv/remote-iserv.cabal.in b/utils/remote-iserv/remote-iserv.cabal.in
+index 7ecf099eac..24c5c99c74 100644
+--- a/utils/remote-iserv/remote-iserv.cabal.in
++++ b/utils/remote-iserv/remote-iserv.cabal.in
+@@ -13,7 +13,7 @@ Synopsis: iserv allows GHC to delegate Template Haskell computations
+ Description:
+   This is a very simple remote runner for iserv, to be used together
+   with iserv-proxy.  The foundamental idea is that this this wrapper
+-  starts running libiserv on a given port to which iserv-proxy will
++  starts running the GHCi server on a given port to which iserv-proxy will
+   then connect.
+ Category: Development
+ build-type: Simple
+@@ -24,4 +24,4 @@ Executable remote-iserv
+    Main-Is: Cli.hs
+    Hs-Source-Dirs: src
+    Build-Depends: base       >= 4   && < 5,
+-                  libiserv   == @ProjectVersionMunged@
++                  ghci       == @ProjectVersionMunged@
+-- 
+2.37.1 (Apple Git-137.1)
+

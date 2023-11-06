@@ -7,7 +7,6 @@
 , iserv-proxy
 , iserv-proxy-interpreter
 , gmp
-, extra-test-libs ? []
 , buildPlatform
 , hostPlatform
 , ...
@@ -47,21 +46,6 @@ let
     '';
   testWrapper = lib.optional isLinuxCross "${qemuTestWrapper}/bin/test-wrapper";
 
-  preCheck = lib.optionalString isLinuxCross ''
-    echo "================================================================="
-    echo "RUNNING TESTS for $name via qemu-${qemuSuffix}"
-    echo "================================================================="
-    echo "Copying extra test libraries"
-    for p in ${lib.concatStringsSep " " extra-test-libs}; do
-      find "$p" -iname '*.so*' -exec cp {} . \;
-    done
-  '';
-  postCheck = lib.optionalString isLinuxCross ''
-    echo "================================================================="
-    echo "END RUNNING TESTS"
-    echo "================================================================="
-  '';
-
   enableShared = lib.mkDefault (!isLinuxCross);
 
-in { inherit preCheck postCheck configureFlags setupBuildFlags testWrapper enableShared; }
+in { inherit configureFlags setupBuildFlags testWrapper enableShared; }

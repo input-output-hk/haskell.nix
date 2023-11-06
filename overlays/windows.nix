@@ -17,6 +17,11 @@ final: prev:
    mfpr = if !prev.stdenv.hostPlatform.isWindows then prev.mpfr else prev.mfpr.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
+} // prev.lib.optionalAttrs (prev.stdenv.hostPlatform.isWindows && prev.stdenv.hostPlatform.libc == "ucrt") {
+  windows = prev.windows // {
+    # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
+    mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
+  };
 } // {
    libmpc = if !prev.stdenv.hostPlatform.isWindows then prev.libmpc else prev.libmpc.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
@@ -36,16 +41,14 @@ final: prev:
       let
         withTH = import ./mingw_w64.nix {
           inherit (pkgs.stdenv) hostPlatform;
-          inherit (pkgs) stdenv lib writeScriptBin;
-          wine = pkgs.buildPackages.winePackages.minimal;
+          inherit (pkgs.pkgsBuildBuild) lib writeShellScriptBin;
+          wine = pkgs.pkgsBuildBuild.winePackages.minimal;
           inherit (pkgs.windows) mingw_w64_pthreads;
           inherit (pkgs) gmp;
-          inherit (pkgs.buildPackages) symlinkJoin;
+          inherit (pkgs.pkgsBuildBuild) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
           inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter;
-          # we need to use openssl.bin here, because the .dll's are in the .bin expression.
-          # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
           # Therefore let's enable doCrossCheck here!

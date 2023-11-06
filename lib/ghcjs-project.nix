@@ -86,7 +86,7 @@ let
             makeWrapper
             xorg.lndir
             gmp
-            pkgconfig
+            (pkgs.buildPackages.pkg-config or pkgconfig)
         ]
         ++ [ ghc cabal-install emsdk ];
     # Configured the GHCJS source
