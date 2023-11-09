@@ -23,6 +23,8 @@ in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
     || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
+    # Failed to lookup symbol: __aarch64_swp8_acq_rel
+    || (compiler-nix-name == "ghc947" && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) 
     ;
 
   ifdInputs = {
