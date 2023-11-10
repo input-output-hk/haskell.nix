@@ -9,7 +9,10 @@ let
     inherit compiler-nix-name evalPackages;
     # reuse the cabal-simple test project
     src = testSrc "cabal-simple";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
+        constraints: text -simdutf, text source
+    '';
   };
   pkgSet = mkCabalProjectPkgSet {
     plan-pkgs = importAndFilterProject {

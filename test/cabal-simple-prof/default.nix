@@ -18,7 +18,10 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "cabal-simple-prof";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
+    cabalProjectLocal = builtins.readFile ../cabal.project.local
+      + lib.optionalString (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64) ''
+        constraints: text -simdutf, text source
+    '';
     inherit modules;
   };
 
