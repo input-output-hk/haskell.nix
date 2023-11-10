@@ -1,4 +1,4 @@
-{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, haskellLib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 with util;
@@ -76,7 +76,7 @@ in recurseIntoAttrs {
 
       printf "checking that the 'library' with doExactConfig works... " >& 2
       echo ${decLibrary} >& 2
-    '' + (if stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isGhcjs
+    '' + (if haskellLib.isCrossHost
       then ''
         printf "runghc tests are not working yet for windows or ghcjs. skipping. " >& 2
       ''
