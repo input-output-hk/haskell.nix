@@ -52,7 +52,8 @@ in {
     # For instance it will map:
     #   "ghc810" -> "ghc8107"
     #   "ghc99" -> "ghc9920230909" (uses last modified date of the git repo)
-    resolve-compiler-name = name: compilerNameMap.${name} or name;
+    inherit compilerNameMap;
+    resolve-compiler-name = name: final.haskell-nix.compilerNameMap.${name} or name;
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = {

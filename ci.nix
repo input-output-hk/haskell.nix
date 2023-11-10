@@ -68,7 +68,9 @@
         ghc92 = true;
         ghc94 = true;
         ghc96 = true;
+        ghc96llvm = true;
         ghc98 = true;
+        ghc98llvm = true;
         ghc98X = true;
         ghc99 = true;
       })));
