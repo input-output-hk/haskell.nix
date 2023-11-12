@@ -326,7 +326,9 @@ let
         " '*.ghc.cabal.configure.opts += --flags=-dynamic-system-linker'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
-      # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
+      # FIXME: we should have iOS as an argument to this derivation, and then make this, as well as
+      #        disableLargeAddress space conditional on iOS = true.
+      + lib.optionalString (stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
       # For GHC versions in the 9.x range that don't support the +native_bignum flavour transformer yet
       + lib.optionalString ((enableNativeBignum && !hadrianHasNativeBignumFlavour))
         " --bignum=native"
