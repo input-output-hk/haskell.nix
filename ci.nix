@@ -135,8 +135,7 @@ dimension "Nixpkgs version" nixpkgsVersions (nixpkgsName: pinnedNixpkgsSrc:
             # ghc = pkgs.haskell-nix.compiler.${compiler-nix-name};
             # TODO: look into making tools work when cross compiling
             # inherit (build) tools;
-          } // pkgs.lib.optionalAttrs (runTests && crossSystemName != "aarch64-multiplatform") {
-            # Tests are broken on aarch64 cross https://github.com/input-output-hk/haskell.nix/issues/513
+          } // pkgs.lib.optionalAttrs runTests {
             inherit (build) tests;
         })
         # GHCJS builds its own template haskell runner.

@@ -41,6 +41,7 @@ in recurseIntoAttrs {
       touch $out
     '';
     meta.platforms = platforms.all;
+    meta.disabled = haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64;
     passthru = {
       inherit project;
     };

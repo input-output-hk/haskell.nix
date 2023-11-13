@@ -6,7 +6,8 @@ final: prev:
       let
         withTH = import ./linux-cross.nix {
           inherit (pkgs.stdenv) hostPlatform buildPlatform;
-          inherit (pkgs) stdenv lib writeScriptBin;
+          inherit (pkgs) stdenv lib;
+          inherit (pkgs.pkgsBuildBuild) writeShellScriptBin symlinkJoin;
           inherit (pkgs.haskell-nix) haskellLib;
           # qemu for linux
           # Using `buildPackages.buildPackages` here fixes `python3Packages.pygobject3` issue.
@@ -18,13 +19,6 @@ final: prev:
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
           inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter;
-          # we need to use openssl.bin here, because the .dll's are in the .bin expression.
-          extra-test-libs = [
-            # pkgs.rocksdb
-            pkgs.openssl.bin
-            pkgs.libffi
-            pkgs.gmp
-          ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
           # Therefore let's enable doCrossCheck here!
