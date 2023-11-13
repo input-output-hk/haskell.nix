@@ -298,7 +298,8 @@ in {
                 # this one is to allow linking extra symbols from iserv.
                 ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/iserv-syms.patch
                 ++ final.lib.optional (versionAtLeast "9.4"                             && final.stdenv.targetPlatform.isWindows) ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch
-                ++ final.lib.optional (versionAtLeast "9.6.3"  && versionLessThan "9.10" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-9.6-iog.patch
+                ++ final.lib.optional (versionAtLeast "9.6.3"  && versionLessThan "9.10" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-9.6-iog.patch                                                                       ./patches/ghc/iserv-syms.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.12" && final.stdenv.targetPlatform.is32bit) ./patches/ghc/ghc-9.6-genapply-cross-arch.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
