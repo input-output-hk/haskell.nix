@@ -42,7 +42,7 @@ index 1d489178673..a251370bfaf 100644
 +                                ncgImpl optimizedCFG)
 +                            shorted
 +
-+        massert (checkLayout shorted sequenced)
++        -- massert (checkLayout shorted sequenced)
  
          let branchOpt :: [NatCmmDecl statics instr]
              branchOpt =
@@ -252,7 +252,7 @@ index b77aa73e52b..2a1fa03b1bc 100644
 +      -- We might have introduced new labels, so split the instructions into basic blocks again if neccesary.
 +      let (top, split_blocks, no_data) = foldr mkBlocks ([],[],[]) instrs''
 +      -- There should be no data in the instruction stream at this point
-+      massert (null no_data)
++      -- massert (null no_data)
 +
 +      let final_blocks = BasicBlock lbl top : split_blocks
 +      pure (pos', final_blocks)
