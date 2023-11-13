@@ -225,7 +225,7 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.0"    "9.3"    ./patches/ghc/ghc-9.2-win-add-tzset-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4"    "9.10"   ./patches/ghc/win-add-tzset-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.7"  ./patches/ghc/win-linker-no-null-deref.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.6"    ./patches/ghc/win-linker-no-null-deref-9.6.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.4.8"  ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-drop-mingwex-from-base.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/win-linker-no-null-deref.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/win-linker-no-null-deref-9.6.patch)
