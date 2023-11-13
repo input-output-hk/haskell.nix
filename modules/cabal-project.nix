@@ -25,7 +25,7 @@ in {
           ghc99FullName = pkgs.haskell-nix.resolve-compiler-name "ghc99";
         in
         # cabal-install from hackage (3.10.1.0) does not build with GHC HEAD
-        if fullName == ghc99FullName && config.name == "cabal-install" && config.version == "3.10.1.0"
+        if fullName == ghc99FullName && config.name == "cabal-install" && (builtins.elem config.version ["3.10.1.0" "3.10.2.0" "3.10.2.1"])
           then "ghc963"
           else pkgs.haskell-nix.resolve-compiler-name name;
     };
