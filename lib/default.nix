@@ -256,8 +256,8 @@ in {
     && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch);
   # Native musl build-host-target combo
   isNativeMusl = stdenv.hostPlatform.isMusl
-    && stdenv.buildPlatform == stdenv.hostPlatform
-    && stdenv.hostPlatform == stdenv.targetPlatform;
+    && stdenv.buildPlatform.linuxArch == stdenv.hostPlatform.linuxArch
+    && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch;
 
   # Takes a version number, module or list of modules (for cabalProject)
   # and converts it to an list of project modules.  This allows
