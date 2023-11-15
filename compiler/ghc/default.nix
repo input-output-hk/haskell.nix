@@ -318,6 +318,10 @@ let
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
       + lib.optionalString targetPlatform.isAndroid
+      # The fact that we need to set this here is pretty idiotic. GHC should figure this out on it's own.
+      # Either have a runtime flag/setting to disable it or if dlopen fails, remember that it failed and
+      # fall back to non-dynamic. We only have x86_64 dynamic linker with musl.
+      + lib.optionalString targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86)
         " '*.ghc.cabal.configure.opts += --flags=-dynamic-system-linker'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
