@@ -86,11 +86,11 @@
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc96llvm" "ghc98llvm"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc96llvm" "ghc963llvm" "ghc98llvm"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) mingwW64;
   } // lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc8107" "ghc902" "ghc928" "ghc96llvm" "ghc98llvm"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc8107" "ghc902" "ghc928" "ghc96llvm" "ghc963llvm" "ghc98llvm"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
     inherit (lib.systems.examples) ucrt64;
   } // lib.optionalAttrs (system == "x86_64-linux" && nixpkgsName == "unstable" && !builtins.elem compiler-nix-name ["ghc884"]) {
