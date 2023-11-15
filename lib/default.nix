@@ -255,7 +255,7 @@ in {
   isCrossTarget = stdenv.targetPlatform != stdenv.hostPlatform
     && !(stdenv.hostPlatform.isLinux && stdenv.targetPlatform.isMusl && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch);
   # Native musl build-host-target combo
-  isNativeMusl = stdenv.hostPlatform.isMusl
+  isNativeMusl = stdenv.targetPlatform.isMusl
     && stdenv.buildPlatform.linuxArch == stdenv.hostPlatform.linuxArch
     && stdenv.hostPlatform.linuxArch == stdenv.targetPlatform.linuxArch;
 
