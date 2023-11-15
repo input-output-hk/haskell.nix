@@ -12,3 +12,15 @@ index 4d0c978..96a9d60 100644
                              }
                          }
                      } else {
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 2356818..727e845 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1088,6 +1088,7 @@ SymbolAddr* lookupSymbol( SymbolName* lbl )
+                    "See top entry above.\n", lbl);
+         IF_DEBUG(linker, printLoadedObjects());
+         fflush(stderr);
++        r = 0xDEADBEEF;
+     }
+
+     if (!runPendingInitializers()) {
