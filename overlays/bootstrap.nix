@@ -284,6 +284,7 @@ in {
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-9.6-debug-secno.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.is32bit) ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
