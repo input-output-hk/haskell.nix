@@ -163,8 +163,9 @@ let
     WITH_TERMINFO=NO
   ''
   # musl doesn't have a system-linker. Only on x86, and on x86 we need it, as
-  # our elf linker for x86_64 is broken.
-  + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86)) ''
+  # our elf linker for x86_64 is broken. The i686 one seems also to not exist.
+  # So it's really _just_ x86_64.
+  + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86_64)) ''
     compiler_CONFIGURE_OPTS += --flags=-dynamic-system-linker
   ''
   # While split sections are now enabled by default in ghc 8.8 for windows,
@@ -318,7 +319,7 @@ let
       # The fact that we need to set this here is pretty idiotic. GHC should figure this out on it's own.
       # Either have a runtime flag/setting to disable it or if dlopen fails, remember that it failed and
       # fall back to non-dynamic. We only have x86_64 dynamic linker with musl.
-      + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86))
+      + lib.optionalString (targetPlatform.isAndroid || (targetPlatform.isMusl && !targetPlatform.isx86_64))
         " '*.ghc.cabal.configure.opts += --flags=-dynamic-system-linker'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
