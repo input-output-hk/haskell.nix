@@ -296,7 +296,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/ghc-9.6-hadrian-strip-cmd.patch
                 ++ final.lib.optional (versionAtLeast "9.0"    && versionLessThan "10.0" && final.stdenv.targetPlatform.is32bit) ./patches/ghc/ghc-9.6-32bit-cmm.patch
                 # this one is to allow linking extra symbols from iserv.
-                ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit)) ./patches/ghc/iserv-syms.patch
+                # This one will lead to segv's on darwin, when calling `strlen` during lookupStrHashTable. `strlen` ends up being called with 0x0.
+                ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && (final.stdenv.targetPlatform.isAndroid || final.stdenv.targetPlatform.isLinux) && (final.stdenv.targetPlatform.isAarch64 || final.stdenv.targetPlatform.is32bit)) ./patches/ghc/iserv-syms.patch
                 ++ final.lib.optional (versionAtLeast "9.4"                             && final.stdenv.targetPlatform.isWindows) ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch
                 ++ final.lib.optional (versionAtLeast "9.6.3"  && versionLessThan "9.10" && final.stdenv.targetPlatform.isAndroid) ./patches/ghc/ghc-9.6-iog.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.12" && final.stdenv.targetPlatform.is32bit) ./patches/ghc/ghc-9.6-genapply-cross-arch.patch
