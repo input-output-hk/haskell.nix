@@ -34,7 +34,12 @@ let
         PORT=$((5000 + $RANDOM % 5000))
         (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
         REMOTE_ISERV=$(mktemp -d)
-        ln -s ${interpreter.override { enableDebugRTS = true; }}/bin/* $REMOTE_ISERV
+        ln -s ${interpreter.override
+          {
+            patches = [ ./patches/iserv-proxy-keep-cafs.patch ]
+                      ;
+            enableDebugRTS = true;
+          }}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
         # TODO use `LINK_DLL_FOLDERS` here once it is in all the nixpkgs we want to support.
         for p in $pkgsHostTargetAsString; do
