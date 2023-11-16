@@ -49,11 +49,15 @@ let
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
     ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override
-      (lib.optionalAttrs hostPlatform.isAndroid {
+      ({
+        patches = [ ./patches/iserv-proxy-keep-cafs.patch ]
+                  ++ lib.optional (hostPlatform.isAndroid && hostPlatform.isAarch32) ./patches/iserv-proxy-interpreter-9.3-android32.patch
+                  ++ lib.optional (hostPlatform.isAndroid && hostPlatform.isAarch64) ./patches/iserv-proxy-interpreter-9.3-android.patch
+                  ;
+       } // lib.optionalAttrs hostPlatform.isAndroid {
         setupBuildFlags = ["--ghc-option=-optl-static" ] ++ lib.optional hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
-        patches = lib.optional hostPlatform.isAarch64 ./patches/iserv-proxy-interpreter-9.3-android.patch;
         enableDebugRTS = true;
-        })}/bin/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
+       })}/bin/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
     (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
     RISERV_PID="$!"
     ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" $PROXY_ARGS
