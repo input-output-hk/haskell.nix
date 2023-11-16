@@ -32,7 +32,7 @@ let
   # We also need to run armv7a-android in unshare --user --pid --fork, to
   # ensure that we get a low pid < 65535 for android (If we run outside)
   # of nix build envs.
-  isLinuxCross = haskellLib.isCrossHost && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64);
+  isLinuxCross = haskellLib.isCrossHost && hostPlatform.isLinux && (hostPlatform.isAarch32 || hostPlatform.isAarch64 || hostPlatform.isi686);
   qemuIservWrapperScript = enableProfiling:
     let
       interpreter =

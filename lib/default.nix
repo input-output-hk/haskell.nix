@@ -585,6 +585,8 @@ in {
     then "arm"
     else if hostPlatform.isAarch64
     then "aarch64"
+    else if hostPlatform.isi686
+    then "i386"
     else abort "Don't know which QEMU to use for hostPlatform ${hostPlatform.config}. Please provide qemuSuffix";
 
   # How to run ldd when checking for static linking
