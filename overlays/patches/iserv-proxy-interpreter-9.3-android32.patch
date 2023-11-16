@@ -328,9 +328,6 @@ index a0eeaeb..a146108 100644
 --- a/iserv-proxy.cabal
 +++ b/iserv-proxy.cabal
 @@ -103,6 +103,7 @@ Executable iserv-proxy
- Executable iserv-proxy-interpreter
-    Default-Language: Haskell2010
-    Main-Is: Interpreter.hs
     -- We need to pass -fkeep-cafs to ensure that the interpreter retains CAFs
     -- Iserv and GHC do something similar.
     ghc-options: -fkeep-cafs
