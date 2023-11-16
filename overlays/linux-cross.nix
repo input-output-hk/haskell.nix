@@ -51,7 +51,7 @@ let
     ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override
       ({
         patches = [ ./patches/iserv-proxy-keep-cafs.patch ]
-                  ++ lib.optional (hostPlatform.isAndroid && hostPlatform.isAarch32) ./patches/iserv-proxy-interpreter-9.3-android32.patch
+                  # ++ lib.optional (hostPlatform.isAndroid && hostPlatform.isAarch32) ./patches/iserv-proxy-interpreter-9.3-android32.patch
                   ++ lib.optional (hostPlatform.isAndroid && hostPlatform.isAarch64) ./patches/iserv-proxy-interpreter-9.3-android.patch
                   ;
        } // lib.optionalAttrs hostPlatform.isAndroid {
