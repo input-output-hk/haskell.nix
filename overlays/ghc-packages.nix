@@ -214,7 +214,7 @@ in rec {
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
-        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq"
+        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc" "ghc-boot" "ghci" "Win32" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq"
            "Cabal" "Cabal-syntax" "cabal-install" "cabal-install-solver" ])) (ghc-extra-pkgs ghc.version));
       cabalProject = ''
         packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
