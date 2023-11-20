@@ -446,7 +446,7 @@ final: prev: {
         # If you want to update this value it important to check the
         # materializations.  Turn `checkMaterialization` on below and
         # check the CI results before turning it off again.
-        internalHackageIndexState = "2023-11-11T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
+        internalHackageIndexState = "2023-11-19T00:00:00Z"; # Remember to also update ../nix-tools/cabal.project and ../nix-tools/flake.lock
 
         checkMaterialization = false; # This is the default. Use an overlay to set it to true and test all the materialized files
 
