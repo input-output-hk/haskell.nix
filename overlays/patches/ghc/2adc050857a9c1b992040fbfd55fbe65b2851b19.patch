@@ -1,0 +1,543 @@
+From 2adc050857a9c1b992040fbfd55fbe65b2851b19 Mon Sep 17 00:00:00 2001
+From: Andreas Klebinger <klebinger.andreas@gmx.at>
+Date: Thu, 14 Sep 2023 14:11:48 +0200
+Subject: [PATCH] AArch64: Fix broken conditional jumps for offsets >= 1MB
+
+Rewrite conditional jump instructions with offsets >= 1MB to use unconditional jumps
+to avoid overflowing the immediate.
+
+Fixes #23746
+---
+ compiler/GHC/CmmToAsm.hs                 |  21 +--
+ compiler/GHC/CmmToAsm/AArch64.hs         |   4 +-
+ compiler/GHC/CmmToAsm/AArch64/CodeGen.hs | 199 ++++++++++++++++++++++-
+ compiler/GHC/CmmToAsm/AArch64/Cond.hs    |  10 +-
+ compiler/GHC/CmmToAsm/AArch64/Instr.hs   |   1 +
+ compiler/GHC/CmmToAsm/AArch64/Ppr.hs     |   9 +-
+ compiler/GHC/CmmToAsm/BlockLayout.hs     |  50 +++---
+ compiler/GHC/CmmToAsm/Monad.hs           |   5 +-
+ compiler/GHC/CmmToAsm/PPC/Instr.hs       |  11 +-
+ compiler/GHC/CmmToAsm/X86.hs             |   2 +-
+ 10 files changed, 257 insertions(+), 55 deletions(-)
+
+diff --git a/compiler/GHC/CmmToAsm.hs b/compiler/GHC/CmmToAsm.hs
+index 1d489178673..a251370bfaf 100644
+--- a/compiler/GHC/CmmToAsm.hs
++++ b/compiler/GHC/CmmToAsm.hs
+@@ -655,13 +655,14 @@ cmmNativeGen logger ncgImpl us fileIds dbgMap cmm count
+                                 text "cfg not in lockstep") ()
+ 
+         ---- sequence blocks
+-        let sequenced :: [NatCmmDecl statics instr]
+-            sequenced =
+-                checkLayout shorted $
+-                {-# SCC "sequenceBlocks" #-}
+-                map (BlockLayout.sequenceTop
+-                        ncgImpl optimizedCFG)
+-                    shorted
++        -- sequenced :: [NatCmmDecl statics instr]
++        let (sequenced, us_seq) =
++                        {-# SCC "sequenceBlocks" #-}
++                        initUs usAlloc $ mapM (BlockLayout.sequenceTop
++                                ncgImpl optimizedCFG)
++                            shorted
++
++        -- massert (checkLayout shorted sequenced)
+ 
+         let branchOpt :: [NatCmmDecl statics instr]
+             branchOpt =
+@@ -684,7 +685,7 @@ cmmNativeGen logger ncgImpl us fileIds dbgMap cmm count
+                 addUnwind acc proc =
+                     acc `mapUnion` computeUnwinding config ncgImpl proc
+ 
+-        return  ( usAlloc
++        return  ( us_seq
+                 , fileIds'
+                 , branchOpt
+                 , lastMinuteImports ++ imports
+@@ -704,10 +705,10 @@ maybeDumpCfg logger (Just cfg) msg proc_name
+ 
+ -- | Make sure all blocks we want the layout algorithm to place have been placed.
+ checkLayout :: [NatCmmDecl statics instr] -> [NatCmmDecl statics instr]
+-            -> [NatCmmDecl statics instr]
++            -> Bool
+ checkLayout procsUnsequenced procsSequenced =
+         assertPpr (setNull diff) (text "Block sequencing dropped blocks:" <> ppr diff)
+-        procsSequenced
++        True
+   where
+         blocks1 = foldl' (setUnion) setEmpty $
+                         map getBlockIds procsUnsequenced :: LabelSet
+diff --git a/compiler/GHC/CmmToAsm/AArch64.hs b/compiler/GHC/CmmToAsm/AArch64.hs
+index d814764b2d5..1977aeb1a7e 100644
+--- a/compiler/GHC/CmmToAsm/AArch64.hs
++++ b/compiler/GHC/CmmToAsm/AArch64.hs
+@@ -34,9 +34,9 @@ ncgAArch64 config
+        ,maxSpillSlots             = AArch64.maxSpillSlots config
+        ,allocatableRegs           = AArch64.allocatableRegs platform
+        ,ncgAllocMoreStack         = AArch64.allocMoreStack platform
+-       ,ncgMakeFarBranches        = const id
++       ,ncgMakeFarBranches        = AArch64.makeFarBranches
+        ,extractUnwindPoints       = const []
+-       ,invertCondBranches        = \_ _ -> id
++       ,invertCondBranches        = \_ _ blocks -> blocks
+   }
+     where
+       platform = ncgPlatform config
+diff --git a/compiler/GHC/CmmToAsm/AArch64/CodeGen.hs b/compiler/GHC/CmmToAsm/AArch64/CodeGen.hs
+index b77aa73e52b..2a1fa03b1bc 100644
+--- a/compiler/GHC/CmmToAsm/AArch64/CodeGen.hs
++++ b/compiler/GHC/CmmToAsm/AArch64/CodeGen.hs
+@@ -7,6 +7,7 @@
+ module GHC.CmmToAsm.AArch64.CodeGen (
+       cmmTopCodeGen
+     , generateJumpTableForInstr
++    , makeFarBranches
+ )
+ 
+ where
+@@ -43,9 +44,11 @@ import GHC.Cmm.Utils
+ import GHC.Cmm.Switch
+ import GHC.Cmm.CLabel
+ import GHC.Cmm.Dataflow.Block
++import GHC.Cmm.Dataflow.Label
+ import GHC.Cmm.Dataflow.Graph
+ import GHC.Types.Tickish ( GenTickish(..) )
+ import GHC.Types.SrcLoc  ( srcSpanFile, srcSpanStartLine, srcSpanStartCol )
++import GHC.Types.Unique.Supply
+ 
+ -- The rest:
+ import GHC.Data.OrdList
+@@ -61,6 +64,9 @@ import GHC.Data.FastString
+ import GHC.Utils.Misc
+ import GHC.Utils.Panic
+ import GHC.Utils.Constants (debugIsOn)
++import GHC.Utils.Monad (mapAccumLM)
++
++import GHC.Cmm.Dataflow.Collections
+ 
+ -- Note [General layout of an NCG]
+ -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+@@ -161,15 +167,17 @@ basicBlockCodeGen block = do
+   let
+         (top,other_blocks,statics) = foldrOL mkBlocks ([],[],[]) instrs
+ 
+-        mkBlocks (NEWBLOCK id) (instrs,blocks,statics)
+-          = ([], BasicBlock id instrs : blocks, statics)
+-        mkBlocks (LDATA sec dat) (instrs,blocks,statics)
+-          = (instrs, blocks, CmmData sec dat:statics)
+-        mkBlocks instr (instrs,blocks,statics)
+-          = (instr:instrs, blocks, statics)
+   return (BasicBlock id top : other_blocks, statics)
+ 
+-
++mkBlocks :: Instr
++          -> ([Instr], [GenBasicBlock Instr], [GenCmmDecl RawCmmStatics h g])
++          -> ([Instr], [GenBasicBlock Instr], [GenCmmDecl RawCmmStatics h g])
++mkBlocks (NEWBLOCK id) (instrs,blocks,statics)
++  = ([], BasicBlock id instrs : blocks, statics)
++mkBlocks (LDATA sec dat) (instrs,blocks,statics)
++  = (instrs, blocks, CmmData sec dat:statics)
++mkBlocks instr (instrs,blocks,statics)
++  = (instr:instrs, blocks, statics)
+ -- -----------------------------------------------------------------------------
+ -- | Utilities
+ ann :: SDoc -> Instr -> Instr
+@@ -1217,6 +1225,7 @@ assignReg_FltCode = assignReg_IntCode
+ 
+ -- -----------------------------------------------------------------------------
+ -- Jumps
++
+ genJump :: CmmExpr{-the branch target-} -> NatM InstrBlock
+ genJump expr@(CmmLit (CmmLabel lbl))
+   = return $ unitOL (annExpr expr (J (TLabel lbl)))
+@@ -1302,6 +1311,22 @@ genCondJump bid expr = do
+           _ -> pprPanic "AArch64.genCondJump:case mop: " (text $ show expr)
+       _ -> pprPanic "AArch64.genCondJump: " (text $ show expr)
+ 
++-- A conditional jump with at least +/-128M jump range
++genCondFarJump :: MonadUnique m => Cond -> Target -> m InstrBlock
++genCondFarJump cond far_target = do
++  skip_lbl_id <- newBlockId
++  jmp_lbl_id <- newBlockId
++
++  -- TODO: We can improve this by inverting the condition
++  -- but it's not quite trivial since we don't know if we
++  -- need to consider float orderings.
++  -- So we take the hit of the additional jump in the false
++  -- case for now.
++  return $ toOL [ BCOND cond (TBlock jmp_lbl_id)
++                , B (TBlock skip_lbl_id)
++                , NEWBLOCK jmp_lbl_id
++                , B far_target
++                , NEWBLOCK skip_lbl_id]
+ 
+ genCondBranch
+     :: BlockId      -- the source of the jump
+@@ -1816,3 +1841,163 @@ genCCall target dest_regs arg_regs bid = do
+       let dst = getRegisterReg platform (CmmLocal dest_reg)
+       let code = code_fx `appOL` op (OpReg w dst) (OpReg w reg_fx)
+       return (code, Nothing)
++
++{- Note [AArch64 far jumps]
++~~~~~~~~~~~~~~~~~~~~~~~~~~~
++AArch conditional jump instructions can only encode an offset of +/-1MB
++which is usually enough but can be exceeded in edge cases. In these cases
++we will replace:
++
++  b.cond <cond> foo
++
++with the sequence:
++
++  b.cond <cond> <lbl_true>
++  b <lbl_false>
++  <lbl_true>:
++  b foo
++  <lbl_false>:
++
++Note the encoding of the `b` instruction still limits jumps to
+++/-128M offsets, but that seems like an acceptable limitation.
++
++Since AArch64 instructions are all of equal length we can reasonably estimate jumps
++in range by counting the instructions between a jump and its target label.
++
++We make some simplifications in the name of performance which can result in overestimating
++jump <-> label offsets:
++
++* To avoid having to recalculate the label offsets once we replaced a jump we simply
++  assume all jumps will be expanded to a three instruction far jump sequence.
++* For labels associated with a info table we assume the info table is 64byte large.
++  Most info tables are smaller than that but it means we don't have to distinguish
++  between multiple types of info tables.
++
++In terms of implementation we walk the instruction stream at least once calculating
++label offsets, and if we determine during this that the functions body is big enough
++to potentially contain out of range jumps we walk the instructions a second time, replacing
++out of range jumps with the sequence of instructions described above.
++
++-}
++
++-- See Note [AArch64 far jumps]
++data BlockInRange = InRange | NotInRange Target
++
++-- See Note [AArch64 far jumps]
++makeFarBranches :: Platform -> LabelMap RawCmmStatics -> [NatBasicBlock Instr]
++                -> UniqSM [NatBasicBlock Instr]
++makeFarBranches {- only used when debugging -} _platform statics basic_blocks = do
++  -- All offsets/positions are counted in multiples of 4 bytes (the size of AArch64 instructions)
++  -- That is an offset of 1 represents a 4-byte/one instruction offset.
++  let (func_size, lblMap) = foldl' calc_lbl_positions (0, mapEmpty) basic_blocks
++  if func_size < max_jump_dist
++    then pure basic_blocks
++    else do
++      (_,blocks) <- mapAccumLM (replace_blk lblMap) 0 basic_blocks
++      pure $ concat blocks
++      -- pprTrace "lblMap" (ppr lblMap) $ basic_blocks
++
++  where
++    -- 2^18, 19 bit immediate with one bit is reserved for the sign
++    max_jump_dist = 2^(18::Int) - 1 :: Int
++    -- Currently all inline info tables fit into 64 bytes.
++    max_info_size     = 16 :: Int
++    long_bc_jump_size =  3 :: Int
++    long_bz_jump_size =  4 :: Int
++
++    -- Replace out of range conditional jumps with unconditional jumps.
++    replace_blk :: LabelMap Int -> Int -> GenBasicBlock Instr -> UniqSM (Int, [GenBasicBlock Instr])
++    replace_blk !m !pos (BasicBlock lbl instrs) = do
++      -- Account for a potential info table before the label.
++      let !block_pos = pos + infoTblSize_maybe lbl
++      (!pos', instrs') <- mapAccumLM (replace_jump m) block_pos instrs
++      let instrs'' = concat instrs'
++      -- We might have introduced new labels, so split the instructions into basic blocks again if neccesary.
++      let (top, split_blocks, no_data) = foldr mkBlocks ([],[],[]) instrs''
++      -- There should be no data in the instruction stream at this point
++      -- massert (null no_data)
++
++      let final_blocks = BasicBlock lbl top : split_blocks
++      pure (pos', final_blocks)
++
++    replace_jump :: LabelMap Int -> Int -> Instr -> UniqSM (Int, [Instr])
++    replace_jump !m !pos instr = do
++      case instr of
++        ANN ann instr -> do
++          (idx,instr':instrs') <- replace_jump m pos instr
++          pure (idx, ANN ann instr':instrs')
++        BCOND cond t
++          -> case target_in_range m t pos of
++              InRange -> pure (pos+long_bc_jump_size,[instr])
++              NotInRange far_target -> do
++                jmp_code <- genCondFarJump cond far_target
++                pure (pos+long_bc_jump_size, fromOL jmp_code)
++        CBZ op t -> long_zero_jump op t EQ
++        CBNZ op t -> long_zero_jump op t NE
++        instr
++          | isMetaInstr instr -> pure (pos,[instr])
++          | otherwise -> pure (pos+1, [instr])
++
++      where
++        -- cmp_op: EQ = CBZ, NEQ = CBNZ
++        long_zero_jump op t cmp_op =
++          case target_in_range m t pos of
++              InRange -> pure (pos+long_bz_jump_size,[instr])
++              NotInRange far_target -> do
++                jmp_code <- genCondFarJump cmp_op far_target
++                -- TODO: Fix zero reg so we can use it here
++                pure (pos + long_bz_jump_size, CMP op (OpImm (ImmInt 0)) : fromOL jmp_code)
++
++
++    target_in_range :: LabelMap Int -> Target -> Int -> BlockInRange
++    target_in_range m target src =
++      case target of
++        (TReg{}) -> InRange
++        (TBlock bid) -> block_in_range m src bid
++        (TLabel clbl)
++          | Just bid <- maybeLocalBlockLabel clbl
++          -> block_in_range m src bid
++          | otherwise
++          -- Maybe we should be pessimistic here, for now just fixing intra proc jumps
++          -> InRange
++
++    block_in_range :: LabelMap Int -> Int -> BlockId -> BlockInRange
++    block_in_range m src_pos dest_lbl =
++      case mapLookup dest_lbl m of
++        Nothing       ->
++          pprTrace "not in range" (ppr dest_lbl) $
++            NotInRange (TBlock dest_lbl)
++        Just dest_pos -> if abs (dest_pos - src_pos) < max_jump_dist
++          then InRange
++          else NotInRange (TBlock dest_lbl)
++
++    calc_lbl_positions :: (Int, LabelMap Int) -> GenBasicBlock Instr -> (Int, LabelMap Int)
++    calc_lbl_positions (pos, m) (BasicBlock lbl instrs)
++      = let !pos' = pos + infoTblSize_maybe lbl
++        in foldl' instr_pos (pos',mapInsert lbl pos' m) instrs
++
++    instr_pos :: (Int, LabelMap Int) -> Instr -> (Int, LabelMap Int)
++    instr_pos (pos, m) instr =
++      case instr of
++        ANN _ann instr -> instr_pos (pos, m) instr
++        NEWBLOCK _bid -> panic "mkFarBranched - unexpected NEWBLOCK" -- At this point there should be no NEWBLOCK
++                                                                     -- in the instruction stream
++                                                                     -- (pos, mapInsert bid pos m)
++        COMMENT{} -> (pos, m)
++        instr
++          | Just jump_size <- is_expandable_jump instr -> (pos+jump_size, m)
++          | otherwise -> (pos+1, m)
++
++    infoTblSize_maybe bid =
++      case mapLookup bid statics of
++        Nothing           -> 0 :: Int
++        Just _info_static -> max_info_size
++
++    -- These jumps have a 19bit immediate as offset which is quite
++    -- limiting so we potentially have to expand them into
++    -- multiple instructions.
++    is_expandable_jump i = case i of
++      CBZ{}   -> Just long_bz_jump_size
++      CBNZ{}  -> Just long_bz_jump_size
++      BCOND{} -> Just long_bc_jump_size
++      _ -> Nothing
+diff --git a/compiler/GHC/CmmToAsm/AArch64/Cond.hs b/compiler/GHC/CmmToAsm/AArch64/Cond.hs
+index 687daccfda1..7efbb9c70bf 100644
+--- a/compiler/GHC/CmmToAsm/AArch64/Cond.hs
++++ b/compiler/GHC/CmmToAsm/AArch64/Cond.hs
+@@ -1,6 +1,6 @@
+ module GHC.CmmToAsm.AArch64.Cond  where
+ 
+-import GHC.Prelude
++import GHC.Prelude hiding (EQ)
+ 
+ -- https://developer.arm.com/documentation/den0024/a/the-a64-instruction-set/data-processing-instructions/conditional-instructions
+ 
+@@ -60,7 +60,13 @@ data Cond
+     | UOGE   -- b.pl
+     | UOGT   -- b.hi
+     -- others
+-    | NEVER  -- b.nv
++    -- NEVER -- b.nv
++             -- I removed never. According to the ARM spec:
++             -- >   The Condition code NV exists only to provide a valid disassembly of
++             -- >   the 0b1111 encoding, otherwise its behavior is identical to AL.
++             -- This can only lead to disaster. Better to not have it than someone
++             -- using it assuming it actually means never.
++
+     | VS     -- oVerflow set
+     | VC     -- oVerflow clear
+     deriving Eq
+diff --git a/compiler/GHC/CmmToAsm/AArch64/Instr.hs b/compiler/GHC/CmmToAsm/AArch64/Instr.hs
+index d8dd1a4dc0c..1fb8193612f 100644
+--- a/compiler/GHC/CmmToAsm/AArch64/Instr.hs
++++ b/compiler/GHC/CmmToAsm/AArch64/Instr.hs
+@@ -743,6 +743,7 @@ data Target
+     = TBlock BlockId
+     | TLabel CLabel
+     | TReg   Reg
++    deriving (Eq, Ord)
+ 
+ 
+ -- Extension
+diff --git a/compiler/GHC/CmmToAsm/AArch64/Ppr.hs b/compiler/GHC/CmmToAsm/AArch64/Ppr.hs
+index fd56d37cd39..c672c342376 100644
+--- a/compiler/GHC/CmmToAsm/AArch64/Ppr.hs
++++ b/compiler/GHC/CmmToAsm/AArch64/Ppr.hs
+@@ -1,7 +1,7 @@
+ {-# OPTIONS_GHC -fno-warn-orphans #-}
+ {-# LANGUAGE CPP #-}
+ 
+-module GHC.CmmToAsm.AArch64.Ppr (pprNatCmmDecl, pprInstr) where
++module GHC.CmmToAsm.AArch64.Ppr (pprNatCmmDecl, pprInstr, pprBasicBlock) where
+ 
+ import GHC.Prelude hiding (EQ)
+ 
+@@ -353,7 +353,10 @@ pprInstr platform instr = case instr of
+     -> line (text "\t.loc" <+> int file <+> int line' <+> int col)
+   DELTA d   -> dualDoc (asmComment $ text "\tdelta = " <> int d) empty
+                -- see Note [dualLine and dualDoc] in GHC.Utils.Outputable
+-  NEWBLOCK _ -> panic "PprInstr: NEWBLOCK"
++  NEWBLOCK blockid -> -- This is invalid assembly. But NEWBLOCK should never be contained
++                      -- in the final instruction stream. But we still want to be able to
++                      -- print it for debugging purposes.
++                      line (text "BLOCK " <> pprAsmLabel platform (blockLbl blockid))
+   LDATA _ _  -> panic "pprInstr: LDATA"
+ 
+   -- Pseudo Instructions -------------------------------------------------------
+@@ -567,7 +570,7 @@ pprCond c = case c of
+   UGE    -> text "hs" -- Carry set/unsigned higher or same ; Greater than or equal, or unordered
+   UGT    -> text "hi" -- Unsigned higher                   ; Greater than, or unordered
+ 
+-  NEVER  -> text "nv" -- Never
++  -- NEVER  -> text "nv" -- Never
+   VS     -> text "vs" -- Overflow                          ; Unordered (at least one NaN operand)
+   VC     -> text "vc" -- No overflow                       ; Not unordered
+ 
+diff --git a/compiler/GHC/CmmToAsm/BlockLayout.hs b/compiler/GHC/CmmToAsm/BlockLayout.hs
+index fa0929348ce..e2096c90209 100644
+--- a/compiler/GHC/CmmToAsm/BlockLayout.hs
++++ b/compiler/GHC/CmmToAsm/BlockLayout.hs
+@@ -49,6 +49,7 @@ import Data.STRef
+ import Control.Monad.ST.Strict
+ import Control.Monad (foldM, unless)
+ import GHC.Data.UnionFind
++import GHC.Types.Unique.Supply (UniqSM)
+ 
+ {-
+   Note [CFG based code layout]
+@@ -794,29 +795,32 @@ sequenceTop
+     => NcgImpl statics instr jumpDest
+     -> Maybe CFG -- ^ CFG if we have one.
+     -> NatCmmDecl statics instr -- ^ Function to serialize
+-    -> NatCmmDecl statics instr
+-
+-sequenceTop _       _           top@(CmmData _ _) = top
+-sequenceTop ncgImpl edgeWeights (CmmProc info lbl live (ListGraph blocks))
+-  = let
+-      config     = ncgConfig ncgImpl
+-      platform   = ncgPlatform config
+-
+-    in CmmProc info lbl live $ ListGraph $ ncgMakeFarBranches ncgImpl info $
+-         if -- Chain based algorithm
+-            | ncgCfgBlockLayout config
+-            , backendMaintainsCfg platform
+-            , Just cfg <- edgeWeights
+-            -> {-# SCC layoutBlocks #-} sequenceChain info cfg blocks
+-
+-            -- Old algorithm without edge weights
+-            | ncgCfgWeightlessLayout config
+-               || not (backendMaintainsCfg platform)
+-            -> {-# SCC layoutBlocks #-} sequenceBlocks Nothing info blocks
+-
+-            -- Old algorithm with edge weights (if any)
+-            | otherwise
+-            -> {-# SCC layoutBlocks #-} sequenceBlocks edgeWeights info blocks
++    -> UniqSM (NatCmmDecl statics instr)
++
++sequenceTop _       _           top@(CmmData _ _) = pure top
++sequenceTop ncgImpl edgeWeights (CmmProc info lbl live (ListGraph blocks)) = do
++    let config     = ncgConfig ncgImpl
++        platform   = ncgPlatform config
++
++        seq_blocks =
++                  if -- Chain based algorithm
++                      | ncgCfgBlockLayout config
++                      , backendMaintainsCfg platform
++                      , Just cfg <- edgeWeights
++                      -> {-# SCC layoutBlocks #-} sequenceChain info cfg blocks
++
++                      -- Old algorithm without edge weights
++                      | ncgCfgWeightlessLayout config
++                        || not (backendMaintainsCfg platform)
++                      -> {-# SCC layoutBlocks #-} sequenceBlocks Nothing info blocks
++
++                      -- Old algorithm with edge weights (if any)
++                      | otherwise
++                      -> {-# SCC layoutBlocks #-} sequenceBlocks edgeWeights info blocks
++
++    far_blocks <- (ncgMakeFarBranches ncgImpl) platform info seq_blocks
++    pure $ CmmProc info lbl live $ ListGraph far_blocks
++
+ 
+ -- The old algorithm:
+ -- It is very simple (and stupid): We make a graph out of
+diff --git a/compiler/GHC/CmmToAsm/Monad.hs b/compiler/GHC/CmmToAsm/Monad.hs
+index 2a61ff0314f..1426f8939dd 100644
+--- a/compiler/GHC/CmmToAsm/Monad.hs
++++ b/compiler/GHC/CmmToAsm/Monad.hs
+@@ -93,7 +93,8 @@ data NcgImpl statics instr jumpDest = NcgImpl {
+                               -> UniqSM (NatCmmDecl statics instr, [(BlockId,BlockId)]),
+     -- ^ The list of block ids records the redirected jumps to allow us to update
+     -- the CFG.
+-    ncgMakeFarBranches        :: LabelMap RawCmmStatics -> [NatBasicBlock instr] -> [NatBasicBlock instr],
++    ncgMakeFarBranches        :: Platform -> LabelMap RawCmmStatics -> [NatBasicBlock instr]
++                              -> UniqSM [NatBasicBlock instr],
+     extractUnwindPoints       :: [instr] -> [UnwindPoint],
+     -- ^ given the instruction sequence of a block, produce a list of
+     -- the block's 'UnwindPoint's
+@@ -140,7 +141,7 @@ mistake would readily show up in performance tests). -}
+ data NatM_State
+         = NatM_State {
+                 natm_us          :: UniqSupply,
+-                natm_delta       :: Int,
++                natm_delta       :: Int, -- ^ Stack offset for unwinding information
+                 natm_imports     :: [(CLabel)],
+                 natm_pic         :: Maybe Reg,
+                 natm_config      :: NCGConfig,
+diff --git a/compiler/GHC/CmmToAsm/PPC/Instr.hs b/compiler/GHC/CmmToAsm/PPC/Instr.hs
+index 3fedcc1fc40..8682d1db9d8 100644
+--- a/compiler/GHC/CmmToAsm/PPC/Instr.hs
++++ b/compiler/GHC/CmmToAsm/PPC/Instr.hs
+@@ -688,12 +688,13 @@ takeRegRegMoveInstr _  = Nothing
+ -- big, we have to work around this limitation.
+ 
+ makeFarBranches
+-        :: LabelMap RawCmmStatics
++        :: Platform
++        -> LabelMap RawCmmStatics
+         -> [NatBasicBlock Instr]
+-        -> [NatBasicBlock Instr]
+-makeFarBranches info_env blocks
+-    | NE.last blockAddresses < nearLimit = blocks
+-    | otherwise = zipWith handleBlock blockAddressList blocks
++        -> UniqSM [NatBasicBlock Instr]
++makeFarBranches _platform info_env blocks
++    | NE.last blockAddresses < nearLimit = return blocks
++    | otherwise = return $ zipWith handleBlock blockAddressList blocks
+     where
+         blockAddresses = NE.scanl (+) 0 $ map blockLen blocks
+         blockAddressList = toList blockAddresses
+diff --git a/compiler/GHC/CmmToAsm/X86.hs b/compiler/GHC/CmmToAsm/X86.hs
+index a82674afe8f..a13fa2e4656 100644
+--- a/compiler/GHC/CmmToAsm/X86.hs
++++ b/compiler/GHC/CmmToAsm/X86.hs
+@@ -38,7 +38,7 @@ ncgX86_64 config = NcgImpl
+    , maxSpillSlots             = X86.maxSpillSlots config
+    , allocatableRegs           = X86.allocatableRegs platform
+    , ncgAllocMoreStack         = X86.allocMoreStack platform
+-   , ncgMakeFarBranches        = const id
++   , ncgMakeFarBranches        = \_p _i bs -> pure bs
+    , extractUnwindPoints       = X86.extractUnwindPoints
+    , invertCondBranches        = X86.invertCondBranches
+    }
+-- 
+GitLab
+

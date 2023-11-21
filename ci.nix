@@ -77,10 +77,10 @@
     # of 'lib.systems.examples' are not understood between all versions
     let lib = nixpkgs.lib;
     in lib.optionalAttrs (nixpkgsName == "unstable"
-      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc947"])
-       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc947"])
-       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc947"])
-       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc947"])
+      && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
+       || (system == "aarch64-linux" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
+       || (system == "x86_64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
+       || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
        )) {
     inherit (lib.systems.examples) ghcjs;
   } // lib.optionalAttrs (nixpkgsName == "unstable"

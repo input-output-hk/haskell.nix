@@ -11,13 +11,13 @@
         containers.revision = (((hackage.containers)."0.6.5.1").revisions).default;
         base.revision = (((hackage.base)."4.14.3.0").revisions).default;
         time.revision = (((hackage.time)."1.9.3").revisions).default;
-        terminfo.revision = import ./cabal-files/terminfo.nix;
         deepseq.revision = (((hackage.deepseq)."1.4.4.0").revisions).default;
         rts.revision = (((hackage.rts)."1.0.1").revisions).default;
+        ghci.revision = (((hackage.ghci)."8.10.7").revisions).default;
         template-haskell.revision = (((hackage.template-haskell)."2.16.0.0").revisions).default;
         binary.revision = (((hackage.binary)."0.8.8.0").revisions).default;
+        ghc-boot.revision = (((hackage.ghc-boot)."8.10.7").revisions).default;
         integer-gmp.revision = (((hackage.integer-gmp)."1.0.3.0").revisions).default;
-        process.revision = (((hackage.process)."1.6.13.2").revisions).default;
         unix.revision = (((hackage.unix)."2.7.2.2").revisions).default;
         transformers.revision = (((hackage.transformers)."0.5.6.2").revisions).default;
         array.revision = (((hackage.array)."0.5.4.0").revisions).default;
@@ -28,6 +28,7 @@
         version = "8.10.7";
         nix-name = "ghc8107";
         packages = {
+          "ghc-boot" = "8.10.7";
           "pretty" = "1.1.3.6";
           "array" = "0.5.4.0";
           "bytestring" = "0.10.12.0";
@@ -37,11 +38,11 @@
           "ghc-boot-th" = "8.10.7";
           "base" = "4.14.3.0";
           "time" = "1.9.3";
-          "process" = "1.6.13.2";
           "directory" = "1.3.6.0";
           "rts" = "1.0.1";
           "transformers" = "0.5.6.2";
           "template-haskell" = "2.16.0.0";
+          "ghci" = "8.10.7";
           "deepseq" = "1.4.4.0";
           "unix" = "2.7.2.2";
           "integer-gmp" = "1.0.3.0";
@@ -54,11 +55,7 @@
     {
       packages = {
         iserv-proxy = ./.plan.nix/iserv-proxy.nix;
-        ghc = ./.plan.nix/ghc.nix;
-        Win32 = ./.plan.nix/Win32.nix;
         remote-iserv = ./.plan.nix/remote-iserv.nix;
-        ghci = ./.plan.nix/ghci.nix;
-        ghc-boot = ./.plan.nix/ghc-boot.nix;
         iserv = ./.plan.nix/iserv.nix;
         libiserv = ./.plan.nix/libiserv.nix;
         hpc = ./.plan.nix/hpc.nix;
@@ -69,22 +66,7 @@
       {
         packages = {
           "iserv-proxy" = { flags = {}; };
-          "ghc" = {
-            flags = {
-              "dynamic-system-linker" = lib.mkOverride 900 true;
-              "stage2" = lib.mkOverride 900 false;
-              "integer-simple" = lib.mkOverride 900 false;
-              "terminfo" = lib.mkOverride 900 true;
-              "ghci" = lib.mkOverride 900 true;
-              "stage3" = lib.mkOverride 900 false;
-              "integer-gmp" = lib.mkOverride 900 false;
-              "stage1" = lib.mkOverride 900 false;
-              };
-            };
-          "Win32" = { flags = {}; };
           "remote-iserv" = { flags = {}; };
-          "ghci" = { flags = { "ghci" = lib.mkOverride 900 true; }; };
-          "ghc-boot" = { flags = {}; };
           "iserv" = { flags = {}; };
           "libiserv" = { flags = { "network" = lib.mkOverride 900 true; }; };
           "hpc" = { flags = {}; };
@@ -107,8 +89,6 @@
           "iserv".components.exes."iserv".planned = lib.mkOverride 900 true;
           "time".components.library.planned = lib.mkOverride 900 true;
           "network".components.library.planned = lib.mkOverride 900 true;
-          "ghc".components.library.planned = lib.mkOverride 900 true;
-          "process".components.library.planned = lib.mkOverride 900 true;
           "template-haskell".components.library.planned = lib.mkOverride 900 true;
           "ghci".components.library.planned = lib.mkOverride 900 true;
           "ghc-boot".components.library.planned = lib.mkOverride 900 true;
@@ -121,7 +101,6 @@
           "integer-gmp".components.library.planned = lib.mkOverride 900 true;
           "containers".components.library.planned = lib.mkOverride 900 true;
           "iserv-proxy".components.exes."iserv-proxy".planned = lib.mkOverride 900 true;
-          "terminfo".components.library.planned = lib.mkOverride 900 true;
           };
         })
     ];
