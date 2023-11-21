@@ -21,7 +21,7 @@
         HTTP.flags.network-uri = true;
         HTTP.flags.conduit10 = false;
         HTTP.flags.warn-as-error = false;
-        ghc-bignum.revision = (((hackage.ghc-bignum)."1.2").revisions).default;
+        ghc-bignum.revision = (((hackage.ghc-bignum)."1.3").revisions).default;
         zlib.revision = import ./cabal-files/zlib.nix;
         zlib.flags.non-blocking-ffi = false;
         zlib.flags.bundled-c-zlib = false;
@@ -102,7 +102,7 @@
           "ghc-boot-th" = "9.2.6";
           "base" = "4.16.4.0";
           "time" = "1.11.1.1";
-          "ghc-bignum" = "1.2";
+          "ghc-bignum" = "1.3";
           "exceptions" = "0.10.4";
           "rts" = "1.0.2";
           "transformers" = "0.5.6.2";

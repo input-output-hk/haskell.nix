@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, haskellLib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -54,7 +54,7 @@ let
 in recurseIntoAttrs {
   # Does not work on ghcjs because it needs zlib.
   # Does not work on windows because it needs mintty.
-  meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows
+  meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows || (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     || compiler-nix-name != ((import ./pkgs.nix).pkgs null).compiler.nix-name;
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {

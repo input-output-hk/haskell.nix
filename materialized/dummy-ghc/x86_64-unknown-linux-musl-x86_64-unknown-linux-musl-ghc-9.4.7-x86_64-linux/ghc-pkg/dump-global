@@ -236,6 +236,7 @@ hidden-modules:
     Distribution.ZinzaPrelude Paths_Cabal
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/Cabal-3.8.1.0
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/Cabal-3.8.1.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/Cabal-3.8.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/Cabal-3.8.1.0
 hs-libraries:         HSCabal-3.8.1.0
@@ -356,6 +357,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/Cabal-syntax-3.8.1.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/Cabal-syntax-3.8.1.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/Cabal-syntax-3.8.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/Cabal-syntax-3.8.1.0
@@ -393,6 +396,7 @@ exposed-modules:
     Data.Array.Storable.Safe Data.Array.Unboxed Data.Array.Unsafe
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/array-0.5.4.0
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/array-0.5.4.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/array-0.5.4.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/array-0.5.4.0
 hs-libraries:         HSarray-0.5.4.0
@@ -502,6 +506,8 @@ hidden-modules:
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/base-4.17.2.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/base-4.17.2.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/base-4.17.2.0
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/base-4.17.2.0
@@ -545,6 +551,7 @@ hidden-modules:
     Data.Binary.FloatCast
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/binary-0.8.9.1
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/binary-0.8.9.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/binary-0.8.9.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/binary-0.8.9.1
 hs-libraries:         HSbinary-0.8.9.1
@@ -627,6 +634,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/bytestring-0.11.5.2
 library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/bytestring-0.11.5.2
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/bytestring-0.11.5.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/bytestring-0.11.5.2
@@ -682,6 +691,7 @@ hidden-modules:
     Data.IntMap.Internal.DeprecatedDebug
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/containers-0.6.7
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/containers-0.6.7
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/containers-0.6.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/containers-0.6.7
 hs-libraries:         HScontainers-0.6.7
@@ -719,6 +729,7 @@ exposed-modules:      Control.DeepSeq
 hidden-modules:       Control.DeepSeq.BackDoor
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/deepseq-1.4.8.0
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/deepseq-1.4.8.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/deepseq-1.4.8.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/deepseq-1.4.8.0
 hs-libraries:         HSdeepseq-1.4.8.0
@@ -749,6 +760,7 @@ hidden-modules:
     System.Directory.Internal.Posix System.Directory.Internal.Windows
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/directory-1.3.7.1
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/directory-1.3.7.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/directory-1.3.7.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/directory-1.3.7.1
@@ -778,6 +790,7 @@ exposed:              True
 exposed-modules:      Control.Monad.Catch Control.Monad.Catch.Pure
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/exceptions-0.10.5
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/exceptions-0.10.5
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/exceptions-0.10.5
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/exceptions-0.10.5
@@ -812,6 +825,7 @@ exposed-modules:
     System.FilePath System.FilePath.Posix System.FilePath.Windows
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/filepath-1.4.2.2
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/filepath-1.4.2.2
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/filepath-1.4.2.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/filepath-1.4.2.2
 hs-libraries:         HSfilepath-1.4.2.2
@@ -1070,6 +1084,7 @@ exposed-modules:
     Language.Haskell.Syntax.Pat, Language.Haskell.Syntax.Type
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-9.4.7
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-9.4.7
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-9.4.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/ghc-9.4.7
 hs-libraries:         HSghc-9.4.7
@@ -1106,6 +1121,8 @@ exposed-modules:
 hidden-modules:       GHC.Num.Backend.GMP
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-bignum-1.3
 library-dirs:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-bignum-1.3
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-bignum-1.3
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
@@ -1154,6 +1171,7 @@ exposed-modules:
     GHC.Version
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-boot-9.4.7
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-boot-9.4.7
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-boot-9.4.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/ghc-boot-9.4.7
 hs-libraries:         HSghc-boot-9.4.7
@@ -1187,6 +1205,7 @@ exposed-modules:
     GHC.ForeignSrcLang.Type GHC.LanguageExtensions.Type GHC.Lexeme
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-boot-th-9.4.7
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-boot-th-9.4.7
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-boot-th-9.4.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/ghc-boot-th-9.4.7
@@ -1224,6 +1243,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-compact-0.1.0.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-compact-0.1.0.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-compact-0.1.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/ghc-compact-0.1.0.0
@@ -1258,6 +1279,7 @@ exposed-modules:
     GHC.Exts.Heap.ProfInfo.Types GHC.Exts.Heap.Utils
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-heap-9.4.7
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-heap-9.4.7
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-heap-9.4.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/ghc-heap-9.4.7
 hs-libraries:         HSghc-heap-9.4.7
@@ -1285,6 +1307,7 @@ exposed-modules:
     GHC.PrimopWrappers GHC.Tuple GHC.Types GHC.Prim
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-prim-0.9.1
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-prim-0.9.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghc-prim-0.9.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/ghc-prim-0.9.1
 hs-libraries:         HSghc-prim-0.9.1
@@ -1315,6 +1338,8 @@ exposed-modules:
     GHCi.TH.Binary
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghci-9.4.7
 library-dirs:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghci-9.4.7
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/ghci-9.4.7
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
@@ -1373,6 +1398,7 @@ hidden-modules:
     System.Console.Haskeline.Backend.Terminfo
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/haskeline-0.8.2
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/haskeline-0.8.2
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/haskeline-0.8.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/haskeline-0.8.2
 hs-libraries:         HShaskeline-0.8.2
@@ -1404,6 +1430,7 @@ exposed-modules:
     Trace.Hpc.Mix Trace.Hpc.Reflect Trace.Hpc.Tix Trace.Hpc.Util
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/hpc-0.6.1.0
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/hpc-0.6.1.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/hpc-0.6.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/hpc-0.6.1.0
 hs-libraries:         HShpc-0.6.1.0
@@ -1435,6 +1462,7 @@ exposed:              True
 exposed-modules:      GHC.Integer.GMP.Internals
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/integer-gmp-1.1
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/integer-gmp-1.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/integer-gmp-1.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/integer-gmp-1.1
 hs-libraries:         HSinteger-gmp-1.1
@@ -1461,6 +1489,7 @@ exposed:              True
 exposed-modules:      GHCi.Utils IServ
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/libiserv-9.4.7
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/libiserv-9.4.7
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/libiserv-9.4.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/libiserv-9.4.7
 hs-libraries:         HSlibiserv-9.4.7
@@ -1502,6 +1531,7 @@ exposed-modules:
     Control.Monad.Writer.Strict
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/mtl-2.2.2
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/mtl-2.2.2
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/mtl-2.2.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/mtl-2.2.2
 hs-libraries:         HSmtl-2.2.2
@@ -1552,6 +1582,7 @@ exposed-modules:
     Text.ParserCombinators.Parsec.Token
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/parsec-3.1.16.1
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/parsec-3.1.16.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/parsec-3.1.16.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/parsec-3.1.16.1
 hs-libraries:         HSparsec-3.1.16.1
@@ -1587,6 +1618,7 @@ exposed-modules:
     Text.PrettyPrint.HughesPJClass
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/pretty-1.1.3.6
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/pretty-1.1.3.6
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/pretty-1.1.3.6
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/pretty-1.1.3.6
 hs-libraries:         HSpretty-1.1.3.6
@@ -1616,6 +1648,7 @@ exposed-modules:      System.Cmd System.Process System.Process.Internals
 hidden-modules:       System.Process.Common System.Process.Posix
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/process-1.6.17.0
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/process-1.6.17.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/process-1.6.17.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/process-1.6.17.0
 hs-libraries:         HSprocess-1.6.17.0
@@ -1638,6 +1671,8 @@ license:              BSD-3-Clause
 maintainer:           glasgow-haskell-users@haskell.org
 exposed:              True
 library-dirs:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/rts-1.0.2
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/rts-1.0.2
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
@@ -1742,6 +1777,7 @@ exposed-modules:
 hidden-modules:       Control.Sequential.STM
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/stm-2.5.1.0
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/stm-2.5.1.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/stm-2.5.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/stm-2.5.1.0
 hs-libraries:         HSstm-2.5.1.0
@@ -1790,6 +1826,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/template-haskell-2.19.0.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/template-haskell-2.19.0.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/template-haskell-2.19.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/template-haskell-2.19.0.0
@@ -1826,6 +1864,8 @@ exposed-modules:
     System.Console.Terminfo.Keys
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/terminfo-0.4.1.5
 library-dirs:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/terminfo-0.4.1.5
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/terminfo-0.4.1.5
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
@@ -1905,6 +1945,7 @@ exposed-modules:
 hidden-modules:       Data.Text.Show
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/text-2.0.2
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/text-2.0.2
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/text-2.0.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/text-2.0.2
 hs-libraries:         HStext-2.0.2
@@ -1959,6 +2000,7 @@ hidden-modules:
     Data.Time.Format.Parse.Instances
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/time-1.12.2
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/time-1.12.2
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/time-1.12.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/time-1.12.2
 hs-libraries:         HStime-1.12.2
@@ -2016,6 +2058,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/transformers-0.5.6.2
 library-dirs:
     ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/transformers-0.5.6.2
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/transformers-0.5.6.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:
     ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/transformers-0.5.6.2
@@ -2066,6 +2110,7 @@ hidden-modules:
     System.Posix.Process.Common System.Posix.Terminal.Common
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/unix-2.7.3
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/unix-2.7.3
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/unix-2.7.3
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/unix-2.7.3
 hs-libraries:         HSunix-2.7.3
@@ -2105,6 +2150,7 @@ hidden-modules:
     Text.XHtml.BlockTable Text.XHtml.Extras Text.XHtml.Internals
 import-dirs:          ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/xhtml-3000.2.2.1
 library-dirs:         ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/xhtml-3000.2.2.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7/xhtml-3000.2.2.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-linux-ghc-9.4.7
 data-dir:             ${pkgroot}/../share/x86_64-linux-ghc-9.4.7/xhtml-3000.2.2.1
 hs-libraries:         HSxhtml-3000.2.2.1

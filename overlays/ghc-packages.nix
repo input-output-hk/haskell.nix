@@ -73,7 +73,7 @@ let
       iserv        = "utils/iserv";
     } // final.lib.optionalAttrs ((!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9.6" < 0) && builtins.compareVersions ghcVersion "9.8" < 0) {
       libiserv     = "libraries/libiserv";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.6" > 0) {
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" > 0) {
       Cabal        = "libraries/Cabal/Cabal";
       Cabal-syntax = "libraries/Cabal/Cabal-syntax";
       cabal-install = "libraries/Cabal/cabal-install";
@@ -214,7 +214,7 @@ in rec {
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
-        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq"
+        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc" "ghc-boot" "ghci" "Win32" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq"
            "Cabal" "Cabal-syntax" "cabal-install" "cabal-install-solver" ])) (ghc-extra-pkgs ghc.version));
       cabalProject = ''
         packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
