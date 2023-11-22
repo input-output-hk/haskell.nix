@@ -48,8 +48,8 @@ in builtins.listToAttrs (builtins.concatMap (system: builtins.concatMap (compile
      || (system == "x86_64-linux"  && !__elem compiler-nix-name ["ghc865" "ghc881" "ghc882" "ghc883"
      "ghc8101" "ghc8102" "ghc8103" "ghc8104" "ghc8105" "ghc8106" "ghc8107" "ghc901" "ghc902"
      "ghc921" "ghc922" "ghc923" "ghc924" "ghc925" "ghc926" "ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc947" "ghc961" "ghc962" "ghc963" "ghc9820230704"])) [
-#  { name = "${prefix}-arm-musl";           value = (pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
-#  { name = "${prefix}-hello-arm-musl";     value = pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.tool compiler-nix-name "hello" {}; }
+  { name = "${prefix}-arm-musl";           value = (pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.roots' compiler-nix-name).ghc-extra-projects-nix or {}; }
+  { name = "${prefix}-hello-arm-musl";     value = pkgs.pkgsCross.aarch64-multiplatform-musl.haskell-nix.tool compiler-nix-name "hello" {}; }
 ] ++ eval.lib.optionals (
         (system == "x86_64-linux"   && __elem compiler-nix-name ["ghc865" "ghc884" "ghc8105" "ghc8106" "ghc8107" "ghc961" "ghc962" "ghc963" "ghc981" "ghc9820230704"])
      || (system == "aarch64-linux"  && __elem compiler-nix-name ["ghc961" "ghc962" "ghc963" "ghc981" "ghc9820230704"])
