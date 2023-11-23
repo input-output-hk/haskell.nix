@@ -42,7 +42,7 @@ final: prev:
         withTH = import ./mingw_w64.nix {
           inherit (pkgs.stdenv) hostPlatform;
           inherit (pkgs.pkgsBuildBuild) lib writeShellScriptBin;
-          wine = pkgs.pkgsBuildBuild.winePackages.minimal;
+          wine = pkgs.pkgsBuildBuild.wine64Packages.minimal;
           inherit (pkgs.windows) mingw_w64_pthreads;
           inherit (pkgs) gmp;
           inherit (pkgs.pkgsBuildBuild) symlinkJoin;
