@@ -35,7 +35,8 @@ let
             tarball = final.fetchzip {
               name = "nix-tools-0.1.0.0";
               url = "https://ci.zw3rk.com/build/3419283/download/1/nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz";
-              sha256 = "sha256-0NFDSRJM+f8n3K8902LqqjNJfyqgWUTKAM5xmInsqpU=";            };
+              sha256 = "sha256-0NFDSRJM+f8n3K8902LqqjNJfyqgWUTKAM5xmInsqpU=";
+            };
             nix-tools-provided-exes = builtins.attrNames nix-tools-pkgs.nix-tools.exes;
           in
             # add the missing exes attributes to the tarball derivation
