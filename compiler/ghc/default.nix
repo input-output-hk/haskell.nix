@@ -354,7 +354,7 @@ let
 in
 stdenv.mkDerivation (rec {
   version = ghc-version;
-  name = "${targetPrefix}ghc-${version}";
+  name = "${targetPrefix}ghc-${version}" + lib.optionalString (useLLVM) "-llvm";
 
   inherit src configureFlags;
   patches = ghc-patches;
