@@ -239,6 +239,7 @@ hidden-modules:
     Paths_Cabal
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Cabal-3.10.1.0
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Cabal-3.10.1.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Cabal-3.10.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/Cabal-3.10.1.0
 hs-libraries:         HSCabal-3.10.1.0
@@ -359,6 +360,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Cabal-syntax-3.10.1.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Cabal-syntax-3.10.1.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Cabal-syntax-3.10.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/Cabal-syntax-3.10.1.0
@@ -433,6 +436,7 @@ hidden-modules:
     System.Win32.SymbolicLink.Internal System.Win32.Time.Internal
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Win32-2.13.3.0
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Win32-2.13.3.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/Win32-2.13.3.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/Win32-2.13.3.0
 hs-libraries:         HSWin32-2.13.3.0
@@ -473,6 +477,7 @@ exposed-modules:
     Data.Array.Storable.Safe Data.Array.Unboxed Data.Array.Unsafe
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/array-0.5.5.0
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/array-0.5.5.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/array-0.5.5.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/array-0.5.5.0
 hs-libraries:         HSarray-0.5.5.0
@@ -593,6 +598,8 @@ hidden-modules:
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/base-4.18.1.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/base-4.18.1.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/base-4.18.1.0
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/base-4.18.1.0
@@ -639,6 +646,7 @@ hidden-modules:
     Data.Binary.FloatCast
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/binary-0.8.9.1
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/binary-0.8.9.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/binary-0.8.9.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/binary-0.8.9.1
 hs-libraries:         HSbinary-0.8.9.1
@@ -721,6 +729,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/bytestring-0.11.5.2
 library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/bytestring-0.11.5.2
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/bytestring-0.11.5.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/bytestring-0.11.5.2
@@ -776,6 +786,7 @@ hidden-modules:
     Data.IntMap.Internal.DeprecatedDebug
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/containers-0.6.7
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/containers-0.6.7
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/containers-0.6.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/containers-0.6.7
@@ -814,6 +825,7 @@ exposed-modules:      Control.DeepSeq
 hidden-modules:       Control.DeepSeq.BackDoor
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/deepseq-1.4.8.1
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/deepseq-1.4.8.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/deepseq-1.4.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/deepseq-1.4.8.1
@@ -846,6 +858,8 @@ hidden-modules:
 import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/directory-1.3.8.1
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/directory-1.3.8.1
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/directory-1.3.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
@@ -880,6 +894,8 @@ exposed-modules:      Control.Monad.Catch Control.Monad.Catch.Pure
 import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/exceptions-0.10.7
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/exceptions-0.10.7
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/exceptions-0.10.7
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
@@ -933,6 +949,8 @@ exposed-modules:
 import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/filepath-1.4.100.4
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/filepath-1.4.100.4
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/filepath-1.4.100.4
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
@@ -1232,6 +1250,7 @@ exposed-modules:
     Language.Haskell.Syntax.Type
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-9.6.3
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-9.6.3
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-9.6.3
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/ghc-9.6.3
 hs-libraries:         HSghc-9.6.3
@@ -1268,6 +1287,8 @@ exposed-modules:
 hidden-modules:       GHC.Num.Backend.GMP
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-bignum-1.3
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-bignum-1.3
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-bignum-1.3
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
@@ -1316,6 +1337,7 @@ exposed-modules:
     GHC.Utils.Encoding.UTF8, GHC.Version
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-boot-9.6.3
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-boot-9.6.3
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-boot-9.6.3
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/ghc-boot-9.6.3
 hs-libraries:         HSghc-boot-9.6.3
@@ -1350,6 +1372,8 @@ exposed-modules:
 import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-boot-th-9.6.3
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-boot-th-9.6.3
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-boot-th-9.6.3
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
@@ -1388,6 +1412,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-compact-0.1.0.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-compact-0.1.0.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-compact-0.1.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/ghc-compact-0.1.0.0
@@ -1422,6 +1448,7 @@ exposed-modules:
     GHC.Exts.Heap.ProfInfo.Types GHC.Exts.Heap.Utils
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-heap-9.6.3
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-heap-9.6.3
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-heap-9.6.3
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/ghc-heap-9.6.3
 hs-libraries:         HSghc-heap-9.6.3
@@ -1453,6 +1480,7 @@ exposed-modules:
     GHC.PrimopWrappers GHC.Tuple GHC.Tuple.Prim GHC.Types GHC.Prim
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-prim-0.10.0
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-prim-0.10.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghc-prim-0.10.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/ghc-prim-0.10.0
@@ -1484,6 +1512,8 @@ exposed-modules:
     GHCi.TH.Binary
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghci-9.6.3
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghci-9.6.3
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/ghci-9.6.3
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
@@ -1542,6 +1572,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/haskeline-0.8.2.1
 library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/haskeline-0.8.2.1
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/haskeline-0.8.2.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/haskeline-0.8.2.1
@@ -1576,6 +1608,7 @@ exposed-modules:
     Trace.Hpc.Mix Trace.Hpc.Reflect Trace.Hpc.Tix Trace.Hpc.Util
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/hpc-0.6.2.0
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/hpc-0.6.2.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/hpc-0.6.2.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/hpc-0.6.2.0
 hs-libraries:         HShpc-0.6.2.0
@@ -1607,6 +1640,7 @@ exposed:              True
 exposed-modules:      GHC.Integer.GMP.Internals
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/integer-gmp-1.1
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/integer-gmp-1.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/integer-gmp-1.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/integer-gmp-1.1
@@ -1634,6 +1668,7 @@ exposed:              True
 exposed-modules:      GHCi.Utils IServ
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/libiserv-9.6.3
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/libiserv-9.6.3
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/libiserv-9.6.3
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/libiserv-9.6.3
 hs-libraries:         HSlibiserv-9.6.3
@@ -1677,6 +1712,7 @@ exposed-modules:
     Control.Monad.Writer.Lazy Control.Monad.Writer.Strict
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/mtl-2.3.1
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/mtl-2.3.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/mtl-2.3.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/mtl-2.3.1
 hs-libraries:         HSmtl-2.3.1
@@ -1727,6 +1763,7 @@ exposed-modules:
     Text.ParserCombinators.Parsec.Token
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/parsec-3.1.16.1
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/parsec-3.1.16.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/parsec-3.1.16.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/parsec-3.1.16.1
@@ -1763,6 +1800,7 @@ exposed-modules:
     Text.PrettyPrint.HughesPJClass
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/pretty-1.1.3.6
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/pretty-1.1.3.6
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/pretty-1.1.3.6
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/pretty-1.1.3.6
 hs-libraries:         HSpretty-1.1.3.6
@@ -1792,6 +1830,7 @@ exposed-modules:      System.Cmd System.Process System.Process.Internals
 hidden-modules:       System.Process.Common System.Process.Windows
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/process-1.6.17.0
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/process-1.6.17.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/process-1.6.17.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/process-1.6.17.0
@@ -1816,6 +1855,8 @@ license:              BSD-3-Clause
 maintainer:           glasgow-haskell-users@haskell.org
 exposed:              True
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/rts-1.0.2
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/rts-1.0.2
 dynamic-library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
@@ -1921,6 +1962,7 @@ exposed-modules:
 hidden-modules:       Control.Sequential.STM
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/stm-2.5.1.0
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/stm-2.5.1.0
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/stm-2.5.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/stm-2.5.1.0
 hs-libraries:         HSstm-2.5.1.0
@@ -1955,6 +1997,8 @@ hidden-modules:
 import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/template-haskell-2.20.0.0
 library-dirs:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/template-haskell-2.20.0.0
+library-dirs-static:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/template-haskell-2.20.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
@@ -2034,6 +2078,7 @@ exposed-modules:
 hidden-modules:       Data.Text.Show
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/text-2.0.2
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/text-2.0.2
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/text-2.0.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/text-2.0.2
 hs-libraries:         HStext-2.0.2
@@ -2088,6 +2133,7 @@ hidden-modules:
     Data.Time.Format.Parse.Instances
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/time-1.12.2
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/time-1.12.2
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/time-1.12.2
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:             ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/time-1.12.2
 hs-libraries:         HStime-1.12.2
@@ -2144,6 +2190,8 @@ import-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/transformers-0.6.1.0
 library-dirs:
     ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/transformers-0.6.1.0
+library-dirs-static:
+    ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/transformers-0.6.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/transformers-0.6.1.0
@@ -2183,6 +2231,7 @@ hidden-modules:
     Text.XHtml.BlockTable Text.XHtml.Extras Text.XHtml.Internals
 import-dirs:          ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/xhtml-3000.2.2.1
 library-dirs:         ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/xhtml-3000.2.2.1
+library-dirs-static:  ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3/xhtml-3000.2.2.1
 dynamic-library-dirs: ${pkgroot}/../lib/x86_64-windows-ghc-9.6.3
 data-dir:
     ${pkgroot}/../share/x86_64-windows-ghc-9.6.3/xhtml-3000.2.2.1
