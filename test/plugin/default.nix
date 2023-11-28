@@ -1,4 +1,4 @@
-{ stdenv, lib, project', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
+{ stdenv, lib, haskellLib, project', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
