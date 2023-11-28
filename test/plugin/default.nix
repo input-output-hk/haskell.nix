@@ -21,6 +21,7 @@ in recurseIntoAttrs {
     || __compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" >= 0
     || stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
-    || stdenv.hostPlatform.isWindows;
+    || stdenv.hostPlatform.isWindows
+    || (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64);
   build = packages.test.components.library;
 }
