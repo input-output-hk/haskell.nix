@@ -25,14 +25,16 @@ let
     in
       writeShellScriptBin ("iserv-wrapper" + lib.optionalString enableProfiling "-prof") ''
     set -euo pipefail
+    ISERV_ARGS=''${ISERV_ARGS:-}
+    PROXY_ARGS=''${PROXY_ARGS:-}
     # Unset configure flags as configure should have run already
     unset configureFlags
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
-    ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override (lib.optionalAttrs hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ];})}/bin/${interpreter.exeName} tmp $PORT &
+    ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override (lib.optionalAttrs hostPlatform.isAndroid { setupBuildFlags = ["--ghc-option=-optl-static" ];})}/bin/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
     (>&2 echo "---| ${interpreter.exeName} should have started on $PORT")
     RISERV_PID="$!"
-    ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT"
+    ${iserv-proxy}/bin/iserv-proxy $@ 127.0.0.1 "$PORT" $PROXY_ARGS
     (>&2 echo "---> killing ${interpreter.exeName}...")
     kill $RISERV_PID
     '';
