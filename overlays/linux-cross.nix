@@ -32,10 +32,7 @@ let
     PORT=$((5000 + $RANDOM % 5000))
     (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
     ${qemu}/bin/qemu-${qemuSuffix} ${interpreter.override
-      ({
-        patches = [ ./patches/iserv-proxy-keep-cafs.patch ]
-                  ;
-       } // lib.optionalAttrs hostPlatform.isAndroid {
+      (lib.optionalAttrs hostPlatform.isAndroid {
         setupBuildFlags = ["--ghc-option=-optl-static" ] ++ lib.optional hostPlatform.isAarch32 "--ghc-option=-optl-no-pie";
         enableDebugRTS = true;
       })}/bin/${interpreter.exeName} tmp $PORT $ISERV_ARGS &
