@@ -1047,18 +1047,9 @@ final: prev: {
               exes = pkgs: (pkgs.haskell-nix.cabalProject' ({pkgs, ...}: {
                 name = "iserv-proxy";
                 inherit compiler-nix-name;
-                src =
-                  # Instead of using `sources.iserv-proxy` pull the pin from
-                  # the flake.lock file and use `pkgs.fetchgit`.
-                  # Unlike `sources.iserv-proxy`, this works even when using:
-                  #   --option restrict-eval true
-                  let
-                    pins = (__fromJSON (__readFile ../flake.lock)).nodes;
-                    iservProxyPin = pins.iserv-proxy.locked;
-                  in pkgs.fetchgit {
-                    inherit (iservProxyPin) url rev;
-                    sha256 = iservProxyPin.narHash;
-                  };
+
+                src = sources.iserv-proxy;
+
                 index-state = final.haskell-nix.internalHackageIndexState;
                 modules = [{
                   config = {
