@@ -1,6 +1,6 @@
 # 'supportedSystems' restricts the set of systems that we will evaluate for. Useful when you're evaluating
 # on a machine with e.g. no way to build the Darwin IFDs you need!
-{ ifdLevel ? 3
+{ ifdLevel ? 1
 , checkMaterialization ? false
 , system ? builtins.currentSystem
 , evalSystem ? builtins.currentSystem or "x86_64-linux"
@@ -21,6 +21,7 @@
     "R2205" = inputs.nixpkgs-2205;
     "R2211" = inputs.nixpkgs-2211;
     "R2305" = inputs.nixpkgs-2305;
+    "R2311" = inputs.nixpkgs-2311;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -55,7 +56,7 @@
       # cabal-install and nix-tools plans.  When removing a ghc version
       # from here (so that is no longer cached) also remove ./materialized/ghcXXX.
       # Update supported-ghc-versions.md to reflect any changes made here.
-      nixpkgs.lib.optionalAttrs (nixpkgsName == "R2305") {
+      nixpkgs.lib.optionalAttrs (__elem nixpkgsName ["R2305" "R2311"]) {
         ghc810 = false;
         ghc90 = false;
         ghc92 = false;
