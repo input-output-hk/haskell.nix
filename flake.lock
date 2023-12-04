@@ -140,7 +140,7 @@
       "flake": false,
       "locked": {
         "lastModified": 1701580282,
-        "narHash": "sha256-NtsJFMVKs0Tdbr2gMBX7LB1jHvQsLwrtKxMHMBHLcIk=",
+        "narHash": "sha256-drA01r3JrXnkKyzI+owMZGxX0JameMzjK0W5jJE/+V4=",
         "ref": "refs/heads/master",
         "rev": "f5eb0f2982e9cf27515e892c4bdf634bcfb28459",
         "revCount": 62197,
