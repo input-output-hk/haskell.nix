@@ -70,6 +70,7 @@ let
       });
 
     bootstrap = import ./bootstrap.nix;
+    compiler-llvm = import ./compiler-llvm.nix;
     ghc = import ./ghc.nix;
     ghc-packages = import ./ghc-packages.nix;
     hydra = import ./hydra.nix { inherit sources; };
@@ -109,6 +110,7 @@ let
     haskell
     nix-tools
     bootstrap
+    compiler-llvm
     ghc
     ghc-packages
     darwin

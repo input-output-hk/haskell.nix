@@ -52,7 +52,8 @@ in {
     # For instance it will map:
     #   "ghc810" -> "ghc8107"
     #   "ghc99" -> "ghc9920230909" (uses last modified date of the git repo)
-    resolve-compiler-name = name: compilerNameMap.${name} or name;
+    inherit compilerNameMap;
+    resolve-compiler-name = name: final.haskell-nix.compilerNameMap.${name} or name;
     # Use this to disable the existing haskell infra structure for testing purposes
     compiler =
         let bootPkgs = {
@@ -240,6 +241,7 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/ghc-9.6-JS-implement-TH-support.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.3"  "9.8"    ./patches/ghc/ghc-9.6.3-JS-implement-TH-support.patch)
                 ++ fromUntil "9.8.1"  "9.8.2"  ./patches/ghc/ghc-9.8-cabal-c-soures-fix.patch
+                ++ fromUntil "9.6.3"  "9.9"    ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
 
                 # the following is a partial reversal of https://gitlab.haskell.org/ghc/ghc/-/merge_requests/4391, to address haskell.nix#1227
                 ++ final.lib.optional (versionAtLeast "8.10.6" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/mmap-next.patch
@@ -264,6 +266,7 @@ in {
                 # ++ fromUntil "9.6.1" "9.10"                                                                                       ./patches/ghc/iserv-syms.patch
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch
+                ++ final.lib.optional (versionAtLeast "8.10.7" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64 && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-8.10-aarch64-musl-gettimeofday.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
