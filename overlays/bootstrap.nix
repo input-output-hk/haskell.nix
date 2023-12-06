@@ -217,7 +217,7 @@ in {
                   ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/no-ucrt-9.6.patch)
                   ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.8"    ./patches/ghc/no-ucrt-9.6.3.patch)
                   ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.8"    "9.9"    ./patches/ghc/no-ucrt-9.8.patch)
-                  ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.9"    "9.10"   ./patches/ghc/no-ucrt-9.9.patch)
+                  ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.9"    "9.9.20231203" ./patches/ghc/no-ucrt-9.9.patch)
                 )
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.5"    ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
@@ -230,10 +230,10 @@ in {
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.4.8"  ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-drop-mingwex-from-base.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/win-linker-no-null-deref.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/win-linker-no-null-deref-9.6.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.9.20231203" ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ fromUntil "9.4.5"  "9.4.9"  ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.2"  "9.8"    ./patches/ghc/ghc-9.4.5-include-order-fix.patch
-                ++ fromUntil "9.6.1"  "9.10"   ./patches/ghc/MR10116.patch
+                ++ fromUntil "9.6.1"  "9.9.20231203" ./patches/ghc/MR10116.patch
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.4.1" "9.6" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.6.1" "9.10" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
@@ -262,7 +262,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.6.3"  && versionLessThan "9.9" && final.stdenv.targetPlatform.isWindows) ./patches/ghc/ghc-9.6-hadrian-splitsections.patch
                 # this patch was backported to 9.4.8
                 ++ final.lib.optional (versionAtLeast "9.4"    && versionLessThan "9.4.8" && final.stdenv.targetPlatform.isWindows) ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch
-                ++ final.lib.optional (versionAtLeast "9.6"                              && final.stdenv.targetPlatform.isWindows) ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9.20231203" && final.stdenv.targetPlatform.isWindows) ./patches/ghc/ghc-9.6-fix-code-symbol-jumps.patch
                 # this one is to allow linking extra symbols from iserv.
                 # ++ fromUntil "9.6.1" "9.10"                                                                                       ./patches/ghc/iserv-syms.patch
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
