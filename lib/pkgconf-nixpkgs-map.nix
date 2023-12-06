@@ -2,6 +2,8 @@
 # See ../docs/tutorials/pkg-map.md
 pkgs:
   let
+    inherit (pkgs) lib;
+
     # Only include derivations that exist in the current pkgs.
     # This allows us to use this mapping to be used in allPkgConfigWrapper.
     # See ./overlas
@@ -3136,7 +3138,6 @@ pkgs:
     "libstilview" = [ "libsidplayfp" ];
     "libsieve" = [ "libsieve" ];
     "sigc++-2.0" = [ "libsigcxx" ];
-    "sigc++-1.2" = [ "libsigcxx12" ];
     "sigc++-3.0" = [ "libsigcxx30" ];
     "libsignal-protocol-c" = [ "libsignal-protocol-c" ];
     "libsignon-glib" = [ "libsignon-glib" ];
@@ -4807,7 +4808,6 @@ pkgs:
 #    "gmock" = [ "robo3t" ];
 #    "gtest_main" = [ "robo3t" ];
 #    "gtest" = [ "robo3t" ];
-    "libhsakmt" = [ "rocm-thunk" ];
     "rofi" = [ "rofi" ];
 #    "rofi" = [ "rofi-unwrapped" ];
 #    "rofi" = [ "rofi-wayland" ];
@@ -5732,4 +5732,16 @@ pkgs:
       else if pkgs ? gdk_pixbuf
         then [ pkgs.gdk_pixbuf ]
       else [];
+    # rocm-thunk was replaced by rocmPackages.rocm-thunk in 23.11
+    "libhsakmt" =
+      if pkgs ? rocmPackages && pkgs.rocmPackages ? rocm-thunk
+        then [ pkgs.rocmPackages.rocm-thunk ]
+      else if pkgs ? rocm-thunk
+        then [ pkgs.rocm-thunk ]
+      else [];
+    # libsigcxx12 was removed in 23.11
+    "sigc++-1.2" =
+      if pkgs ? libsigcxx12
+        then [ "libsigcxx12" ]
+        else [];
 }
