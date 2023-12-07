@@ -5736,12 +5736,8 @@ pkgs:
     "libhsakmt" =
       if pkgs ? rocmPackages && pkgs.rocmPackages ? rocm-thunk
         then [ pkgs.rocmPackages.rocm-thunk ]
-      else if pkgs ? rocm-thunk
-        then [ pkgs.rocm-thunk ]
-      else [];
+        else [ pkgs.rocm-thunk ];
+} // lib.optionalAttrs (pkgs ? libsigcxx12) {
     # libsigcxx12 was removed in 23.11
-    "sigc++-1.2" =
-      if pkgs ? libsigcxx12
-        then [ "libsigcxx12" ]
-        else [];
+    "sigc++-1.2" = [ "libsigcxx12" ];
 }
