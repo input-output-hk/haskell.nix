@@ -1,6 +1,6 @@
 # haskell.nix
 
-`haskell.nix` is an infrastructure based on `nix` to build Haskell codes.
+`haskell.nix` is an infrastructure based on `nix` to build Haskell code.
 
 ## Features
 
