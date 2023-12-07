@@ -24,10 +24,3 @@ index 721e1836b1..be9c62d32c 100644
    mb_env <- getGccEnv cc_args
    runSomethingFiltered dflags id "Windres" windres args' Nothing mb_env
  
-diff --git a/libraries/integer-gmp/gmp/gmp-tarballs b/libraries/integer-gmp/gmp/gmp-tarballs
-index 31f9909680..4f26049af4 160000
---- a/libraries/integer-gmp/gmp/gmp-tarballs
-+++ b/libraries/integer-gmp/gmp/gmp-tarballs
-@@ -1 +1 @@
--Subproject commit 31f9909680ba8fe00d27fd8a6f5d198a0a96c1ac
-+Subproject commit 4f26049af40afb380eaf033ab91404cd2e214919
