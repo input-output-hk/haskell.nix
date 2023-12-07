@@ -2,6 +2,8 @@
 # See ../docs/tutorials/pkg-map.md
 pkgs:
   let
+    inherit (pkgs) lib;
+
     # Only include derivations that exist in the current pkgs.
     # This allows us to use this mapping to be used in allPkgConfigWrapper.
     # See ./overlas
@@ -5719,12 +5721,17 @@ pkgs:
     "xorg-sgml-doctools" = [ "xorgsgmldoctools" ];
     "xtrans" = [ "xtrans" ];
 } // {
-    "gtkglext-1.0" = [ pkgs.gnome2.gtkglext pkgs.gtk2 ];
+    "gtkglext-1.0"                       =
+      if pkgs ? gnome2 && pkgs.gnome2 ? gtkglext && pkgs ? gtk2
+        then [ pkgs.gnome2.gtkglext pkgs.gtk2 ]
+        else [];
     # This was renamed
     "gdk-pixbuf-2.0" =
       if pkgs ? gdk-pixbuf
         then [ pkgs.gdk-pixbuf ]
-      else [ pkgs.gdk_pixbuf ];
+      else if pkgs ? gdk_pixbuf
+        then [ pkgs.gdk_pixbuf ]
+      else [];
     # rocm-thunk was replaced by rocmPackages.rocm-thunk in 23.11
     "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
 } // lib.optionalAttrs (pkgs ? libsigcxx12) {
