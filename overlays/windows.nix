@@ -22,6 +22,22 @@ final: prev:
     # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
     mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
   };
+} // prev.lib.optionalAttrs (builtins.compareVersions pkgs.lib.version "23.11" < 0) {
+   # This work around still seems to be needed for GHC <9.4 to build
+   # on windows, however it does not work on nixpkgs >= 23.11 and it breaks
+   # all windows builds (including GHC >9.4).
+
+   # For now we have set it to be left out for nixpkgs >= 23.11
+   # This means if we want to cross compile for windows and
+   # use nixpkgs >= 23.11, we will need to use GHC >9.4.
+   
+   # GHC <9.4 does not work with binutils 2.38 from newer nixpkgs.
+   # GHC >=9.4 will use clang/llvm instead.
+   binutils-unwrapped =
+     if final.stdenv.targetPlatform.isWindows
+       then (import prev.haskell-nix.sources.nixpkgs-2111 { inherit (prev) system; })
+         .pkgsCross.mingwW64.buildPackages.binutils-unwrapped
+       else prev.binutils-unwrapped;
 } // {
    libmpc = if !prev.stdenv.hostPlatform.isWindows then prev.libmpc else prev.libmpc.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
