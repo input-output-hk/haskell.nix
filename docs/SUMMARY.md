@@ -1,6 +1,6 @@
 - [Introduction](./index.md)
-- [Motivation](./motivation.md)
-- [Architecture](./architecture.md)
+    - [Motivation](./motivation.md)
+    - [Architecture](./architecture.md)
 - [Tutorials](./tutorials/index.md)
     - [Creating a development environment](./tutorials/development.md)
     - [Getting started](./tutorials/getting-started.md)

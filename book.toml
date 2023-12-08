@@ -2,4 +2,4 @@
 language = "en"
 multilingual = false
 src = "docs"
-title = "Alternative Haskell Infrastructure for Nixpkgs"
+title = "Haskell.nix"
