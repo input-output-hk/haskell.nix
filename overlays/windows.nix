@@ -22,7 +22,7 @@ final: prev:
     # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
     mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
   };
-} // prev.lib.optionalAttrs (builtins.compareVersions pkgs.lib.version "23.11" < 0) {
+} // prev.lib.optionalAttrs (builtins.compareVersions prev.lib.version "23.11" < 0) {
    # This work around still seems to be needed for GHC <9.4 to build
    # on windows, however it does not work on nixpkgs >= 23.11 and it breaks
    # all windows builds (including GHC >9.4).
