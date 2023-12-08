@@ -22,10 +22,17 @@ final: prev:
     # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
     mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
   };
-} // prev.lib.optionalAttrs (builtins.compareVersions prev.lib.version "23.11pre-git" < 0) {
+} // prev.lib.optionalAttrs (builtins.compareVersions prev.glibc.version "2.38" < 0) {
    # This work around still seems to be needed for GHC <9.4 to build
    # on windows, however it does not work on nixpkgs >= 23.11 and it breaks
-   # all windows builds (including GHC >9.4).
+   # all windows builds (including GHC >9.4).  In particular `windows.mcfgthreads`
+   # fails to build.
+
+   # We are using the `glibc.version` to determine if the fix will work.
+   # `prev.lib.version` (the nixpkgs version) is not granular enough
+   # (all the unstable release leading up to 23.11 have the same version as 23.11)
+   # and the newer version of `glibc` in nixpkgs 23.11 might be the
+   # change that caused this to break.
 
    # For now we have set it to be left out for nixpkgs >= 23.11
    # This means if we want to cross compile for windows and
