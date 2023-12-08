@@ -1,14 +1,23 @@
 # Motivation
 
-`haskell.nix` is an alternative to:
-- `Stack` or `cabal-install` build tools
-- [nixpkgs](https://haskell4nix.readthedocs.io/): Haskell infrastructure for `nix`
+`haskell.nix` is an infrastructure based on `nix` to build Haskell code.
+It provides a way to build `cabal-install` and `Stack` based projects using `nix`,
+reading the `cabal.project` or `stack.yaml` files used by those tools, hence reducing
+the amount of `nix` code that needs to be maintained and making it easy to continue
+using `cabal-install` and `Stack` as well.
+
+In the rest of this page we motivate `haskell.nix` by comparing it to:
+- [Stack](https://docs.haskellstack.org/en/stable/) and [cabal-install](https://cabal.readthedocs.io/en/stable/) build tools
+- [nixpkgs](https://haskell4nix.readthedocs.io/) Haskell infrastructure for `nix`
+
 
 ## Comparison with `Stack` and `cabal-install`
 
-Using `haskell.nix` instead of `Stack` or `cabal-install` gives us deterministic
-and hermetic builds, caching... `haskell.nix` allows us to be very precise about
-the GHC compiler to use which only `Stack` allows to some extent.
+Using `haskell.nix` instead of `Stack` or `cabal-install` gives us:
+- deterministic and hermetic builds
+- distributed caching
+- precise selection of the toolchain (GHC...) to use (which only `Stack` allows to some extent)
+- precise selection of the native libraries to use (using `nix`), if any
 
 In addition, `haskell.nix` has better support for cross-compilation (e.g.
 compiling Haskell code on Linux that will be run on Windows). It does this by
@@ -29,7 +38,7 @@ with `Stack` or `cabal-install`.
 `haskell.nix` can also be used to provide developer environments including
 common Haskell tools: GHC, cabal-install, HLS (Haskell Language Server), hlint,
 etc. With these environments, you don't need to use `ghcup` nor to pass programs
-explicitly (e.g. as in `cabal -w ghc-9.2.2`).
+explicitly (e.g. as in `cabal -w ghc-9.2.2`). See [devx](https://github.com/input-output-hk/devx).
 
 
 ## Comparison with `nixpkgs`
