@@ -45,7 +45,7 @@ final: prev:
    # GHC <9.4 does not work with binutils 2.38 from newer nixpkgs.
    # GHC >=9.4 will use clang/llvm instead.
    binutils-unwrapped =
-     if final.stdenv.targetPlatform.isWindows && builtins.compareVersions prev.glibc.version "2.38" < 0
+     if final.stdenv.targetPlatform.isWindows && builtins.compareVersions prev.buildPackages.glibc.version "2.38" < 0
        then (import prev.haskell-nix.sources.nixpkgs-2111 { inherit (prev) system; })
          .pkgsCross.mingwW64.buildPackages.binutils-unwrapped
        else prev.binutils-unwrapped;
