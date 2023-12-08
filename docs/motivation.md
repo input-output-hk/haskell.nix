@@ -26,7 +26,7 @@ compile `Cabal`'s `Setup.hs` files for Linux in our example) and the GHC
 compiler for the host platform (GHC cross-compiler targeting Windows in our
 example).
 
-By design `haskell.nix` reuses configuration files from other tools and convert
+By design `haskell.nix` reuses configuration files from other tools and converts
 them into `nix` expressions:
 - `.cabal` files
 - `Stack`'s `stack.yaml`
