@@ -1,0 +1,41 @@
+From 27cc2e7b1c1268e59c9d16b4530f27c0d40e9464 Mon Sep 17 00:00:00 2001
+From: Ben Gamari <ben@smart-cactus.org>
+Date: Mon, 23 Mar 2020 12:36:25 -0400
+Subject: [PATCH] rts: Don't mark evacuate_large as inline
+
+This function has two callsites and is quite large. GCC consequently
+decides not to inline and warns instead. Given the situation, I can't
+blame it. Let's just remove the inline specifier.
+---
+ rts/sm/Evac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rts/sm/Evac.c b/rts/sm/Evac.c
+index 521fd4eef45..e9a1c5d796f 100644
+--- a/rts/sm/Evac.c
++++ b/rts/sm/Evac.c
+@@ -298,7 +298,7 @@ copy(StgClosure **p, const StgInfoTable *info,
+    that has been evacuated, or unset otherwise.
+    -------------------------------------------------------------------------- */
+ 
+-STATIC_INLINE void
++static void
+ evacuate_large(StgPtr p)
+ {
+   bdescr *bd;
+-- 
+GitLab
+
+diff --git a/rts/sm/Evac.c b/rts/sm/Evac.c
+index 3ef9fe6..704f10d 100644
+--- a/rts/sm/Evac.c
++++ b/rts/sm/Evac.c
+@@ -58,7 +58,7 @@
+ #define MAX_THUNK_SELECTOR_DEPTH 16
+
+ static void eval_thunk_selector (StgClosure **q, StgSelector *p, bool);
+-STATIC_INLINE void evacuate_large(StgPtr p);
++static void evacuate_large(StgPtr p);
+
+ /* -----------------------------------------------------------------------------
+    Allocate some space in which to copy an object.
