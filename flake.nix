@@ -9,6 +9,7 @@
     nixpkgs-2205 = { url = "github:NixOS/nixpkgs/nixpkgs-22.05-darwin"; };
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
+    nixpkgs-2311 = { url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     ghc98X = {
       flake = false;
@@ -85,6 +86,7 @@
     , nixpkgs-2205
     , nixpkgs-2211
     , nixpkgs-2305
+    , nixpkgs-2311
     , flake-compat
     , ...
     }@inputs:

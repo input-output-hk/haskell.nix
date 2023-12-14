@@ -79,6 +79,7 @@ let
     armv6l-linux = import ./armv6l-linux.nix;
     musl = import ./musl.nix;
     android = import ./android.nix;
+    sphinx = import ./sphinx.nix;
     tools = import ./tools.nix;
     emscripten = import ./emscripten.nix;
     nix-prefetch-git-minimal = import ./nix-prefetch-git-minimal.nix;
@@ -128,6 +129,7 @@ let
     hydra
     # Restore nixpkgs haskell and haskellPackages
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
+    sphinx
     dummy-ghc-data
     cacheCompilerDeps
     default-setup

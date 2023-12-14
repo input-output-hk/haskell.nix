@@ -48,7 +48,7 @@
  ,("Project Patch Level1","1")
  ,("Project Patch Level2","0")
  ,("Project Unit Id","ghc-9.8.1-inplace")
- ,("Booter version","9.6.2")
+ ,("Booter version","9.6.3")
  ,("Stage","2")
  ,("Build platform","x86_64-unknown-linux")
  ,("Host platform","x86_64-unknown-linux")

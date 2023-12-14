@@ -21,6 +21,7 @@
     "R2205" = inputs.nixpkgs-2205;
     "R2211" = inputs.nixpkgs-2211;
     "R2305" = inputs.nixpkgs-2305;
+    "R2311" = inputs.nixpkgs-2311;
     "unstable" = inputs.nixpkgs-unstable;
   };
 
@@ -59,6 +60,7 @@
         ghc810 = false;
         ghc90 = false;
         ghc92 = false;
+      } // nixpkgs.lib.optionalAttrs (nixpkgsName == "R2311") {
         ghc94 = false;
         ghc96 = false;
         ghc98 = false;
@@ -71,7 +73,7 @@
         ghc96llvm = true;
         ghc98 = true;
         ghc98llvm = true;
-        ghc98X = true;
+        # ghc98X = true; Disabled for now as there are no changes since 9.8.1 release yet and the current source does not boot with 9.8.1
         ghc99 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
@@ -86,7 +88,7 @@
        || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
        )) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs (nixpkgsName == "unstable"
+  } // lib.optionalAttrs (nixpkgsName != "unstable"
       && (__match ".*llvm" compiler-nix-name == null)
       && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity

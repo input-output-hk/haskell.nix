@@ -54,7 +54,7 @@ Available options:
 
 Use this for Cabal new-build projects (even if you don't have a
 `cabal.project`). Before running, you need to create a plan. For more
-information, see [Cabal Projects](../manually-generating-nix-expressions#Using-Cabal) in the user
+information, see [Cabal Projects](../dev/manually-generating-nix-expressions#Using-Cabal) in the user
 guide.
 
 It will create a template `default.nix` in the output directory,
