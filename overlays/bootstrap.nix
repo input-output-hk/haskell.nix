@@ -1272,7 +1272,11 @@ in {
         # version of nix-tools (on platforms where we cannot use the
         # static nix-tools).
         cabalProjectLocal = ''
-          allow-newer: *:*
+          -- allow newer packages, that are bound to be newer due to
+          -- being shipped with a newer compiler.  If you extend this
+          -- be very careful to only extend it for absolutely necessary packages
+          -- otherwise we risk running into broken build-plans down the line.
+          allow-newer: *:base, *:template-haskell, *:bytestring, *:text
 
           repository head.hackage.ghc.haskell.org
             url: https://ghc.gitlab.haskell.org/head.hackage/
