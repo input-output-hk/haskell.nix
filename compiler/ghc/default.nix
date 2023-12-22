@@ -64,11 +64,11 @@ let self =
   # necessary fix for iOS: https://www.reddit.com/r/haskell/comments/4ttdz1/building_an_osxi386_to_iosarm64_cross_compiler/d5qvd67/
   disableLargeAddressSpace ? stdenv.targetPlatform.isDarwin && stdenv.targetPlatform.isAarch64
 
-, useLdGold ? 
+, useLdGold ?
     # might be better check to see if cc is clang/llvm?
     # use gold as the linker on linux to improve link times
     # do not use it on musl due to a ld.gold bug. See: <https://sourceware.org/bugzilla/show_bug.cgi?id=22266>.
-    (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid && !stdenv.targetPlatform.isMusl) 
+    (stdenv.targetPlatform.isLinux && !stdenv.targetPlatform.isAndroid && !stdenv.targetPlatform.isMusl)
 
 , ghc-version ? src-spec.version
 , ghc-version-date ? null
@@ -311,7 +311,11 @@ let
       # For cross compilers only the RTS should be built with -mno-outline-atomics
       + lib.optionalString (!hostPlatform.isAarch64 && targetPlatform.isLinux && targetPlatform.isAarch64)
         " '*.rts.ghc.c.opts += -optc-mno-outline-atomics'"
-      # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older 
+      + lib.optionalString enableRelocatedStaticLibs
+        " '*.*.ghc.*.opts += -fPIC' '*.*.cc.*.opts += -fPIC'"
+      + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
+        " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
+      # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
       # iPhones/iPads/... won't understand the compiled code, as the compiler will emit LDSETALH
       # + lib.optionalString (targetPlatform.???) "'*.rts.ghc.c.opts += -optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc'"
       # For GHC versions in the 9.x range that don't support the +native_bignum flavour transformer yet
@@ -403,7 +407,7 @@ stdenv.mkDerivation (rec {
     '' + lib.optionalString (stdenv.targetPlatform.linker == "cctools") ''
         export OTOOL="${targetCC.bintools.bintools}/bin/${targetCC.bintools.targetPrefix}otool"
         export INSTALL_NAME_TOOL="${bintoolsFor.install_name_tool}/bin/${bintoolsFor.install_name_tool.targetPrefix}install_name_tool"
-    '') + lib.optionalString (targetPlatform == hostPlatform && useLdGold) 
+    '') + lib.optionalString (targetPlatform == hostPlatform && useLdGold)
     # set LD explicitly if we want gold even if we aren't cross compiling
     ''
         export LD="${targetCC.bintools}/bin/ld.gold"
@@ -779,9 +783,9 @@ stdenv.mkDerivation (rec {
   '';
 
   # Hadrian's installation only works for native compilers, and is broken for cross compilers.
-  # However Hadrian produces mostly relocatable installs anyway, so we can simply copy 
+  # However Hadrian produces mostly relocatable installs anyway, so we can simply copy
   # stage1/{bin, lib, share} into the destination as the copy phase.
-  
+
   installPhase =
     if installStage1
       then ''
