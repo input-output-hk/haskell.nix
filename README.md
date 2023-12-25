@@ -25,8 +25,6 @@ The troubleshooting documentation also contains some help for other common issue
 The `haskell.nix` repository contains the runtime system for building
 Haskell packages in Nix. It depends on other repos, which are:
 
-- [`nix-tools`](https://github.com/input-output-hk/nix-tools) — provides the programs for generating Nix expressions from  Haskell projects.
-
 - [`hackage.nix`](https://github.com/input-output-hk/hackage.nix) — the latest contents of the [Hackage](https://hackage.haskell.org/) databases, converted to Nix expressions.
 
 - [`stackage.nix`](https://github.com/input-output-hk/stackage.nix) — all of the [Stackage](https://www.stackage.org/) snapshots, converted to Nix expressions.
