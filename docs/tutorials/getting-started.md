@@ -46,7 +46,7 @@ This can be tricky to get setup properly. If you're still having trouble getting
 
 ## Create a project using Flakes
 
-This section assumes you choose to uses the experimental flakes features, and so that you have added `experimental-features = [ "nix-command" "flakes" ];` in your Nix configuration. You can look at [the Wiki](https://nixos.wiki/wiki/Flakes) for more instructions. If you don't want to set up a Flakes project, [skip to the Niv section](#create-a-project-using-niv).
+This section assumes you choose to uses the experimental flakes features, and so that you have added `experimental-features = [ "nix-command" "flakes" ];` in your Nix configuration. You can look at [the Wiki](https://nixos.wiki/wiki/Flakes) for more instructions.
 
 The following `nix flake init` command creates a template `hello` package containing a `flake.nix` and `nix/hix.nix` file. The project can be used with
 regular `nix` tools. This template is defined in the [NixOS/templates repository](https://github.com/NixOS/templates/tree/master/haskell.nix).
@@ -72,57 +72,12 @@ To build and run a component:
 nix run .#hello:exe:hello
 ```
 
-## Create a project using Niv
-
-[Niv](https://github.com/nmattia/niv) is a command line tool for keeping track of Nix project dependencies. You don't need it if you [set up your project with Flakes](#create-a-project-using-flakes), and so you can skip this section.
-
-This guide assumes that the `sources.haskellNix` will be set to point a pinned copy of the `haskell.nix` github repo. One easy way to do this is to use Niv. If you prefer not to use Niv another option is described in the in the following "[Using `haskell.nix` without Niv](#using-1-without-Niv)" section of this document.
-
-After installing niv you can initialize niv and pin the latest `haskell.nix` commit by running the following in the root directory of the project:
-```shell
-niv init
-niv add input-output-hk/haskell.nix -n haskellNix
-```
-
-Then when you want to update to the latest version of `haskellNix` use:
-```shell
-niv update haskellNix
-```
-
-### Using `haskell.nix` without Niv
-
-If you would prefer not to use niv you can replace `sources = import ./nix/sources.nix {};` in the examples with:
-```nix
-let sources = {
-  haskellNix = builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/master.tar.gz";
-};
-```
-
-The `fetchTarball` call above will always get the latest version, and is similar to an auto-updating Nix channel.
-
-However, in your own project, you may wish to pin `haskell.nix` (as you would pin Nixpkgs). This will make your builds reproducible, more predictable, and faster (because the fixed version is cached).
-
-Straightforward way of doing this is to change the branch name to a revision.
-```nix
-let sources = {
-  haskellNix = builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/f1a94a4c82a2ab999a67c3b84269da78d89f0075.tar.gz";
-};
-```
-
-There are other possible schemes for pinning. See [Bumping Hackage and Stackage snapshots](./hackage-stackage.md) and [Nix tutorial on reproducibility using pinning](https://nix.dev/tutorials/towards-reproducibility-pinning-nixpkgs.html).
-
 ## Scaffolding
 
 The following code could be capy-pasted and will work with `stack.yaml` and `cabal.project` based projects.
 
-For a Flakes-based project, use a `flake.nix`:
-```nix
+Edit your `flake.nix` as:```nix
 {{#include getting-started-flakes/flake.nix}}
-```
-
-For a legacy (Nix) Nix project rather, use a `default.nix`:
-```nix
-{{#include getting-started/default.nix}}
 ```
 
 > **Note:** Git dependencies
@@ -136,32 +91,14 @@ Top-level attributes are Haskell packages (incl. dependencies) part of your proj
 This section will show side by side the commands using Flakes experimental `new-command` API and legacy Nix commands.
 
 To build the library component of a package in the project run:
-
-* With flakes experimental commands:
-  ```shell
-  nix build .#your-package-name:lib:your-package-name
-  ```
-* With Nix legacy commands:
-  ```shell
-  nix-build -A your-package-name.components.library
-  ```
+```shell
+nix build .#your-package-name:lib:your-package-name
+```
 
 There are also other components such as `exes`, `tests`, `benchmarks` and `all`.
 To build an executable:
-
-* With flakes experimental commands:
-  ```shell
-  nix build .#your-package-name:exe:your-exe-name
-  ```
-* With Nix legacy commands:
-  ```shell
-  nix-build -A your-package-name.components.exes.your-exe-name
-  ```
-
-Cross compilation is builtins into Flakes, but to cross-compile with legacy Nix commands, use the `projectCross` attribute:
-```
-nix-build -A projectCross.ghcjs.hsPkgs.your-package-name.components.exes.your-exe-name
-nix-build -A projectCross.mingwW64.hsPkgs.your-package-name.components.exes.your-exe-name
+```shell
+nix build .#your-package-name:exe:your-exe-name
 ```
 
 Flakes provide a `devShell` attribute that allow you to spawn a developer shell, here with `cabal`, `hlint` and `haskell-language-server`:
@@ -169,17 +106,6 @@ Flakes provide a `devShell` attribute that allow you to spawn a developer shell,
 nix develop .
 cabal repl your-package-name:lib:your-package-name
 cabal build your-package-name
-```
-
-Nix legacy commands needs you to add first a `shell.nix`:
-```nix
-{{#include getting-started/shell.nix}}
-```
-Then you can run:
-```shell
-nix-shell
-cabal new-repl your-package-name:library:your-package-name
-cabal new-build your-package-name
 ```
 
 To open a shell for use with `stack` see [the following issue](https://github.com/input-output-hk/haskell.nix/issues/689#issuecomment-643832619).
