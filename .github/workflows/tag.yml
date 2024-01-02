@@ -1,0 +1,33 @@
+name: "Weekly Date Tag"
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every Sunday
+    - cron: '0 0 * * 0'
+
+jobs:
+  tag-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create and push tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const github = require('@actions/github');
+            const core = require('@actions/core');
+            const exec = require('@actions/exec');
+            async function run() {
+              try {
+                const date = new Date();
+                const tag = `${date.getUTCFullYear()}.${String(date.getUTCMonth() + 1).padStart(2, '0')}.${String(date.getUTCDate()).padStart(2, '0')}`;
+                await exec.exec(`git tag ${tag}`);
+                await exec.exec(`git push origin ${tag}`);
+              } catch (error) {
+                core.setFailed(error.message);
+              }
+            }
+            run();
