@@ -269,7 +269,7 @@ in {
                 # this one is to allow linking extra symbols from iserv.
                 # ++ fromUntil "9.6.1" "9.10"                                                                                       ./patches/ghc/iserv-syms.patch
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
-                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.6.4" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch
                 ++ final.lib.optional (versionAtLeast "8.10.7" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64 && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-8.10-aarch64-musl-gettimeofday.patch
                 ;
         in ({
