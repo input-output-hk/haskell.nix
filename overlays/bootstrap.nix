@@ -1026,7 +1026,7 @@ in {
                     sha256 = "sha256-EL8luLBxdP3ZhotcDFbBfA7x7ctiR7S4ZL6TNlG/1MA=";
                 };
 
-                ghc-patches = ghc-patches "9.6.3";
+                ghc-patches = ghc-patches "9.6.4";
             });
             ghc981 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc981; };
