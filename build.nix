@@ -20,6 +20,7 @@ let
   haskell = pkgs.haskell-nix;
   buildHaskell = pkgs.buildPackages.haskell-nix;
   tool = buildHaskell.tool;
+  ghcFromTo = from: to: __compareVersions haskell.compiler.${compiler-nix-name}.version from >= 0 && __compareVersions haskell.compiler.${compiler-nix-name}.version to < 0;
 in rec {
   tests = import ./test/default.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
 
@@ -43,36 +44,33 @@ in rec {
             "ghc8107" = "3.4.1";
           }.${compiler-nix-name} or "latest";
       };
-    } // pkgs.lib.optionalAttrs (
-             __compareVersions haskell.compiler.${compiler-nix-name}.version "9.2" >= 0
-          && __compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.2" "9.6") {
       stack =
         tool compiler-nix-name "stack" {
           version = "2.11.1";
           inherit evalPackages;
         };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0) {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "8.10.7" "9.0") {
       # This version will build for ghc < 9.8, but we are only going to test it for
       # ghc < 9.0 (since newer versions do not work with ghc 8.10.7).
       "hls-22" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // pkgs.lib.optionalAttrs (
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" >= 0 &&
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0
-    ) {
-      "hls-23" = tool compiler-nix-name "haskell-language-server" {
-        inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.3";
-      };
-    } // pkgs.lib.optionalAttrs (
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" >= 0 &&
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0
-    ) {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.6.4" || ghcFromTo "9.8.1" "9.8") {
       "hls-24" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.4";
+      };
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.6.4" || ghcFromTo "9.8.1" "9.8") {
+      "hls-25" = tool compiler-nix-name "haskell-language-server" {
+        inherit evalPackages;
+        src = pkgs.haskell-nix.sources."hls-2.5";
+      };
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.6.4" "9.8.2") {
+      "hls-master" = tool compiler-nix-name "haskell-language-server" {
+        inherit evalPackages;
+        src = pkgs.haskell-nix.sources."hls-master";
       };
     })
   );
