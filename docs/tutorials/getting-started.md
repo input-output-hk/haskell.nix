@@ -6,7 +6,7 @@ The first steps are to ensure you have [Nix](https://nixos.org/download.html) in
 
 Then you have the choice to set-up your project using [the experimental Flake feature](#create-a-project-using-flakes) or [Niv](#create-a-project-using-niv), which are 2 ways to pin `nixpkgs` with Nix.
 
-If you have an existing Haskell project that you want to build with `haskell.nix`. you might [prefer to use `hix`](#getting-started-with-hix).
+If you have an existing Haskell project that you want to build with `haskell.nix`, you might [prefer to use `hix`](#getting-started-with-hix). `hix` is a more easy and user-friendly way to use `haskell.nix`, using it reduce considerably the size of the Nix expression you will have to maintain in your project codebase.
 
 ## Setting up the binary cache
 
