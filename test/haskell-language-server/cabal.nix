@@ -3,7 +3,7 @@ let
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name evalPackages;
     name = "haskell-language-server";
-    src = haskell-nix.sources."hls-2.4";
+    src = haskell-nix.sources."hls-2.6";
     # Even though this is in the cabal.project it is inside a condional
     # and so haskell.nix cannot parse it properly.  Luckily adding it
     # again seems to work fine.
