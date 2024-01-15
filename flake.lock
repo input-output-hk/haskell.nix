@@ -275,11 +275,11 @@
     "hls-master": {
       "flake": false,
       "locked": {
-        "lastModified": 1705260183,
-        "narHash": "sha256-s9pCEsPbR4+9i2aJFux/fwxMNHbQyXXdMRZghrbG5Go=",
+        "lastModified": 1705345559,
+        "narHash": "sha256-2w/UJL27bgIcs3begK+4AU+ZmO4KkMyYQsN7D33Hx70=",
         "owner": "haskell",
         "repo": "haskell-language-server",
-        "rev": "1c62ba32d4f74335ae4cf4a3903ae85a2f43ade2",
+        "rev": "db8efbe03246713c58f23b225293a8f08e640d2a",
         "type": "github"
       },
       "original": {
