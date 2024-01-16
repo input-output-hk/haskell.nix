@@ -225,8 +225,8 @@ srcToNix _ (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
 srcToNix pi' (Repo url mHash)
   = let uri = mkPrivateHackageUrl url pi'
     in if "file:" == uriScheme uri
-    then 
-      -- It's a file: URL. In principle curl can fetch file URLs, but in 
+    then
+      -- It's a file: URL. In principle curl can fetch file URLs, but in
       -- practice fetchurl can't. This is (I believe) because the Nix sandbox
       -- is relaxed to allow fetchurl to access the internet, but _not_ to
       -- let is access random files, even if it has a hash specified.
@@ -241,7 +241,7 @@ srcToNix pi' (Repo url mHash)
           , "recursive" $= mkBool False
           ])
         ]
-    else 
+    else
       -- It's some other kind of URL, just use fetchurl and hope curl
       -- can fetch it.
       mkNonRecSet
@@ -445,9 +445,19 @@ instance {-# OVERLAPPABLE #-} ToNixExpr String where
 instance {-# OVERLAPS #-} ToNixExpr a => ToNixExpr [a] where
   toNix = mkList . fmap toNix
 
+-- We expect isJavaScript in nixos, not isJavascript, which we'd
+-- generate from
+--
+--   if arch(javascript)
+--
+-- condtional statements in .cabal files.
+fixSystem :: String -> String
+fixSystem "isJavascript" = "isJavaScript"
+fixSystem s = s
+
 instance ToNixExpr ConfVar where
-  toNix (OS os) = mkSym "system" @. (fromString . ("is" ++) . capitalize . show . pretty $ os)
-  toNix (Arch arch) = mkSym "system" @. (fromString . ("is" ++) . capitalize . show . pretty $ arch)
+  toNix (OS os) = mkSym "system" @. (fromString . fixSystem . ("is" ++) . capitalize . show . pretty $ os)
+  toNix (Arch arch) = mkSym "system" @. (fromString . fixSystem . ("is" ++) . capitalize . show . pretty $ arch)
   toNix (PackageFlag flag) = mkSym flags @. (fromString . show . pretty $ flag)
   toNix (Impl flavour range) = toNix flavour $&& toNix (projectVersionRange range)
 

@@ -20,6 +20,7 @@ let
   haskell = pkgs.haskell-nix;
   buildHaskell = pkgs.buildPackages.haskell-nix;
   tool = buildHaskell.tool;
+  ghcFromTo = from: to: __compareVersions haskell.compiler.${compiler-nix-name}.version from >= 0 && __compareVersions haskell.compiler.${compiler-nix-name}.version to < 0;
 in rec {
   tests = import ./test/default.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
 
@@ -43,53 +44,23 @@ in rec {
             "ghc8107" = "3.4.1";
           }.${compiler-nix-name} or "latest";
       };
-    } // pkgs.lib.optionalAttrs (
-             __compareVersions haskell.compiler.${compiler-nix-name}.version "9.2" >= 0
-          && __compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.2" "9.6") {
       stack =
         tool compiler-nix-name "stack" {
           version = "2.11.1";
           inherit evalPackages;
         };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" < 0) {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "8.10.7" "9.0") {
       # This version will build for ghc < 9.8, but we are only going to test it for
       # ghc < 9.0 (since newer versions do not work with ghc 8.10.7).
       "hls-22" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
         src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // pkgs.lib.optionalAttrs (
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" >= 0 &&
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0
-    ) {
-      "hls-23" = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.8") {
+      "hls-26" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.3";
-      };
-    } // pkgs.lib.optionalAttrs (
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.0" >= 0 &&
-      __compareVersions haskell.compiler.${compiler-nix-name}.version "9.9" < 0
-    ) {
-      "hls-24" = tool compiler-nix-name "haskell-language-server" {
-        inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.4";
-        # Even though this is in the cabal.project it is inside a condional
-        # and so haskell.nix cannot parse it properly.  Luckily adding it
-        # again seems to work fine.
-        cabalProjectLocal = ''
-          repository head.hackage.ghc.haskell.org
-            url: https://ghc.gitlab.haskell.org/head.hackage/
-            secure: True
-            key-threshold: 3
-            root-keys:
-               f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
-               26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
-               7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-            --sha256: sha256-aVI93DtHziicNn2mGli0YE+bC5BeT7mOQQETp2Thi68=
-
-          if impl(ghc < 9.7)
-            active-repositories: hackage.haskell.org
-        '';
+        src = pkgs.haskell-nix.sources."hls-2.6";
       };
     })
   );

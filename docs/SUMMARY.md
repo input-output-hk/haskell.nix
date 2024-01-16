@@ -4,8 +4,6 @@
 - [Tutorials](./tutorials/index.md)
     - [Creating a development environment](./tutorials/development.md)
     - [Getting started](./tutorials/getting-started.md)
-    - [Getting started with Flakes](./tutorials/getting-started-flakes.md)
-    - [Getting started with Hix](./tutorials/getting-started-hix.md)
     - [Sourcing files only part of git repository using cleanGit](./tutorials/clean-git.md)
     - [Handling git repositories in projects](./tutorials/source-repository-hashes.md)
     - [Mapping non-Haskell dependencies to Nixpkgs](./tutorials/pkg-map.md)
