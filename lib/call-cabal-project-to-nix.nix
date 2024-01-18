@@ -401,7 +401,7 @@ let
         exit 1
       ''}
     else
-      cp -r ${cleanedSource}/* .
+      rsync -a ${cleanedSource}/ ./
     fi
     chmod +w -R .
     # Decide what to do for each `package.yaml` file.
