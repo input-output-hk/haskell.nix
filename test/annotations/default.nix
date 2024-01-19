@@ -9,6 +9,8 @@ let
   };
 
 in recurseIntoAttrs {
+  meta.disabled = stdenv.hostPlatform.isGhcjs;
+
   ifdInputs = {
     inherit (project) plan-nix;
   };
