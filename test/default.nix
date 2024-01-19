@@ -217,6 +217,7 @@ let
     ca-derivations = callTest ./ca-derivations { inherit CADerivationsEnabled; };
     ca-derivations-include = callTest ./ca-derivations-include { inherit CADerivationsEnabled; };
     test-only = callTest ./test-only { inherit util; };
+    annotations = callTest ./annotations { inherit util; };
     cabal-project-nix-path = callTest ./cabal-project-nix-path {};
     plugin = callTest ./plugin {};
     unit = unitTests;

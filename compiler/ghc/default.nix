@@ -311,8 +311,10 @@ let
       # For cross compilers only the RTS should be built with -mno-outline-atomics
       + lib.optionalString (!hostPlatform.isAarch64 && targetPlatform.isLinux && targetPlatform.isAarch64)
         " '*.rts.ghc.c.opts += -optc-mno-outline-atomics'"
-      + lib.optionalString enableRelocatedStaticLibs
+      # PIC breaks GHC annotations on windows (see test/annotations for a test case)
+      + lib.optionalString (enableRelocatedStaticLibs && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fPIC' '*.*.cc.*.opts += -fPIC'"
+      # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
