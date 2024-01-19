@@ -9,8 +9,9 @@ let
   };
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs;
-
+  meta.disabled = stdenv.hostPlatform.isGhcjs
+    # Failed to lookup symbol: __aarch64_swp8_acq_rel
+    || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64);
   ifdInputs = {
     inherit (project) plan-nix;
   };
