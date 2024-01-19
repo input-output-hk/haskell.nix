@@ -1,0 +1,10 @@
+cabal-version: 1.24
+name: test-annotations
+version: 1
+build-type: Simple
+
+library
+  exposed-modules: Lib
+  hs-source-dirs: .
+  build-depends: base
+  default-language: Haskell2010
