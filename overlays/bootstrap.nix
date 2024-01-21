@@ -249,7 +249,6 @@ in {
                 ++ fromUntil "9.8.1"  "9.8.2"  ./patches/ghc/ghc-9.8-cabal-c-soures-fix.patch
                 ++ fromUntil "9.6.3"  "9.9"    ./patches/ghc/ghc-9.6.3-Cabal-9384.patch
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.5"    ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
-                ++ fromUntil "9.6.1"  "9.8"    ./patches/ghc/MR10116.patch
                 ++ fromUntil "9.4.1"  "9.6"    ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "9.4" && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-make-stage-1-lib-ghc.patch
 
