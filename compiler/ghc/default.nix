@@ -793,6 +793,19 @@ stdenv.mkDerivation (rec {
       then ''
         mkdir $out
         cp -r _build/stage1/bin $out
+        ${
+          # These are needed when building the reinstallable lib ghc
+          if targetPlatform.isMusl
+            then ''
+              cp _build/stageBoot/bin/genprimopcode $out/bin
+              cp _build/stageBoot/bin/deriveConstants $out/bin
+            '' else ''
+              cp _build/stageBoot/bin/${targetPrefix}genprimopcode $out/bin
+              ln -s $out/bin/${targetPrefix}genprimopcode $out/bin/genprimopcode
+              cp _build/stageBoot/bin/${targetPrefix}deriveConstants $out/bin
+              ln -s $out/bin/${targetPrefix}deriveConstants $out/bin/deriveConstants
+            ''
+        }
         cp -r _build/stage1/lib $out
         mkdir $doc
         cp -r _build/stage1/share $doc

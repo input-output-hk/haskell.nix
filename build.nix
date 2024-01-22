@@ -42,6 +42,7 @@ in rec {
             "ghc8105" = "3.4.1";
             "ghc8106" = "3.4.1";
             "ghc8107" = "3.4.1";
+            "ghc928" = "3.6.1";
           }.${compiler-nix-name} or "latest";
       };
     } // pkgs.lib.optionalAttrs (ghcFromTo "9.2" "9.6") {
