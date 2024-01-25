@@ -8,8 +8,6 @@ let
     # going to use. To cut the evaluation time of nix-tools (which would itself
     # depend on haskell.nix), we have the option of obtaining a pre-compiled
     # and statically-linked copy nix-tools.
-    #
-    # For the moment we do this only on x84_64-linux.
     nix-tools = (final: prev:
       let
         # Import the overlay from nix-tools' subdirectory
@@ -32,11 +30,15 @@ let
         # as shown above.
         static-nix-tools =
           let
-            tarball = final.fetchzip {
-              name = "nix-tools-0.1.0.0";
-              url = "https://ci.zw3rk.com/build/3419283/download/1/nix-tools-0.1.0.0-x86_64-unknown-linux-musl.tar.gz";
-              sha256 = "sha256-0NFDSRJM+f8n3K8902LqqjNJfyqgWUTKAM5xmInsqpU=";
-            };
+            # TODO replace once haskell-nix-examples nix-tools is in haskell.nix
+            zipFile = (import final.haskell-nix.sources.nix-tools-static final).${final.system};
+            tarball = final.runCommand "nix-tools" {
+              nativeBuildInputs = [ final.unzip ];
+            } ''
+              mkdir -p $out/bin
+              cd $out/bin
+              unzip ${zipFile}
+            '';
             nix-tools-provided-exes = builtins.attrNames nix-tools-pkgs.nix-tools.exes;
           in
             # add the missing exes attributes to the tarball derivation
@@ -58,11 +60,7 @@ let
           prev.haskell-nix // {
             inherit (nix-tools-pkgs) nix-tools nix-tools-set;
             # either nix-tools from its overlay or from the tarball.
-            nix-tools-unchecked =
-              # If possible use the static nix-tools tarball
-              if final.stdenv.hostPlatform.isLinux && final.stdenv.hostPlatform.isx86_64
-                then static-nix-tools
-                else pinned-nix-tools-lib.nix-tools final.system;
+            nix-tools-unchecked = static-nix-tools;
           };
         # For use building hadrian.  This way updating anything that modifies the
         # way hadrian is built will not cause a GHC rebuild.
