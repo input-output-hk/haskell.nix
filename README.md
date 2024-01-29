@@ -29,3 +29,5 @@ Haskell packages in Nix. It depends on other repos, which are:
 
 - [`stackage.nix`](https://github.com/input-output-hk/stackage.nix) — all of the [Stackage](https://www.stackage.org/) snapshots, converted to Nix expressions.
 
+> [!NOTE]
+> For commercial support, please don't hesitate to reach out at devx@iohk.io

@@ -311,8 +311,10 @@ let
       # For cross compilers only the RTS should be built with -mno-outline-atomics
       + lib.optionalString (!hostPlatform.isAarch64 && targetPlatform.isLinux && targetPlatform.isAarch64)
         " '*.rts.ghc.c.opts += -optc-mno-outline-atomics'"
-      + lib.optionalString enableRelocatedStaticLibs
+      # PIC breaks GHC annotations on windows (see test/annotations for a test case)
+      + lib.optionalString (enableRelocatedStaticLibs && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fPIC' '*.*.cc.*.opts += -fPIC'"
+      # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
       # The following is required if we build on aarch64-darwin for aarch64-iOS. Otherwise older
@@ -791,6 +793,19 @@ stdenv.mkDerivation (rec {
       then ''
         mkdir $out
         cp -r _build/stage1/bin $out
+        ${
+          # These are needed when building the reinstallable lib ghc
+          if targetPlatform.isMusl
+            then ''
+              cp _build/stageBoot/bin/genprimopcode $out/bin
+              cp _build/stageBoot/bin/deriveConstants $out/bin
+            '' else ''
+              cp _build/stageBoot/bin/${targetPrefix}genprimopcode $out/bin
+              ln -s $out/bin/${targetPrefix}genprimopcode $out/bin/genprimopcode
+              cp _build/stageBoot/bin/${targetPrefix}deriveConstants $out/bin
+              ln -s $out/bin/${targetPrefix}deriveConstants $out/bin/deriveConstants
+            ''
+        }
         cp -r _build/stage1/lib $out
         mkdir $doc
         cp -r _build/stage1/share $doc
