@@ -66,7 +66,10 @@ let
 
 
   outputs = {
-    zipped = forAllSystems (import ./zipped.nix inputs);
+    hydraJobs = forAllSystems (pkgs: {
+      zipped = import ./zipped.nix inputs pkgs;
+      flake = (import ./project.nix inputs pkgs).flake'.hydraJobs;
+    });
   };
 
 in

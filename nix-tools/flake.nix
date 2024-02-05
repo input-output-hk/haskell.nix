@@ -52,10 +52,11 @@
             echo "file binary-dist $out/${tarball-filename}" >> $out/nix-support/hydra-build-products
           '';
     
-    in
-    {
-
       static-nix-tools-outputs = import ./static/outputs.nix inputs;
+    
+    in {
+
+      inherit static-nix-tools-outputs;
 
       # this is not per-system!
       overlays.default = import ./overlay.nix;
@@ -92,6 +93,9 @@
           # aarch64-multiplatform-musl cross compile is currently broken
           # // lib.optionalAttrs (pkgs.buildPlatform.system == "aarch64-linux")
           #   { binary-tarball = mkTarball pkgs.pkgsCross.aarch64-multiplatform-musl; }
+          // {
+            static = static-nix-tools-outputs.hydraJobs.${pkgs.system};
+          }
         );
     };
 
