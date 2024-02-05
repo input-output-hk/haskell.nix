@@ -1,8 +1,19 @@
 {
-  inputs.nixpkgs.follows = "haskellNix/nixpkgs";
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
+  inputs = {
+    nixpkgs.follows = "haskellNix/nixpkgs";
 
-  outputs = { self, nixpkgs, haskellNix, ... }:
+    haskellNix.url = "github:input-output-hk/haskell.nix";
+  
+    iohkNix.url = "github:input-output-hk/iohk-nix";
+
+    CHaP = {
+      url = "github:input-output-hk/cardano-haskell-packages?ref=repo";
+      flake = false;
+    };
+  };
+
+  
+  outputs = inputs@{ self, nixpkgs, haskellNix, iohkNix, ... }:
     let
       systems = [
         "x86_64-linux"
@@ -40,8 +51,12 @@
             mkdir -p $out/nix-support
             echo "file binary-dist $out/${tarball-filename}" >> $out/nix-support/hydra-build-products
           '';
+    
     in
     {
+
+      static-nix-tools-outputs = import ./static/outputs.nix inputs;
+
       # this is not per-system!
       overlays.default = import ./overlay.nix;
 
@@ -51,6 +66,7 @@
         nix-tools = system: (haskellNix.legacyPackages.${system}.extend self.overlays.default).nix-tools;
         haskell-nix = system: (haskellNix.legacyPackages.${system}.extend self.overlays.default).haskell-nix;
       };
+
       project = forAllSystems (pkgs: pkgs.nix-tools.project);
 
       packages = forAllSystems (pkgs:
