@@ -801,7 +801,7 @@ stdenv.mkDerivation (rec {
         cp -r _build/stage1/bin $out
         # let's assume that if we find a non-prefixed genprimop,
         # we also find a non-prefixed deriveConstants
-        if [ -f _build/stage1/bin/genprimopcode ]; then
+        if [ -f _build/stageBoot/bin/genprimopcode ]; then
           cp _build/stageBoot/bin/genprimopcode $out/bin
           cp _build/stageBoot/bin/deriveConstants $out/bin
         else
