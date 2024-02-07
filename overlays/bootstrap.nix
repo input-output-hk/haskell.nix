@@ -267,7 +267,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.6.4" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch
                 ++ final.lib.optional (versionAtLeast "8.10.7" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64 && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-8.10-aarch64-musl-gettimeofday.patch
 
-                ++ until           "9.8" ./patches/ghc/docs-sphinx-7.patch
+                ++ fromUntil "9.0" "9.8" ./patches/ghc/docs-sphinx-7.patch
                 ++ fromUntil "9.8" "9.9" ./patches/ghc/docs-sphinx-7-ghc98.patch
                 ;
         in ({
