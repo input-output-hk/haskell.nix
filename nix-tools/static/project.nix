@@ -78,8 +78,6 @@ let
 
     src = ../.;
 
-    inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = inputs.CHaP; };
-
     modules = [
       apply-hnix-patches
       apply-workaround-for-ghc94-and-above
