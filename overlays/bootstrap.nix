@@ -1,14 +1,6 @@
 final: prev:
 let
-    # For each architecture, what GHC version we should use for bootstrapping.
-    buildBootstrapper =
-        if final.stdenv.buildPlatform.isAarch64 && final.stdenv.buildPlatform.isDarwin
-        then {
-            compilerNixName = "ghc8107";
-        }
-        else {
-            compilerNixName = "ghc884";
-        };
+    buildBootstrapper.compilerNixName = "ghc8107";
     latestVer = {
       "8.4" = "8.4.4";
       "8.6" = "8.6.5";
