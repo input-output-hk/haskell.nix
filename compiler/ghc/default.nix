@@ -244,8 +244,6 @@ let
           then "ghc928"
           else "ghc962";
     in
-      assert (buildPackages.haskell.compiler ? ${compiler-nix-name}
-        || throw "Expected pkgs.haskell.compiler.${compiler-nix-name} for building hadrian");
     buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
