@@ -76,7 +76,7 @@ in {
                   materialized = ../materialized/happy-1.20.0;
                 };
             };
-            sphinx = with final.buildPackages; python3Packages.sphinx_1_7_9 or sphinx_5;
+            sphinx = final.buildPackages.sphinx;
 
             D5123-patch = final.fetchpatch rec { # https://phabricator.haskell.org/D5123
                 url = "http://tarballs.nixos.org/sha256/${sha256}";
