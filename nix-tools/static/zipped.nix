@@ -47,7 +47,6 @@ let
           [ pkgs.nix pkgs.gitMinimal ]
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs
-          # ++ stringifyInputs inputs.flake-utils.inputs
           ++ stringifyInputs inputs.iohkNix.inputs;
       } ''
         export HOME=$(mktemp -d)

@@ -5,11 +5,6 @@
     haskellNix.url = "github:input-output-hk/haskell.nix";
   
     iohkNix.url = "github:input-output-hk/iohk-nix";
-
-    CHaP = {
-      url = "github:input-output-hk/cardano-haskell-packages?ref=repo";
-      flake = false;
-    };
   };
 
   

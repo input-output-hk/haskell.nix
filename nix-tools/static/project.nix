@@ -4,7 +4,7 @@ let
 
   apply-hnix-patches = {
     packages.hnix.patches = [
-      (builtins.toFile "plutus-core.patch" ''
+      (builtins.toFile "hnix.patch" ''
         diff --git a/src/Nix/Options/Parser.hs b/src/Nix/Options/Parser.hs
         index 3aeb0e5..bea0ac9 100644
         --- a/src/Nix/Options/Parser.hs
