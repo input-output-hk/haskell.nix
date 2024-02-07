@@ -1,4 +1,4 @@
-inputs@{ nixpkgs, haskellNix, iohkNix, ... }:
+inputs@{ nixpkgs, haskellNix, ... }:
 
 let
 
@@ -14,30 +14,27 @@ let
 
 
   static-libraries-overlay = final: prev: {
-    static-libsodium-vrf = final.libsodium-vrf.overrideDerivation (old: {
-      configureFlags = old.configureFlags ++ [ "--disable-shared" ];
-    });
-    static-secp256k1 = final.secp256k1.overrideDerivation (old: {
-      configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ];
-    });
-    dyn-static-secp256k1 = final.secp256k1.overrideDerivation (old: {
-      configureFlags = old.configureFlags ++ [ "--enable-static" "--enable-shared" ];
-    });
+    # static-libsodium-vrf = final.libsodium-vrf.overrideDerivation (old: {
+    #   configureFlags = old.configureFlags ++ [ "--disable-shared" ];
+    # });
+    # static-secp256k1 = final.secp256k1.overrideDerivation (old: {
+    #   configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ];
+    # });
+    # dyn-static-secp256k1 = final.secp256k1.overrideDerivation (old: {
+    #   configureFlags = old.configureFlags ++ [ "--enable-static" "--enable-shared" ];
+    # });
     static-gmp = (final.gmp.override { withStatic = true; }).overrideDerivation (old: {
       configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ];
     });
-    static-libblst = (final.libblst.override { enableShared = false; }).overrideDerivation (old: {
-      postFixup = "";
-    });
-    static-openssl = (final.openssl.override { static = true; });
-    static-zlib = final.zlib.override { shared = false; };
-    static-pcre = final.pcre.override { shared = false; };
+    # static-libblst = (final.libblst.override { enableShared = false; }).overrideDerivation (old: {
+    #   postFixup = "";
+    # });
+    # static-openssl = (final.openssl.override { static = true; });
+    # static-zlib = final.zlib.override { shared = false; };
+    # static-pcre = final.pcre.override { shared = false; };
   };
 
 
-  # This sets up the `pkgs`, by importing the nixpkgs flake and adding the 
-  # haskellNix overlay. We need the iohkNix overlays to get the necessary cryto 
-  # packages: secp256k1, blst, and libsodium.
   mkNixpkgsForSystem = system: import nixpkgs {
 
     inherit system;
@@ -47,12 +44,12 @@ let
     inherit (haskellNix) config;
 
     overlays = with inputs; [
-      iohkNix.overlays.crypto
+      # iohkNix.overlays.crypto
       haskellNix.overlay
-      iohkNix.overlays.haskell-nix-extra
-      iohkNix.overlays.haskell-nix-crypto
-      iohkNix.overlays.cardano-lib
-      iohkNix.overlays.utils
+      # iohkNix.overlays.haskell-nix-extra
+      # iohkNix.overlays.haskell-nix-crypto
+      # iohkNix.overlays.cardano-lib
+      # iohkNix.overlays.utils
       static-libraries-overlay
       (import ./packaging.nix)
     ];

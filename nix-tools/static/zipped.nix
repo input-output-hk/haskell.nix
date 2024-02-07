@@ -46,8 +46,8 @@ let
         nativeBuildInputs = 
           [ pkgs.nix pkgs.gitMinimal ]
           ++ stringifyInputs inputs
-          ++ stringifyInputs inputs.haskellNix.inputs
-          ++ stringifyInputs inputs.iohkNix.inputs;
+          ++ stringifyInputs inputs.haskellNix.inputs;
+          # ++ stringifyInputs inputs.iohkNix.inputs;
       } ''
         export HOME=$(mktemp -d)
         mkdir $out

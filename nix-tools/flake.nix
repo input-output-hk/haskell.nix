@@ -4,11 +4,11 @@
 
     haskellNix.url = "github:input-output-hk/haskell.nix";
   
-    iohkNix.url = "github:input-output-hk/iohk-nix";
+    # iohkNix.url = "github:input-output-hk/iohk-nix";
   };
 
   
-  outputs = inputs@{ self, nixpkgs, haskellNix, iohkNix, ... }:
+  outputs = inputs@{ self, nixpkgs, haskellNix, ... }:
     let
       systems = [
         "x86_64-linux"
