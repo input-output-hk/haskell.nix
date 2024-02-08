@@ -64,10 +64,6 @@ let
     ];
     packages.nix-tools.ghcOptions = [
       "-L${pkgs.lib.getLib pkgs.static-gmp}/lib"
-      # "-L${pkgs.lib.getLib pkgs.static-libsodium-vrf}/lib"
-      # "-L${pkgs.lib.getLib pkgs.static-secp256k1}/lib"
-      # "-L${pkgs.lib.getLib pkgs.static-openssl}/lib"
-      # "-L${pkgs.lib.getLib pkgs.static-libblst}/lib"
     ];
   };
 

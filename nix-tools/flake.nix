@@ -3,8 +3,6 @@
     nixpkgs.follows = "haskellNix/nixpkgs";
 
     haskellNix.url = "github:input-output-hk/haskell.nix";
-  
-    # iohkNix.url = "github:input-output-hk/iohk-nix";
   };
 
   

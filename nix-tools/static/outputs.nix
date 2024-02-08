@@ -13,25 +13,10 @@ let
   ];
 
 
-  static-libraries-overlay = final: prev: {
-    # static-libsodium-vrf = final.libsodium-vrf.overrideDerivation (old: {
-    #   configureFlags = old.configureFlags ++ [ "--disable-shared" ];
-    # });
-    # static-secp256k1 = final.secp256k1.overrideDerivation (old: {
-    #   configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ];
-    # });
-    # dyn-static-secp256k1 = final.secp256k1.overrideDerivation (old: {
-    #   configureFlags = old.configureFlags ++ [ "--enable-static" "--enable-shared" ];
-    # });
+  static-gmp-overlay = final: prev: {
     static-gmp = (final.gmp.override { withStatic = true; }).overrideDerivation (old: {
       configureFlags = old.configureFlags ++ [ "--enable-static" "--disable-shared" ];
     });
-    # static-libblst = (final.libblst.override { enableShared = false; }).overrideDerivation (old: {
-    #   postFixup = "";
-    # });
-    # static-openssl = (final.openssl.override { static = true; });
-    # static-zlib = final.zlib.override { shared = false; };
-    # static-pcre = final.pcre.override { shared = false; };
   };
 
 
@@ -44,13 +29,8 @@ let
     inherit (haskellNix) config;
 
     overlays = with inputs; [
-      # iohkNix.overlays.crypto
       haskellNix.overlay
-      # iohkNix.overlays.haskell-nix-extra
-      # iohkNix.overlays.haskell-nix-crypto
-      # iohkNix.overlays.cardano-lib
-      # iohkNix.overlays.utils
-      static-libraries-overlay
+      static-gmp-overlay
       (import ./packaging.nix)
     ];
   };
