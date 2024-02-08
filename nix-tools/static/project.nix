@@ -74,6 +74,9 @@ let
 
     src = ../.;
 
+    # tests need to fetch hackage
+    configureArgs = pkgs.lib.mkDefault "--disable-tests";
+
     modules = [
       apply-hnix-patches
       apply-workaround-for-ghc94-and-above
