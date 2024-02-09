@@ -6,6 +6,9 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "plugin";
+    modules = [{
+      reinstallableLibGhc = compiler-nix-name != "ghc981";
+    }];
   };
 
   packages = project.hsPkgs;
