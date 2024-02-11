@@ -7,7 +7,7 @@ let
     inherit compiler-nix-name evalPackages;
     src = testSrc "plugin";
     modules = [{
-      reinstallableLibGhc = compiler-nix-name != "ghc981";
+      reinstallableLibGhc = builtins.compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" < 0;
     }];
   };
 
