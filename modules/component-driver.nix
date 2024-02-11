@@ -77,6 +77,8 @@ in
     ++ lib.optionals (builtins.compareVersions config.compiler.version "8.11" >= 0) [
       # stm and exceptions are needed by the GHC package since 9.0.1
       "stm" "exceptions"]
+    ++ lib.optionals (builtins.compareVersions config.compiler.version "9.8.1" >= 0) [
+      "semaphore-compat"]
     )
     ++ lib.optionals (!config.reinstallableLibGhc || __elem config.compiler.nix-name ["ghc865"]) [
       "ghc-heap"
