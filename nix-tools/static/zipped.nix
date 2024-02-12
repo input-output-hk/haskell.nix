@@ -40,6 +40,8 @@ let
   zippedToolsNoIfdFor = fragment-name: 
     let 
       stringifyInputs = inputs: map (x: "${x}") (builtins.attrValues inputs);
+
+      fragment-drv = "static-nix-tools-outputs.hydraJobs.${pkgs.hostPlatform.system}.zipped.${fragment-name}";
     in
       pkgs.runCommand "${pkgs.hostPlatform.system}-all-nix-tools" {
         requiredSystemFeatures = [ "recursive-nix" ];
@@ -47,17 +49,15 @@ let
           [ pkgs.nix pkgs.gitMinimal ]
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs;
-          # ++ stringifyInputs inputs.iohkNix.inputs;
       } ''
         export HOME=$(mktemp -d)
         mkdir $out
-        cp $(nix --offline --extra-experimental-features "flakes nix-command" \
+        cp $(nix --offline --extra-experimental-features "flakes nix-command recursive-nix" \
           build --accept-flake-config --no-link --print-out-paths \
           --system ${pkgs.hostPlatform.system} \
-          ${../.}#${fragment-name})/*.zip $out/
+          ${../.}#${fragment-drv})/*.zip $out/
       '';
-
-
+ 
   zippedToolsForDarwin = makeZippedTools {
     customPkgs = pkgs;
     clearStripDebugFlags = true;

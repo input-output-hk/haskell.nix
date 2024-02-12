@@ -29,19 +29,7 @@ let
   };
 
 
-  # Fix compilation with newer ghc versions
-  apply-workaround-for-ghc94-and-above = { lib, config, ... }:
-    lib.mkIf (lib.versionAtLeast config.compiler.version "9.4") {
-      # lib:ghc is a bit annoying in that it comes with it's own build-type:Custom, and then tries
-      # to call out to all kinds of silly tools that GHC doesn't really provide.
-      # For this reason, we try to get away without re-installing lib:ghc for now.
-      reinstallableLibGhc = false;
-    };
-
-
   apply-dontStrip-to-nix-tools = {
-    # This is stupid. We should be able to set dontStrip globally.
-    # The fact that we can't inherit is bullshit.
     packages.nix-tools.components.exes = {
       cabal-name.dontStrip = false;
       cabal-to-nix.dontStrip = false;
@@ -79,7 +67,6 @@ let
 
     modules = [
       apply-hnix-patches
-      apply-workaround-for-ghc94-and-above
       apply-dontStrip-to-nix-tools
       add-static-libs-to-darwin
     ];
