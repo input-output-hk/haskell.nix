@@ -54,7 +54,6 @@ let
           [ pkgs.nix pkgs.gitMinimal ]
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs;
-        ];
       } ''
         export HOME=$(mktemp -d)
         mkdir $out
