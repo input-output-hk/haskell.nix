@@ -50,7 +50,7 @@ let
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs;
 
-        buildInputs = [
+        buildInputs = 
           [ pkgs.nix pkgs.gitMinimal ]
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs;
