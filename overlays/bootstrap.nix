@@ -719,9 +719,7 @@ in {
                 extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc928; };
 
                 bootPkgs = bootPkgs // {
-                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc928
-                    else final.buildPackages.buildPackages.haskell-nix.compiler.ghc902;
+                  ghc = final.buildPackages.buildPackages.haskell-nix.compiler.ghc8107;
                 };
                 inherit sphinx;
 
