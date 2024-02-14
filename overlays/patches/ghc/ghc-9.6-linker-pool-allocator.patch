@@ -1,0 +1,124 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index b1c533a..ad76b30 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1839,6 +1839,7 @@ HsInt resolveObjs (void)
+ {
+     ACQUIRE_LOCK(&linker_mutex);
+     HsInt r = resolveObjs_();
++    memPoolProtect();
+     RELEASE_LOCK(&linker_mutex);
+     return r;
+ }
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index bab2ca3..5c9608c 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -131,6 +131,56 @@
+       https://refspecs.linuxfoundation.org/elf/gabi4+/contents.html
+ 
+ */
++void * memPoolAlloc(SectionKind kind, StgWord size);
++
++void * __pool = NULL;
++void * __pool_rw_offset = NULL;
++void * __pool_rx_offset = NULL;
++
++void memPoolProtect( void ) {
++    if(__pool != NULL) {
++        mprotect(__pool, 512*1024*1024, PROT_READ | PROT_WRITE);
++        mprotect((void*)((uintptr_t)__pool + 512*1024*1024), 512*1024*1024, PROT_READ | PROT_WRITE | PROT_EXEC);
++    }
++}
++
++void * memPoolAlloc(SectionKind kind, StgWord size) {
++    if(__pool == NULL) {
++        // allocate 1 GB of virtual memory.
++        __pool = mmapAnonForLinker(1024*1024*1024);
++        if(__pool == NULL) {
++            printf("Failed to allocate memory pool\n");
++            fflush(stdout);
++            return NULL;
++        }
++        __pool_rw_offset = (void*)((uintptr_t)__pool + 512*1024*1024);
++        __pool_rx_offset = __pool_rw_offset;
++    }
++    // align to 64 bytes
++    StgWord alignedSize = (size + 0x3f) & ~0x3f;
++    void * ret = NULL;
++
++    if(kind == SECTIONKIND_CODE_OR_RODATA) {
++        ret = __pool_rx_offset;
++        // printf("Allocated RX %p\n", ret);
++        __pool_rx_offset = (void*)((uintptr_t)__pool_rx_offset + alignedSize);
++        if((uintptr_t)__pool_rx_offset > (uintptr_t)__pool + 1024*1024*1024) {
++            printf("Out of memory pool\n");
++            fflush(stdout);
++            return NULL;
++        }
++    } else {
++        __pool_rw_offset = (void*)((uintptr_t)__pool_rw_offset - alignedSize);
++        ret = __pool_rw_offset;
++        // printf("Allocated RW %p\n", ret);
++        if((uintptr_t)__pool_rw_offset < (uintptr_t)__pool) {
++            printf("Out of memory pool\n");
++            fflush(stdout);
++            return NULL;
++        }
++    }
++    return ret;
++}
+ 
+ #if defined(SHN_XINDEX)
+ /* global variable which address is used to signal an uninitialised shndx_table */
+@@ -813,7 +863,8 @@ ocGetNames_ELF ( ObjectCode* oc )
+                * address might be out of range for sections that are mmaped.
+                */
+               alloc = SECTION_MMAP;
+-              start = mmapAnonForLinker(size);
++              start = memPoolAlloc(kind, size);
++              // mmapAnonForLinker(size);
+               if (start == NULL) {
+                 barf("failed to mmap memory for bss. "
+                      "errno = %d", errno);
+@@ -860,7 +911,8 @@ ocGetNames_ELF ( ObjectCode* oc )
+           unsigned nstubs = numberOfStubsForSection(oc, i);
+           unsigned stub_space = STUB_SIZE * nstubs;
+ 
+-          void * mem = mmapAnonForLinker(size+stub_space);
++          void * mem = memPoolAlloc(kind, stub_space + size);
++        //   void * mem = mmapAnonForLinker(size+stub_space);
+ 
+           if( mem == MAP_FAILED ) {
+             barf("failed to mmap allocated memory to load section %d. "
+@@ -967,7 +1019,8 @@ ocGetNames_ELF ( ObjectCode* oc )
+       }
+       void * common_mem = NULL;
+       if(common_size > 0) {
+-          common_mem = mmapAnonForLinker(common_size);
++          common_mem = // mmapAnonForLinker(common_size);
++              memPoolAlloc(SECTIONKIND_RWDATA, common_size);
+           if (common_mem == NULL) {
+             barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
+           }
+@@ -2020,7 +2073,8 @@ ocResolve_ELF ( ObjectCode* oc )
+     ocFlushInstructionCache( oc );
+ #endif
+ 
+-    return ocMprotect_Elf(oc);
++    // return ocMprotect_Elf(oc);
++    return true;
+ }
+ 
+ /*
+diff --git a/rts/linker/Elf.h b/rts/linker/Elf.h
+index 2b9ad87..cf7a541 100644
+--- a/rts/linker/Elf.h
++++ b/rts/linker/Elf.h
+@@ -16,5 +16,6 @@ int ocRunFini_ELF        ( ObjectCode* oc );
+ int ocAllocateExtras_ELF ( ObjectCode *oc );
+ void freeNativeCode_ELF  ( ObjectCode *nc );
+ void *loadNativeObj_ELF  ( pathchar *path, char **errmsg );
++void memPoolProtect      ( void );
+ 
+ #include "EndPrivate.h"
