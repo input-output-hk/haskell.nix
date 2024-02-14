@@ -771,7 +771,7 @@ stdenv.mkDerivation (rec {
     ${hadrian}/bin/hadrian ${hadrianArgs} stage2:exe:iserv
     ${
       # This work around for building `ghc-iserv-prof` does not work with the current ghc HEAD
-      lib.optionalString (builtins.compareVersions ghc-version "9.9" >= 0)
+      lib.optionalString (builtins.compareVersions ghc-version "9.9" < 0)
       
       # I don't seem to be able to build _build/stage1/lib/bin/ghc-iserv-prof
       # by asking hadrian for this. The issue is likely that the profiling way
