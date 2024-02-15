@@ -96,6 +96,7 @@ in {
                 # Returns true iff this derivation's version is greater than or equal to ver.
                 versionAtLeast = ver: !versionLessThan ver;
                 fromUntil = start: end: final.lib.optional (versionAtLeast start && versionLessThan end);
+                from = start: final.lib.optional (versionAtLeast start);
                 until = end: final.lib.optional (versionLessThan end);
                 always = final.lib.optional true;
                 # Try to avoid reordering the patches unless a patch is added or changed that
