@@ -277,7 +277,8 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10.7" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64 && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-8.10-aarch64-musl-gettimeofday.patch
 
                 # Haskell.nix planning breaks if boot package ids have a suffix
-                ++ from                               "9.8.1" ./patches/ghc/ghc-9.8.1-remove-inplace-suffix.patch
+                ++ fromUntil "9.8.1" "9.9" ./patches/ghc/ghc-9.8.1-remove-inplace-suffix.patch
+                ++ from      "9.9"         ./patches/ghc/ghc-9.9-remove-inplace-suffix.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
