@@ -39,18 +39,14 @@ let
   
   zippedToolsNoIfdFor = fragment-name: 
     let 
+      # stringifyInputs = inputs: pkgs.lib.mapAttrsToList (name: value: pkgs.lib.trace "${name}=${value}" "${value}") inputs;
       stringifyInputs = inputs: map (x: "${x}") (builtins.attrValues inputs);
 
       fragment-drv = "static-nix-tools-outputs.hydraJobs.${pkgs.hostPlatform.system}.zipped.${fragment-name}";
     in
       pkgs.runCommand "${pkgs.hostPlatform.system}-all-nix-tools" {
-        requiredSystemFeatures = [ "recursive-nix" ];
+        # requiredSystemFeatures = [ "recursive-nix" ];
         nativeBuildInputs = 
-          [ pkgs.nix pkgs.gitMinimal ]
-          ++ stringifyInputs inputs
-          ++ stringifyInputs inputs.haskellNix.inputs;
-
-        buildInputs = 
           [ pkgs.nix pkgs.gitMinimal ]
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs;
