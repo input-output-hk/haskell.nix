@@ -378,18 +378,19 @@ index 9de31707d7..0c751c2d3f 100644
      [ Parsec.try (Parsec.string "haddock-prologue.txt")
          *> pure (HaddockPrologue pkgname)
 diff --git a/hadrian/src/Rules/Generate.hs b/hadrian/src/Rules/Generate.hs
-index bf84da2f9d..be18d896b7 100644
+index bf84da2f9d..457ab02da7 100644
 --- a/hadrian/src/Rules/Generate.hs
 +++ b/hadrian/src/Rules/Generate.hs
-@@ -15,7 +15,6 @@ import Oracles.Flag hiding (arSupportsAtFile, arSupportsDashL)
+@@ -15,7 +15,7 @@ import Oracles.Flag hiding (arSupportsAtFile, arSupportsDashL)
  import Oracles.ModuleFiles
  import Oracles.Setting
  import Hadrian.Haskell.Cabal.Type (PackageData(version))
 -import Hadrian.Haskell.Cabal
++import Hadrian.Haskell.Cabal (pkgIdentifier)
  import Hadrian.Oracles.Cabal (readPackageData)
  import Packages
  import Rules.Libffi
-@@ -291,7 +290,7 @@ packageUnitIds stage =
+@@ -291,7 +291,7 @@ packageUnitIds stage =
      foldMap f [ base, ghcPrim, compiler, ghc, cabal, templateHaskell, ghcCompact, array ]
    where
      f :: Package -> Interpolations
@@ -398,7 +399,7 @@ index bf84da2f9d..be18d896b7 100644
        where var = "LIBRARY_" <> escapedPkgName pkg <> "_UNIT_ID"
  
  escapedPkgName :: Package -> String
-@@ -456,15 +455,16 @@ generateConfigHs = do
+@@ -456,15 +456,16 @@ generateConfigHs = do
      trackGenerateHs
      cProjectName        <- getSetting ProjectName
      cBooterVersion      <- getSetting GhcVersion
@@ -421,7 +422,7 @@ index bf84da2f9d..be18d896b7 100644
      return $ unlines
          [ "module GHC.Settings.Config"
          , "  ( module GHC.Version"
-@@ -561,5 +561,3 @@ generatePlatformHostHs = do
+@@ -561,5 +562,3 @@ generatePlatformHostHs = do
          , "hostPlatformArchOS :: ArchOS"
          , "hostPlatformArchOS = ArchOS hostPlatformArch hostPlatformOS"
          ]
