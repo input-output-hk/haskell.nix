@@ -183,7 +183,9 @@ in {
   # https://gitlab.haskell.org/ghc/ghc/-/issues/23392
   # Using -j1 works around the issue.
   packages.gi-gtk.components.library.ghcOptions =
-    pkgs.lib.optional (__elem config.compiler.nix-name ["ghc961" "ghc962" "ghc963" "ghc964"]) "-j1";
+    pkgs.lib.optional (
+         builtins.compareVersions config.compiler.version "9.6.1" >= 0
+      && builtins.compareVersions config.compiler.version "9.9" < 0) "-j1";
 
   # With recent versions of nixpkgs fortify causes musl version of the
   # text package to fail with:

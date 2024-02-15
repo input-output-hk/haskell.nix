@@ -571,7 +571,7 @@ pkgs:
     "alure" = [ "alure" ];
     "alure-static" = [ "alure" ];
     "aml" = [ "aml" ];
-    "amtk-5" = [ "amtk" ];
+    "amtk-5" = [ "libgedit-amtk" ];
     "anthy" = [ "anthy" ];
     "apk" = [ "apk-tools" ];
     "libapngasm" = [ "apngasm" ];
