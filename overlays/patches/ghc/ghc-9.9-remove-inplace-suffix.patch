@@ -378,7 +378,7 @@ index 9de31707d7..0c751c2d3f 100644
      [ Parsec.try (Parsec.string "haddock-prologue.txt")
          *> pure (HaddockPrologue pkgname)
 diff --git a/hadrian/src/Rules/Generate.hs b/hadrian/src/Rules/Generate.hs
-index bf84da2f9d..74e25dd43b 100644
+index bf84da2f9d..be18d896b7 100644
 --- a/hadrian/src/Rules/Generate.hs
 +++ b/hadrian/src/Rules/Generate.hs
 @@ -15,7 +15,6 @@ import Oracles.Flag hiding (arSupportsAtFile, arSupportsDashL)
@@ -389,6 +389,15 @@ index bf84da2f9d..74e25dd43b 100644
  import Hadrian.Oracles.Cabal (readPackageData)
  import Packages
  import Rules.Libffi
+@@ -291,7 +290,7 @@ packageUnitIds stage =
+     foldMap f [ base, ghcPrim, compiler, ghc, cabal, templateHaskell, ghcCompact, array ]
+   where
+     f :: Package -> Interpolations
+-    f pkg = interpolateVar var $ pkgUnitId stage pkg
++    f pkg = interpolateVar var $ pkgIdentifier pkg
+       where var = "LIBRARY_" <> escapedPkgName pkg <> "_UNIT_ID"
+ 
+ escapedPkgName :: Package -> String
 @@ -456,15 +455,16 @@ generateConfigHs = do
      trackGenerateHs
      cProjectName        <- getSetting ProjectName
