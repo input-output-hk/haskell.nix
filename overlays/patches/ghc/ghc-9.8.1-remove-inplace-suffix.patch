@@ -1,0 +1,18 @@
+diff --git a/hadrian/src/Hadrian/Haskell/Hash.hs b/hadrian/src/Hadrian/Haskell/Hash.hs
+index ee644168e2..2abcf4daa4 100644
+--- a/hadrian/src/Hadrian/Haskell/Hash.hs
++++ b/hadrian/src/Hadrian/Haskell/Hash.hs
+@@ -56,10 +56,10 @@ pkgUnitId stg pkg = do
+         hash <- if use_hash
+                   then do
+                     phash <- pkgHash stg pkg
+-                    return $ truncateHash 4 phash
++                    return $ "-" <> truncateHash 4 phash
+                   else
+-                    return "inplace"
+-        pure $ pid <> "-" <> hash
++                    return ""
++        pure $ pid <> hash
+ 
+   where
+     truncateHash :: Int -> String -> String

@@ -302,7 +302,6 @@ let
           + lib.optionalString ((enableNativeBignum && hadrianHasNativeBignumFlavour) || targetPlatform.isGhcjs) "+native_bignum"
           + lib.optionalString targetPlatform.isGhcjs "+no_profiled_libs"
       } --docs=no-sphinx -j --verbose"
-      + lib.optionalString (builtins.compareVersions ghc-version "9.8.1" >= 0) " --hash-unit-ids"
       # This is needed to prevent $GCC from emitting out of line atomics.
       # Those would then result in __aarch64_ldadd1_sync and others being referenced, which
       # we don't handle in the RTS properly yet. Until we figure out how to _properly_ deal
