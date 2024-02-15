@@ -1,18 +1,1236 @@
-diff --git a/hadrian/src/Hadrian/Haskell/Hash.hs b/hadrian/src/Hadrian/Haskell/Hash.hs
-index ee644168e2..2abcf4daa4 100644
---- a/hadrian/src/Hadrian/Haskell/Hash.hs
-+++ b/hadrian/src/Hadrian/Haskell/Hash.hs
-@@ -56,10 +56,10 @@ pkgUnitId stg pkg = do
-         hash <- if use_hash
-                   then do
-                     phash <- pkgHash stg pkg
--                    return $ truncateHash 4 phash
-+                    return $ "-" <> truncateHash 4 phash
-                   else
--                    return "inplace"
--        pure $ pid <> "-" <> hash
-+                    return ""
-+        pure $ pid <> hash
+diff --git a/hadrian/bindist/Makefile b/hadrian/bindist/Makefile
+index 4b6a8cf022..7580ded296 100644
+--- a/hadrian/bindist/Makefile
++++ b/hadrian/bindist/Makefile
+@@ -235,7 +235,7 @@ update_package_db: install_bin install_lib
+ 	$(INSTALL_DATA) mk/system-cxx-std-lib-1.0.conf "$(DESTDIR)$(ActualLibsDir)/package.conf.d"
+ 	@echo "Updating the package DB"
+ 	$(foreach p, $(PKG_CONFS),\
+-		$(call patchpackageconf,$(shell echo $(notdir $p) | sed 's/-[0-9.]*-[0-9a-zA-Z]*\.conf//g'),$(shell echo "$p" | sed 's:\0xxx\0:   :g'),$(docdir),$(shell mk/relpath.sh "$(ActualLibsDir)" "$(docdir)"),$(shell echo $(notdir $p) | sed 's/.conf//g')))
++		$(call patchpackageconf,$(shell echo $(notdir $p) | sed 's/-\([0-9]*[0-9]\.\)*conf//g'),$(shell echo "$p" | sed 's:\0xxx\0:   :g'),$(docdir),$(shell mk/relpath.sh "$(ActualLibsDir)" "$(docdir)"),$(shell echo $(notdir $p) | sed 's/.conf//g')))
+ 	'$(DESTDIR)$(ActualBinsDir)/$(CrossCompilePrefix)ghc-pkg' --global-package-db "$(DESTDIR)$(ActualLibsDir)/package.conf.d" recache
+ 
+ install_mingw:
+diff --git a/hadrian/bootstrap/plan-bootstrap-9_4_1.json b/hadrian/bootstrap/plan-bootstrap-9_4_1.json
+index 34cbc95a5e..2cb99b8f71 100644
+--- a/hadrian/bootstrap/plan-bootstrap-9_4_1.json
++++ b/hadrian/bootstrap/plan-bootstrap-9_4_1.json
+@@ -126,15 +126,6 @@
+       "src_sha256": "d87b6c85696b601175274361fa62217894401e401e150c3c5d4013ac53cd36f3",
+       "version": "2.14.2"
+     },
+-    {
+-      "cabal_sha256": "64abad7816ab8cabed8489e29f807b3a6f828e0b2cec0eae404323d69d36df9a",
+-      "flags": [],
+-      "package": "base16-bytestring",
+-      "revision": 0,
+-      "source": "hackage",
+-      "src_sha256": "1d5a91143ef0e22157536093ec8e59d226a68220ec89378d5dcaeea86472c784",
+-      "version": "1.0.2.0"
+-    },
+     {
+       "cabal_sha256": "a692159828c2cd278eaec317b3a7e9fb6d7b787c8a19f086004d15d9fa1fd72c",
+       "flags": [
+@@ -146,18 +137,6 @@
+       "src_sha256": "845ce5db4c98cefd517323e005f87effceff886987305e421c4ef616dc0505d1",
+       "version": "0.8.3"
+     },
+-    {
+-      "cabal_sha256": "72ce9095872eae653addca5f412ac8070d6282d8e1c8578c2237c33f2cbbf4bc",
+-      "flags": [
+-        "-exe",
+-        "+use-cbits"
+-      ],
+-      "package": "cryptohash-sha256",
+-      "revision": 2,
+-      "source": "hackage",
+-      "src_sha256": "73a7dc7163871a80837495039a099967b11f5c4fe70a118277842f7a713c6bf6",
+-      "version": "0.11.102.1"
+-    },
+     {
+       "cabal_sha256": "3ac58d7341976173d1052e7b2837d119212d9afcf911735667c7f1ab67aec25f",
+       "flags": [],
+diff --git a/hadrian/bootstrap/plan-bootstrap-9_4_2.json b/hadrian/bootstrap/plan-bootstrap-9_4_2.json
+index 6ce98ec157..a17b217d1e 100644
+--- a/hadrian/bootstrap/plan-bootstrap-9_4_2.json
++++ b/hadrian/bootstrap/plan-bootstrap-9_4_2.json
+@@ -126,15 +126,6 @@
+       "src_sha256": "d87b6c85696b601175274361fa62217894401e401e150c3c5d4013ac53cd36f3",
+       "version": "2.14.2"
+     },
+-    {
+-      "cabal_sha256": "64abad7816ab8cabed8489e29f807b3a6f828e0b2cec0eae404323d69d36df9a",
+-      "flags": [],
+-      "package": "base16-bytestring",
+-      "revision": 0,
+-      "source": "hackage",
+-      "src_sha256": "1d5a91143ef0e22157536093ec8e59d226a68220ec89378d5dcaeea86472c784",
+-      "version": "1.0.2.0"
+-    },
+     {
+       "cabal_sha256": "a692159828c2cd278eaec317b3a7e9fb6d7b787c8a19f086004d15d9fa1fd72c",
+       "flags": [
+@@ -146,18 +137,6 @@
+       "src_sha256": "845ce5db4c98cefd517323e005f87effceff886987305e421c4ef616dc0505d1",
+       "version": "0.8.3"
+     },
+-    {
+-      "cabal_sha256": "72ce9095872eae653addca5f412ac8070d6282d8e1c8578c2237c33f2cbbf4bc",
+-      "flags": [
+-        "-exe",
+-        "+use-cbits"
+-      ],
+-      "package": "cryptohash-sha256",
+-      "revision": 2,
+-      "source": "hackage",
+-      "src_sha256": "73a7dc7163871a80837495039a099967b11f5c4fe70a118277842f7a713c6bf6",
+-      "version": "0.11.102.1"
+-    },
+     {
+       "cabal_sha256": "3ac58d7341976173d1052e7b2837d119212d9afcf911735667c7f1ab67aec25f",
+       "flags": [],
+diff --git a/hadrian/bootstrap/plan-bootstrap-9_4_3.json b/hadrian/bootstrap/plan-bootstrap-9_4_3.json
+index 017c37b1eb..82c6baa824 100644
+--- a/hadrian/bootstrap/plan-bootstrap-9_4_3.json
++++ b/hadrian/bootstrap/plan-bootstrap-9_4_3.json
+@@ -126,15 +126,6 @@
+       "src_sha256": "d87b6c85696b601175274361fa62217894401e401e150c3c5d4013ac53cd36f3",
+       "version": "2.14.2"
+     },
+-    {
+-      "cabal_sha256": "64abad7816ab8cabed8489e29f807b3a6f828e0b2cec0eae404323d69d36df9a",
+-      "flags": [],
+-      "package": "base16-bytestring",
+-      "revision": 0,
+-      "source": "hackage",
+-      "src_sha256": "1d5a91143ef0e22157536093ec8e59d226a68220ec89378d5dcaeea86472c784",
+-      "version": "1.0.2.0"
+-    },
+     {
+       "cabal_sha256": "a692159828c2cd278eaec317b3a7e9fb6d7b787c8a19f086004d15d9fa1fd72c",
+       "flags": [
+@@ -146,18 +137,6 @@
+       "src_sha256": "845ce5db4c98cefd517323e005f87effceff886987305e421c4ef616dc0505d1",
+       "version": "0.8.3"
+     },
+-    {
+-      "cabal_sha256": "72ce9095872eae653addca5f412ac8070d6282d8e1c8578c2237c33f2cbbf4bc",
+-      "flags": [
+-        "-exe",
+-        "+use-cbits"
+-      ],
+-      "package": "cryptohash-sha256",
+-      "revision": 2,
+-      "source": "hackage",
+-      "src_sha256": "73a7dc7163871a80837495039a099967b11f5c4fe70a118277842f7a713c6bf6",
+-      "version": "0.11.102.1"
+-    },
+     {
+       "cabal_sha256": "3ac58d7341976173d1052e7b2837d119212d9afcf911735667c7f1ab67aec25f",
+       "flags": [],
+diff --git a/hadrian/bootstrap/plan-bootstrap-9_4_4.json b/hadrian/bootstrap/plan-bootstrap-9_4_4.json
+index ed9ddbef9c..5420b39c73 100644
+--- a/hadrian/bootstrap/plan-bootstrap-9_4_4.json
++++ b/hadrian/bootstrap/plan-bootstrap-9_4_4.json
+@@ -126,15 +126,6 @@
+       "src_sha256": "d87b6c85696b601175274361fa62217894401e401e150c3c5d4013ac53cd36f3",
+       "version": "2.14.2"
+     },
+-    {
+-      "cabal_sha256": "64abad7816ab8cabed8489e29f807b3a6f828e0b2cec0eae404323d69d36df9a",
+-      "flags": [],
+-      "package": "base16-bytestring",
+-      "revision": 0,
+-      "source": "hackage",
+-      "src_sha256": "1d5a91143ef0e22157536093ec8e59d226a68220ec89378d5dcaeea86472c784",
+-      "version": "1.0.2.0"
+-    },
+     {
+       "cabal_sha256": "a692159828c2cd278eaec317b3a7e9fb6d7b787c8a19f086004d15d9fa1fd72c",
+       "flags": [
+@@ -146,18 +137,6 @@
+       "src_sha256": "845ce5db4c98cefd517323e005f87effceff886987305e421c4ef616dc0505d1",
+       "version": "0.8.3"
+     },
+-    {
+-      "cabal_sha256": "72ce9095872eae653addca5f412ac8070d6282d8e1c8578c2237c33f2cbbf4bc",
+-      "flags": [
+-        "-exe",
+-        "+use-cbits"
+-      ],
+-      "package": "cryptohash-sha256",
+-      "revision": 2,
+-      "source": "hackage",
+-      "src_sha256": "73a7dc7163871a80837495039a099967b11f5c4fe70a118277842f7a713c6bf6",
+-      "version": "0.11.102.1"
+-    },
+     {
+       "cabal_sha256": "3ac58d7341976173d1052e7b2837d119212d9afcf911735667c7f1ab67aec25f",
+       "flags": [],
+diff --git a/hadrian/bootstrap/plan-bootstrap-9_6_1.json b/hadrian/bootstrap/plan-bootstrap-9_6_1.json
+index 5dedb0dced..eee2bfbc19 100644
+--- a/hadrian/bootstrap/plan-bootstrap-9_6_1.json
++++ b/hadrian/bootstrap/plan-bootstrap-9_6_1.json
+@@ -144,15 +144,6 @@
+       "src_sha256": "d87b6c85696b601175274361fa62217894401e401e150c3c5d4013ac53cd36f3",
+       "version": "2.14.2"
+     },
+-    {
+-      "cabal_sha256": "64abad7816ab8cabed8489e29f807b3a6f828e0b2cec0eae404323d69d36df9a",
+-      "flags": [],
+-      "package": "base16-bytestring",
+-      "revision": 0,
+-      "source": "hackage",
+-      "src_sha256": "1d5a91143ef0e22157536093ec8e59d226a68220ec89378d5dcaeea86472c784",
+-      "version": "1.0.2.0"
+-    },
+     {
+       "cabal_sha256": "a692159828c2cd278eaec317b3a7e9fb6d7b787c8a19f086004d15d9fa1fd72c",
+       "flags": [
+@@ -164,18 +155,6 @@
+       "src_sha256": "845ce5db4c98cefd517323e005f87effceff886987305e421c4ef616dc0505d1",
+       "version": "0.8.3"
+     },
+-    {
+-      "cabal_sha256": "72ce9095872eae653addca5f412ac8070d6282d8e1c8578c2237c33f2cbbf4bc",
+-      "flags": [
+-        "-exe",
+-        "+use-cbits"
+-      ],
+-      "package": "cryptohash-sha256",
+-      "revision": 2,
+-      "source": "hackage",
+-      "src_sha256": "73a7dc7163871a80837495039a099967b11f5c4fe70a118277842f7a713c6bf6",
+-      "version": "0.11.102.1"
+-    },
+     {
+       "cabal_sha256": "3ac58d7341976173d1052e7b2837d119212d9afcf911735667c7f1ab67aec25f",
+       "flags": [],
+diff --git a/hadrian/hadrian.cabal b/hadrian/hadrian.cabal
+index 70fded11aa..7d50b7fb4f 100644
+--- a/hadrian/hadrian.cabal
++++ b/hadrian/hadrian.cabal
+@@ -55,7 +55,6 @@ executable hadrian
+                        , Hadrian.BuildPath
+                        , Hadrian.Expression
+                        , Hadrian.Haskell.Cabal
+-                       , Hadrian.Haskell.Hash
+                        , Hadrian.Haskell.Cabal.Type
+                        , Hadrian.Haskell.Cabal.Parse
+                        , Hadrian.Oracles.ArgsHash
+@@ -164,8 +163,6 @@ executable hadrian
+                        , transformers         >= 0.4     && < 0.7
+                        , unordered-containers >= 0.2.1   && < 0.3
+                        , text                 >= 1.2     && < 3
+-                       , cryptohash-sha256    >= 0.11    && < 0.12
+-                       , base16-bytestring    >= 0.1.1 && < 1.1.0.0
+     ghc-options:       -Wall
+                        -Wincomplete-record-updates
+                        -Wredundant-constraints
+diff --git a/hadrian/src/CommandLine.hs b/hadrian/src/CommandLine.hs
+index 9de13ef89e..6fc74af5d3 100644
+--- a/hadrian/src/CommandLine.hs
++++ b/hadrian/src/CommandLine.hs
+@@ -1,7 +1,7 @@
+ module CommandLine (
+     optDescrs, cmdLineArgsMap, cmdFlavour, lookupFreeze1, lookupFreeze2, lookupSkipDepends,
+     cmdBignum, cmdBignumCheck, cmdProgressInfo, cmdCompleteSetting,
+-    cmdDocsArgs, cmdUnitIdHash, lookupBuildRoot, TestArgs(..), TestSpeed(..), defaultTestArgs,
++    cmdDocsArgs, lookupBuildRoot, TestArgs(..), TestSpeed(..), defaultTestArgs,
+     cmdPrefix, DocArgs(..), defaultDocArgs
+     ) where
+ 
+@@ -28,7 +28,6 @@ data CommandLineArgs = CommandLineArgs
+     , freeze1        :: Bool
+     , freeze2        :: Bool
+     , skipDepends    :: Bool
+-    , unitIdHash     :: Bool
+     , bignum         :: Maybe String
+     , bignumCheck    :: Bool
+     , progressInfo   :: ProgressInfo
+@@ -48,7 +47,6 @@ defaultCommandLineArgs = CommandLineArgs
+     , freeze1        = False
+     , freeze2        = False
+     , skipDepends    = False
+-    , unitIdHash     = False
+     , bignum         = Nothing
+     , bignumCheck    = False
+     , progressInfo   = Brief
+@@ -138,9 +136,6 @@ readFreeze1 = Right $ \flags -> flags { freeze1 = True }
+ readFreeze2 = Right $ \flags -> flags { freeze1 = True, freeze2 = True }
+ readSkipDepends = Right $ \flags -> flags { skipDepends = True }
+ 
+-readUnitIdHash :: Either String (CommandLineArgs -> CommandLineArgs)
+-readUnitIdHash = Right $ \flags -> flags { unitIdHash = True }
+-
+ readProgressInfo :: String -> Either String (CommandLineArgs -> CommandLineArgs)
+ readProgressInfo ms =
+   case lower ms of
+@@ -274,8 +269,6 @@ optDescrs =
+       "Freeze Stage1 GHC."
+     , Option [] ["freeze2"] (NoArg readFreeze2)
+       "Freeze Stage2 GHC."
+-    , Option [] ["hash-unit-ids"] (NoArg readUnitIdHash)
+-      "Include package hashes in unit ids."
+     , Option [] ["skip-depends"] (NoArg readSkipDepends)
+       "Skip rebuilding dependency information."
+     , Option [] ["bignum"] (OptArg readBignum "BACKEND")
+@@ -387,9 +380,6 @@ lookupFreeze2 = freeze2 . lookupExtra defaultCommandLineArgs
+ lookupSkipDepends :: Map.HashMap TypeRep Dynamic -> Bool
+ lookupSkipDepends = skipDepends . lookupExtra defaultCommandLineArgs
+ 
+-cmdUnitIdHash :: Action Bool
+-cmdUnitIdHash = unitIdHash <$> cmdLineArgs
+-
+ cmdBignum :: Action (Maybe String)
+ cmdBignum = bignum <$> cmdLineArgs
+ 
+diff --git a/hadrian/src/Context.hs b/hadrian/src/Context.hs
+index d09228b004..b8fb5fca26 100644
+--- a/hadrian/src/Context.hs
++++ b/hadrian/src/Context.hs
+@@ -70,15 +70,15 @@ distDir st = do
+     hostArch       <- cabalArchString <$> setting arch
+     return $ hostArch ++ "-" ++ hostOs ++ "-ghc-" ++ version
+ 
+-pkgFileName :: Context -> Package -> String -> String -> Action FilePath
+-pkgFileName context package prefix suffix = do
+-    pid  <- pkgUnitId (stage context) package
++pkgFileName :: Package -> String -> String -> Action FilePath
++pkgFileName package prefix suffix = do
++    pid  <- pkgIdentifier package
+     return $ prefix ++ pid ++ suffix
+ 
+ pkgFile :: Context -> String -> String -> Action FilePath
+ pkgFile context@Context {..} prefix suffix = do
+     path <- buildPath context
+-    fileName <- pkgFileName context package prefix suffix
++    fileName <- pkgFileName package prefix suffix
+     return $ path -/- fileName
+ 
+ -- | Path to inplace package configuration file of a given 'Context'.
+@@ -95,9 +95,9 @@ pkgSetupConfigFile context = pkgSetupConfigDir context <&> (-/- "setup-config")
+ -- | Path to the haddock file of a given 'Context', e.g.:
+ -- @_build/stage1/libraries/array/doc/html/array/array.haddock@.
+ pkgHaddockFile :: Context -> Action FilePath
+-pkgHaddockFile context@Context {..} = do
++pkgHaddockFile Context {..} = do
+     root <- buildRoot
+-    version <- pkgUnitId stage package
++    version <- pkgIdentifier package
+     return $ root -/- "doc/html/libraries" -/- version -/- pkgName package <.> "haddock"
+ 
+ -- | Path to the registered ghc-pkg library file of a given 'Context', e.g.:
+@@ -106,7 +106,7 @@ pkgHaddockFile context@Context {..} = do
+ pkgRegisteredLibraryFile :: Context -> Action FilePath
+ pkgRegisteredLibraryFile context@Context {..} = do
+     libDir    <- libPath context
+-    pkgId     <- pkgUnitId stage package
++    pkgId     <- pkgIdentifier package
+     fileName  <- pkgRegisteredLibraryFileName context
+     distDir   <- distDir stage
+     return $ if Dynamic `wayUnit` way
+@@ -115,9 +115,9 @@ pkgRegisteredLibraryFile context@Context {..} = do
+ 
+ -- | Just the final filename portion of pkgRegisteredLibraryFile
+ pkgRegisteredLibraryFileName :: Context -> Action FilePath
+-pkgRegisteredLibraryFileName context@Context{..} = do
++pkgRegisteredLibraryFileName Context{..} = do
+     extension <- libsuf stage way
+-    pkgFileName context package "libHS" extension
++    pkgFileName package "libHS" extension
+ 
+ 
+ -- | Path to the library file of a given 'Context', e.g.:
+@@ -136,8 +136,8 @@ pkgGhciLibraryFile context@Context {..} = do
+ 
+ -- | Path to the configuration file of a given 'Context'.
+ pkgConfFile :: Context -> Action FilePath
+-pkgConfFile context@Context {..} = do
+-    pid  <- pkgUnitId stage package
++pkgConfFile Context {..} = do
++    pid  <- pkgIdentifier package
+     dbPath <- packageDbPath (PackageDbLoc stage iplace)
+     return $ dbPath -/- pid <.> "conf"
+ 
+diff --git a/hadrian/src/Hadrian/BuildPath.hs b/hadrian/src/Hadrian/BuildPath.hs
+index 342a2ca7eb..8d2806b587 100644
+--- a/hadrian/src/Hadrian/BuildPath.hs
++++ b/hadrian/src/Hadrian/BuildPath.hs
+@@ -110,28 +110,17 @@ parseWayUnit = Parsec.choice
+     , Parsec.char 'l'     *> pure Logging
+     ] Parsec.<?> "way unit (thr, debug, dyn, p, l)"
+ 
+--- | Parse a @"pkgname-pkgversion-pkghash"@ string into the package name and the
++-- | Parse a @"pkgname-pkgversion"@ string into the package name and the
+ -- integers that make up the package version.
+---
+--- If no hash was assigned, an empty string is returned in its place.
+-parsePkgId :: Parsec.Parsec String () (String, [Integer], String)
+-parsePkgId = parsePkgId' "" Parsec.<?> "package identifier (<name>-<version>(-<hash>?))"
++parsePkgId :: Parsec.Parsec String () (String, [Integer])
++parsePkgId = parsePkgId' "" Parsec.<?> "package identifier (<name>-<version>)"
+   where
+     parsePkgId' currName = do
+         s <- Parsec.many1 Parsec.alphaNum
+         _ <- Parsec.char '-'
+         let newName = if null currName then s else currName ++ "-" ++ s
+-        Parsec.choice
+-          [ (,,) newName <$> parsePkgVersion
+-                         <*> Parsec.option "" (Parsec.try $ do
+-                              _ <- Parsec.char '-'
+-                              -- Ensure we're not parsing a libDynName as a hash
+-                              _ <- Parsec.notFollowedBy (Parsec.string "ghc" *> parsePkgVersion)
+-                              parsePkgHash)
+-          , parsePkgId' newName ]
+-
+-parsePkgHash :: Parsec.Parsec String () String
+-parsePkgHash = Parsec.many1 Parsec.alphaNum
++        Parsec.choice [ (newName,) <$> parsePkgVersion
++                      , parsePkgId' newName ]
+ 
+ -- | Parse "."-separated integers that describe a package's version.
+ parsePkgVersion :: Parsec.Parsec String () [Integer]
+diff --git a/hadrian/src/Hadrian/Builder/Git.hs b/hadrian/src/Hadrian/Builder/Git.hs
+index 0f073ac463..6875a48fbd 100644
+--- a/hadrian/src/Hadrian/Builder/Git.hs
++++ b/hadrian/src/Hadrian/Builder/Git.hs
+@@ -2,13 +2,12 @@ module Hadrian.Builder.Git (gitArgs) where
+ 
+ import Expression
+ 
+--- | Default command line arguments for invoking the archiving utility @git@.
++-- | Default command line arguments for invoking the archiving utility @tar@.
+ gitArgs :: Args
+ gitArgs = mconcat
+   [ builder (Git ListFiles) ? mconcat
+       [ arg "ls-files"
+       , arg "--recurse-submodules"
+       , arg "-z"
+-      , getInputs
+       ]
+   ]
+diff --git a/hadrian/src/Hadrian/Haskell/Cabal.hs b/hadrian/src/Hadrian/Haskell/Cabal.hs
+index 1220e6bbe4..f5864b6297 100644
+--- a/hadrian/src/Hadrian/Haskell/Cabal.hs
++++ b/hadrian/src/Hadrian/Haskell/Cabal.hs
+@@ -10,8 +10,8 @@
+ -- Cabal files.
+ -----------------------------------------------------------------------------
+ module Hadrian.Haskell.Cabal (
+-    pkgVersion, pkgUnitId, pkgSynopsis, pkgDescription, pkgSimpleIdentifier,
+-    pkgDependencies, pkgGenericDescription, cabalArchString, cabalOsString
++    pkgVersion, pkgIdentifier, pkgSynopsis, pkgDescription, pkgDependencies,
++    pkgGenericDescription, cabalArchString, cabalOsString,
+     ) where
+ 
+ import Development.Shake
+@@ -20,19 +20,15 @@ import Distribution.PackageDescription (GenericPackageDescription)
+ import Hadrian.Haskell.Cabal.Type
+ import Hadrian.Oracles.Cabal
+ import Hadrian.Package
+-import {-# SOURCE #-} Hadrian.Haskell.Hash (pkgUnitId)
+-
+ 
+ -- | Read a Cabal file and return the package version. The Cabal file is tracked.
+ pkgVersion :: Package -> Action String
+ pkgVersion = fmap version . readPackageData
+ 
+--- | Read a Cabal file and return the package identifier without a hash, e.g. @base-4.10.0.0@.
++-- | Read a Cabal file and return the package identifier, e.g. @base-4.10.0.0@.
+ -- The Cabal file is tracked.
+---
+--- For an identifier complete with the hash use 'pkgUnitId'
+-pkgSimpleIdentifier :: Package -> Action String
+-pkgSimpleIdentifier package = do
++pkgIdentifier :: Package -> Action String
++pkgIdentifier package = do
+     cabal <- readPackageData package
+     return $ if null (version cabal)
+         then name cabal
+@@ -76,4 +72,3 @@ cabalOsString "mingw32"  = "windows"
+ cabalOsString "darwin"   = "osx"
+ cabalOsString "solaris2" = "solaris"
+ cabalOsString other      = other
+-
+diff --git a/hadrian/src/Hadrian/Haskell/Cabal/Parse.hs b/hadrian/src/Hadrian/Haskell/Cabal/Parse.hs
+index 760f4295c9..74ae8fb16a 100644
+--- a/hadrian/src/Hadrian/Haskell/Cabal/Parse.hs
++++ b/hadrian/src/Hadrian/Haskell/Cabal/Parse.hs
+@@ -63,6 +63,7 @@ import Hadrian.Target
+ import Base
+ import Builder
+ import Context
++import Flavour
+ import Settings
+ import Distribution.Simple.LocalBuildInfo
+ import qualified Distribution.Simple.Register as C
+@@ -343,7 +344,7 @@ registerPackage rs context = do
+     pd <- packageDescription <$> readContextData context
+     db_path <- packageDbPath (PackageDbLoc (stage context) (iplace context))
+     dist_dir <- Context.buildPath context
+-    pid <- pkgUnitId (stage context) (package context)
++    pid <- pkgIdentifier (package context)
+     -- Note: the @cPath@ is ignored. The path that's used is the 'buildDir' path
+     -- from the local build info @lbi@.
+     lbi <- liftIO $ C.getPersistBuildConfig cPath
+@@ -355,12 +356,12 @@ registerPackage rs context = do
+ -- This is copied and simplified from Cabal, because we want to install the package
+ -- into a different package database to the one it was configured against.
+ register :: FilePath
+-         -> String -- ^ Package Identifier
++         -> FilePath
+          -> FilePath
+          -> C.PackageDescription
+          -> LocalBuildInfo
+          -> IO ()
+-register pkg_db pid build_dir pd lbi
++register pkg_db conf_file build_dir pd lbi
+   = withLibLBI pd lbi $ \lib clbi -> do
+ 
+     absPackageDBs    <- C.absolutePackageDBPaths packageDbs
+@@ -371,13 +372,13 @@ register pkg_db pid build_dir pd lbi
+     writeRegistrationFile installedPkgInfo
  
    where
-     truncateHash :: Int -> String -> String
+-    regFile   = pkg_db </> pid <.> "conf"
++    regFile             = conf_file
+     reloc     = relocatable lbi
+     -- Using a specific package db here is why we have to copy the function from Cabal.
+     packageDbs = [C.SpecificPackageDB pkg_db]
+ 
+     writeRegistrationFile installedPkgInfo = do
+-      writeUTF8File regFile (CP.showInstalledPackageInfo installedPkgInfo)
++      writeUTF8File (pkg_db </> regFile <.> "conf") (CP.showInstalledPackageInfo installedPkgInfo)
+ 
+ 
+ -- | Build autogenerated files @autogen/cabal_macros.h@ and @autogen/Paths_*.hs@.
+diff --git a/hadrian/src/Hadrian/Haskell/Hash.hs b/hadrian/src/Hadrian/Haskell/Hash.hs
+deleted file mode 100644
+index ee644168e2..0000000000
+--- a/hadrian/src/Hadrian/Haskell/Hash.hs
++++ /dev/null
+@@ -1,257 +0,0 @@
+-{-# LANGUAGE DuplicateRecordFields #-}
+-{-# LANGUAGE NamedFieldPuns #-}
+-{-# LANGUAGE OverloadedStrings #-}
+-{-# LANGUAGE TypeFamilies #-}
+-module Hadrian.Haskell.Hash (pkgUnitId, pkgHashOracle) where
+-
+-import Development.Shake
+-
+-import Hadrian.Haskell.Cabal.Type
+-import Hadrian.Haskell.Cabal
+-import Hadrian.Oracles.Cabal
+-import Hadrian.Package
+-
+-import qualified Crypto.Hash.SHA256     as SHA256
+-import qualified Data.ByteString.Base16 as Base16
+-import qualified Data.ByteString.Char8  as BS
+-import Data.ByteString as BS (readFile)
+-import Data.Map (Map)
+-import qualified Data.Map as Map
+-import qualified Data.Set as Set
+-import Data.Maybe
+-import Data.List
+-import Context.Type
+-import Oracles.Setting
+-import Hadrian.Target
+-import Hadrian.Expression
+-import Builder
+-import Flavour.Type
+-import Settings
+-import Way
+-import Packages
+-import Development.Shake.Classes
+-import Control.Monad
+-import Utilities
+-import Base
+-import Context
+-import System.Directory.Extra (listFilesRecursive)
+-import CommandLine
+-import Control.Arrow (first)
+-
+-
+--- | Read a Cabal file and return the package identifier, e.g. @base-4.10.0.0-abcd@.
+--- This needs to be an oracle so it's cached
+-pkgUnitId :: Stage -> Package -> Action String
+-pkgUnitId stg pkg = do
+-  pid   <- pkgSimpleIdentifier pkg
+-  use_hash <- cmdUnitIdHash
+-  if pkgName pkg == "rts"
+-     -- The unit-id will change depending on the way, we need to treat the rts separately
+-     then pure pid
+-     else do
+-        -- Other boot packages still hardcode their unit-id to just <name>, but we
+-        -- can have hadrian generate a different unit-id for them just as cabal does
+-        -- because the boot packages unit-ids are overriden by setting -this-unit-id
+-        -- in the cabal file
+-        hash <- if use_hash
+-                  then do
+-                    phash <- pkgHash stg pkg
+-                    return $ truncateHash 4 phash
+-                  else
+-                    return "inplace"
+-        pure $ pid <> "-" <> hash
+-
+-  where
+-    truncateHash :: Int -> String -> String
+-    truncateHash = take
+-
+-data PackageHashInputs = PackageHashInputs {
+-       pkgHashPkgId         :: String, -- ^ name-version
+-       pkgHashComponent     :: PackageType,
+-       pkgHashSourceHash    :: BS.ByteString,
+-       -- pkgHashPkgConfigDeps :: Set (PkgconfigName, Maybe PkgconfigVersion),
+-       pkgHashDirectDeps    :: Set.Set String,
+-       pkgHashOtherConfig   :: PackageHashConfigInputs
+-     }
+-
+--- | Those parts of the package configuration that contribute to the
+--- package hash computed by hadrian (which is simpler than cabal's).
+---
+--- setting in Oracle.setting, which come from system.config
+-data PackageHashConfigInputs = PackageHashConfigInputs {
+-       pkgHashCompilerId          :: String,
+-       pkgHashPlatform            :: String,
+-       pkgHashFlagAssignment      :: [String], -- complete not partial
+-       pkgHashVanillaLib          :: Bool,
+-       pkgHashSharedLib           :: Bool,
+-       pkgHashDynExe              :: Bool,
+-       pkgHashGHCiLib             :: Bool,
+-       pkgHashProfLib             :: Bool,
+-       pkgHashProfExe             :: Bool,
+-       pkgHashSplitObjs           :: Bool,
+-       pkgHashSplitSections       :: Bool,
+-       pkgHashStripLibs           :: Bool,
+-       pkgHashStripExes           :: Bool,
+-       pkgHashProgramArgs         :: Map String [String]
+-       -- pkgHashProgPrefix          :: Maybe PathTemplate,
+-       -- pkgHashProgSuffix          :: Maybe PathTemplate,
+-       -- pkgHashPackageDbs          :: [Maybe PackageDB]
+-       -- Captured by extraArgs
+---       pkgHashDebugInfo           :: DebugInfoLevel,
+---       pkgHashCoverage            :: Bool,
+---       pkgHashFullyStaticExe      :: Bool,
+---       pkgHashProfLibDetail       :: ProfDetailLevel,
+---       pkgHashOptimization        :: Int,
+---       pkgHashProfExeDetail       :: ProfDetailLevel,
+---       pkgHashExtraLibDirs        :: [FilePath],
+---       pkgHashExtraLibDirsStatic  :: [FilePath],
+---       pkgHashExtraFrameworkDirs  :: [FilePath],
+---       pkgHashExtraIncludeDirs    :: [FilePath]
+-     }
+-  deriving Show
+-
+-newtype PkgHashKey = PkgHashKey (Stage, Package)
+-  deriving (Binary, Eq, Hashable, NFData, Show, Typeable)
+-type instance RuleResult PkgHashKey = String
+-
+-pkgHash :: Stage -> Package -> Action String
+-pkgHash stg p = askOracle . PkgHashKey $ (stg, p)
+-
+--- Needs to be an oracle to be cached. Called lots of times.
+-pkgHashOracle :: Rules ()
+-pkgHashOracle = void $ addOracleCache $ \(PkgHashKey (stag, pkg)) -> do
+-  let vanilla_ctx = vanillaContext stag pkg
+-  pkg_data <- readPackageData pkg
+-  name <- pkgSimpleIdentifier pkg
+-  stagePkgs <- stagePackages stag
+-
+-  depsHashes <- sequence [pkgHash stag pkg' | pkg' <- packageDependencies pkg_data, pkg' `elem` stagePkgs]
+-
+-  flav <- flavour
+-  let flavourArgs = extraArgs flav
+-
+-  targetOs       <- setting TargetOs
+-  projectVersion <- setting ProjectVersion
+-  let pkgHashCompilerId = "ghc-" ++ projectVersion
+-      pkgHashPlatform = targetOs
+-
+-  libWays <- interpretInContext vanilla_ctx (libraryWays flav)
+-  dyn_ghc <- dynamicGhcPrograms flav
+-  flags <-  interpret (target vanilla_ctx (Cabal Flags stag) [] []) getArgs
+-  let pkgHashFlagAssignment = flags
+-      pkgHashVanillaLib = vanilla `Set.member` libWays
+-      pkgHashSharedLib = dynamic `Set.member` libWays
+-      pkgHashDynExe = dyn_ghc
+-      pkgHashGHCiLib = False
+-      pkgHashProfLib = profiling `Set.member` libWays
+-      pkgHashProfExe = pkg == ghc && ghcProfiled flav stag
+-      pkgHashSplitObjs = False -- Deprecated
+-      pkgHashSplitSections = ghcSplitSections flav
+-      pkgHashStripExes = False
+-      pkgHashStripLibs = False
+-
+-  pkgHashProgramArgs <- Map.unions <$> (forM (Set.toList libWays) $ \lib_way -> do
+-    let ctx = vanilla_ctx { way = lib_way }
+-    ghcArgs <- interpret (target ctx (Ghc CompileHs stag) [] []) flavourArgs
+-    ghcCArgs <- interpret (target ctx (Ghc CompileCWithGhc stag) [] []) flavourArgs
+-    linkArgs <- interpret (target ctx (Ghc LinkHs stag) [] []) flavourArgs
+-    ccArgs  <- interpret (target ctx (Cc CompileC stag) [] []) flavourArgs
+-    hsc2hsArgs <- interpret (target ctx (Hsc2Hs stag) [] []) flavourArgs
+-    -- TODO: Other arguments for other things (a user could pass extra options to any
+-    -- builder we know about and we need to enumerate them here)
+-    return $ Map.fromList (map (first (++ waySuffix lib_way))
+-                           [("ghc", ghcArgs)
+-                           ,("ghc-c", ghcCArgs)
+-                           ,("ghc-link", linkArgs)
+-                           ,("hsc2hs", hsc2hsArgs)
+-                           ,("cc", ccArgs) ]))
+-
+-  let other_config = PackageHashConfigInputs{..}
+-
+-  files <- allFilesInDirectory (pkgPath pkg)
+-  need files
+-  files_hash <- liftIO (SHA256.finalize <$> hashFiles (SHA256.init) files)
+-
+-  return $ BS.unpack $ Base16.encode $ SHA256.hash $
+-    renderPackageHashInputs $ PackageHashInputs
+-    {
+-       pkgHashPkgId       = name
+-    ,  pkgHashComponent   = pkgType pkg
+-    ,  pkgHashSourceHash  = files_hash
+-    ,  pkgHashDirectDeps  = Set.fromList depsHashes
+-    ,  pkgHashOtherConfig = other_config
+-    }
+-
+-allFilesInDirectory :: FilePath -> Action [FilePath]
+-allFilesInDirectory dir = liftIO $ listFilesRecursive dir
+-
+--- Either use git ls-tree if we are in a git repo, otherwise just get all the
+--- files in the given directory.
+-{- Deb9 toolchain is too old to support git ls-tree properly
+-  git_tree <- isInGitTree
+-  if git_tree
+-    then do
+-      let gitFiles = filter fileFilter . split (=='\NUL')
+-          fileFilter file = not (null file) && ((dir ++ "/*") ?== file)
+-      gitFiles <$> askWithResources [] (target (vanillaContext stage0Boot compiler)  -- This value doesn't matter.
+-                                               (Git ListFiles) [dir] [])
+-    else
+-      liftIO $ listFilesRecursive dir
+-
+-
+-isInGitTree :: Action Bool
+-isInGitTree = do
+-  git_commit <- setting ProjectGitCommitId
+-  -- git_commit is not set if we are in a source dist
+-  return $ not ("" == git_commit)
+--}
+-
+-
+-
+-hashFiles :: SHA256.Ctx -> [FilePath] -> IO SHA256.Ctx
+-hashFiles = foldM hashFile
+-
+-hashFile :: SHA256.Ctx -> FilePath -> IO SHA256.Ctx
+-hashFile !ctx fp = do
+-  contents <- BS.readFile fp
+-  return $! SHA256.update ctx contents
+-
+-
+-renderPackageHashInputs :: PackageHashInputs -> BS.ByteString
+-renderPackageHashInputs PackageHashInputs{
+-                          pkgHashPkgId,
+-                          pkgHashComponent,
+-                          pkgHashSourceHash,
+-                          pkgHashDirectDeps,
+-                          pkgHashOtherConfig =
+-                            PackageHashConfigInputs{..}
+-                        } =
+-    -- The purpose of this somewhat laboured rendering (e.g. why not just
+-    -- use show?) is so that existing package hashes do not change
+-    -- unnecessarily when new configuration inputs are added into the hash.
+-    BS.pack $ unlines $ catMaybes $
+-      [ entry "pkgid"       show pkgHashPkgId
+-      , entry "component"  show pkgHashComponent
+-      , entry "src"         show pkgHashSourceHash
+-      , entry "deps"        (intercalate ", " . map show
+-                                              . Set.toList) pkgHashDirectDeps
+-        -- and then all the config
+-      , entry "compilerid"  show pkgHashCompilerId
+-      , entry "platform" show pkgHashPlatform
+-      , opt   "flags" mempty show pkgHashFlagAssignment
+-      , opt   "vanilla-lib" True  show pkgHashVanillaLib
+-      , opt   "shared-lib"  False show pkgHashSharedLib
+-      , opt   "dynamic-exe" False show pkgHashDynExe
+-      , opt   "ghci-lib"    False show pkgHashGHCiLib
+-      , opt   "prof-lib"    False show pkgHashProfLib
+-      , opt   "prof-exe"    False show pkgHashProfExe
+-      , opt   "split-objs"   False show pkgHashSplitObjs
+-      , opt   "split-sections" False show pkgHashSplitSections
+-      , opt   "stripped-lib" False show pkgHashStripLibs
+-      , opt   "stripped-exe" True  show pkgHashStripExes
+-      ] ++ Map.foldrWithKey (\prog args acc -> opt (prog ++ "-options") [] unwords args : acc) [] pkgHashProgramArgs
+-  where
+-    entry key     format value = Just (key ++ ": " ++ format value)
+-    opt   key def format value
+-         | value == def = Nothing
+-         | otherwise    = entry key format value
+diff --git a/hadrian/src/Hadrian/Haskell/Hash.hs-boot b/hadrian/src/Hadrian/Haskell/Hash.hs-boot
+deleted file mode 100644
+index b6fc67e36f..0000000000
+--- a/hadrian/src/Hadrian/Haskell/Hash.hs-boot
++++ /dev/null
+@@ -1,8 +0,0 @@
+-module Hadrian.Haskell.Hash where
+-
+-import Hadrian.Package
+-import Stage
+-import Development.Shake
+-
+-pkgUnitId :: Stage -> Package -> Action String
+-
+diff --git a/hadrian/src/Hadrian/Package.hs b/hadrian/src/Hadrian/Package.hs
+index 6291edee74..6bc31d7c58 100644
+--- a/hadrian/src/Hadrian/Package.hs
++++ b/hadrian/src/Hadrian/Package.hs
+@@ -81,4 +81,4 @@ instance NFData   PackageType
+ 
+ instance Binary   Package
+ instance Hashable Package
+-instance NFData   Package
++instance NFData   Package
+\ No newline at end of file
+diff --git a/hadrian/src/Rules.hs b/hadrian/src/Rules.hs
+index 55de341f8e..7cfeb65e5a 100644
+--- a/hadrian/src/Rules.hs
++++ b/hadrian/src/Rules.hs
+@@ -8,7 +8,6 @@ import qualified Hadrian.Oracles.Cabal.Rules
+ import qualified Hadrian.Oracles.DirectoryContents
+ import qualified Hadrian.Oracles.Path
+ import qualified Hadrian.Oracles.TextFile
+-import qualified Hadrian.Haskell.Hash
+ 
+ import Expression
+ import qualified Oracles.Flavour
+@@ -143,7 +142,6 @@ oracleRules :: Rules ()
+ oracleRules = do
+     Hadrian.Oracles.ArgsHash.argsHashOracle trackArgument getArgs
+     Hadrian.Oracles.Cabal.Rules.cabalOracle
+-    Hadrian.Haskell.Hash.pkgHashOracle
+     Hadrian.Oracles.DirectoryContents.directoryContentsOracle
+     Hadrian.Oracles.Path.pathOracle
+     Hadrian.Oracles.TextFile.textFileOracle
+diff --git a/hadrian/src/Rules/BinaryDist.hs b/hadrian/src/Rules/BinaryDist.hs
+index 549323991a..5dd6066abc 100644
+--- a/hadrian/src/Rules/BinaryDist.hs
++++ b/hadrian/src/Rules/BinaryDist.hs
+@@ -132,8 +132,7 @@ bindistRules = do
+         version        <- setting ProjectVersion
+         targetPlatform <- setting TargetPlatformFull
+         distDir        <- Context.distDir Stage1
+-        rtsDir         <- pkgUnitId Stage1 rts
+-        -- let rtsDir  = "rts"
++        rtsDir         <- pkgIdentifier rts
+ 
+         let ghcBuildDir      = root -/- stageString Stage1
+             bindistFilesDir  = root -/- "bindist" -/- ghcVersionPretty
+diff --git a/hadrian/src/Rules/CabalReinstall.hs b/hadrian/src/Rules/CabalReinstall.hs
+index 57baa79d56..2bfc8f92b0 100644
+--- a/hadrian/src/Rules/CabalReinstall.hs
++++ b/hadrian/src/Rules/CabalReinstall.hs
+@@ -10,7 +10,7 @@ import Utilities
+ import qualified System.Directory.Extra as IO
+ import Data.Either
+ import Rules.BinaryDist
+-import Hadrian.Haskell.Cabal (pkgUnitId)
++import Hadrian.Haskell.Cabal (pkgIdentifier)
+ import Oracles.Setting
+ 
+ {-
+@@ -54,8 +54,7 @@ cabalBuildRules = do
+         need (lib_targets ++ (map (\(_, p) -> p) (bin_targets ++ iserv_targets)))
+ 
+         distDir        <- Context.distDir Stage1
+-        rtsDir         <- pkgUnitId Stage1 rts
+-        -- let rtsDir = "rts"
++        rtsDir         <- pkgIdentifier rts
+ 
+         let ghcBuildDir      = root -/- stageString Stage1
+             rtsIncludeDir    = ghcBuildDir -/- "lib" -/- distDir -/- rtsDir
+diff --git a/hadrian/src/Rules/Documentation.hs b/hadrian/src/Rules/Documentation.hs
+index 311a1593e3..572ebf24ec 100644
+--- a/hadrian/src/Rules/Documentation.hs
++++ b/hadrian/src/Rules/Documentation.hs
+@@ -298,7 +298,7 @@ parsePkgDocTarget root = do
+   _ <- Parsec.string root *> Parsec.optional (Parsec.char '/')
+   _ <- Parsec.string (htmlRoot ++ "/")
+   _ <- Parsec.string "libraries/"
+-  (pkgname, _, _) <- parsePkgId <* Parsec.char '/'
++  (pkgname, _) <- parsePkgId <* Parsec.char '/'
+   Parsec.choice
+     [ Parsec.try (Parsec.string "haddock-prologue.txt")
+         *> pure (HaddockPrologue pkgname)
+diff --git a/hadrian/src/Rules/Generate.hs b/hadrian/src/Rules/Generate.hs
+index 4b76e9ccc1..8b5470f6b7 100644
+--- a/hadrian/src/Rules/Generate.hs
++++ b/hadrian/src/Rules/Generate.hs
+@@ -14,7 +14,6 @@ import Oracles.Flag
+ import Oracles.ModuleFiles
+ import Oracles.Setting
+ import Hadrian.Haskell.Cabal.Type (PackageData(version))
+-import Hadrian.Haskell.Cabal
+ import Hadrian.Oracles.Cabal (readPackageData)
+ import Packages
+ import Rules.Libffi
+@@ -498,15 +497,16 @@ generateConfigHs = do
+     trackGenerateHs
+     cProjectName        <- getSetting ProjectName
+     cBooterVersion      <- getSetting GhcVersion
+-    -- We now give a unit-id with a version and a hash to ghc.
+-    -- See Note [GHC's Unit Id] in GHC.Unit.Types
++    cProjectVersionMunged  <- getSetting ProjectVersionMunged
++    -- ROMES:TODO:HASH First we attempt a fixed unit-id with version but without hash.
++    --
++    -- We now use a more informative unit-id for ghc. See Note [GHC's Unit Id]
++    -- in GHC.Unit.Types
+     --
+     -- It's crucial that the unit-id matches the unit-key -- ghc is no longer
+     -- part of the WiringMap, so we don't to go back and forth between the
+-    -- unit-id and the unit-key -- we take care that they are the same by using
+-    -- 'pkgUnitId' on 'compiler' (the ghc-library package) to create the
+-    -- unit-id in both situations.
+-    cProjectUnitId <- expr . (`pkgUnitId` compiler) =<< getStage
++    -- unit-id and the unit-key -- we take care here that they are the same.
++    let cProjectUnitId = "ghc-" ++ cProjectVersionMunged -- ROMES:TODO:HASH
+     return $ unlines
+         [ "module GHC.Settings.Config"
+         , "  ( module GHC.Version"
+@@ -603,5 +603,3 @@ generatePlatformHostHs = do
+         , "hostPlatformArchOS :: ArchOS"
+         , "hostPlatformArchOS = ArchOS hostPlatformArch hostPlatformOS"
+         ]
+-
+-
+diff --git a/hadrian/src/Rules/Library.hs b/hadrian/src/Rules/Library.hs
+index d12249073c..2e63f1768f 100644
+--- a/hadrian/src/Rules/Library.hs
++++ b/hadrian/src/Rules/Library.hs
+@@ -45,7 +45,7 @@ libraryRules = do
+ registerStaticLib :: FilePath -> FilePath -> Action ()
+ registerStaticLib root archivePath = do
+     -- Simply need the ghc-pkg database .conf file.
+-    GhcPkgPath _ stage _ (LibA name _ _ w)
++    GhcPkgPath _ stage _ (LibA name _ w)
+         <- parsePath (parseGhcPkgLibA root)
+                     "<.a library (register) path parser>"
+                     archivePath
+@@ -56,7 +56,7 @@ registerStaticLib root archivePath = do
+ -- the second argument.
+ buildStaticLib :: FilePath -> FilePath -> Action ()
+ buildStaticLib root archivePath = do
+-    l@(BuildPath _ stage _ (LibA pkgname _ _ way))
++    l@(BuildPath _ stage _ (LibA pkgname _ way))
+         <- parsePath (parseBuildLibA root)
+                      "<.a library (build) path parser>"
+                      archivePath
+@@ -75,7 +75,7 @@ buildStaticLib root archivePath = do
+ registerDynamicLib :: FilePath -> String -> FilePath -> Action ()
+ registerDynamicLib root suffix dynlibpath = do
+     -- Simply need the ghc-pkg database .conf file.
+-    (GhcPkgPath _ stage _ (LibDyn name _ _ w _))
++    (GhcPkgPath _ stage _ (LibDyn name _ w _))
+         <- parsePath (parseGhcPkgLibDyn root suffix)
+                             "<dyn register lib parser>"
+                             dynlibpath
+@@ -99,7 +99,7 @@ buildDynamicLib root suffix dynlibpath = do
+ -- See Note [Merging object files for GHCi] in GHC.Driver.Pipeline.
+ buildGhciLibO :: FilePath -> FilePath -> Action ()
+ buildGhciLibO root ghcilibPath = do
+-    l@(BuildPath _ stage _ (LibGhci _ _ _ _))
++    l@(BuildPath _ stage _ (LibGhci _ _ _))
+         <- parsePath (parseBuildLibGhci root)
+                      "<.o ghci lib (build) path parser>"
+                      ghcilibPath
+@@ -134,7 +134,7 @@ files etc.
+ 
+ buildPackage :: FilePath -> FilePath -> Action ()
+ buildPackage root fp = do
+-  l@(BuildPath _ _ _ (PkgStamp _ _ _ way)) <- parsePath (parseStampPath root) "<.stamp parser>" fp
++  l@(BuildPath _ _ _ (PkgStamp _ _ way)) <- parsePath (parseStampPath root) "<.stamp parser>" fp
+   let ctx = stampContext l
+   srcs <- hsSources ctx
+   gens <- interpretInContext ctx generatedDependencies
+@@ -226,47 +226,47 @@ needLibrary cs = need =<< concatMapM (libraryTargets True) cs
+ 
+ -- * Library paths types and parsers
+ 
+--- | > libHS<pkg name>-<pkg version>-<pkg hash>[_<way suffix>].a
+-data LibA = LibA String [Integer] String Way deriving (Eq, Show)
++-- | > libHS<pkg name>-<pkg version>[_<way suffix>].a
++data LibA = LibA String [Integer] Way deriving (Eq, Show)
+ 
+ -- | > <so or dylib>
+ data DynLibExt = So | Dylib deriving (Eq, Show)
+ 
+--- | > libHS<pkg name>-<pkg version>-<pkg hash>[_<way suffix>]-ghc<ghc version>.<so|dylib>
+-data LibDyn = LibDyn String [Integer] String Way DynLibExt deriving (Eq, Show)
++-- | > libHS<pkg name>-<pkg version>[_<way suffix>]-ghc<ghc version>.<so|dylib>
++data LibDyn = LibDyn String [Integer] Way DynLibExt deriving (Eq, Show)
+ 
+--- | > HS<pkg name>-<pkg version>-<pkg hash>[_<way suffix>].o
+-data LibGhci = LibGhci String [Integer] String Way deriving (Eq, Show)
++-- | > HS<pkg name>-<pkg version>[_<way suffix>].o
++data LibGhci = LibGhci String [Integer] Way deriving (Eq, Show)
+ 
+ -- | Get the 'Context' corresponding to the build path for a given static library.
+ libAContext :: BuildPath LibA -> Context
+-libAContext (BuildPath _ stage pkgpath (LibA pkgname _ _ way)) =
++libAContext (BuildPath _ stage pkgpath (LibA pkgname _ way)) =
+     Context stage pkg way Final
+   where
+     pkg = library pkgname pkgpath
+ 
+ -- | Get the 'Context' corresponding to the build path for a given GHCi library.
+ libGhciContext :: BuildPath LibGhci -> Context
+-libGhciContext (BuildPath _ stage pkgpath (LibGhci pkgname _ _ way)) =
++libGhciContext (BuildPath _ stage pkgpath (LibGhci pkgname _ way)) =
+     Context stage pkg way Final
+   where
+     pkg = library pkgname pkgpath
+ 
+ -- | Get the 'Context' corresponding to the build path for a given dynamic library.
+ libDynContext :: BuildPath LibDyn -> Context
+-libDynContext (BuildPath _ stage pkgpath (LibDyn pkgname _ _ way _)) =
++libDynContext (BuildPath _ stage pkgpath (LibDyn pkgname _ way _)) =
+     Context stage pkg way Final
+   where
+     pkg = library pkgname pkgpath
+ 
+ -- | Get the 'Context' corresponding to the build path for a given static library.
+ stampContext :: BuildPath PkgStamp -> Context
+-stampContext (BuildPath _ stage _ (PkgStamp pkgname _ _ way)) =
++stampContext (BuildPath _ stage _ (PkgStamp pkgname _ way)) =
+     Context stage pkg way Final
+   where
+     pkg = unsafeFindPackageByName pkgname
+ 
+-data PkgStamp = PkgStamp String [Integer] String Way deriving (Eq, Show)
++data PkgStamp = PkgStamp String [Integer] Way deriving (Eq, Show)
+ 
+ 
+ -- | Parse a path to a ghci library to be built, making sure the path starts
+@@ -313,34 +313,34 @@ parseGhcPkgLibDyn root ext = parseGhcPkgPath root (parseLibDynFilename ext)
+ parseLibAFilename :: Parsec.Parsec String () LibA
+ parseLibAFilename = do
+     _ <- Parsec.string "libHS"
+-    (pkgname, pkgver, pkghash) <- parsePkgId
++    (pkgname, pkgver) <- parsePkgId
+     way <- parseWaySuffix vanilla
+     _ <- Parsec.string ".a"
+-    return (LibA pkgname pkgver pkghash way)
++    return (LibA pkgname pkgver way)
+ 
+ -- | Parse the filename of a ghci library to be built into a 'LibGhci' value.
+ parseLibGhciFilename :: Parsec.Parsec String () LibGhci
+ parseLibGhciFilename = do
+     _ <- Parsec.string "HS"
+-    (pkgname, pkgver, pkghash) <- parsePkgId
++    (pkgname, pkgver) <- parsePkgId
+     _ <- Parsec.string "."
+     way <- parseWayPrefix vanilla
+     _ <- Parsec.string "o"
+-    return (LibGhci pkgname pkgver pkghash way)
++    return (LibGhci pkgname pkgver way)
+ 
+ -- | Parse the filename of a dynamic library to be built into a 'LibDyn' value.
+ parseLibDynFilename :: String -> Parsec.Parsec String () LibDyn
+ parseLibDynFilename ext = do
+     _ <- Parsec.string "libHS"
+-    (pkgname, pkgver, pkghash) <- parsePkgId
++    (pkgname, pkgver) <- parsePkgId
+     way <- addWayUnit Dynamic <$> parseWaySuffix dynamic
+     _ <- optional $ Parsec.string "-ghc" *> parsePkgVersion
+     _ <- Parsec.string ("." ++ ext)
+-    return (LibDyn pkgname pkgver pkghash way $ if ext == "so" then So else Dylib)
++    return (LibDyn pkgname pkgver way $ if ext == "so" then So else Dylib)
+ 
+ parseStamp :: Parsec.Parsec String () PkgStamp
+ parseStamp = do
+     _ <- Parsec.string "stamp-"
+-    (pkgname, pkgver, pkghash) <- parsePkgId
++    (pkgname, pkgver) <- parsePkgId
+     way <- parseWaySuffix vanilla
+-    return (PkgStamp pkgname pkgver pkghash way)
++    return (PkgStamp pkgname pkgver way)
+diff --git a/hadrian/src/Rules/Register.hs b/hadrian/src/Rules/Register.hs
+index 967f403926..8543576215 100644
+--- a/hadrian/src/Rules/Register.hs
++++ b/hadrian/src/Rules/Register.hs
+@@ -1,4 +1,3 @@
+-{-# LANGUAGE TypeApplications #-}
+ module Rules.Register (
+     configurePackageRules, registerPackageRules, registerPackages,
+     libraryTargets
+@@ -21,16 +20,11 @@ import Utilities
+ import Hadrian.Haskell.Cabal.Type
+ import qualified Text.Parsec      as Parsec
+ import qualified Data.Set         as Set
+-import qualified Data.Char        as Char
+-import Data.Bifunctor (bimap)
+ 
+ import Distribution.Version (Version)
+-import qualified Distribution.Types.PackageId as Cabal
+-import qualified Distribution.Types.PackageName as Cabal
+ import qualified Distribution.Parsec as Cabal
+-import qualified Distribution.Compat.Parsing as Cabal
+-import qualified Distribution.Parsec.FieldLineStream as Cabal
+-import qualified Distribution.Compat.CharParsing as CabalCharParsing
++import qualified Distribution.Types.PackageName as Cabal
++import qualified Distribution.Types.PackageId as Cabal
+ 
+ import qualified Hadrian.Haskell.Cabal.Parse as Cabal
+ import qualified System.Directory            as IO
+@@ -189,7 +183,7 @@ buildConfFinal rs context@Context {..} _conf = do
+     -- so that if any change ends up modifying a library (but not its .conf
+     -- file), we still rebuild things that depend on it.
+     dir <- (-/-) <$> libPath context <*> distDir stage
+-    pkgid <- pkgUnitId stage package
++    pkgid <- pkgIdentifier package
+     files <- liftIO $
+       (++) <$> getDirectoryFilesIO "." [dir -/- "*libHS"++pkgid++"*"]
+            <*> getDirectoryFilesIO "." [dir -/- pkgid -/- "**"]
+@@ -257,33 +251,11 @@ getPackageNameFromConfFile conf
+                             takeBaseName conf ++ ": " ++ err
+         Right (name, _) -> return name
+ 
+--- | Parse a cabal-like name
+ parseCabalName :: String -> Either String (String, Version)
+--- Try to parse a name with a hash, but otherwise parse a name without one.
+-parseCabalName s = bimap show id (Cabal.runParsecParser parser "<parseCabalName>" $ Cabal.fieldLineStreamFromString s)
++parseCabalName = fmap f . Cabal.eitherParsec
+   where
+-    parser = Cabal.try nameWithHashParser <|> (extractVersion <$> Cabal.parsec)
+-
+-    extractVersion :: Cabal.PackageId -> (String, Version)
+-    extractVersion pkg_id = (Cabal.unPackageName $ Cabal.pkgName pkg_id, Cabal.pkgVersion pkg_id)
+-    -- Definition similar to 'Parsec PackageIdentifier' from Cabal but extended
+-    -- with logic for parsing the hash (despite not returning it)
+-    nameWithHashParser :: Cabal.ParsecParser (String, Version)
+-    nameWithHashParser = Cabal.PP $ \_ -> do
+-      xs' <- Parsec.sepBy component (Parsec.char '-')
+-      case reverse xs' of
+-        _hash:version_str:xs ->
+-          case Cabal.simpleParsec @Version version_str of
+-            Nothing -> fail ("failed to parse a version from " <> version_str)
+-            Just v  ->
+-              if not (null xs) && all (\c ->  all (/= '.') c && not (all Char.isDigit c)) xs
+-              then return $ (intercalate "-" (reverse xs), v)
+-              else fail "all digits or a dot in a portion of package name"
+-        _ -> fail "couldn't parse a hash, a version and a name"
+-      where
+-        component = CabalCharParsing.munch1 (\c ->  Char.isAlphaNum c || c == '.')
+-
+-
++    f :: Cabal.PackageId -> (String, Version)
++    f pkg_id = (Cabal.unPackageName $ Cabal.pkgName pkg_id, Cabal.pkgVersion pkg_id)
+ 
+ -- | Return extra library targets.
+ extraTargets :: Context -> Action [FilePath]
+diff --git a/hadrian/src/Settings/Builders/Cabal.hs b/hadrian/src/Settings/Builders/Cabal.hs
+index 75eb78ccd8..2e421857e5 100644
+--- a/hadrian/src/Settings/Builders/Cabal.hs
++++ b/hadrian/src/Settings/Builders/Cabal.hs
+@@ -85,7 +85,7 @@ commonCabalArgs :: Stage -> Args
+ commonCabalArgs stage = do
+   verbosity <- expr getVerbosity
+   pkg       <- getPackage
+-  package_id <- expr $ pkgUnitId stage pkg
++  package_id <- expr $ pkgIdentifier pkg
+   let prefix = "${pkgroot}" ++ (if windowsHost then "" else "/..")
+   mconcat [ -- Don't strip libraries when cross compiling.
+             -- TODO: We need to set @--with-strip=(stripCmdPath :: Action FilePath)@,
+@@ -101,7 +101,7 @@ commonCabalArgs stage = do
+             , arg "--cabal-file"
+             , arg $ pkgCabalFile pkg
+             , arg "--ipid"
+-            , arg package_id
++            , arg "$pkg-$version"
+             , arg "--prefix"
+             , arg prefix
+ 
+diff --git a/hadrian/src/Settings/Builders/Ghc.hs b/hadrian/src/Settings/Builders/Ghc.hs
+index 2e5a15cee5..b211657b9e 100644
+--- a/hadrian/src/Settings/Builders/Ghc.hs
++++ b/hadrian/src/Settings/Builders/Ghc.hs
+@@ -246,24 +246,21 @@ wayGhcArgs = do
+             , (way == debug || way == debugDynamic) ?
+               pure ["-ticky", "-DTICKY_TICKY"] ]
+ 
+--- | Args related to correct handling of packages, such as setting
+--- -this-unit-id and passing -package-id for dependencies
+ packageGhcArgs :: Args
+ packageGhcArgs = do
+     package <- getPackage
+-    stage <- getStage
+     ghc_ver <- readVersion <$> (expr . ghcVersionStage =<< getStage)
+     -- ROMES: Until the boot compiler no longer needs ghc's
+     -- unit-id to be "ghc", the stage0 compiler must be built
+     -- with `-this-unit-id ghc`, while the wired-in unit-id of
+     -- ghc is correctly set to the unit-id we'll generate for
+-    -- stage1 (set in generateConfigHs in Rules.Generate).
++    -- stage1 (set in generateVersionHs in Rules.Generate).
+     --
+     -- However, we don't need to set the unit-id of "ghc" to "ghc" when
+     -- building stage0 because we have a flag in compiler/ghc.cabal.in that is
+     -- sets `-this-unit-id ghc` when hadrian is building stage0, which will
+     -- overwrite this one.
+-    pkgId   <- expr $ pkgUnitId stage package
++    pkgId   <- expr $ pkgIdentifier package
+     mconcat [ arg "-hide-all-packages"
+             , arg "-no-user-package-db"
+             , arg "-package-env -"
+diff --git a/hadrian/src/Settings/Builders/Haddock.hs b/hadrian/src/Settings/Builders/Haddock.hs
+index 400e697da0..100f52f9b1 100644
+--- a/hadrian/src/Settings/Builders/Haddock.hs
++++ b/hadrian/src/Settings/Builders/Haddock.hs
+@@ -38,13 +38,11 @@ haddockBuilderArgs = mconcat
+         output   <- getOutput
+         pkg      <- getPackage
+         root     <- getBuildRoot
+-        stage    <- getStage
+         context  <- getContext
+         version  <- expr $ pkgVersion  pkg
+         synopsis <- expr $ pkgSynopsis pkg
+         haddocks <- expr $ haddockDependencies context
+-        haddocks_with_versions <- expr $ sequence $ [(,h) <$> pkgUnitId stage p | (p, h) <- haddocks]
+-
++        haddocks_with_versions <- expr $ sequence $ [(,h) <$> pkgIdentifier p | (p, h) <- haddocks]
+         hVersion <- expr $ pkgVersion haddock
+         statsDir <- expr $ haddockStatsFilesDir
+         baseUrlTemplate <- expr (docsBaseUrl <$> userSetting defaultDocArgs)
+diff --git a/hadrian/src/Settings/Default.hs b/hadrian/src/Settings/Default.hs
+index c3f33c337f..866c5520aa 100644
+--- a/hadrian/src/Settings/Default.hs
++++ b/hadrian/src/Settings/Default.hs
+@@ -17,6 +17,7 @@ import qualified Data.Set as Set
+ 
+ import qualified Hadrian.Builder.Sphinx
+ import qualified Hadrian.Builder.Tar
++import Hadrian.Haskell.Cabal.Type
+ 
+ import CommandLine
+ import Expression
+diff --git a/utils/ghc-pkg/Main.hs b/utils/ghc-pkg/Main.hs
+index 0bfc2d159a..8746b0296e 100644
+--- a/utils/ghc-pkg/Main.hs
++++ b/utils/ghc-pkg/Main.hs
+@@ -23,7 +23,6 @@
+ 
+ module Main (main) where
+ 
+-import Debug.Trace
+ import qualified GHC.Unit.Database as GhcPkg
+ import GHC.Unit.Database hiding (mkMungePathUrl)
+ import GHC.HandleEncoding
+@@ -1601,7 +1600,7 @@ listPackages verbosity my_flags mPackageName mModuleName = do
+ simplePackageList :: [Flag] -> [InstalledPackageInfo] -> IO ()
+ simplePackageList my_flags pkgs = do
+    let showPkg :: InstalledPackageInfo -> String
+-       showPkg | FlagShowUnitIds `elem` my_flags = traceId . display . installedUnitId
++       showPkg | FlagShowUnitIds `elem` my_flags = display . installedUnitId
+                | FlagNamesOnly `elem` my_flags   = display . mungedName . mungedId
+                | otherwise                       = display . mungedId
+        strs = map showPkg pkgs
