@@ -546,7 +546,7 @@ in {
   # into a devshell module (https://github.com/numtide/devshell)
   # that should provide the same environnement.
   devshellFor = shell: {
-    packages = lib.filter lib.isDerivation (shell.nativeBuildInputs
+    packages = lib.filter lib.isDerivation (shell.buildInputs ++ shell.nativeBuildInputs
     # devshell does not use pkgs.mkShell / pkgs.stdenv.mkDerivation,
     # so we need to explicit required dependencies which
     # are provided implicitely by stdenv when using the normal shell:
