@@ -283,6 +283,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && (final.stdenv.targetPlatform != final.stdenv.hostPlatform)) ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && (final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.is32bit || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-linker-pool-allocator.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch
                 # These two patches are needed for libblst, which has now hidden symbols, which the linker doesn't know how to deal with.
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch

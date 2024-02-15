@@ -1,0 +1,102 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index ad76b30..d5ea12e 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1832,6 +1832,8 @@ static HsInt resolveObjs_ (void)
+ #endif
+
+     IF_DEBUG(linker, debugBelch("resolveObjs: done\n"));
++    IF_DEBUG(linker, printPoolInfo());
++
+     return 1;
+ }
+
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index 271611a..6cadaa8 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -136,7 +136,8 @@ typedef
+    enum { SECTION_NOMEM,
+           SECTION_M32,
+           SECTION_MMAP,
+-          SECTION_MALLOC
++          SECTION_MALLOC,
++          SECTION_POOL
+         }
+    SectionAlloc;
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 4b5a506..fe3406e 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -144,6 +144,18 @@ void memPoolProtect( void ) {
+     }
+ }
+
++StgWord poolAlign(StgWord size) {
++    return (size + 0xff) & ~0xff;
++}
++
++void * printPoolInfo( void ) {
++    printf("Pool size: %ldM\n", ((uintptr_t)__pool_rx_offset - (uintptr_t)__pool_rw_offset)/(1024*1024));
++    printf("RW: %p -- %p\n", __pool_rw_offset, (void*)((uintptr_t)__pool + 512*1024*1024));
++    printf("RX: %p -- %p\n", (void*)((uintptr_t)__pool + 512*1024*1024), __pool_rx_offset);
++    fflush(stdout);
++    return NULL;
++}
++
+ void * memPoolAlloc(SectionKind kind, StgWord size) {
+     if(__pool == NULL) {
+         // allocate 1 GB of virtual memory.
+@@ -157,7 +169,7 @@ void * memPoolAlloc(SectionKind kind, StgWord size) {
+         __pool_rx_offset = __pool_rw_offset;
+     }
+     // align to 64 bytes
+-    StgWord alignedSize = (size + 0x3f) & ~0x3f;
++    StgWord alignedSize = poolAlign(size);
+     void * ret = NULL;
+
+     if(kind == SECTIONKIND_CODE_OR_RODATA) {
+@@ -862,7 +874,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+               /* Use mmapForLinker to allocate .bss, otherwise the malloced
+                * address might be out of range for sections that are mmaped.
+                */
+-              alloc = SECTION_MMAP;
++              alloc = SECTION_POOL;
+               start = memPoolAlloc(kind, size);
+               // mmapAnonForLinker(size);
+               if (start == NULL) {
+@@ -871,7 +883,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+               }
+               mapped_start = start;
+               mapped_offset = 0;
+-              mapped_size = roundUpToPage(size);
++              mapped_size = poolAlign(size);
+           }
+           CHECK(start != 0x0);
+ #else
+@@ -924,10 +936,10 @@ ocGetNames_ELF ( ObjectCode* oc )
+            */
+           memcpy( mem, oc->image + offset, size );
+
+-          alloc = SECTION_MMAP;
++          alloc = SECTION_POOL;
+
+           mapped_offset = 0;
+-          mapped_size = roundUpToPage(size+stub_space);
++          mapped_size = poolAlign(size+stub_space);
+           start = mem;
+           mapped_start = mem;
+ #else
+diff --git a/rts/linker/Elf.h b/rts/linker/Elf.h
+index cf7a541..fb8fbfb 100644
+--- a/rts/linker/Elf.h
++++ b/rts/linker/Elf.h
+@@ -17,5 +17,7 @@ int ocAllocateExtras_ELF ( ObjectCode *oc );
+ void freeNativeCode_ELF  ( ObjectCode *nc );
+ void *loadNativeObj_ELF  ( pathchar *path, char **errmsg );
+ void memPoolProtect      ( void );
++void * printPoolInfo     ( void );
++StgWord poolAlign        ( StgWord size );
+
+ #include "EndPrivate.h"
