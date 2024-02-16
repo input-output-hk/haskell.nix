@@ -1,8 +1,8 @@
 name:                 Cabal
 version:              3.10.2.0
 visibility:           public
-id:                   Cabal-3.10.2.0-inplace
-key:                  Cabal-3.10.2.0-inplace
+id:                   Cabal-3.10.2.0
+key:                  Cabal-3.10.2.0
 license:              BSD-3-Clause
 copyright:            2003-2023, Cabal Development Team (see AUTHORS file)
 maintainer:           cabal-devel@haskell.org
@@ -18,7 +18,7 @@ description:
 category:             Distribution
 exposed:              True
 exposed-modules:
-    Distribution.Backpack from Cabal-syntax-3.10.2.0-inplace:Distribution.Backpack,
+    Distribution.Backpack from Cabal-syntax-3.10.2.0:Distribution.Backpack,
     Distribution.Backpack.ComponentsGraph,
     Distribution.Backpack.Configure,
     Distribution.Backpack.ConfiguredComponent,
@@ -27,69 +27,69 @@ exposed-modules:
     Distribution.Backpack.LinkedComponent,
     Distribution.Backpack.ModSubst, Distribution.Backpack.ModuleShape,
     Distribution.Backpack.PreModuleShape,
-    Distribution.CabalSpecVersion from Cabal-syntax-3.10.2.0-inplace:Distribution.CabalSpecVersion,
-    Distribution.Compat.Binary from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Binary,
-    Distribution.Compat.CharParsing from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.CharParsing,
+    Distribution.CabalSpecVersion from Cabal-syntax-3.10.2.0:Distribution.CabalSpecVersion,
+    Distribution.Compat.Binary from Cabal-syntax-3.10.2.0:Distribution.Compat.Binary,
+    Distribution.Compat.CharParsing from Cabal-syntax-3.10.2.0:Distribution.Compat.CharParsing,
     Distribution.Compat.CreatePipe,
-    Distribution.Compat.DList from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.DList,
+    Distribution.Compat.DList from Cabal-syntax-3.10.2.0:Distribution.Compat.DList,
     Distribution.Compat.Directory, Distribution.Compat.Environment,
-    Distribution.Compat.Exception from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Exception,
+    Distribution.Compat.Exception from Cabal-syntax-3.10.2.0:Distribution.Compat.Exception,
     Distribution.Compat.FilePath,
-    Distribution.Compat.Graph from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Graph,
+    Distribution.Compat.Graph from Cabal-syntax-3.10.2.0:Distribution.Compat.Graph,
     Distribution.Compat.Internal.TempFile,
-    Distribution.Compat.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Lens,
-    Distribution.Compat.MonadFail from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.MonadFail,
-    Distribution.Compat.Newtype from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Newtype,
-    Distribution.Compat.NonEmptySet from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.NonEmptySet,
-    Distribution.Compat.Parsing from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Parsing,
-    Distribution.Compat.Prelude from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Prelude,
+    Distribution.Compat.Lens from Cabal-syntax-3.10.2.0:Distribution.Compat.Lens,
+    Distribution.Compat.MonadFail from Cabal-syntax-3.10.2.0:Distribution.Compat.MonadFail,
+    Distribution.Compat.Newtype from Cabal-syntax-3.10.2.0:Distribution.Compat.Newtype,
+    Distribution.Compat.NonEmptySet from Cabal-syntax-3.10.2.0:Distribution.Compat.NonEmptySet,
+    Distribution.Compat.Parsing from Cabal-syntax-3.10.2.0:Distribution.Compat.Parsing,
+    Distribution.Compat.Prelude from Cabal-syntax-3.10.2.0:Distribution.Compat.Prelude,
     Distribution.Compat.Prelude.Internal, Distribution.Compat.Process,
     Distribution.Compat.ResponseFile,
-    Distribution.Compat.Semigroup from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Semigroup,
+    Distribution.Compat.Semigroup from Cabal-syntax-3.10.2.0:Distribution.Compat.Semigroup,
     Distribution.Compat.Stack, Distribution.Compat.Time,
-    Distribution.Compat.Typeable from Cabal-syntax-3.10.2.0-inplace:Distribution.Compat.Typeable,
-    Distribution.Compiler from Cabal-syntax-3.10.2.0-inplace:Distribution.Compiler,
-    Distribution.FieldGrammar from Cabal-syntax-3.10.2.0-inplace:Distribution.FieldGrammar,
-    Distribution.FieldGrammar.Class from Cabal-syntax-3.10.2.0-inplace:Distribution.FieldGrammar.Class,
-    Distribution.FieldGrammar.FieldDescrs from Cabal-syntax-3.10.2.0-inplace:Distribution.FieldGrammar.FieldDescrs,
-    Distribution.FieldGrammar.Newtypes from Cabal-syntax-3.10.2.0-inplace:Distribution.FieldGrammar.Newtypes,
-    Distribution.FieldGrammar.Parsec from Cabal-syntax-3.10.2.0-inplace:Distribution.FieldGrammar.Parsec,
-    Distribution.FieldGrammar.Pretty from Cabal-syntax-3.10.2.0-inplace:Distribution.FieldGrammar.Pretty,
-    Distribution.Fields from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields,
-    Distribution.Fields.ConfVar from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields.ConfVar,
-    Distribution.Fields.Field from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields.Field,
-    Distribution.Fields.Lexer from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields.Lexer,
-    Distribution.Fields.LexerMonad from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields.LexerMonad,
-    Distribution.Fields.ParseResult from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields.ParseResult,
-    Distribution.Fields.Parser from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields.Parser,
-    Distribution.Fields.Pretty from Cabal-syntax-3.10.2.0-inplace:Distribution.Fields.Pretty,
-    Distribution.InstalledPackageInfo from Cabal-syntax-3.10.2.0-inplace:Distribution.InstalledPackageInfo,
-    Distribution.License from Cabal-syntax-3.10.2.0-inplace:Distribution.License,
+    Distribution.Compat.Typeable from Cabal-syntax-3.10.2.0:Distribution.Compat.Typeable,
+    Distribution.Compiler from Cabal-syntax-3.10.2.0:Distribution.Compiler,
+    Distribution.FieldGrammar from Cabal-syntax-3.10.2.0:Distribution.FieldGrammar,
+    Distribution.FieldGrammar.Class from Cabal-syntax-3.10.2.0:Distribution.FieldGrammar.Class,
+    Distribution.FieldGrammar.FieldDescrs from Cabal-syntax-3.10.2.0:Distribution.FieldGrammar.FieldDescrs,
+    Distribution.FieldGrammar.Newtypes from Cabal-syntax-3.10.2.0:Distribution.FieldGrammar.Newtypes,
+    Distribution.FieldGrammar.Parsec from Cabal-syntax-3.10.2.0:Distribution.FieldGrammar.Parsec,
+    Distribution.FieldGrammar.Pretty from Cabal-syntax-3.10.2.0:Distribution.FieldGrammar.Pretty,
+    Distribution.Fields from Cabal-syntax-3.10.2.0:Distribution.Fields,
+    Distribution.Fields.ConfVar from Cabal-syntax-3.10.2.0:Distribution.Fields.ConfVar,
+    Distribution.Fields.Field from Cabal-syntax-3.10.2.0:Distribution.Fields.Field,
+    Distribution.Fields.Lexer from Cabal-syntax-3.10.2.0:Distribution.Fields.Lexer,
+    Distribution.Fields.LexerMonad from Cabal-syntax-3.10.2.0:Distribution.Fields.LexerMonad,
+    Distribution.Fields.ParseResult from Cabal-syntax-3.10.2.0:Distribution.Fields.ParseResult,
+    Distribution.Fields.Parser from Cabal-syntax-3.10.2.0:Distribution.Fields.Parser,
+    Distribution.Fields.Pretty from Cabal-syntax-3.10.2.0:Distribution.Fields.Pretty,
+    Distribution.InstalledPackageInfo from Cabal-syntax-3.10.2.0:Distribution.InstalledPackageInfo,
+    Distribution.License from Cabal-syntax-3.10.2.0:Distribution.License,
     Distribution.Make,
-    Distribution.ModuleName from Cabal-syntax-3.10.2.0-inplace:Distribution.ModuleName,
-    Distribution.Package from Cabal-syntax-3.10.2.0-inplace:Distribution.Package,
-    Distribution.PackageDescription from Cabal-syntax-3.10.2.0-inplace:Distribution.PackageDescription,
+    Distribution.ModuleName from Cabal-syntax-3.10.2.0:Distribution.ModuleName,
+    Distribution.Package from Cabal-syntax-3.10.2.0:Distribution.Package,
+    Distribution.PackageDescription from Cabal-syntax-3.10.2.0:Distribution.PackageDescription,
     Distribution.PackageDescription.Check,
-    Distribution.PackageDescription.Configuration from Cabal-syntax-3.10.2.0-inplace:Distribution.PackageDescription.Configuration,
-    Distribution.PackageDescription.FieldGrammar from Cabal-syntax-3.10.2.0-inplace:Distribution.PackageDescription.FieldGrammar,
-    Distribution.PackageDescription.Parsec from Cabal-syntax-3.10.2.0-inplace:Distribution.PackageDescription.Parsec,
-    Distribution.PackageDescription.PrettyPrint from Cabal-syntax-3.10.2.0-inplace:Distribution.PackageDescription.PrettyPrint,
-    Distribution.PackageDescription.Quirks from Cabal-syntax-3.10.2.0-inplace:Distribution.PackageDescription.Quirks,
-    Distribution.PackageDescription.Utils from Cabal-syntax-3.10.2.0-inplace:Distribution.PackageDescription.Utils,
-    Distribution.Parsec from Cabal-syntax-3.10.2.0-inplace:Distribution.Parsec,
-    Distribution.Parsec.Error from Cabal-syntax-3.10.2.0-inplace:Distribution.Parsec.Error,
-    Distribution.Parsec.FieldLineStream from Cabal-syntax-3.10.2.0-inplace:Distribution.Parsec.FieldLineStream,
-    Distribution.Parsec.Position from Cabal-syntax-3.10.2.0-inplace:Distribution.Parsec.Position,
-    Distribution.Parsec.Warning from Cabal-syntax-3.10.2.0-inplace:Distribution.Parsec.Warning,
-    Distribution.Pretty from Cabal-syntax-3.10.2.0-inplace:Distribution.Pretty,
+    Distribution.PackageDescription.Configuration from Cabal-syntax-3.10.2.0:Distribution.PackageDescription.Configuration,
+    Distribution.PackageDescription.FieldGrammar from Cabal-syntax-3.10.2.0:Distribution.PackageDescription.FieldGrammar,
+    Distribution.PackageDescription.Parsec from Cabal-syntax-3.10.2.0:Distribution.PackageDescription.Parsec,
+    Distribution.PackageDescription.PrettyPrint from Cabal-syntax-3.10.2.0:Distribution.PackageDescription.PrettyPrint,
+    Distribution.PackageDescription.Quirks from Cabal-syntax-3.10.2.0:Distribution.PackageDescription.Quirks,
+    Distribution.PackageDescription.Utils from Cabal-syntax-3.10.2.0:Distribution.PackageDescription.Utils,
+    Distribution.Parsec from Cabal-syntax-3.10.2.0:Distribution.Parsec,
+    Distribution.Parsec.Error from Cabal-syntax-3.10.2.0:Distribution.Parsec.Error,
+    Distribution.Parsec.FieldLineStream from Cabal-syntax-3.10.2.0:Distribution.Parsec.FieldLineStream,
+    Distribution.Parsec.Position from Cabal-syntax-3.10.2.0:Distribution.Parsec.Position,
+    Distribution.Parsec.Warning from Cabal-syntax-3.10.2.0:Distribution.Parsec.Warning,
+    Distribution.Pretty from Cabal-syntax-3.10.2.0:Distribution.Pretty,
     Distribution.ReadE,
-    Distribution.SPDX from Cabal-syntax-3.10.2.0-inplace:Distribution.SPDX,
-    Distribution.SPDX.License from Cabal-syntax-3.10.2.0-inplace:Distribution.SPDX.License,
-    Distribution.SPDX.LicenseExceptionId from Cabal-syntax-3.10.2.0-inplace:Distribution.SPDX.LicenseExceptionId,
-    Distribution.SPDX.LicenseExpression from Cabal-syntax-3.10.2.0-inplace:Distribution.SPDX.LicenseExpression,
-    Distribution.SPDX.LicenseId from Cabal-syntax-3.10.2.0-inplace:Distribution.SPDX.LicenseId,
-    Distribution.SPDX.LicenseListVersion from Cabal-syntax-3.10.2.0-inplace:Distribution.SPDX.LicenseListVersion,
-    Distribution.SPDX.LicenseReference from Cabal-syntax-3.10.2.0-inplace:Distribution.SPDX.LicenseReference,
+    Distribution.SPDX from Cabal-syntax-3.10.2.0:Distribution.SPDX,
+    Distribution.SPDX.License from Cabal-syntax-3.10.2.0:Distribution.SPDX.License,
+    Distribution.SPDX.LicenseExceptionId from Cabal-syntax-3.10.2.0:Distribution.SPDX.LicenseExceptionId,
+    Distribution.SPDX.LicenseExpression from Cabal-syntax-3.10.2.0:Distribution.SPDX.LicenseExpression,
+    Distribution.SPDX.LicenseId from Cabal-syntax-3.10.2.0:Distribution.SPDX.LicenseId,
+    Distribution.SPDX.LicenseListVersion from Cabal-syntax-3.10.2.0:Distribution.SPDX.LicenseListVersion,
+    Distribution.SPDX.LicenseReference from Cabal-syntax-3.10.2.0:Distribution.SPDX.LicenseReference,
     Distribution.Simple, Distribution.Simple.Bench,
     Distribution.Simple.Build, Distribution.Simple.Build.Macros,
     Distribution.Simple.Build.PackageInfoModule,
@@ -125,103 +125,103 @@ exposed-modules:
     Distribution.Simple.Test.ExeV10, Distribution.Simple.Test.LibV09,
     Distribution.Simple.Test.Log, Distribution.Simple.UHC,
     Distribution.Simple.UserHooks, Distribution.Simple.Utils,
-    Distribution.System from Cabal-syntax-3.10.2.0-inplace:Distribution.System,
+    Distribution.System from Cabal-syntax-3.10.2.0:Distribution.System,
     Distribution.TestSuite,
-    Distribution.Text from Cabal-syntax-3.10.2.0-inplace:Distribution.Text,
-    Distribution.Types.AbiDependency from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.AbiDependency,
-    Distribution.Types.AbiHash from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.AbiHash,
+    Distribution.Text from Cabal-syntax-3.10.2.0:Distribution.Text,
+    Distribution.Types.AbiDependency from Cabal-syntax-3.10.2.0:Distribution.Types.AbiDependency,
+    Distribution.Types.AbiHash from Cabal-syntax-3.10.2.0:Distribution.Types.AbiHash,
     Distribution.Types.AnnotatedId,
-    Distribution.Types.Benchmark from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Benchmark,
-    Distribution.Types.Benchmark.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Benchmark.Lens,
-    Distribution.Types.BenchmarkInterface from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.BenchmarkInterface,
-    Distribution.Types.BenchmarkType from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.BenchmarkType,
-    Distribution.Types.BuildInfo from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.BuildInfo,
-    Distribution.Types.BuildInfo.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.BuildInfo.Lens,
-    Distribution.Types.BuildType from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.BuildType,
-    Distribution.Types.Component from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Component,
-    Distribution.Types.ComponentId from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ComponentId,
+    Distribution.Types.Benchmark from Cabal-syntax-3.10.2.0:Distribution.Types.Benchmark,
+    Distribution.Types.Benchmark.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.Benchmark.Lens,
+    Distribution.Types.BenchmarkInterface from Cabal-syntax-3.10.2.0:Distribution.Types.BenchmarkInterface,
+    Distribution.Types.BenchmarkType from Cabal-syntax-3.10.2.0:Distribution.Types.BenchmarkType,
+    Distribution.Types.BuildInfo from Cabal-syntax-3.10.2.0:Distribution.Types.BuildInfo,
+    Distribution.Types.BuildInfo.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.BuildInfo.Lens,
+    Distribution.Types.BuildType from Cabal-syntax-3.10.2.0:Distribution.Types.BuildType,
+    Distribution.Types.Component from Cabal-syntax-3.10.2.0:Distribution.Types.Component,
+    Distribution.Types.ComponentId from Cabal-syntax-3.10.2.0:Distribution.Types.ComponentId,
     Distribution.Types.ComponentInclude,
     Distribution.Types.ComponentLocalBuildInfo,
-    Distribution.Types.ComponentName from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ComponentName,
-    Distribution.Types.ComponentRequestedSpec from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ComponentRequestedSpec,
-    Distribution.Types.CondTree from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.CondTree,
-    Distribution.Types.Condition from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Condition,
-    Distribution.Types.ConfVar from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ConfVar,
-    Distribution.Types.Dependency from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Dependency,
-    Distribution.Types.DependencyMap from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.DependencyMap,
+    Distribution.Types.ComponentName from Cabal-syntax-3.10.2.0:Distribution.Types.ComponentName,
+    Distribution.Types.ComponentRequestedSpec from Cabal-syntax-3.10.2.0:Distribution.Types.ComponentRequestedSpec,
+    Distribution.Types.CondTree from Cabal-syntax-3.10.2.0:Distribution.Types.CondTree,
+    Distribution.Types.Condition from Cabal-syntax-3.10.2.0:Distribution.Types.Condition,
+    Distribution.Types.ConfVar from Cabal-syntax-3.10.2.0:Distribution.Types.ConfVar,
+    Distribution.Types.Dependency from Cabal-syntax-3.10.2.0:Distribution.Types.Dependency,
+    Distribution.Types.DependencyMap from Cabal-syntax-3.10.2.0:Distribution.Types.DependencyMap,
     Distribution.Types.DumpBuildInfo,
-    Distribution.Types.ExeDependency from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ExeDependency,
-    Distribution.Types.Executable from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Executable,
-    Distribution.Types.Executable.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Executable.Lens,
-    Distribution.Types.ExecutableScope from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ExecutableScope,
-    Distribution.Types.ExposedModule from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ExposedModule,
-    Distribution.Types.Flag from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Flag,
-    Distribution.Types.ForeignLib from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ForeignLib,
-    Distribution.Types.ForeignLib.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ForeignLib.Lens,
-    Distribution.Types.ForeignLibOption from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ForeignLibOption,
-    Distribution.Types.ForeignLibType from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ForeignLibType,
-    Distribution.Types.GenericPackageDescription from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.GenericPackageDescription,
-    Distribution.Types.GenericPackageDescription.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.GenericPackageDescription.Lens,
+    Distribution.Types.ExeDependency from Cabal-syntax-3.10.2.0:Distribution.Types.ExeDependency,
+    Distribution.Types.Executable from Cabal-syntax-3.10.2.0:Distribution.Types.Executable,
+    Distribution.Types.Executable.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.Executable.Lens,
+    Distribution.Types.ExecutableScope from Cabal-syntax-3.10.2.0:Distribution.Types.ExecutableScope,
+    Distribution.Types.ExposedModule from Cabal-syntax-3.10.2.0:Distribution.Types.ExposedModule,
+    Distribution.Types.Flag from Cabal-syntax-3.10.2.0:Distribution.Types.Flag,
+    Distribution.Types.ForeignLib from Cabal-syntax-3.10.2.0:Distribution.Types.ForeignLib,
+    Distribution.Types.ForeignLib.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.ForeignLib.Lens,
+    Distribution.Types.ForeignLibOption from Cabal-syntax-3.10.2.0:Distribution.Types.ForeignLibOption,
+    Distribution.Types.ForeignLibType from Cabal-syntax-3.10.2.0:Distribution.Types.ForeignLibType,
+    Distribution.Types.GenericPackageDescription from Cabal-syntax-3.10.2.0:Distribution.Types.GenericPackageDescription,
+    Distribution.Types.GenericPackageDescription.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.GenericPackageDescription.Lens,
     Distribution.Types.GivenComponent,
-    Distribution.Types.HookedBuildInfo from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.HookedBuildInfo,
-    Distribution.Types.IncludeRenaming from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.IncludeRenaming,
-    Distribution.Types.InstalledPackageInfo from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.InstalledPackageInfo,
-    Distribution.Types.InstalledPackageInfo.FieldGrammar from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.InstalledPackageInfo.FieldGrammar,
-    Distribution.Types.InstalledPackageInfo.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.InstalledPackageInfo.Lens,
-    Distribution.Types.LegacyExeDependency from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.LegacyExeDependency,
-    Distribution.Types.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Lens,
-    Distribution.Types.Library from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Library,
-    Distribution.Types.Library.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Library.Lens,
-    Distribution.Types.LibraryName from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.LibraryName,
-    Distribution.Types.LibraryVisibility from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.LibraryVisibility,
+    Distribution.Types.HookedBuildInfo from Cabal-syntax-3.10.2.0:Distribution.Types.HookedBuildInfo,
+    Distribution.Types.IncludeRenaming from Cabal-syntax-3.10.2.0:Distribution.Types.IncludeRenaming,
+    Distribution.Types.InstalledPackageInfo from Cabal-syntax-3.10.2.0:Distribution.Types.InstalledPackageInfo,
+    Distribution.Types.InstalledPackageInfo.FieldGrammar from Cabal-syntax-3.10.2.0:Distribution.Types.InstalledPackageInfo.FieldGrammar,
+    Distribution.Types.InstalledPackageInfo.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.InstalledPackageInfo.Lens,
+    Distribution.Types.LegacyExeDependency from Cabal-syntax-3.10.2.0:Distribution.Types.LegacyExeDependency,
+    Distribution.Types.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.Lens,
+    Distribution.Types.Library from Cabal-syntax-3.10.2.0:Distribution.Types.Library,
+    Distribution.Types.Library.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.Library.Lens,
+    Distribution.Types.LibraryName from Cabal-syntax-3.10.2.0:Distribution.Types.LibraryName,
+    Distribution.Types.LibraryVisibility from Cabal-syntax-3.10.2.0:Distribution.Types.LibraryVisibility,
     Distribution.Types.LocalBuildInfo,
-    Distribution.Types.Mixin from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Mixin,
-    Distribution.Types.Module from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Module,
-    Distribution.Types.ModuleReexport from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ModuleReexport,
-    Distribution.Types.ModuleRenaming from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.ModuleRenaming,
-    Distribution.Types.MungedPackageId from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.MungedPackageId,
-    Distribution.Types.MungedPackageName from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.MungedPackageName,
-    Distribution.Types.PackageDescription from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PackageDescription,
-    Distribution.Types.PackageDescription.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PackageDescription.Lens,
-    Distribution.Types.PackageId from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PackageId,
-    Distribution.Types.PackageId.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PackageId.Lens,
-    Distribution.Types.PackageName from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PackageName,
+    Distribution.Types.Mixin from Cabal-syntax-3.10.2.0:Distribution.Types.Mixin,
+    Distribution.Types.Module from Cabal-syntax-3.10.2.0:Distribution.Types.Module,
+    Distribution.Types.ModuleReexport from Cabal-syntax-3.10.2.0:Distribution.Types.ModuleReexport,
+    Distribution.Types.ModuleRenaming from Cabal-syntax-3.10.2.0:Distribution.Types.ModuleRenaming,
+    Distribution.Types.MungedPackageId from Cabal-syntax-3.10.2.0:Distribution.Types.MungedPackageId,
+    Distribution.Types.MungedPackageName from Cabal-syntax-3.10.2.0:Distribution.Types.MungedPackageName,
+    Distribution.Types.PackageDescription from Cabal-syntax-3.10.2.0:Distribution.Types.PackageDescription,
+    Distribution.Types.PackageDescription.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.PackageDescription.Lens,
+    Distribution.Types.PackageId from Cabal-syntax-3.10.2.0:Distribution.Types.PackageId,
+    Distribution.Types.PackageId.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.PackageId.Lens,
+    Distribution.Types.PackageName from Cabal-syntax-3.10.2.0:Distribution.Types.PackageName,
     Distribution.Types.PackageName.Magic,
-    Distribution.Types.PackageVersionConstraint from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PackageVersionConstraint,
-    Distribution.Types.PkgconfigDependency from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PkgconfigDependency,
-    Distribution.Types.PkgconfigName from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PkgconfigName,
-    Distribution.Types.PkgconfigVersion from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PkgconfigVersion,
-    Distribution.Types.PkgconfigVersionRange from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.PkgconfigVersionRange,
-    Distribution.Types.SetupBuildInfo from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.SetupBuildInfo,
-    Distribution.Types.SetupBuildInfo.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.SetupBuildInfo.Lens,
-    Distribution.Types.SourceRepo from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.SourceRepo,
-    Distribution.Types.SourceRepo.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.SourceRepo.Lens,
+    Distribution.Types.PackageVersionConstraint from Cabal-syntax-3.10.2.0:Distribution.Types.PackageVersionConstraint,
+    Distribution.Types.PkgconfigDependency from Cabal-syntax-3.10.2.0:Distribution.Types.PkgconfigDependency,
+    Distribution.Types.PkgconfigName from Cabal-syntax-3.10.2.0:Distribution.Types.PkgconfigName,
+    Distribution.Types.PkgconfigVersion from Cabal-syntax-3.10.2.0:Distribution.Types.PkgconfigVersion,
+    Distribution.Types.PkgconfigVersionRange from Cabal-syntax-3.10.2.0:Distribution.Types.PkgconfigVersionRange,
+    Distribution.Types.SetupBuildInfo from Cabal-syntax-3.10.2.0:Distribution.Types.SetupBuildInfo,
+    Distribution.Types.SetupBuildInfo.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.SetupBuildInfo.Lens,
+    Distribution.Types.SourceRepo from Cabal-syntax-3.10.2.0:Distribution.Types.SourceRepo,
+    Distribution.Types.SourceRepo.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.SourceRepo.Lens,
     Distribution.Types.TargetInfo,
-    Distribution.Types.TestSuite from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.TestSuite,
-    Distribution.Types.TestSuite.Lens from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.TestSuite.Lens,
-    Distribution.Types.TestSuiteInterface from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.TestSuiteInterface,
-    Distribution.Types.TestType from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.TestType,
-    Distribution.Types.UnitId from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.UnitId,
-    Distribution.Types.UnqualComponentName from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.UnqualComponentName,
-    Distribution.Types.Version from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.Version,
-    Distribution.Types.VersionInterval from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.VersionInterval,
-    Distribution.Types.VersionInterval.Legacy from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.VersionInterval.Legacy,
-    Distribution.Types.VersionRange from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.VersionRange,
-    Distribution.Types.VersionRange.Internal from Cabal-syntax-3.10.2.0-inplace:Distribution.Types.VersionRange.Internal,
-    Distribution.Utils.Base62 from Cabal-syntax-3.10.2.0-inplace:Distribution.Utils.Base62,
-    Distribution.Utils.Generic from Cabal-syntax-3.10.2.0-inplace:Distribution.Utils.Generic,
+    Distribution.Types.TestSuite from Cabal-syntax-3.10.2.0:Distribution.Types.TestSuite,
+    Distribution.Types.TestSuite.Lens from Cabal-syntax-3.10.2.0:Distribution.Types.TestSuite.Lens,
+    Distribution.Types.TestSuiteInterface from Cabal-syntax-3.10.2.0:Distribution.Types.TestSuiteInterface,
+    Distribution.Types.TestType from Cabal-syntax-3.10.2.0:Distribution.Types.TestType,
+    Distribution.Types.UnitId from Cabal-syntax-3.10.2.0:Distribution.Types.UnitId,
+    Distribution.Types.UnqualComponentName from Cabal-syntax-3.10.2.0:Distribution.Types.UnqualComponentName,
+    Distribution.Types.Version from Cabal-syntax-3.10.2.0:Distribution.Types.Version,
+    Distribution.Types.VersionInterval from Cabal-syntax-3.10.2.0:Distribution.Types.VersionInterval,
+    Distribution.Types.VersionInterval.Legacy from Cabal-syntax-3.10.2.0:Distribution.Types.VersionInterval.Legacy,
+    Distribution.Types.VersionRange from Cabal-syntax-3.10.2.0:Distribution.Types.VersionRange,
+    Distribution.Types.VersionRange.Internal from Cabal-syntax-3.10.2.0:Distribution.Types.VersionRange.Internal,
+    Distribution.Utils.Base62 from Cabal-syntax-3.10.2.0:Distribution.Utils.Base62,
+    Distribution.Utils.Generic from Cabal-syntax-3.10.2.0:Distribution.Utils.Generic,
     Distribution.Utils.IOData, Distribution.Utils.Json,
     Distribution.Utils.LogProgress,
-    Distribution.Utils.MD5 from Cabal-syntax-3.10.2.0-inplace:Distribution.Utils.MD5,
+    Distribution.Utils.MD5 from Cabal-syntax-3.10.2.0:Distribution.Utils.MD5,
     Distribution.Utils.MapAccum, Distribution.Utils.NubList,
-    Distribution.Utils.Path from Cabal-syntax-3.10.2.0-inplace:Distribution.Utils.Path,
+    Distribution.Utils.Path from Cabal-syntax-3.10.2.0:Distribution.Utils.Path,
     Distribution.Utils.Progress,
-    Distribution.Utils.ShortText from Cabal-syntax-3.10.2.0-inplace:Distribution.Utils.ShortText,
-    Distribution.Utils.String from Cabal-syntax-3.10.2.0-inplace:Distribution.Utils.String,
-    Distribution.Utils.Structured from Cabal-syntax-3.10.2.0-inplace:Distribution.Utils.Structured,
+    Distribution.Utils.ShortText from Cabal-syntax-3.10.2.0:Distribution.Utils.ShortText,
+    Distribution.Utils.String from Cabal-syntax-3.10.2.0:Distribution.Utils.String,
+    Distribution.Utils.Structured from Cabal-syntax-3.10.2.0:Distribution.Utils.Structured,
     Distribution.Verbosity, Distribution.Verbosity.Internal,
-    Distribution.Version from Cabal-syntax-3.10.2.0-inplace:Distribution.Version,
-    Language.Haskell.Extension from Cabal-syntax-3.10.2.0-inplace:Language.Haskell.Extension
+    Distribution.Version from Cabal-syntax-3.10.2.0:Distribution.Version,
+    Language.Haskell.Extension from Cabal-syntax-3.10.2.0:Language.Haskell.Extension
 hidden-modules:
     Distribution.Backpack.PreExistingComponent
     Distribution.Backpack.ReadyComponent Distribution.Backpack.MixLink
@@ -237,33 +237,28 @@ hidden-modules:
     Distribution.Simple.GHC.Internal Distribution.Simple.GHC.ImplInfo
     Distribution.Simple.ConfigureScript Distribution.ZinzaPrelude
     Paths_Cabal
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-3.10.2.0-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-3.10.2.0-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-3.10.2.0-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-3.10.2.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-3.10.2.0
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-3.10.2.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/Cabal-3.10.2.0
-hs-libraries:         HSCabal-3.10.2.0-inplace
+hs-libraries:         HSCabal-3.10.2.0
 depends:
-    Cabal-syntax-3.10.2.0-inplace array-0.5.6.0-inplace
-    base-4.19.0.0-inplace bytestring-0.12.0.2-inplace
-    containers-0.6.8-inplace deepseq-1.5.0.0-inplace
-    directory-1.3.8.1-inplace filepath-1.4.100.4-inplace
-    mtl-2.3.1-inplace parsec-3.1.17.0-inplace pretty-1.1.3.6-inplace
-    process-1.6.18.0-inplace text-2.1-inplace time-1.12.2-inplace
-    transformers-0.6.1.0-inplace unix-2.8.3.0-inplace
+    Cabal-syntax-3.10.2.0 array-0.5.6.0 base-4.19.0.0
+    bytestring-0.12.0.2 containers-0.6.8 deepseq-1.5.0.0
+    directory-1.3.8.1 filepath-1.4.100.4 mtl-2.3.1 parsec-3.1.17.0
+    pretty-1.1.3.6 process-1.6.18.0 text-2.1 time-1.12.2
+    transformers-0.6.1.0 unix-2.8.3.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/Cabal-3.10.2.0-inplace/Cabal.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/Cabal-3.10.2.0-inplace
+    ${pkgroot}/../../doc/html/libraries/Cabal-3.10.2.0/Cabal.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/Cabal-3.10.2.0
 ---
 name:                 Cabal-syntax
 version:              3.10.2.0
 visibility:           public
-id:                   Cabal-syntax-3.10.2.0-inplace
-key:                  Cabal-syntax-3.10.2.0-inplace
+id:                   Cabal-syntax-3.10.2.0
+key:                  Cabal-syntax-3.10.2.0
 license:              BSD-3-Clause
 copyright:            2003-2023, Cabal Development Team (see AUTHORS file)
 maintainer:           cabal-devel@haskell.org
@@ -363,33 +358,29 @@ exposed-modules:
     Distribution.Utils.String Distribution.Utils.Structured
     Distribution.Version Language.Haskell.Extension
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-syntax-3.10.2.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-syntax-3.10.2.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-syntax-3.10.2.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-syntax-3.10.2.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-syntax-3.10.2.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/Cabal-syntax-3.10.2.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/Cabal-syntax-3.10.2.0
-hs-libraries:         HSCabal-syntax-3.10.2.0-inplace
+hs-libraries:         HSCabal-syntax-3.10.2.0
 depends:
-    array-0.5.6.0-inplace base-4.19.0.0-inplace binary-0.8.9.1-inplace
-    bytestring-0.12.0.2-inplace containers-0.6.8-inplace
-    deepseq-1.5.0.0-inplace directory-1.3.8.1-inplace
-    filepath-1.4.100.4-inplace mtl-2.3.1-inplace
-    parsec-3.1.17.0-inplace pretty-1.1.3.6-inplace text-2.1-inplace
-    time-1.12.2-inplace transformers-0.6.1.0-inplace
-    unix-2.8.3.0-inplace
+    array-0.5.6.0 base-4.19.0.0 binary-0.8.9.1 bytestring-0.12.0.2
+    containers-0.6.8 deepseq-1.5.0.0 directory-1.3.8.1
+    filepath-1.4.100.4 mtl-2.3.1 parsec-3.1.17.0 pretty-1.1.3.6
+    text-2.1 time-1.12.2 transformers-0.6.1.0 unix-2.8.3.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/Cabal-syntax-3.10.2.0-inplace/Cabal-syntax.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/Cabal-syntax-3.10.2.0-inplace
+    ${pkgroot}/../../doc/html/libraries/Cabal-syntax-3.10.2.0/Cabal-syntax.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/Cabal-syntax-3.10.2.0
 ---
 name:                 array
 version:              0.5.6.0
 visibility:           public
-id:                   array-0.5.6.0-inplace
-key:                  array-0.5.6.0-inplace
+id:                   array-0.5.6.0
+key:                  array-0.5.6.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Mutable and immutable arrays
@@ -407,26 +398,23 @@ exposed-modules:
     Data.Array.MArray.Safe Data.Array.ST Data.Array.ST.Safe
     Data.Array.Storable Data.Array.Storable.Internals
     Data.Array.Storable.Safe Data.Array.Unboxed Data.Array.Unsafe
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/array-0.5.6.0-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/array-0.5.6.0-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/array-0.5.6.0-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/array-0.5.6.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/array-0.5.6.0
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/array-0.5.6.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/array-0.5.6.0
-hs-libraries:         HSarray-0.5.6.0-inplace
-depends:              base-4.19.0.0-inplace
+hs-libraries:         HSarray-0.5.6.0
+depends:              base-4.19.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/array-0.5.6.0-inplace/array.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/array-0.5.6.0-inplace
+    ${pkgroot}/../../doc/html/libraries/array-0.5.6.0/array.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/array-0.5.6.0
 ---
 name:                 base
 version:              4.19.0.0
 visibility:           public
-id:                   base-4.19.0.0-inplace
-key:                  base-4.19.0.0-inplace
+id:                   base-4.19.0.0
+key:                  base-4.19.0.0
 license:              BSD-3-Clause
 maintainer:
     Core Libraries Committee <core-libraries-committee@haskell.org>
@@ -492,18 +480,18 @@ exposed-modules:
     GHC.JS.Foreign.Callback, GHC.JS.Prim, GHC.JS.Prim.Internal,
     GHC.JS.Prim.Internal.Build, GHC.List, GHC.MVar, GHC.Maybe,
     GHC.Natural, GHC.Num,
-    GHC.Num.BigNat from ghc-bignum-1.3-inplace:GHC.Num.BigNat,
-    GHC.Num.Integer from ghc-bignum-1.3-inplace:GHC.Num.Integer,
-    GHC.Num.Natural from ghc-bignum-1.3-inplace:GHC.Num.Natural,
-    GHC.OldList, GHC.OverloadedLabels, GHC.Pack, GHC.Profiling,
-    GHC.Ptr, GHC.RTS.Flags, GHC.Read, GHC.Real, GHC.Records,
-    GHC.ResponseFile, GHC.ST, GHC.STRef, GHC.Show, GHC.Stable,
-    GHC.StableName, GHC.Stack, GHC.Stack.CCS, GHC.Stack.CloneStack,
-    GHC.Stack.Types, GHC.StaticPtr, GHC.Stats, GHC.Storable,
-    GHC.TopHandler, GHC.TypeError, GHC.TypeLits, GHC.TypeLits.Internal,
-    GHC.TypeNats, GHC.TypeNats.Internal, GHC.Unicode, GHC.Weak,
-    GHC.Weak.Finalize, GHC.Word, Numeric, Numeric.Natural, Prelude,
-    System.CPUTime, System.Console.GetOpt, System.Environment,
+    GHC.Num.BigNat from ghc-bignum-1.3:GHC.Num.BigNat,
+    GHC.Num.Integer from ghc-bignum-1.3:GHC.Num.Integer,
+    GHC.Num.Natural from ghc-bignum-1.3:GHC.Num.Natural, GHC.OldList,
+    GHC.OverloadedLabels, GHC.Pack, GHC.Profiling, GHC.Ptr,
+    GHC.RTS.Flags, GHC.Read, GHC.Real, GHC.Records, GHC.ResponseFile,
+    GHC.ST, GHC.STRef, GHC.Show, GHC.Stable, GHC.StableName, GHC.Stack,
+    GHC.Stack.CCS, GHC.Stack.CloneStack, GHC.Stack.Types,
+    GHC.StaticPtr, GHC.Stats, GHC.Storable, GHC.TopHandler,
+    GHC.TypeError, GHC.TypeLits, GHC.TypeLits.Internal, GHC.TypeNats,
+    GHC.TypeNats.Internal, GHC.Unicode, GHC.Weak, GHC.Weak.Finalize,
+    GHC.Word, Numeric, Numeric.Natural, Prelude, System.CPUTime,
+    System.Console.GetOpt, System.Environment,
     System.Environment.Blank, System.Exit, System.IO, System.IO.Error,
     System.IO.Unsafe, System.Info, System.Mem, System.Mem.StableName,
     System.Mem.Weak, System.Posix.Internals, System.Posix.Types,
@@ -532,30 +520,26 @@ hidden-modules:
     GHC.Event.TimerManager System.CPUTime.Posix.ClockGetTime
     System.CPUTime.Posix.Times System.CPUTime.Posix.RUsage
     System.CPUTime.Unsupported System.CPUTime.Javascript
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0
-hs-libraries:         HSbase-4.19.0.0-inplace
+hs-libraries:         HSbase-4.19.0.0
 include-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0-inplace/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/base-4.19.0.0/include
 includes:             HsBase.h
-depends:
-    ghc-bignum-1.3-inplace ghc-prim-0.11.0-inplace rts-1.0.2
+depends:              ghc-bignum-1.3 ghc-prim-0.11.0 rts-1.0.2
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/base-4.19.0.0-inplace/base.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/base-4.19.0.0-inplace
+    ${pkgroot}/../../doc/html/libraries/base-4.19.0.0/base.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/base-4.19.0.0
 ---
 name:                 binary
 version:              0.8.9.1
 visibility:           public
-id:                   binary-0.8.9.1-inplace
-key:                  binary-0.8.9.1-inplace
+id:                   binary-0.8.9.1
+key:                  binary-0.8.9.1
 license:              BSD-3-Clause
 maintainer:           Lennart Kolmodin, Don Stewart <dons00@gmail.com>
 author:               Lennart Kolmodin <kolmodin@gmail.com>
@@ -580,28 +564,24 @@ exposed-modules:
 hidden-modules:
     Data.Binary.Class Data.Binary.Internal Data.Binary.Generic
     Data.Binary.FloatCast
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/binary-0.8.9.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/binary-0.8.9.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/binary-0.8.9.1-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/binary-0.8.9.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/binary-0.8.9.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/binary-0.8.9.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/binary-0.8.9.1
-hs-libraries:         HSbinary-0.8.9.1-inplace
+hs-libraries:         HSbinary-0.8.9.1
 depends:
-    array-0.5.6.0-inplace base-4.19.0.0-inplace
-    bytestring-0.12.0.2-inplace containers-0.6.8-inplace
+    array-0.5.6.0 base-4.19.0.0 bytestring-0.12.0.2 containers-0.6.8
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/binary-0.8.9.1-inplace/binary.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/binary-0.8.9.1-inplace
+    ${pkgroot}/../../doc/html/libraries/binary-0.8.9.1/binary.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/binary-0.8.9.1
 ---
 name:                 bytestring
 version:              0.12.0.2
 visibility:           public
-id:                   bytestring-0.12.0.2-inplace
-key:                  bytestring-0.12.0.2-inplace
+id:                   bytestring-0.12.0.2
+key:                  bytestring-0.12.0.2
 license:              BSD-3-Clause
 copyright:
     Copyright (c) Don Stewart          2005-2009,
@@ -669,31 +649,30 @@ hidden-modules:
     Data.ByteString.Lazy.ReadInt Data.ByteString.Lazy.ReadNat
     Data.ByteString.ReadInt Data.ByteString.ReadNat
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2
-hs-libraries:         HSbytestring-0.12.0.2-inplace
+hs-libraries:         HSbytestring-0.12.0.2
 include-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2-inplace/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/bytestring-0.12.0.2/include
 includes:             fpstring.h
 depends:
-    base-4.19.0.0-inplace deepseq-1.5.0.0-inplace
-    ghc-prim-0.11.0-inplace template-haskell-2.21.0.0-inplace
+    base-4.19.0.0 deepseq-1.5.0.0 ghc-prim-0.11.0
+    template-haskell-2.21.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/bytestring-0.12.0.2-inplace/bytestring.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/bytestring-0.12.0.2-inplace
+    ${pkgroot}/../../doc/html/libraries/bytestring-0.12.0.2/bytestring.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/bytestring-0.12.0.2
 ---
 name:                 containers
 version:              0.6.8
 visibility:           public
-id:                   containers-0.6.8-inplace
-key:                  containers-0.6.8-inplace
+id:                   containers-0.6.8
+key:                  containers-0.6.8
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Assorted concrete container types
@@ -729,28 +708,27 @@ hidden-modules:
     Data.Map.Internal.DeprecatedShowTree
     Data.IntMap.Internal.DeprecatedDebug
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/containers-0.6.8-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/containers-0.6.8
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/containers-0.6.8-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/containers-0.6.8
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/containers-0.6.8-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/containers-0.6.8
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/containers-0.6.8
-hs-libraries:         HScontainers-0.6.8-inplace
+hs-libraries:         HScontainers-0.6.8
 depends:
-    array-0.5.6.0-inplace base-4.19.0.0-inplace deepseq-1.5.0.0-inplace
-    template-haskell-2.21.0.0-inplace
+    array-0.5.6.0 base-4.19.0.0 deepseq-1.5.0.0
+    template-haskell-2.21.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/containers-0.6.8-inplace/containers.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/containers-0.6.8-inplace
+    ${pkgroot}/../../doc/html/libraries/containers-0.6.8/containers.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/containers-0.6.8
 ---
 name:                 deepseq
 version:              1.5.0.0
 visibility:           public
-id:                   deepseq-1.5.0.0-inplace
-key:                  deepseq-1.5.0.0-inplace
+id:                   deepseq-1.5.0.0
+key:                  deepseq-1.5.0.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Deep evaluation of data structures
@@ -771,26 +749,25 @@ category:             Control
 exposed:              True
 exposed-modules:      Control.DeepSeq
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/deepseq-1.5.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/deepseq-1.5.0.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/deepseq-1.5.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/deepseq-1.5.0.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/deepseq-1.5.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/deepseq-1.5.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/deepseq-1.5.0.0
-hs-libraries:         HSdeepseq-1.5.0.0-inplace
-depends:
-    array-0.5.6.0-inplace base-4.19.0.0-inplace ghc-prim-0.11.0-inplace
+hs-libraries:         HSdeepseq-1.5.0.0
+depends:              array-0.5.6.0 base-4.19.0.0 ghc-prim-0.11.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/deepseq-1.5.0.0-inplace/deepseq.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/deepseq-1.5.0.0-inplace
+    ${pkgroot}/../../doc/html/libraries/deepseq-1.5.0.0/deepseq.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/deepseq-1.5.0.0
 ---
 name:                 directory
 version:              1.3.8.1
 visibility:           public
-id:                   directory-1.3.8.1-inplace
-key:                  directory-1.3.8.1-inplace
+id:                   directory-1.3.8.1
+key:                  directory-1.3.8.1
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Platform-agnostic library for filesystem operations
@@ -807,30 +784,28 @@ hidden-modules:
     System.Directory.Internal.Common System.Directory.Internal.Config
     System.Directory.Internal.Posix System.Directory.Internal.Windows
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1
-hs-libraries:         HSdirectory-1.3.8.1-inplace
+hs-libraries:         HSdirectory-1.3.8.1
 include-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1-inplace/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/directory-1.3.8.1/include
 depends:
-    base-4.19.0.0-inplace filepath-1.4.100.4-inplace
-    time-1.12.2-inplace unix-2.8.3.0-inplace
+    base-4.19.0.0 filepath-1.4.100.4 time-1.12.2 unix-2.8.3.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/directory-1.3.8.1-inplace/directory.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/directory-1.3.8.1-inplace
+    ${pkgroot}/../../doc/html/libraries/directory-1.3.8.1/directory.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/directory-1.3.8.1
 ---
 name:                 exceptions
 version:              0.10.7
 visibility:           public
-id:                   exceptions-0.10.7-inplace
-key:                  exceptions-0.10.7-inplace
+id:                   exceptions-0.10.7
+key:                  exceptions-0.10.7
 license:              BSD-3-Clause
 copyright:
     Copyright (C) 2013-2015 Edward A. Kmett
@@ -845,28 +820,27 @@ category:             Control, Exceptions, Monad
 exposed:              True
 exposed-modules:      Control.Monad.Catch Control.Monad.Catch.Pure
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/exceptions-0.10.7-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/exceptions-0.10.7
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/exceptions-0.10.7-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/exceptions-0.10.7
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/exceptions-0.10.7-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/exceptions-0.10.7
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/exceptions-0.10.7
-hs-libraries:         HSexceptions-0.10.7-inplace
+hs-libraries:         HSexceptions-0.10.7
 depends:
-    base-4.19.0.0-inplace mtl-2.3.1-inplace stm-2.5.2.1-inplace
-    template-haskell-2.21.0.0-inplace transformers-0.6.1.0-inplace
+    base-4.19.0.0 mtl-2.3.1 stm-2.5.2.1 template-haskell-2.21.0.0
+    transformers-0.6.1.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/exceptions-0.10.7-inplace/exceptions.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/exceptions-0.10.7-inplace
+    ${pkgroot}/../../doc/html/libraries/exceptions-0.10.7/exceptions.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/exceptions-0.10.7
 ---
 name:                 filepath
 version:              1.4.100.4
 visibility:           public
-id:                   filepath-1.4.100.4-inplace
-key:                  filepath-1.4.100.4-inplace
+id:                   filepath-1.4.100.4
+key:                  filepath-1.4.100.4
 license:              BSD-3-Clause
 copyright:            Neil Mitchell 2005-2020, Julain Ospald 2021-2022
 maintainer:           Julian Ospald <hasufell@posteo.de>
@@ -901,29 +875,27 @@ exposed-modules:
     System.OsString.Internal System.OsString.Internal.Types
     System.OsString.Posix System.OsString.Windows
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/filepath-1.4.100.4-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/filepath-1.4.100.4
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/filepath-1.4.100.4-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/filepath-1.4.100.4
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/filepath-1.4.100.4-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/filepath-1.4.100.4
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/filepath-1.4.100.4
-hs-libraries:         HSfilepath-1.4.100.4-inplace
+hs-libraries:         HSfilepath-1.4.100.4
 depends:
-    base-4.19.0.0-inplace bytestring-0.12.0.2-inplace
-    deepseq-1.5.0.0-inplace exceptions-0.10.7-inplace
-    template-haskell-2.21.0.0-inplace
+    base-4.19.0.0 bytestring-0.12.0.2 deepseq-1.5.0.0 exceptions-0.10.7
+    template-haskell-2.21.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/filepath-1.4.100.4-inplace/filepath.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/filepath-1.4.100.4-inplace
+    ${pkgroot}/../../doc/html/libraries/filepath-1.4.100.4/filepath.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/filepath-1.4.100.4
 ---
 name:                 ghc
 version:              9.8.1
 visibility:           public
-id:                   ghc-9.8.1-inplace
-key:                  ghc-9.8.1-inplace
+id:                   ghc-9.8.1
+key:                  ghc-9.8.1
 license:              BSD-3-Clause
 maintainer:           glasgow-haskell-users@haskell.org
 author:               The GHC Team
@@ -1096,9 +1068,9 @@ exposed-modules:
     GHC.Parser.Lexer, GHC.Parser.PostProcess,
     GHC.Parser.PostProcess.Haddock, GHC.Parser.Types, GHC.Parser.Utils,
     GHC.Platform, GHC.Platform.AArch64, GHC.Platform.ARM,
-    GHC.Platform.ArchOS from ghc-boot-9.8.1-inplace:GHC.Platform.ArchOS,
+    GHC.Platform.ArchOS from ghc-boot-9.8.1:GHC.Platform.ArchOS,
     GHC.Platform.Constants,
-    GHC.Platform.Host from ghc-boot-9.8.1-inplace:GHC.Platform.Host,
+    GHC.Platform.Host from ghc-boot-9.8.1:GHC.Platform.Host,
     GHC.Platform.LoongArch64, GHC.Platform.NoRegs, GHC.Platform.PPC,
     GHC.Platform.Profile, GHC.Platform.RISCV64, GHC.Platform.Reg,
     GHC.Platform.Reg.Class, GHC.Platform.Regs, GHC.Platform.S390X,
@@ -1214,36 +1186,29 @@ exposed-modules:
     Language.Haskell.Syntax.Extension, Language.Haskell.Syntax.ImpExp,
     Language.Haskell.Syntax.Lit, Language.Haskell.Syntax.Module.Name,
     Language.Haskell.Syntax.Pat, Language.Haskell.Syntax.Type
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-9.8.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-9.8.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-9.8.1-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-9.8.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-9.8.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-9.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghc-9.8.1
-hs-libraries:         HSghc-9.8.1-inplace
+hs-libraries:         HSghc-9.8.1
 includes:
     Unique.h Bytecodes.h ClosureTypes.h FunTypes.h ghc-llvm-version.h
 depends:
-    array-0.5.6.0-inplace base-4.19.0.0-inplace binary-0.8.9.1-inplace
-    bytestring-0.12.0.2-inplace containers-0.6.8-inplace
-    deepseq-1.5.0.0-inplace directory-1.3.8.1-inplace
-    exceptions-0.10.7-inplace filepath-1.4.100.4-inplace
-    ghc-boot-9.8.1-inplace ghc-heap-9.8.1-inplace ghci-9.8.1-inplace
-    hpc-0.7.0.0-inplace process-1.6.18.0-inplace
-    semaphore-compat-1.0.0-inplace stm-2.5.2.1-inplace
-    template-haskell-2.21.0.0-inplace time-1.12.2-inplace
-    transformers-0.6.1.0-inplace unix-2.8.3.0-inplace
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghc-9.8.1-inplace/ghc.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-9.8.1-inplace
+    array-0.5.6.0 base-4.19.0.0 binary-0.8.9.1 bytestring-0.12.0.2
+    containers-0.6.8 deepseq-1.5.0.0 directory-1.3.8.1
+    exceptions-0.10.7 filepath-1.4.100.4 ghc-boot-9.8.1 ghc-heap-9.8.1
+    ghci-9.8.1 hpc-0.7.0.0 process-1.6.18.0 semaphore-compat-1.0.0
+    stm-2.5.2.1 template-haskell-2.21.0.0 time-1.12.2
+    transformers-0.6.1.0 unix-2.8.3.0
+haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/ghc-9.8.1/ghc.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-9.8.1
 ---
 name:                 ghc-bignum
 version:              1.3
 visibility:           public
-id:                   ghc-bignum-1.3-inplace
-key:                  ghc-bignum-1.3-inplace
+id:                   ghc-bignum-1.3
+key:                  ghc-bignum-1.3
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 author:               Sylvain Henry
@@ -1257,26 +1222,23 @@ exposed-modules:
     GHC.Num.Backend GHC.Num.Backend.Native GHC.Num.Backend.Selected
     GHC.Num.BigNat GHC.Num.Integer GHC.Num.Natural GHC.Num.Primitives
     GHC.Num.WordArray
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-bignum-1.3-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-bignum-1.3-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-bignum-1.3-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-bignum-1.3
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-bignum-1.3
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-bignum-1.3
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghc-bignum-1.3
-hs-libraries:         HSghc-bignum-1.3-inplace
-depends:              ghc-prim-0.11.0-inplace
+hs-libraries:         HSghc-bignum-1.3
+depends:              ghc-prim-0.11.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghc-bignum-1.3-inplace/ghc-bignum.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-bignum-1.3-inplace
+    ${pkgroot}/../../doc/html/libraries/ghc-bignum-1.3/ghc-bignum.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-bignum-1.3
 ---
 name:                 ghc-boot
 version:              9.8.1
 visibility:           public
-id:                   ghc-boot-9.8.1-inplace
-key:                  ghc-boot-9.8.1-inplace
+id:                   ghc-boot-9.8.1
+key:                  ghc-boot-9.8.1
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:             Shared functionality between GHC and its boot libraries
@@ -1298,38 +1260,33 @@ exposed:              True
 exposed-modules:
     GHC.BaseDir, GHC.Data.ShortText, GHC.Data.SizedSeq,
     GHC.ForeignSrcLang,
-    GHC.ForeignSrcLang.Type from ghc-boot-th-9.8.1-inplace:GHC.ForeignSrcLang.Type,
+    GHC.ForeignSrcLang.Type from ghc-boot-th-9.8.1:GHC.ForeignSrcLang.Type,
     GHC.HandleEncoding, GHC.LanguageExtensions,
-    GHC.LanguageExtensions.Type from ghc-boot-th-9.8.1-inplace:GHC.LanguageExtensions.Type,
-    GHC.Lexeme from ghc-boot-th-9.8.1-inplace:GHC.Lexeme,
-    GHC.Platform.ArchOS, GHC.Platform.Host, GHC.Serialized,
-    GHC.Settings.Utils, GHC.UniqueSubdir, GHC.Unit.Database,
-    GHC.Utils.Encoding, GHC.Utils.Encoding.UTF8, GHC.Version
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-9.8.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-9.8.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-9.8.1-inplace
+    GHC.LanguageExtensions.Type from ghc-boot-th-9.8.1:GHC.LanguageExtensions.Type,
+    GHC.Lexeme from ghc-boot-th-9.8.1:GHC.Lexeme, GHC.Platform.ArchOS,
+    GHC.Platform.Host, GHC.Serialized, GHC.Settings.Utils,
+    GHC.UniqueSubdir, GHC.Unit.Database, GHC.Utils.Encoding,
+    GHC.Utils.Encoding.UTF8, GHC.Version
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-9.8.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-9.8.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-9.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghc-boot-9.8.1
-hs-libraries:         HSghc-boot-9.8.1-inplace
+hs-libraries:         HSghc-boot-9.8.1
 depends:
-    base-4.19.0.0-inplace binary-0.8.9.1-inplace
-    bytestring-0.12.0.2-inplace containers-0.6.8-inplace
-    deepseq-1.5.0.0-inplace directory-1.3.8.1-inplace
-    filepath-1.4.100.4-inplace ghc-boot-th-9.8.1-inplace
-    unix-2.8.3.0-inplace
+    base-4.19.0.0 binary-0.8.9.1 bytestring-0.12.0.2 containers-0.6.8
+    deepseq-1.5.0.0 directory-1.3.8.1 filepath-1.4.100.4
+    ghc-boot-th-9.8.1 unix-2.8.3.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghc-boot-9.8.1-inplace/ghc-boot.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-boot-9.8.1-inplace
+    ${pkgroot}/../../doc/html/libraries/ghc-boot-9.8.1/ghc-boot.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-boot-9.8.1
 ---
 name:                 ghc-boot-th
 version:              9.8.1
 visibility:           public
-id:                   ghc-boot-th-9.8.1-inplace
-key:                  ghc-boot-th-9.8.1-inplace
+id:                   ghc-boot-th-9.8.1
+key:                  ghc-boot-th-9.8.1
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:
@@ -1346,26 +1303,25 @@ exposed:              True
 exposed-modules:
     GHC.ForeignSrcLang.Type GHC.LanguageExtensions.Type GHC.Lexeme
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-th-9.8.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-th-9.8.1
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-th-9.8.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-th-9.8.1
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-th-9.8.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-boot-th-9.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghc-boot-th-9.8.1
-hs-libraries:         HSghc-boot-th-9.8.1-inplace
-depends:              base-4.19.0.0-inplace
+hs-libraries:         HSghc-boot-th-9.8.1
+depends:              base-4.19.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghc-boot-th-9.8.1-inplace/ghc-boot-th.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/ghc-boot-th-9.8.1-inplace
+    ${pkgroot}/../../doc/html/libraries/ghc-boot-th-9.8.1/ghc-boot-th.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-boot-th-9.8.1
 ---
 name:                 ghc-compact
 version:              0.1.0.0
 visibility:           public
-id:                   ghc-compact-0.1.0.0-inplace
-key:                  ghc-compact-0.1.0.0-inplace
+id:                   ghc-compact-0.1.0.0
+key:                  ghc-compact-0.1.0.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             In memory storage of deeply evaluated data structure
@@ -1386,28 +1342,25 @@ category:             Data
 exposed:              True
 exposed-modules:      GHC.Compact GHC.Compact.Serialized
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-compact-0.1.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-compact-0.1.0.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-compact-0.1.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-compact-0.1.0.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-compact-0.1.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-compact-0.1.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghc-compact-0.1.0.0
-hs-libraries:         HSghc-compact-0.1.0.0-inplace
-depends:
-    base-4.19.0.0-inplace bytestring-0.12.0.2-inplace
-    ghc-prim-0.11.0-inplace
+hs-libraries:         HSghc-compact-0.1.0.0
+depends:              base-4.19.0.0 bytestring-0.12.0.2 ghc-prim-0.11.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghc-compact-0.1.0.0-inplace/ghc-compact.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/ghc-compact-0.1.0.0-inplace
+    ${pkgroot}/../../doc/html/libraries/ghc-compact-0.1.0.0/ghc-compact.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-compact-0.1.0.0
 ---
 name:                 ghc-heap
 version:              9.8.1
 visibility:           public
-id:                   ghc-heap-9.8.1-inplace
-key:                  ghc-heap-9.8.1-inplace
+id:                   ghc-heap-9.8.1
+key:                  ghc-heap-9.8.1
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Functions for walking GHC's heap
@@ -1426,28 +1379,24 @@ exposed-modules:
     GHC.Exts.Heap.ProfInfo.PeekProfInfo_ProfilingDisabled
     GHC.Exts.Heap.ProfInfo.PeekProfInfo_ProfilingEnabled
     GHC.Exts.Heap.ProfInfo.Types GHC.Exts.Heap.Utils
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-heap-9.8.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-heap-9.8.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-heap-9.8.1-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-heap-9.8.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-heap-9.8.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-heap-9.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghc-heap-9.8.1
-hs-libraries:         HSghc-heap-9.8.1-inplace
+hs-libraries:         HSghc-heap-9.8.1
 depends:
-    base-4.19.0.0-inplace containers-0.6.8-inplace
-    ghc-prim-0.11.0-inplace rts-1.0.2
+    base-4.19.0.0 containers-0.6.8 ghc-prim-0.11.0 rts-1.0.2
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghc-heap-9.8.1-inplace/ghc-heap.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-heap-9.8.1-inplace
+    ${pkgroot}/../../doc/html/libraries/ghc-heap-9.8.1/ghc-heap.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-heap-9.8.1
 ---
 name:                 ghc-prim
 version:              0.11.0
 visibility:           public
-id:                   ghc-prim-0.11.0-inplace
-key:                  ghc-prim-0.11.0-inplace
+id:                   ghc-prim-0.11.0
+key:                  ghc-prim-0.11.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             GHC primitives
@@ -1464,25 +1413,25 @@ exposed-modules:
     GHC.Prim.Exception GHC.Prim.Ext GHC.Prim.Panic GHC.Prim.PtrEq
     GHC.PrimopWrappers GHC.Tuple GHC.Tuple.Prim GHC.Types GHC.Prim
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-prim-0.11.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-prim-0.11.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-prim-0.11.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-prim-0.11.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-prim-0.11.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghc-prim-0.11.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghc-prim-0.11.0
-hs-libraries:         HSghc-prim-0.11.0-inplace
+hs-libraries:         HSghc-prim-0.11.0
 depends:              rts-1.0.2
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghc-prim-0.11.0-inplace/ghc-prim.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-prim-0.11.0-inplace
+    ${pkgroot}/../../doc/html/libraries/ghc-prim-0.11.0/ghc-prim.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghc-prim-0.11.0
 ---
 name:                 ghci
 version:              9.8.1
 visibility:           public
-id:                   ghci-9.8.1-inplace
-key:                  ghci-9.8.1-inplace
+id:                   ghci-9.8.1
+key:                  ghci-9.8.1
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 synopsis:             The library supporting GHC's interactive interpreter
@@ -1497,31 +1446,25 @@ exposed-modules:
     GHCi.Message GHCi.ObjLink GHCi.RemoteTypes GHCi.ResolvedBCO
     GHCi.Run GHCi.Server GHCi.Signals GHCi.StaticPtrTable GHCi.TH
     GHCi.TH.Binary GHCi.Utils
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghci-9.8.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghci-9.8.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghci-9.8.1-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghci-9.8.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghci-9.8.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/ghci-9.8.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/ghci-9.8.1
-hs-libraries:         HSghci-9.8.1-inplace
+hs-libraries:         HSghci-9.8.1
 depends:
-    array-0.5.6.0-inplace base-4.19.0.0-inplace binary-0.8.9.1-inplace
-    bytestring-0.12.0.2-inplace containers-0.6.8-inplace
-    deepseq-1.5.0.0-inplace filepath-1.4.100.4-inplace
-    ghc-boot-9.8.1-inplace ghc-heap-9.8.1-inplace
-    ghc-prim-0.11.0-inplace rts-1.0.2 template-haskell-2.21.0.0-inplace
-    transformers-0.6.1.0-inplace unix-2.8.3.0-inplace
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/ghci-9.8.1-inplace/ghci.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/ghci-9.8.1-inplace
+    array-0.5.6.0 base-4.19.0.0 binary-0.8.9.1 bytestring-0.12.0.2
+    containers-0.6.8 deepseq-1.5.0.0 filepath-1.4.100.4 ghc-boot-9.8.1
+    ghc-heap-9.8.1 ghc-prim-0.11.0 rts-1.0.2 template-haskell-2.21.0.0
+    transformers-0.6.1.0 unix-2.8.3.0
+haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/ghci-9.8.1/ghci.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/ghci-9.8.1
 ---
 name:                 haskeline
 version:              0.8.2.1
 visibility:           public
-id:                   haskeline-0.8.2.1-inplace
-key:                  haskeline-0.8.2.1-inplace
+id:                   haskeline-0.8.2.1
+key:                  haskeline-0.8.2.1
 license:              BSD-3-Clause
 copyright:            (c) Judah Jacobson
 maintainer:           Judah Jacobson <judah.jacobson@gmail.com>
@@ -1559,31 +1502,28 @@ hidden-modules:
     System.Console.Haskeline.Backend.Posix.Encoder
     System.Console.Haskeline.Backend.DumbTerm
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/haskeline-0.8.2.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/haskeline-0.8.2.1
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/haskeline-0.8.2.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/haskeline-0.8.2.1
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/haskeline-0.8.2.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/haskeline-0.8.2.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/haskeline-0.8.2.1
-hs-libraries:         HShaskeline-0.8.2.1-inplace
+hs-libraries:         HShaskeline-0.8.2.1
 depends:
-    base-4.19.0.0-inplace bytestring-0.12.0.2-inplace
-    containers-0.6.8-inplace directory-1.3.8.1-inplace
-    exceptions-0.10.7-inplace filepath-1.4.100.4-inplace
-    process-1.6.18.0-inplace stm-2.5.2.1-inplace
-    transformers-0.6.1.0-inplace unix-2.8.3.0-inplace
+    base-4.19.0.0 bytestring-0.12.0.2 containers-0.6.8
+    directory-1.3.8.1 exceptions-0.10.7 filepath-1.4.100.4
+    process-1.6.18.0 stm-2.5.2.1 transformers-0.6.1.0 unix-2.8.3.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1-inplace/haskeline.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1-inplace
+    ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1/haskeline.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/haskeline-0.8.2.1
 ---
 name:                 hpc
 version:              0.7.0.0
 visibility:           public
-id:                   hpc-0.7.0.0-inplace
-key:                  hpc-0.7.0.0-inplace
+id:                   hpc-0.7.0.0
+key:                  hpc-0.7.0.0
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 author:               Andy Gill
@@ -1596,28 +1536,23 @@ category:             Control
 exposed:              True
 exposed-modules:
     Trace.Hpc.Mix Trace.Hpc.Reflect Trace.Hpc.Tix Trace.Hpc.Util
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/hpc-0.7.0.0-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/hpc-0.7.0.0-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/hpc-0.7.0.0-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/hpc-0.7.0.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/hpc-0.7.0.0
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/hpc-0.7.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/hpc-0.7.0.0
-hs-libraries:         HShpc-0.7.0.0-inplace
+hs-libraries:         HShpc-0.7.0.0
 depends:
-    base-4.19.0.0-inplace containers-0.6.8-inplace
-    deepseq-1.5.0.0-inplace directory-1.3.8.1-inplace
-    filepath-1.4.100.4-inplace time-1.12.2-inplace
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/hpc-0.7.0.0-inplace/hpc.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/hpc-0.7.0.0-inplace
+    base-4.19.0.0 containers-0.6.8 deepseq-1.5.0.0 directory-1.3.8.1
+    filepath-1.4.100.4 time-1.12.2
+haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/hpc-0.7.0.0/hpc.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/hpc-0.7.0.0
 ---
 name:                 integer-gmp
 version:              1.1
 visibility:           public
-id:                   integer-gmp-1.1-inplace
-key:                  integer-gmp-1.1-inplace
+id:                   integer-gmp-1.1
+key:                  integer-gmp-1.1
 license:              BSD-3-Clause
 maintainer:           hvr@gnu.org
 author:               Herbert Valerio Riedel
@@ -1634,27 +1569,25 @@ category:             Numeric, Algebra
 exposed:              True
 exposed-modules:      GHC.Integer.GMP.Internals
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/integer-gmp-1.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/integer-gmp-1.1
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/integer-gmp-1.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/integer-gmp-1.1
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/integer-gmp-1.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/integer-gmp-1.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/integer-gmp-1.1
-hs-libraries:         HSinteger-gmp-1.1-inplace
-depends:
-    base-4.19.0.0-inplace ghc-bignum-1.3-inplace
-    ghc-prim-0.11.0-inplace
+hs-libraries:         HSinteger-gmp-1.1
+depends:              base-4.19.0.0 ghc-bignum-1.3 ghc-prim-0.11.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1-inplace/integer-gmp.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1-inplace
+    ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1/integer-gmp.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/integer-gmp-1.1
 ---
 name:                 mtl
 version:              2.3.1
 visibility:           public
-id:                   mtl-2.3.1-inplace
-key:                  mtl-2.3.1-inplace
+id:                   mtl-2.3.1
+key:                  mtl-2.3.1
 license:              BSD-3-Clause
 maintainer:
     chessai <chessai1996@gmail.com>,
@@ -1681,25 +1614,21 @@ exposed-modules:
     Control.Monad.State.Strict Control.Monad.Trans Control.Monad.Writer
     Control.Monad.Writer.CPS Control.Monad.Writer.Class
     Control.Monad.Writer.Lazy Control.Monad.Writer.Strict
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/mtl-2.3.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/mtl-2.3.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/mtl-2.3.1-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/mtl-2.3.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/mtl-2.3.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/mtl-2.3.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/mtl-2.3.1
-hs-libraries:         HSmtl-2.3.1-inplace
-depends:              base-4.19.0.0-inplace transformers-0.6.1.0-inplace
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/mtl-2.3.1-inplace/mtl.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/mtl-2.3.1-inplace
+hs-libraries:         HSmtl-2.3.1
+depends:              base-4.19.0.0 transformers-0.6.1.0
+haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/mtl-2.3.1/mtl.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/mtl-2.3.1
 ---
 name:                 parsec
 version:              3.1.17.0
 visibility:           public
-id:                   parsec-3.1.17.0-inplace
-key:                  parsec-3.1.17.0-inplace
+id:                   parsec-3.1.17.0
+key:                  parsec-3.1.17.0
 license:              BSD-2-Clause
 maintainer:
     Oleg Grenrus <oleg.grenrus@iki.fi>, Herbert Valerio Riedel <hvr@gnu.org>
@@ -1737,27 +1666,25 @@ exposed-modules:
     Text.ParserCombinators.Parsec.Prim
     Text.ParserCombinators.Parsec.Token
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/parsec-3.1.17.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/parsec-3.1.17.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/parsec-3.1.17.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/parsec-3.1.17.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/parsec-3.1.17.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/parsec-3.1.17.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/parsec-3.1.17.0
-hs-libraries:         HSparsec-3.1.17.0-inplace
-depends:
-    base-4.19.0.0-inplace bytestring-0.12.0.2-inplace mtl-2.3.1-inplace
-    text-2.1-inplace
+hs-libraries:         HSparsec-3.1.17.0
+depends:              base-4.19.0.0 bytestring-0.12.0.2 mtl-2.3.1 text-2.1
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/parsec-3.1.17.0-inplace/parsec.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/parsec-3.1.17.0-inplace
+    ${pkgroot}/../../doc/html/libraries/parsec-3.1.17.0/parsec.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/parsec-3.1.17.0
 ---
 name:                 pretty
 version:              1.1.3.6
 visibility:           public
-id:                   pretty-1.1.3.6-inplace
-key:                  pretty-1.1.3.6-inplace
+id:                   pretty-1.1.3.6
+key:                  pretty-1.1.3.6
 license:              BSD-3-Clause
 maintainer:           David Terei <code@davidterei.com>
 stability:            Stable
@@ -1777,28 +1704,23 @@ exposed-modules:
     Text.PrettyPrint.Annotated.HughesPJ
     Text.PrettyPrint.Annotated.HughesPJClass Text.PrettyPrint.HughesPJ
     Text.PrettyPrint.HughesPJClass
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/pretty-1.1.3.6-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/pretty-1.1.3.6-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/pretty-1.1.3.6-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/pretty-1.1.3.6
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/pretty-1.1.3.6
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/pretty-1.1.3.6
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/pretty-1.1.3.6
-hs-libraries:         HSpretty-1.1.3.6-inplace
-depends:
-    base-4.19.0.0-inplace deepseq-1.5.0.0-inplace
-    ghc-prim-0.11.0-inplace
+hs-libraries:         HSpretty-1.1.3.6
+depends:              base-4.19.0.0 deepseq-1.5.0.0 ghc-prim-0.11.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/pretty-1.1.3.6-inplace/pretty.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/pretty-1.1.3.6-inplace
+    ${pkgroot}/../../doc/html/libraries/pretty-1.1.3.6/pretty.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/pretty-1.1.3.6
 ---
 name:                 process
 version:              1.6.18.0
 visibility:           public
-id:                   process-1.6.18.0-inplace
-key:                  process-1.6.18.0-inplace
+id:                   process-1.6.18.0
+key:                  process-1.6.18.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Process libraries
@@ -1814,25 +1736,23 @@ exposed:              True
 exposed-modules:      System.Cmd System.Process System.Process.Internals
 hidden-modules:       System.Process.Common System.Process.JavaScript
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0
-hs-libraries:         HSprocess-1.6.18.0-inplace
+hs-libraries:         HSprocess-1.6.18.0
 include-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0-inplace/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/process-1.6.18.0/include
 includes:             runProcess.h
 depends:
-    base-4.19.0.0-inplace deepseq-1.5.0.0-inplace
-    directory-1.3.8.1-inplace filepath-1.4.100.4-inplace
+    base-4.19.0.0 deepseq-1.5.0.0 directory-1.3.8.1 filepath-1.4.100.4
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/process-1.6.18.0-inplace/process.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/process-1.6.18.0-inplace
+    ${pkgroot}/../../doc/html/libraries/process-1.6.18.0/process.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/process-1.6.18.0
 ---
 name:                 rts
 version:              1.0.2
@@ -1860,8 +1780,8 @@ haddock-html:         ${pkgroot}/../../doc/html/libraries/rts-1.0.2
 name:                 semaphore-compat
 version:              1.0.0
 visibility:           public
-id:                   semaphore-compat-1.0.0-inplace
-key:                  semaphore-compat-1.0.0-inplace
+id:                   semaphore-compat-1.0.0
+key:                  semaphore-compat-1.0.0
 license:              BSD-3-Clause
 maintainer:           ghc-devs@haskell.org
 author:               The GHC team
@@ -1874,28 +1794,25 @@ category:             System
 exposed:              True
 exposed-modules:      System.Semaphore
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/semaphore-compat-1.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/semaphore-compat-1.0.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/semaphore-compat-1.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/semaphore-compat-1.0.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/semaphore-compat-1.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/semaphore-compat-1.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/semaphore-compat-1.0.0
-hs-libraries:         HSsemaphore-compat-1.0.0-inplace
-depends:
-    base-4.19.0.0-inplace exceptions-0.10.7-inplace
-    unix-2.8.3.0-inplace
+hs-libraries:         HSsemaphore-compat-1.0.0
+depends:              base-4.19.0.0 exceptions-0.10.7 unix-2.8.3.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/semaphore-compat-1.0.0-inplace/semaphore-compat.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/semaphore-compat-1.0.0-inplace
+    ${pkgroot}/../../doc/html/libraries/semaphore-compat-1.0.0/semaphore-compat.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/semaphore-compat-1.0.0
 ---
 name:                 stm
 version:              2.5.2.1
 visibility:           public
-id:                   stm-2.5.2.1-inplace
-key:                  stm-2.5.2.1-inplace
+id:                   stm-2.5.2.1
+key:                  stm-2.5.2.1
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 homepage:             https://wiki.haskell.org/Software_transactional_memory
@@ -1918,25 +1835,21 @@ exposed-modules:
     Control.Concurrent.STM.TSem Control.Concurrent.STM.TVar
     Control.Monad.STM
 hidden-modules:       Control.Sequential.STM
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/stm-2.5.2.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/stm-2.5.2.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/stm-2.5.2.1-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/stm-2.5.2.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/stm-2.5.2.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/stm-2.5.2.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/stm-2.5.2.1
-hs-libraries:         HSstm-2.5.2.1-inplace
-depends:              array-0.5.6.0-inplace base-4.19.0.0-inplace
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/stm-2.5.2.1-inplace/stm.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/stm-2.5.2.1-inplace
+hs-libraries:         HSstm-2.5.2.1
+depends:              array-0.5.6.0 base-4.19.0.0
+haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/stm-2.5.2.1/stm.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/stm-2.5.2.1
 ---
 name:                 template-haskell
 version:              2.21.0.0
 visibility:           public
-id:                   template-haskell-2.21.0.0-inplace
-key:                  template-haskell-2.21.0.0-inplace
+id:                   template-haskell-2.21.0.0
+key:                  template-haskell-2.21.0.0
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 synopsis:             Support library for Template Haskell
@@ -1957,28 +1870,27 @@ hidden-modules:
     Language.Haskell.TH.Lib.Map System.FilePath System.FilePath.Posix
     System.FilePath.Windows
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/template-haskell-2.21.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/template-haskell-2.21.0.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/template-haskell-2.21.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/template-haskell-2.21.0.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/template-haskell-2.21.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/template-haskell-2.21.0.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/template-haskell-2.21.0.0
-hs-libraries:         HStemplate-haskell-2.21.0.0-inplace
+hs-libraries:         HStemplate-haskell-2.21.0.0
 depends:
-    base-4.19.0.0-inplace ghc-boot-th-9.8.1-inplace
-    ghc-prim-0.11.0-inplace pretty-1.1.3.6-inplace
+    base-4.19.0.0 ghc-boot-th-9.8.1 ghc-prim-0.11.0 pretty-1.1.3.6
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/template-haskell-2.21.0.0-inplace/template-haskell.haddock
+    ${pkgroot}/../../doc/html/libraries/template-haskell-2.21.0.0/template-haskell.haddock
 haddock-html:
-    ${pkgroot}/../../doc/html/libraries/template-haskell-2.21.0.0-inplace
+    ${pkgroot}/../../doc/html/libraries/template-haskell-2.21.0.0
 ---
 name:                 text
 version:              2.1
 visibility:           public
-id:                   text-2.1-inplace
-key:                  text-2.1-inplace
+id:                   text-2.1
+key:                  text-2.1
 license:              BSD-2-Clause
 copyright:
     2009-2011 Bryan O'Sullivan, 2008-2009 Tom Harper, 2021 Andrew Lelechenko
@@ -2039,28 +1951,23 @@ exposed-modules:
     Data.Text.Lazy.IO Data.Text.Lazy.Internal Data.Text.Lazy.Read
     Data.Text.Read Data.Text.Unsafe
 hidden-modules:       Data.Text.Show
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/text-2.1-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/text-2.1-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/text-2.1-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/text-2.1
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/text-2.1
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/text-2.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/text-2.1
-hs-libraries:         HStext-2.1-inplace
+hs-libraries:         HStext-2.1
 depends:
-    array-0.5.6.0-inplace base-4.19.0.0-inplace binary-0.8.9.1-inplace
-    bytestring-0.12.0.2-inplace deepseq-1.5.0.0-inplace
-    ghc-prim-0.11.0-inplace template-haskell-2.21.0.0-inplace
-haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/text-2.1-inplace/text.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/text-2.1-inplace
+    array-0.5.6.0 base-4.19.0.0 binary-0.8.9.1 bytestring-0.12.0.2
+    deepseq-1.5.0.0 ghc-prim-0.11.0 template-haskell-2.21.0.0
+haddock-interfaces:   ${pkgroot}/../../doc/html/libraries/text-2.1/text.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/text-2.1
 ---
 name:                 time
 version:              1.12.2
 visibility:           public
-id:                   time-1.12.2-inplace
-key:                  time-1.12.2-inplace
+id:                   time-1.12.2
+key:                  time-1.12.2
 license:              BSD-2-Clause
 maintainer:           <ashley@semantic.org>
 author:               Ashley Yakeley
@@ -2099,27 +2006,24 @@ hidden-modules:
     Data.Time.Format.Locale Data.Time.Format.Format.Class
     Data.Time.Format.Format.Instances Data.Time.Format.Parse.Class
     Data.Time.Format.Parse.Instances
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/time-1.12.2
-hs-libraries:         HStime-1.12.2-inplace
+hs-libraries:         HStime-1.12.2
 include-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2-inplace/include
-depends:              base-4.19.0.0-inplace deepseq-1.5.0.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/time-1.12.2/include
+depends:              base-4.19.0.0 deepseq-1.5.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/time-1.12.2-inplace/time.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/time-1.12.2-inplace
+    ${pkgroot}/../../doc/html/libraries/time-1.12.2/time.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/time-1.12.2
 ---
 name:                 transformers
 version:              0.6.1.0
 visibility:           public
-id:                   transformers-0.6.1.0-inplace
-key:                  transformers-0.6.1.0-inplace
+id:                   transformers-0.6.1.0
+key:                  transformers-0.6.1.0
 license:              BSD-3-Clause
 maintainer:           Ross Paterson <R.Paterson@city.ac.uk>
 author:               Andy Gill, Ross Paterson
@@ -2158,26 +2062,25 @@ exposed-modules:
     Control.Monad.Trans.Writer.Lazy Control.Monad.Trans.Writer.Strict
     Data.Functor.Constant Data.Functor.Reverse
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/transformers-0.6.1.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/transformers-0.6.1.0
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/transformers-0.6.1.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/transformers-0.6.1.0
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/transformers-0.6.1.0-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/transformers-0.6.1.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/transformers-0.6.1.0
-hs-libraries:         HStransformers-0.6.1.0-inplace
-depends:              base-4.19.0.0-inplace
+hs-libraries:         HStransformers-0.6.1.0
+depends:              base-4.19.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/transformers-0.6.1.0-inplace/transformers.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/transformers-0.6.1.0-inplace
+    ${pkgroot}/../../doc/html/libraries/transformers-0.6.1.0/transformers.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/transformers-0.6.1.0
 ---
 name:                 unix
 version:              2.8.3.0
 visibility:           public
-id:                   unix-2.8.3.0-inplace
-key:                  unix-2.8.3.0-inplace
+id:                   unix-2.8.3.0
+key:                  unix-2.8.3.0
 license:              BSD-3-Clause
 maintainer:
     Julian Ospald <hasufell@posteo.de>, Viktor Dukhovni <ietf-dane@dukhovni.org>, Andrew Lelechenko <andrew.lelechenko@gmail.com>
@@ -2220,30 +2123,26 @@ hidden-modules:
     System.Posix.Files.Common System.Posix.IO.Common
     System.Posix.Process.Common System.Posix.Terminal.Common
     System.Posix.User.Common System.Posix.Env.Internal
-import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0-inplace
-library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0-inplace
-library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0-inplace
+import-dirs:          ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0
+library-dirs:         ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0
+library-dirs-static:  ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:             ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0
-hs-libraries:         HSunix-2.8.3.0-inplace
+hs-libraries:         HSunix-2.8.3.0
 include-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0-inplace/include
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/unix-2.8.3.0/include
 includes:             HsUnix.h execvpe.h
 depends:
-    base-4.19.0.0-inplace bytestring-0.12.0.2-inplace
-    filepath-1.4.100.4-inplace time-1.12.2-inplace
+    base-4.19.0.0 bytestring-0.12.0.2 filepath-1.4.100.4 time-1.12.2
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/unix-2.8.3.0-inplace/unix.haddock
-haddock-html:         ${pkgroot}/../../doc/html/libraries/unix-2.8.3.0-inplace
+    ${pkgroot}/../../doc/html/libraries/unix-2.8.3.0/unix.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/unix-2.8.3.0
 ---
 name:                 xhtml
 version:              3000.2.2.1
 visibility:           public
-id:                   xhtml-3000.2.2.1-inplace
-key:                  xhtml-3000.2.2.1-inplace
+id:                   xhtml-3000.2.2.1
+key:                  xhtml-3000.2.2.1
 license:              BSD-3-Clause
 copyright:
     Bjorn Bringert 2004-2006, Andy Gill and the Oregon
@@ -2268,20 +2167,19 @@ hidden-modules:
     Text.XHtml.Transitional.Attributes Text.XHtml.Transitional.Elements
     Text.XHtml.BlockTable Text.XHtml.Extras Text.XHtml.Internals
 import-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/xhtml-3000.2.2.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/xhtml-3000.2.2.1
 library-dirs:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/xhtml-3000.2.2.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/xhtml-3000.2.2.1
 library-dirs-static:
-    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/xhtml-3000.2.2.1-inplace
+    ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1/xhtml-3000.2.2.1
 dynamic-library-dirs: ${pkgroot}/../lib/javascript-ghcjs-ghc-9.8.1
 data-dir:
     ${pkgroot}/../share/javascript-ghcjs-ghc-9.8.1/xhtml-3000.2.2.1
-hs-libraries:         HSxhtml-3000.2.2.1-inplace
-depends:              base-4.19.0.0-inplace
+hs-libraries:         HSxhtml-3000.2.2.1
+depends:              base-4.19.0.0
 haddock-interfaces:
-    ${pkgroot}/../../doc/html/libraries/xhtml-3000.2.2.1-inplace/xhtml.haddock
-haddock-html:
-    ${pkgroot}/../../doc/html/libraries/xhtml-3000.2.2.1-inplace
+    ${pkgroot}/../../doc/html/libraries/xhtml-3000.2.2.1/xhtml.haddock
+haddock-html:         ${pkgroot}/../../doc/html/libraries/xhtml-3000.2.2.1
 ---
 name:        system-cxx-std-lib
 version:     1.0

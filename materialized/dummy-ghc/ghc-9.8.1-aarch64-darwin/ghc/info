@@ -47,7 +47,7 @@
  ,("Project Patch Level","1")
  ,("Project Patch Level1","1")
  ,("Project Patch Level2","0")
- ,("Project Unit Id","ghc-9.8.1-inplace")
+ ,("Project Unit Id","ghc-9.8.1")
  ,("Booter version","9.6.2")
  ,("Stage","2")
  ,("Build platform","aarch64-apple-darwin")
