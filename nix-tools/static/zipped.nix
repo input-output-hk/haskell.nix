@@ -39,8 +39,8 @@ let
   
   zippedToolsNoIfdFor = fragment-name: 
     let 
-      # stringifyInputs = inputs: pkgs.lib.mapAttrsToList (name: value: pkgs.lib.trace "${name}=${value}" "${value}") inputs;
-      stringifyInputs = inputs: map (x: "${x}") (builtins.attrValues inputs);
+      stringifyInputs = inputs: pkgs.lib.mapAttrsToList (name: value: pkgs.lib.trace "${name}=${value}" "${value}") inputs;
+      # stringifyInputs = inputs: map (x: "${x}") (builtins.attrValues inputs);
 
       fragment-drv = "static-nix-tools-outputs.hydraJobs.${pkgs.hostPlatform.system}.zipped.${fragment-name}";
     in
