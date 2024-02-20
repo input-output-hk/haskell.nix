@@ -47,13 +47,14 @@ let
       pkgs.runCommand "${pkgs.hostPlatform.system}-all-nix-tools" {
         requiredSystemFeatures = [ "recursive-nix" ];
         nativeBuildInputs = 
-          [ pkgs.nix pkgs.gitMinimal ]
+          # [ inputs.nixpkgs-unstable.legacyPackages.${pkgs.system}.nix pkgs.gitMinimal ]
+          [ (pkgs.lib.trace pkgs.nix.version pkgs.nix) pkgs.gitMinimal ]
           ++ stringifyInputs inputs
           ++ stringifyInputs inputs.haskellNix.inputs;
       } ''
         export HOME=$(mktemp -d)
         mkdir $out
-        cp $(nix --offline --extra-experimental-features "flakes nix-command recursive-nix" \
+        cp $(nix --offline --extra-experimental-features "flakes nix-command" \
           build --accept-flake-config --no-link --print-out-paths --no-allow-import-from-derivation \
           --system ${pkgs.hostPlatform.system} \
           ${../.}#${fragment-drv})/*.zip $out/
