@@ -45,7 +45,7 @@ let
       fragment-drv = "static-nix-tools-outputs.hydraJobs.${pkgs.hostPlatform.system}.zipped.${fragment-name}";
     in
       pkgs.runCommand "${pkgs.hostPlatform.system}-all-nix-tools" {
-        # requiredSystemFeatures = [ "recursive-nix" ];
+        requiredSystemFeatures = [ "recursive-nix" ];
         nativeBuildInputs = 
           [ pkgs.nix pkgs.gitMinimal ]
           ++ stringifyInputs inputs
@@ -54,11 +54,12 @@ let
         export HOME=$(mktemp -d)
         mkdir $out
         cp $(nix --offline --extra-experimental-features "flakes nix-command recursive-nix" \
-          build --accept-flake-config --no-link --print-out-paths \
+          build --accept-flake-config --no-link --print-out-paths --no-allow-import-from-derivation \
           --system ${pkgs.hostPlatform.system} \
           ${../.}#${fragment-drv})/*.zip $out/
       '';
  
+
   zippedToolsForDarwin = makeZippedTools {
     customPkgs = pkgs;
     clearStripDebugFlags = true;
