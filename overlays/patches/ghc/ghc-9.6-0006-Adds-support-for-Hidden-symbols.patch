@@ -29,7 +29,6 @@ index c3a5b5d..b826af8 100644
 +        default: barf("symbolTypeString: unknown symbol type (%d)", type);
      }
  }
-
 @@ -277,10 +277,19 @@ int ghciInsertSymbolTable(
     }
     else if (pinfo->type ^ type)
@@ -58,7 +57,6 @@ index c3a5b5d..b826af8 100644
     );
 +   debugBelch("Address of new symbol: %p, old symbol: %p\n", data, pinfo->value);
 +   debugBelch("Type of symbol; new: %d, existing: %d\n", type, pinfo->type);
-
     return 0;
  }
 diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h

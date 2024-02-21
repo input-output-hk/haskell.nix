@@ -1,7 +1,7 @@
 From e3bf7ebed5a6a1ea00408ca42b4090e056bbbe5a Mon Sep 17 00:00:00 2001
 From: Moritz Angermann <moritz.angermann@gmail.com>
 Date: Wed, 21 Feb 2024 03:05:11 +0000
-Subject: [PATCH 2/5] Drop spurious 8 byte offset from elf_plt.
+Subject: [PATCH 2/7] Drop spurious 8 byte offset from elf_plt.
 
 ---
  rts/linker/elf_plt.c | 2 +-

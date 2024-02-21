@@ -1,7 +1,7 @@
 From 8e978b309dad28cc70e5383d59fb4af67d359239 Mon Sep 17 00:00:00 2001
 From: Moritz Angermann <moritz.angermann@gmail.com>
 Date: Wed, 21 Feb 2024 03:08:11 +0000
-Subject: [PATCH 5/5] Better interpreter debugging. Needs ghcidladdr!
+Subject: [PATCH 5/7] Better interpreter debugging. Needs ghcidladdr!
 
 ---
  rts/Interpreter.c | 134 ++++++++++++++++++++++++++++++++++++++++++++--

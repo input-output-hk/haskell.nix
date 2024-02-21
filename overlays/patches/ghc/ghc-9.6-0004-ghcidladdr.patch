@@ -1,7 +1,7 @@
 From cd3ed75e62c033466d824995b797e85bbe3c27a8 Mon Sep 17 00:00:00 2001
 From: Moritz Angermann <moritz.angermann@gmail.com>
 Date: Wed, 21 Feb 2024 03:07:33 +0000
-Subject: [PATCH 4/5] ghcidladdr
+Subject: [PATCH 4/7] ghcidladdr
 
 ---
  rts/Linker.c             | 24 ++++++++++++++++++++++++

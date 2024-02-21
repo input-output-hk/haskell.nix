@@ -1,7 +1,7 @@
 From 622e85098c8b10dfa163e74c56bda9968fd80ada Mon Sep 17 00:00:00 2001
 From: Moritz Angermann <moritz.angermann@gmail.com>
 Date: Wed, 21 Feb 2024 03:06:36 +0000
-Subject: [PATCH 3/5] Better pool alignment. We still hardcode section
+Subject: [PATCH 3/7] Better pool alignment. We still hardcode section
  alignments. But that's ok for now.
 
 ---
