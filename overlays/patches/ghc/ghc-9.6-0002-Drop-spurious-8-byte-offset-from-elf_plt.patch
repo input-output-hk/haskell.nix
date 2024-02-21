@@ -1,0 +1,25 @@
+From e3bf7ebed5a6a1ea00408ca42b4090e056bbbe5a Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 21 Feb 2024 03:05:11 +0000
+Subject: [PATCH 2/5] Drop spurious 8 byte offset from elf_plt.
+
+---
+ rts/linker/elf_plt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rts/linker/elf_plt.c b/rts/linker/elf_plt.c
+index 9cd42ef..b5acb29 100644
+--- a/rts/linker/elf_plt.c
++++ b/rts/linker/elf_plt.c
+@@ -56,7 +56,7 @@ makeStub(Section * section,
+     s->target = *addr;
+     s->flags  = flags;
+     s->next = NULL;
+-    s->addr = (uint8_t *)section->info->stub_offset + 8
++    s->addr = (uint8_t *)section->info->stub_offset
+             + STUB_SIZE * section->info->nstubs;
+ 
+     if((*_makeStub)(s))
+-- 
+2.33.0
+

@@ -1,0 +1,194 @@
+diff --git a/rts/linker/InitFini.c b/rts/linker/InitFini.c
+index 6c787fe552..bdb134b274 100644
+--- a/rts/linker/InitFini.c
++++ b/rts/linker/InitFini.c
+@@ -103,55 +103,82 @@ void freeInitFiniList(struct InitFiniList *slist)
+
+ static bool runInitFini(struct InitFiniList **head)
+ {
++    IF_DEBUG(linker, debugBelch ("runInitFini on %p; sorting...\n", head));
+     int argc, envc;
+     char **argv, **envv;
+
++    IF_DEBUG(linker, debugBelch ("runInitFini gettingProgArgv...\n"));
+     getProgArgv(&argc, &argv);
+     getProgEnvv(&envc, &envv);
+
++    IF_DEBUG(linker, debugBelch ("runInitFini iterating over the list...\n"));
+     for (struct InitFiniList *slist = *head;
+            slist != NULL;
+            slist = slist->next)
+     {
++        IF_DEBUG(linker, debugBelch ("\trunInitFini getting section...\n"));
+         Section *section = slist->section;
++        IF_DEBUG(linker, debugBelch ("\trunInitFini getting section...\n"));
+         switch (slist->kind) {
+         case INITFINI_INIT: {
++            IF_DEBUG(linker, debugBelch ("\trunInitFini INIT...\n"));
+             init_t *init = (init_t*)section->start;
+             (*init)(argc, argv, envv);
++            IF_DEBUG(linker, debugBelch ("\trunInitFini INIT...done\n"));
+             break;
+         }
+         case INITFINI_FINI: {
++            IF_DEBUG(linker, debugBelch ("\trunInitFini FINI...\n"));
+             fini_t *fini = (fini_t*)section->start;
+             (*fini)();
++            IF_DEBUG(linker, debugBelch ("\trunInitFini FINI...done\n"));
+             break;
+         }
+         case INITFINI_CTORS: {
++            IF_DEBUG(linker, debugBelch ("\trunInitFini CTORS...\n"));
+             uint8_t *init_startC = section->start;
+             init_t *init_start   = (init_t*)init_startC;
+             init_t *init_end     = (init_t*)(init_startC + section->size);
+
+             // ctors are run *backwards*!
+             for (init_t *init = init_end - 1; init >= init_start; init--) {
++                IF_DEBUG(linker, debugBelch ("\trunInitFini CTORS init...\n"));
+                 if ((intptr_t) *init == 0x0 || (intptr_t)*init == -1) {
++                    IF_DEBUG(linker, debugBelch ("\trunInitFini CTORS init is ignored...\n"));
+                     continue;
+                 }
++                IF_DEBUG(linker, debugBelch ("\trunInitFini CTORS running init=%p, *init=%p, **init=%p...\n", init, *init, **init));
++                IF_DEBUG(linker, {
++                    unsigned char* p = (unsigned char*)(*init);
++                    for(size_t i = 0; i < 128; i++)
++                    { printf("%02x ", p[i]); if ((i + 1) % 16 == 0) { printf("\n"); }}
++                });
+                 (*init)(argc, argv, envv);
++                IF_DEBUG(linker, debugBelch ("\trunInitFini CTORS running init done\n"));
+             }
++            IF_DEBUG(linker, debugBelch ("\trunInitFini CTORS...done\n"));
+             break;
+         }
+         case INITFINI_DTORS: {
++            IF_DEBUG(linker, debugBelch ("\trunInitFini DTORS...\n"));
+             char *fini_startC = section->start;
+             fini_t *fini_start = (fini_t*)fini_startC;
+             fini_t *fini_end = (fini_t*)(fini_startC + section->size);
+             for (fini_t *fini = fini_start; fini < fini_end; fini++) {
++                IF_DEBUG(linker, debugBelch ("\trunInitFini DTORS init...\n"));
+                 if ((intptr_t) *fini == 0x0 || (intptr_t) *fini == -1) {
++                    IF_DEBUG(linker, debugBelch ("\trunInitFini DTORS init is ignored...\n"));
+                     continue;
+                 }
++                IF_DEBUG(linker, debugBelch ("\trunInitFini DTORS running init...\n"));
+                 (*fini)();
++                IF_DEBUG(linker, debugBelch ("\trunInitFini DTORS running init done\n"));
+             }
++            IF_DEBUG(linker, debugBelch ("\trunInitFini DTORS...done\n"));
+             break;
+         }
+         case INITFINI_INIT_ARRAY: {
++            IF_DEBUG(linker, debugBelch ("\trunInitFini INIT_ARRAY...\n"));
+             char *init_startC = section->start;
+             init_t *init_start = (init_t*)init_startC;
+             init_t *init_end = (init_t*)(init_startC + section->size);
+@@ -159,9 +186,11 @@ static bool runInitFini(struct InitFiniList **head)
+                 CHECK(0x0 != *init);
+                 (*init)(argc, argv, envv);
+             }
++            IF_DEBUG(linker, debugBelch ("\trunInitFini INIT_ARRAY...done\n"));
+             break;
+         }
+         case INITFINI_FINI_ARRAY: {
++            IF_DEBUG(linker, debugBelch ("\trunInitFini FINI_ARRAY...\n"));
+             char *fini_startC = section->start;
+             fini_t *fini_start = (fini_t*)fini_startC;
+             fini_t *fini_end = (fini_t*)(fini_startC + section->size);
+@@ -170,15 +199,19 @@ static bool runInitFini(struct InitFiniList **head)
+                 CHECK(0x0 != *fini);
+                 (*fini)();
+             }
++            IF_DEBUG(linker, debugBelch ("\trunInitFini FINI_ARRAY...done\n"));
+             break;
+         }
+         default: barf("unknown InitFiniKind");
+         }
+     }
++    IF_DEBUG(linker, debugBelch ("runInitFini freeingInitFiniList...\n"));
+     freeInitFiniList(*head);
+     *head = NULL;
+
++    IF_DEBUG(linker, debugBelch ("runInitFini freeingProgEnvv...\n"));
+     freeProgEnvv(envc, envv);
++    IF_DEBUG(linker, debugBelch ("runInitFini done\n"));
+     return true;
+ }
+
+@@ -187,6 +220,7 @@ static bool runInitFini(struct InitFiniList **head)
+ // See Note [Initializers and finalizers (PEi386/ELF)].
+ bool runInit(struct InitFiniList **head)
+ {
++    IF_DEBUG(linker, debugBelch ("runInit on %p; sorting...\n", head));
+     sortInitFiniList(head, INCREASING);
+     return runInitFini(head);
+ }
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index c30957b750..6739e161c1 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -2278,20 +2278,58 @@ ocResolve_PEi386 ( ObjectCode* oc )
+   them using RtlDeleteFunctionTable.
+ */
+
++void dump_memory(unsigned char* pc) {
++    printf("PC: %p\n", pc);
++
++    // Print 32 bytes before PC
++    for (int i = 0; i < 64; i++) {
++        if (i % 16 == 0) {
++            if(i>0) printf("\n");
++            printf("%p: ", pc-32+i);
++        }
++        printf("%02x ", pc[i-32]);
++    }
++    printf("\n");
++}
++
++__attribute__((noreturn))
++EXCEPTION_DISPOSITION
++_except_handler(struct _EXCEPTION_RECORD* ExceptionRecord,
++               void* EstablisherFrame,
++               struct _CONTEXT* ContextRecord,
++               void* DispatcherContext)
++{
++    unsigned char* pc = (unsigned char*)ContextRecord->Rip;
++
++    dump_memory(pc);
++
++    exit(1);  // Exit the program after handling the exception
++}
++
+ bool
+ ocRunInit_PEi386 ( ObjectCode *oc )
+ {
+-    if (oc && oc->info && oc->info->init) {
+-        return runInit(&oc->info->init);
++    __try1(_except_handler) {
++        if (oc && oc->info && oc->info->init) {
++            IF_DEBUG(linker, debugBelch ("runInit for %" PATH_FMT "...\n", oc->fileName));
++            return runInit(&oc->info->init);
++            IF_DEBUG(linker, debugBelch ("...done\n"));
++        }
+     }
++    __except1;
+     return true;
+ }
+
+ bool ocRunFini_PEi386( ObjectCode *oc )
+ {
+-    if (oc && oc->info && oc->info->fini) {
+-        return runFini(&oc->info->fini);
++    // __try1(_except_handler) {
++        if (oc && oc->info && oc->info->fini) {
++            IF_DEBUG(linker, debugBelch ("runFini for %" PATH_FMT "...\n", oc->fileName));
++            return runFini(&oc->info->fini);
++            IF_DEBUG(linker, debugBelch ("...done\n"));
++        //}
+     }
++    // __except1;
+     return true;
+ }
+

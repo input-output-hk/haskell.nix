@@ -1,0 +1,71 @@
+From cd3ed75e62c033466d824995b797e85bbe3c27a8 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 21 Feb 2024 03:07:33 +0000
+Subject: [PATCH 4/5] ghcidladdr
+
+---
+ rts/Linker.c             | 24 ++++++++++++++++++++++++
+ rts/include/rts/Linker.h |  5 +++++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/rts/Linker.c b/rts/Linker.c
+index d5ea12e..c3a5b5d 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1135,6 +1135,30 @@ void ghci_enquire(SymbolAddr* addr)
+ }
+ #endif
+ 
++int ghcidladdr(void *_addr, Dl_info *_info) {
++    for(ObjectCode *oc = objects; oc; oc = oc->next) {
++        for(size_t i = 0; i < oc->n_symbols; i++) {
++            SymbolName *sym = oc->symbols[i].name;
++            if(sym == NULL) continue;
++            RtsSymbolInfo *info = NULL;
++            if(info == NULL) {
++                ghciLookupSymbolInfo(symhash, sym, &info);
++            }
++            if(info == NULL) {
++                continue;
++            }
++            if(info->value == _addr) {
++                _info->dli_fname = OC_INFORMATIVE_FILENAME(oc);
++                _info->dli_fbase = oc->image;
++                _info->dli_sname = sym;
++                _info->dli_saddr = _addr;
++                return 1;
++            }
++        }
++    }
++    return 0;
++}
++
+ pathchar*
+ resolveSymbolAddr (pathchar* buffer, int size,
+                    SymbolAddr* symbol, uintptr_t* top)
+diff --git a/rts/include/rts/Linker.h b/rts/include/rts/Linker.h
+index ae463bc..a8bb3b6 100644
+--- a/rts/include/rts/Linker.h
++++ b/rts/include/rts/Linker.h
+@@ -13,6 +13,8 @@
+ 
+ #pragma once
+ 
++#include <dlfcn.h> // for Dl_info
++
+ #if defined(mingw32_HOST_OS)
+ typedef wchar_t pathchar;
+ #define PATH_FMT "ls"
+@@ -47,6 +49,9 @@ HsInt insertSymbol(pathchar* obj_name, char* key, void* data);
+ /* lookup a symbol in the hash table */
+ void *lookupSymbol( char *lbl );
+ 
++/* lookup a symbol in the hash table by address */
++int ghcidladdr(void *_addr, Dl_info *_info);
++
+ /* See Linker.c Note [runtime-linker-phases] */
+ typedef enum {
+     OBJECT_LOADED,
+-- 
+2.33.0
+

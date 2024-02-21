@@ -1,0 +1,142 @@
+From 622e85098c8b10dfa163e74c56bda9968fd80ada Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 21 Feb 2024 03:06:36 +0000
+Subject: [PATCH 3/5] Better pool alignment. We still hardcode section
+ alignments. But that's ok for now.
+
+---
+ rts/linker/Elf.c | 31 +++++++++++++++++--------------
+ rts/linker/Elf.h |  2 +-
+ 2 files changed, 18 insertions(+), 15 deletions(-)
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index fe3406e..9f56812 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -131,7 +131,7 @@
+       https://refspecs.linuxfoundation.org/elf/gabi4+/contents.html
+ 
+ */
+-void * memPoolAlloc(SectionKind kind, StgWord size);
++void * memPoolAlloc(SectionKind kind, StgWord align, StgWord size);
+ 
+ void * __pool = NULL;
+ void * __pool_rw_offset = NULL;
+@@ -144,8 +144,8 @@ void memPoolProtect( void ) {
+     }
+ }
+ 
+-StgWord poolAlign(StgWord size) {
+-    return (size + 0xff) & ~0xff;
++StgWord poolAlign(StgWord align, StgWord size) {
++    return (size + align) & ~align;
+ }
+ 
+ void * printPoolInfo( void ) {
+@@ -156,7 +156,8 @@ void * printPoolInfo( void ) {
+     return NULL;
+ }
+ 
+-void * memPoolAlloc(SectionKind kind, StgWord size) {
++void * memPoolAlloc(SectionKind kind, StgWord align, StgWord size) {
++    ASSERT(0x0 == (size & align));
+     if(__pool == NULL) {
+         // allocate 1 GB of virtual memory.
+         __pool = mmapAnonForLinker(1024*1024*1024);
+@@ -169,7 +170,7 @@ void * memPoolAlloc(SectionKind kind, StgWord size) {
+         __pool_rx_offset = __pool_rw_offset;
+     }
+     // align to 64 bytes
+-    StgWord alignedSize = poolAlign(size);
++    StgWord alignedSize = size;
+     void * ret = NULL;
+ 
+     if(kind == SECTIONKIND_CODE_OR_RODATA) {
+@@ -875,7 +876,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+                * address might be out of range for sections that are mmaped.
+                */
+               alloc = SECTION_POOL;
+-              start = memPoolAlloc(kind, size);
++              start = memPoolAlloc(kind, 0xff, size);
+               // mmapAnonForLinker(size);
+               if (start == NULL) {
+                 barf("failed to mmap memory for bss. "
+@@ -883,7 +884,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+               }
+               mapped_start = start;
+               mapped_offset = 0;
+-              mapped_size = poolAlign(size);
++              mapped_size = poolAlign(0xff, size);
+           }
+           CHECK(start != 0x0);
+ #else
+@@ -908,9 +909,9 @@ ocGetNames_ELF ( ObjectCode* oc )
+           /* To support stubs next to sections, we will use the following
+            * layout:
+            *
+-           * .--------------.
++           * .--------------. <- align this by section alignment
+            * | Section data |
+-           * |--------------|
++           * |--------------| <- align this by stub alignment (8)
+            * | Stub space   |
+            * '--------------'
+            *
+@@ -919,11 +920,13 @@ ocGetNames_ELF ( ObjectCode* oc )
+            * which case I wouldn't know how to solve this, without starting to
+            * break up the section itself.
+            */
++          unsigned stub_align = 0x7;
++          unsigned section_align = 0xff;
+ 
+           unsigned nstubs = numberOfStubsForSection(oc, i);
+-          unsigned stub_space = STUB_SIZE * nstubs;
++          unsigned stub_space = poolAlign(stub_align, STUB_SIZE * nstubs);
+ 
+-          void * mem = memPoolAlloc(kind, stub_space + size);
++          void * mem = memPoolAlloc(kind, section_align, poolAlign(section_align, stub_space + size));
+         //   void * mem = mmapAnonForLinker(size+stub_space);
+ 
+           if( mem == MAP_FAILED ) {
+@@ -939,7 +942,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+           alloc = SECTION_POOL;
+ 
+           mapped_offset = 0;
+-          mapped_size = poolAlign(size+stub_space);
++          mapped_size = poolAlign(section_align, size + stub_space);
+           start = mem;
+           mapped_start = mem;
+ #else
+@@ -978,7 +981,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+ 
+ #if defined(NEED_PLT)
+           oc->sections[i].info->nstubs = 0;
+-          oc->sections[i].info->stub_offset = (uint8_t*)mem + size;
++          oc->sections[i].info->stub_offset = (uint8_t*)mem + poolAlign(stub_align, size);
+           oc->sections[i].info->stub_size = stub_space;
+           oc->sections[i].info->stubs = NULL;
+ #else
+@@ -1032,7 +1035,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+       void * common_mem = NULL;
+       if(common_size > 0) {
+           common_mem = // mmapAnonForLinker(common_size);
+-              memPoolAlloc(SECTIONKIND_RWDATA, common_size);
++              memPoolAlloc(SECTIONKIND_RWDATA, 0xff, common_size);
+           if (common_mem == NULL) {
+             barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
+           }
+diff --git a/rts/linker/Elf.h b/rts/linker/Elf.h
+index fb8fbfb..c6e185d 100644
+--- a/rts/linker/Elf.h
++++ b/rts/linker/Elf.h
+@@ -18,6 +18,6 @@ void freeNativeCode_ELF  ( ObjectCode *nc );
+ void *loadNativeObj_ELF  ( pathchar *path, char **errmsg );
+ void memPoolProtect      ( void );
+ void * printPoolInfo     ( void );
+-StgWord poolAlign        ( StgWord size );
++StgWord poolAlign        ( StgWord align, StgWord size );
+ 
+ #include "EndPrivate.h"
+-- 
+2.33.0
+
