@@ -274,6 +274,9 @@ in {
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.6.4" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch
                 ++ final.lib.optional (versionAtLeast "8.10.7" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64 && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-8.10-aarch64-musl-gettimeofday.patch
+                # These two patches are needed for libblst, which has now hidden symbols, which the linker doesn't know how to deal with.
+                ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
+                ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
