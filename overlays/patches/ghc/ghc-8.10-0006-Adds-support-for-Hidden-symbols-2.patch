@@ -42,7 +42,7 @@ index 5b3421d..7a6e3b6 100644
 +                                symhash, "__dso_handle", (void *)0x12345687, HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), NULL)) {
          barf("ghciInsertSymbolTable failed");
      }
- 
+
 @@ -487,7 +488,7 @@ initLinker_ (int retain_cafs)
      if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"), symhash,
                                  MAYBE_LEADING_UNDERSCORE_STR("newCAF"),
@@ -51,7 +51,7 @@ index 5b3421d..7a6e3b6 100644
 +                                HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), NULL)) {
          barf("ghciInsertSymbolTable failed");
      }
- 
+
 @@ -860,8 +861,8 @@ HsBool removeLibrarySearchPath(HsPtr dll_path_index)
   */
  HsInt insertSymbol(pathchar* obj_name, SymbolName* key, SymbolAddr* data)
@@ -61,7 +61,7 @@ index 5b3421d..7a6e3b6 100644
 +    return ghciInsertSymbolTable(obj_name, symhash, key, data,
 +                                 HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), NULL);
  }
- 
+
  /* -----------------------------------------------------------------------------
 @@ -1715,8 +1716,8 @@ int ocTryLoad (ObjectCode* oc) {
          if (   symbol.name
@@ -86,7 +86,7 @@ index 1bc082c..b40d14e 100644
 -    HsBool hidden,
 +    int flags,
      ObjectCode *owner);
- 
+
  /* Lock-free version of lookupSymbol. When 'dependent' is not NULL, adds it as a
 diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
 index 4a53687..e166e20 100644
@@ -114,10 +114,10 @@ index 00b0dce..d633699 100644
 -                                                 , HS_BOOL_FALSE
 +                                                 , HS_BOOL_FALSE | (HS_BOOL_FALSE << 1)
                                                   , oc);
- 
+
                              oc->symbols[curSymbol].name = nm;
 @@ -1376,7 +1376,7 @@ ocGetNames_MachO(ObjectCode* oc)
- 
+
                  IF_DEBUG(linker, debugBelch("ocGetNames_MachO: inserting common symbol: %s\n", nm));
                  ghciInsertSymbolTable(oc->fileName, symhash, nm,
 -                                       (void*)commonCounter, HS_BOOL_FALSE, oc);
@@ -137,16 +137,7 @@ index 841faa8..d847d13 100644
 +                               symhash, "__image_base__", __image_base, HS_BOOL_TRUE | (HS_BOOL_FALSE << 1), NULL)) {
          barf("ghciInsertSymbolTable failed");
      }
- 
-@@ -1093,7 +1093,7 @@ lookupSymbolInDLLs ( const SymbolName* lbl )
-         /* debugBelch("look in %ls for %s\n", o_dll->name, lbl); */
- 
-         if (wcsncmp(o_dll->name,WSTR("ucrtbase.dll"),wcslen(WSTR("ucrtbase.dll"))) == 0) {
--            IF_DEBUG(linker, debugBelch("warning: ignoring %s\n", o_dll->name));
-+            IF_DEBUG(linker, debugBelch("warning: ignoring %" PATH_FMT "\n", o_dll->name));
-             continue;
-         }
- 
+
 @@ -1541,7 +1541,7 @@ ocGetNames_PEi386 ( ObjectCode* oc )
            sname = strdup (sname);
            addr  = strdup (addr);
@@ -166,7 +157,7 @@ index 841faa8..d847d13 100644
 +                                     HS_BOOL_FALSE | ((secNumber == IMAGE_SYM_UNDEFINED) << 1),
                                       oc))
                 return false;
- 
+
 @@ -1779,8 +1779,7 @@ ocGetNames_PEi386 ( ObjectCode* oc )
               setWeakSymbol(oc, sname);
           }
