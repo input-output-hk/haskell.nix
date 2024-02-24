@@ -1,0 +1,11 @@
+diff --git a/hadrian/src/Hadrian/Haskell/Cabal.hs b/hadrian/src/Hadrian/Haskell/Cabal.hs
+index f5864b6..69123e1 100644
+--- a/hadrian/src/Hadrian/Haskell/Cabal.hs
++++ b/hadrian/src/Hadrian/Haskell/Cabal.hs
+@@ -71,4 +71,5 @@ cabalOsString :: String -> String
+ cabalOsString "mingw32"  = "windows"
+ cabalOsString "darwin"   = "osx"
+ cabalOsString "solaris2" = "solaris"
++cabalOsString "linux_android" = "android"
+ cabalOsString other      = other
+

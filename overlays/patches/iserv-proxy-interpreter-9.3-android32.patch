@@ -1,0 +1,466 @@
+diff --git a/cbits/symbols.c b/cbits/symbols.c
+new file mode 100644
+index 0000000..9974c73
+--- /dev/null
++++ b/cbits/symbols.c
+@@ -0,0 +1,447 @@
++#include <stddef.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <math.h>
++#include <errno.h>
++
++extern void __aeabi_idiv(void);
++extern void __aeabi_idivmod(void);
++extern void __aeabi_memcpy(void);
++extern void __aeabi_memclr(void);
++extern void __aeabi_memclr4(void);
++extern void __aeabi_ldivmod(void);
++extern void __aeabi_memcpy4(void);
++extern void __aeabi_memmove(void);
++extern void __aeabi_memset4(void);
++extern void __aeabi_uidiv(void);
++extern void __aeabi_uidivmod(void);
++extern void __aeabi_uldivmod(void);
++
++extern void eventfd_write(void);
++extern void ioctl(void);
++extern void close(void);
++extern void epoll_wait(void);
++// extern void expf(void);
++extern void getpid(void);
++extern void isatty(void);
++extern void waitpid(void);
++
++extern void dup2(void);
++extern void epoll_ctl(void);
++extern void ftruncate64(void);
++extern void link(void);
++extern void pipe(void);
++
++extern void __assert2(void);
++extern void dup(void);
++extern void epoll_create(void);
++extern void eventfd(void);
++extern void fork(void);
++extern void unlink(void);
++extern void creat(void);
++extern void fcntl(void);
++extern void open(void);
++extern void access(void);
++extern void environ(void);
++extern void lseek64(void);
++extern void umask(void);
++extern void poll(void);
++extern void raise(void);
++extern void mbrtowc(void);
++extern void sigprocmask(void);
++extern void sigaddset(void);
++extern void sigemptyset(void);
++extern void stat(void);
++extern void utime(void);
++extern void chmod(void);
++extern void mkfifo(void);
++extern void wcrtomb(void);
++extern void lstat(void);
++extern void fstat(void);
++extern void write(void);
++extern void read(void);
++extern void __stack_chk_fail(void);
++extern void __stack_chk_guard(void);
++extern void __aeabi_memclr8(void);
++extern void __aeabi_memcpy8(void);
++extern void __aeabi_memmove4(void);
++extern void __write_chk(void);
++extern void time(void);
++extern void uname(void);
++extern void tzset(void);
++extern void sysconf(void);
++extern void socket(void);
++extern void readdir(void);
++extern void pthread_rwlock_init(void);
++extern void __memset_chk(void);
++extern void __memcpy_chk(void);
++extern void gmtime_r(void);
++extern void getauxval(void);
++extern void clock_gettime(void);
++extern void __aeabi_memset4(void);
++extern void __aeabi_memset8(void);
++extern void __aeabi_memset(void);
++extern void __vsprintf_chk(void);
++extern void usleep(void);
++extern void setsockopt(void);
++extern void __read_chk(void);
++extern void opendir(void);
++extern void mmap(void);
++extern void pthread_rwlock_rdlock(void);
++extern void __memmove_chk(void);
++extern void localtime_r(void);
++extern void getsockopt(void);
++extern void getnameinfo(void);
++extern void getentropy(void);
++extern void clock_getres(void);
++extern void __aeabi_d2lz(void);
++extern void __aeabi_l2d(void);
++extern void __aeabi_d2ulz(void);
++extern void syscall(void);
++extern void shutdown(void);
++extern void pthread_rwlock_wrlock(void);
++extern void mprotect(void);
++extern void gettimeofday(void);
++extern void gethostbyname(void);
++extern void gai_strerror(void);
++extern void fsync(void);
++extern void connect(void);
++extern void closedir(void);
++extern void bind(void);
++extern void sleep(void);
++extern void pthread_rwlock_unlock(void);
++extern void __open_2(void);
++extern void mlock(void);
++extern void listen(void);
++extern void freeaddrinfo(void);
++extern void clock(void);
++extern void __aeabi_ul2d(void);
++extern void accept(void);
++extern void strftime(void);
++extern void pthread_rwlock_destroy(void);
++extern void madvise(void);
++extern void getsockname(void);
++extern void getaddrinfo(void);
++extern void sigaction(void);
++extern void pthread_once(void);
++extern void munmap(void);
++extern void __FD_SET_chk(void);
++extern void __cmsg_nxthdr(void);
++extern void pthread_key_create(void);
++extern void select(void);
++extern void sendmsg(void);
++extern void signal(void);
++extern void pthread_getspecific(void);
++extern void pthread_setspecific(void);
++extern void munlock(void);
++extern void pthread_key_delete(void);
++extern void pthread_key_create(void);
++extern void pthread_mutexattr_init(void);
++extern void pthread_self(void);
++extern void pthread_mutexattr_settype(void);
++extern void pthread_equal(void);
++extern void pthread_mutex_init(void);
++extern void pthread_mutexattr_destroy(void);
++extern void pthread_mutex_destroy(void);
++extern void pthread_mutex_lock(void);
++extern void pthread_mutex_trylock(void);
++extern void pthread_mutex_unlock(void);
++extern void utimes(void);
++extern void pthread_join(void);
++extern void __aeabi_l2f(void);
++extern void pthread_create(void);
++extern void localtime(void);
++extern void getcwd(void);
++extern void fchmod(void);
++extern void mkdir(void);
++extern void rmdir(void);
++extern void fchown(void);
++extern void geteuid(void);
++extern void mmap64(void);
++extern void mremap(void);
++extern void readlink(void);
++
++#define MISSING_FUN(f) void (f)(void) { printf("Unknown call to %s\n", #f); exit(1); }
++
++MISSING_FUN(c_format_unix_time)
++MISSING_FUN(c_format_unix_time_gmt)
++MISSING_FUN(c_parse_unix_time)
++MISSING_FUN(c_parse_unix_time_gmt)
++
++typedef void SymbolAddr;
++typedef char SymbolName;
++
++typedef enum _SymStrength {
++    STRENGTH_NORMAL,
++    STRENGTH_WEAK,
++    STRENGTH_STRONG,
++} SymStrength;
++
++typedef enum _SymType {
++    SYM_TYPE_CODE = 1 << 0, /* the symbol is a function and can be relocated via a jump island */
++    SYM_TYPE_DATA = 1 << 1, /* the symbol is data */
++    SYM_TYPE_INDIRECT_DATA = 1 << 2, /* see Note [_iob_func symbol] */
++    SYM_TYPE_DUP_DISCARD = 1 << 3, /* the symbol is a symbol in a BFD import library
++                                      however if a duplicate is found with a mismatching
++                                      SymType then discard this one.  */
++} SymType;
++
++typedef struct _RtsSymbolVal {
++    const SymbolName* lbl;
++    SymbolAddr* addr;
++    SymStrength strength;
++    SymType type;
++} RtsSymbolVal;
++
++#define SYM(x) { #x, (void*)(&x), STRENGTH_NORMAL, 1 }
++typedef mode_t (*umask_func_ptr_t)(mode_t);
++
++RtsSymbolVal my_iserv_syms[] = {
++    SYM(strlen),
++    SYM(__aeabi_idiv),
++    SYM(__aeabi_idivmod),
++    SYM(__aeabi_memcpy),
++    SYM(__aeabi_memclr),
++    SYM(__aeabi_memclr4),
++    SYM(__aeabi_ldivmod),
++    SYM(__aeabi_memcpy4),
++    SYM(__aeabi_memmove),
++    SYM(__aeabi_memset4),
++    SYM(__aeabi_uidiv),
++    SYM(__aeabi_uidivmod),
++    SYM(__aeabi_uldivmod),
++    SYM(calloc),
++    SYM(malloc),
++    SYM(free),
++    SYM(realloc),
++    SYM(abort),
++    SYM(close),
++    SYM(epoll_wait),
++    SYM(__errno),
++    SYM(eventfd_write),
++    SYM(expf),
++    SYM(fprintf),
++    SYM(getenv),
++    SYM(getpid),
++    SYM(ioctl),
++    SYM(isatty),
++    SYM(memcmp),
++    SYM(poll),
++    SYM(raise),
++    SYM(strcmp),
++    SYM(strerror),
++    SYM(unsetenv),
++    SYM(waitpid),
++    SYM(dup2),
++    SYM(epoll_ctl),
++    SYM(ftruncate64),
++    SYM(ldexp),
++    SYM(link),
++    SYM(log1pf),
++    SYM(mbrtowc),
++    SYM(pipe),
++    SYM(putenv),
++    SYM(sigprocmask),
++    SYM(stderr),
++    SYM(__assert2),
++    SYM(dup),
++    SYM(epoll_create),
++    SYM(eventfd),
++    SYM(expm1f),
++    SYM(fork),
++    SYM(sigaddset),
++    SYM(stat),
++    SYM(wcrtomb),
++    SYM(__ctype_get_mb_cur_max),
++    SYM(fstat),
++    SYM(logf),
++    SYM(sigemptyset),
++    SYM(unlink),
++    SYM(creat),
++    SYM(lstat),
++    SYM(mkfifo),
++    SYM(qsort),
++    SYM(sinf),
++    SYM(chmod),
++    SYM(cosf),
++    SYM(fcntl),
++    SYM(open),
++    SYM(access),
++    SYM(environ),
++    SYM(tanf),
++    SYM(utime),
++    SYM(asinf),
++    SYM(lseek64),
++    SYM(umask),
++    SYM(acosf),
++    SYM(write),
++    SYM(atanf),
++    SYM(read),
++    SYM(sinhf),
++    SYM(coshf),
++    SYM(tanhf),
++    SYM(asinhf),
++    SYM(acoshf),
++    SYM(atanhf),
++    SYM(powf),
++    SYM(exp),
++    SYM(log1p),
++    SYM(expm1),
++    SYM(log),
++    SYM(sin),
++    SYM(cos),
++    SYM(tan),
++    SYM(asin),
++    SYM(acos),
++    SYM(atan),
++    SYM(sinh),
++    SYM(cosh),
++    SYM(tanh),
++    SYM(asinh),
++    SYM(acosh),
++    SYM(atanh),
++    SYM(pow),
++    SYM(__aeabi_memclr8),
++    SYM(__aeabi_memcpy8),
++    SYM(__aeabi_memmove4),
++    SYM(__aeabi_memset),
++    SYM(__aeabi_memset8),
++    SYM(clock_gettime),
++    SYM(fopen),
++    SYM(fwrite),
++    SYM(getauxval),
++    SYM(gmtime_r),
++    SYM(memchr),
++    SYM(__memcpy_chk),
++    SYM(memset),
++    SYM(__memset_chk),
++    SYM(pthread_rwlock_init),
++    SYM(readdir),
++    SYM(socket),
++    SYM(__stack_chk_fail),
++    SYM(__stack_chk_guard),
++    SYM(strchr),
++    SYM(__strchr_chk),
++    SYM(strcpy),
++    SYM(strdup),
++    SYM(__strlen_chk),
++    SYM(strncmp),
++    SYM(strncpy),
++    SYM(__strncpy_chk2),
++    SYM(strrchr),
++    SYM(strspn),
++    SYM(strstr),
++    SYM(strtoul),
++    SYM(sysconf),
++    SYM(time),
++    SYM(tzset),
++    SYM(uname),
++    SYM(vfprintf),
++    SYM(__write_chk),
++    SYM(__aeabi_d2lz),
++    SYM(__aeabi_l2d),
++    SYM(atexit),
++    SYM(atoi),
++    SYM(clock_getres),
++    SYM(fclose),
++    SYM(fileno),
++    SYM(fread),
++    SYM(fseek),
++    SYM(getentropy),
++    SYM(getnameinfo),
++    SYM(getsockopt),
++    SYM(localtime_r),
++    SYM(__memmove_chk),
++    SYM(mmap),
++    SYM(opendir),
++    SYM(pthread_rwlock_rdlock),
++    SYM(__read_chk),
++    SYM(setsockopt),
++    SYM(sscanf),
++    SYM(strcspn),
++    SYM(strtok),
++    SYM(strtol),
++    SYM(usleep),
++    SYM(__vsprintf_chk),
++    SYM(__aeabi_d2ulz),
++    SYM(bind),
++    SYM(closedir),
++    SYM(connect),
++    SYM(ferror),
++    SYM(fsync),
++    SYM(ftell),
++    SYM(gai_strerror),
++    SYM(gethostbyname),
++    SYM(gettimeofday),
++    SYM(mprotect),
++    SYM(pthread_rwlock_wrlock),
++    SYM(shutdown),
++    SYM(stdin),
++    SYM(syscall),
++    SYM(accept),
++    SYM(__aeabi_ul2d),
++    SYM(clock),
++    SYM(fgets),
++    SYM(fputs),
++    SYM(freeaddrinfo),
++    SYM(listen),
++    SYM(mlock),
++    SYM(__open_2),
++    SYM(pthread_rwlock_unlock),
++    SYM(sleep),
++    SYM(strcat),
++    SYM(feof),
++    SYM(fflush),
++    SYM(getaddrinfo),
++    SYM(getsockname),
++    SYM(madvise),
++    SYM(perror),
++    SYM(pthread_rwlock_destroy),
++    SYM(strftime),
++    SYM(__cmsg_nxthdr),
++    SYM(__FD_SET_chk),
++    SYM(fputc),
++    SYM(munmap),
++    SYM(pthread_once),
++    SYM(sigaction),
++    SYM(pthread_key_create),
++    SYM(select),
++    SYM(sendmsg),
++    SYM(signal),
++    SYM(stdout),
++    SYM(pthread_getspecific),
++    SYM(rename),
++    SYM(munlock),
++    SYM(pthread_setspecific),
++    SYM(pthread_key_delete),
++    SYM(pthread_mutexattr_init),
++    SYM(pthread_mutexattr_settype),
++    SYM(pthread_self),
++    SYM(pthread_equal),
++    SYM(pthread_mutex_init),
++    SYM(pthread_mutexattr_destroy),
++    SYM(pthread_mutex_destroy),
++    SYM(pthread_mutex_lock),
++    SYM(pthread_mutex_trylock),
++    SYM(pthread_mutex_unlock),
++    SYM(utimes),
++    SYM(pthread_join),
++    SYM(__aeabi_l2f),
++    SYM(pthread_create),
++    SYM(localtime),
++    SYM(getcwd),
++    SYM(fchmod),
++    SYM(mkdir),
++    SYM(rmdir),
++    SYM(fchown),
++    SYM(geteuid),
++    SYM(mmap64),
++    SYM(mremap),
++    SYM(readlink),
++    { 0, 0, STRENGTH_NORMAL, 1 } /* sentinel */
++};
++
++RtsSymbolVal* iserv_syms() {
++    return my_iserv_syms;
++}
+\ No newline at end of file
+diff --git a/iserv-proxy.cabal b/iserv-proxy.cabal
+index eca2047..51a125b 100644
+--- a/iserv-proxy.cabal
++++ b/iserv-proxy.cabal
+@@ -104,6 +104,7 @@ Executable iserv-proxy-interpreter
+    -- We need to pass -fkeep-cafs to ensure that the interpreter retains CAFs
+    -- Iserv and GHC do something similar.
+    ghc-options: -fkeep-cafs
++   c-sources: cbits/symbols.c
+    Build-Depends: base       >= 4   && < 5,
+                   iserv-proxy
+ 

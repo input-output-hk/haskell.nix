@@ -1,0 +1,22 @@
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 9f623a6..f4ee928 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1056,7 +1056,15 @@ ocGetNames_ELF ( ObjectCode* oc )
+                           )
+                        ) {
+                    /* Section 0 is the undefined section, hence > and not >=. */
+-                   CHECK(secno > 0 && secno < shnum);
++                   // This is only a problem if the symbol is _not_ WEAK. If it's
++                   // weak this is perfectly ok. See below how we set the symbol's
++                   // address to NULL in that case.
++                //    if (!(secno > 0 && secno < shnum)) {
++                //       debugBelch("while processing %s\n", OC_INFORMATIVE_FILENAME(oc));
++                //       debugBelch("while processing symbol %s (%d)\n", nm, j);
++                //       barf("secno %d out of range (0, %d)\n", secno, shnum);
++                //    }
++                //    CHECK(secno > 0 && secno < shnum);
+                    /*
+                    if (shdr[secno].sh_type == SHT_NOBITS) {
+                       debugBelch("   BSS symbol, size %d off %d name %s\n",
+

@@ -1,0 +1,13 @@
+diff --git a/libraries/ghc-prim/ghc-prim.cabal b/libraries/ghc-prim/ghc-prim.cabal
+index 2bd51c0..aeaeacc 100644
+--- a/libraries/ghc-prim/ghc-prim.cabal
++++ b/libraries/ghc-prim/ghc-prim.cabal
+@@ -67,7 +67,7 @@ Library
+         --         on Windows. Required because of mingw32.
+         extra-libraries: user32, mingw32, mingwex
+ 
+-    if os(linux)
++    if os(linux) || os(android) || os(linux-android)
+         -- we need libm, but for musl and other's we might need libc, as libm
+         -- is just an empty shell.
+         extra-libraries: c, m

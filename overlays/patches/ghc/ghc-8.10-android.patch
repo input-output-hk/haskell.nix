@@ -1,0 +1,262 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index cfae6fc..b766ce0 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -350,6 +350,37 @@ int ghciInsertSymbolTable(
+          || strncmp(key, "calloc", 6) == 0
+          || strncmp(key, "realloc", 7) == 0
+          || strncmp(key, "reallocarray", 12) == 0
++
++         || strncmp(key, "open", 4) == 0
++         || strncmp(key, "close", 5) == 0
++         || strncmp(key, "stderr", 6) == 0
++         || strncmp(key, "clock_gettime", 13) == 0
++         || strncmp(key, "clock_getres", 12) == 0
++         || strncmp(key, "__stack_chk_guard", 17) == 0
++         || strncmp(key, "__strchr_chk", 12) == 0
++         || strncmp(key, "__strcpy_chk", 12) == 0
++         || strncmp(key, "__strcpy_chk_generic", 20) == 0
++         || strncmp(key, "__strcat_chk_generic", 20) == 0
++         || strncmp(key, "__strlcpy_chk", 13) == 0
++         || strncmp(key, "__strlen_chk", 12) == 0
++         || strncmp(key, "__strncpy_chk", 13) == 0
++         || strncmp(key, "__vsnprintf_chk", 15) == 0
++         || strncmp(key, "__write_chk", 11) == 0
++         || strncmp(key, "__read_chk", 10) == 0
++         || strncmp(key, "__memset_chk", 12) == 0
++         || strncmp(key, "__memset_chk_fail", 17) == 0
++         || strncmp(key, "__libc_globals", 14) == 0
++         || strncmp(key, "memmove", 7) == 0
++         || strncmp(key, "gettimeofday", 12) == 0
++         || strncmp(key, "strcmp", 6) == 0
++         || strncmp(key, "fopen", 5) == 0
++         || strncmp(key, "fread", 5) == 0
++         || strncmp(key, "fwrite", 6) == 0
++         || strncmp(key, "fclose", 5) == 0
++         || strncmp(key, "open", 4) == 0
++         || strncmp(key, "close", 5) == 0
++         || strncmp(key, "strerror", 8) == 0
++         || strncmp(key, "__rel_iplt_start", 16) == 0
+          ) {
+         /* symbols we link aginst the libc we link ghc or iserv against */
+         return 1;
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index 1da73dd..29ef159 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -1009,7 +1009,31 @@
+       SymI_NeedsProto(__ashldi3)                       \
+       SymI_NeedsProto(__ashrdi3)                       \
+       SymI_NeedsProto(__lshrdi3)                       \
+-      SymI_NeedsProto(__fixunsdfdi)
++      SymI_NeedsProto(__fixunsdfdi)                    \
++      SymI_NeedsProto(__aeabi_memset)                  \
++      SymI_NeedsProto(__aeabi_memset4)                 \
++      SymI_NeedsProto(__aeabi_memset8)                 \
++      SymI_NeedsProto(__aeabi_memcpy)                  \
++      SymI_NeedsProto(__aeabi_memcpy4)                 \
++      SymI_NeedsProto(__aeabi_memcpy8)                 \
++      SymI_NeedsProto(__aeabi_memmove)                 \
++      SymI_NeedsProto(__aeabi_memmove4)                \
++      SymI_NeedsProto(__aeabi_memclr)                  \
++      SymI_NeedsProto(__aeabi_memclr4)                 \
++      SymI_NeedsProto(__aeabi_memclr8)                 \
++      SymI_NeedsProto(__aeabi_idiv)                    \
++      SymI_NeedsProto(__aeabi_uidiv)                   \
++      SymI_NeedsProto(__aeabi_idivmod)                 \
++      SymI_NeedsProto(__aeabi_ldivmod)                 \
++      SymI_NeedsProto(__aeabi_uidivmod)                \
++      SymI_NeedsProto(__aeabi_uldivmod)                \
++      SymI_NeedsProto(__aeabi_l2f)                     \
++      SymI_NeedsProto(__aeabi_l2d)                     \
++      SymI_NeedsProto(__aeabi_ul2d)                    \
++      SymI_NeedsProto(__aeabi_d2lz)                    \
++      SymI_NeedsProto(__aeabi_d2ulz)
++
++
+ #elif defined(__GNUC__) && SIZEOF_VOID_P == 8
+ #define RTS_LIBGCC_SYMBOLS                             \
+       SymI_NeedsProto(__udivti3)                       \
+@@ -1045,10 +1069,45 @@
+       SymI_HasProto(free) \
+       SymI_HasProto(malloc) \
+       SymI_HasProto(calloc) \
+-      SymI_HasProto(realloc)
++      SymI_HasProto(realloc) \
++      SymI_HasProto(stderr) \
++      SymI_HasProto(fopen) \
++      SymI_HasProto(fwrite) \
++      SymI_HasProto(fread) \
++      SymI_HasProto(fclose) \
++      SymI_NeedsProto(__assert) \
++      SymI_NeedsProto(__assert2) \
++      SymI_NeedsProto(__stack_chk_guard) \
++      SymI_NeedsProto(__memset_chk) \
++      SymI_NeedsProto(__memcpy_chk) \
++      SymI_HasProto(__strlen_chk) \
++      SymI_NeedsProto(__write_chk) \
++      SymI_NeedsProto(__read_chk) \
++      SymI_NeedsProto(__strlcpy_chk) \
++      SymI_NeedsProto(__strcpy_chk) \
++      SymI_NeedsProto(__strncpy_chk) \
++      SymI_NeedsProto(__vsnprintf_chk) \
++      SymI_HasProto(__strchr_chk) \
++      SymI_NeedsProto(open) \
++      SymI_NeedsProto(close) \
++      SymI_HasProto(strerror)
++#if defined(linux_android_HOST_OS) && SIZEOF_VOID_P <= 4
++#define RTS_BIONIC_LIBC_SYMBOLS \
++      // SymI_NeedsProto(reallocarray) \
++      // SymI_NeedsProto(__svfscanf) \
++      // SymI_NeedsProto(__vfwscanf) \
++      // SymI_NeedsProto(__memset_chk_fail) \
++      // SymI_NeedsProto(__strcpy_chk_generic) \
++      // SymI_NeedsProto(__strcat_chk_generic) \
++      // SymI_NeedsProto(__libc_globals) \
++      // SymI_NeedsProto(__rel_iplt_start)
++#else
++#define RTS_BIONIC_LIBC_SYMBOLS
++#endif
+ #else
+ #define RTS_STACK_PROTECTOR_SYMBOLS
+ #define RTS_LIBC_SYMBOLS
++#define RTS_BIONIC_LIBC_SYMBOLS
+ #endif
+ 
+ /* entirely bogus claims about types of these symbols */
+@@ -1082,6 +1141,7 @@ RTS_LIBFFI_SYMBOLS
+ RTS_LINKER_SYMBOLS
+ RTS_STACK_PROTECTOR_SYMBOLS
+ RTS_LIBC_SYMBOLS
++RTS_BIONIC_LIBC_SYMBOLS
+ #undef SymI_NeedsProto
+ #undef SymI_NeedsDataProto
+ #undef SymI_HasProto
+@@ -1137,6 +1197,7 @@ RtsSymbolVal rtsSyms[] = {
+       RTS_LINKER_SYMBOLS
+       RTS_STACK_PROTECTOR_SYMBOLS
+       RTS_LIBC_SYMBOLS
++      RTS_BIONIC_LIBC_SYMBOLS
+       SymI_HasDataProto(nonmoving_write_barrier_enabled)
+ #if defined(darwin_HOST_OS) && defined(i386_HOST_ARCH)
+       // dyld stub code contains references to this,
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index c3f9110..da7007c 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -931,6 +931,14 @@ ocGetNames_ELF ( ObjectCode* oc )
+                             debugBelch("COMMON symbol, size %ld name %s allocated at %p\n",
+                                        symbol->elf_sym->st_size, nm, symbol->addr));
+ 
++                } else if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
++                          && shndx == SHN_UNDEF
++                          && (ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_FUNC
++                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_OBJECT
++                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_NOTYPE)) {
++                        symbol->addr = NULL;
++                        isLocal = false;
++                        isWeak = true;
+                    /* Pointless to do addProddableBlock() for this area,
+                       since the linker should never poke around in it. */
+                } else if ((ELF_ST_BIND(symbol->elf_sym->st_info) == STB_GLOBAL
+@@ -978,14 +986,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+                        isWeak = ELF_ST_BIND(symbol->elf_sym->st_info)
+                                 == STB_WEAK;
+                    }
+-               } else if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
+-                          && shndx == SHN_UNDEF
+-                          && (ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_FUNC
+-                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_OBJECT
+-                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_NOTYPE)) {
+-                        symbol->addr = NULL;
+-                        isLocal = false;
+-                        isWeak = true;
++
+                 } else {
+                     /* skip this symbol */
+                    IF_DEBUG(linker,
+@@ -1244,6 +1245,7 @@ do_Elf_Rel_relocations ( ObjectCode* oc, char* ehdrC,
+ 
+            const StgBool overflow = !isInt(26, (StgInt32) result);
+            // Handle overflow and Thumb interworking
++           is_target_thm = S & 0x1;
+            const StgBool needs_veneer =
+                (is_target_thm && ELF_R_TYPE(info) == COMPAT_R_ARM_JUMP24)
+                || overflow;
+diff --git a/rts/linker/elf_plt_arm.c b/rts/linker/elf_plt_arm.c
+index bd21243..e3bd3cb 100644
+--- a/rts/linker/elf_plt_arm.c
++++ b/rts/linker/elf_plt_arm.c
+@@ -117,13 +117,13 @@ makeStubArmArm(Stub * s) {
+     uint32_t movt_r12 = 0xe340c000;
+     uint32_t bx_r12   = 0xe12fff1c;
+ 
+-    *((uint32_t*)s->addr+0) = movw_r12
++    ((uint32_t*)s->addr)[0] = movw_r12
+                               | (((uint32_t )s->target & 0xf000) << 4)
+                               |  ((uint32_t )s->target & 0x0fff);
+-    *((uint32_t*)s->addr+1) = movt_r12
++    ((uint32_t*)s->addr)[1] = movt_r12
+                               | ((((uint32_t )s->target >> 16) & 0xf000) << 4)
+                               |  (((uint32_t )s->target >> 16) & 0x0fff);
+-    *((uint32_t*)s->addr+2) = bx_r12;
++    ((uint32_t*)s->addr)[2] = bx_r12;
+ 
+     return EXIT_SUCCESS;
+ }
+@@ -157,17 +157,20 @@ makeStubArmThm(Stub * s) {
+     uint32_t movt_r12 = 0xf2c00c00;
+     uint32_t bx_r12   = 0x47600000;
+ 
+-    *((uint32_t*)s->addr+0) = movw_r12
++    uint32_t movw_r12_inst = movw_r12
+                               | (((uint32_t )s->target & 0xf000) << 4)
+-                              | (((uint32_t )s->target & 0x0800) << 16)
++                              | (((uint32_t )s->target & 0x0800) << 15)
+                               | (((uint32_t )s->target & 0x0700) << 4)
+                               |  ((uint32_t )s->target & 0x00ff);
+-    *((uint32_t*)s->addr+1) = movt_r12
++    uint32_t movt_r12_inst = movt_r12
+                               | ((((uint32_t )s->target >> 16) & 0xf000) << 4)
+-                              | ((((uint32_t )s->target >> 16) & 0x0800) << 16)
++                              | ((((uint32_t )s->target >> 16) & 0x0800) << 15)
+                               | ((((uint32_t )s->target >> 16) & 0x0700) << 4)
+                               |  (((uint32_t )s->target >> 16) & 0x00ff);
+-    *((uint32_t*)s->addr+2) = bx_r12;
++    // encode in little endian (half word reversal)
++    ((uint32_t*)s->addr)[0] = (movw_r12_inst << 16) | (movw_r12_inst >> 16);
++    ((uint32_t*)s->addr)[1] = (movt_r12_inst << 16) | (movt_r12_inst >> 16);
++    ((uint32_t*)s->addr)[2] = (bx_r12        << 16) | (bx_r12        >> 16);
+ 
+     return EXIT_SUCCESS;
+ }
+diff --git a/utils/check-sphinx/dist/.doctrees/environment.pickle b/utils/check-sphinx/dist/.doctrees/environment.pickle
+index 98df77f..a7b10a7 100644
+Binary files a/utils/check-sphinx/dist/.doctrees/environment.pickle and b/utils/check-sphinx/dist/.doctrees/environment.pickle differ
+diff --git a/utils/genapply/Main.hs b/utils/genapply/Main.hs
+index 8c194f1..24514e1 100644
+--- a/utils/genapply/Main.hs
++++ b/utils/genapply/Main.hs
+@@ -12,6 +12,11 @@
+ -- for details
+ module Main(main) where
+ 
++#undef linux_BUILD_OS
++#undef x86_64_BUILD_ARCH
++#undef linux_HOST_OS
++#undef x86_64_HOST_ARCH
++
+ -- Note [Genapply target as host for RTS macros]
+ -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ -- We improperly include *HOST* macros for our target...
+diff --git a/utils/genapply/ghc.mk b/utils/genapply/ghc.mk
+index 8da1f7a..c206b24 100644
+--- a/utils/genapply/ghc.mk
++++ b/utils/genapply/ghc.mk
+@@ -27,4 +27,5 @@ $(eval $(call build-prog,utils/genapply,dist,0))
+ 
+ # Purposely do the wrong stage for HOST := TARGET hack.
+ # See Note [Genapply target as host for RTS macros].
+-utils/genapply_dist_CC_OPTS += -I,$(BUILD_1_INCLUDE_DIR)
++$(utils/genapply_dist_depfile_haskell) : $(includes_1_H_CONFIG) $(includes_1_H_PLATFORM)
++utils/genapply_dist_HC_OPTS += -I$(BUILD_1_INCLUDE_DIR)

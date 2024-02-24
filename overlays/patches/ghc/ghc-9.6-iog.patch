@@ -1,0 +1,370 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 59e2ff9397..78e43cd471 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -267,7 +267,7 @@ int ghciInsertSymbolTable(
+    RtsSymbolInfo *pinfo = lookupStrHashTable(table, key);
+    if (!pinfo) /* new entry */
+    {
+-      pinfo = stgMallocBytes(sizeof (*pinfo), "ghciInsertToSymbolTable");
++      pinfo = stgCallocBytes(1, sizeof (*pinfo), "ghciInsertToSymbolTable");
+       pinfo->value = data;
+       pinfo->owner = owner;
+       pinfo->strength = strength;
+@@ -605,11 +605,11 @@ internal_dlopen(const char *dll_name)
+       /* dlopen failed; return a ptr to the error msg. */
+       errmsg = dlerror();
+       if (errmsg == NULL) errmsg = "addDLL: unknown error";
+-      errmsg_copy = stgMallocBytes(strlen(errmsg)+1, "addDLL");
++      errmsg_copy = stgCallocBytes(1,strlen(errmsg)+1, "addDLL");
+       strcpy(errmsg_copy, errmsg);
+       errmsg = errmsg_copy;
+    } else {
+-      o_so = stgMallocBytes(sizeof(OpenedSO), "addDLL");
++      o_so = stgCallocBytes(1,sizeof(OpenedSO), "addDLL");
+       o_so->handle = hdl;
+       o_so->next   = openedSOs;
+       openedSOs    = o_so;
+@@ -1314,7 +1314,7 @@ mkOc( ObjectType type, pathchar *path, char *image, int imageSize,
+
+
+    IF_DEBUG(linker, debugBelch("mkOc: %" PATH_FMT "\n", path));
+-   oc = stgMallocBytes(sizeof(ObjectCode), "mkOc(oc)");
++   oc = stgCallocBytes(1, sizeof(ObjectCode), "mkOc(oc)");
+
+    oc->info = NULL;
+    oc->type = type;
+@@ -1334,7 +1334,7 @@ mkOc( ObjectType type, pathchar *path, char *image, int imageSize,
+    oc->fileName = pathdup(path);
+
+    if (archiveMemberName) {
+-       oc->archiveMemberName = stgMallocBytes( (pathlen(archiveMemberName)+1) * pathsize,
++       oc->archiveMemberName = stgCallocBytes(1, (pathlen(archiveMemberName)+1) * pathsize,
+                                                "loadObj" );
+        pathcopy(oc->archiveMemberName, archiveMemberName);
+    } else {
+@@ -1489,12 +1489,12 @@ preloadObjectFile (pathchar *path)
+     // reading the file, and then we misalign image on purpose so
+     // that the actual sections end up aligned again.
+    misalignment = machoGetMisalignment(f);
+-   image = stgMallocBytes(fileSize + misalignment, "loadObj(image)");
++   image = stgCallocBytes(1, fileSize + misalignment, "loadObj(image)");
+    image += misalignment;
+
+ # else /* !defined(darwin_HOST_OS) */
+
+-   image = stgMallocBytes(fileSize, "loadObj(image)");
++   image = stgCallocBytes(1, fileSize, "loadObj(image)");
+
+ #endif /* !defined(darwin_HOST_OS) */
+
+@@ -1787,6 +1787,8 @@ static HsInt resolveObjs_ (void)
+     IF_DEBUG(linker, debugBelch("resolveObjs: start\n"));
+
+     for (ObjectCode *oc = objects; oc; oc = oc->next) {
++        if(oc->status == OBJECT_RESOLVED)
++            continue;
+         int r = ocTryLoad(oc);
+         if (!r) {
+             errorBelch("Could not load Object Code %" PATH_FMT ".\n", OC_INFORMATIVE_FILENAME(oc));
+@@ -1907,7 +1909,7 @@ void
+ addProddableBlock ( ObjectCode* oc, void* start, int size )
+ {
+    ProddableBlock* pb
+-      = stgMallocBytes(sizeof(ProddableBlock), "addProddableBlock");
++      = stgCallocBytes(1,sizeof(ProddableBlock), "addProddableBlock");
+
+    IF_DEBUG(linker, debugBelch("addProddableBlock: %p %p %d\n", oc, start, size));
+    ASSERT(size > 0);
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index 271611a249..784bb19c10 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -299,6 +299,10 @@ struct _ObjectCode {
+     int n_segments;
+     Segment *segments;
+
++    // COMMON section
++    void * common_mem;
++    unsigned long common_size;
++
+     //
+     // Garbage collection fields
+     //
+diff --git a/rts/RtsUtils.c b/rts/RtsUtils.c
+index 4cac10ba15..fe0d8ca40e 100644
+--- a/rts/RtsUtils.c
++++ b/rts/RtsUtils.c
+@@ -104,6 +104,11 @@ stgCallocBytes (size_t count, size_t size, char *msg)
+       rtsConfig.mallocFailHook((W_) count*size, msg);
+       stg_exit(EXIT_INTERNAL_ERROR);
+     }
++    // If we run under qemu with jemalloc, calloc is not guaranteed
++    // to zero memory.
++    // - https://giters.com/jemalloc/jemalloc/issues/1844
++    // - https://lists.nongnu.org/archive/html/qemu-devel/2020-05/msg03119.html
++    memset(space, 0, count*size);
+     return space;
+ }
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index bab2ca3041..9f623a62da 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -303,6 +303,15 @@ ocInit_ELF(ObjectCode * oc)
+             }
+         }
+     }
++    if(NULL != oc->common_mem) {
++#if RTS_LINKER_USE_MMAP
++        munmap(oc->common_mem, oc->common_size);
++#else
++        stgFree(oc->common_mem);
++#endif
++    }
++    oc->common_mem = NULL;
++    oc->common_size = 0;
+ }
+
+ void
+@@ -961,14 +970,17 @@ ocGetNames_ELF ( ObjectCode* oc )
+            for (size_t j = 0; j < symTab->n_symbols; j++) {
+                ElfSymbol *symbol = &symTab->symbols[j];
+                if (SHN_COMMON == symTab->symbols[j].elf_sym->st_shndx) {
+-                   common_size += symbol->elf_sym->st_size;
++                   // st_value holds the alignment. Adding alignment always
++                   // should give us some wiggle room to get alignment right.
++                   common_size += symbol->elf_sym->st_size + symbol->elf_sym->st_value;
+                }
+            }
+       }
+-      void * common_mem = NULL;
++      oc->common_mem = NULL;
++      oc->common_size = common_size;
+       if(common_size > 0) {
+-          common_mem = mmapAnonForLinker(common_size);
+-          if (common_mem == NULL) {
++          oc->common_mem = mmapAnonForLinker(common_size);
++          if (oc->common_mem == NULL) {
+             barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
+           }
+       }
+@@ -1009,9 +1021,10 @@ ocGetNames_ELF ( ObjectCode* oc )
+                if (shndx == SHN_COMMON) {
+                    isLocal = false;
+                    CHECK(common_used < common_size);
+-                   CHECK(common_mem);
+-                   symbol->addr = (void*)((uintptr_t)common_mem + common_used);
+-                   common_used += symbol->elf_sym->st_size;
++                   CHECK(oc->common_mem);
++                   int alignment = symbol->elf_sym->st_value-1;
++                   symbol->addr = (void*)(((uintptr_t)oc->common_mem + common_used + alignment) & ~alignment);
++                   common_used = (uintptr_t)symbol->addr - (uintptr_t)oc->common_mem + symbol->elf_sym->st_size;
+                    CHECK(common_used <= common_size);
+
+                    IF_DEBUG(linker_verbose,
+@@ -1025,7 +1038,9 @@ ocGetNames_ELF ( ObjectCode* oc )
+                            || ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
+                                                                   )
+                           /* and not an undefined symbol */
+-                          && shndx != SHN_UNDEF
++                          && (shndx != SHN_UNDEF
++                             /* unless it's weak */
++                             || (shndx == SHN_UNDEF && ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK))
+                           /* and not in a "special section" */
+                           && (shndx < SHN_LORESERVE
+ #if defined(SHN_XINDEX)
+@@ -1052,6 +1067,14 @@ ocGetNames_ELF ( ObjectCode* oc )
+                            (intptr_t) oc->sections[secno].start +
+                            (intptr_t) symbol->elf_sym->st_value);
+                    CHECK(symbol->addr != 0x0);
++                   if(shndx == SHN_UNDEF && ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK) {
++                       symbol->addr = NULL;
++                   } else {
++                        symbol->addr = (SymbolAddr*)(
++                                (intptr_t) oc->sections[secno].start +
++                                (intptr_t) symbol->elf_sym->st_value);
++                        CHECK(symbol->addr != 0x0);
++                   }
+                    if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_LOCAL) {
+                        isLocal = true;
+                        isWeak = false;
+@@ -1063,42 +1086,20 @@ ocGetNames_ELF ( ObjectCode* oc )
+                        isWeak = ELF_ST_BIND(symbol->elf_sym->st_info)
+                                 == STB_WEAK;
+                    }
+-               }
+-
+-               SymType sym_type;
+-               if (ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_FUNC) {
+-                   sym_type = SYM_TYPE_CODE;
++               } else if (ELF_ST_BIND(symbol->elf_sym->st_info) == STB_WEAK
++                          && shndx == SHN_UNDEF
++                          && (ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_FUNC
++                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_OBJECT
++                              || ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_NOTYPE)) {
++                        symbol->addr = NULL;
++                        isLocal = false;
++                        isWeak = true;
+                } else {
+-                   sym_type = SYM_TYPE_DATA;
+-               }
+-
+-               /* And the decision is ... */
+-
+-               if (symbol->addr != NULL) {
+-                   CHECK(nm != NULL);
+-                   /* Acquire! */
+-                   if (!isLocal) {
+-
+-                       if (isWeak == HS_BOOL_TRUE) {
+-                           setWeakSymbol(oc, nm);
+-                       }
+-                       if (!ghciInsertSymbolTable(oc->fileName, symhash,
+-                                                  nm, symbol->addr, isWeak, sym_type, oc)
+-                           ) {
+-                           goto fail;
+-                       }
+-                       oc->symbols[curSymbol].name = nm;
+-                       oc->symbols[curSymbol].addr = symbol->addr;
+-                       oc->symbols[curSymbol].type = sym_type;
+-                       curSymbol++;
+-                   }
+-               } else {
+-                   /* Skip. */
++                /* Skip. */
+                    IF_DEBUG(linker_verbose,
+                             debugBelch("skipping `%s'\n",
+                                                nm)
+                    );
+-
+                    /*
+                    debugBelch(
+                       "skipping   bind = %d,  type = %d,  secno = %d   `%s'\n",
+@@ -1108,7 +1109,34 @@ ocGetNames_ELF ( ObjectCode* oc )
+                       nm
+                    );
+                    */
++                    continue;
+                }
++
++               SymType sym_type;
++               if (ELF_ST_TYPE(symbol->elf_sym->st_info) == STT_FUNC) {
++                   sym_type = SYM_TYPE_CODE;
++               } else {
++                   sym_type = SYM_TYPE_DATA;
++               }
++
++               /* And the decision is ... */
++                 CHECK(nm != NULL);
++                /* Acquire! */
++                if (!isLocal) {
++
++                    if (isWeak == HS_BOOL_TRUE) {
++                        setWeakSymbol(oc, nm);
++                    }
++                    if (!ghciInsertSymbolTable(oc->fileName, symhash,
++                                                nm, symbol->addr, isWeak, sym_type, oc)
++                        ) {
++                        goto fail;
++                    }
++                    oc->symbols[curSymbol].name = nm;
++                    oc->symbols[curSymbol].addr = symbol->addr;
++                    oc->symbols[curSymbol].type = sym_type;
++                    curSymbol++;
++                }
+            }
+       }
+    }
+diff --git a/rts/linker/elf_plt.c b/rts/linker/elf_plt.c
+index 9cd42efff2..70817d8b0b 100644
+--- a/rts/linker/elf_plt.c
++++ b/rts/linker/elf_plt.c
+@@ -1,4 +1,5 @@
+ #include "Rts.h"
++#include "RtsUtils.h"
+ #include "elf_plt.h"
+
+ #include <stdbool.h>
+@@ -51,7 +52,7 @@ makeStub(Section * section,
+           void* * addr,
+           uint8_t flags) {
+
+-    Stub * s = calloc(1, sizeof(Stub));
++    Stub * s = stgCallocBytes(1, sizeof(Stub), "makeStub");
+     ASSERT(s != NULL);
+     s->target = *addr;
+     s->flags  = flags;
+diff --git a/rts/linker/elf_plt_aarch64.c b/rts/linker/elf_plt_aarch64.c
+index 11354a63db..6b27a2c73d 100644
+--- a/rts/linker/elf_plt_aarch64.c
++++ b/rts/linker/elf_plt_aarch64.c
+@@ -25,6 +25,7 @@ const size_t stubSizeAarch64 = 5 * 4;
+  */
+ bool needStubForRelAarch64(Elf_Rel * rel) {
+     switch(ELF64_R_TYPE(rel->r_info)) {
++        case COMPAT_R_AARCH64_CONDBR19:
+         case COMPAT_R_AARCH64_CALL26:
+         case COMPAT_R_AARCH64_JUMP26:
+             return true;
+@@ -34,6 +35,7 @@ bool needStubForRelAarch64(Elf_Rel * rel) {
+ }
+ bool needStubForRelaAarch64(Elf_Rela * rela) {
+     switch(ELF64_R_TYPE(rela->r_info)) {
++        case COMPAT_R_AARCH64_CONDBR19:
+         case COMPAT_R_AARCH64_CALL26:
+         case COMPAT_R_AARCH64_JUMP26:
+             return true;
+diff --git a/rts/linker/elf_reloc_aarch64.c b/rts/linker/elf_reloc_aarch64.c
+index 4743e81ea2..f37e3699f1 100644
+--- a/rts/linker/elf_reloc_aarch64.c
++++ b/rts/linker/elf_reloc_aarch64.c
+@@ -105,8 +105,24 @@ encodeAddendAarch64(Section * section, Elf_Rel * rel, int64_t addend) {
+             break;
+         }
+         /* - control flow relocations */
++        case COMPAT_R_AARCH64_CONDBR19: { /* relocate b.* ... */
++            // 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
++            //  0  1  0  1  0  1  0  0 [ imm19 ...
++            //
++            // 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
++            // ...        imm19               ]  0  [  cond  ]
++            CHECK(isInt64(19+2, addend)); /* X in range */
++            *(inst_t *)P = (*(inst_t *)P & 0xff00001f)
++                         | ((uint32_t)(addend << (5-2)) & 0x00ffffe0);
++            break;
++        }
+         case COMPAT_R_AARCH64_JUMP26:   /* relocate b ... */
+         case COMPAT_R_AARCH64_CALL26: { /* relocate bl ... */
++            // 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
++            // 0|1 0  0  1  0  1 [ imm26 ...
++
++            // 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
++            // ...        imm26                              ]
+             CHECK(isInt64(26+2, addend)); /* X in range */
+             *(inst_t *)P = (*(inst_t *)P & 0xfc000000) /* keep upper 6 (32-6)
+  * bits */
+@@ -222,6 +238,23 @@ computeAddend(Section * section, Elf_Rel * rel,
+         case COMPAT_R_AARCH64_ADD_ABS_LO12_NC:
+             /* type: static, class: aarch64, op: S + A */
+             return (S + A) & 0xfff;
++        case COMPAT_R_AARCH64_CONDBR19: {
++            int64_t V = S + A - P;
++            if(!isInt64(19+2, V)) {
++                /* need a stub */
++                /* check if we already have that stub */
++                if(findStub(section, (void**)&S, 0)) {
++                    /* did not find it. Crete a new stub. */
++                    if(makeStub(section, (void**)&S, 0)) {
++                        abort(/* could not find or make stub */);
++                    }
++                }
++
++                V = S + A -P;
++                assert(isInt64(19+2, V));
++            }
++            return V;
++        }
+         case COMPAT_R_AARCH64_JUMP26:
+         case COMPAT_R_AARCH64_CALL26: {
+             // S+A-P
