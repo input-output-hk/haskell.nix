@@ -1,0 +1,149 @@
+From bcce4db821abe826673c247d673274db5d219949 Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 21 Feb 2024 08:13:32 +0000
+Subject: [PATCH 6/7] Adds support for Hidden symbols
+
+There migth be hidden and Global symbols. Global symbols should have precedence over Hidden ones.
+---
+ rts/Linker.c          | 19 +++++++++++++++----
+ rts/LinkerInternals.h |  2 ++
+ rts/linker/Elf.c      |  3 +++
+ rts/linker/ElfTypes.h |  6 ++++++
+ rts/linker/PEi386.c   |  2 +-
+ 5 files changed, 27 insertions(+), 5 deletions(-)
+
+diff --git a/rts/Linker.c b/rts/Linker.c
+index c3a5b5d..b826af8 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -226,11 +226,11 @@ static void ghciRemoveSymbolTable(StrHashTable *table, const SymbolName* key,
+ static const char *
+ symbolTypeString (SymType type)
+ {
+-    switch (type & ~SYM_TYPE_DUP_DISCARD) {
++    switch (type & ~(SYM_TYPE_DUP_DISCARD | SYM_TYPE_HIDDEN)) {
+         case SYM_TYPE_CODE: return "code";
+         case SYM_TYPE_DATA: return "data";
+         case SYM_TYPE_INDIRECT_DATA: return "indirect-data";
+-        default: barf("symbolTypeString: unknown symbol type");
++        default: barf("symbolTypeString: unknown symbol type (%d)", type);
+     }
+ }
+
+@@ -277,10 +277,19 @@ int ghciInsertSymbolTable(
+    }
+    else if (pinfo->type ^ type)
+    {
++       if(pinfo->type & SYM_TYPE_HIDDEN)
++       {
++            /* The existing symbol is hidden, let's replace it */
++            pinfo->value = data;
++            pinfo->owner = owner;
++            pinfo->strength = strength;
++            pinfo->type = type;
++            return 1;
++       }
+        /* We were asked to discard the symbol on duplicates, do so quietly.  */
+-       if (!(type & SYM_TYPE_DUP_DISCARD))
++       if (!(type & (SYM_TYPE_DUP_DISCARD | SYM_TYPE_HIDDEN)))
+        {
+-         debugBelch("Symbol type mismatch.\n");
++         debugBelch("Symbol type mismatch (existing %d, new %d).\n", pinfo->type, type);
+          debugBelch("Symbol %s was defined by %" PATH_FMT " to be a %s symbol.\n",
+                     key, obj_name, symbolTypeString(type));
+          debugBelch("      yet was defined by %" PATH_FMT " to be a %s symbol.\n",
+@@ -380,6 +389,8 @@ int ghciInsertSymbolTable(
+       pinfo->owner->archiveMemberName ? pinfo->owner->archiveMemberName
+       : pinfo->owner->fileName
+    );
++   debugBelch("Address of new symbol: %p, old symbol: %p\n", data, pinfo->value);
++   debugBelch("Type of symbol; new: %d, existing: %d\n", type, pinfo->type);
+
+    return 0;
+ }
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index 6cadaa8..3beac1d 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -64,6 +64,8 @@ typedef enum _SymType {
+     SYM_TYPE_DUP_DISCARD = 1 << 3, /* the symbol is a symbol in a BFD import library
+                                       however if a duplicate is found with a mismatching
+                                       SymType then discard this one.  */
++    SYM_TYPE_HIDDEN = 1 << 4, /* the symbol is hidden and should not be exported */
++
+ } SymType;
+
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 9f56812..05db9b3 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -1139,6 +1139,9 @@ ocGetNames_ELF ( ObjectCode* oc )
+                } else {
+                    sym_type = SYM_TYPE_DATA;
+                }
++               if(ELF_ST_VISIBILITY(symbol->elf_sym->st_other) == STV_HIDDEN) {
++                   sym_type |= SYM_TYPE_HIDDEN;
++               }
+
+                /* And the decision is ... */
+
+diff --git a/rts/linker/ElfTypes.h b/rts/linker/ElfTypes.h
+index 24e29a1..d3524e1 100644
+--- a/rts/linker/ElfTypes.h
++++ b/rts/linker/ElfTypes.h
+@@ -33,6 +33,9 @@
+ #define Elf_Sym     Elf64_Sym
+ #define Elf_Rel     Elf64_Rel
+ #define Elf_Rela    Elf64_Rela
++#if !defined(ELF_ST_VISIBILITY)
++#define ELF_ST_VISIBILITY ELF64_ST_VISIBILITY
++#endif
+ #if !defined(ELF_ST_TYPE)
+ #define ELF_ST_TYPE ELF64_ST_TYPE
+ #endif
+@@ -57,6 +60,9 @@
+ #define Elf_Sym     Elf32_Sym
+ #define Elf_Rel     Elf32_Rel
+ #define Elf_Rela    Elf32_Rela
++#if !defined(ELF_ST_VISIBILITY)
++#define ELF_ST_VISIBILITY ELF32_ST_VISIBILITY
++#endif /* ELF_ST_VISIBILITY */
+ #if !defined(ELF_ST_TYPE)
+ #define ELF_ST_TYPE ELF32_ST_TYPE
+ #endif /* ELF_ST_TYPE */
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index 010dc8f..c6f82b7 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -1897,6 +1897,9 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+           sname[size-start]='\0';
+           stgFree(tmp);
+           sname = strdup (sname);
++          if(secNumber == IMAGE_SYM_UNDEFINED)
++            type |= SYM_TYPE_HIDDEN;
++
+           if (!ghciInsertSymbolTable(oc->fileName, symhash, sname,
+                                      addr, false, type, oc))
+                return false;
+@@ -1919,6 +1922,8 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+          if (isWeak) {
+              setWeakSymbol(oc, sname);
+          }
++         if(secNumber == IMAGE_SYM_UNDEFINED)
++           type |= SYM_TYPE_HIDDEN;
+
+          if (! ghciInsertSymbolTable(oc->fileName, symhash, sname, addr,
+                                      isWeak, type, oc))
+@@ -1946,7 +1946,7 @@ static size_t
+ makeSymbolExtra_PEi386( ObjectCode* oc, uint64_t index STG_UNUSED, size_t s, char* symbol STG_UNUSED, SymType type )
+ {
+     SymbolExtra *extra;
+-    switch(type & ~SYM_TYPE_DUP_DISCARD) {
++    switch(type & ~(SYM_TYPE_DUP_DISCARD | SYM_TYPE_HIDDEN)) {
+         case SYM_TYPE_CODE: {
+             // jmp *-14(%rip)
+             extra = m32_alloc(oc->rx_m32, sizeof(SymbolExtra), 8);
+--
+2.33.0
+
