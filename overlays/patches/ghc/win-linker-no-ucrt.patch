@@ -7,7 +7,7 @@ index c404992..fd060e4 100644
          /* debugBelch("look in %ls for %s\n", o_dll->name, lbl); */
 
 +        if (wcsncmp(o_dll->name,WSTR("ucrtbase.dll"),wcslen(WSTR("ucrtbase.dll"))) == 0) {
-+            IF_DEBUG(linker, debugBelch("warning: ignoring %s\n", o_dll->name));
++            IF_DEBUG(linker, debugBelch("warning: ignoring " PATH_FMT "\n", o_dll->name));
 +            continue;
 +        }
 +
