@@ -317,7 +317,6 @@ let
       # `-fexternal-dynamic-refs` causes `undefined reference` errors when building GHC cross compiler for windows
       + lib.optionalString (enableRelocatedStaticLibs && targetPlatform.isx86_64 && !targetPlatform.isWindows)
         " '*.*.ghc.*.opts += -fexternal-dynamic-refs'"
-      + lib.optionalString targetPlatform.isAndroid
       # The fact that we need to set this here is pretty idiotic. GHC should figure this out on it's own.
       # Either have a runtime flag/setting to disable it or if dlopen fails, remember that it failed and
       # fall back to non-dynamic. We only have x86_64 dynamic linker with musl.
