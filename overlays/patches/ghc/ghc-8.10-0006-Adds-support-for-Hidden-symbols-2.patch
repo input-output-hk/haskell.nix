@@ -1,0 +1,170 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 5b3421d..7a6e3b6 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -267,10 +267,12 @@ int ghciInsertSymbolTable(
+    HashTable *table,
+    const SymbolName* key,
+    SymbolAddr* data,
+-   HsBool weak,
+-   HsBool hidden,
++   int flags,
+    ObjectCode *owner)
+ {
++   HsBool weak = flags & 1;
++   HsBool hidden = flags & 2;
++
+    RtsSymbolInfo *pinfo = lookupStrHashTable(table, key);
+    if (!pinfo) /* new entry */
+    {
+@@ -352,7 +354,6 @@ int ghciInsertSymbolTable(
+         pinfo->hidden = hidden;
+         return 1;
+     }
+-
+    pathchar* archiveName = NULL;
+    debugBelch(
+       "GHC runtime linker: fatal error: I found a duplicate definition for symbol\n"
+@@ -467,7 +468,7 @@ initLinker_ (int retain_cafs)
+     for (sym = rtsSyms; sym->lbl != NULL; sym++) {
+         if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"),
+                                     symhash, sym->lbl, sym->addr,
+-                                    sym->weak, HS_BOOL_FALSE, NULL)) {
++                                    sym->weak | (HS_BOOL_FALSE << 1), NULL)) {
+             barf("ghciInsertSymbolTable failed");
+         }
+         IF_DEBUG(linker, debugBelch("initLinker: inserting rts symbol %s, %p\n", sym->lbl, sym->addr));
+@@ -479,7 +480,7 @@ initLinker_ (int retain_cafs)
+        use an arbitrary (hopefully unique) address here.
+     */
+     if (! ghciInsertSymbolTable(WSTR("(GHCi special symbols)"),
+-                                symhash, "__dso_handle", (void *)0x12345687, HS_BOOL_FALSE, HS_BOOL_FALSE, NULL)) {
++                                symhash, "__dso_handle", (void *)0x12345687, HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), NULL)) {
+         barf("ghciInsertSymbolTable failed");
+     }
+
+@@ -487,7 +488,7 @@ initLinker_ (int retain_cafs)
+     if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"), symhash,
+                                 MAYBE_LEADING_UNDERSCORE_STR("newCAF"),
+                                 retain_cafs ? newRetainedCAF : newGCdCAF,
+-                                HS_BOOL_FALSE, HS_BOOL_FALSE, NULL)) {
++                                HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), NULL)) {
+         barf("ghciInsertSymbolTable failed");
+     }
+
+@@ -860,8 +861,8 @@ HsBool removeLibrarySearchPath(HsPtr dll_path_index)
+  */
+ HsInt insertSymbol(pathchar* obj_name, SymbolName* key, SymbolAddr* data)
+ {
+-    return ghciInsertSymbolTable(obj_name, symhash, key, data, HS_BOOL_FALSE,
+-                                 HS_BOOL_FALSE, NULL);
++    return ghciInsertSymbolTable(obj_name, symhash, key, data,
++                                 HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), NULL);
+ }
+
+ /* -----------------------------------------------------------------------------
+@@ -1715,8 +1716,8 @@ int ocTryLoad (ObjectCode* oc) {
+         if (   symbol.name
+             && !ghciInsertSymbolTable(oc->fileName, symhash, symbol.name,
+                                       symbol.addr,
+-                                      isSymbolWeak(oc, symbol.name),
+-                                      HS_BOOL_FALSE, oc)) {
++                                      isSymbolWeak(oc, symbol.name) | (HS_BOOL_FALSE << 1),
++                                      oc)) {
+             return 0;
+         }
+     }
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index 1bc082c..b40d14e 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -334,8 +334,7 @@ int ghciInsertSymbolTable(
+     HashTable *table,
+     const SymbolName* key,
+     SymbolAddr* data,
+-    HsBool weak,
+-    HsBool hidden,
++    int flags,
+     ObjectCode *owner);
+
+ /* Lock-free version of lookupSymbol. When 'dependent' is not NULL, adds it as a
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 4a53687..e166e20 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -976,8 +976,8 @@ ocGetNames_ELF ( ObjectCode* oc )
+                            setWeakSymbol(oc, nm);
+                        }
+                        if (!ghciInsertSymbolTable(oc->fileName, symhash,
+-                                                  nm, symbol->addr, isWeak,
+-                                                  ELF_ST_VISIBILITY(symbol->elf_sym->st_other) == STV_HIDDEN,
++                                                  nm, symbol->addr,
++                                                  isWeak | ((ELF_ST_VISIBILITY(symbol->elf_sym->st_other) == STV_HIDDEN) << 1),
+                                                   oc)
+                            ) {
+                            goto fail;
+diff --git a/rts/linker/MachO.c b/rts/linker/MachO.c
+index 00b0dce..d633699 100644
+--- a/rts/linker/MachO.c
++++ b/rts/linker/MachO.c
+@@ -1336,7 +1336,7 @@ ocGetNames_MachO(ObjectCode* oc)
+                                                  , symhash
+                                                  , nm
+                                                  , addr
+-                                                 , HS_BOOL_FALSE
++                                                 , HS_BOOL_FALSE | (HS_BOOL_FALSE << 1)
+                                                  , oc);
+
+                             oc->symbols[curSymbol].name = nm;
+@@ -1376,7 +1376,7 @@ ocGetNames_MachO(ObjectCode* oc)
+
+                 IF_DEBUG(linker, debugBelch("ocGetNames_MachO: inserting common symbol: %s\n", nm));
+                 ghciInsertSymbolTable(oc->fileName, symhash, nm,
+-                                       (void*)commonCounter, HS_BOOL_FALSE, oc);
++                                       (void*)commonCounter, HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), oc);
+                 oc->symbols[curSymbol].name = nm;
+                 oc->symbols[curSymbol].addr = oc->info->macho_symbols[i].addr;
+                 curSymbol++;
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index 841faa8..d847d13 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -292,7 +292,7 @@ const void* __rts_iob_func = (void*)&__acrt_iob_func;
+ void initLinker_PEi386()
+ {
+     if (!ghciInsertSymbolTable(WSTR("(GHCi/Ld special symbols)"),
+-                               symhash, "__image_base__", __image_base, HS_BOOL_TRUE, HS_BOOL_FALSE, NULL)) {
++                               symhash, "__image_base__", __image_base, HS_BOOL_TRUE | (HS_BOOL_FALSE << 1), NULL)) {
+         barf("ghciInsertSymbolTable failed");
+     }
+
+@@ -1541,7 +1541,7 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+           sname = strdup (sname);
+           addr  = strdup (addr);
+           if (!ghciInsertSymbolTable(oc->fileName, symhash, sname,
+-                                     addr, false, HS_BOOL_FALSE, oc)) {
++                                     addr, HS_BOOL_FALSE | (HS_BOOL_FALSE << 1), oc)) {
+              releaseOcInfo (oc);
+              stgFree (oc->image);
+              oc->image = NULL;
+@@ -1759,8 +1759,8 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+           stgFree(tmp);
+           sname = strdup (sname);
+           if (!ghciInsertSymbolTable(oc->fileName, symhash, sname,
+-                                     addr, false,
+-                                     section->info->props & IMAGE_SCN_LNK_COMDAT,
++                                     addr,
++                                     HS_BOOL_FALSE | ((secNumber == IMAGE_SYM_UNDEFINED) << 1),
+                                      oc))
+                return false;
+
+@@ -1779,8 +1779,7 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+              setWeakSymbol(oc, sname);
+          }
+          if (! ghciInsertSymbolTable(oc->fileName, symhash, sname, addr,
+-                                     isWeak,
+-                                     section->info->props & IMAGE_SCN_LNK_COMDAT,
++                                     isWeak | ((secNumber == IMAGE_SYM_UNDEFINED) << 1),
+                                      oc))
+              return false;
+       } else {
