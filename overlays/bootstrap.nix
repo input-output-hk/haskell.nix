@@ -278,6 +278,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
