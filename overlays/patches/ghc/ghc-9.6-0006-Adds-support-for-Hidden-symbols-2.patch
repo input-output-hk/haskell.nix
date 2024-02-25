@@ -1,0 +1,22 @@
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index 8701e76..150ec73 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -1916,6 +1916,8 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+          && (!section || (section && section->kind != SECTIONKIND_IMPORT))) {
+          /* debugBelch("addSymbol %p `%s' Weak:%lld \n", addr, sname, isWeak); */
+          sname = strdup (sname);
++         if(secNumber == IMAGE_SYM_UNDEFINED)
++           type |= SYM_TYPE_HIDDEN;
+          IF_DEBUG(linker_verbose, debugBelch("addSymbol %p `%s'\n", addr, sname));
+          ASSERT(i < (uint32_t)oc->n_symbols);
+          oc->symbols[i].name = sname;
+@@ -1924,8 +1926,6 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+          if (isWeak) {
+              setWeakSymbol(oc, sname);
+          }
+-         if(secNumber == IMAGE_SYM_UNDEFINED)
+-           type |= SYM_TYPE_HIDDEN;
+ 
+          if (! ghciInsertSymbolTable(oc->fileName, symhash, sname, addr,
+                                      isWeak, type, oc))
