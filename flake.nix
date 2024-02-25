@@ -76,9 +76,7 @@
       flake = false;
     };
     iserv-proxy = {
-      type = "git";
-      url = "https://gitlab.haskell.org/hamishmack/iserv-proxy.git";
-      ref = "hkm/remote-iserv";
+      url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
   };
