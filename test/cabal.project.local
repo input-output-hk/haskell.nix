@@ -22,6 +22,12 @@ repository ghcjs-overlay
   key-threshold: 0
   --sha256: sha256-mZT7c+xR5cUTjLdCqOxpprjYL3kr/+9rmumtXvWAQlM=
 
+source-repository-package
+  type: git
+  location: https://github.com/hamishmack/hs-libsodium.git
+  tag: c094f210f3bd34d97204451ea57855a5d17e2086
+  --sha256: sha256-6iCKvdLdjwg2jcoWMEj3qcFTvKe3P4BYxgKeXY3QwRM=
+ 
 if !impl(ghc>=9.8) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
