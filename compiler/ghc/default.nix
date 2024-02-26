@@ -141,8 +141,8 @@ let
     CrossCompilePrefix = ${targetPrefix}
   '' + lib.optionalString isCrossTarget ''
     Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
-  '' + ''
     HADDOCK_DOCS = NO
+  '' + ''
     BUILD_SPHINX_HTML = NO
     BUILD_SPHINX_PDF = NO
   '' + lib.optionalString enableRelocatedStaticLibs ''
