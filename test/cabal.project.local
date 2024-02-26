@@ -3,9 +3,9 @@ if impl(ghc>=9.8)
   -- being shipped with a newer compiler.  If you extend this
   -- be very careful to only extend it for absolutely necessary packages
   -- otherwise we risk running into broken build-plans down the line.
-  allow-newer: *:base, *:template-haskell, *:bytestring, *:text, *:ghc-prim, *:deepseq
+  allow-newer: *:base, *:template-haskell, *:bytestring, *:text, *:ghc-prim, *:deepseq, *:Cabal
 if impl(ghc > 9.9)
-  allow-newer: *:containers, *:Cabal
+  allow-newer: *:containers
 
 repository head.hackage.ghc.haskell.org
   url: https://ghc.gitlab.haskell.org/head.hackage/
