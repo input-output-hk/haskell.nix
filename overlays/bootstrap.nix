@@ -281,7 +281,7 @@ in {
                 # Allow loading static external plugins into cross compilers
                 ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && (final.stdenv.targetPlatform != final.stdenv.hostPlatform)) ./patches/ghc/5c80a27488acfe3610ddfcb99a1e961002e386d0.patch
                 ++ final.lib.optional (versionAtLeast "9.6.1"  && versionLessThan"9.10" && (final.stdenv.targetPlatform != final.stdenv.hostPlatform)) ./patches/ghc/f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b.patch
-                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && (final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.is32bit || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch
+                ++ final.lib.optional (versionAtLeast "9.10"   && versionLessThan "9.9" && (final.stdenv.targetPlatform.isAndroid && final.stdenv.targetPlatform.is32bit || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-missing-symbols-deadbeef.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-linker-pool-allocator.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-linker-pool-allocator-2.patch
 
