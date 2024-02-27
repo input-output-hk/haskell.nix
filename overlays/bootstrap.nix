@@ -18,10 +18,10 @@ let
       "9.2" = "9.2.8";
       "9.4" = "9.4.8";
       "9.6" = "9.6.4";
-      "9.8" = "9.8.1";
+      "9.8" = "9.8.2";
     };
     gitInputs = {
-      ghc98X = "9.8.1";
+      ghc98X = "9.8.2";
       ghc99 = "9.9";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
@@ -1063,6 +1063,32 @@ in {
 
                 ghc-patches = ghc-patches "9.8.1";
             });
+            ghc982 = final.callPackage ../compiler/ghc (traceWarnOld "9.8" {
+                extra-passthru = { buildGHC = final.buildPackages.haskell-nix.compiler.ghc982; };
+
+                bootPkgs = bootPkgsGhc94 // {
+                  ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc964
+                    else final.buildPackages.buildPackages.haskell.compiler.ghc964
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc963
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc962
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc945
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc944
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc943;
+                };
+                inherit sphinx;
+
+                buildLlvmPackages = final.buildPackages.llvmPackages_12;
+                llvmPackages = final.llvmPackages_12;
+
+                src-spec = rec {
+                    version = "9.8.2";
+                    url = "https://downloads.haskell.org/~ghc/${version}/ghc-${version}-src.tar.xz";
+                    sha256 = "sha256-4vt6fddGEjfSLoNlqD7dnhp30uFdBF85RTloRah3gck=";
+                };
+
+                ghc-patches = ghc-patches "9.8.2";
+            });
         } // (__listToAttrs (final.lib.mapAttrsToList (source-name: ver:
           let
             src = final.haskell-nix.sources.${source-name};
@@ -1325,7 +1351,7 @@ in {
                f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
                26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
                7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-            --sha256: sha256-Bkn2Etb0JVmb7tM7jxuIoYLFnSp7acqraEYVq0I5oUM=
+            --sha256: sha256-7gj1rdsbRtU+HWGjDuLqb/YZ6NNjtUeCgAVsB9RUNx8=
 
           active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
         '';
