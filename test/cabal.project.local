@@ -6,6 +6,7 @@ if impl(ghc>=9.8)
   allow-newer: *:base, *:template-haskell, *:bytestring, *:text, *:ghc-prim, *:deepseq, *:Cabal
 if impl(ghc > 9.9)
   allow-newer: *:containers
+  constraints: os-string >=2.0.2
 
 repository head.hackage.ghc.haskell.org
   url: https://ghc.gitlab.haskell.org/head.hackage/
