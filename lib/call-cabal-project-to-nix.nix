@@ -257,12 +257,10 @@ let
         echo >> ./cabal.project
       '' +
         # Add replacement `source-repository-package` blocks pointing to the minimal git repos
+        # Using `optional-packages:` to work around https://github.com/haskell/cabal/issues/5444
         ( pkgs.lib.strings.concatMapStrings (f: ''
-              echo "source-repository-package" >> ./cabal.project
-              echo "  type: git" >> ./cabal.project
-              echo "  location: file://${f.location}" >> ./cabal.project
-              echo "  subdir: ${builtins.concatStringsSep " " f.subdirs}" >> ./cabal.project
-              echo "  tag: ${f.tag}" >> ./cabal.project
+              echo "optional-packages:" >> ./cabal.project
+              echo "  ${f.location}/${builtins.concatStringsSep " " f.subdirs}" >> ./cabal.project
             '') sourceReposEval
         ));
       # This will be used to replace refernces to the minimal git repos with just the index
