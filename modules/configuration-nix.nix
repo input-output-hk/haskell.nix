@@ -168,6 +168,14 @@ in {
   packages.ghci.flags.ghci = true;
   packages.ghci.flags.internal-interpreter = true;
 
+  # These flags are set by hadrian.  This would be fine if:
+  # * Haskell.nix respected `pre-existing` packages in `plan.json` and used the hadrian built version.
+  # * If `plan.json` included the flag settings used by `pre-existing` packages.
+  # For now the work around is to set the flags that hadrian does (see hadrian/src/Settings/Packages.hs).
+  packages.unix.flags      = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
+  packages.directory.flags = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
+  packages.win32.flags     = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
+
   # See https://github.com/Bodigrim/bitvec/pull/61
   packages.bitvec.patches = [
     (fromUntil "1.1.3.0" "1.1.3.0.1" ../patches/bitvec-gmp-fix.patch)
