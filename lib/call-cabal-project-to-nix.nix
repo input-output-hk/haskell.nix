@@ -230,9 +230,22 @@ let
       sourceRepoPackageResult = pkgs.haskell-nix.haskellLib.parseSourceRepositoryPackages
         cabalProjectFileName sha256map source-repo-override projectFile;
 
-      # Parse the `repository` blocks
-      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoPackageResult.otherText;
+      sourceRepoFixedProjectFile =
+        sourceRepoPackageResult.initialText +
+        pkgs.lib.strings.concatMapStrings (block:
+            if block ? sourceRepo
+              then
+                let
+                  f = fetchPackageRepo evalPackages.fetchgit block.sourceRepo;
+                in ''
+                  ${block.indentation}source-repository-package
+                  ${block.indentation}  type: git
+                  ${block.indentation}  location: file://${f.location}
+                  ${block.indentation}  subdir: ${builtins.concatStringsSep " " f.subdirs}
+                  ${block.indentation}  tag: ${f.tag}
+                '' + block.followingText
+              else block.followingText
+          ) sourceRepoPackageResult.sourceRepos;
 
       # we need the repository content twice:
       # * at eval time (below to build the fixed project file)
@@ -243,26 +256,19 @@ let
       #   on the target system would use, so that the derivation is unaffected
       #   and, say, a linux release build job can identify the derivation
       #   as built by a darwin builder, and fetch it from a cache
-      sourceReposEval = builtins.map (fetchPackageRepo evalPackages.fetchgit) sourceRepoPackageResult.sourceRepos;
-      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x).fetched) sourceRepoPackageResult.sourceRepos;
+      sourceReposEval = builtins.map (x: (fetchPackageRepo evalPackages.fetchgit x.sourceRepo)) sourceRepoPackageResult.sourceRepos;
+      sourceReposBuild = builtins.map (x: (fetchPackageRepo pkgs.fetchgit x.sourceRepo).fetched) sourceRepoPackageResult.sourceRepos;
+
+      # Parse the `repository` blocks
+      repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
+        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoFixedProjectFile;
     in {
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
       makeFixedProjectFile = ''
-        cp -f ${evalPackages.writeText "cabal.project" sourceRepoPackageResult.otherText} ./cabal.project
-      '' +
-        pkgs.lib.optionalString (builtins.length sourceReposEval != 0) (''
+        cp -f ${evalPackages.writeText "cabal.project" sourceRepoFixedProjectFile} ./cabal.project
         chmod +w -R ./cabal.project
-        # The newline here is important in case cabal.project does not have one at the end
-        echo >> ./cabal.project
-      '' +
-        # Add replacement `source-repository-package` blocks pointing to the minimal git repos
-        # Using `optional-packages:` to work around https://github.com/haskell/cabal/issues/5444
-        ( pkgs.lib.strings.concatMapStrings (f: ''
-              echo "optional-packages:" >> ./cabal.project
-              echo "  ${f.location}/${builtins.concatStringsSep " " f.subdirs}" >> ./cabal.project
-            '') sourceReposEval
-        ));
+      '';
       # This will be used to replace refernces to the minimal git repos with just the index
       # of the repo.  The index will be used in lib/import-and-filter-project.nix to
       # lookup the correct repository in `sourceReposBuild`.  This avoids having
