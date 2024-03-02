@@ -238,6 +238,7 @@ let
                 let
                   f = fetchPackageRepo evalPackages.fetchgit block.sourceRepo;
                 in ''
+
                   ${block.indentation}source-repository-package
                   ${block.indentation}  type: git
                   ${block.indentation}  location: file://${f.location}
