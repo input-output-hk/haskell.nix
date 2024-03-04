@@ -47,18 +47,14 @@ in pkgs.runCommand (name + "-coverage-report")
     local mixDirArgs=$(mktemp)
     ${ # Copy out mix files used for this report
       lib.concatStrings (map (l: ''
-        local dir=${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}
+        local mixDir=${l}/share/hpc/vanilla/mix
+        local dir=$mixDir/${l.identifier.name}-${l.identifier.version}
         if [ -d $dir ]; then
           echo --hpcdir=$dir >> $mixDirArgs
-          if [ -d $dir ]; then
-            cp -R $dir $out/share/hpc/vanilla/mix/
-          fi
-        else
-          dir=${l}/share/hpc/vanilla/mix
-          echo --hpcdir=$dir >> $mixDirArgs
-          if [ -d $dir ]; then
-            cp -R $dir/* $out/share/hpc/vanilla/mix/
-          fi
+          cp -R $dir $out/share/hpc/vanilla/mix/
+        elif [ -n "$(ls -A $mixDir)" ]; then
+          echo --hpcdir=$mixDir >> $mixDirArgs
+          cp -R $mixDir/* $out/share/hpc/vanilla/mix/
         fi
       '') mixLibraries)
     }

@@ -82,9 +82,9 @@ in pkgs.runCommand "project-coverage-report"
       fi
 
       # Copy mix, tix, and html information over from each report
-      if [ -d $report/share/hpc/vanilla/mix/$identifier* ]; then
-        cp -Rn $report/share/hpc/vanilla/mix/$identifier* $out/share/hpc/vanilla/mix
-      fi
+      for f in $report/share/hpc/vanilla/mix/$identifier*; do
+        cp -Rn $f $out/share/hpc/vanilla/mix
+      done
       cp -R $report/share/hpc/vanilla/tix/* $out/share/hpc/vanilla/tix/
       cp -R $report/share/hpc/vanilla/html/* $out/share/hpc/vanilla/html/
     '') coverageReports)}
