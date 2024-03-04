@@ -16,9 +16,6 @@
 }:
 
 let
-  mixDir = l: "${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}";
-  mixDirs = map mixDir mixLibraries;
-
   srcDirs = map (l: l.srcSubDirPath) mixLibraries;
 
 in pkgs.runCommand (name + "-coverage-report")
@@ -49,13 +46,21 @@ in pkgs.runCommand (name + "-coverage-report")
     }
     local mixDirArgs=$(mktemp)
     ${ # Copy out mix files used for this report
-      lib.concatStrings (map (mixDir: ''
-        local dir=${mixDir}
-        echo --hpcdir=$dir >> $mixDirArgs
+      lib.concatStrings (map (l: ''
+        local dir=${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}
         if [ -d $dir ]; then
-          cp -R "$dir" $out/share/hpc/vanilla/mix/
+          echo --hpcdir=$dir >> $mixDirArgs
+          if [ -d $dir ]; then
+            cp -R $dir $out/share/hpc/vanilla/mix/
+          fi
+        else
+          dir=${l}/share/hpc/vanilla/mix
+          echo --hpcdir=$dir >> $mixDirArgs
+          if [ -d $dir ]; then
+            cp -R $dir/* $out/share/hpc/vanilla/mix/
+          fi
         fi
-      '') mixDirs)
+      '') mixLibraries)
     }
     local includeArgs=$(mktemp)
     find $out/share/hpc/vanilla/mix/ -type f \

@@ -635,7 +635,7 @@ let
       ''))
       + (lib.optionalString doCoverage ''
         mkdir -p $out/share
-        cp -r dist/hpc $out/share
+        cp -r dist/${lib.optionalString (builtins.compareVersions defaults.ghc.version "9.9" >= 0) "build/extra-compilation-artifacts/"}hpc $out/share
         cp dist/setup-config $out/
       '')
       }
