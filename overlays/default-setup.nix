@@ -59,9 +59,10 @@ let
           build-tools = [];
 
           platforms = null;
+          preUnpack = null;  postUnpack = null;
+          prePatch = null;   postPatch = null;
           preBuild = null;   postBuild = null;
           preInstall = null; postInstall = null;
-          preUnpack = null;  postUnpack = null;
         };
         package = {
           identifier = {

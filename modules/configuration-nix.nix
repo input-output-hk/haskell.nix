@@ -68,6 +68,16 @@ in {
       (config.hsPkgs.buildPackages.happy.components.exes.happy or pkgs.buildPackages.happy)
     ]);
 
+  packages.ghc.prePatch = ''
+    cp -L Setup.hs Setup.hs.temp
+    rm Setup.hs
+    mv Setup.hs.temp Setup.hs
+    chmod +w Setup.hs
+  '';
+  packages.ghc.patches = [
+    (fromUntil "9.9" "9.10" ../overlays/patches/ghc/ghc-9.9-setup-hs.patch)
+  ];
+
   # Remove dependency on hsc2hs (hsc2hs should be in ghc derivation)
   packages.mintty.components.library.build-tools = pkgs.lib.mkForce [];
 

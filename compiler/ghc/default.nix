@@ -545,6 +545,10 @@ stdenv.mkDerivation (rec {
               mkdir -p $generated/compiler/stage2/build/GHC/Settings
               cp _build/stage1/compiler/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
             fi
+            if [[ -f _build/stage1/compiler/build/compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
+              mkdir -p $generated/compiler/stage2/build/compiler/GHC/CmmToLlvm/Version
+              cp _build/stage1/compiler/build/compiler/GHC/CmmToLlvm/Version/Bounds.hs $generated/compiler/stage2/build/compiler/GHC/CmmToLlvm/Version/Bounds.hs
+            fi
             cp _build/stage1/compiler/build/*.hs-incl $generated/compiler/stage2/build || true
           ''
           # Save generated files for needed when building ghc-boot
