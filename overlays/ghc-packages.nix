@@ -172,8 +172,8 @@ in rec {
                 if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs ]]; then
                   ln -s ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs $out/compiler/GHC/Settings
                 fi
-                if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
-                  ln -s ${ghc.generated}/compiler/stage2/build/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version
+                if [[ -f ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
+                  ln -s ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version
                 fi
                 ln -s ${ghc.generated}/includes/dist-derivedconstants/header/* $out/compiler
                 ln -s ${ghc.generated}/compiler/stage2/build/*.hs-incl $out/compiler
