@@ -139,11 +139,11 @@
     "ghc99": {
       "flake": false,
       "locked": {
-        "lastModified": 1708819824,
-        "narHash": "sha256-0JpAnmpQnCwyyDFybtgM491c5Wt1AZpaw/32b58e8+c=",
+        "lastModified": 1709600354,
+        "narHash": "sha256-aebL+jM4R//+57FGqNWR38XCmKbM/3nCNXTx4QxV0Z0=",
         "ref": "refs/heads/master",
-        "rev": "294c93a580e85e242d90349ae92fa6a7818002bb",
-        "revCount": 62485,
+        "rev": "82ccb8012ba532f0fa06dc6ff96d33217560088a",
+        "revCount": 62515,
         "submodules": true,
         "type": "git",
         "url": "https://gitlab.haskell.org/ghc/ghc"
