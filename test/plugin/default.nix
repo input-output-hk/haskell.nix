@@ -21,7 +21,7 @@ in recurseIntoAttrs {
 
   # Not sure why this breaks for ghc 8.10.7
   meta.disabled = compiler-nix-name == "ghc8107"
-    || compiler-nix-name == "ghc9920240225" # undefined symbol: hs_atomics_primops_store_load_barrier
+    || compiler-nix-name == "ghc9920240305" # undefined symbol: hs_atomics_primops_store_load_barrier
     || stdenv.hostPlatform.isMusl
     || stdenv.hostPlatform.isGhcjs
     || stdenv.hostPlatform.isWindows
