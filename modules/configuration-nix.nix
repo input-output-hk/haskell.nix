@@ -68,12 +68,13 @@ in {
       (config.hsPkgs.buildPackages.happy.components.exes.happy or pkgs.buildPackages.happy)
     ]);
 
-  packages.ghc.prePatch = ''
-    cp -L Setup.hs Setup.hs.temp
-    rm Setup.hs
-    mv Setup.hs.temp Setup.hs
-    chmod +w Setup.hs
-  '';
+  packages.ghc.prePatch =
+    pkgs.lib.optionalString (builtins.compareVersions config.compiler.version "9.9" > 0) ''
+      cp -L Setup.hs Setup.hs.temp
+      rm Setup.hs
+      mv Setup.hs.temp Setup.hs
+      chmod +w Setup.hs
+    '';
   packages.ghc.patches = [
     (fromUntil "9.9" "9.10" ../overlays/patches/ghc/ghc-9.9-setup-hs.patch)
   ];
