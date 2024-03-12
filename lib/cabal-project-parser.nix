@@ -94,32 +94,32 @@ let
 
   # Parse a source-repository-package and return data of `type: git` repositories
   # See tests/unit.nix for examples of input and output.
-  parseSourceRepositoryPackageBlock = cabalProjectFileName: sha256map: block:
+  parseSourceRepositoryPackageBlock = cabalProjectFileName: sha256map: source-repo-override: indentation: block:
     let
-      x = span (pkgs.lib.strings.hasPrefix " ") (pkgs.lib.splitString "\n" block);
+      x = span (pkgs.lib.strings.hasPrefix (indentation + " ")) (pkgs.lib.splitString "\n" block);
       attrs = parseBlockLines x.fst;
+      overrideSourceRepo = sourceRepo: (source-repo-override.${sourceRepo.url} or (pkgs.lib.id)) sourceRepo;
     in
       if attrs."type" or "" != "git"
         then {
-          sourceRepo = [];
-          otherText = "\nsource-repository-package\n" + block;
+          followingText = "\n" + indentation + "source-repository-package\n" + block;
         }
         else {
-          sourceRepo = extractSourceRepoPackageData cabalProjectFileName sha256map attrs;
-          otherText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
+          inherit indentation;
+          sourceRepo = overrideSourceRepo (extractSourceRepoPackageData cabalProjectFileName sha256map attrs);
+          followingText = pkgs.lib.strings.concatStringsSep "\n" x.snd;
         };
 
   parseSourceRepositoryPackages = cabalProjectFileName: sha256map: source-repo-override: projectFile:
     let
-      blocks = pkgs.lib.splitString "\nsource-repository-package\n" ("\n" + projectFile);
-      initialText = pkgs.lib.lists.take 1 blocks;
-      repoBlocks = builtins.map (parseSourceRepositoryPackageBlock cabalProjectFileName sha256map) (pkgs.lib.lists.drop 1 blocks);
-      overrideSourceRepo = sourceRepo: (source-repo-override.${sourceRepo.url} or (pkgs.lib.id)) sourceRepo;
+      splitResult = builtins.split "\n( *)source-repository-package\n" ("\n" + projectFile);
+      # Construct a list of strings with just the indentation amounts for each map
+      indentations = builtins.concatLists (builtins.filter builtins.isList splitResult);
+      blocks = builtins.filter builtins.isString (pkgs.lib.lists.drop 1 splitResult);
     in {
-      sourceRepos = pkgs.lib.lists.map (block: overrideSourceRepo block.sourceRepo) repoBlocks;
-      otherText = pkgs.lib.strings.concatStringsSep "\n" (
-        initialText
-        ++ (builtins.map (x: x.otherText) repoBlocks));
+      initialText = builtins.head splitResult;
+      sourceRepos = pkgs.lib.zipListsWith (parseSourceRepositoryPackageBlock cabalProjectFileName sha256map source-repo-override)
+        indentations blocks;
     };
 
   # Parse and replace repository

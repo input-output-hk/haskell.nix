@@ -1,14 +1,6 @@
 final: prev:
 let
-    # For each architecture, what GHC version we should use for bootstrapping.
-    buildBootstrapper =
-        if final.stdenv.buildPlatform.isAarch64 && final.stdenv.buildPlatform.isDarwin
-        then {
-            compilerNixName = "ghc8107";
-        }
-        else {
-            compilerNixName = "ghc884";
-        };
+    buildBootstrapper.compilerNixName = "ghc8107";
     latestVer = {
       "8.4" = "8.4.4";
       "8.6" = "8.6.5";
@@ -76,7 +68,7 @@ in {
                   materialized = ../materialized/happy-1.20.0;
                 };
             };
-            sphinx = with final.buildPackages; python3Packages.sphinx_1_7_9 or sphinx_5;
+            sphinx = final.buildPackages.sphinx;
 
             D5123-patch = final.fetchpatch rec { # https://phabricator.haskell.org/D5123
                 url = "http://tarballs.nixos.org/sha256/${sha256}";
@@ -275,6 +267,11 @@ in {
                 # Fix the bad fixups: https://gitlab.haskell.org/ghc/ghc/-/commit/2adc050857a9c1b992040fbfd55fbe65b2851b19
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.6.4" && final.stdenv.targetPlatform.isAarch64) ./patches/ghc/2adc050857a9c1b992040fbfd55fbe65b2851b19.patch
                 ++ final.lib.optional (versionAtLeast "8.10.7" && versionLessThan "9.0" && final.stdenv.targetPlatform.isAarch64 && final.stdenv.targetPlatform.isMusl && final.stdenv.targetPlatform != final.stdenv.hostPlatform) ./patches/ghc/ghc-8.10-aarch64-musl-gettimeofday.patch
+
+                # Fix docs/users_guide/rtd-theme/layout.html to work with sphinx 7
+                ++ fromUntil "9.0" "9.8" ./patches/ghc/docs-sphinx-7.patch
+                ++ fromUntil "9.8" "9.9" ./patches/ghc/docs-sphinx-7-ghc98.patch
+
                 # These two patches are needed for libblst, which has now hidden symbols, which the linker doesn't know how to deal with.
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols.patch
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
@@ -1102,8 +1099,9 @@ in {
 
                 bootPkgs = bootPkgsGhc94 // {
                   ghc = if final.stdenv.buildPlatform != final.stdenv.targetPlatform
-                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc963
+                    then final.buildPackages.buildPackages.haskell-nix.compiler.ghc964
                     else final.buildPackages.buildPackages.haskell.compiler.ghc981
+                          or final.buildPackages.buildPackages.haskell.compiler.ghc964
                           or final.buildPackages.buildPackages.haskell.compiler.ghc963
                           or final.buildPackages.buildPackages.haskell.compiler.ghc962
                           or final.buildPackages.buildPackages.haskell.compiler.ghc945
@@ -1168,7 +1166,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                        "--with-gcc=${final.pkgsBuildBuild.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -1202,7 +1200,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                        "--with-gcc=${final.pkgsBuildBuild.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -1236,7 +1234,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                        "--with-gcc=${final.pkgsBuildBuild.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -1270,7 +1268,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                        "--with-gcc=${final.pkgsBuildBuild.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.
@@ -1304,7 +1302,7 @@ in {
                     extraConfigureFlags = [
                         "--ghcjs"
                         "--with-ghcjs=${targetPrefix}ghc" "--with-ghcjs-pkg=${targetPrefix}ghc-pkg"
-                        "--with-gcc=${final.buildPackages.emscripten}/bin/emcc"
+                        "--with-gcc=${final.pkgsBuildBuild.emscripten}/bin/emcc"
                     ];
                 };
                 # note: we'll use the buildGHCs `hsc2hs`, ghcjss wrapper just horribly breaks in this nix setup.

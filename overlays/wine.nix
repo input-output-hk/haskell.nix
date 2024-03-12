@@ -6,6 +6,7 @@ _final: prev: {
   winePackages = prev.winePackages // {
     minimal = prev.winePackages.minimal.overrideAttrs (oldAttrs: {
       patches = oldAttrs.patches or [] ++ [ ./patches/wine-add-dll-directory.patch ];
+      configureFlags = oldAttrs.configureFlags or [] ++ [ "--without-x" ];
     });
   };
 }

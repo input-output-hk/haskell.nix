@@ -141,10 +141,9 @@ let
     CrossCompilePrefix = ${targetPrefix}
   '' + lib.optionalString isCrossTarget ''
     Stage1Only = ${if targetPlatform.system == hostPlatform.system then "NO" else "YES"}
-  ''
-    # GHC 9.0.1 fails to compile for musl unless HADDOC_DOCS = NO
-    + lib.optionalString (isCrossTarget || (targetPlatform.isMusl && builtins.compareVersions ghc-version "9.0.1" >= 0)) ''
+  '' + lib.optionalString (isCrossTarget || targetPlatform.isMusl) ''
     HADDOCK_DOCS = NO
+  '' + ''
     BUILD_SPHINX_HTML = NO
     BUILD_SPHINX_PDF = NO
   '' + lib.optionalString enableRelocatedStaticLibs ''
@@ -247,8 +246,6 @@ let
           then "ghc928"
           else "ghc962";
     in
-      assert (buildPackages.haskell.compiler ? ${compiler-nix-name}
-        || throw "Expected pkgs.haskell.compiler.${compiler-nix-name} for building hadrian");
     buildPackages.pinned-haskell-nix.tool compiler-nix-name "hadrian" {
       compilerSelection = p: p.haskell.compiler;
       index-state = buildPackages.haskell-nix.internalHackageIndexState;
@@ -548,6 +545,10 @@ stdenv.mkDerivation (rec {
               mkdir -p $generated/compiler/stage2/build/GHC/Settings
               cp _build/stage1/compiler/build/GHC/Settings/Config.hs $generated/compiler/stage2/build/GHC/Settings
             fi
+            if [[ -f compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
+              mkdir -p $generated/compiler/GHC/CmmToLlvm/Version
+              cp compiler/GHC/CmmToLlvm/Version/Bounds.hs $generated/compiler/GHC/CmmToLlvm/Version/Bounds.hs
+            fi
             cp _build/stage1/compiler/build/*.hs-incl $generated/compiler/stage2/build || true
           ''
           # Save generated files for needed when building ghc-boot
@@ -773,10 +774,17 @@ stdenv.mkDerivation (rec {
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage2:exe:iserv
-    # I don't seem to be able to build _build/stage1/lib/bin/ghc-iserv-prof
-    # by asking hadrian for this. The issue is likely that the profiling way
-    # is probably missing from hadrian m(
-    ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage1/lib/bin/ghc-iserv-prof
+    ${
+      # This work around for building `ghc-iserv-prof` does not work with the current ghc HEAD
+      lib.optionalString (builtins.compareVersions ghc-version "9.9" < 0)
+      
+      # I don't seem to be able to build _build/stage1/lib/bin/ghc-iserv-prof
+      # by asking hadrian for this. The issue is likely that the profiling way
+      # is probably missing from hadrian m(
+      ''
+      ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage1/lib/bin/ghc-iserv-prof
+      ''
+    }
     pushd _build/stage1/bin
     for exe in *; do
       mv $exe ${targetPrefix}$exe

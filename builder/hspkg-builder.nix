@@ -46,7 +46,7 @@ let
         pkgconfig = if components ? library then components.library.pkgconfig or [] else [];
       };
       inherit package name src flags patches defaultSetupSrc;
-      inherit (pkg) preUnpack postUnpack;
+      inherit (pkg) preUnpack postUnpack prePatch postPatch;
     } // lib.optionalAttrs (package.buildType != "Custom") {
       nonReinstallablePkgs = ["base" "Cabal"];
     });
