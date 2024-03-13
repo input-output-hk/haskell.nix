@@ -13,8 +13,8 @@ let
       "9.8" = "9.8.2";
     };
     gitInputs = {
-      ghc98X = "9.8.2";
-      ghc99 = "9.9";
+      ghc910X = "9.10.1";
+      ghc911 = "9.11";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
     compilerNameMap =
