@@ -13,7 +13,7 @@ let
       "9.8" = "9.8.2";
     };
     gitInputs = {
-      ghc910X = "9.10.1";
+      ghc910X = "9.9";
       ghc911 = "9.11";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
