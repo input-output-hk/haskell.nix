@@ -185,7 +185,7 @@ in {
   # For now the work around is to set the flags that hadrian does (see hadrian/src/Settings/Packages.hs).
   packages.unix.flags      = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
   packages.directory.flags = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
-  packages.win32.flags     = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
+  packages.Win32.flags     = pkgs.lib.optionalAttrs (builtins.compareVersions config.compiler.version "9.9" > 0) { os-string = true; };
 
   # See https://github.com/Bodigrim/bitvec/pull/61
   packages.bitvec.patches = [
