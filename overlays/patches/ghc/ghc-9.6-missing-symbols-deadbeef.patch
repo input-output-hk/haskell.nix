@@ -1,0 +1,26 @@
+diff --git a/rts/linker/elf_got.c b/rts/linker/elf_got.c
+index 4d0c978..96a9d60 100644
+--- a/rts/linker/elf_got.c
++++ b/rts/linker/elf_got.c
+@@ -99,7 +99,8 @@ fillGot(ObjectCode * oc) {
+                             } else {
+                                 errorBelch("Failed to lookup symbol: %s\n",
+                                            symbol->name);
+-                                return EXIT_FAILURE;
++                                // return EXIT_FAILURE;
++                                symbol->addr = 0xDEADBEEF;
+                             }
+                         }
+                     } else {
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 2356818..727e845 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -1088,6 +1088,7 @@ SymbolAddr* lookupSymbol( SymbolName* lbl )
+                    "See top entry above.\n", lbl);
+         IF_DEBUG(linker, printLoadedObjects());
+         fflush(stderr);
++        r = 0xDEADBEEF;
+     }
+
+     if (!runPendingInitializers()) {

@@ -1,0 +1,35 @@
+From e00fa7688c2442ed8590d4cd003c31dd46c7a0ff Mon Sep 17 00:00:00 2001
+From: Moritz Angermann <moritz.angermann@gmail.com>
+Date: Wed, 21 Feb 2024 08:14:01 +0000
+Subject: [PATCH 7/7] fixup! Better pool alignment. We still hardcode section
+ alignments. But that's ok for now.
+
+---
+ rts/linker/Elf.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 05db9b3..fd33458 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -876,7 +876,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+                * address might be out of range for sections that are mmaped.
+                */
+               alloc = SECTION_POOL;
+-              start = memPoolAlloc(kind, 0xff, size);
++              start = memPoolAlloc(kind, 0xff, poolAlign(0xff, size));
+               // mmapAnonForLinker(size);
+               if (start == NULL) {
+                 barf("failed to mmap memory for bss. "
+@@ -1035,7 +1035,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+       void * common_mem = NULL;
+       if(common_size > 0) {
+           common_mem = // mmapAnonForLinker(common_size);
+-              memPoolAlloc(SECTIONKIND_RWDATA, 0xff, common_size);
++              memPoolAlloc(SECTIONKIND_RWDATA, 0xff, poolAlign(0xff,common_size));
+           if (common_mem == NULL) {
+             barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
+           }
+-- 
+2.33.0
+

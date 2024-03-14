@@ -1,0 +1,81 @@
+From f8beb54a1d5725bd0d8a4b0a909d1b41d742b50b Mon Sep 17 00:00:00 2001
+From: Luite Stegeman <stegeman@gmail.com>
+Date: Fri, 8 Dec 2023 12:12:20 +0100
+Subject: [PATCH] External plugins: try loading archive if loading dynamic
+ library fails
+
+---
+ compiler/GHC/Driver/Plugins.hs | 27 ++++++++++-----------------
+ 1 file changed, 10 insertions(+), 17 deletions(-)
+
+diff --git a/compiler/GHC/Driver/Plugins.hs b/compiler/GHC/Driver/Plugins.hs
+index 2f3bf44b408..8b06e8b16d5 100644
+--- a/compiler/GHC/Driver/Plugins.hs
++++ b/compiler/GHC/Driver/Plugins.hs
+@@ -1,12 +1,9 @@
+ {-# LANGUAGE RankNTypes #-}
+ {-# LANGUAGE CPP #-}
+ 
+-#if defined(CAN_LOAD_DLL)
+ {-# LANGUAGE MagicHash #-}
+ {-# LANGUAGE LambdaCase #-}
+ {-# LANGUAGE UnboxedTuples #-}
+-#endif
+-
+ 
+ -- | Definitions for writing /plugins/ for GHC. Plugins can hook into
+ -- several areas of the compiler. See the 'Plugin' type. These plugins
+@@ -103,11 +100,9 @@ import qualified Data.Semigroup
+ 
+ import Control.Monad
+ 
+-#if defined(CAN_LOAD_DLL)
+ import GHCi.ObjLink
+ import GHC.Exts (addrToAny#, Ptr(..))
+ import GHC.Utils.Encoding
+-#endif
+ 
+ 
+ -- | Command line options gathered from the -PModule.Name:stuff syntax
+@@ -372,10 +367,6 @@ defaultFrontendPlugin = FrontendPlugin { frontend = \_ _ -> return () }
+ -- | Load external plugins
+ loadExternalPlugins :: [ExternalPluginSpec] -> IO [ExternalPlugin]
+ loadExternalPlugins [] = return []
+-#if !defined(CAN_LOAD_DLL)
+-loadExternalPlugins _ = do
+-  panic "loadExternalPlugins: loading shared libraries isn't supported by this compiler"
+-#else
+ loadExternalPlugins ps = do
+   -- initialize the linker
+   initObjLinker RetainCAFs
+@@ -400,17 +391,19 @@ loadExternalPlugins ps = do
+ 
+ loadExternalPluginLib :: FilePath -> IO ()
+ loadExternalPluginLib path = do
+-  -- load library
++  -- XXX we should probably use the filename to determine whether
++  --     the plugin is an archive or dynamic lib
++
++  -- try loading it as a dynamic library
+   loadDLL path >>= \case
+-    Just errmsg -> pprPanic "loadExternalPluginLib"
+-                    (vcat [ text "Can't load plugin library"
+-                          , text "  Library path: " <> text path
+-                          , text "  Error       : " <> text errmsg
+-                          ])
+-    Nothing -> do
++    Just _errmsg ->
++      -- if that fails, try loading it as an archive
++      loadArchive path >> resolve
++    Nothing -> resolve
++  where
++    resolve = do
+       -- resolve objects
+       resolveObjs >>= \case
+         True -> return ()
+         False -> pprPanic "loadExternalPluginLib" (text "Unable to resolve objects for library: " <> text path)
+ 
+-#endif
+-- 
+GitLab
+

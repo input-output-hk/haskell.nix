@@ -52,15 +52,7 @@ index c3a5b5d..b826af8 100644
           debugBelch("Symbol %s was defined by %" PATH_FMT " to be a %s symbol.\n",
                      key, obj_name, symbolTypeString(type));
           debugBelch("      yet was defined by %" PATH_FMT " to be a %s symbol.\n",
-@@ -380,6 +389,8 @@ int ghciInsertSymbolTable(
-       pinfo->owner->archiveMemberName ? pinfo->owner->archiveMemberName
-       : pinfo->owner->fileName
-    );
-+   debugBelch("Address of new symbol: %p, old symbol: %p\n", data, pinfo->value);
-+   debugBelch("Type of symbol; new: %d, existing: %d\n", type, pinfo->type);
 
-    return 0;
- }
 diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
 index 6cadaa8..3beac1d 100644
 --- a/rts/LinkerInternals.h
