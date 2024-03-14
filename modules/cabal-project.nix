@@ -22,7 +22,7 @@ in {
       apply = name:
         let
           fullName = pkgs.haskell-nix.resolve-compiler-name name;
-          ghc910FullName = pkgs.haskell-nix.resolve-compiler-name "ghc910";
+          ghc910FullName = pkgs.haskell-nix.resolve-compiler-name "ghc910X";
           ghc911FullName = pkgs.haskell-nix.resolve-compiler-name "ghc911";
         in
         # cabal-install from hackage (3.10.1.0) does not build with GHC HEAD
