@@ -325,5 +325,5 @@ lib.runTests {
         };
       };
     };
-    in __trace (__toJSON result) result;
+    in result;
 }
