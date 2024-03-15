@@ -127,6 +127,7 @@ let
   ''
   + lib.optionalString (stdenv.targetPlatform.isMusl && !haskellLib.isNativeMusl && builtins.compareVersions ghc.version "9.9" >0) ''
      ln -s $wrappedGhc/bin/${ghcCommand}-iserv $wrappedGhc/bin/ghc-iserv
+     ln -s $wrappedGhc/bin/${ghcCommand}-iserv-prof $wrappedGhc/bin/ghc-iserv-prof
   ''
   # Wrap haddock, if the base GHC provides it.
   + ''
