@@ -191,14 +191,14 @@ in {
                 ++ fromUntil "8.10"   "9.1"    ./patches/ghc/issue-18708.patch              # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6554
                 ++ fromUntil "9.2.2"  "9.3"    ./patches/ghc/ghc-9.2.2-fix-warnings-building-with-self.patch # https://gitlab.haskell.org/ghc/ghc/-/commit/c41c478eb9003eaa9fc8081a0039652448124f5d
                 ++ fromUntil "8.6.5"  "9.5"    ./patches/ghc/ghc-hpc-response-files.patch   # https://gitlab.haskell.org/ghc/ghc/-/merge_requests/8194
-                ++ fromUntil "9.2"    "9.10"   ./patches/ghc/sanity-check-find-file-name.patch
+                ++ fromUntil "9.2"    "9.12"   ./patches/ghc/sanity-check-find-file-name.patch
                 ++ fromUntil "8.0"    "9.0"    ./patches/ghc/dont-mark-evacuate_large-as-inline.patch
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.5"  ./patches/ghc/ghc-9.4-hadrian-win-cross.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.4.9"  ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.12"   ./patches/ghc/ghc-9.8-hadrian-win-cross.patch)
                 # support R_X86_64_PC64 (ELF constant 24) - IMAGE_REL_AMD64_SREL32 (PE constant 14), which seems to appear with 9.6 more frequently, and
                 # results in "unhandled PEi386 relocation type 14".
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.10"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.12"   ./patches/ghc/win-reloc-x86_64-pc64.patch)
                 # ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.10"   ./patches/ghc/Win32-depends-on-mingwex.patch)
                 # if the host system provides ucrt (e.g. wine with ucrtbase.dll), we may end up linking against symbols from ucrtbase, instead of msvcrt,
                 # thus leading to broken code.  E.g. the handles we create and hand to wine will all be busted, because they come from one and are processed
@@ -213,12 +213,12 @@ in {
                   ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.9"    "9.9.20231203" ./patches/ghc/no-ucrt-9.9.patch)
                 )
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.5"    ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.10"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.6.3"  "9.12"   ./patches/ghc/revert-289547580b6f2808ee123f106c3118b716486d5b.patch)
                 # the following is needed for cardano-prelude as it uses closure_sizeW :-/
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4"    "9.10"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4"    "9.12"   ./patches/ghc/win-add-closure_sizeW-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "8.10.7" "8.11"   ./patches/ghc/ghc-8.10-win-add-tzset-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.0"    "9.3"    ./patches/ghc/ghc-9.2-win-add-tzset-to-rtssyms.patch)
-                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4"    "9.10"   ./patches/ghc/win-add-tzset-to-rtssyms.patch)
+                ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4"    "9.12"   ./patches/ghc/win-add-tzset-to-rtssyms.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.4.7"  ./patches/ghc/win-linker-no-null-deref.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.7"  "9.4.8"  ./patches/ghc/win-linker-no-null-deref-9.6.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isWindows) (fromUntil "9.4.1"  "9.6"    ./patches/ghc/ghc-9.4-drop-mingwex-from-base.patch)
@@ -231,7 +231,7 @@ in {
                 ++ fromUntil "9.6.2"  "9.8"    ./patches/ghc/ghc-9.4.5-include-order-fix.patch
                 ++ fromUntil "9.6.1"  "9.9.20231203" ./patches/ghc/MR10116.patch
                 ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.4.1" "9.6" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode-ghc94.patch)
-                ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.6.1" "9.10" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
+                ++ final.lib.optionals (final.stdenv.buildPlatform == final.stdenv.targetPlatform) (fromUntil "9.6.1" "9.12" ./patches/ghc/hadrian-build-deriveConstants-genprimopcode.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.6.3"  ./patches/ghc/ghc-9.6-Merge-libiserv-with-ghci.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.3"  "9.8"    ./patches/ghc/ghc-9.6.3-Merge-libiserv-with-ghci.patch)
                 ++ final.lib.optionals (final.stdenv.targetPlatform.isGhcjs) (fromUntil "9.6.1"  "9.8"    ./patches/ghc/ghc-9.6-Assorted-changes-to-avoid-head-tail.patch)
@@ -277,6 +277,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "8.10"   && versionLessThan "8.11") ./patches/ghc/ghc-8.10-0006-Adds-support-for-Hidden-symbols-2.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch
+                ++ fromUntil "9.9" "9.12" ./patches/ghc/ghc-9.9-Cabal-3.11.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
