@@ -11,11 +11,11 @@
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-2311 = { url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin"; };
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
-    ghc98X = {
+    ghc910X = {
       flake = false;
-      url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.8&submodules=1";
+      url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.10&submodules=1";
     };
-    ghc99 = {
+    ghc911 = {
       flake = false;
       url = "git+https://gitlab.haskell.org/ghc/ghc?submodules=1";
     };

@@ -774,17 +774,8 @@ stdenv.mkDerivation (rec {
     ${hadrian}/bin/hadrian ${hadrianArgs} stage1:lib:terminfo
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget) ''
     ${hadrian}/bin/hadrian ${hadrianArgs} stage2:exe:iserv
-    ${
-      # This work around for building `ghc-iserv-prof` does not work with the current ghc HEAD
-      lib.optionalString (builtins.compareVersions ghc-version "9.9" < 0)
-      
-      # I don't seem to be able to build _build/stage1/lib/bin/ghc-iserv-prof
-      # by asking hadrian for this. The issue is likely that the profiling way
-      # is probably missing from hadrian m(
-      ''
-      ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage1/lib/bin/ghc-iserv-prof
-      ''
-    }
+    ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage1/${
+        lib.optionalString (builtins.compareVersions ghc-version "9.9" < 0) "lib/"}bin/ghc-iserv-prof
     pushd _build/stage1/bin
     for exe in *; do
       mv $exe ${targetPrefix}$exe
@@ -801,19 +792,17 @@ stdenv.mkDerivation (rec {
       then ''
         mkdir $out
         cp -r _build/stage1/bin $out
-        ${
-          # These are needed when building the reinstallable lib ghc
-          if targetPlatform.isMusl
-            then ''
-              cp _build/stageBoot/bin/genprimopcode $out/bin
-              cp _build/stageBoot/bin/deriveConstants $out/bin
-            '' else ''
-              cp _build/stageBoot/bin/${targetPrefix}genprimopcode $out/bin
-              ln -s $out/bin/${targetPrefix}genprimopcode $out/bin/genprimopcode
-              cp _build/stageBoot/bin/${targetPrefix}deriveConstants $out/bin
-              ln -s $out/bin/${targetPrefix}deriveConstants $out/bin/deriveConstants
-            ''
-        }
+        # let's assume that if we find a non-prefixed genprimop,
+        # we also find a non-prefixed deriveConstants
+        if [ -f _build/stageBoot/bin/genprimopcode ]; then
+          cp _build/stageBoot/bin/genprimopcode $out/bin
+          cp _build/stageBoot/bin/deriveConstants $out/bin
+        else
+          cp _build/stageBoot/bin/${targetPrefix}genprimopcode $out/bin
+          ln -s $out/bin/${targetPrefix}genprimopcode $out/bin/genprimopcode
+          cp _build/stageBoot/bin/${targetPrefix}deriveConstants $out/bin
+          ln -s $out/bin/${targetPrefix}deriveConstants $out/bin/deriveConstants
+        fi
         cp -r _build/stage1/lib $out
         mkdir $doc
         cp -r _build/stage1/share $doc
