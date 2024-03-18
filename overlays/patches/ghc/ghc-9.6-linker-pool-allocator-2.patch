@@ -34,13 +34,13 @@ index 4b5a506..fe3406e 100644
  }
 
 +StgWord poolAlign(StgWord size) {
-+    return (size + 0xff) & ~0xff;
++    return (size + 0x3f) & ~0x3f;
 +}
 +
 +void * printPoolInfo( void ) {
 +    printf("Pool size: %ldM\n", ((uintptr_t)__pool_rx_offset - (uintptr_t)__pool_rw_offset)/(1024*1024));
-+    printf("RW: %p -- %p\n", __pool_rw_offset, (void*)((uintptr_t)__pool + 512*1024*1024));
-+    printf("RX: %p -- %p\n", (void*)((uintptr_t)__pool + 512*1024*1024), __pool_rx_offset);
++    printf("RW: %p -- %p\n", __pool_rw_offset, (void*)((uintptr_t)__pool + 256*1024*1024));
++    printf("RX: %p -- %p\n", (void*)((uintptr_t)__pool + 256*1024*1024), __pool_rx_offset);
 +    fflush(stdout);
 +    return NULL;
 +}

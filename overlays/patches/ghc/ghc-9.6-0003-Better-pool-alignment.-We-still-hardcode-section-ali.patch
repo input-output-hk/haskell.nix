@@ -15,28 +15,28 @@ index fe3406e..9f56812 100644
 +++ b/rts/linker/Elf.c
 @@ -131,7 +131,7 @@
        https://refspecs.linuxfoundation.org/elf/gabi4+/contents.html
- 
+
  */
 -void * memPoolAlloc(SectionKind kind, StgWord size);
 +void * memPoolAlloc(SectionKind kind, StgWord align, StgWord size);
- 
+
  void * __pool = NULL;
  void * __pool_rw_offset = NULL;
 @@ -144,8 +144,8 @@ void memPoolProtect( void ) {
      }
  }
- 
+
 -StgWord poolAlign(StgWord size) {
--    return (size + 0xff) & ~0xff;
+-    return (size + 0x3f) & ~0x3f;
 +StgWord poolAlign(StgWord align, StgWord size) {
 +    return (size + align) & ~align;
  }
- 
+
  void * printPoolInfo( void ) {
 @@ -156,7 +156,8 @@ void * printPoolInfo( void ) {
      return NULL;
  }
- 
+
 -void * memPoolAlloc(SectionKind kind, StgWord size) {
 +void * memPoolAlloc(SectionKind kind, StgWord align, StgWord size) {
 +    ASSERT(0x0 == (size & align));
@@ -50,14 +50,14 @@ index fe3406e..9f56812 100644
 -    StgWord alignedSize = poolAlign(size);
 +    StgWord alignedSize = size;
      void * ret = NULL;
- 
+
      if(kind == SECTIONKIND_CODE_OR_RODATA) {
 @@ -875,7 +876,7 @@ ocGetNames_ELF ( ObjectCode* oc )
                 * address might be out of range for sections that are mmaped.
                 */
                alloc = SECTION_POOL;
 -              start = memPoolAlloc(kind, size);
-+              start = memPoolAlloc(kind, 0xff, size);
++              start = memPoolAlloc(kind, 0x3f, size);
                // mmapAnonForLinker(size);
                if (start == NULL) {
                  barf("failed to mmap memory for bss. "
@@ -66,7 +66,7 @@ index fe3406e..9f56812 100644
                mapped_start = start;
                mapped_offset = 0;
 -              mapped_size = poolAlign(size);
-+              mapped_size = poolAlign(0xff, size);
++              mapped_size = poolAlign(0x3f, size);
            }
            CHECK(start != 0x0);
  #else
@@ -87,20 +87,20 @@ index fe3406e..9f56812 100644
             * break up the section itself.
             */
 +          unsigned stub_align = 0x7;
-+          unsigned section_align = 0xff;
- 
++          unsigned section_align = 0x3f;
+
            unsigned nstubs = numberOfStubsForSection(oc, i);
 -          unsigned stub_space = STUB_SIZE * nstubs;
 +          unsigned stub_space = poolAlign(stub_align, STUB_SIZE * nstubs);
- 
+
 -          void * mem = memPoolAlloc(kind, stub_space + size);
 +          void * mem = memPoolAlloc(kind, section_align, poolAlign(section_align, stub_space + size));
          //   void * mem = mmapAnonForLinker(size+stub_space);
- 
+
            if( mem == MAP_FAILED ) {
 @@ -939,7 +942,7 @@ ocGetNames_ELF ( ObjectCode* oc )
            alloc = SECTION_POOL;
- 
+
            mapped_offset = 0;
 -          mapped_size = poolAlign(size+stub_space);
 +          mapped_size = poolAlign(section_align, size + stub_space);
@@ -108,7 +108,7 @@ index fe3406e..9f56812 100644
            mapped_start = mem;
  #else
 @@ -978,7 +981,7 @@ ocGetNames_ELF ( ObjectCode* oc )
- 
+
  #if defined(NEED_PLT)
            oc->sections[i].info->nstubs = 0;
 -          oc->sections[i].info->stub_offset = (uint8_t*)mem + size;
@@ -121,7 +121,7 @@ index fe3406e..9f56812 100644
        if(common_size > 0) {
            common_mem = // mmapAnonForLinker(common_size);
 -              memPoolAlloc(SECTIONKIND_RWDATA, common_size);
-+              memPoolAlloc(SECTIONKIND_RWDATA, 0xff, common_size);
++              memPoolAlloc(SECTIONKIND_RWDATA, 0x3f, common_size);
            if (common_mem == NULL) {
              barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
            }
@@ -135,8 +135,8 @@ index fb8fbfb..c6e185d 100644
  void * printPoolInfo     ( void );
 -StgWord poolAlign        ( StgWord size );
 +StgWord poolAlign        ( StgWord align, StgWord size );
- 
+
  #include "EndPrivate.h"
--- 
+--
 2.33.0
 

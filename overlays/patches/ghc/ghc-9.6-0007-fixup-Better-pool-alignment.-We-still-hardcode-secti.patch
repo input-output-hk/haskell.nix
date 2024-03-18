@@ -16,8 +16,8 @@ index 05db9b3..fd33458 100644
                 * address might be out of range for sections that are mmaped.
                 */
                alloc = SECTION_POOL;
--              start = memPoolAlloc(kind, 0xff, size);
-+              start = memPoolAlloc(kind, 0xff, poolAlign(0xff, size));
+-              start = memPoolAlloc(kind, 0x3f, size);
++              start = memPoolAlloc(kind, 0x3f, poolAlign(0x3f, size));
                // mmapAnonForLinker(size);
                if (start == NULL) {
                  barf("failed to mmap memory for bss. "
@@ -25,11 +25,11 @@ index 05db9b3..fd33458 100644
        void * common_mem = NULL;
        if(common_size > 0) {
            common_mem = // mmapAnonForLinker(common_size);
--              memPoolAlloc(SECTIONKIND_RWDATA, 0xff, common_size);
-+              memPoolAlloc(SECTIONKIND_RWDATA, 0xff, poolAlign(0xff,common_size));
+-              memPoolAlloc(SECTIONKIND_RWDATA, 0x3f, common_size);
++              memPoolAlloc(SECTIONKIND_RWDATA, 0x3f, poolAlign(0x3f,common_size));
            if (common_mem == NULL) {
              barf("ocGetNames_ELF: Failed to allocate memory for SHN_COMMONs");
            }
--- 
+--
 2.33.0
 

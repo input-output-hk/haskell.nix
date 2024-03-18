@@ -289,6 +289,7 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0002-Drop-spurious-8-byte-offset-from-elf_plt.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0003-Better-pool-alignment.-We-still-hardcode-section-ali.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0007-fixup-Better-pool-alignment.-We-still-hardcode-secti.patch
+                ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0008-pool-improvements.patch
                 # these two are abit questionable. They are pretty rough, and assume static binary as well as posix.
                 # ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0004-ghcidladdr.patch
                 # ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.9" && final.stdenv.targetPlatform.isMusl) ./patches/ghc/ghc-9.6-0005-Better-interpreter-debugging.-Needs-ghcidladdr.patch
