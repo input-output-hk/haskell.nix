@@ -279,10 +279,6 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch
                 ++ fromUntil "9.9" "9.12" ./patches/ghc/ghc-9.9-Cabal-3.11.patch
-
-                # Haskell.nix planning breaks if boot package ids have a suffix
-                ++ fromUntil "9.8.1" "9.9" ./patches/ghc/ghc-9.8.1-remove-inplace-suffix.patch
-                ++ from      "9.9"         ./patches/ghc/ghc-9.9-remove-inplace-suffix.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
