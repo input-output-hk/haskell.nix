@@ -23,7 +23,7 @@ jobs:
   deadnix:
     runs-on: [self-hosted, linux]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: |
           nix run github:astro/deadnix -- --edit --no-lambda-pattern-names --exclude materialized
           TMPFILE=$(mktemp)

@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
+{ pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -194,8 +194,8 @@ let
       ++ lib.optional (!stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" >= 0)
         "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
       ++ lib.optionals (stdenv.hostPlatform.isGhcjs) [
-        "--with-gcc=${buildPackages.emscripten}/bin/emcc"
-        "--with-ld=${buildPackages.emscripten}/bin/emcc"
+        "--with-gcc=${pkgsBuildBuild.emscripten}/bin/emcc"
+        "--with-ld=${pkgsBuildBuild.emscripten}/bin/emcc"
       ]
       ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
@@ -635,7 +635,7 @@ let
       ''))
       + (lib.optionalString doCoverage ''
         mkdir -p $out/share
-        cp -r dist/hpc $out/share
+        cp -r dist/${lib.optionalString (builtins.compareVersions defaults.ghc.version "9.9" >= 0) "build/extra-compilation-artifacts/"}hpc $out/share
         cp dist/setup-config $out/
       '')
       }
