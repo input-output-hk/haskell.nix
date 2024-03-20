@@ -14,11 +14,11 @@
     # And later it breaks in th-dll due to some change in the windows libs. We should probably
     # drop unsable.
     nixpkgs-unstable = { url = "github:NixOS/nixpkgs?rev=47585496bcb13fb72e4a90daeea2f434e2501998"; }; # nixpkgs-unstable };
-    ghc98X = {
+    ghc910X = {
       flake = false;
-      url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.8&submodules=1";
+      url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.10&submodules=1";
     };
-    ghc99 = {
+    ghc911 = {
       flake = false;
       url = "git+https://gitlab.haskell.org/ghc/ghc?submodules=1";
     };
@@ -79,9 +79,7 @@
       flake = false;
     };
     iserv-proxy = {
-      type = "git";
-      url = "https://gitlab.haskell.org/hamishmack/iserv-proxy.git";
-      ref = "hkm/remote-iserv";
+      url = "github:stable-haskell/iserv-proxy?ref=iserv-syms";
       flake = false;
     };
   };

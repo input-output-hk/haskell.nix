@@ -73,8 +73,8 @@
         ghc96llvm = true;
         ghc98 = true;
         ghc98llvm = true;
-        # ghc98X = true; Disabled for now as there are no changes since 9.8.1 release yet and the current source does not boot with 9.8.1
-        ghc99 = true;
+        ghc910X = true;
+        ghc911 = true;
       })));
   crossSystems = nixpkgsName: nixpkgs: compiler-nix-name:
     # We need to use the actual nixpkgs version we're working with here, since the values

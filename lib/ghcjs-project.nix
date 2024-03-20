@@ -74,7 +74,7 @@ let
             cabal-install
         ];
 
-    inherit (pkgs.buildPackages) emscriptenupstream emscripten emsdk;
+    inherit (pkgs.pkgsBuildBuild) emscriptenupstream emscripten emsdk;
 
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
