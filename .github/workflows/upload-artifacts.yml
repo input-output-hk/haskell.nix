@@ -2,11 +2,8 @@ name: Wait for Hydra Build
 
 on:
   push:
-    branches:
-      - main
     tags:
-      - "v*.*"
-  pull_request:
+      - "nix-tools-*"
 
 env:
   FLAKE_REF: github:${{ github.repository }}?ref=${{ github.head_ref || github.ref }}
@@ -55,11 +52,9 @@ jobs:
           git config --global user.name 'Auto Update Bot'
           git config --global user.email 'no-reply@iohk.io'
 
-      - name: "Compute default.nix"
+      - name: "Compute nix-tools-static.nix"
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          git fetch --all
-          git switch --force nix
           (
             echo "pkgs: let baseurl = \"https://github.com/input-output-hk/haskell.nix/releases/download/${GITHUB_REF_NAME}/\"; in {"
             for arch in aarch64-darwin x86_64-darwin aarch64-linux x86_64-linux; do
@@ -70,16 +65,16 @@ jobs:
               echo "  };"
             done
             echo "}"
-          ) > default.nix
-          cat default.nix
+          ) > nix-tools-static.nix
+          cat nix-tools-static.nix
 
 
       - name: Push to nix branch
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          git add default.nix
-          git commit -m "update default.nix"
-          git push origin nix
+          git add nix-tools-static.nix
+          git commit -m "update nix-tools-static.nix"
+          git push
 
       - name: Release
         uses: input-output-hk/action-gh-release@v1
