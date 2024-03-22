@@ -135,7 +135,7 @@
         stripAttrsForHydra
         filterDerivations;
 
-    in traceHydraJobs ({
+      flake = {
       inherit config;
       overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
@@ -290,7 +290,31 @@
                 "ghc901"
                 "ghc921" "ghc922" "ghc923"])
       );
-    });
+    }; in with (import nixpkgs { system = "x86_64-linux"; });
+          traceHydraJobs (lib.recursiveUpdate flake {
+            hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
+              name = "nix-tools";
+              constituents = [
+                "aarch64-darwin.nix-tools-static"
+                "x86_64-darwin.nix-tools-static"
+                "x86_64-linux.nix-tools-static"
+                "x86_64-linux.nix-tools-static-arm64"
+                "aarch64-darwin.nix-tools-static-no-ifd"
+                "x86_64-darwin.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools-static-arm64-no-ifd"
+                (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
+              ];
+            };
+            # hydraJobs.all-nix-tools = runCommand "all-nix-tools" {
+            #   } ''
+            #   mkdir $out
+            #   cp ${flake.hydraJobs.aarch64-darwin.nix-tools-static-no-ifd}/*.zip $out/
+            #   cp ${flake.hydraJobs.x86_64-darwin.nix-tools-static-no-ifd}/*.zip $out/
+            #   cp ${flake.hydraJobs.x86_64-linux.nix-tools-static-no-ifd}/*.zip $out/
+            #   cp ${flake.hydraJobs.x86_64-linux.nix-tools-static-arm64-no-ifd}/*.zip $out/
+            # '';
+          });
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
