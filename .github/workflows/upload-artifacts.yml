@@ -61,7 +61,7 @@ jobs:
           git fetch --all
           git switch --force nix
           (
-            echo "pkgs: let baseurl = \"https://github.com/input-output-hk/haskell-nix-example/releases/download/${GITHUB_REF_NAME}/\"; in {"
+            echo "pkgs: let baseurl = \"https://github.com/input-output-hk/haskell.nix/releases/download/${GITHUB_REF_NAME}/\"; in {"
             for arch in aarch64-darwin x86_64-darwin aarch64-linux x86_64-linux; do
               echo "  ${arch} = pkgs.fetchurl { "
               echo "     name = \"${arch}-nix-tools-static\";"
