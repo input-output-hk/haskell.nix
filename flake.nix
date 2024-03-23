@@ -295,25 +295,17 @@
             hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
               name = "nix-tools";
               constituents = [
-                "aarch64-darwin.nix-tools-static"
-                "x86_64-darwin.nix-tools-static"
-                "x86_64-linux.nix-tools-static"
-                "x86_64-linux.nix-tools-static-arm64"
-                "aarch64-darwin.nix-tools-static-no-ifd"
-                "x86_64-darwin.nix-tools-static-no-ifd"
-                "x86_64-linux.nix-tools-static-no-ifd"
-                "x86_64-linux.nix-tools-static-arm64-no-ifd"
+                "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
+                "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
                 (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
               ];
             };
-            # hydraJobs.all-nix-tools = runCommand "all-nix-tools" {
-            #   } ''
-            #   mkdir $out
-            #   cp ${flake.hydraJobs.aarch64-darwin.nix-tools-static-no-ifd}/*.zip $out/
-            #   cp ${flake.hydraJobs.x86_64-darwin.nix-tools-static-no-ifd}/*.zip $out/
-            #   cp ${flake.hydraJobs.x86_64-linux.nix-tools-static-no-ifd}/*.zip $out/
-            #   cp ${flake.hydraJobs.x86_64-linux.nix-tools-static-arm64-no-ifd}/*.zip $out/
-            # '';
           });
 
   # --- Flake Local Nix Configuration ----------------------------
