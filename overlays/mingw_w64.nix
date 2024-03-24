@@ -31,10 +31,12 @@ let
         # due to a too large environment.
         unset configureFlags
         unset configurePhase
+        WINEPREFIX=''${WINEPREFIX:-$(mktemp -d)}
+        REMOTE_ISERV=''${REMOTE_ISERV:-$(mktemp -d)}
         PORT=$((5000 + $RANDOM % 5000))
         (>&2 echo "---> Starting ${interpreter.exeName} on port $PORT")
         REMOTE_ISERV=$(mktemp -d)
-        ln -s ${interpreter.override { enableDebugRTS = true; }}/bin/* $REMOTE_ISERV
+        ln -s ${interpreter.override { enableDebugRTS = true; setupBuildFlags = ["--ghc-option=-optl-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000" ];}}/bin/* $REMOTE_ISERV
         # See coment in comp-builder.nix for where this comes from and why it's here
         # TODO use `LINK_DLL_FOLDERS` here once it is in all the nixpkgs we want to support.
         for p in $pkgsHostTargetAsString; do
@@ -50,6 +52,9 @@ let
           ln -s "$l" "''${l#lib}"
         done
         )
+        echo "To re-use the same wine-prefix and remote-iserv, set the following environment variables:"
+        echo "export WINEPREFIX=$WINEPREFIX"
+        echo "export REMOTE_ISERV=$REMOTE_ISERV"
         # Not sure why this `unset` helps.  It might avoids some kind of overflow issue.  We see `wine` fail to start when building `cardano-wallet-cli` test `unit`.
         unset pkgsHostTargetAsString
         unset LINK_DLL_FOLDERS

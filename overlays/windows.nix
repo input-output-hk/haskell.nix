@@ -22,12 +22,20 @@ final: prev:
     # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
     mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
   };
+} // prev.lib.optionalAttrs prev.stdenv.hostPlatform.isWindows {
+  # If we build libffi with high entropy, we keep running into
+  #
+  # > Mingw-w64 runtime failure:
+  # > 32 bit pseudo relocation at 0000000140117CE6 out of range, targeting 00006FFFFFF18160, yielding the value 00006FFEBFE00476.
+  #
+  # This however also means, pretty much all of our haskell packages will need to be built with this as well.
+  libffi = prev.libffi.overrideAttrs (_: {
+    LDFLAGS = "-Wl,--disable-dynamicbase,--disable-high-entropy-va,--image-base=0x400000";
+  });
 } // {
    libmpc = if !prev.stdenv.hostPlatform.isWindows then prev.libmpc else prev.libmpc.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
-
-
 
    haskell-nix = prev.haskell-nix // ({
      defaultModules = prev.haskell-nix.defaultModules ++ [
