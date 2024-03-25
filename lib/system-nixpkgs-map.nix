@@ -21,7 +21,7 @@ in
 # -- linux
 { crypto = [ openssl ];
   "c++" = [ libcxx ];
-  "c++abi" = [ libcxxabi ];
+  "c++abi" = [ libcxx ];
   system-cxx-std-lib = [];
   "stdc++" = gcclibs;
   "stdc++-6" = gcclibs;

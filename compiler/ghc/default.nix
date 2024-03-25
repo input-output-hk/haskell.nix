@@ -9,7 +9,7 @@ let self =
 # build-tools
 , bootPkgs
 , buildPackages
-, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils, libcxx, libcxxabi
+, autoconf, automake, coreutils, fetchurl, fetchpatch, perl, python3, m4, sphinx, numactl, elfutils, libcxx
 , autoreconfHook
 , bash
 
@@ -673,7 +673,7 @@ stdenv.mkDerivation (rec {
         done
       '' + lib.optionalString stdenv.isDarwin ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
-          --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+          --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
       '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
@@ -758,7 +758,7 @@ stdenv.mkDerivation (rec {
 } // lib.optionalAttrs useHadrian {
   postConfigure = lib.optionalString stdenv.isDarwin ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
-      --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+      --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget && stdenv.targetPlatform.isMusl) ''
@@ -822,9 +822,9 @@ stdenv.mkDerivation (rec {
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
         ${lib.optionalString stdenv.isDarwin ''
           substituteInPlace mk/system-cxx-std-lib-1.0.conf \
-            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
           substituteInPlace lib/package.conf.d/system-cxx-std-lib-1.0.conf \
-            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         ''}
         mkdir -p utils
         cp -r ../../../utils/completion utils
