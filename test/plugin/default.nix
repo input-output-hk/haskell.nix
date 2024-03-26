@@ -6,10 +6,6 @@ let
   project = project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "plugin";
-    cabalProjectLocal = builtins.readFile ../cabal.project.local;
-    modules = [{
-      reinstallableLibGhc = builtins.compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.1" < 0;
-    }];
   };
 
   packages = project.hsPkgs;
