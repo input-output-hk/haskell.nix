@@ -46,7 +46,7 @@ let
       inherit (pkg) preUnpack postUnpack prePatch postPatch;
     } // lib.optionalAttrs (package.buildType != "Custom") {
       nonReinstallablePkgs = ["base" "Cabal"];
-    }) + "/bin/setup";
+    }) + "/bin/Setup";
 
   buildComp = allComponent: componentId: component: comp-builder {
     inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches
