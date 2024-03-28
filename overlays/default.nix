@@ -85,6 +85,7 @@ let
     ghcjs = import ./ghcjs.nix;
     cabalPkgConfig = import ./cabal-pkg-config.nix;
     cacheCompilerDeps = import ./cache-compiler-deps.nix;
+    default-setup = import ./default-setup.nix;
     dummy-ghc-data = import ./dummy-ghc-data.nix;
     fetch-source = import ./fetch-source.nix;
   };
