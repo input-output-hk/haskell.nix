@@ -110,8 +110,8 @@ let
 
   ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
         (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
-  setup = (if enableDWARF then (x: x.dwarf) else (x: x)) (
-        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) drvArgs.setup);
+  setup = (if enableDWARF then (x: x.dwarf or x) else (x: x)) (
+          (if smallAddressSpace then (x: x.smallAddressSpace or x) else (x: x)) drvArgs.setup);
 
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
@@ -285,7 +285,7 @@ let
 
       enableParallelBuilding = true;
 
-      SETUP_HS = setup;
+      SETUP_HS = setup + (if setup.isCabal or false then "/bin/cabal act-as-setup --build-type=Simple --" else "/bin/Setup");
 
       inherit cabalFile;
       passAsFile = [ "cabalFile" ];

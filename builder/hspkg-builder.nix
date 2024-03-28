@@ -35,7 +35,7 @@ let
 
   setup = if package.buildType == "Simple"
     then
-      buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal + "/bin/cabal act-as-setup --build-type=Simple --"
+      buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal // { isCabal = true; }
     else setup-builder ({
       component = components.setup // {
         depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
@@ -46,7 +46,7 @@ let
       inherit (pkg) preUnpack postUnpack prePatch postPatch;
     } // lib.optionalAttrs (package.buildType != "Custom") {
       nonReinstallablePkgs = ["base" "Cabal"];
-    }) + "/bin/Setup";
+    });
 
   buildComp = allComponent: componentId: component: comp-builder {
     inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches
