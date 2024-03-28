@@ -31,7 +31,7 @@ let
         static-nix-tools =
           let
             # TODO replace once haskell-nix-examples nix-tools is in haskell.nix
-            zipFile = (import final.haskell-nix.sources.nix-tools-static final).${final.system};
+            zipFile = (import ../nix-tools-static.nix final).${final.system};
             tarball = final.runCommand "nix-tools" {
               nativeBuildInputs = [ final.unzip ];
             } ''

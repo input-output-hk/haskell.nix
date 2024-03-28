@@ -27,14 +27,14 @@ repository ghcjs-overlay
   key-threshold: 0
   --sha256: sha256-mZT7c+xR5cUTjLdCqOxpprjYL3kr/+9rmumtXvWAQlM=
 
-if !impl(ghc>=9.8) && !os(ghcjs)
+if !impl(ghc>=9.10) && !os(ghcjs)
   active-repositories: hackage.haskell.org
 
-if impl(ghc>=9.8) && !os(ghcjs)
+if impl(ghc>=9.10) && !os(ghcjs)
   active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
 
-if !impl(ghc>=9.8) && os(ghcjs)
+if !impl(ghc>=9.10) && os(ghcjs)
   active-repositories: hackage.haskell.org, ghcjs-overlay:override
 
-if impl(ghc>=9.8) && os(ghcjs)
+if impl(ghc>=9.10) && os(ghcjs)
   active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override, ghcjs-overlay:override

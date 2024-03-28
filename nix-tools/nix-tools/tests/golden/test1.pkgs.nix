@@ -110,7 +110,7 @@
         hashable.revision = import ./cabal-files/hashable.nix;
         hashable.flags.random-initial-seed = false;
         hashable.flags.integer-gmp = true;
-        };
+      };
       compiler = {
         version = "9.4.5";
         nix-name = "ghc945";
@@ -133,14 +133,14 @@
           "deepseq" = "1.4.8.0";
           "binary" = "0.8.9.1";
           "containers" = "0.6.7";
-          };
         };
       };
+    };
   extras = _hackage:
-    { packages = {}; };
+    { packages = { }; };
   modules = [
     ({ lib, ... }:
-      { packages = {}; })
+      { packages = { }; })
     ({ lib, ... }:
       {
         packages = {
@@ -196,7 +196,7 @@
           "hashable".components.library.planned = lib.mkOverride 900 true;
           "semigroups".components.library.planned = lib.mkOverride 900 true;
           "void".components.library.planned = lib.mkOverride 900 true;
-          };
-        })
-    ];
-  }
+        };
+      })
+  ];
+}
