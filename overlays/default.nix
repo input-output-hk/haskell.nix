@@ -128,6 +128,7 @@ let
     (_: prev: { inherit (prev.haskell-nix-prev) haskell haskellPackages; })
     dummy-ghc-data
     cacheCompilerDeps
+    default-setup
     fetch-source
   ];
   combined = builtins.foldl' composeExtensions (_: _: { }) ordered;
