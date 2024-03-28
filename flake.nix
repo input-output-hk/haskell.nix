@@ -10,10 +10,7 @@
     nixpkgs-2211 = { url = "github:NixOS/nixpkgs/nixpkgs-22.11-darwin"; };
     nixpkgs-2305 = { url = "github:NixOS/nixpkgs/nixpkgs-23.05-darwin"; };
     nixpkgs-2311 = { url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin"; };
-    # The libsodium bump in 85c6e70b555fe892a049fa3d9dce000dc23a9562 breaks th-dll tests.
-    # And later it breaks in th-dll due to some change in the windows libs. We should probably
-    # drop unsable.
-    nixpkgs-unstable = { url = "github:NixOS/nixpkgs?rev=47585496bcb13fb72e4a90daeea2f434e2501998"; }; # nixpkgs-unstable };
+    nixpkgs-unstable = { url = "github:NixOS/nixpkgs/nixpkgs-unstable"; };
     ghc910X = {
       flake = false;
       url = "git+https://gitlab.haskell.org/ghc/ghc?ref=ghc-9.10&submodules=1";
