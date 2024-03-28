@@ -26,7 +26,7 @@ in rec {
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
-      cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; cabalProjectLocal = builtins.readFile ./test/cabal.project.local; };
+      cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;
