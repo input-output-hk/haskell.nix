@@ -285,7 +285,7 @@ let
 
       enableParallelBuilding = true;
 
-      SETUP_HS = setup + (if setup.isCabal or false then "/bin/cabal act-as-setup --build-type=Simple --" else "/bin/Setup");
+      SETUP_HS = setup + "/bin/Setup";
 
       inherit cabalFile;
       passAsFile = [ "cabalFile" ];

@@ -35,14 +35,10 @@ let
 
   setup = if package.buildType == "Simple"
     then
-      if stdenv.targetPlatform.isGhcjs
-        then
-          # Don't try to build default setup with DWARF enabled
-          let defaultSetup = ghc.defaultSetupFor package.identifier.name // {
-            dwarf = defaultSetup;
-          }; in defaultSetup
-        else
-          buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal // { isCabal = true; }
+      # Don't try to build default setup with DWARF enabled
+      let defaultSetup = ghc.defaultSetupFor package.identifier.name // {
+        dwarf = defaultSetup;
+      }; in defaultSetup
     else setup-builder ({
       component = components.setup // {
         depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
