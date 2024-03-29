@@ -1119,8 +1119,7 @@ final: prev: {
               ghc-extra-projects-nix = final.ghc-extra-projects.${compiler-nix-name}.plan-nix;
           }) // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
-            nix-tools = final.buildPackages.haskell-nix.nix-tools;
-            nix-tools-unchecked = final.buildPackages.haskell-nix.nix-tools-unchecked;
+            nix-tools-unchecked = final.pkgsBuildBuildhaskell-nix.nix-tools-unchecked;
           } // final.lib.optionalAttrs (ifdLevel > 1
             && final.haskell-nix.haskellLib.isCrossHost
             # GHCJS builds its own template haskell runner.
