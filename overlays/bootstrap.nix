@@ -1334,9 +1334,6 @@ in {
 
     # Memoize the cabal-install and nix-tools derivations by adding:
     #   haskell-nix.cabal-install.ghcXXX
-    #   haskell-nix.cabal-install-unchecked.ghcXXX
-    #   haskell-nix.nix-tools.ghcXXX
-    #   haskell-nix.nix-tools-unchecked.ghcXXX
     # Using these avoids unnecessary calls to mkDerivation.
     # For cabal projects we match the versions used to the compiler
     # selected for the project to avoid the chance of a dependency
@@ -1346,32 +1343,6 @@ in {
     # that GHC itself in your closure).
     cabal-install = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.cabal-install-tool { inherit compiler-nix-name; }) final.haskell-nix.compiler;
-    cabal-install-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.cabal-install-tool {
-        compiler-nix-name =
-          # If there is no materialized version for this GHC version fall back on
-          # a version of GHC for which there will be.
-          if builtins.pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
-            then compiler-nix-name
-            else "ghc928";
-        checkMaterialization = false;
-      }) final.haskell-nix.compiler;
-
-    # These `internal` versions are used for:
-    # * `nix-tools` for stack projects (since we use `nix-tools` to process
-    #   the `stack.yaml` file we cannot match the ghc of the project the
-    #   way we do for cabal projects).
-    # * Scripts are used to update stackage and hackage
-    # Updating the version of GHC selected here should be fairly safe as
-    # there should be no difference in the behaviour of these tools.
-    # (stack projects on macOS may see a significant change in the
-    # closure size of their build dependencies due to dynamic linking).
-    internal-cabal-install =
-      final.haskell-nix.cabal-install-tool {
-        compiler-nix-name = "ghc8107";
-        compilerSelection = p: p.haskell.compiler;
-        checkMaterialization = false;
-      };
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose

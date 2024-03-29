@@ -38,7 +38,7 @@ let
       # It makes sense to use this version (when possible) because it will match the behavior of
       # building with `cabal-install` (including fixes that may not be in the
       # version of Cabal bundled with GHC).
-      cabalFromCabalInstall = final.buildPackages.haskell-nix.cabal-install-unchecked.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
+      cabalFromCabalInstall = final.buildPackages.haskell-nix.cabal-install.${compiler-nix-name}.project.hsPkgs.Cabal.components.library;
 
      in ghc // rec {
       defaultSetup = final.lib.mapAttrs (_: useCabalFromCabalInstall: setup-builder ({
