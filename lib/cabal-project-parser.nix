@@ -138,15 +138,15 @@ let
         if sha256map != null
           then sha256map.${attrs.url} or null
           else null);
-    in rec {
-      # This is `some-name` from the `repository some-name` line in the `cabal.project` file.
-      name = builtins.unsafeDiscardStringContext (__head lines);
       addContext = s:
         let storeDirMatch = builtins.match ".*(${builtins.storeDir}/[^/]+).*" s;
         in if storeDirMatch == null
           then s
           else builtins.appendContext s { ${builtins.head storeDirMatch} = { path = true; }; };
       # The $HOME/.cabal/packages/${name} after running `cabal v2-update` to download the repository
+    in rec {
+      # This is `some-name` from the `repository some-name` line in the `cabal.project` file.
+      name = builtins.unsafeDiscardStringContext (__head lines);
       repoContents = if inputMap ? ${attrs.url}
         # If there is an input use it to make `file:` url and create a suitable `.cabal/packages/${name}` directory
         then evalPackages.runCommand name ({
