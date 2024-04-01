@@ -246,10 +246,6 @@
               inherit system;
               pkgs = self.legacyPackages.${system};
               src = ./nix-tools;
-              override-inputs = {
-                # Avoid downloading another `hackage.nix`.
-                inherit (inputs) hackage;
-              };
             };
             in cf.defaultNix.hydraJobs;
         in
