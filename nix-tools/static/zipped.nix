@@ -18,6 +18,8 @@ let
       strippedNixToolsComponents = map getStrippedNixToolsExe [
         "cabal-name" 
         "cabal-to-nix" 
+        "default-setup"
+        "default-setup-ghcjs"
         "hackage-to-nix" 
         "hashes-to-nix" 
         "lts-to-nix" 
