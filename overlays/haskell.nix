@@ -1120,10 +1120,6 @@ final: prev: {
           }) // final.lib.optionalAttrs (ifdLevel > 1) {
             # Things that require two levels of IFD to build (inputs should be in level 1)
             nix-tools-unchecked = final.pkgsBuildBuild.haskell-nix.nix-tools-unchecked;
-            # This is the setup using the prefered Cabal library.
-            default-setup = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.defaultSetupFor "some-package";
-            # This is the one used when that one is not allowed.
-            setup-cabal-from-ghc = final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.defaultSetup.useCabalFromGHC;
           } // final.lib.optionalAttrs (ifdLevel > 1
             && final.haskell-nix.haskellLib.isCrossHost
             # GHCJS builds its own template haskell runner.
