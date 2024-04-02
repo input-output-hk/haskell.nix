@@ -285,7 +285,7 @@ let
 
       enableParallelBuilding = true;
 
-      SETUP_HS = setup;
+      SETUP_HS = setup + "/bin/${setup.exeName}";
 
       inherit cabalFile;
       passAsFile = [ "cabalFile" ];

@@ -37,9 +37,9 @@ let
     then
       if stdenv.targetPlatform.isGhcjs
         then
-          buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup-ghcjs + "/bin/default-setup-ghcjs"
+          buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup-ghcjs // { exeName = "default-setup-ghcjs"; }
         else
-          buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup + "/bin/default-setup"
+          buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup // { exeName = "default-setup"; }
     else setup-builder ({
       component = components.setup // {
         depends = config.setup-depends ++ components.setup.depends ++ package.setup-depends;
@@ -50,7 +50,7 @@ let
       inherit (pkg) preUnpack postUnpack prePatch postPatch;
     } // lib.optionalAttrs (package.buildType != "Custom") {
       nonReinstallablePkgs = ["base" "Cabal"];
-    }) + "/bin/Setup";
+    }) // { exeName = "Setup"; };
 
   buildComp = allComponent: componentId: component: comp-builder {
     inherit allComponent componentId component package name src flags setup cabalFile cabal-generator patches
