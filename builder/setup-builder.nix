@@ -77,6 +77,7 @@ let
         cleanSrc = cleanSrc';
         dwarf = self (drvArgs // { enableDWARF = true; });
         smallAddressSpace = self (drvArgs // { smallAddressSpace = true; });
+        exeName = "Setup";
       };
 
       meta = {
