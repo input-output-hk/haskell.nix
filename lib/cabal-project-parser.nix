@@ -138,9 +138,15 @@ let
         if sha256map != null
           then sha256map.${attrs.url} or null
           else null);
+      # Find store directory strings and include them in the string context
+      addContext = s:
+        let storeDirMatch = builtins.match ".*(${builtins.storeDir}/[^/]+).*" s;
+        in if storeDirMatch == null
+          then s
+          else builtins.appendContext s { ${builtins.head storeDirMatch} = { path = true; }; };
     in rec {
       # This is `some-name` from the `repository some-name` line in the `cabal.project` file.
-      name = __head lines;
+      name = builtins.unsafeDiscardStringContext (__head lines);
       # The $HOME/.cabal/packages/${name} after running `cabal v2-update` to download the repository
       repoContents = if inputMap ? ${attrs.url}
         # If there is an input use it to make `file:` url and create a suitable `.cabal/packages/${name}` directory
@@ -174,7 +180,7 @@ let
             mkdir -p $HOME/.cabal/packages/${name}
             cat <<EOF > $HOME/.cabal/config
             repository ${name}
-              url: ${attrs.url}
+              url: ${addContext attrs.url}
               ${pkgs.lib.optionalString (attrs ? secure) "secure: ${attrs.secure}"}
               ${pkgs.lib.optionalString (attrs ? root-keys) "root-keys: ${attrs.root-keys}"}
               ${pkgs.lib.optionalString (attrs ? key-threshold) "key-threshold: ${attrs.key-threshold}"}
@@ -195,12 +201,7 @@ let
           hackage-to-nix $out ${repoContents}/01-index.tar ${attrs.url}
         '');
       # Directory to `lndir` when constructing a suitable $HOME/.cabal dir
-      repo = {
-        # Strings used as attrset keys can't have contet. This can cause problems if the cabal.project file has antiquoted strings
-        # in it. Discarding the context here works, and because 'name' is used elsewhere, we don't actually lose the string content,
-        # which can matter!
-        ${builtins.unsafeDiscardStringContext name} = repoContents;
-      };
+      repo.${name} = repoContents;
     };
 
   parseRepositories = evalPackages: cabalProjectFileName: sha256map: inputMap: cabal-install: nix-tools: projectFile:
