@@ -137,8 +137,7 @@ lib.runTests {
       };
       result = rec {
       expr = __toJSON (removeNix (haskellLib.parseRepositoryBlock evalPackages "cabal.project" {} {}
-        evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
-        evalPackages.haskell-nix.nix-tools ''
+        evalPackages.haskell-nix.nix-tools-unchecked ''
           ghcjs-overlay
             url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32
             secure: True
