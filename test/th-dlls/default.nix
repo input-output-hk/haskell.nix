@@ -17,7 +17,6 @@ let
 
   packages = (project false).hsPkgs;
   packages-ei = (project true).hsPkgs;
-  compareGhc = builtins.compareVersions buildPackages.haskell-nix.compiler.${compiler-nix-name}.version;
 
 in recurseIntoAttrs {
   meta.disabled = stdenv.hostPlatform.isGhcjs

@@ -26,7 +26,7 @@ in rec {
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
-      cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; cabalProjectLocal = builtins.readFile ./test/cabal.project.local; };
+      cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
     } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;
@@ -91,11 +91,7 @@ in rec {
     };
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
-      # Includes cabal-install since this is commonly used.
-      nix-tools = pkgs.linkFarm "common-tools" [
-        { name = "nix-tools";     path = haskell.nix-tools; }
-        { name = "cabal-install"; path = haskell.cabal-install.${compiler-nix-name}; }
-      ];
+      nix-tools = haskell.nix-tools-unchecked; # includes cabal-install and default-setup
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
     check-path-support = pkgsForGitHubAction.buildPackages.callPackage ./scripts/check-path-support.nix {
@@ -114,7 +110,7 @@ in rec {
         # Some of the dependencies of the impure scripts so that they will
         # will be in the cache too for buildkite.
         inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
-        inherit (haskell) nix-tools;
+        nix-tools = pkgs.haskell-nix.nix-tools-unchecked;
       })
   );
 }
