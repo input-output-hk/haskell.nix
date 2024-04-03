@@ -35,7 +35,7 @@ let
 
   setup = if package.buildType == "Simple"
     then
-      if stdenv.targetPlatform.isGhcjs
+      if stdenv.targetPlatform.isGhcjs # TODO probably should be hostPlatform, but only HsColour used to build ghc will change (updating will require rebuilding all the ghcjs versions)
         then
           buildPackages.haskell-nix.nix-tools-unchecked.exes.default-setup-ghcjs // { exeName = "default-setup-ghcjs"; }
         else
