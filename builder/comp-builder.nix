@@ -545,7 +545,7 @@ let
               # we assume that if the SETUP_HS command fails and the following line was found in the error
               # log, that it was the only error. Hence if we do _not_ find the line, grep will fail and this derivation
               # will be marked as failure.
-              cat $SETUP_ERR | grep 'No executables and no library found\. Nothing to'
+              cat $SETUP_ERR | tr '\n' ' ' | tr -d '\r' | grep 'No executables and no library found\. Nothing to do\.'
             fi
             ''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
