@@ -1,0 +1,3744 @@
+From 7f61324e9d65d747dd7ffc2ecf86ab6af0ac19df Mon Sep 17 00:00:00 2001
+From: Sylvain Henry <sylvain@haskus.fr>
+Date: Thu, 15 Dec 2022 16:59:20 +0100
+Subject: [PATCH] JS: implement TH support
+
+- Add ghc-interp.js bootstrap script for the JS interpreter
+- Interactively link and execute iserv code from the ghci package
+- Incrementally load and run JS code for splices into the running iserv
+
+Co-authored-by: Luite Stegeman <stegeman@gmail.com>
+---
+ compiler/GHC.hs                               |  35 +-
+ compiler/GHC/Driver/Main.hs                   | 201 +++---
+ compiler/GHC/Driver/Pipeline.hs               |   2 -
+ compiler/GHC/Runtime/Interpreter.hs           | 338 +++++------
+ compiler/GHC/Runtime/Interpreter/JS.hs        | 391 ++++++++++++
+ compiler/GHC/Runtime/Interpreter/Process.hs   | 102 ++++
+ compiler/GHC/Runtime/Interpreter/Types.hs     | 127 +++-
+ compiler/GHC/Runtime/Utils.hs                 |  84 +++
+ compiler/GHC/StgToJS/CodeGen.hs               |  20 +-
+ compiler/GHC/StgToJS/Deps.hs                  |  46 +-
+ compiler/GHC/StgToJS/Linker/Linker.hs         | 570 +++++++++++-------
+ compiler/GHC/StgToJS/Linker/Types.hs          |  75 ++-
+ compiler/GHC/StgToJS/Object.hs                | 150 +++--
+ compiler/GHC/StgToJS/Rts/Rts.hs               |   5 +
+ compiler/GHC/StgToJS/Types.hs                 |   6 +-
+ compiler/GHC/Tc/Gen/Splice.hs                 |  82 +--
+ compiler/ghc.cabal.in                         |   3 +
+ ghc-interp.js                                 |  99 +++
+ hadrian/src/Base.hs                           |   1 +
+ hadrian/src/Rules/Generate.hs                 |   1 +
+ libraries/base/System/Posix/Internals.hs      |   4 +-
+ libraries/base/jsbits/base.js                 |   9 +
+ libraries/ghci/GHCi/RemoteTypes.hs            |  65 +-
+ libraries/ghci/GHCi/Run.hs                    |  62 +-
+ libraries/ghci/ghci.cabal.in                  |   5 +-
+ libraries/template-haskell/tests/all.T        |   4 +-
+ testsuite/driver/testlib.py                   |  30 +-
+ .../tests/annotations/should_compile/all.T    |   6 +-
+ testsuite/tests/annotations/should_fail/all.T |  32 +-
+ testsuite/tests/annotations/should_run/all.T  |   3 +-
+ .../tests/count-deps/CountDepsAst.stdout      |   7 +
+ .../tests/count-deps/CountDepsParser.stdout   |   7 +
+ .../tests/dependent/should_compile/all.T      |   2 +-
+ testsuite/tests/driver/T20604/all.T           |   1 +
+ testsuite/tests/driver/all.T                  |   1 +
+ testsuite/tests/driver/fat-iface/T22405/all.T |   4 +-
+ testsuite/tests/driver/fat-iface/all.T        |   6 +-
+ testsuite/tests/driver/recomp009/all.T        |   2 +-
+ testsuite/tests/driver/recompTH/all.T         |   2 +-
+ testsuite/tests/driver/th-new-test/all.T      |   2 +-
+ .../should_run/PackedDataCon/packeddatacon.T  |   1 +
+ testsuite/tests/ghci/should_run/T21052.stdout |   2 +-
+ .../should_run/UnboxedTuples/unboxedtuples.T  |   1 +
+ .../unlifteddatatypeinterp.T                  |   1 +
+ testsuite/tests/layout/all.T                  |   2 +-
+ .../overloadedrecflds/should_compile/all.T    |   2 +-
+ .../tests/partial-sigs/should_compile/all.T   |   4 +-
+ .../tests/partial-sigs/should_fail/all.T      |   4 +-
+ testsuite/tests/plugins/all.T                 |   4 +
+ testsuite/tests/printer/all.T                 |  18 +-
+ testsuite/tests/quasiquotation/T13863/all.T   |   2 +-
+ testsuite/tests/quasiquotation/T4491/test.T   |   2 +-
+ testsuite/tests/quasiquotation/all.T          |   4 +-
+ testsuite/tests/quasiquotation/qq001/test.T   |   2 +-
+ testsuite/tests/quasiquotation/qq002/test.T   |   2 +-
+ testsuite/tests/quasiquotation/qq003/test.T   |   2 +-
+ testsuite/tests/quasiquotation/qq004/test.T   |   2 +-
+ testsuite/tests/quasiquotation/qq007/test.T   |   2 +-
+ testsuite/tests/quasiquotation/qq008/test.T   |   2 +-
+ testsuite/tests/quasiquotation/qq009/test.T   |   2 +-
+ .../tests/safeHaskell/safeLanguage/all.T      |   2 +-
+ testsuite/tests/showIface/all.T               |   2 +-
+ .../tests/simplCore/should_compile/all.T      |   6 +-
+ testsuite/tests/th/T2014/all.T                |   2 +-
+ .../tests/th/TH_import_loop/TH_import_loop.T  |   7 +-
+ testsuite/tests/th/all.T                      |  16 +-
+ testsuite/tests/th/overloaded/all.T           |   2 +-
+ .../tests/th/should_compile/T13949/all.T      |   2 +-
+ testsuite/tests/th/should_compile/T8025/all.T |   2 +-
+ .../tests/type-data/should_compile/all.T      |   2 +-
+ testsuite/tests/typecheck/should_fail/all.T   |   2 +-
+ 71 files changed, 1896 insertions(+), 802 deletions(-)
+ create mode 100644 compiler/GHC/Runtime/Interpreter/JS.hs
+ create mode 100644 compiler/GHC/Runtime/Interpreter/Process.hs
+ create mode 100644 compiler/GHC/Runtime/Utils.hs
+ create mode 100644 ghc-interp.js
+
+diff --git a/compiler/GHC.hs b/compiler/GHC.hs
+index f822961fff..4e61c2c915 100644
+--- a/compiler/GHC.hs
++++ b/compiler/GHC.hs
+@@ -1,3 +1,4 @@
++{-# LANGUAGE MultiWayIf #-}
+ {-# LANGUAGE CPP #-}
+ {-# LANGUAGE NondecreasingIndentation, ScopedTypeVariables #-}
+ {-# LANGUAGE TupleSections, NamedFieldPuns #-}
+@@ -316,6 +317,7 @@ import GHC.Driver.Backend
+ import GHC.Driver.Config.Finder (initFinderOpts)
+ import GHC.Driver.Config.Parser (initParserOpts)
+ import GHC.Driver.Config.Logger (initLogFlags)
++import GHC.Driver.Config.StgToJS (initStgToJSConfig)
+ import GHC.Driver.Config.Diagnostic
+ import GHC.Driver.Main
+ import GHC.Driver.Make
+@@ -675,8 +677,10 @@ setTopSessionDynFlags dflags = do
+   logger  <- getLogger
+ 
+   -- Interpreter
+-  interp <- if gopt Opt_ExternalInterpreter dflags
+-    then do
++  interp <- if
++    -- external interpreter
++    | gopt Opt_ExternalInterpreter dflags
++    -> do
+          let
+            prog = pgm_i dflags ++ flavour
+            profiled = ways dflags `hasWay` WayProf
+@@ -698,10 +702,31 @@ setTopSessionDynFlags dflags = do
+             , iservConfHook     = createIservProcessHook (hsc_hooks hsc_env)
+             , iservConfTrace    = tr
+             }
+-         s <- liftIO $ newMVar IServPending
++         s <- liftIO $ newMVar InterpPending
++         loader <- liftIO Loader.uninitializedLoader
++         return (Just (Interp (ExternalInterp (ExtIServ (ExtInterpState conf s))) loader))
++
++    -- JavaScript interpreter
++    | ArchJavaScript <- platformArch (targetPlatform dflags)
++    -> do
++         s <- liftIO $ newMVar InterpPending
+          loader <- liftIO Loader.uninitializedLoader
+-         return (Just (Interp (ExternalInterp conf (IServ s)) loader))
+-    else
++         let cfg = JSInterpConfig
++              { jsInterpNodeConfig  = defaultNodeJsSettings
++              , jsInterpScript      = topDir dflags </> "ghc-interp.js"
++              , jsInterpTmpFs       = hsc_tmpfs hsc_env
++              , jsInterpTmpDir      = tmpDir dflags
++              , jsInterpLogger      = hsc_logger hsc_env
++              , jsInterpCodegenCfg  = initStgToJSConfig dflags
++              , jsInterpUnitEnv     = hsc_unit_env hsc_env
++              , jsInterpFinderOpts  = initFinderOpts dflags
++              , jsInterpFinderCache = hsc_FC hsc_env
++              }
++         return (Just (Interp (ExternalInterp (ExtJS (ExtInterpState cfg s))) loader))
++
++    -- Internal interpreter
++    | otherwise
++    ->
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+      do
+       loader <- liftIO Loader.uninitializedLoader
+diff --git a/compiler/GHC/Driver/Main.hs b/compiler/GHC/Driver/Main.hs
+index 651f9bf8a2..24bfd5dfc4 100644
+--- a/compiler/GHC/Driver/Main.hs
++++ b/compiler/GHC/Driver/Main.hs
+@@ -140,9 +140,10 @@ import GHC.Driver.Hooks
+ import GHC.Driver.GenerateCgIPEStub (generateCgIPEStub, lookupEstimatedTicks)
+ 
+ import GHC.Runtime.Context
+-import GHC.Runtime.Interpreter ( addSptEntry )
++import GHC.Runtime.Interpreter
++import GHC.Runtime.Interpreter.JS
+ import GHC.Runtime.Loader      ( initializePlugins )
+-import GHCi.RemoteTypes        ( ForeignHValue )
++import GHCi.RemoteTypes
+ import GHC.ByteCode.Types
+ 
+ import GHC.Linker.Loader
+@@ -156,6 +157,9 @@ import GHC.HsToCore
+ 
+ import GHC.StgToByteCode    ( byteCodeGen )
+ import GHC.StgToJS          ( stgToJS )
++import GHC.StgToJS.Ids
++import GHC.StgToJS.Types
++import GHC.JS.Syntax
+ 
+ import GHC.IfaceToCore  ( typecheckIface, typecheckWholeCoreBindings )
+ 
+@@ -172,7 +176,6 @@ import GHC.Core
+ import GHC.Core.Lint.Interactive ( interactiveInScope )
+ import GHC.Core.Tidy           ( tidyExpr )
+ import GHC.Core.Type           ( Type, Kind )
+-import GHC.Core.Multiplicity
+ import GHC.Core.Utils          ( exprType )
+ import GHC.Core.ConLike
+ import GHC.Core.Opt.Pipeline
+@@ -201,7 +204,6 @@ import GHC.Stg.Pipeline ( stg2stg, StgCgInfos )
+ 
+ import GHC.Builtin.Utils
+ import GHC.Builtin.Names
+-import GHC.Builtin.Uniques ( mkPseudoUniqueE )
+ 
+ import qualified GHC.StgToCmm as StgToCmm ( codeGen )
+ import GHC.StgToCmm.Types (CmmCgInfos (..), ModuleLFInfos)
+@@ -230,7 +232,7 @@ import GHC.Types.Id
+ import GHC.Types.SourceError
+ import GHC.Types.SafeHaskell
+ import GHC.Types.ForeignStubs
+-import GHC.Types.Var.Env       ( emptyTidyEnv )
++import GHC.Types.Var.Env       ( mkEmptyTidyEnv )
+ import GHC.Types.Error
+ import GHC.Types.Fixity.Env
+ import GHC.Types.CostCentre
+@@ -243,6 +245,8 @@ import GHC.Types.Name.Reader
+ import GHC.Types.Name.Ppr
+ import GHC.Types.TyThing
+ import GHC.Types.HpcInfo
++import GHC.Types.Unique.Supply (uniqFromMask)
++import GHC.Types.Unique (getKey)
+ 
+ import GHC.Utils.Fingerprint ( Fingerprint )
+ import GHC.Utils.Panic
+@@ -289,6 +293,7 @@ import GHC.Stg.InferTags.TagSig (seqTagSig)
+ import GHC.StgToCmm.Utils (IPEStats)
+ import GHC.Types.Unique.FM
+ import GHC.Cmm.Config (CmmConfig)
++import GHC.Types.Unique.DFM
+ 
+ 
+ {- **********************************************************************
+@@ -2157,31 +2162,6 @@ doCodeGen hsc_env this_mod denv data_tycons
+ 
+     return $ Stream.mapM dump2 pipeline_stream
+ 
+-myCoreToStgExpr :: Logger -> DynFlags -> InteractiveContext
+-                -> Bool
+-                -> Module -> ModLocation -> CoreExpr
+-                -> IO ( Id
+-                      , [CgStgTopBinding]
+-                      , InfoTableProvMap
+-                      , CollectedCCs
+-                      , StgCgInfos )
+-myCoreToStgExpr logger dflags ictxt for_bytecode this_mod ml prepd_expr = do
+-    {- Create a temporary binding (just because myCoreToStg needs a
+-       binding for the stg2stg step) -}
+-    let bco_tmp_id = mkSysLocal (fsLit "BCO_toplevel")
+-                                (mkPseudoUniqueE 0)
+-                                ManyTy
+-                                (exprType prepd_expr)
+-    (stg_binds, prov_map, collected_ccs, stg_cg_infos) <-
+-       myCoreToStg logger
+-                   dflags
+-                   ictxt
+-                   for_bytecode
+-                   this_mod
+-                   ml
+-                   [NonRec bco_tmp_id prepd_expr]
+-    return (bco_tmp_id, stg_binds, prov_map, collected_ccs, stg_cg_infos)
+-
+ myCoreToStg :: Logger -> DynFlags -> InteractiveContext
+             -> Bool
+             -> Module -> ModLocation -> CoreProgram
+@@ -2562,56 +2542,117 @@ hscCompileCoreExpr hsc_env loc expr =
+       Just h  -> h                   hsc_env loc expr
+ 
+ hscCompileCoreExpr' :: HscEnv -> SrcSpan -> CoreExpr -> IO (ForeignHValue, [Linkable], PkgsLoaded)
+-hscCompileCoreExpr' hsc_env srcspan ds_expr
+-    = do { {- Simplify it -}
+-           -- Question: should we call SimpleOpt.simpleOptExpr here instead?
+-           -- It is, well, simpler, and does less inlining etc.
+-           let dflags = hsc_dflags hsc_env
+-         ; let logger = hsc_logger hsc_env
+-         ; let ic = hsc_IC hsc_env
+-         ; let unit_env = hsc_unit_env hsc_env
+-         ; let simplify_expr_opts = initSimplifyExprOpts dflags ic
+-         ; simpl_expr <- simplifyExpr logger (ue_eps unit_env) simplify_expr_opts ds_expr
+-
+-           {- Tidy it (temporary, until coreSat does cloning) -}
+-         ; let tidy_expr = tidyExpr emptyTidyEnv simpl_expr
+-
+-           {- Prepare for codegen -}
+-         ; cp_cfg <- initCorePrepConfig hsc_env
+-         ; prepd_expr <- corePrepExpr
+-            logger cp_cfg
+-            tidy_expr
+-
+-           {- Lint if necessary -}
+-         ; lintInteractiveExpr (text "hscCompileExpr") hsc_env prepd_expr
+-         ; let iNTERACTIVELoc = ModLocation{ ml_hs_file   = Nothing,
+-                                      ml_hi_file   = panic "hscCompileCoreExpr':ml_hi_file",
+-                                      ml_obj_file  = panic "hscCompileCoreExpr':ml_obj_file",
+-                                      ml_dyn_obj_file = panic "hscCompileCoreExpr': ml_obj_file",
+-                                      ml_dyn_hi_file  = panic "hscCompileCoreExpr': ml_dyn_hi_file",
+-                                      ml_hie_file  = panic "hscCompileCoreExpr':ml_hie_file" }
+-
+-         ; let ictxt = hsc_IC hsc_env
+-         ; (binding_id, stg_expr, _, _, _stg_cg_info) <-
+-             myCoreToStgExpr logger
+-                             dflags
+-                             ictxt
+-                             True
+-                             (icInteractiveModule ictxt)
+-                             iNTERACTIVELoc
+-                             prepd_expr
+-
+-           {- Convert to BCOs -}
+-         ; bcos <- byteCodeGen hsc_env
+-                     (icInteractiveModule ictxt)
+-                     stg_expr
+-                     [] Nothing
+-
+-           {- load it -}
+-         ; (fv_hvs, mods_needed, units_needed) <- loadDecls (hscInterp hsc_env) hsc_env srcspan bcos
+-           {- Get the HValue for the root -}
+-         ; return (expectJust "hscCompileCoreExpr'"
+-              $ lookup (idName binding_id) fv_hvs, mods_needed, units_needed) }
++hscCompileCoreExpr' hsc_env srcspan ds_expr = do
++  {- Simplify it -}
++  -- Question: should we call SimpleOpt.simpleOptExpr here instead?
++  -- It is, well, simpler, and does less inlining etc.
++  let dflags = hsc_dflags hsc_env
++  let logger = hsc_logger hsc_env
++  let ic = hsc_IC hsc_env
++  let unit_env = hsc_unit_env hsc_env
++  let simplify_expr_opts = initSimplifyExprOpts dflags ic
++
++  simpl_expr <- simplifyExpr logger (ue_eps unit_env) simplify_expr_opts ds_expr
++
++  -- Create a unique temporary binding
++  --
++  -- The id has to be exported for the JS backend. This isn't required for the
++  -- byte-code interpreter but it does no harm to always do it.
++  u <- uniqFromMask 'I'
++  let binding_name = mkSystemVarName u (fsLit ("BCO_toplevel"))
++  let binding_id   = mkExportedVanillaId binding_name (exprType simpl_expr)
++
++  {- Tidy it (temporary, until coreSat does cloning) -}
++  let tidy_occ_env = initTidyOccEnv [occName binding_id]
++  let tidy_env     = mkEmptyTidyEnv tidy_occ_env
++  let tidy_expr    = tidyExpr tidy_env simpl_expr
++
++  {- Prepare for codegen -}
++  cp_cfg <- initCorePrepConfig hsc_env
++  prepd_expr <- corePrepExpr
++   logger cp_cfg
++   tidy_expr
++
++  {- Lint if necessary -}
++  lintInteractiveExpr (text "hscCompileExpr") hsc_env prepd_expr
++  let this_loc = ModLocation{ ml_hs_file   = Nothing,
++                              ml_hi_file   = panic "hscCompileCoreExpr':ml_hi_file",
++                              ml_obj_file  = panic "hscCompileCoreExpr':ml_obj_file",
++                              ml_dyn_obj_file = panic "hscCompileCoreExpr': ml_obj_file",
++                              ml_dyn_hi_file  = panic "hscCompileCoreExpr': ml_dyn_hi_file",
++                              ml_hie_file  = panic "hscCompileCoreExpr':ml_hie_file" }
++
++  let ictxt = (hsc_IC hsc_env) {
++                ic_mod_index = getKey u
++                  -- Ensure module uniqueness ("GhciNNNN") by reusing the unique
++                  -- we've used for the binding. If ic_mod_index was mutable, we
++                  -- would simply bump it here after its use.
++                  --
++                  -- This uniqueness is needed by the JS linker. Without it we
++                  -- break the 1-2-1 relationship between modules and object
++                  -- files, i.e. we get different object files for the same module
++                  -- End the linker doesn't support this.
++               }
++  let this_mod = icInteractiveModule ictxt
++  let for_bytecode = True
++
++  (stg_binds, _prov_map, _collected_ccs, _stg_cg_infos) <-
++       myCoreToStg logger
++                   dflags
++                   ictxt
++                   for_bytecode
++                   this_mod
++                   this_loc
++                   [NonRec binding_id prepd_expr]
++
++  let interp = hscInterp hsc_env
++  let tmpfs = hsc_tmpfs hsc_env
++  let tmp_dir = tmpDir dflags
++
++  case interp of
++    Interp (ExternalInterp (ExtJS i)) _ -> do
++      let js_config        = initStgToJSConfig dflags
++          foreign_stubs    = NoStubs
++          spt_entries      = mempty
++          cost_centre_info = mempty
++
++      -- codegen into object file whose path is in out_obj
++      out_obj <- newTempName logger tmpfs tmp_dir TFL_CurrentModule "o"
++      stgToJS logger js_config stg_binds this_mod spt_entries foreign_stubs cost_centre_info out_obj
++
++      let TxtI id_sym = makeIdentForId binding_id Nothing IdPlain this_mod
++      -- link code containing binding "id_sym = expr", using id_sym as root
++      withJSInterp i $ \inst -> do
++        let roots = mkExportedModFuns this_mod [id_sym]
++        jsLinkObject logger tmpfs tmp_dir js_config unit_env inst out_obj roots
++
++      -- look up "id_sym" closure and create a StablePtr (HValue) from it
++      href <- lookupClosure interp (unpackFS id_sym) >>= \case
++        Nothing -> pprPanic "Couldn't find just linked TH closure" (ppr id_sym)
++        Just r  -> pure r
++
++      binding_fref <- withJSInterp i $ \inst ->
++                        mkForeignRef href (freeReallyRemoteRef inst href)
++
++      -- FIXME: LoaderState doesn't make sense for the JS linker
++      -- The state is maintained in the interpreter instance (jsLinkState field)
++      let linkables   = mempty
++      let loaded_pkgs = emptyUDFM
++
++      return (castForeignRef binding_fref, linkables, loaded_pkgs)
++
++    _ -> do
++      {- Convert to BCOs -}
++      bcos <- byteCodeGen hsc_env
++                this_mod
++                stg_binds
++                [] Nothing
++
++      {- load it -}
++      (fv_hvs, mods_needed, units_needed) <- loadDecls interp hsc_env srcspan bcos
++      {- Get the HValue for the root -}
++      return (expectJust "hscCompileCoreExpr'"
++         $ lookup (idName binding_id) fv_hvs, mods_needed, units_needed)
+ 
+ 
+ {- **********************************************************************
+diff --git a/compiler/GHC/Driver/Pipeline.hs b/compiler/GHC/Driver/Pipeline.hs
+index 44f590244b..068d2e1d00 100644
+--- a/compiler/GHC/Driver/Pipeline.hs
++++ b/compiler/GHC/Driver/Pipeline.hs
+@@ -111,8 +111,6 @@ import GHC.Types.SourceError
+ 
+ import GHC.Unit
+ import GHC.Unit.Env
+---import GHC.Unit.Finder
+---import GHC.Unit.State
+ import GHC.Unit.Module.ModSummary
+ import GHC.Unit.Module.ModIface
+ import GHC.Unit.Module.Deps
+diff --git a/compiler/GHC/Runtime/Interpreter.hs b/compiler/GHC/Runtime/Interpreter.hs
+index 4f34cbf03b..59cd4b3ee0 100644
+--- a/compiler/GHC/Runtime/Interpreter.hs
++++ b/compiler/GHC/Runtime/Interpreter.hs
+@@ -3,6 +3,8 @@
+ {-# LANGUAGE RecordWildCards #-}
+ {-# LANGUAGE ScopedTypeVariables #-}
+ {-# LANGUAGE TupleSections #-}
++{-# LANGUAGE LambdaCase #-}
++{-# LANGUAGE RankNTypes #-}
+ 
+ -- | Interacting with the iserv interpreter, whether it is running on an
+ -- external process or in the current process.
+@@ -46,22 +48,30 @@ module GHC.Runtime.Interpreter
+   , resolveObjs
+   , findSystemLibrary
+ 
+-  -- * Lower-level API using messages
+-  , interpCmd, Message(..), withIServ, withIServ_
++  , interpCmd
++  , withExtInterp
++  , withExtInterpStatus
++  , withIServ
++  , withJSInterp
+   , stopInterp
+-  , iservCall, readIServ, writeIServ
+   , purgeLookupSymbolCache
++  , freeReallyRemoteRef
+   , freeHValueRefs
+   , mkFinalizedHValue
+   , wormhole, wormholeRef
+   , fromEvalResult
++
++  -- * Reexport for convenience
++  , Message (..)
++  , module GHC.Runtime.Interpreter.Process
+   ) where
+ 
+ import GHC.Prelude
+ 
+-import GHC.IO (catchException)
+-
+ import GHC.Runtime.Interpreter.Types
++import GHC.Runtime.Interpreter.JS
++import GHC.Runtime.Interpreter.Process
++import GHC.Runtime.Utils
+ import GHCi.Message
+ import GHCi.RemoteTypes
+ import GHCi.ResolvedBCO
+@@ -98,7 +108,7 @@ import GHC.Platform.Ways
+ import Control.Concurrent
+ import Control.Monad
+ import Control.Monad.IO.Class
+-import Control.Monad.Catch as MC (mask, onException)
++import Control.Monad.Catch as MC (mask)
+ import Data.Binary
+ import Data.Binary.Put
+ import Data.ByteString (ByteString)
+@@ -108,19 +118,6 @@ import Data.IORef
+ import Foreign hiding (void)
+ import qualified GHC.Exts.Heap as Heap
+ import GHC.Stack.CCS (CostCentre,CostCentreStack)
+-import System.Exit
+-import GHC.IO.Handle.Types (Handle)
+-#if defined(mingw32_HOST_OS)
+-import Foreign.C
+-import GHC.IO.Handle.FD (fdToHandle)
+-# if defined(__IO_MANAGER_WINIO__)
+-import GHC.IO.SubSystem ((<!>))
+-import GHC.IO.Handle.Windows (handleToHANDLE)
+-import GHC.Event.Windows (associateHandle')
+-# endif
+-#else
+-import System.Posix as Posix
+-#endif
+ import System.Directory
+ import System.Process
+ import GHC.Conc (pseq, par)
+@@ -199,10 +196,20 @@ interpCmd interp msg = case interpInstance interp of
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+   InternalInterp     -> run msg -- Just run it directly
+ #endif
+-  ExternalInterp c i -> withIServ_ c i $ \iserv ->
++  ExternalInterp ext -> withExtInterp ext $ \inst ->
+     uninterruptibleMask_ $ -- Note [uninterruptibleMask_ and interpCmd]
+-      iservCall iserv msg
++      sendMessage inst msg
++
+ 
++withExtInterp :: ExceptionMonad m => ExtInterp -> (forall d. ExtInterpInstance d -> m a) -> m a
++withExtInterp ext action = case ext of
++  ExtJS    i -> withJSInterp i action
++  ExtIServ i -> withIServ    i action
++
++withExtInterpStatus :: ExtInterp -> (forall d. ExtInterpStatusVar d -> m a) -> m a
++withExtInterpStatus ext action = case ext of
++  ExtJS    i -> action (interpStatus i)
++  ExtIServ i -> action (interpStatus i)
+ 
+ -- Note [uninterruptibleMask_ and interpCmd]
+ -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+@@ -217,37 +224,51 @@ interpCmd interp msg = case interpInstance interp of
+ -- Overloaded because this is used from TcM as well as IO.
+ withIServ
+   :: (ExceptionMonad m)
+-  => IServConfig -> IServ -> (IServInstance -> m (IServInstance, a)) -> m a
+-withIServ conf (IServ mIServState) action =
+-  MC.mask $ \restore -> do
+-    state <- liftIO $ takeMVar mIServState
+-
+-    iserv <- case state of
+-      -- start the external iserv process if we haven't done so yet
+-      IServPending ->
+-         liftIO (spawnIServ conf)
+-           `MC.onException` (liftIO $ putMVar mIServState state)
+-
+-      IServRunning inst -> return inst
+-
+-
+-    let iserv'  = iserv{ iservPendingFrees = [] }
+-
+-    (iserv'',a) <- (do
+-      -- free any ForeignHValues that have been garbage collected.
+-      liftIO $ when (not (null (iservPendingFrees iserv))) $
+-        iservCall iserv (FreeHValueRefs (iservPendingFrees iserv))
+-      -- run the inner action
+-      restore $ action iserv')
+-          `MC.onException` (liftIO $ putMVar mIServState (IServRunning iserv'))
+-    liftIO $ putMVar mIServState (IServRunning iserv'')
+-    return a
+-
+-withIServ_
+-  :: (MonadIO m, ExceptionMonad m)
+-  => IServConfig -> IServ -> (IServInstance -> m a) -> m a
+-withIServ_ conf iserv action = withIServ conf iserv $ \inst ->
+-   (inst,) <$> action inst
++  => IServ -> (ExtInterpInstance () -> m a) -> m a
++withIServ (ExtInterpState cfg mstate) action = do
++  inst <- spawnInterpMaybe cfg spawnIServ mstate
++  action inst
++
++-- | Spawn JS interpreter if it isn't already running and execute the given action
++--
++-- Update the interpreter state.
++withJSInterp :: ExceptionMonad m => JSInterp -> (ExtInterpInstance JSInterpExtra -> m a) -> m a
++withJSInterp (ExtInterpState cfg mstate) action = do
++  inst <- spawnInterpMaybe cfg spawnJSInterp mstate
++  action inst
++
++-- | Spawn an interpreter if not already running according to the status in the
++-- MVar. Update the status, free pending heap references, and return the
++-- interpreter instance.
++--
++-- This function is generic to support both the native external interpreter and
++-- the JS one.
++spawnInterpMaybe :: ExceptionMonad m => cfg -> (cfg -> IO (ExtInterpInstance d)) -> ExtInterpStatusVar d -> m (ExtInterpInstance d)
++spawnInterpMaybe cfg spawn mstatus = do
++  inst <- liftIO $ modifyMVarMasked mstatus $ \case
++    -- start the external iserv process if we haven't done so yet
++    InterpPending -> do
++      inst <- spawn cfg
++      pure (InterpRunning inst, inst)
++
++    InterpRunning inst -> do
++      pure (InterpRunning inst, inst)
++
++  -- free any ForeignRef that have been garbage collected.
++  pending_frees <- liftIO $ swapMVar (instPendingFrees inst) []
++  liftIO $ when (not (null (pending_frees))) $
++    sendMessage inst (FreeHValueRefs pending_frees)
++
++  -- run the inner action
++  pure inst
++
++withExtInterpMaybe
++  :: (ExceptionMonad m)
++  => ExtInterp -> (forall d. Maybe (ExtInterpInstance d) -> m a) -> m a
++withExtInterpMaybe ext action = withExtInterpStatus ext $ \mstate -> do
++  liftIO (readMVar mstate) >>= \case
++    InterpPending {}   -> action Nothing -- already shut down or never launched
++    InterpRunning inst -> action (Just inst)
+ 
+ -- -----------------------------------------------------------------------------
+ -- Wrappers around messages
+@@ -451,24 +472,27 @@ lookupSymbol interp str = case interpInstance interp of
+   InternalInterp -> fmap fromRemotePtr <$> run (LookupSymbol (unpackFS str))
+ #endif
+ 
+-  ExternalInterp c i -> withIServ c i $ \iserv -> do
+-    -- Profiling of GHCi showed a lot of time and allocation spent
+-    -- making cross-process LookupSymbol calls, so I added a GHC-side
+-    -- cache which sped things up quite a lot.  We have to be careful
+-    -- to purge this cache when unloading code though.
+-    let cache = iservLookupSymbolCache iserv
+-    case lookupUFM cache str of
+-      Just p -> return (iserv, Just p)
+-      Nothing -> do
+-        m <- uninterruptibleMask_ $
+-                 iservCall iserv (LookupSymbol (unpackFS str))
+-        case m of
+-          Nothing -> return (iserv, Nothing)
+-          Just r -> do
+-            let p      = fromRemotePtr r
+-                cache' = addToUFM cache str p
+-                iserv' = iserv {iservLookupSymbolCache = cache'}
+-            return (iserv', Just p)
++  ExternalInterp ext -> case ext of
++    ExtIServ i -> withIServ i $ \inst -> do
++      -- Profiling of GHCi showed a lot of time and allocation spent
++      -- making cross-process LookupSymbol calls, so I added a GHC-side
++      -- cache which sped things up quite a lot.  We have to be careful
++      -- to purge this cache when unloading code though.
++      cache <- readMVar (instLookupSymbolCache inst)
++      case lookupUFM cache str of
++        Just p -> return (Just p)
++        Nothing -> do
++          m <- uninterruptibleMask_ $
++                   sendMessage inst (LookupSymbol (unpackFS str))
++          case m of
++            Nothing -> return Nothing
++            Just r -> do
++              let p        = fromRemotePtr r
++                  cache'   = addToUFM cache str p
++              modifyMVar_ (instLookupSymbolCache inst) (const (pure cache'))
++              return (Just p)
++
++    ExtJS {} -> pprPanic "lookupSymbol not supported by the JS interpreter" (ppr str)
+ 
+ lookupClosure :: Interp -> String -> IO (Maybe HValueRef)
+ lookupClosure interp str =
+@@ -479,12 +503,9 @@ purgeLookupSymbolCache interp = case interpInstance interp of
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+   InternalInterp -> pure ()
+ #endif
+-  ExternalInterp _ (IServ mstate) ->
+-    modifyMVar_ mstate $ \state -> pure $ case state of
+-      IServPending       -> state
+-      IServRunning iserv -> IServRunning
+-        (iserv { iservLookupSymbolCache = emptyUFM })
+-
++  ExternalInterp ext -> withExtInterpMaybe ext $ \case
++    Nothing   -> pure () -- interpreter stopped, nothing to do
++    Just inst -> modifyMVar_ (instLookupSymbolCache inst) (const (pure emptyUFM))
+ 
+ -- | loadDLL loads a dynamic library using the OS's native linker
+ -- (i.e. dlopen() on Unix, LoadLibrary() on Windows).  It takes either
+@@ -534,56 +555,35 @@ resolveObjs interp = successIf <$> interpCmd interp ResolveObjs
+ findSystemLibrary :: Interp -> String -> IO (Maybe String)
+ findSystemLibrary interp str = interpCmd interp (FindSystemLibrary str)
+ 
+-
+ -- -----------------------------------------------------------------------------
+--- Raw calls and messages
+-
+--- | Send a 'Message' and receive the response from the iserv process
+-iservCall :: Binary a => IServInstance -> Message a -> IO a
+-iservCall iserv msg =
+-  remoteCall (iservPipe iserv) msg
+-    `catchException` \(e :: SomeException) -> handleIServFailure iserv e
+-
+--- | Read a value from the iserv process
+-readIServ :: IServInstance -> Get a -> IO a
+-readIServ iserv get =
+-  readPipe (iservPipe iserv) get
+-    `catchException` \(e :: SomeException) -> handleIServFailure iserv e
+-
+--- | Send a value to the iserv process
+-writeIServ :: IServInstance -> Put -> IO ()
+-writeIServ iserv put =
+-  writePipe (iservPipe iserv) put
+-    `catchException` \(e :: SomeException) -> handleIServFailure iserv e
+-
+-handleIServFailure :: IServInstance -> SomeException -> IO a
+-handleIServFailure iserv e = do
+-  let proc = iservProcess iserv
+-  ex <- getProcessExitCode proc
+-  case ex of
+-    Just (ExitFailure n) ->
+-      throwIO (InstallationError ("ghc-iserv terminated (" ++ show n ++ ")"))
+-    _ -> do
+-      terminateProcess proc
+-      _ <- waitForProcess proc
+-      throw e
++-- IServ specific calls and messages
+ 
+ -- | Spawn an external interpreter
+-spawnIServ :: IServConfig -> IO IServInstance
++spawnIServ :: IServConfig -> IO (ExtInterpInstance ())
+ spawnIServ conf = do
+   iservConfTrace conf
+   let createProc = fromMaybe (\cp -> do { (_,_,_,ph) <- createProcess cp
+                                         ; return ph })
+                              (iservConfHook conf)
+   (ph, rh, wh) <- runWithPipes createProc (iservConfProgram conf)
++                                          []
+                                           (iservConfOpts    conf)
+   lo_ref <- newIORef Nothing
+-  return $ IServInstance
+-    { iservPipe              = Pipe { pipeRead = rh, pipeWrite = wh, pipeLeftovers = lo_ref }
+-    , iservProcess           = ph
+-    , iservLookupSymbolCache = emptyUFM
+-    , iservPendingFrees      = []
+-    }
++  let pipe = Pipe { pipeRead = rh, pipeWrite = wh, pipeLeftovers = lo_ref }
++  let process = InterpProcess
++                  { interpHandle = ph
++                  , interpPipe   = pipe
++                  }
++
++  pending_frees <- newMVar []
++  lookup_cache  <- newMVar emptyUFM
++  let inst = ExtInterpInstance
++        { instProcess           = process
++        , instPendingFrees      = pending_frees
++        , instLookupSymbolCache = lookup_cache
++        , instExtra             = ()
++        }
++  pure inst
+ 
+ -- | Stop the interpreter
+ stopInterp :: Interp -> IO ()
+@@ -591,76 +591,16 @@ stopInterp interp = case interpInstance interp of
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+     InternalInterp -> pure ()
+ #endif
+-    ExternalInterp _ (IServ mstate) ->
++    ExternalInterp ext -> withExtInterpStatus ext $ \mstate -> do
+       MC.mask $ \_restore -> modifyMVar_ mstate $ \state -> do
+         case state of
+-          IServPending    -> pure state -- already stopped
+-          IServRunning i  -> do
+-            ex <- getProcessExitCode (iservProcess i)
++          InterpPending    -> pure state -- already stopped
++          InterpRunning i  -> do
++            ex <- getProcessExitCode (interpHandle (instProcess i))
+             if isJust ex
+                then pure ()
+-               else iservCall i Shutdown
+-            pure IServPending
+-
+-runWithPipes :: (CreateProcess -> IO ProcessHandle)
+-             -> FilePath -> [String] -> IO (ProcessHandle, Handle, Handle)
+-#if defined(mingw32_HOST_OS)
+-foreign import ccall "io.h _close"
+-   c__close :: CInt -> IO CInt
+-
+-foreign import ccall unsafe "io.h _get_osfhandle"
+-   _get_osfhandle :: CInt -> IO CInt
+-
+-runWithPipesPOSIX :: (CreateProcess -> IO ProcessHandle)
+-                  -> FilePath -> [String] -> IO (ProcessHandle, Handle, Handle)
+-runWithPipesPOSIX createProc prog opts = do
+-    (rfd1, wfd1) <- createPipeFd -- we read on rfd1
+-    (rfd2, wfd2) <- createPipeFd -- we write on wfd2
+-    wh_client    <- _get_osfhandle wfd1
+-    rh_client    <- _get_osfhandle rfd2
+-    let args = show wh_client : show rh_client : opts
+-    ph <- createProc (proc prog args)
+-    rh <- mkHandle rfd1
+-    wh <- mkHandle wfd2
+-    return (ph, rh, wh)
+-      where mkHandle :: CInt -> IO Handle
+-            mkHandle fd = (fdToHandle fd) `Ex.onException` (c__close fd)
+-
+-# if defined (__IO_MANAGER_WINIO__)
+-runWithPipesNative :: (CreateProcess -> IO ProcessHandle)
+-                   -> FilePath -> [String] -> IO (ProcessHandle, Handle, Handle)
+-runWithPipesNative createProc prog opts = do
+-    (rh, wfd1) <- createPipe -- we read on rfd1
+-    (rfd2, wh) <- createPipe -- we write on wfd2
+-    wh_client    <- handleToHANDLE wfd1
+-    rh_client    <- handleToHANDLE rfd2
+-    -- Associate the handle with the current manager
+-    -- but don't touch the ones we're passing to the child
+-    -- since it needs to register the handle with its own manager.
+-    associateHandle' =<< handleToHANDLE rh
+-    associateHandle' =<< handleToHANDLE wh
+-    let args = show wh_client : show rh_client : opts
+-    ph <- createProc (proc prog args)
+-    return (ph, rh, wh)
+-
+-runWithPipes = runWithPipesPOSIX <!> runWithPipesNative
+-# else
+-runWithPipes = runWithPipesPOSIX
+-# endif
+-#else
+-runWithPipes createProc prog opts = do
+-    (rfd1, wfd1) <- Posix.createPipe -- we read on rfd1
+-    (rfd2, wfd2) <- Posix.createPipe -- we write on wfd2
+-    setFdOption rfd1 CloseOnExec True
+-    setFdOption wfd2 CloseOnExec True
+-    let args = show wfd1 : show rfd2 : opts
+-    ph <- createProc (proc prog args)
+-    closeFd wfd1
+-    closeFd rfd2
+-    rh <- fdToHandle rfd1
+-    wh <- fdToHandle wfd2
+-    return (ph, rh, wh)
+-#endif
++               else sendMessage i Shutdown
++            pure InterpPending
+ 
+ -- -----------------------------------------------------------------------------
+ {- Note [External GHCi pointers]
+@@ -677,10 +617,10 @@ we cannot use this to refer to things in the external process.
+ RemoteRef
+ ---------
+ 
+-RemoteRef is a StablePtr to a heap-resident value.  When
+--fexternal-interpreter is used, this value resides in the external
+-process's heap.  RemoteRefs are mostly used to send pointers in
+-messages between GHC and iserv.
++RemoteRef is a StablePtr to a heap-resident value.  When -fexternal-interpreter
++or the JS interpreter is used, this value resides in the external process's
++heap. RemoteRefs are mostly used to send pointers in messages between GHC and
++iserv.
+ 
+ A RemoteRef must be explicitly freed when no longer required, using
+ freeHValueRefs, or by attaching a finalizer with mkForeignHValue.
+@@ -706,20 +646,18 @@ principle it would probably be ok, but it seems less hairy this way.
+ -- 'RemoteRef' when it is no longer referenced.
+ mkFinalizedHValue :: Interp -> RemoteRef a -> IO (ForeignRef a)
+ mkFinalizedHValue interp rref = do
+-   let hvref = toHValueRef rref
+-
+-   free <- case interpInstance interp of
++  case interpInstance interp of
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+-      InternalInterp             -> return (freeRemoteRef hvref)
++    InternalInterp     -> mkForeignRef rref (freeRemoteRef rref)
+ #endif
+-      ExternalInterp _ (IServ i) -> return $ modifyMVar_ i $ \state ->
+-       case state of
+-         IServPending {}   -> pure state -- already shut down
+-         IServRunning inst -> do
+-            let !inst' = inst {iservPendingFrees = hvref:iservPendingFrees inst}
+-            pure (IServRunning inst')
++    ExternalInterp ext -> withExtInterpMaybe ext $ \case
++      Nothing   -> mkForeignRef rref (pure ()) -- nothing to do, interpreter already stopped
++      Just inst -> mkForeignRef rref (freeReallyRemoteRef inst rref)
+ 
+-   mkForeignRef rref free
++freeReallyRemoteRef :: ExtInterpInstance d -> RemoteRef a -> IO ()
++freeReallyRemoteRef inst rref =
++  -- add to the list of HValues to free
++  modifyMVar_ (instPendingFrees inst) (\xs -> pure (castRemoteRef rref : xs))
+ 
+ 
+ freeHValueRefs :: Interp -> [HValueRef] -> IO ()
+@@ -769,7 +707,9 @@ interpreterProfiled interp = case interpInstance interp of
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+   InternalInterp     -> hostIsProfiled
+ #endif
+-  ExternalInterp c _ -> iservConfProfiled c
++  ExternalInterp ext -> case ext of
++    ExtIServ i -> iservConfProfiled (interpConfig i)
++    ExtJS {}   -> False -- we don't support profiling yet in the JS backend
+ 
+ -- | Interpreter uses Dynamic way
+ interpreterDynamic :: Interp -> Bool
+@@ -777,4 +717,6 @@ interpreterDynamic interp = case interpInstance interp of
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+   InternalInterp     -> hostIsDynamic
+ #endif
+-  ExternalInterp c _ -> iservConfDynamic c
++  ExternalInterp ext -> case ext of
++    ExtIServ i -> iservConfDynamic (interpConfig i)
++    ExtJS {}   -> False -- dynamic doesn't make sense for JS
+diff --git a/compiler/GHC/Runtime/Interpreter/JS.hs b/compiler/GHC/Runtime/Interpreter/JS.hs
+new file mode 100644
+index 0000000000..d5f9d334f7
+--- /dev/null
++++ b/compiler/GHC/Runtime/Interpreter/JS.hs
+@@ -0,0 +1,391 @@
++{-# LANGUAGE GADTs #-}
++{-# LANGUAGE TupleSections #-}
++{-# LANGUAGE BlockArguments #-}
++{-# LANGUAGE LambdaCase #-}
++
++-- | JavaScript interpreter
++--
++-- The JS interpreter works as follows:
++--
++-- ghc-interp.js is a simple JS script used to bootstrap the external
++-- interpreter server (iserv) that is written in Haskell. This script waits for
++-- commands on stdin:
++--      LOAD foo.js -- load a JS file in the current JS environment
++--      RUN_SERVER  -- execute h$main(h$ghciZCGHCiziServerzidefaultServer)
++--                     (entry point of the interpreter server)
++--
++-- On the GHC side, when we need the interpreter we do the following:
++--
++-- 1. spawn nodejs with $topdir/ghc-interp.js script
++-- 2. link the JS rts and send a LOAD command to load it
++-- 3. link iserv (i.e. use GHCi.Server.defaultServer as root) and LOAD it
++-- 4. send a RUN_SERVER command to execute the JS iserv
++--
++-- From this moment on, everything happens as with the native iserv, using a
++-- pipe for communication, with the following differences:
++--
++--  - the JS iserv only supports the LoadObj linking command which has been
++--  repurposed to load a JS source file. The JS iserv doesn't deal with
++--  libraries (.a) and with object files (.o). The linker state is maintained on
++--  the GHC side and GHC only sends the appropriate chunks of JS code to link. 
++--
++--  - the JS iserv doesn't support ByteCode (i.e. it doesn't support CreateBCOs
++--  messages). JS iserv clients should use the usual JS compilation pipeline and
++--  send JS code instead. See GHC.Driver.Main.hscCompileCoreExpr for an example.
++--
++-- GHC keeps track of JS blocks (JS unit of linking corresponding to top-level
++-- binding groups) that have already been linked by the JS interpreter. It only
++-- links new ones when necessary, using the JS linker incremental link plan
++-- feature.
++--
++-- Note that the JS interpreter isn't subject to staging issues: we can use it
++-- in a Stage1 GHC.
++--
++module GHC.Runtime.Interpreter.JS
++  ( spawnJSInterp
++  , jsLinkRts
++  , jsLinkInterp
++  , jsLinkObject
++  , jsLinkObjects
++  , jsLoadFile
++  , jsRunServer
++  -- * Reexported for convenience
++  , mkExportedModFuns
++  )
++where
++
++import GHC.Prelude
++import GHC.Runtime.Interpreter.Types
++import GHC.Runtime.Interpreter.Process
++import GHC.Runtime.Utils
++import GHCi.Message
++
++import GHC.StgToJS.Linker.Types
++import GHC.StgToJS.Linker.Linker
++import GHC.StgToJS.Types
++import GHC.StgToJS.Object
++
++import GHC.Unit.Env
++import GHC.Unit.Types
++import GHC.Unit.State
++
++import GHC.Utils.Logger
++import GHC.Utils.TmpFs
++import GHC.Utils.Panic
++import GHC.Utils.Error (logInfo)
++import GHC.Utils.Outputable (text)
++import GHC.Data.FastString
++import GHC.Types.Unique.FM
++
++import Control.Concurrent
++import Control.Monad
++
++import System.Process
++import System.IO
++import System.FilePath
++
++import Data.IORef
++import qualified Data.Set    as Set
++import qualified Data.ByteString as B
++
++import Foreign.C.String
++
++---------------------------------------------------------
++-- Running node
++---------------------------------------------------------
++
++-- | Start NodeJS interactively with "ghc-interp.js" script loaded in
++startTHRunnerProcess :: FilePath -> NodeJsSettings -> IO (Handle,InterpProcess)
++startTHRunnerProcess interp_js settings = do
++  interp_in <- newIORef undefined
++
++  let createProc cp = do
++          let cp' = cp
++                      { std_in  = CreatePipe
++                      , std_out = Inherit
++                      , std_err = Inherit
++                      }
++          (mb_in, _mb_out, _mb_err, hdl) <- createProcess cp'
++          -- we can't directly return stdin for the process given the current
++          -- implementation of runWithPipes. So we just use an IORef for this...
++          case mb_in of
++            Nothing -> panic "startTHRunnerProcess: expected stdin for interpreter"
++            Just i  -> writeIORef interp_in i
++          return hdl
++
++  (hdl, rh, wh) <- runWithPipes createProc (nodeProgram settings)
++                                           [interp_js]
++                                           (nodeExtraArgs settings)
++  std_in <- readIORef interp_in
++
++  lo_ref <- newIORef Nothing
++  let pipe = Pipe { pipeRead = rh, pipeWrite = wh, pipeLeftovers = lo_ref }
++  let proc = InterpProcess
++              { interpHandle = hdl
++              , interpPipe   = pipe
++              }
++  pure (std_in, proc)
++
++-- | Spawn a JS interpreter
++--
++-- Run NodeJS with "ghc-interp.js" loaded in. Then load GHCi.Server and its deps
++-- (including the rts) and run GHCi.Server.defaultServer.
++spawnJSInterp :: JSInterpConfig -> IO (ExtInterpInstance JSInterpExtra)
++spawnJSInterp cfg = do
++  let logger= jsInterpLogger cfg
++  when (logVerbAtLeast logger 2) $
++    logInfo logger (text "Spawning JS interpreter")
++
++  let tmpfs        = jsInterpTmpFs cfg
++      tmp_dir      = jsInterpTmpDir cfg
++      logger       = jsInterpLogger cfg
++      codegen_cfg  = jsInterpCodegenCfg cfg
++      unit_env     = jsInterpUnitEnv cfg
++      finder_opts  = jsInterpFinderOpts cfg
++      finder_cache = jsInterpFinderCache cfg
++
++  (std_in, proc) <- startTHRunnerProcess (jsInterpScript cfg) (jsInterpNodeConfig cfg)
++
++  js_state <- newMVar (JSState
++                { jsLinkState     = emptyLinkPlan
++                , jsServerStarted = False
++                })
++
++  -- get the unit-id of the ghci package. We need this to load the
++  -- interpreter code.
++  ghci_unit_id <- case lookupPackageName (ue_units unit_env) (PackageName (fsLit "ghci")) of
++    Nothing -> cmdLineErrorIO "JS interpreter: couldn't find \"ghci\" package"
++    Just i  -> pure i
++
++  let extra = JSInterpExtra
++        { instStdIn        = std_in
++        , instJSState      = js_state
++        , instFinderCache  = finder_cache
++        , instFinderOpts   = finder_opts
++        , instGhciUnitId   = ghci_unit_id
++        }
++
++  pending_frees <- newMVar []
++  lookup_cache  <- newMVar emptyUFM
++  let inst = ExtInterpInstance
++        { instProcess           = proc
++        , instPendingFrees      = pending_frees
++        , instLookupSymbolCache = lookup_cache
++        , instExtra             = extra
++        }
++
++  -- link rts and its deps
++  jsLinkRts logger tmpfs tmp_dir codegen_cfg unit_env inst
++
++  -- link interpreter and its deps
++  jsLinkInterp logger tmpfs tmp_dir codegen_cfg unit_env inst
++
++  -- run interpreter main loop
++  jsRunServer inst
++
++  pure inst
++
++
++
++---------------------------------------------------------
++-- Interpreter commands
++---------------------------------------------------------
++
++-- | Link JS RTS
++jsLinkRts :: Logger -> TmpFs -> TempDir -> StgToJSConfig -> UnitEnv -> ExtInterpInstance JSInterpExtra -> IO ()
++jsLinkRts logger tmpfs tmp_dir cfg unit_env inst = do
++  let link_cfg = JSLinkConfig
++        { lcNoStats         = True  -- we don't need the stats
++        , lcNoRts           = False -- we need the RTS
++        , lcCombineAll      = False -- we don't need the combined all.js, we'll link each part independently below
++        , lcForeignRefs     = False -- we don't need foreign references
++        , lcNoJSExecutables = True  -- we don't need executables
++        , lcNoHsMain        = True  -- nor HsMain
++        }
++
++  -- link the RTS and its dependencies (things it uses from `base`, etc.)
++  let link_spec = LinkSpec
++        { lks_unit_ids        = [rtsUnitId, baseUnitId, primUnitId]
++        , lks_obj_files       = mempty
++        , lks_obj_root_filter = const False
++        , lks_extra_roots     = mempty
++        , lks_extra_js        = mempty
++        }
++
++  let finder_opts  = instFinderOpts (instExtra inst)
++      finder_cache = instFinderCache (instExtra inst)
++
++  link_plan <- computeLinkDependencies cfg unit_env link_spec finder_opts finder_cache
++  jsLinkPlan logger tmpfs tmp_dir link_cfg cfg inst link_plan
++
++-- | Link JS interpreter
++jsLinkInterp :: Logger -> TmpFs -> TempDir -> StgToJSConfig -> UnitEnv -> ExtInterpInstance JSInterpExtra -> IO ()
++jsLinkInterp logger tmpfs tmp_dir cfg unit_env inst = do
++
++  let link_cfg = JSLinkConfig
++        { lcNoStats         = True  -- we don't need the stats
++        , lcNoRts           = True  -- we don't need the RTS
++        , lcCombineAll      = False -- we don't need the combined all.js, we'll link each part independently below
++        , lcForeignRefs     = False -- we don't need foreign references
++        , lcNoJSExecutables = True  -- we don't need executables
++        , lcNoHsMain        = True  -- nor HsMain
++        }
++
++  let is_root _ = True -- FIXME: we shouldn't consider every function as a root
++
++  let ghci_unit_id = instGhciUnitId (instExtra inst)
++
++  -- compute unit dependencies of ghc_unit_id
++  let unit_map = unitInfoMap (ue_units unit_env)
++  dep_units <- mayThrowUnitErr $ closeUnitDeps unit_map [(ghci_unit_id,Nothing)]
++  let units = dep_units ++ [ghci_unit_id]
++
++  -- indicate that our root function is GHCi.Server.defaultServer
++  let root_deps = Set.fromList $ mkExportedFuns ghci_unit_id (fsLit "GHCi.Server") [fsLit "defaultServer"]
++
++  -- link the interpreter and its dependencies
++  let link_spec = LinkSpec
++        { lks_unit_ids        = units
++        , lks_obj_files       = mempty
++        , lks_obj_root_filter = is_root
++        , lks_extra_roots     = root_deps
++        , lks_extra_js        = mempty
++        }
++
++  let finder_cache = instFinderCache (instExtra inst)
++      finder_opts  = instFinderOpts (instExtra inst)
++
++  link_plan <- computeLinkDependencies cfg unit_env link_spec finder_opts finder_cache
++
++  jsLinkPlan logger tmpfs tmp_dir link_cfg cfg inst link_plan
++
++
++-- | Link object files
++jsLinkObjects :: Logger -> TmpFs -> TempDir -> StgToJSConfig -> UnitEnv -> ExtInterpInstance JSInterpExtra -> [FilePath] -> (ExportedFun -> Bool) -> IO ()
++jsLinkObjects logger tmpfs tmp_dir cfg unit_env inst objs is_root = do
++  let link_cfg = JSLinkConfig
++        { lcNoStats         = True  -- we don't need the stats
++        , lcNoRts           = True  -- we don't need the RTS (already linked)
++        , lcCombineAll      = False -- we don't need the combined all.js, we'll link each part independently below
++        , lcForeignRefs     = False -- we don't need foreign references
++        , lcNoJSExecutables = True  -- we don't need executables
++        , lcNoHsMain        = True  -- nor HsMain
++        }
++
++  let units = preloadUnits (ue_units unit_env)
++              ++ [thUnitId] -- don't forget TH which is an implicit dep
++
++  -- compute dependencies
++  let link_spec = LinkSpec
++        { lks_unit_ids        = units
++        , lks_obj_files       = fmap ObjFile objs
++        , lks_obj_root_filter = is_root
++        , lks_extra_roots     = mempty
++        , lks_extra_js        = mempty
++        }
++
++  let finder_opts  = instFinderOpts (instExtra inst)
++      finder_cache = instFinderCache (instExtra inst)
++
++  link_plan <- computeLinkDependencies cfg unit_env link_spec finder_opts finder_cache
++
++  -- link
++  jsLinkPlan logger tmpfs tmp_dir link_cfg cfg inst link_plan
++
++
++
++-- | Link an object file using the given functions as roots
++jsLinkObject :: Logger -> TmpFs -> TempDir -> StgToJSConfig -> UnitEnv -> ExtInterpInstance JSInterpExtra -> FilePath -> [ExportedFun] -> IO ()
++jsLinkObject logger tmpfs tmp_dir cfg unit_env inst obj roots = do
++  let is_root f = Set.member f (Set.fromList roots)
++  let objs      = [obj]
++  jsLinkObjects logger tmpfs tmp_dir cfg unit_env inst objs is_root
++
++
++-- | Link the given link plan
++--
++-- Perform incremental linking by removing what is already linked from the plan
++jsLinkPlan :: Logger -> TmpFs -> TempDir -> JSLinkConfig -> StgToJSConfig -> ExtInterpInstance JSInterpExtra -> LinkPlan -> IO ()
++jsLinkPlan logger tmpfs tmp_dir link_cfg cfg inst link_plan = do
++  ----------------------------------------------------------------
++  -- Get already linked stuff and compute incremental plan
++  ----------------------------------------------------------------
++
++  old_plan <- jsLinkState <$> readMVar (instJSState (instExtra inst))
++
++  -- compute new plan discarding what's already linked
++  let (diff_plan, total_plan) = incrementLinkPlan old_plan link_plan
++
++  ----------------------------------------------------------------
++  -- Generate JS code for the incremental plan
++  ----------------------------------------------------------------
++
++  tmp_out <- newTempSubDir logger tmpfs tmp_dir
++  void $ jsLink link_cfg cfg logger tmp_out diff_plan
++
++  -- Code has been linked into the following files:
++  --  - generated rts from tmp_out/rts.js (depends on link options)
++  --  - raw js files from tmp_out/lib.js
++  --  - Haskell generated JS from tmp_out/out.js
++
++  -- We need to combine at least rts.js and lib.js for the RTS because they
++  -- depend on each other. We might as well combine them all, so that's what we
++  -- do.
++  let filenames
++        | lcNoRts link_cfg = ["lib.js", "out.js"]
++        | otherwise        = ["rts.js", "lib.js", "out.js"]
++  let files = map (tmp_out </>) filenames
++  let all_js = tmp_out </> "all.js"
++  let all_files = all_js : files
++  withBinaryFile all_js WriteMode $ \h -> do
++    let cpy i = B.readFile i >>= B.hPut h
++    mapM_ cpy files
++
++  -- add files to clean
++  addFilesToClean tmpfs TFL_CurrentModule all_files
++
++  ----------------------------------------------------------------
++  -- Link JS code
++  ----------------------------------------------------------------
++
++  -- linking JS code depends on the phase we're in:
++  -- - during in the initialization phase, we send a LoadFile message to the
++  --   JS server;
++  -- - once the Haskell server is started, we send a LoadObj message to the
++  --   Haskell server.
++  server_started <- jsServerStarted <$> readMVar (instJSState (instExtra inst))
++  if server_started
++    then sendMessageNoResponse inst $ LoadObj all_js
++    else jsLoadFile            inst all_js
++
++  ----------------------------------------------------------------
++  -- update linker state
++  ----------------------------------------------------------------
++  modifyMVar_ (instJSState (instExtra inst)) $ \state -> pure state { jsLinkState = total_plan }
++
++
++-- | Send a command to the JS interpreter
++jsSendCommand :: ExtInterpInstance JSInterpExtra -> String -> IO ()
++jsSendCommand inst cmd = send_cmd cmd
++  where
++    extra      = instExtra inst
++    handle     = instStdIn extra
++    send_cmd s = do
++      withCStringLen s \(p,n) -> hPutBuf handle p n
++      hFlush handle
++
++-- | Load a JS file in the interpreter
++jsLoadFile :: ExtInterpInstance JSInterpExtra -> FilePath -> IO ()
++jsLoadFile inst path = jsSendCommand inst ("LOAD " ++ path ++ "\n")
++
++-- | Run JS server
++jsRunServer :: ExtInterpInstance JSInterpExtra -> IO ()
++jsRunServer inst = do
++  let ghci_unit_id = instGhciUnitId (instExtra inst)
++  let zghci_unit_id = zString (zEncodeFS (unitIdFS ghci_unit_id))
++
++  -- Run `GHCi.Server.defaultServer`
++  jsSendCommand inst ("RUN_SERVER " ++ zghci_unit_id ++ "\n")
++
++  -- indicate that the Haskell server is now started
++  modifyMVar_ (instJSState (instExtra inst)) $ \state -> pure state { jsServerStarted = True }
+diff --git a/compiler/GHC/Runtime/Interpreter/Process.hs b/compiler/GHC/Runtime/Interpreter/Process.hs
+new file mode 100644
+index 0000000000..a93d00d7bc
+--- /dev/null
++++ b/compiler/GHC/Runtime/Interpreter/Process.hs
+@@ -0,0 +1,102 @@
++module GHC.Runtime.Interpreter.Process
++  (
++  -- * Low-level API
++    callInterpProcess
++  , readInterpProcess
++  , writeInterpProcess
++
++  -- * Message API
++  , Message(..)
++  , DelayedResponse (..)
++  , sendMessage
++  , sendMessageNoResponse
++  , sendMessageDelayedResponse
++  , sendAnyValue
++  , receiveAnyValue
++  , receiveDelayedResponse
++  , receiveTHMessage
++
++  )
++where
++
++import GHC.Prelude
++
++import GHC.Runtime.Interpreter.Types
++import GHCi.Message
++
++import GHC.IO (catchException)
++import GHC.Utils.Panic
++import GHC.Utils.Exception as Ex
++
++import Data.Binary
++import System.Exit
++import System.Process
++
++data DelayedResponse a = DelayedResponse
++
++-- | Send a message to the interpreter process that doesn't expect a response
++sendMessageNoResponse :: ExtInterpInstance d -> Message () -> IO ()
++sendMessageNoResponse i m = writeInterpProcess (instProcess i) (putMessage m)
++
++-- | Send a message to the interpreter that excepts a response
++sendMessage :: Binary a => ExtInterpInstance d -> Message a -> IO a
++sendMessage i m = callInterpProcess (instProcess i) m
++
++-- | Send a message to the interpreter process whose response is expected later
++--
++-- This is useful to avoid forgetting to receive the value and to ensure that
++-- the type of the response isn't lost. Use receiveDelayedResponse to read it.
++sendMessageDelayedResponse :: ExtInterpInstance d -> Message a -> IO (DelayedResponse a)
++sendMessageDelayedResponse i m = do
++  writeInterpProcess (instProcess i) (putMessage m)
++  pure DelayedResponse
++
++-- | Send any value
++sendAnyValue :: Binary a => ExtInterpInstance d -> a -> IO ()
++sendAnyValue i m = writeInterpProcess (instProcess i) (put m)
++
++-- | Expect a value to be received
++receiveAnyValue :: ExtInterpInstance d -> Get a -> IO a
++receiveAnyValue i get = readInterpProcess (instProcess i) get
++
++-- | Expect a delayed result to be received now
++receiveDelayedResponse :: Binary a => ExtInterpInstance d -> DelayedResponse a -> IO a
++receiveDelayedResponse i DelayedResponse = readInterpProcess (instProcess i) get
++
++-- | Expect a value to be received
++receiveTHMessage :: ExtInterpInstance d -> IO THMsg
++receiveTHMessage i = receiveAnyValue i getTHMessage
++
++
++-- -----------------------------------------------------------------------------
++-- Low-level API
++
++-- | Send a 'Message' and receive the response from the interpreter process
++callInterpProcess :: Binary a => InterpProcess -> Message a -> IO a
++callInterpProcess i msg =
++  remoteCall (interpPipe i) msg
++    `catchException` \(e :: SomeException) -> handleInterpProcessFailure i e
++
++-- | Read a value from the interpreter process
++readInterpProcess :: InterpProcess -> Get a -> IO a
++readInterpProcess i get =
++  readPipe (interpPipe i) get
++    `catchException` \(e :: SomeException) -> handleInterpProcessFailure i e
++
++-- | Send a value to the interpreter process
++writeInterpProcess :: InterpProcess -> Put -> IO ()
++writeInterpProcess i put =
++  writePipe (interpPipe i) put
++    `catchException` \(e :: SomeException) -> handleInterpProcessFailure i e
++
++handleInterpProcessFailure :: InterpProcess -> SomeException -> IO a
++handleInterpProcessFailure i e = do
++  let hdl = interpHandle i
++  ex <- getProcessExitCode hdl
++  case ex of
++    Just (ExitFailure n) ->
++      throwIO (InstallationError ("External interpreter terminated (" ++ show n ++ ")"))
++    _ -> do
++      terminateProcess hdl
++      _ <- waitForProcess hdl
++      throw e
+diff --git a/compiler/GHC/Runtime/Interpreter/Types.hs b/compiler/GHC/Runtime/Interpreter/Types.hs
+index e1b33198d0..962c21491f 100644
+--- a/compiler/GHC/Runtime/Interpreter/Types.hs
++++ b/compiler/GHC/Runtime/Interpreter/Types.hs
+@@ -4,10 +4,22 @@
+ module GHC.Runtime.Interpreter.Types
+    ( Interp(..)
+    , InterpInstance(..)
+-   , IServ(..)
+-   , IServInstance(..)
++   , InterpProcess (..)
++   , ExtInterp (..)
++   , ExtInterpStatusVar
++   , ExtInterpInstance (..)
++   , ExtInterpState (..)
++   , InterpStatus(..)
++   -- * IServ
++   , IServ
+    , IServConfig(..)
+-   , IServState(..)
++   -- * JSInterp
++   , JSInterp
++   , JSInterpExtra (..)
++   , JSInterpConfig (..)
++   , JSState (..)
++   , NodeJsSettings (..)
++   , defaultNodeJsSettings
+    )
+ where
+ 
+@@ -20,8 +32,17 @@ import GHC.Types.Unique.FM
+ import GHC.Data.FastString ( FastString )
+ import Foreign
+ 
++import GHC.Utils.TmpFs
++import GHC.Utils.Logger
++import GHC.Unit.Env
++import GHC.Unit.Types
++import GHC.StgToJS.Types
++import GHC.StgToJS.Linker.Types
++
+ import Control.Concurrent
+ import System.Process   ( ProcessHandle, CreateProcess )
++import System.IO
++import GHC.Unit.Finder.Types (FinderCache, FinderOpts)
+ 
+ -- | Interpreter
+ data Interp = Interp
+@@ -32,24 +53,40 @@ data Interp = Interp
+       -- ^ Interpreter loader
+   }
+ 
+-
+ data InterpInstance
+-   = ExternalInterp !IServConfig !IServ -- ^ External interpreter
++   = ExternalInterp !ExtInterp -- ^ External interpreter
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+-   | InternalInterp                     -- ^ Internal interpreter
++   | InternalInterp            -- ^ Internal interpreter
+ #endif
+ 
++data ExtInterp
++  = ExtIServ !IServ
++  | ExtJS !JSInterp
++
+ -- | External interpreter
+ --
+ -- The external interpreter is spawned lazily (on first use) to avoid slowing
+ -- down sessions that don't require it. The contents of the MVar reflects the
+ -- state of the interpreter (running or not).
+-newtype IServ = IServ (MVar IServState)
++data ExtInterpState cfg details = ExtInterpState
++  { interpConfig :: !cfg
++  , interpStatus :: !(ExtInterpStatusVar details)
++  }
++
++type ExtInterpStatusVar d = MVar (InterpStatus (ExtInterpInstance d))
++
++type IServ    = ExtInterpState IServConfig    ()
++type JSInterp = ExtInterpState JSInterpConfig JSInterpExtra
+ 
+--- | State of an external interpreter
+-data IServState
+-   = IServPending                 -- ^ Not spawned yet
+-   | IServRunning !IServInstance  -- ^ Running
++data InterpProcess = InterpProcess
++  { interpPipe   :: !Pipe           -- ^ Pipe to communicate with the server
++  , interpHandle :: !ProcessHandle  -- ^ Process handle of the server
++  }
++
++-- | Status of an external interpreter
++data InterpStatus inst
++   = InterpPending       -- ^ Not spawned yet
++   | InterpRunning !inst -- ^ Running
+ 
+ -- | Configuration needed to spawn an external interpreter
+ data IServConfig = IServConfig
+@@ -61,14 +98,66 @@ data IServConfig = IServConfig
+   , iservConfTrace    :: IO ()     -- ^ Trace action executed after spawn
+   }
+ 
+--- | External interpreter instance
+-data IServInstance = IServInstance
+-  { iservPipe              :: !Pipe
+-  , iservProcess           :: !ProcessHandle
+-  , iservLookupSymbolCache :: !(UniqFM FastString (Ptr ()))
+-  , iservPendingFrees      :: ![HValueRef]
++-- | Common field between native external interpreter and the JS one
++data ExtInterpInstance c = ExtInterpInstance
++  { instProcess       :: {-# UNPACK #-} !InterpProcess
++      -- ^ External interpreter process and its pipe (communication channel)
++
++  , instPendingFrees  :: !(MVar [HValueRef])
+       -- ^ Values that need to be freed before the next command is sent.
+-      -- Threads can append values to this list asynchronously (by modifying the
+-      -- IServ state MVar).
++      -- Finalizers for ForeignRefs can append values to this list
++      -- asynchronously.
++
++  , instLookupSymbolCache :: !(MVar (UniqFM FastString (Ptr ())))
++      -- ^ LookupSymbol cache
++
++  , instExtra             :: !c
++      -- ^ Instance specific extra fields
++  }
++
++------------------------
++-- JS Stuff
++------------------------
++
++data JSInterpExtra = JSInterpExtra
++  { instStdIn       :: !Handle         -- ^ Stdin for the process
++  , instFinderCache :: !FinderCache
++  , instFinderOpts  :: !FinderOpts
++  , instJSState     :: !(MVar JSState) -- ^ Mutable state
++  , instGhciUnitId  :: !UnitId         -- ^ GHCi unit-id
++  }
++
++data JSState = JSState
++  { jsLinkState     :: !LinkPlan -- ^ Linker state of the interpreter
++  , jsServerStarted :: !Bool     -- ^ Is the Haskell server started?
++  }
++
++-- | NodeJs configuration
++data NodeJsSettings = NodeJsSettings
++  { nodeProgram         :: FilePath        -- ^ location of node.js program
++  , nodePath            :: Maybe FilePath  -- ^ value of NODE_PATH environment variable (search path for Node modules; GHCJS used to provide some)
++  , nodeExtraArgs       :: [String]        -- ^ extra arguments to pass to node.js
++  , nodeKeepAliveMaxMem :: Integer         -- ^ keep node.js (TH, GHCJSi) processes alive if they don't use more than this
++  }
++
++defaultNodeJsSettings :: NodeJsSettings
++defaultNodeJsSettings = NodeJsSettings
++  { nodeProgram         = "node"
++  , nodePath            = Nothing
++  , nodeExtraArgs       = []
++  , nodeKeepAliveMaxMem = 536870912
++  }
++
++
++data JSInterpConfig = JSInterpConfig
++  { jsInterpNodeConfig  :: !NodeJsSettings  -- ^ NodeJS settings
++  , jsInterpScript      :: !FilePath        -- ^ Path to "ghc-interp.js" script
++  , jsInterpTmpFs       :: !TmpFs
++  , jsInterpTmpDir      :: !TempDir
++  , jsInterpLogger      :: !Logger
++  , jsInterpCodegenCfg  :: !StgToJSConfig
++  , jsInterpUnitEnv     :: !UnitEnv
++  , jsInterpFinderOpts  :: !FinderOpts
++  , jsInterpFinderCache :: !FinderCache
+   }
+ 
+diff --git a/compiler/GHC/Runtime/Utils.hs b/compiler/GHC/Runtime/Utils.hs
+new file mode 100644
+index 0000000000..083d592990
+--- /dev/null
++++ b/compiler/GHC/Runtime/Utils.hs
+@@ -0,0 +1,84 @@
++{-# LANGUAGE CPP #-}
++
++module GHC.Runtime.Utils
++  ( runWithPipes
++  )
++where
++
++import GHC.Prelude
++
++#if defined(mingw32_HOST_OS)
++import Foreign.C
++import GHC.IO.Handle.FD (fdToHandle)
++import GHC.Utils.Exception as Ex
++# if defined(__IO_MANAGER_WINIO__)
++import GHC.IO.SubSystem ((<!>))
++import GHC.IO.Handle.Windows (handleToHANDLE)
++import GHC.Event.Windows (associateHandle')
++# endif
++#else
++import System.Posix as Posix
++#endif
++import System.Process
++import System.IO
++
++runWithPipes :: (CreateProcess -> IO ProcessHandle)
++             -> FilePath -> [String] -> [String] -> IO (ProcessHandle, Handle, Handle)
++#if defined(mingw32_HOST_OS)
++foreign import ccall "io.h _close"
++   c__close :: CInt -> IO CInt
++
++foreign import ccall unsafe "io.h _get_osfhandle"
++   _get_osfhandle :: CInt -> IO CInt
++
++runWithPipesPOSIX :: (CreateProcess -> IO ProcessHandle)
++                  -> FilePath -> [String] -> [String] -> IO (ProcessHandle, Handle, Handle)
++runWithPipesPOSIX createProc prog pre_opts opts = do
++    (rfd1, wfd1) <- createPipeFd -- we read on rfd1
++    (rfd2, wfd2) <- createPipeFd -- we write on wfd2
++    wh_client    <- _get_osfhandle wfd1
++    rh_client    <- _get_osfhandle rfd2
++    let args = pre_opts ++ (show wh_client : show rh_client : opts)
++    ph <- createProc (proc prog args)
++    rh <- mkHandle rfd1
++    wh <- mkHandle wfd2
++    return (ph, rh, wh)
++      where mkHandle :: CInt -> IO Handle
++            mkHandle fd = (fdToHandle fd) `Ex.onException` (c__close fd)
++
++# if defined (__IO_MANAGER_WINIO__)
++runWithPipesNative :: (CreateProcess -> IO ProcessHandle)
++                   -> FilePath -> [String] -> [String] -> IO (ProcessHandle, Handle, Handle)
++runWithPipesNative createProc prog pre_opts opts = do
++    (rh, wfd1) <- createPipe -- we read on rfd1
++    (rfd2, wh) <- createPipe -- we write on wfd2
++    wh_client    <- handleToHANDLE wfd1
++    rh_client    <- handleToHANDLE rfd2
++    -- Associate the handle with the current manager
++    -- but don't touch the ones we're passing to the child
++    -- since it needs to register the handle with its own manager.
++    associateHandle' =<< handleToHANDLE rh
++    associateHandle' =<< handleToHANDLE wh
++    let args = pre_opts ++ (show wh_client : show rh_client : opts)
++    ph <- createProc (proc prog args)
++    return (ph, rh, wh)
++
++runWithPipes = runWithPipesPOSIX <!> runWithPipesNative
++# else
++runWithPipes = runWithPipesPOSIX
++# endif
++#else
++runWithPipes createProc prog pre_opts opts = do
++    (rfd1, wfd1) <- Posix.createPipe -- we read on rfd1
++    (rfd2, wfd2) <- Posix.createPipe -- we write on wfd2
++    setFdOption rfd1 CloseOnExec True
++    setFdOption wfd2 CloseOnExec True
++    let args = pre_opts ++ (show wfd1 : show rfd2 : opts)
++    ph <- createProc (proc prog args)
++    closeFd wfd1
++    closeFd rfd2
++    rh <- fdToHandle rfd1
++    wh <- fdToHandle wfd2
++    return (ph, rh, wh)
++#endif
++
+diff --git a/compiler/GHC/StgToJS/CodeGen.hs b/compiler/GHC/StgToJS/CodeGen.hs
+index 7703398aea..9bf0f7e0ec 100644
+--- a/compiler/GHC/StgToJS/CodeGen.hs
++++ b/compiler/GHC/StgToJS/CodeGen.hs
+@@ -90,11 +90,11 @@ stgToJS logger config stg_binds0 this_mod spt_entries foreign_stubs cccs output_
+   -- Doc to dump when -ddump-js is enabled
+   when (logHasDumpFlag logger Opt_D_dump_js) $ do
+     putDumpFileMaybe logger Opt_D_dump_js "JavaScript code" FormatJS
+-      $ vcat (fmap (docToSDoc . jsToDoc . oiStat . luObjUnit) lus)
++      $ vcat (fmap (docToSDoc . jsToDoc . oiStat . luObjBlock) lus)
+ 
+   -- Write the object file
+   bh <- openBinMem (4 * 1024 * 1000) -- a bit less than 4kB
+-  Object.putObject bh (moduleName this_mod) deps (map luObjUnit lus)
++  Object.putObject bh (moduleName this_mod) deps (map luObjBlock lus)
+ 
+   createDirectoryIfMissing True (takeDirectory output_fn)
+   writeBinMem bh output_fn
+@@ -137,7 +137,7 @@ genUnits m ss spt_entries foreign_stubs = do
+                      jsSaturate (Just $ modulePrefix m 1)
+                    $ mconcat (reverse glbl) <> staticInit)
+         let syms = [moduleGlobalSymbol m]
+-        let oi = ObjUnit
++        let oi = ObjBlock
+                   { oiSymbols  = syms
+                   , oiClInfo   = []
+                   , oiStatic   = []
+@@ -147,7 +147,7 @@ genUnits m ss spt_entries foreign_stubs = do
+                   , oiFImports = []
+                   }
+         let lu = LinkableUnit
+-                  { luObjUnit      = oi
++                  { luObjBlock     = oi
+                   , luIdExports    = []
+                   , luOtherExports = syms
+                   , luIdDeps       = []
+@@ -169,7 +169,7 @@ genUnits m ss spt_entries foreign_stubs = do
+ 
+         let syms = [moduleExportsSymbol m]
+         let raw  = utf8EncodeByteString $ renderWithContext defaultSDocContext f_c
+-        let oi = ObjUnit
++        let oi = ObjBlock
+                   { oiSymbols  = syms
+                   , oiClInfo   = []
+                   , oiStatic   = []
+@@ -179,7 +179,7 @@ genUnits m ss spt_entries foreign_stubs = do
+                   , oiFImports = []
+                   }
+         let lu = LinkableUnit
+-                  { luObjUnit      = oi
++                  { luObjBlock     = oi
+                   , luIdExports    = []
+                   , luOtherExports = syms
+                   , luIdDeps       = []
+@@ -210,7 +210,7 @@ genUnits m ss spt_entries foreign_stubs = do
+               let stat = jsSaturate (Just $ modulePrefix m n) body
+               let ids = [bnd]
+               syms <- (\(TxtI i) -> [i]) <$> identForId bnd
+-              let oi = ObjUnit
++              let oi = ObjBlock
+                         { oiSymbols  = syms
+                         , oiClInfo   = []
+                         , oiStatic   = si
+@@ -220,7 +220,7 @@ genUnits m ss spt_entries foreign_stubs = do
+                         , oiFImports = []
+                         }
+               let lu = LinkableUnit
+-                        { luObjUnit      = oi
++                        { luObjBlock     = oi
+                         , luIdExports    = ids
+                         , luOtherExports = []
+                         , luIdDeps       = []
+@@ -248,7 +248,7 @@ genUnits m ss spt_entries foreign_stubs = do
+                          jsSaturate (Just $ modulePrefix m n)
+                        $ mconcat (reverse extraTl) <> tl
+           syms <- mapM (fmap (\(TxtI i) -> i) . identForId) topDeps
+-          let oi = ObjUnit
++          let oi = ObjBlock
+                     { oiSymbols  = syms
+                     , oiClInfo   = ci
+                     , oiStatic   = si
+@@ -258,7 +258,7 @@ genUnits m ss spt_entries foreign_stubs = do
+                     , oiFImports = fRefs
+                     }
+           let lu = LinkableUnit
+-                    { luObjUnit      = oi
++                    { luObjBlock     = oi
+                     , luIdExports    = topDeps
+                     , luOtherExports = []
+                     , luIdDeps       = allDeps
+diff --git a/compiler/GHC/StgToJS/Deps.hs b/compiler/GHC/StgToJS/Deps.hs
+index 229daf51a4..ca38ff3052 100644
+--- a/compiler/GHC/StgToJS/Deps.hs
++++ b/compiler/GHC/StgToJS/Deps.hs
+@@ -22,7 +22,7 @@ where
+ 
+ import GHC.Prelude
+ 
+-import GHC.StgToJS.Object as Object
++import GHC.StgToJS.Object
+ import GHC.StgToJS.Types
+ import GHC.StgToJS.Ids
+ 
+@@ -55,9 +55,9 @@ import Control.Monad.Trans.Class
+ import Control.Monad.Trans.State
+ 
+ data DependencyDataCache = DDC
+-  { ddcModule :: !(IntMap Unit)               -- ^ Unique Module -> Unit
+-  , ddcId     :: !(IntMap Object.ExportedFun) -- ^ Unique Id     -> Object.ExportedFun (only to other modules)
+-  , ddcOther  :: !(Map OtherSymb Object.ExportedFun)
++  { ddcModule :: !(IntMap Unit)        -- ^ Unique Module -> Unit
++  , ddcId     :: !(IntMap ExportedFun) -- ^ Unique Id     -> ExportedFun (only to other modules)
++  , ddcOther  :: !(Map OtherSymb ExportedFun)
+   }
+ 
+ -- | Generate module dependency data
+@@ -68,16 +68,15 @@ genDependencyData
+   :: HasDebugCallStack
+   => Module
+   -> [LinkableUnit]
+-  -> G Object.Deps
++  -> G BlockInfo
+ genDependencyData mod units = do
+-    -- [(blockindex, blockdeps, required, exported)]
+     ds <- evalStateT (mapM (uncurry oneDep) blocks)
+                      (DDC IM.empty IM.empty M.empty)
+-    return $ Object.Deps
+-      { depsModule          = mod
+-      , depsRequired        = IS.fromList [ n | (n, _, True, _) <- ds ]
+-      , depsHaskellExported = M.fromList $ (\(n,_,_,es) -> map (,n) es) =<< ds
+-      , depsBlocks          = listArray (0, length blocks-1) (map (\(_,deps,_,_) -> deps) ds)
++    return $ BlockInfo
++      { bi_module     = mod
++      , bi_must_link  = IS.fromList [ n | (n, _, True, _) <- ds ]
++      , bi_exports    = M.fromList $ (\(n,_,_,es) -> map (,n) es) =<< ds
++      , bi_block_deps = listArray (0, length blocks-1) (map (\(_,deps,_,_) -> deps) ds)
+       }
+   where
+       -- Id -> Block
+@@ -99,7 +98,7 @@ genDependencyData mod units = do
+       -- generate the list of exports and set of dependencies for one unit
+       oneDep :: LinkableUnit
+              -> Int
+-             -> StateT DependencyDataCache G (Int, Object.BlockDeps, Bool, [Object.ExportedFun])
++             -> StateT DependencyDataCache G (Int, BlockDeps, Bool, [ExportedFun])
+       oneDep (LinkableUnit _ idExports otherExports idDeps pseudoIdDeps otherDeps req _frefs) n = do
+         (edi, bdi) <- partitionEithers <$> mapM (lookupIdFun n) idDeps
+         (edo, bdo) <- partitionEithers <$> mapM lookupOtherFun otherDeps
+@@ -107,9 +106,10 @@ genDependencyData mod units = do
+         expi <- mapM lookupExportedId (filter isExportedId idExports)
+         expo <- mapM lookupExportedOther otherExports
+         -- fixme thin deps, remove all transitive dependencies!
+-        let bdeps = Object.BlockDeps
+-                      (IS.toList . IS.fromList . filter (/=n) $ bdi++bdo++bdp)
+-                      (S.toList . S.fromList $ edi++edo++edp)
++        let bdeps = BlockDeps
++                      { blockBlockDeps = IS.toList . IS.fromList . filter (/=n) $ bdi++bdo++bdp
++                      , blockFunDeps   = S.toList . S.fromList $ edi++edo++edp
++                      }
+         return (n, bdeps, req, expi++expo)
+ 
+       idModule :: Id -> Maybe Module
+@@ -117,7 +117,7 @@ genDependencyData mod units = do
+                    guard (m /= mod) >> return m
+ 
+       lookupPseudoIdFun :: Int -> Unique
+-                        -> StateT DependencyDataCache G (Either Object.ExportedFun Int)
++                        -> StateT DependencyDataCache G (Either ExportedFun Int)
+       lookupPseudoIdFun _n u =
+         case lookupUFM_Directly unitIdExports u of
+           Just k -> return (Right k)
+@@ -130,14 +130,14 @@ genDependencyData mod units = do
+       --         assumes function is internal to the current block if it's
+       --         from teh current module and not in the unitIdExports map.
+       lookupIdFun :: Int -> Id
+-                  -> StateT DependencyDataCache G (Either Object.ExportedFun Int)
++                  -> StateT DependencyDataCache G (Either ExportedFun Int)
+       lookupIdFun n i = case lookupUFM unitIdExports i of
+         Just k  -> return (Right k)
+         Nothing -> case idModule i of
+           Nothing -> return (Right n)
+           Just m ->
+             let k = getKey . getUnique $ i
+-                addEntry :: StateT DependencyDataCache G Object.ExportedFun
++                addEntry :: StateT DependencyDataCache G ExportedFun
+                 addEntry = do
+                   (TxtI idTxt) <- lift (identForId i)
+                   lookupExternalFun (Just k) (OtherSymb m idTxt)
+@@ -149,7 +149,7 @@ genDependencyData mod units = do
+ 
+       -- get the function for an OtherSymb from the cache, add it if necessary
+       lookupOtherFun :: OtherSymb
+-                     -> StateT DependencyDataCache G (Either Object.ExportedFun Int)
++                     -> StateT DependencyDataCache G (Either ExportedFun Int)
+       lookupOtherFun od@(OtherSymb m idTxt) =
+         case M.lookup od unitOtherExports of
+           Just n  -> return (Right n)
+@@ -157,22 +157,22 @@ genDependencyData mod units = do
+           Nothing ->  Left <$> (maybe (lookupExternalFun Nothing od) return =<<
+                         gets (M.lookup od . ddcOther))
+ 
+-      lookupExportedId :: Id -> StateT DependencyDataCache G Object.ExportedFun
++      lookupExportedId :: Id -> StateT DependencyDataCache G ExportedFun
+       lookupExportedId i = do
+         (TxtI idTxt) <- lift (identForId i)
+         lookupExternalFun (Just . getKey . getUnique $ i) (OtherSymb mod idTxt)
+ 
+-      lookupExportedOther :: FastString -> StateT DependencyDataCache G Object.ExportedFun
++      lookupExportedOther :: FastString -> StateT DependencyDataCache G ExportedFun
+       lookupExportedOther = lookupExternalFun Nothing . OtherSymb mod
+ 
+       -- lookup a dependency to another module, add to the id cache if there's
+       -- an id key, otherwise add to other cache
+       lookupExternalFun :: Maybe Int
+-                        -> OtherSymb -> StateT DependencyDataCache G Object.ExportedFun
++                        -> OtherSymb -> StateT DependencyDataCache G ExportedFun
+       lookupExternalFun mbIdKey od@(OtherSymb m idTxt) = do
+         let mk        = getKey . getUnique $ m
+             mpk       = moduleUnit m
+-            exp_fun   = Object.ExportedFun m (LexicalFastString idTxt)
++            exp_fun   = ExportedFun m (LexicalFastString idTxt)
+             addCache  = do
+               ms <- gets ddcModule
+               let !cache' = IM.insert mk mpk ms
+diff --git a/compiler/GHC/StgToJS/Linker/Linker.hs b/compiler/GHC/StgToJS/Linker/Linker.hs
+index 0739c73204..d44627f405 100644
+--- a/compiler/GHC/StgToJS/Linker/Linker.hs
++++ b/compiler/GHC/StgToJS/Linker/Linker.hs
+@@ -21,7 +21,17 @@
+ 
+ module GHC.StgToJS.Linker.Linker
+   ( jsLinkBinary
++  , jsLink
+   , embedJsFile
++  , staticInitStat
++  , staticDeclStat
++  , mkExportedFuns
++  , mkExportedModFuns
++  , computeLinkDependencies
++  , LinkSpec (..)
++  , LinkPlan (..)
++  , emptyLinkPlan
++  , incrementLinkPlan
+   )
+ where
+ 
+@@ -38,6 +48,7 @@ import GHC.SysTools.Cpp
+ import GHC.SysTools
+ 
+ import GHC.Linker.Static.Utils (exeFileName)
++import GHC.Linker.Types (Unlinked(..), linkableUnlinked)
+ 
+ import GHC.StgToJS.Linker.Types
+ import GHC.StgToJS.Linker.Utils
+@@ -51,7 +62,7 @@ import GHC.StgToJS.Closure
+ 
+ import GHC.Unit.State
+ import GHC.Unit.Env
+-import GHC.Unit.Home
++import GHC.Unit.Home.ModInfo
+ import GHC.Unit.Types
+ import GHC.Unit.Module (moduleStableString)
+ 
+@@ -71,23 +82,17 @@ import qualified GHC.SysTools.Ar          as Ar
+ import qualified GHC.Data.ShortText as ST
+ import GHC.Data.FastString
+ 
+-import Control.Concurrent.MVar
+ import Control.Monad
+ 
+ import Data.Array
+ import qualified Data.ByteString          as B
+ import qualified Data.ByteString.Char8    as BC
+-import qualified Data.ByteString.Lazy.Char8 as BLC
+ import qualified Data.ByteString.Lazy     as BL
+ import qualified Data.ByteString          as BS
+ import Data.Function            (on)
+-import Data.IntSet              (IntSet)
+ import qualified Data.IntSet              as IS
+ import Data.IORef
+-import Data.List  ( partition, nub, intercalate, sort
+-                  , groupBy, intersperse,
+-                  )
+-import qualified Data.List.NonEmpty       as NE
++import Data.List  ( nub, intercalate, groupBy, intersperse, sortBy)
+ import Data.Map.Strict          (Map)
+ import qualified Data.Map.Strict          as M
+ import Data.Maybe
+@@ -105,6 +110,10 @@ import System.Directory ( createDirectoryIfMissing
+                         , getPermissions
+                         )
+ 
++import GHC.Unit.Finder.Types
++import GHC.Unit.Finder (findObjectLinkableMaybe, initFinderCache, findHomeModule)
++import GHC.Driver.Config.Finder (initFinderOpts)
++
+ data LinkerStats = LinkerStats
+   { bytesPerModule     :: !(Map Module Word64) -- ^ number of bytes linked per module
+   , packedMetaDataSize :: !Word64              -- ^ number of bytes for metadata
+@@ -125,7 +134,7 @@ jsLinkBinary
+   -> [FilePath]
+   -> [UnitId]
+   -> IO ()
+-jsLinkBinary lc_cfg cfg js_srcs logger dflags u_env objs dep_pkgs
++jsLinkBinary lc_cfg cfg js_srcs logger dflags unit_env objs dep_units
+   | lcNoJSExecutables lc_cfg = return ()
+   | otherwise = do
+     -- additional objects to link are passed as FileOption ldInputs...
+@@ -135,47 +144,59 @@ jsLinkBinary lc_cfg cfg js_srcs logger dflags u_env objs dep_pkgs
+     let
+         objs'    = map ObjFile (objs ++ cmdline_js_objs)
+         js_srcs' = js_srcs ++ cmdline_js_srcs
+-        isRoot _ = True
++        is_root _ = True -- FIXME: we shouldn't consider every function as a root,
++                         -- but only the program entry point (main), either the
++                         -- generated one or coming from an object
+         exe      = jsExeFileName dflags
+ 
+-    void $ link lc_cfg cfg logger u_env exe mempty dep_pkgs objs' js_srcs' isRoot mempty
++    -- compute dependencies
++    let link_spec = LinkSpec
++          { lks_unit_ids        = dep_units
++          , lks_obj_files       = objs'
++          , lks_obj_root_filter = is_root
++          , lks_extra_roots     = mempty
++          , lks_extra_js        = js_srcs'
++          }
++
++    -- XXX we should probably get this from the HscEnv instead?
++    finder_cache <- initFinderCache
++
++    let finder_opts = initFinderOpts dflags
++
++    link_plan <- computeLinkDependencies cfg unit_env link_spec finder_opts finder_cache
++
++    void $ jsLink lc_cfg cfg logger exe link_plan
+ 
+ -- | link and write result to disk (jsexe directory)
+-link :: JSLinkConfig
++jsLink
++     :: JSLinkConfig
+      -> StgToJSConfig
+      -> Logger
+-     -> UnitEnv
+      -> FilePath               -- ^ output file/directory
+-     -> [FilePath]             -- ^ include path for home package
+-     -> [UnitId]               -- ^ packages to link
+-     -> [LinkedObj]            -- ^ the object files we're linking
+-     -> [FilePath]             -- ^ extra js files to include
+-     -> (ExportedFun -> Bool)  -- ^ functions from the objects to use as roots (include all their deps)
+-     -> Set ExportedFun        -- ^ extra symbols to link in
++     -> LinkPlan
+      -> IO ()
+-link lc_cfg cfg logger unit_env out _include units objFiles jsFiles isRootFun extraStaticDeps = do
++jsLink lc_cfg cfg logger out link_plan = do
+ 
+       -- create output directory
+       createDirectoryIfMissing False out
+ 
++      when (logVerbAtLeast logger 2) $
++        logInfo logger $ hang (text "jsLink:") 2 (ppr link_plan)
++
+       -------------------------------------------------------------
+       -- link all Haskell code (program + dependencies) into out.js
+ 
+-      -- compute dependencies
+-      (dep_map, dep_units, all_deps, _rts_wired_functions, dep_archives)
+-        <- computeLinkDependencies cfg logger out unit_env units objFiles extraStaticDeps isRootFun
+-
+-      -- retrieve code for dependencies
+-      mods <- collectDeps dep_map dep_units all_deps
++      -- retrieve code for Haskell dependencies
++      mods <- collectModuleCodes link_plan
+ 
+       -- LTO + rendering of JS code
+       link_stats <- withBinaryFile (out </> "out.js") WriteMode $ \h ->
+-        renderLinker h mods jsFiles
++        renderLinker h mods (lkp_extra_js link_plan)
+ 
+       -------------------------------------------------------------
+ 
+       -- dump foreign references file (.frefs)
+-      unless (lcOnlyOut lc_cfg) $ do
++      when (lcForeignRefs lc_cfg) $ do
+         let frefsFile  = "out.frefs"
+             -- frefs      = concatMap mc_frefs mods
+             jsonFrefs  = mempty -- FIXME: toJson frefs
+@@ -191,12 +212,11 @@ link lc_cfg cfg logger unit_env out _include units objFiles jsFiles isRootFun ex
+ 
+       -- link generated RTS parts into rts.js
+       unless (lcNoRts lc_cfg) $ do
+-        BL.writeFile (out </> "rts.js") ( BLC.pack rtsDeclsText
+-                                         <> BLC.pack (rtsText cfg))
++        BL.writeFile (out </> "rts.js") (generatedRTS cfg)
+ 
+       -- link dependencies' JS files into lib.js
+       withBinaryFile (out </> "lib.js") WriteMode $ \h -> do
+-        forM_ dep_archives $ \archive_file -> do
++        forM_ (lkp_archives link_plan) $ \archive_file -> do
+           Ar.Archive entries <- Ar.loadAr archive_file
+           forM_ entries $ \entry -> do
+             case getJsArchiveEntry entry of
+@@ -205,47 +225,96 @@ link lc_cfg cfg logger unit_env out _include units objFiles jsFiles isRootFun ex
+                 B.hPut   h bs
+                 hPutChar h '\n'
+ 
+-      -- link everything together into all.js
+-      when (generateAllJs lc_cfg) $ do
++      -- link everything together into a runnable all.js
++      -- only if we link a complete application,
++      --   no incremental linking and no skipped parts
++      when (lcCombineAll lc_cfg && not (lcNoRts lc_cfg)) $ do
+         _ <- combineFiles lc_cfg out
+         writeHtml    out
+         writeRunMain out
+         writeRunner lc_cfg out
+         writeExterns out
+ 
++data LinkSpec = LinkSpec
++  { lks_unit_ids        :: [UnitId]
++
++  , lks_obj_files       :: [LinkedObj]
++
++  , lks_obj_root_filter :: ExportedFun -> Bool
++      -- ^ Predicate for exported functions in objects to declare as root
++
++  , lks_extra_roots     :: Set ExportedFun
++      -- ^ Extra root functions from loaded units
++
++  , lks_extra_js        :: [FilePath]
++      -- ^ Extra JS files to link
++  }
++
++instance Outputable LinkSpec where
++  ppr s = hang (text "LinkSpec") 2 $ vcat
++            [ hcat [text "Unit ids: ", ppr (lks_unit_ids s)]
++            , hcat [text "Object files:", ppr (lks_obj_files s)]
++            , text "Object root filter: <function>"
++            , hcat [text "Extra roots: ", ppr (lks_extra_roots s)]
++            , hang (text "Extra JS:") 2 (vcat (fmap text (lks_extra_js s)))
++            ]
++
++emptyLinkPlan :: LinkPlan
++emptyLinkPlan = LinkPlan
++  { lkp_block_info = mempty
++  , lkp_dep_blocks = mempty
++  , lkp_archives   = mempty
++  , lkp_extra_js   = mempty
++  }
++
++-- | Given a `base` link plan (assumed to be already linked) and a `new` link
++-- plan, compute `(diff, total)` link plans.
++--
++-- - `diff` is the incremental link plan to get from `base` to `total`
++-- - `total` is the total link plan as if `base` and `new` were linked at once
++incrementLinkPlan :: LinkPlan -> LinkPlan -> (LinkPlan, LinkPlan)
++incrementLinkPlan base new = (diff,total)
++  where
++    total = LinkPlan
++      { lkp_block_info = M.union (lkp_block_info base) (lkp_block_info new)
++      , lkp_dep_blocks = S.union (lkp_dep_blocks base) (lkp_dep_blocks new)
++      , lkp_archives   = S.union (lkp_archives base) (lkp_archives new)
++      , lkp_extra_js   = S.union (lkp_extra_js base) (lkp_extra_js new)
++      }
++    diff = LinkPlan
++      { lkp_block_info = lkp_block_info new -- block info from "new" contains all we need to load new blocks
++      , lkp_dep_blocks = S.difference (lkp_dep_blocks new) (lkp_dep_blocks base)
++      , lkp_archives   = S.difference (lkp_archives new)   (lkp_archives base)
++      , lkp_extra_js   = S.difference (lkp_extra_js new)   (lkp_extra_js base)
++      }
++
+ 
+ computeLinkDependencies
+   :: StgToJSConfig
+-  -> Logger
+-  -> String
+   -> UnitEnv
+-  -> [UnitId]
+-  -> [LinkedObj]
+-  -> Set ExportedFun
+-  -> (ExportedFun -> Bool)
+-  -> IO (Map Module (Deps, DepsLocation), [UnitId], Set LinkableUnit, Set ExportedFun, [FilePath])
+-computeLinkDependencies cfg logger target unit_env units objFiles extraStaticDeps isRootFun = do
+-
+-  (objDepsMap, objRequiredUnits) <- loadObjDeps objFiles
+-
+-  let roots    = S.fromList . filter isRootFun $ concatMap (M.keys . depsHaskellExported . fst) (M.elems objDepsMap)
+-      rootMods = map (moduleNameString . moduleName . NE.head) . NE.group . sort . map funModule . S.toList $ roots
+-      objPkgs  = map moduleUnitId $ nub (M.keys objDepsMap)
+-
+-  when (logVerbAtLeast logger 2) $ void $ do
+-    compilationProgressMsg logger $ hcat
+-      [ text "Linking ", text target, text " (", text (intercalate "," rootMods), char ')' ]
+-    compilationProgressMsg logger $ hcat
+-      [ text "objDepsMap ", ppr objDepsMap ]
+-    compilationProgressMsg logger $ hcat
+-      [ text "objFiles ", ppr objFiles ]
++  -> LinkSpec
++  -> FinderOpts
++  -> FinderCache
++  -> IO LinkPlan
++computeLinkDependencies cfg unit_env link_spec finder_opts finder_cache = do
++
++  let units       = lks_unit_ids        link_spec
++  let obj_files   = lks_obj_files       link_spec
++  let extra_roots = lks_extra_roots     link_spec
++  let obj_is_root = lks_obj_root_filter link_spec
++
++  (objs_block_info, objs_required_blocks) <- loadObjBlockInfo obj_files
++
++  let obj_roots = S.fromList . filter obj_is_root $ concatMap (M.keys . bi_exports . lbi_info) (M.elems objs_block_info)
++      obj_units = map moduleUnitId $ nub (M.keys objs_block_info)
+ 
+   let (rts_wired_units, rts_wired_functions) = rtsDeps units
+ 
+   -- all the units we want to link together, without their dependencies
+   let root_units = filter (/= mainUnitId)
++                   $ filter (/= interactiveUnitId)
+                    $ nub
+-                   $ rts_wired_units ++ reverse objPkgs ++ reverse units
++                   $ rts_wired_units ++ reverse obj_units ++ reverse units
+ 
+   -- all the units we want to link together, including their dependencies,
+   -- preload units, and backpack instantiations
+@@ -254,26 +323,72 @@ computeLinkDependencies cfg logger target unit_env units objFiles extraStaticDep
+   let all_units = fmap unitId all_units_infos
+ 
+   dep_archives <- getPackageArchives cfg unit_env all_units
+-  env <- newGhcjsEnv
+-  (archsDepsMap, archsRequiredUnits) <- loadArchiveDeps env dep_archives
+-
+-  when (logVerbAtLeast logger 2) $
+-    logInfo logger $ hang (text "Linking with archives:") 2 (vcat (fmap text dep_archives))
++  (archives_block_info, archives_required_blocks) <- loadArchiveBlockInfo dep_archives
+ 
+   -- compute dependencies
+-  let dep_units      = all_units ++ [homeUnitId (ue_unsafeHomeUnit $ unit_env)]
+-      dep_map        = objDepsMap `M.union` archsDepsMap
+-      excluded_units = S.empty
+-      dep_fun_roots  = roots `S.union` rts_wired_functions `S.union` extraStaticDeps
+-      dep_unit_roots = archsRequiredUnits ++ objRequiredUnits
+-
+-  all_deps <- getDeps (fmap fst dep_map) excluded_units dep_fun_roots dep_unit_roots
+-
+-  when (logVerbAtLeast logger 2) $
+-    logInfo logger $ hang (text "Units to link:") 2 (vcat (fmap ppr dep_units))
+-    -- logInfo logger $ hang (text "All deps:") 2 (vcat (fmap ppr (S.toList all_deps)))
++  let block_info      = objs_block_info `M.union` archives_block_info
++      dep_fun_roots   = obj_roots `S.union` rts_wired_functions `S.union` extra_roots
++
++  -- read transitive dependencies
++  new_required_blocks_var <- newIORef []
++  let load_info mod = do
++        -- Adapted from the tangled code in GHC.Linker.Loader.getLinkDeps.
++        linkable <- case lookupHugByModule mod (ue_home_unit_graph unit_env) of
++          Nothing ->
++                -- It's not in the HPT because we are in one shot mode,
++                -- so use the Finder to get a ModLocation...
++              case ue_homeUnit unit_env of
++                Nothing -> pprPanic "getDeps: No home-unit: " (pprModule mod)
++                Just home_unit -> do
++                    mb_stuff <- findHomeModule finder_cache finder_opts home_unit (moduleName mod)
++                    case mb_stuff of
++                      Found loc mod -> found loc mod
++                      _ -> pprPanic "getDeps: Couldn't find home-module: " (pprModule mod)
++                where
++                    found loc mod = do {
++                      mb_lnk <- findObjectLinkableMaybe mod loc ;
++                      case mb_lnk of {
++                          Nothing  -> pprPanic "getDeps: Couldn't find linkable for module: " (pprModule mod) ;
++                          Just lnk -> pure lnk
++                      }}
++
++          Just mod_info -> case homeModInfoObject mod_info of
++            Nothing  -> pprPanic "getDeps: Couldn't find object file for home-module: " (pprModule mod)
++            Just lnk -> pure lnk
++
++        case linkableUnlinked linkable of
++              [DotO p] -> do
++                  (bis, req_b) <- loadObjBlockInfo [ObjFile p]
++                  -- Store new required blocks in IORef
++                  modifyIORef new_required_blocks_var ((++) req_b)
++                  case M.lookup mod bis of
++                    Nothing -> pprPanic "getDeps: Didn't load any block info for home-module: " (pprModule mod)
++                    Just bi -> pure bi
++              ul -> pprPanic "getDeps: Unrecognized linkable for home-module: "
++                      (vcat [ pprModule mod
++                            , ppr ul])
++
++  -- required blocks have no dependencies, so don't have to use them as roots in
++  -- the traversal
++  (updated_block_info, transitive_deps) <- getDeps block_info load_info dep_fun_roots mempty
++
++  new_required_blocks <- readIORef new_required_blocks_var
++  let required_blocks = S.fromList $ mconcat
++        [ archives_required_blocks
++        , objs_required_blocks
++        , new_required_blocks
++        ]
++
++  let all_deps = S.union transitive_deps required_blocks
++
++  let plan = LinkPlan
++        { lkp_block_info = updated_block_info
++        , lkp_dep_blocks = all_deps
++        , lkp_archives   = S.fromList dep_archives
++        , lkp_extra_js   = S.fromList (lks_extra_js link_spec)
++        }
+ 
+-  return (dep_map, dep_units, all_deps, rts_wired_functions, dep_archives)
++  return plan
+ 
+ 
+ -- | Compiled module
+@@ -300,9 +415,9 @@ data CompactedModuleCode = CompactedModuleCode
+ renderLinker
+   :: Handle
+   -> [ModuleCode] -- ^ linked code per module
+-  -> [FilePath]   -- ^ additional JS files
++  -> Set FilePath -- ^ additional JS files
+   -> IO LinkerStats
+-renderLinker h mods jsFiles = do
++renderLinker h mods js_files = do
+ 
+   -- link modules
+   let (compacted_mods, meta) = linkModules mods
+@@ -336,7 +451,7 @@ renderLinker h mods jsFiles = do
+   mapM_ (putBS . cmc_exports) compacted_mods
+ 
+   -- explicit additional JS files
+-  mapM_ (\i -> B.readFile i >>= putBS) jsFiles
++  mapM_ (\i -> B.readFile i >>= putBS) (S.toList js_files)
+ 
+   -- stats
+   let link_stats = LinkerStats
+@@ -469,99 +584,147 @@ writeExterns :: FilePath -> IO ()
+ writeExterns out = writeFile (out </> "all.js.externs")
+   $ unpackFS rtsExterns
+ 
+--- | get all dependencies for a given set of roots
+-getDeps :: Map Module Deps  -- ^ loaded deps
+-        -> Set LinkableUnit -- ^ don't link these blocks
+-        -> Set ExportedFun  -- ^ start here
+-        -> [LinkableUnit]   -- ^ and also link these
+-        -> IO (Set LinkableUnit)
+-getDeps loaded_deps base fun startlu = go' S.empty (S.fromList startlu) (S.toList fun)
++-- | Get all block dependencies for a given set of roots
++--
++-- Returns the update block info map and the blocks.
++getDeps :: Map Module LocatedBlockInfo     -- ^ Block info per module
++        -> (Module -> IO LocatedBlockInfo) -- ^ Used to load block info if missing
++        -> Set ExportedFun                 -- ^ start here
++        -> Set BlockRef                    -- ^ and also link these
++        -> IO (Map Module LocatedBlockInfo, Set BlockRef)
++getDeps init_infos load_info root_funs root_blocks = traverse_funs init_infos S.empty root_blocks (S.toList root_funs)
+   where
+-    go :: Set LinkableUnit
+-       -> Set LinkableUnit
+-       -> IO (Set LinkableUnit)
+-    go result open = case S.minView open of
+-      Nothing -> return result
+-      Just (lu@(lmod,n), open') ->
+-          case M.lookup lmod loaded_deps of
+-            Nothing -> pprPanic "getDeps.go: object file not loaded for:  " (pprModule lmod)
+-            Just (Deps _ _ _ b) ->
+-              let block = b!n
+-                  result' = S.insert lu result
+-              in go' result'
+-                 (addOpen result' open' $
+-                   map (lmod,) (blockBlockDeps block)) (blockFunDeps block)
+-
+-    go' :: Set LinkableUnit
+-        -> Set LinkableUnit
+-        -> [ExportedFun]
+-        -> IO (Set LinkableUnit)
+-    go' result open [] = go result open
+-    go' result open (f:fs) =
+-        let key = funModule f
+-        in  case M.lookup key loaded_deps of
+-              Nothing -> pprPanic "getDeps.go': object file not loaded for:  " $ pprModule key
+-              Just (Deps _m _r e _b) ->
+-                 let lun :: Int
+-                     lun = fromMaybe (pprPanic "exported function not found: " $ ppr f)
+-                                     (M.lookup f e)
+-                     lu  = (key, lun)
+-                 in  go' result (addOpen result open [lu]) fs
+-
+-    addOpen :: Set LinkableUnit -> Set LinkableUnit -> [LinkableUnit]
+-            -> Set LinkableUnit
+-    addOpen result open newUnits =
+-      let alreadyLinked s = S.member s result ||
+-                            S.member s open   ||
+-                            S.member s base
+-      in  open `S.union` S.fromList (filter (not . alreadyLinked) newUnits)
++    -- A block may depend on:
++    --  1. other blocks from the same module
++    --  2. exported functions from another module
++    --
++    -- Process:
++    --  1. We use the BlockInfos to find the block corresponding to every
++    --  exported root functions.
++    --
++    --  2. We had these blocks to the set of root_blocks if they aren't already
++    --  added to the result.
++    --
++    --  3. Then we traverse the root_blocks to find their dependencies and we
++    --  add them to root_blocks (if they aren't already added to the result) and
++    --  to root_funs.
++    --
++    --  4. back to 1
++
++    lookup_info infos mod = case M.lookup mod infos of
++      Just info -> pure (infos, lbi_info info)
++      Nothing   -> do
++        -- load info and update cache with it
++        info <- load_info mod
++        pure (M.insert mod info infos, lbi_info info)
++
++    traverse_blocks
++      :: Map Module LocatedBlockInfo
++      -> Set BlockRef
++      -> Set BlockRef
++      -> IO (Map Module LocatedBlockInfo, Set BlockRef)
++    traverse_blocks infos result open = case S.minView open of
++      Nothing -> return (infos, result)
++      Just (ref, open') -> do
++          let mod = block_ref_mod ref
++          !(infos',info) <- lookup_info infos mod
++          let block =  bi_block_deps info ! block_ref_idx ref
++              result' = S.insert ref result
++              to_block_ref i = BlockRef
++                                { block_ref_mod = mod
++                                , block_ref_idx = i
++                                }
++          traverse_funs infos' result'
++             (addOpen result' open' $
++               map to_block_ref (blockBlockDeps block)) (blockFunDeps block)
++
++    traverse_funs
++      :: Map Module LocatedBlockInfo
++      -> Set BlockRef
++      -> Set BlockRef
++      -> [ExportedFun]
++      -> IO (Map Module LocatedBlockInfo, Set BlockRef)
++    traverse_funs infos result open = \case
++      []     -> traverse_blocks infos result open
++      (f:fs) -> do
++        let mod = funModule f
++        -- lookup module block info for the module that exports the function
++        !(infos',info) <- lookup_info infos mod
++        -- lookup block index associated to the function in the block info
++        case M.lookup f (bi_exports info) of
++          Nothing  -> pprPanic "exported function not found: " $ ppr f
++          Just idx -> do
++            let fun_block_ref = BlockRef
++                   { block_ref_mod = mod
++                   , block_ref_idx = idx
++                   }
++            -- always add the module "global block" when we link a module
++            let global_block_ref = BlockRef
++                   { block_ref_mod = mod
++                   , block_ref_idx = 0
++                   }
++            traverse_funs infos' result (addOpen result open [fun_block_ref,global_block_ref]) fs
++
++    -- extend the open block set with new blocks that are not already in the
++    -- result block set nor in the open block set.
++    addOpen
++      :: Set BlockRef
++      -> Set BlockRef
++      -> [BlockRef]
++      -> Set BlockRef
++    addOpen result open new_blocks =
++      let alreadyLinked s = S.member s result || S.member s open
++      in  open `S.union` S.fromList (filter (not . alreadyLinked) new_blocks)
+ 
+ -- | collect dependencies for a set of roots
+-collectDeps :: Map Module (Deps, DepsLocation) -- ^ Dependency map
+-            -> [UnitId]                        -- ^ packages, code linked in this order
+-            -> Set LinkableUnit                -- ^ All dependencides
+-            -> IO [ModuleCode]
+-collectDeps mod_deps packages all_deps = do
+-
+-  -- read ghc-prim first, since we depend on that for static initialization
+-  let packages' = uncurry (++) $ partition (== primUnitId) (nub packages)
+-
+-      units_by_module :: Map Module IntSet
+-      units_by_module = M.fromListWith IS.union $
+-                      map (\(m,n) -> (m, IS.singleton n)) (S.toList all_deps)
+-
+-      mod_deps_bypkg :: Map UnitId [(Deps, DepsLocation)]
+-      mod_deps_bypkg = M.fromListWith (++)
+-                        (map (\(m,v) -> (moduleUnitId m,[v])) (M.toList mod_deps))
+-
++collectModuleCodes :: LinkPlan -> IO [ModuleCode]
++collectModuleCodes link_plan = do
++
++  let block_info = lkp_block_info link_plan
++  let blocks     = lkp_dep_blocks link_plan
++
++  -- we're going to load all the blocks. Instead of doing this randomly, we
++  -- group them by module first.
++  let module_blocks :: Map Module BlockIds
++      module_blocks = M.fromListWith IS.union $
++                      map (\ref -> (block_ref_mod ref, IS.singleton (block_ref_idx ref))) (S.toList blocks)
++
++  -- GHCJS had this comment: "read ghc-prim first, since we depend on that for
++  -- static initialization". Not sure if it's still true as we haven't ported
++  -- the compactor yet. Still we sort to read ghc-prim blocks first just in
++  -- case.
++  let pred x = moduleUnitId (fst x) == primUnitId
++      cmp x y = case (pred x, pred y) of
++        (True,False)  -> LT
++        (False,True)  -> GT
++        (True,True)   -> EQ
++        (False,False) -> EQ
++
++      sorted_module_blocks :: [(Module,BlockIds)]
++      sorted_module_blocks = sortBy cmp (M.toList module_blocks)
++
++  -- load blocks
+   ar_state <- emptyArchiveState
+-  fmap (catMaybes . concat) . forM packages' $ \pkg ->
+-    mapM (uncurry $ extractDeps ar_state units_by_module)
+-         (fromMaybe [] $ M.lookup pkg mod_deps_bypkg)
+-
+-extractDeps :: ArchiveState
+-            -> Map Module IntSet
+-            -> Deps
+-            -> DepsLocation
+-            -> IO (Maybe ModuleCode)
+-extractDeps ar_state units deps loc =
+-  case M.lookup mod units of
+-    Nothing       -> return Nothing
+-    Just mod_units -> Just <$> do
+-      let selector n _  = fromIntegral n `IS.member` mod_units || isGlobalUnit (fromIntegral n)
+-      case loc of
+-        ObjectFile fp -> do
+-          us <- readObjectUnits fp selector
+-          pure (collectCode us)
+-        ArchiveFile a -> do
+-          obj <- readArObject ar_state mod a
+-          us <- getObjectUnits obj selector
+-          pure (collectCode us)
+-        InMemory _n obj -> do
+-          us <- getObjectUnits obj selector
+-          pure (collectCode us)
++  forM sorted_module_blocks $ \(mod,bids) -> do
++    case M.lookup mod block_info of
++      Nothing  -> pprPanic "collectModuleCodes: couldn't find block info for module" (ppr mod)
++      Just lbi -> extractBlocks ar_state lbi bids
++
++extractBlocks :: ArchiveState -> LocatedBlockInfo -> BlockIds -> IO ModuleCode
++extractBlocks ar_state lbi blocks = do
++  case lbi_loc lbi of
++    ObjectFile fp -> do
++      us <- readObjectBlocks fp blocks
++      pure (collectCode us)
++    ArchiveFile a -> do
++      obj <- readArObject ar_state mod a
++      us <- getObjectBlocks obj blocks
++      pure (collectCode us)
++    InMemory _n obj -> do
++      us <- getObjectBlocks obj blocks
++      pure (collectCode us)
+   where
+-    mod           = depsModule deps
++    mod           = bi_module (lbi_info lbi)
+     newline       = BC.pack "\n"
+     mk_exports    = mconcat . intersperse newline . filter (not . BS.null) . map oiRaw
+     mk_js_code    = mconcat . map oiStat
+@@ -693,40 +856,32 @@ mkPrimFuns = mkExportedFuns primUnitId
+ -- | Given a @UnitId@, a module name, and a set of symbols in the module,
+ -- package these into an @ExportedFun@.
+ mkExportedFuns :: UnitId -> FastString -> [FastString] -> [ExportedFun]
+-mkExportedFuns uid mod_name symbols = map mk_fun symbols
++mkExportedFuns uid mod_name symbols = mkExportedModFuns mod names
+   where
+     mod        = mkModule (RealUnit (Definite uid)) (mkModuleNameFS mod_name)
+-    mk_fun sym = ExportedFun mod (LexicalFastString (mkJsSymbol True mod sym))
++    names      = map (mkJsSymbol True mod) symbols
++
++-- | Given a @Module@ and a set of symbols in the module, package these into an
++-- @ExportedFun@.
++mkExportedModFuns :: Module -> [FastString] -> [ExportedFun]
++mkExportedModFuns mod symbols = map mk_fun symbols
++  where
++    mk_fun sym = ExportedFun mod (LexicalFastString sym)
+ 
+ -- | read all dependency data from the to-be-linked files
+-loadObjDeps :: [LinkedObj] -- ^ object files to link
+-            -> IO (Map Module (Deps, DepsLocation), [LinkableUnit])
+-loadObjDeps objs = (prepareLoadedDeps . catMaybes) <$> mapM readDepsFromObj objs
++loadObjBlockInfo :: [LinkedObj] -- ^ object files to link
++            -> IO (Map Module LocatedBlockInfo, [BlockRef])
++loadObjBlockInfo objs = (prepareLoadedDeps . catMaybes) <$> mapM readBlockInfoFromObj objs
+ 
+ -- | Load dependencies for the Linker from Ar
+-loadArchiveDeps :: GhcjsEnv
+-                -> [FilePath]
+-                -> IO ( Map Module (Deps, DepsLocation)
+-                      , [LinkableUnit]
+-                      )
+-loadArchiveDeps env archives = modifyMVar (linkerArchiveDeps env) $ \m ->
+-  case M.lookup archives' m of
+-    Just r  -> return (m, r)
+-    Nothing -> loadArchiveDeps' archives >>= \r -> return (M.insert archives' r m, r)
+-  where
+-     archives' = S.fromList archives
+-
+-loadArchiveDeps' :: [FilePath]
+-                 -> IO ( Map Module (Deps, DepsLocation)
+-                       , [LinkableUnit]
+-                       )
+-loadArchiveDeps' archives = do
++loadArchiveBlockInfo :: [FilePath] -> IO (Map Module LocatedBlockInfo, [BlockRef])
++loadArchiveBlockInfo archives = do
+   archDeps <- forM archives $ \file -> do
+     (Ar.Archive entries) <- Ar.loadAr file
+     catMaybes <$> mapM (readEntry file) entries
+   return (prepareLoadedDeps $ concat archDeps)
+     where
+-      readEntry :: FilePath -> Ar.ArchiveEntry -> IO (Maybe (Deps, DepsLocation))
++      readEntry :: FilePath -> Ar.ArchiveEntry -> IO (Maybe LocatedBlockInfo)
+       readEntry ar_file ar_entry = do
+           let bs = Ar.filedata ar_entry
+           bh <- unsafeUnpackBinBuffer bs
+@@ -734,8 +889,8 @@ loadArchiveDeps' archives = do
+             Left _         -> pure Nothing -- not a valid object entry
+             Right mod_name -> do
+               obj <- getObjectBody bh mod_name
+-              let !deps = objDeps obj
+-              pure $ Just (deps, ArchiveFile ar_file)
++              let !info = objBlockInfo obj
++              pure $ Just (LocatedBlockInfo (ArchiveFile ar_file) info)
+ 
+ -- | Predicate to check that an entry in Ar is a JS source
+ -- and to return it without its header
+@@ -765,29 +920,32 @@ jsHeaderLength = B.length jsHeader
+ 
+ 
+ 
+-prepareLoadedDeps :: [(Deps, DepsLocation)]
+-                  -> ( Map Module (Deps, DepsLocation)
+-                     , [LinkableUnit]
+-                     )
+-prepareLoadedDeps deps =
+-  let req     = concatMap (requiredUnits . fst) deps
+-      depsMap = M.fromList $ map (\d -> (depsModule (fst d), d)) deps
+-  in  (depsMap, req)
++prepareLoadedDeps :: [LocatedBlockInfo]
++                  -> (Map Module LocatedBlockInfo, [BlockRef])
++prepareLoadedDeps lbis = (module_blocks, must_link)
++  where
++    must_link     = concatMap (requiredBlocks . lbi_info) lbis
++    module_blocks = M.fromList $ map (\d -> (bi_module (lbi_info d), d)) lbis
+ 
+-requiredUnits :: Deps -> [LinkableUnit]
+-requiredUnits d = map (depsModule d,) (IS.toList $ depsRequired d)
++requiredBlocks :: BlockInfo -> [BlockRef]
++requiredBlocks d = map mk_block_ref (IS.toList $ bi_must_link d)
++  where
++    mk_block_ref i = BlockRef
++                      { block_ref_mod = bi_module d
++                      , block_ref_idx = i
++                      }
+ 
+--- | read dependencies from an object that might have already been into memory
++-- | read block info from an object that might have already been into memory
+ -- pulls in all Deps from an archive
+-readDepsFromObj :: LinkedObj -> IO (Maybe (Deps, DepsLocation))
+-readDepsFromObj = \case
++readBlockInfoFromObj :: LinkedObj -> IO (Maybe LocatedBlockInfo)
++readBlockInfoFromObj = \case
+   ObjLoaded name obj -> do
+-    let !deps = objDeps obj
+-    pure $ Just (deps,InMemory name obj)
++    let !info = objBlockInfo obj
++    pure $ Just (LocatedBlockInfo (InMemory name obj) info)
+   ObjFile file -> do
+-    readObjectDeps file >>= \case
++    readObjectBlockInfo file >>= \case
+       Nothing   -> pure Nothing
+-      Just deps -> pure $ Just (deps,ObjectFile file)
++      Just info -> pure $ Just (LocatedBlockInfo (ObjectFile file) info)
+ 
+ 
+ -- | Embed a JS file into a .o file
+diff --git a/compiler/GHC/StgToJS/Linker/Types.hs b/compiler/GHC/StgToJS/Linker/Types.hs
+index 9e1714fc00..7f4cc683b9 100644
+--- a/compiler/GHC/StgToJS/Linker/Types.hs
++++ b/compiler/GHC/StgToJS/Linker/Types.hs
+@@ -2,8 +2,6 @@
+ {-# LANGUAGE PartialTypeSignatures #-}
+ {-# LANGUAGE LambdaCase #-}
+ 
+-{-# OPTIONS_GHC -Wno-orphans #-} -- for Ident's Binary instance
+-
+ -----------------------------------------------------------------------------
+ -- |
+ -- Module      :  GHC.StgToJS.Linker.Types
+@@ -19,26 +17,21 @@
+ -----------------------------------------------------------------------------
+ 
+ module GHC.StgToJS.Linker.Types
+-  ( GhcjsEnv (..)
+-  , newGhcjsEnv
+-  , JSLinkConfig (..)
++  ( JSLinkConfig (..)
+   , defaultJSLinkConfig
+-  , generateAllJs
+   , LinkedObj (..)
+-  , LinkableUnit
++  , LinkPlan (..)
+   )
+ where
+ 
+ import GHC.StgToJS.Object
+ 
+ import GHC.Unit.Types
+-import GHC.Utils.Outputable (hsep,Outputable(..),text,ppr)
++import GHC.Utils.Outputable (hsep,Outputable(..),text,ppr, hang, IsDoc (vcat), IsLine (hcat))
+ 
+ import Data.Map.Strict      (Map)
+-import qualified Data.Map.Strict as M
+ import Data.Set             (Set)
+-
+-import Control.Concurrent.MVar
++import qualified Data.Set        as S
+ 
+ import System.IO
+ 
+@@ -49,35 +42,53 @@ import Prelude
+ --------------------------------------------------------------------------------
+ 
+ data JSLinkConfig = JSLinkConfig
+-  { lcNoJSExecutables    :: Bool
+-  , lcNoHsMain           :: Bool
+-  , lcOnlyOut            :: Bool
+-  , lcNoRts              :: Bool
+-  , lcNoStats            :: Bool
++  { lcNoJSExecutables    :: !Bool -- ^ Dont' build JS executables
++  , lcNoHsMain           :: !Bool -- ^ Don't generate Haskell main entry
++  , lcNoRts              :: !Bool -- ^ Don't dump the generated RTS
++  , lcNoStats            :: !Bool -- ^ Disable .stats file generation
++  , lcForeignRefs        :: !Bool -- ^ Dump .frefs (foreign references) files
++  , lcCombineAll         :: !Bool -- ^ Generate all.js (combined js) + wrappers
+   }
+ 
+--- | we generate a runnable all.js only if we link a complete application,
+---   no incremental linking and no skipped parts
+-generateAllJs :: JSLinkConfig -> Bool
+-generateAllJs s = not (lcOnlyOut s) && not (lcNoRts s)
+-
++-- | Default linker configuration
+ defaultJSLinkConfig :: JSLinkConfig
+ defaultJSLinkConfig = JSLinkConfig
+   { lcNoJSExecutables = False
+   , lcNoHsMain        = False
+-  , lcOnlyOut         = False
+   , lcNoRts           = False
+   , lcNoStats         = False
++  , lcCombineAll      = True
++  , lcForeignRefs     = True
+   }
+ 
++data LinkPlan = LinkPlan
++  { lkp_block_info :: Map Module LocatedBlockInfo
++      -- ^ Block information
++
++  , lkp_dep_blocks :: Set BlockRef
++      -- ^ Blocks to link
++
++  , lkp_archives   :: Set FilePath
++      -- ^ Archives to load JS sources from
++
++  , lkp_extra_js   :: Set FilePath
++      -- ^ Extra JS files to link
++  }
++
++instance Outputable LinkPlan where
++  ppr s = hang (text "LinkPlan") 2 $ vcat
++            -- Hidden because it's too verbose and it's not really part of the
++            -- plan, just meta info used to retrieve actual block contents
++            -- [ hcat [ text "Block info: ", ppr (lkp_block_info s)]
++            [ hcat [ text "Blocks: ", ppr (S.size (lkp_dep_blocks s))]
++            , hang (text "JS files from archives:") 2 (vcat (fmap text (S.toList (lkp_archives s))))
++            , hang (text "Extra JS:") 2 (vcat (fmap text (S.toList (lkp_extra_js s))))
++            ]
++
+ --------------------------------------------------------------------------------
+ -- Linker Environment
+ --------------------------------------------------------------------------------
+ 
+--- | A @LinkableUnit@ is a pair of a module and the index of the block in the
+--- object file
+-type LinkableUnit = (Module, Int)
+-
+ -- | An object file that's either already in memory (with name) or on disk
+ data LinkedObj
+   = ObjFile   FilePath      -- ^ load from this file
+@@ -87,15 +98,3 @@ instance Outputable LinkedObj where
+   ppr = \case
+     ObjFile fp    -> hsep [text "ObjFile", text fp]
+     ObjLoaded s o -> hsep [text "ObjLoaded", text s, ppr (objModuleName o)]
+-
+-data GhcjsEnv = GhcjsEnv
+-  { linkerArchiveDeps :: MVar (Map (Set FilePath)
+-                                   (Map Module (Deps, DepsLocation)
+-                                   , [LinkableUnit]
+-                                   )
+-                              )
+-  }
+-
+--- | return a fresh @GhcjsEnv@
+-newGhcjsEnv :: IO GhcjsEnv
+-newGhcjsEnv = GhcjsEnv <$> newMVar M.empty
+diff --git a/compiler/GHC/StgToJS/Object.hs b/compiler/GHC/StgToJS/Object.hs
+index f75d27e20b..575acd0507 100644
+--- a/compiler/GHC/StgToJS/Object.hs
++++ b/compiler/GHC/StgToJS/Object.hs
+@@ -46,14 +46,20 @@ module GHC.StgToJS.Object
+   , getObjectBody
+   , getObject
+   , readObject
+-  , getObjectUnits
+-  , readObjectUnits
+-  , readObjectDeps
+-  , isGlobalUnit
++  , getObjectBlocks
++  , readObjectBlocks
++  , readObjectBlockInfo
++  , isGlobalBlock
+   , isJsObjectFile
+   , Object(..)
+   , IndexEntry(..)
+-  , Deps (..), BlockDeps (..), DepsLocation (..)
++  , LocatedBlockInfo (..)
++  , BlockInfo (..)
++  , BlockDeps (..)
++  , BlockLocation (..)
++  , BlockId
++  , BlockIds
++  , BlockRef (..)
+   , ExportedFun (..)
+   )
+ where
+@@ -96,63 +102,75 @@ data Object = Object
+   { objModuleName    :: !ModuleName
+     -- ^ name of the module
+   , objHandle        :: !BinHandle
+-    -- ^ BinHandle that can be used to read the ObjUnits
+-  , objPayloadOffset :: !(Bin ObjUnit)
++    -- ^ BinHandle that can be used to read the ObjBlocks
++  , objPayloadOffset :: !(Bin ObjBlock)
+     -- ^ Offset of the payload (units)
+-  , objDeps          :: !Deps
+-    -- ^ Dependencies
++  , objBlockInfo     :: !BlockInfo
++    -- ^ Information about blocks
+   , objIndex         :: !Index
+-    -- ^ The Index, serialed unit indices and their linkable units
++    -- ^ Block index: symbols per block and block offset in the object file
+   }
+ 
+ type BlockId  = Int
+ type BlockIds = IntSet
+ 
+--- | dependencies for a single module
+-data Deps = Deps
+-  { depsModule          :: !Module
+-      -- ^ module
+-  , depsRequired        :: !BlockIds
++-- | Information about blocks (linkable units)
++data BlockInfo = BlockInfo
++  { bi_module     :: !Module
++      -- ^ Module they were generated from
++  , bi_must_link  :: !BlockIds
+       -- ^ blocks that always need to be linked when this object is loaded (e.g.
+       -- everything that contains initializer code or foreign exports)
+-  , depsHaskellExported :: !(Map ExportedFun BlockId)
++  , bi_exports    :: !(Map ExportedFun BlockId)
+       -- ^ exported Haskell functions -> block
+-  , depsBlocks          :: !(Array BlockId BlockDeps)
+-      -- ^ info about each block
++  , bi_block_deps :: !(Array BlockId BlockDeps)
++      -- ^ dependencies of each block
+   }
+ 
+-instance Outputable Deps where
++data LocatedBlockInfo = LocatedBlockInfo
++  { lbi_loc  :: !BlockLocation -- ^ Where to find the blocks
++  , lbi_info :: !BlockInfo     -- ^ Block information
++  }
++
++instance Outputable BlockInfo where
+   ppr d = vcat
+-    [ hcat [ text "module: ", pprModule (depsModule d) ]
+-    , hcat [ text "exports: ", ppr (M.keys (depsHaskellExported d)) ]
++    [ hcat [ text "module: ", pprModule (bi_module d) ]
++    , hcat [ text "exports: ", ppr (M.keys (bi_exports d)) ]
+     ]
+ 
+--- | Where are the dependencies
+-data DepsLocation
++-- | Where are the blocks
++data BlockLocation
+   = ObjectFile  FilePath       -- ^ In an object file at path
+   | ArchiveFile FilePath       -- ^ In a Ar file at path
+   | InMemory    String Object  -- ^ In memory
+ 
+-instance Outputable DepsLocation where
++instance Outputable BlockLocation where
+   ppr = \case
+     ObjectFile fp  -> hsep [text "ObjectFile", text fp]
+     ArchiveFile fp -> hsep [text "ArchiveFile", text fp]
+     InMemory s o   -> hsep [text "InMemory", text s, ppr (objModuleName o)]
+ 
++-- | A @BlockRef@ is a pair of a module and the index of the block in the
++-- object file
++data BlockRef = BlockRef
++  { block_ref_mod :: !Module  -- ^ Module
++  , block_ref_idx :: !BlockId -- ^ Block index in the object file
++  }
++  deriving (Eq,Ord)
++
+ data BlockDeps = BlockDeps
+-  { blockBlockDeps       :: [Int]         -- ^ dependencies on blocks in this object
++  { blockBlockDeps       :: [BlockId]     -- ^ dependencies on blocks in this object
+   , blockFunDeps         :: [ExportedFun] -- ^ dependencies on exported symbols in other objects
+   -- , blockForeignExported :: [ExpFun]
+   -- , blockForeignImported :: [ForeignRef]
+   }
+ 
+-{- | we use the convention that the first unit (0) is a module-global
+-     unit that's always included when something from the module
+-     is loaded. everything in a module implicitly depends on the
+-     global block. the global unit itself can't have dependencies
+- -}
+-isGlobalUnit :: Int -> Bool
+-isGlobalUnit n = n == 0
++-- | we use the convention that the first block (0) is a module-global block
++-- that's always included when something from the module is loaded. everything
++-- in a module implicitly depends on the global block. The global block itself
++-- can't have dependencies
++isGlobalBlock :: BlockId -> Bool
++isGlobalBlock n = n == 0
+ 
+ -- | Exported Functions
+ data ExportedFun = ExportedFun
+@@ -166,10 +184,10 @@ instance Outputable ExportedFun where
+     , hcat [ text "symbol: ", ppr f ]
+     ]
+ 
+--- | Write an ObjUnit, except for the top level symbols which are stored in the
++-- | Write an ObjBlock, except for the top level symbols which are stored in the
+ -- index
+-putObjUnit :: BinHandle -> ObjUnit -> IO ()
+-putObjUnit bh (ObjUnit _syms b c d e f g) = do
++putObjBlock :: BinHandle -> ObjBlock -> IO ()
++putObjBlock bh (ObjBlock _syms b c d e f g) = do
+     put_ bh b
+     put_ bh c
+     lazyPut bh d
+@@ -177,17 +195,17 @@ putObjUnit bh (ObjUnit _syms b c d e f g) = do
+     put_ bh f
+     put_ bh g
+ 
+--- | Read an ObjUnit and associate it to the given symbols (that must have been
++-- | Read an ObjBlock and associate it to the given symbols (that must have been
+ -- read from the index)
+-getObjUnit :: [FastString] -> BinHandle -> IO ObjUnit
+-getObjUnit syms bh = do
++getObjBlock :: [FastString] -> BinHandle -> IO ObjBlock
++getObjBlock syms bh = do
+     b <- get bh
+     c <- get bh
+     d <- lazyGet bh
+     e <- get bh
+     f <- get bh
+     g <- get bh
+-    pure $ ObjUnit
++    pure $ ObjBlock
+       { oiSymbols  = syms
+       , oiClInfo   = b
+       , oiStatic   = c
+@@ -203,12 +221,12 @@ getObjUnit syms bh = do
+ magic :: String
+ magic = "GHCJSOBJ"
+ 
+--- | Serialized unit indexes and their exported symbols
+--- (the first unit is module-global)
++-- | Serialized block indexes and their exported symbols
++-- (the first block is module-global)
+ type Index = [IndexEntry]
+ data IndexEntry = IndexEntry
+-  { idxSymbols :: ![FastString]  -- ^ Symbols exported by a unit
+-  , idxOffset  :: !(Bin ObjUnit) -- ^ Offset of the unit in the object file
++  { idxSymbols :: ![FastString]  -- ^ Symbols exported by a block
++  , idxOffset  :: !(Bin ObjBlock) -- ^ Offset of the block in the object file
+   }
+ 
+ 
+@@ -221,8 +239,8 @@ data IndexEntry = IndexEntry
+ putObject
+   :: BinHandle
+   -> ModuleName -- ^ module
+-  -> Deps       -- ^ dependencies
+-  -> [ObjUnit]  -- ^ linkable units and their symbols
++  -> BlockInfo  -- ^ block infos
++  -> [ObjBlock] -- ^ linkable units and their symbols
+   -> IO ()
+ putObject bh mod_name deps os = do
+   forM_ magic (putByte bh . fromIntegral . ord)
+@@ -243,7 +261,7 @@ putObject bh mod_name deps os = do
+       idx <- forM os $ \o -> do
+         p <- tellBin bh_fs
+         -- write units without their symbols
+-        putObjUnit bh_fs o
++        putObjBlock bh_fs o
+         -- return symbols and offset to store in the index
+         pure (oiSymbols o,p)
+       pure idx
+@@ -295,15 +313,15 @@ getObjectBody bh0 mod_name = do
+   dict <- forwardGet bh0 (getDictionary bh0)
+   let bh = setUserData bh0 $ noUserData { ud_get_fs = getDictFastString dict }
+ 
+-  deps     <- get bh
+-  idx      <- forwardGet bh (get bh)
++  block_info  <- get bh
++  idx         <- forwardGet bh (get bh)
+   payload_pos <- tellBin bh
+ 
+   pure $ Object
+     { objModuleName    = mod_name
+     , objHandle        = bh
+     , objPayloadOffset = payload_pos
+-    , objDeps          = deps
++    , objBlockInfo     = block_info
+     , objIndex         = idx
+     }
+ 
+@@ -322,31 +340,31 @@ readObject file = do
+   bh <- readBinMem file
+   getObject bh
+ 
+--- | Reads only the part necessary to get the dependencies
+-readObjectDeps :: FilePath -> IO (Maybe Deps)
+-readObjectDeps file = do
++-- | Reads only the part necessary to get the block info
++readObjectBlockInfo :: FilePath -> IO (Maybe BlockInfo)
++readObjectBlockInfo file = do
+   bh <- readBinMem file
+   getObject bh >>= \case
+-    Just obj -> pure $! Just $! objDeps obj
++    Just obj -> pure $! Just $! objBlockInfo obj
+     Nothing  -> pure Nothing
+ 
+--- | Get units in the object file, using the given filtering function
+-getObjectUnits :: Object -> (Word -> IndexEntry -> Bool) -> IO [ObjUnit]
+-getObjectUnits obj pred = mapMaybeM read_entry (zip (objIndex obj) [0..])
++-- | Get blocks in the object file, using the given filtering function
++getObjectBlocks :: Object -> BlockIds -> IO [ObjBlock]
++getObjectBlocks obj bids = mapMaybeM read_entry (zip (objIndex obj) [0..])
+   where
+     bh = objHandle obj
+-    read_entry (e@(IndexEntry syms offset),i)
+-      | pred i e  = do
++    read_entry (IndexEntry syms offset,i)
++      | IS.member i bids = do
+           seekBin bh offset
+-          Just <$> getObjUnit syms bh
++          Just <$> getObjBlock syms bh
+       | otherwise = pure Nothing
+ 
+--- | Read units in the object file, using the given filtering function
+-readObjectUnits :: FilePath -> (Word -> IndexEntry -> Bool) -> IO [ObjUnit]
+-readObjectUnits file pred = do
++-- | Read blocks in the object file, using the given filtering function
++readObjectBlocks :: FilePath -> BlockIds -> IO [ObjBlock]
++readObjectBlocks file bids = do
+   readObject file >>= \case
+     Nothing  -> pure []
+-    Just obj -> getObjectUnits obj pred
++    Just obj -> getObjectBlocks obj bids
+ 
+ 
+ --------------------------------------------------------------------------------
+@@ -378,13 +396,13 @@ instance Binary IndexEntry where
+   put_ bh (IndexEntry a b) = put_ bh a >> put_ bh b
+   get bh = IndexEntry <$> get bh <*> get bh
+ 
+-instance Binary Deps where
+-  put_ bh (Deps m r e b) = do
++instance Binary BlockInfo where
++  put_ bh (BlockInfo m r e b) = do
+       put_ bh m
+       put_ bh (map toI32 $ IS.toList r)
+       put_ bh (map (\(x,y) -> (x, toI32 y)) $ M.toList e)
+       put_ bh (elems b)
+-  get bh = Deps <$> get bh
++  get bh = BlockInfo <$> get bh
+              <*> (IS.fromList . map fromI32 <$> get bh)
+              <*> (M.fromList . map (\(x,y) -> (x, fromI32 y)) <$> get bh)
+              <*> ((\xs -> listArray (0, length xs - 1) xs) <$> get bh)
+diff --git a/compiler/GHC/StgToJS/Rts/Rts.hs b/compiler/GHC/StgToJS/Rts/Rts.hs
+index 55e1a3f312..6209f0bce4 100644
+--- a/compiler/GHC/StgToJS/Rts/Rts.hs
++++ b/compiler/GHC/StgToJS/Rts/Rts.hs
+@@ -47,6 +47,7 @@ import Data.Array
+ import Data.Monoid
+ import Data.Char (toLower, toUpper)
+ import qualified Data.Bits          as Bits
++import qualified Data.ByteString.Lazy.Char8 as BLC
+ 
+ -- | The garbageCollector resets registers and result variables.
+ garbageCollector :: JStat
+@@ -356,6 +357,10 @@ rtsDecls = jsSaturate (Just "h$RTSD") $
+           , declRegs
+           , declRets]
+ 
++-- | Get the generated part of the RTS
++generatedRTS :: StgToJSConfig -> BLC.ByteString
++generatedRTS cfg = BLC.pack rtsDeclsText <> BLC.pack (rtsText cfg)
++
+ -- | print the embedded RTS to a String
+ rtsText :: StgToJSConfig -> String
+ rtsText = show . pretty . rts
+diff --git a/compiler/GHC/StgToJS/Types.hs b/compiler/GHC/StgToJS/Types.hs
+index 2c01a30bf2..2bbc0faa81 100644
+--- a/compiler/GHC/StgToJS/Types.hs
++++ b/compiler/GHC/StgToJS/Types.hs
+@@ -301,9 +301,9 @@ data ForeignJSRef = ForeignJSRef
+   , foreignRefResult   :: !FastString
+   } deriving stock (Generic)
+ 
+--- | data used to generate one ObjUnit in our object file
++-- | data used to generate one ObjBlock in our object file
+ data LinkableUnit = LinkableUnit
+-  { luObjUnit      :: ObjUnit       -- ^ serializable unit info
++  { luObjBlock     :: ObjBlock      -- ^ serializable unit info
+   , luIdExports    :: [Id]          -- ^ exported names from haskell identifiers
+   , luOtherExports :: [FastString]  -- ^ other exports
+   , luIdDeps       :: [Id]          -- ^ identifiers this unit depends on
+@@ -314,7 +314,7 @@ data LinkableUnit = LinkableUnit
+   }
+ 
+ -- | one toplevel block in the object file
+-data ObjUnit = ObjUnit
++data ObjBlock = ObjBlock
+   { oiSymbols  :: ![FastString]   -- ^ toplevel symbols (stored in index)
+   , oiClInfo   :: ![ClosureInfo]  -- ^ closure information of all closures in block
+   , oiStatic   :: ![StaticInfo]   -- ^ static closure data
+diff --git a/compiler/GHC/Tc/Gen/Splice.hs b/compiler/GHC/Tc/Gen/Splice.hs
+index 5cf69c0dfe..227765d43c 100644
+--- a/compiler/GHC/Tc/Gen/Splice.hs
++++ b/compiler/GHC/Tc/Gen/Splice.hs
+@@ -155,6 +155,7 @@ import qualified Data.Map as Map
+ import Data.Typeable ( typeOf, Typeable, TypeRep, typeRep )
+ import Data.Data (Data)
+ import Data.Proxy    ( Proxy (..) )
++import Data.IORef
+ import GHC.Parser.HaddockLex (lexHsDoc)
+ import GHC.Parser (parseIdentifier)
+ import GHC.Rename.Doc (rnHsDoc)
+@@ -1058,6 +1059,7 @@ runRemoteModFinalizers (ThModFinalizers finRefs) = do
+       withForeignRefs (x : xs) f = withForeignRef x $ \r ->
+         withForeignRefs xs $ \rs -> f (r : rs)
+   interp <- tcGetInterp
++
+   case interpInstance interp of
+ #if defined(HAVE_INTERNAL_INTERPRETER)
+     InternalInterp -> do
+@@ -1065,17 +1067,18 @@ runRemoteModFinalizers (ThModFinalizers finRefs) = do
+       runQuasi $ sequence_ qs
+ #endif
+ 
+-    ExternalInterp conf iserv -> withIServ_ conf iserv $ \i -> do
++    ExternalInterp ext -> withExtInterp ext $ \inst -> do
+       tcg <- getGblEnv
+       th_state <- readTcRef (tcg_th_remote_state tcg)
+       case th_state of
+         Nothing -> return () -- TH was not started, nothing to do
+         Just fhv -> do
+-          liftIO $ withForeignRef fhv $ \st ->
++          r <- liftIO $ withForeignRef fhv $ \st ->
+             withForeignRefs finRefs $ \qrefs ->
+-              writeIServ i (putMessage (RunModFinalizers st qrefs))
+-          () <- runRemoteTH i []
+-          readQResult i
++              sendMessageDelayedResponse inst (RunModFinalizers st qrefs)
++          () <- runRemoteTH inst []
++          qr <- liftIO $ receiveDelayedResponse inst r
++          checkQResult qr
+ 
+ runQResult
+   :: (a -> String)
+@@ -1691,37 +1694,40 @@ runTH ty fhv = do
+       return r
+ #endif
+ 
+-    ExternalInterp conf iserv ->
++    ExternalInterp ext -> withExtInterp ext $ \inst -> do
+       -- Run it on the server.  For an overview of how TH works with
+       -- Remote GHCi, see Note [Remote Template Haskell] in
+       -- libraries/ghci/GHCi/TH.hs.
+-      withIServ_ conf iserv $ \i -> do
+-        rstate <- getTHState i
+-        loc <- TH.qLocation
+-        liftIO $
+-          withForeignRef rstate $ \state_hv ->
+-          withForeignRef fhv $ \q_hv ->
+-            writeIServ i (putMessage (RunTH state_hv q_hv ty (Just loc)))
+-        runRemoteTH i []
+-        bs <- readQResult i
+-        return $! runGet get (LB.fromStrict bs)
++      rstate <- getTHState inst
++      loc <- TH.qLocation
++      -- run a remote TH request
++      r <- liftIO $
++        withForeignRef rstate $ \state_hv ->
++        withForeignRef fhv $ \q_hv ->
++          sendMessageDelayedResponse inst (RunTH state_hv q_hv ty (Just loc))
++      -- respond to requests from the interpreter
++      runRemoteTH inst []
++      -- get the final result
++      qr <- liftIO $ receiveDelayedResponse inst r
++      bs <- checkQResult qr
++      return $! runGet get (LB.fromStrict bs)
+ 
+ 
+ -- | communicate with a remotely-running TH computation until it finishes.
+ -- See Note [Remote Template Haskell] in libraries/ghci/GHCi/TH.hs.
+ runRemoteTH
+-  :: IServInstance
++  :: ExtInterpInstance d
+   -> [Messages TcRnMessage]   --  saved from nested calls to qRecover
+   -> TcM ()
+-runRemoteTH iserv recovers = do
+-  THMsg msg <- liftIO $ readIServ iserv getTHMessage
++runRemoteTH inst recovers = do
++  THMsg msg <- liftIO $ receiveTHMessage inst
+   case msg of
+     RunTHDone -> return ()
+     StartRecover -> do -- Note [TH recover with -fexternal-interpreter]
+       v <- getErrsVar
+       msgs <- readTcRef v
+       writeTcRef v emptyMessages
+-      runRemoteTH iserv (msgs : recovers)
++      runRemoteTH inst (msgs : recovers)
+     EndRecover caught_error -> do
+       let (prev_msgs, rest) = case recovers of
+              [] -> panic "EndRecover"
+@@ -1732,16 +1738,15 @@ runRemoteTH iserv recovers = do
+       writeTcRef v $ if caught_error
+         then prev_msgs
+         else mkMessages warn_msgs `unionMessages` prev_msgs
+-      runRemoteTH iserv rest
++      runRemoteTH inst rest
+     _other -> do
+       r <- handleTHMessage msg
+-      liftIO $ writeIServ iserv (put r)
+-      runRemoteTH iserv recovers
++      liftIO $ sendAnyValue inst r
++      runRemoteTH inst recovers
+ 
+--- | Read a value of type QResult from the iserv
+-readQResult :: Binary a => IServInstance -> TcM a
+-readQResult i = do
+-  qr <- liftIO $ readIServ i get
++-- | Check a QResult
++checkQResult :: QResult a -> TcM a
++checkQResult qr =
+   case qr of
+     QDone a -> return a
+     QException str -> liftIO $ throwIO (ErrorCall str)
+@@ -1788,17 +1793,18 @@ Back in GHC, when we receive:
+ --
+ -- The TH state is stored in tcg_th_remote_state in the TcGblEnv.
+ --
+-getTHState :: IServInstance -> TcM (ForeignRef (IORef QState))
+-getTHState i = do
+-  tcg <- getGblEnv
+-  th_state <- readTcRef (tcg_th_remote_state tcg)
+-  case th_state of
+-    Just rhv -> return rhv
+-    Nothing -> do
+-      interp <- tcGetInterp
+-      fhv <- liftIO $ mkFinalizedHValue interp =<< iservCall i StartTH
+-      writeTcRef (tcg_th_remote_state tcg) (Just fhv)
+-      return fhv
++getTHState :: ExtInterpInstance d -> TcM (ForeignRef (IORef QState))
++getTHState inst = do
++  th_state_var <- tcg_th_remote_state <$> getGblEnv
++  liftIO $ do
++    th_state <- readIORef th_state_var
++    case th_state of
++      Just rhv -> return rhv
++      Nothing -> do
++        rref <- sendMessage inst StartTH
++        fhv <- mkForeignRef rref (freeReallyRemoteRef inst rref)
++        writeIORef th_state_var (Just fhv)
++        return fhv
+ 
+ wrapTHResult :: TcM a -> TcM (THResult a)
+ wrapTHResult tcm = do
+diff --git a/compiler/ghc.cabal.in b/compiler/ghc.cabal.in
+index 08e579c03a..9fa30dd5a9 100644
+--- a/compiler/ghc.cabal.in
++++ b/compiler/ghc.cabal.in
+@@ -591,8 +591,11 @@ Library
+         GHC.Runtime.Heap.Inspect
+         GHC.Runtime.Heap.Layout
+         GHC.Runtime.Interpreter
++        GHC.Runtime.Interpreter.JS
++        GHC.Runtime.Interpreter.Process
+         GHC.Runtime.Interpreter.Types
+         GHC.Runtime.Loader
++        GHC.Runtime.Utils
+         GHC.Settings
+         GHC.Settings.Config
+         GHC.Settings.Constants
+diff --git a/ghc-interp.js b/ghc-interp.js
+new file mode 100644
+index 0000000000..6e4e4d7201
+--- /dev/null
++++ b/ghc-interp.js
+@@ -0,0 +1,99 @@
++/*
++  GHC JS Interpreter
++
++  Read commands on stdin (ending with \n):
++    LOAD foo.js             : load foo.js file
++    RUN_SERVER ghci_unit_id : run ghci_unit_id:GHCi.Server.defaultServer
++
++  Once the Haskell server is started with RUN_SERVER, the JS server no longer
++  reads commands on stdin. Everything must go through the Haskell server (which
++  uses pipes for communication)
++*/
++
++var h$THfs = require('fs');
++var h$THvm = require('vm');
++
++function h$debug_log(s) {
++  // uncomment the following line to enable some debug messages
++  // console.log("[JS interpreter] " + s);
++}
++
++// load and exec JS file
++function h$loadJS(path) {
++  h$debug_log("Loading file: " + path);
++  var data = h$THfs.readFileSync(path);
++  const script = new h$THvm.Script(data);
++  script.runInThisContext();
++}
++
++// Lookup a static closure by its name
++function h$lookupClosure(v) {
++  h$debug_log("Looking up closure: " + v);
++  const r = eval(v);
++  h$debug_log("  -> Result: " + r);
++  if (!r) return 0;
++  // a RemoteRef is just the offset of a stable pointer
++  return h$makeStablePtr(r);
++}
++
++// give access to these functions to the dynamically linked code
++globalThis.h$loadJS = h$loadJS;
++globalThis.h$lookupClosure = h$lookupClosure;
++global.require = require;
++global.module  = module;
++
++
++function h$initInterp() {
++  h$debug_log("Welcome to GHC's JS interpreter");
++
++  function stdin_end() {
++    h$debug_log('GHC disconnected: goodbye.');
++    process.exit(1);
++  };
++
++  // read until we find '\n'
++  // Accumulate bytes in "bytes" array
++  let bytes = [];
++  let decoder = new TextDecoder('utf8');
++
++  function stdin_readable() {
++    // read until we find '\n'
++    while (null !== (bs = process.stdin.read(1))) {
++      let b = bs[0];
++      switch(b) {
++        case 10: // `\n` found. `bytes` must contain a command
++          let cmd = decoder.decode(new Uint8Array(bytes));
++          bytes = [];
++          // we only supports 2 commands: LOAD, RUN_SERVER
++          if (cmd.startsWith("LOAD ")) {
++            h$loadJS(cmd.slice(5));
++          }
++          else if (cmd.startsWith("RUN_SERVER ")) {
++            let uid = cmd.slice(11);
++            let root = eval("h$" + uid + "ZCGHCiziServerzidefaultServer");
++            // remove listeners
++            process.stdin.removeListener('end',      stdin_end);
++            process.stdin.removeListener('readable', stdin_readable);
++            // run the server
++            h$debug_log("Run server");
++            h$main(root);
++            // break the loop
++            return;
++          }
++          else {
++            console.log("[JS interpreter] Invalid command received: " + cmd);
++            process.exit(1);
++          }
++          break;
++        default:
++          bytes.push(b);
++      }
++    }
++  };
++
++  // read commands on STDIN
++  process.stdin.on('end',      stdin_end);
++  process.stdin.on('readable', stdin_readable);
++}
++
++h$initInterp();
+diff --git a/hadrian/src/Base.hs b/hadrian/src/Base.hs
+index 3fcc3bb3c6..00746ed085 100644
+--- a/hadrian/src/Base.hs
++++ b/hadrian/src/Base.hs
+@@ -123,6 +123,7 @@ ghcLibDeps stage iplace = do
+     ps <- mapM (\f -> stageLibPath stage <&> (-/- f))
+         [ "llvm-targets"
+         , "llvm-passes"
++        , "ghc-interp.js"
+         , "settings"
+         ]
+     cxxStdLib <- systemCxxStdLibConfPath (PackageDbLoc stage iplace)
+diff --git a/hadrian/src/Rules/Generate.hs b/hadrian/src/Rules/Generate.hs
+index 8801fc2d78..d85f92484a 100644
+--- a/hadrian/src/Rules/Generate.hs
++++ b/hadrian/src/Rules/Generate.hs
+@@ -200,6 +200,7 @@ copyRules = do
+         prefix -/- "ghci-usage.txt"    <~ return "driver"
+         prefix -/- "llvm-targets"      <~ return "."
+         prefix -/- "llvm-passes"       <~ return "."
++        prefix -/- "ghc-interp.js"     <~ return "."
+         prefix -/- "template-hsc.h" <~ return (pkgPath hsc2hs -/- "data")
+ 
+         prefix -/- "html/**"           <~ return "utils/haddock/haddock-api/resources"
+diff --git a/libraries/base/System/Posix/Internals.hs b/libraries/base/System/Posix/Internals.hs
+index e4b45532b6..bd3d4db8ca 100644
+--- a/libraries/base/System/Posix/Internals.hs
++++ b/libraries/base/System/Posix/Internals.hs
+@@ -139,10 +139,10 @@ ioe_unknownfiletype = IOError Nothing UnsupportedOperation "fdType"
+                         Nothing
+ 
+ fdGetMode :: FD -> IO IOMode
+-#if defined(mingw32_HOST_OS)
++#if defined(mingw32_HOST_OS) || defined(javascript_HOST_ARCH)
+ fdGetMode _ = do
+     -- We don't have a way of finding out which flags are set on FDs
+-    -- on Windows, so make a handle that thinks that anything goes.
++    -- on Windows/JS, so make a handle that thinks that anything goes.
+     let flags = o_RDWR
+ #else
+ fdGetMode fd = do
+diff --git a/libraries/base/jsbits/base.js b/libraries/base/jsbits/base.js
+index dd491bac00..fcdab5bf9d 100644
+--- a/libraries/base/jsbits/base.js
++++ b/libraries/base/jsbits/base.js
+@@ -450,6 +450,15 @@ function h$base_c_s_isdir(mode) {
+ function h$base_c_s_isfifo(mode) {
+     return 0;
+ }
++function h$base_c_fcntl_read(fd,cmd) {
++    return -1;
++}
++function h$base_c_fcntl_write(fd,cmd,value) {
++    return -1;
++}
++function h$base_c_fcntl_lock(fd,cmd,ptr,ptr_o) {
++    return -1;
++}
+ 
+ #ifndef GHCJS_BROWSER
+ function h$base_fillStat(fs, b, off) {
+diff --git a/libraries/ghci/GHCi/RemoteTypes.hs b/libraries/ghci/GHCi/RemoteTypes.hs
+index bbd7d32bed..77b663b2c4 100644
+--- a/libraries/ghci/GHCi/RemoteTypes.hs
++++ b/libraries/ghci/GHCi/RemoteTypes.hs
+@@ -8,14 +8,29 @@
+ -- compiler/GHC/Runtime/Interpreter.hs.
+ --
+ module GHCi.RemoteTypes
+-  ( RemotePtr(..), toRemotePtr, fromRemotePtr, castRemotePtr
++  ( -- * Remote pointer
++    RemotePtr(..)
++  , toRemotePtr
++  , fromRemotePtr
++  , castRemotePtr
++  -- * RemoteRef: reference to some heap object (potentially remote)
++  , RemoteRef (..)
++  , mkRemoteRef
++  , localRef
++  , freeRemoteRef
++  , castRemoteRef
++  -- * ForeignRef: RemoteRef with a finalizer
++  , ForeignRef
++  , mkForeignRef
++  , withForeignRef
++  , finalizeForeignRef
++  , castForeignRef
++  , unsafeForeignRefToRemoteRef
++  -- * HValue
+   , HValue(..)
+-  , RemoteRef, mkRemoteRef, localRef, freeRemoteRef
+-  , HValueRef, toHValueRef
+-  , ForeignRef, mkForeignRef, withForeignRef
++  , HValueRef
+   , ForeignHValue
+-  , unsafeForeignRefToRemoteRef, finalizeForeignRef
+-  ) where
++) where
+ 
+ import Prelude -- See note [Why do we import Prelude here?]
+ import Control.DeepSeq
+@@ -23,7 +38,6 @@ import Data.Word
+ import Foreign hiding (newForeignPtr)
+ import Foreign.Concurrent
+ import Data.Binary
+-import Unsafe.Coerce
+ import GHC.Exts
+ import GHC.ForeignPtr
+ 
+@@ -52,23 +66,28 @@ deriving instance Binary (RemotePtr a)
+ deriving instance NFData (RemotePtr a)
+ 
+ -- -----------------------------------------------------------------------------
+--- HValueRef
++-- HValue: alias for Any
+ 
+ newtype HValue = HValue Any
+ 
+ instance Show HValue where
+   show _ = "<HValue>"
+ 
+--- | A reference to a remote value.  These are allocated and freed explicitly.
++-- For convenience
++type HValueRef     = RemoteRef HValue
++type ForeignHValue = ForeignRef HValue
++
++-- -----------------------------------------------------------------------------
++-- RemoteRef: pointer to a Heap object
++
++-- | A reference to a heap object. Potentially in a remote heap!
++-- These are allocated and freed explicitly.
+ newtype RemoteRef a = RemoteRef (RemotePtr ())
+   deriving (Show, Binary)
+ 
+ -- We can discard type information if we want
+-toHValueRef :: RemoteRef a -> RemoteRef HValue
+-toHValueRef = unsafeCoerce
+-
+--- For convenience
+-type HValueRef = RemoteRef HValue
++castRemoteRef :: RemoteRef a -> RemoteRef b
++castRemoteRef = coerce
+ 
+ -- | Make a reference to a local value that we can send remotely.
+ -- This reference will keep the value that it refers to alive until
+@@ -78,34 +97,33 @@ mkRemoteRef a = do
+   sp <- newStablePtr a
+   return $! RemoteRef (toRemotePtr (castStablePtrToPtr sp))
+ 
+--- | Convert an HValueRef to an HValue.  Should only be used if the HValue
+--- originated in this process.
++-- | Convert a RemoteRef to its carried type. Should only be used if the
++-- RemoteRef originated in this process.
+ localRef :: RemoteRef a -> IO a
+ localRef (RemoteRef w) =
+   deRefStablePtr (castPtrToStablePtr (fromRemotePtr w))
+ 
+--- | Release an HValueRef that originated in this process
++-- | Release a RemoteRef that originated in this process
+ freeRemoteRef :: RemoteRef a -> IO ()
+ freeRemoteRef (RemoteRef w) =
+   freeStablePtr (castPtrToStablePtr (fromRemotePtr w))
+ 
+--- | An HValueRef with a finalizer
++-- | An RemoteRef with a finalizer
+ newtype ForeignRef a = ForeignRef (ForeignPtr ())
+ 
+ instance NFData (ForeignRef a) where
+   rnf x = x `seq` ()
+ 
+-type ForeignHValue = ForeignRef HValue
+ 
+ -- | Create a 'ForeignRef' from a 'RemoteRef'.  The finalizer
+--- should arrange to call 'freeHValueRef' on the 'HValueRef'.  (since
++-- should arrange to call 'freeRemoteRef' on the 'RemoteRef'.  (since
+ -- this function needs to be called in the process that created the
+--- 'HValueRef', it cannot be called directly from the finalizer).
++-- 'RemoteRef', it cannot be called directly from the finalizer).
+ mkForeignRef :: RemoteRef a -> IO () -> IO (ForeignRef a)
+ mkForeignRef (RemoteRef hvref) finalizer =
+   ForeignRef <$> newForeignPtr (fromRemotePtr hvref) finalizer
+ 
+--- | Use a 'ForeignHValue'
++-- | Use a 'ForeignRef'
+ withForeignRef :: ForeignRef a -> (RemoteRef a -> IO b) -> IO b
+ withForeignRef (ForeignRef fp) f =
+    withForeignPtr fp (f . RemoteRef . toRemotePtr)
+@@ -116,3 +134,6 @@ unsafeForeignRefToRemoteRef (ForeignRef fp) =
+ 
+ finalizeForeignRef :: ForeignRef a -> IO ()
+ finalizeForeignRef (ForeignRef fp) = finalizeForeignPtr fp
++
++castForeignRef :: ForeignRef a -> ForeignRef b
++castForeignRef = coerce
+diff --git a/libraries/ghci/GHCi/Run.hs b/libraries/ghci/GHCi/Run.hs
+index 4ecb64620a..cae13010fe 100644
+--- a/libraries/ghci/GHCi/Run.hs
++++ b/libraries/ghci/GHCi/Run.hs
+@@ -1,5 +1,5 @@
+ {-# LANGUAGE GADTs, RecordWildCards, MagicHash, ScopedTypeVariables, CPP,
+-    UnboxedTuples #-}
++    UnboxedTuples, LambdaCase #-}
+ {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+ 
+ -- |
+@@ -13,8 +13,14 @@ module GHCi.Run
+   ) where
+ 
+ import Prelude -- See note [Why do we import Prelude here?]
++
++#if !defined(javascript_HOST_ARCH)
+ import GHCi.CreateBCO
+ import GHCi.InfoTable
++import Data.Binary
++import Data.Binary.Get
++#endif
++
+ import GHCi.FFI
+ import GHCi.Message
+ import GHCi.ObjLink
+@@ -27,8 +33,6 @@ import Control.Concurrent
+ import Control.DeepSeq
+ import Control.Exception
+ import Control.Monad
+-import Data.Binary
+-import Data.Binary.Get
+ import Data.ByteString (ByteString)
+ import qualified Data.ByteString.Unsafe as B
+ import GHC.Exts
+@@ -49,19 +53,36 @@ foreign import ccall "revertCAFs" rts_revertCAFs  :: IO ()
+ 
+ run :: Message a -> IO a
+ run m = case m of
++#if defined(javascript_HOST_ARCH)
++  LoadObj p                   -> withCString p loadJS
++  InitLinker                  -> notSupportedJS m
++  LoadDLL {}                  -> notSupportedJS m
++  LoadArchive {}              -> notSupportedJS m
++  UnloadObj {}                -> notSupportedJS m
++  AddLibrarySearchPath {}     -> notSupportedJS m
++  RemoveLibrarySearchPath {}  -> notSupportedJS m
++  MkConInfoTable {}           -> notSupportedJS m
++  ResolveObjs                 -> notSupportedJS m
++  FindSystemLibrary {}        -> notSupportedJS m
++  CreateBCOs {}               -> notSupportedJS m
++  LookupClosure str           -> lookupJSClosure str
++#else
+   InitLinker -> initObjLinker RetainCAFs
+-  RtsRevertCAFs -> rts_revertCAFs
+-  LookupSymbol str -> fmap toRemotePtr <$> lookupSymbol str
+-  LookupClosure str -> lookupClosure str
+   LoadDLL str -> loadDLL str
+   LoadArchive str -> loadArchive str
+   LoadObj str -> loadObj str
+   UnloadObj str -> unloadObj str
+   AddLibrarySearchPath str -> toRemotePtr <$> addLibrarySearchPath str
+   RemoveLibrarySearchPath ptr -> removeLibrarySearchPath (fromRemotePtr ptr)
++  MkConInfoTable tc ptrs nptrs tag ptrtag desc ->
++    toRemotePtr <$> mkConInfoTable tc ptrs nptrs tag ptrtag desc
+   ResolveObjs -> resolveObjs
+   FindSystemLibrary str -> findSystemLibrary str
+   CreateBCOs bcos -> createBCOs (concatMap (runGet get) bcos)
++  LookupClosure str -> lookupClosure str
++#endif
++  RtsRevertCAFs -> rts_revertCAFs
++  LookupSymbol str -> fmap toRemotePtr <$> lookupSymbol str
+   FreeHValueRefs rs -> mapM_ freeRemoteRef rs
+   AddSptEntry fpr r -> localRef r >>= sptAddEntry fpr
+   EvalStmt opts r -> evalStmt opts r
+@@ -89,15 +110,38 @@ run m = case m of
+   MallocStrings bss -> mapM mkString0 bss
+   PrepFFI conv args res -> toRemotePtr <$> prepForeignCall conv args res
+   FreeFFI p -> freeForeignCallInfo (fromRemotePtr p)
+-  MkConInfoTable tc ptrs nptrs tag ptrtag desc ->
+-    toRemotePtr <$> mkConInfoTable tc ptrs nptrs tag ptrtag desc
+   StartTH -> startTH
+   GetClosure ref -> do
+     clos <- Heap.getClosureData =<< localRef ref
+     mapM (\(Heap.Box x) -> mkRemoteRef (HValue x)) clos
+   Seq ref -> doSeq ref
+   ResumeSeq ref -> resumeSeq ref
+-  _other -> error "GHCi.Run.run"
++
++  Shutdown            -> unexpectedMessage m
++  RunTH {}            -> unexpectedMessage m
++  RunModFinalizers {} -> unexpectedMessage m
++
++unexpectedMessage :: Message a -> b
++unexpectedMessage m = error ("GHCi.Run.Run: unexpected message: " ++ show m)
++
++#if defined(javascript_HOST_ARCH)
++foreign import javascript "((ptr,off) => globalThis.h$loadJS(h$decodeUtf8z(ptr,off)))" loadJS :: CString -> IO ()
++
++foreign import javascript "((ptr,off) => globalThis.h$lookupClosure(h$decodeUtf8z(ptr,off)))" lookupJSClosure# :: CString -> State# RealWorld -> (# State# RealWorld, Int# #)
++
++lookupJSClosure' :: String -> IO Int
++lookupJSClosure' str = withCString str $ \cstr -> IO (\s ->
++  case lookupJSClosure# cstr s of
++    (# s', r #) -> (# s', I# r #))
++
++lookupJSClosure :: String -> IO (Maybe HValueRef)
++lookupJSClosure str = lookupJSClosure' str >>= \case
++  0 -> pure Nothing
++  r -> pure (Just (RemoteRef (RemotePtr (fromIntegral r))))
++
++notSupportedJS :: Message a -> b
++notSupportedJS m = error ("Message not supported with the JavaScript interpreter: " ++ show m)
++#endif
+ 
+ evalStmt :: EvalOpts -> EvalExpr HValueRef -> IO (EvalStatus [HValueRef])
+ evalStmt opts expr = do
+diff --git a/libraries/ghci/ghci.cabal.in b/libraries/ghci/ghci.cabal.in
+index 700b7d62ea..ce7dc10a3e 100644
+--- a/libraries/ghci/ghci.cabal.in
++++ b/libraries/ghci/ghci.cabal.in
+@@ -50,7 +50,6 @@ library
+     if flag(internal-interpreter)
+         CPP-Options: -DHAVE_INTERNAL_INTERPRETER
+         exposed-modules:
+-            GHCi.InfoTable
+             GHCi.Run
+             GHCi.CreateBCO
+             GHCi.ObjLink
+@@ -59,6 +58,10 @@ library
+             GHCi.TH
+             GHCi.Server
+ 
++        if !arch(javascript)
++          exposed-modules:
++            GHCi.InfoTable
++
+     exposed-modules:
+         GHCi.BreakArray
+         GHCi.BinaryArray
+diff --git a/libraries/template-haskell/tests/all.T b/libraries/template-haskell/tests/all.T
+index 48f05c64fa..6fb09fc3c7 100644
+--- a/libraries/template-haskell/tests/all.T
++++ b/libraries/template-haskell/tests/all.T
+@@ -1,3 +1,3 @@
+ # difficult to test TH with profiling, because we have to build twice
+-test('dataToExpQUnit', [omit_ways(prof_ways), req_interp], compile, ['-v0'])
+-test('pragCompletePpr', [omit_ways(prof_ways), req_interp], compile_and_run, [''])
++test('dataToExpQUnit', [omit_ways(prof_ways), req_th], compile, ['-v0'])
++test('pragCompletePpr', [omit_ways(prof_ways), req_th], compile_and_run, [''])
+-- 
+2.37.1 (Apple Git-137.1)
+

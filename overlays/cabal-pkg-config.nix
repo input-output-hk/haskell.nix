@@ -34,7 +34,7 @@ final: prev:
       # `.name` but no `.version`.
       getVersion = p: p.version or (builtins.parseDrvName (p.name or "")).version;
       pkgconfigPkgs =
-        final.lib.filterAttrs (name: p: __length p > 0 && getVersion (__head p) != "")
+        final.lib.filterAttrs (_name: p: __length p > 0 && getVersion (__head p) != "")
           (import ../lib/pkgconf-nixpkgs-map.nix final);
     in prev.pkg-config.overrideAttrs (attrs:
       let
@@ -56,8 +56,7 @@ final: prev:
         ${final.pkgs.lib.concatStrings (map (name: ''
           ${name}
         '') (__attrNames pkgconfigPkgs))
-         }
-        EOF2
+         }EOF2
         elif [[ "\$1" == "--modversion" ]]; then
           OUTPUT=\$(mktemp)
           ERROR=\$(mktemp)
@@ -65,8 +64,7 @@ final: prev:
         ${final.pkgs.lib.concatStrings (map (p: ''
           ${getVersion (builtins.head p)}
         '') (__attrValues pkgconfigPkgs))
-        }
-        EOF2
+        }EOF2
         else
           $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@"
         fi

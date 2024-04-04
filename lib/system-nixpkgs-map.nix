@@ -9,7 +9,8 @@ with pkgs;
 let
   # On windows systems we need these to be propagatedBuildInputs so that the DLLs will be found.
   gcclibs = if pkgs.stdenv.hostPlatform.isWindows then [
-    pkgs.windows.mcfgthreads
+    # Find the versions of mcfgthreads used by stdenv.cc
+    (pkgs.threadsCrossFor or (_x: { package = pkgs.windows.mcfgthreads; }) pkgs.stdenv.cc.version).package
     # If we just use `pkgs.buildPackages.gcc.cc` here it breaks the `th-dlls` test. TODO figure out why exactly.
     (pkgs.buildPackages.runCommand "gcc-only" { nativeBuildInputs = [ pkgs.buildPackages.xorg.lndir ]; } ''
       mkdir $out
@@ -52,6 +53,8 @@ in
   bz2 = [ bzip2 ];
   util = [ utillinux ];
   magic = [ file ];
+  pgcommon = [ postgresql ];
+  pgport = [ postgresql] ;
   pq = [ postgresql ];
   libpq = [ postgresql ];
   iconv = [ libiconv ];
@@ -97,6 +100,7 @@ in
   # compile C sources (https://github.com/fpco/odbc/blob/master/cbits/odbc.c)
   odbc = [ unixODBC ];
   opencv = [ opencv3 ];
+  phonenumber = [ libphonenumber ];
   icuuc = [ icu ];
   icui18n = [ icu ];
   icu-i18n = [ icu ];
@@ -133,7 +137,11 @@ in
      Crypt32 = null;
      mswsock = null;
      bcrypt = null;
+     dnsapi = null;
    }
+# -- mingw32
+// { mingwex = null;
+}
 # -- os x
 # NB: these map almost 1:1 to the framework names
 // darwin.apple_sdk.frameworks

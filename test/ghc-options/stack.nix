@@ -16,7 +16,7 @@ let
     # TODO work out why these are `ghcide` and `hnix` are here in the first place
     # it might be because we have patches in `modules/configuration.nix`
     lib.optionalString (!__elem name ["ghcide" "hnix"]) p.identifier.name)
-      (filterAttrs (name: hasIdentifier) packages);
+      (filterAttrs (_name: hasIdentifier) packages);
 
 in recurseIntoAttrs {
   # This test is somehow broken for ghcjs

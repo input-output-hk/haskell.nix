@@ -47,19 +47,6 @@ let
 
   ghc = project.pkg-set.config.ghc.package;
 
-  libs = lib.unique (lib.concatMap (r: r.mixLibraries) coverageReports);
-
-  writeArr = name: arr: pkgs.writeText name (lib.concatStringsSep "\n" arr);
-
-  mixDirs =
-    map
-      (l: "${l}/share/hpc/vanilla/mix/${l.identifier.name}-${l.identifier.version}")
-      libs;
-  mixDirsFile = writeArr "mixdirs" mixDirs;
-
-  srcDirs = map (l: l.srcSubDirPath) libs;
-  srcDirsFile = writeArr "srcdirs" srcDirs;
-
   allCoverageReport = haskellLib.coverageReport {
     name = "all";
     checks = lib.flatten (lib.concatMap
@@ -95,9 +82,9 @@ in pkgs.runCommand "project-coverage-report"
       fi
 
       # Copy mix, tix, and html information over from each report
-      if [ -d "$report/share/hpc/vanilla/mix/$identifier" ]; then
-        cp -Rn $report/share/hpc/vanilla/mix/$identifier $out/share/hpc/vanilla/mix/
-      fi
+      for f in $report/share/hpc/vanilla/mix/$identifier*; do
+        cp -Rn $f $out/share/hpc/vanilla/mix
+      done
       cp -R $report/share/hpc/vanilla/tix/* $out/share/hpc/vanilla/tix/
       cp -R $report/share/hpc/vanilla/html/* $out/share/hpc/vanilla/html/
     '') coverageReports)}

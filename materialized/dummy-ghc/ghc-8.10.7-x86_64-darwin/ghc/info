@@ -12,7 +12,7 @@
  ,("ld is GNU ld","NO")
  ,("Merge objects flags","-r")
  ,("ar flags","qcls")
- ,("ar supports at file","NO")
+ ,("ar supports at file","YES")
  ,("touch command","touch")
  ,("dllwrap command","/bin/false")
  ,("windres command","/bin/false")

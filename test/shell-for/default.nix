@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, haskellLib, cabal-install, mkCabalProjectPkgSet, recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
 
 with lib;
 
@@ -23,7 +23,7 @@ let
     packages = ps: with ps; [ pkga pkgb ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    tools = { cabal = "latest"; };
+    tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
     exactDeps = true;
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
@@ -34,7 +34,7 @@ let
     packages = ps: with ps; [ pkga ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    tools = { cabal = "latest"; };
+    tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
     exactDeps = true;
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
@@ -46,7 +46,7 @@ let
     #   packages = ps: with ps; [ pkga pkgb ];
     # This adds cabal-install to the shell, which helps tests because
     # they use a nix-shell --pure. Normally you would BYO cabal-install.
-    tools = { cabal = "latest"; };
+    tools = { cabal = { cabalProjectLocal = builtins.readFile ../cabal.project.local; }; };
     # Avoid duplicate package issues when runghc looks for packages
     packageSetupDeps = false;
   };
@@ -54,7 +54,7 @@ let
 in recurseIntoAttrs {
   # Does not work on ghcjs because it needs zlib.
   # Does not work on windows because it needs mintty.
-  meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows
+  meta.disabled = stdenv.hostPlatform.isMusl || stdenv.hostPlatform.isGhcjs || stdenv.hostPlatform.isWindows || (haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
     || compiler-nix-name != ((import ./pkgs.nix).pkgs null).compiler.nix-name;
   inherit env envPkga envDefault;
   run = stdenv.mkDerivation {

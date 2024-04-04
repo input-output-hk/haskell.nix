@@ -1,4 +1,4 @@
-{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -18,17 +18,15 @@ in recurseIntoAttrs {
     name = "buildable-test";
 
     buildCommand =
-      (concatStrings (mapAttrsToList (name: value: ''
+      (concatStrings (mapAttrsToList (_name: value: ''
         printf "checking whether executable runs... " >& 2
         cat ${haskellLib.check value}/test-stdout
       '') packages.buildable-test.components.exes)) + ''
       touch $out
     '';
 
-    meta = rec {
+    meta = {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
-      disabled = broken;
     };
 
     passthru = {

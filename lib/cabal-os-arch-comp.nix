@@ -34,6 +34,7 @@
     isIOS       = false;
     isAndroid   = false;
     isGhcjs     = false;
+    isWasi      = false;
   };
   arch = {
     # Archs
@@ -54,5 +55,6 @@
     isM68k   = false;
     isVax    = false;
     isJavaScript = false;
+    isWasm32 = false;
   };
 }

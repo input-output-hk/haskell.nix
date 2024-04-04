@@ -1,0 +1,7 @@
+cabal-version: 3.8
+name: stack-compiler
+version: 0.0.1
+
+library
+  exposed-modules: Lib
+  build-depends: base

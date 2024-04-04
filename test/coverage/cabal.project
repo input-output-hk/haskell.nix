@@ -1,15 +1,2 @@
 packages: pkga
           pkgb
-
-
--- allow newer packages that ship
--- with the complier anyway
-allow-newer:
-  , *:base
-  , *:template-haskell
-  , *:ghc-prim
-  , *:ghc-boot
-  , *:ghc
-  , *:mtl
-  , *:transformers
-  , *:unix

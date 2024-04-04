@@ -8,7 +8,6 @@ let
     cabalProject' {
       inherit compiler-nix-name evalPackages;
       src = testSrc "cabal-doctests";
-      index-state = "2021-01-11T00:00:00Z";
     };
 
   packages = project.hsPkgs;

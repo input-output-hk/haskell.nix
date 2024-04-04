@@ -1,0 +1,40 @@
+From 3302f42a57a9e26423e30221e455de5a173cd6c5 Mon Sep 17 00:00:00 2001
+From: Sylvain Henry <sylvain@haskus.fr>
+Date: Wed, 10 Nov 2021 15:12:08 +0100
+Subject: [PATCH] Fix windres invocation
+
+I've already fixed this 7 months ago in the comments of #16780 but it
+never got merged. Now we need this for #20657 too.
+---
+ compiler/GHC/SysTools/Tasks.hs | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/compiler/GHC/SysTools/Tasks.hs b/compiler/GHC/SysTools/Tasks.hs
+index 6bf7e9ba43f..25988af4b21 100644
+--- a/compiler/GHC/SysTools/Tasks.hs
++++ b/compiler/GHC/SysTools/Tasks.hs
+@@ -365,16 +365,15 @@ runWindres logger dflags args = traceToolCommand logger "windres" $ do
+       args' = -- If windres.exe and gcc.exe are in a directory containing
+               -- spaces then windres fails to run gcc. We therefore need
+               -- to tell it what command to use...
+-              Option ("--preprocessor=" ++
+-                      unwords (map quote (cc :
+-                                          map showOpt opts ++
+-                                          ["-E", "-xc", "-DRC_INVOKED"])))
++              [ Option ("--preprocessor=" ++ quote cc) ]
++              ++ map (Option . ("--preprocessor-arg=" ++) . quote)
++                     (map showOpt opts ++ ["-E", "-xc", "-DRC_INVOKED"])
+               -- ...but if we do that then if windres calls popen then
+               -- it can't understand the quoting, so we have to use
+               -- --use-temp-file so that it interprets it correctly.
+               -- See #1828.
+-            : Option "--use-temp-file"
+-            : args
++              ++ [ Option "--use-temp-file" ]
++              ++ args
+   mb_env <- getGccEnv cc_args
+   runSomethingFiltered logger id "Windres" windres args' Nothing mb_env
+ 
+-- 
+GitLab
+

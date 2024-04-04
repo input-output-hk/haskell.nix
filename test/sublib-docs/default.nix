@@ -7,12 +7,7 @@ let
   project = cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "sublib-docs";
-    cabalProject = ''
-      packages: .
-      allow-newer: aeson:*
-    '' + lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
-    '';
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
 
   packages = project.hsPkgs;
@@ -46,9 +41,9 @@ in recurseIntoAttrs {
       otool -L $exe |grep .dylib
     '') + ''
 
-      # Check that it looks like we have docs
+      printf "check that it looks like we have docs..." >& 2
       test -f "${packages.sublib-docs.components.library.doc}/share/doc/sublib-docs/html/Lib.html"
-      test -f "${packages.sublib-docs.components.sublibs.slib.doc}/share/doc/slib/html/Slib.html"
+      test -f "${packages.sublib-docs.components.sublibs.slib.doc}/share/doc/sublib-docs/html/Slib.html"
 
       touch $out
     '';

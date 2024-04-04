@@ -1,4 +1,0 @@
-[dimensions]
-os = [ "x86_64-darwin", "x86_64-linux" ]
-compiler = [ "ghc865", "ghc882", "ghc883", "ghc884", "ghc8102", "ghc8103", "ghc8104", "ghc8105", "ghc8106", "ghc8107" ]
-disable = [ ]

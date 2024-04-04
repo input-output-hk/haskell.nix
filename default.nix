@@ -1,21 +1,42 @@
-{...}@args:
+{ system ? builtins.currentSystem
+, sourcesOverride ? { }
+, checkMaterialization ? false
+, ...
+}:
 
 let
-  pins = (__fromJSON (__readFile ./flake.lock)).nodes;
-  nixpkgsPin = pins.nixpkgs-2211.locked;
-  flakeCompatPin = pins.flake-compat.locked;
-  nixpkgsSrc =
-    builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/${nixpkgsPin.rev}.tar.gz";
-      sha256 = nixpkgsPin.narHash;
-    };
-  pkgs = args.pkgs or (import nixpkgsSrc {});
+  lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+
+  # NOTE: This has to be whitelisted in restricted evaluation mode
   flake-compat =
-    pkgs.fetchzip {
-      url = "https://github.com/input-output-hk/flake-compat/archive/${flakeCompatPin.rev}.tar.gz";
-      sha256 = flakeCompatPin.narHash;
+    with lock.nodes.flake-compat.locked;
+    builtins.fetchTarball {
+      url = "https://github.com/input-output-hk/flake-compat/archive/${rev}.tar.gz";
+      sha256 = narHash;
     };
-  self = import flake-compat {
+
+  # With flake-compat you will end up fetching the flake inputs with
+  # builtins.fetchTarball. This is simply because you don't have access to any
+  # nixpkgs before fetching the inputs.
+  #
+  # This won't work in restricted evaluation mode.
+  #
+  # Under the mild assumtion that https://github.com/NixOS is whitelisted, we
+  # can manually fetch nixpkgs and let flake-compat fetch the rest of the
+  # inputs with the nixpkgs just fetched.
+  #
+  # Manually fetch nixpkgs
+  nixpkgs =
+    with lock.nodes.nixpkgs.locked;
+    builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+      sha256 = narHash;
+    };
+  #
+  # Instantiate the flake fetching the other inputs with the nixpkgs already
+  # fetched
+  self = (import flake-compat {
+    pkgs = import nixpkgs { };
     # We bypass flake-compat's rootSrc cleaning by evading its detection of this as a git
     # repo.
     # This is done for 3 reasons:
@@ -26,7 +47,49 @@ let
     #   in `test/default.nix`).  If `flake-compat` copies the whole git repo, any change to the
     #   repo causes a change of input for all tests.
     src = { outPath = ./.; };
-    inherit pkgs;
+    override-inputs = sourcesOverride;
+  }).defaultNix;
+
+  inherit (self.inputs.nixpkgs) lib;
+
+  # coming from internal.compat
+  overlays = [ self.overlay ]
+    ++ lib.optional checkMaterialization
+    (_final: prev: {
+      haskell-nix = prev.haskell-nix // {
+        checkMaterialization = true;
+      };
+    });
+  nixpkgsArgs = {
+    inherit overlays;
+    inherit (self) config;
   };
-in self.defaultNix // (self.defaultNix.internal.compat
-({ system = args.pkgs.system or builtins.currentSystem; } // args))
+  pkgs = import self.inputs.nixpkgs (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+in
+self // {
+  inherit nixpkgsArgs pkgs;
+  inherit (nixpkgsArgs) config overlays;
+  sources = self.inputs;
+  allOverlays = self.overlays;
+  pkgs-2105 = import self.inputs.nixpkgs-2105 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2111 = import self.inputs.nixpkgs-2111 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2205 = import self.inputs.nixpkgs-2205 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2211 = import self.inputs.nixpkgs-2211 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-2305 = import self.inputs.nixpkgs-2305 (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  pkgs-unstable = import self.inputs.nixpkgs-unstable (nixpkgsArgs // {
+    localSystem = { inherit system; };
+  });
+  hix = import ./hix/default.nix { inherit pkgs; };
+}

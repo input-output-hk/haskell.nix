@@ -1,67 +1,134 @@
 # Motivation
 
-Why do we need another Haskell infrastructure for Nix?
+`haskell.nix` is an infrastructure based on `nix` to build Haskell code.
+It provides a way to build `cabal-install` and `Stack` based projects using `nix`,
+reading the `cabal.project` or `stack.yaml` files used by those tools, hence reducing
+the amount of `nix` code that needs to be maintained and making it easy to continue
+using `cabal-install` and `Stack` as well.
 
-Doesn't nixpkgs
-provide a sufficiently good Haskell infrastructure already?
+In the rest of this page we motivate `haskell.nix` by comparing it to:
+- [Stack](https://docs.haskellstack.org/en/stable/) and [cabal-install](https://cabal.readthedocs.io/en/stable/) build tools
+- [nixpkgs](https://haskell4nix.readthedocs.io/) Haskell infrastructure for `nix`
 
-Problems with
-the nixpkgs haskell infrastructure are covered in the following sections:
 
-## Cross compilation
+## Comparison with `Stack` and `cabal-install`
 
-`nixpkgs` has quite good support for cross compilation, however the
-Haskell infrastructure suffers from the fact that it heavily relies on
-the `cabal2nix` tool.  `cabal2nix` (as well as tools that depend on it
-like `stack2nix`) flattens the `.cabal` file at conversion time to a
-given os/arch/flags configuration.  Thus to make cross compilation
-work with `cabal2nix` you will have to generate a separate `nix`
-expression for each configuration.  This becomes a major maintenance
-burden over time.  Therefore the tooling that translates cabal files
-into nix-expressions for use with Haskell.nix retains the full
-conditional tree from the cabal file and exposes it to `nix`.  In
-addition it will also expose the `build-type` value, which allows us
-to cache the `Setup.hs` for build-type simple and not have to rebuild
-it every time.
+Using `haskell.nix` instead of `Stack` or `cabal-install` gives us:
+- deterministic and hermetic builds
+- distributed caching
+- precise selection of the toolchain (GHC...) to use (which only `Stack` allows to some extent)
+- precise selection of the native libraries to use (using `nix`), if any
 
-## Package sets
+In addition, `haskell.nix` has better support for cross-compilation (e.g.
+compiling Haskell code on Linux that will be run on Windows). It does this by
+carefully distinguishing the GHC compiler for the build platform (used to
+compile `Cabal`'s `Setup.hs` files for Linux in our example) and the GHC
+compiler for the host platform (GHC cross-compiler targeting Windows in our
+example).
 
-We often rely on either package sets as provided by stackage or
-computed by cabal.  `nixpkgs` provides its own curated package set
-which might or might not work for the projects we work on.
-`stack2nix` tries to solve this issue, here we go one step further and
-provide the infrastructure to allow any form of package set.
+By design `haskell.nix` reuses configuration files from other tools and converts
+them into `nix` expressions:
+- `.cabal` files
+- `Stack`'s `stack.yaml`
+- `cabal-install`'s `cabal.project`...
 
-## Per component level control
+As such it doesn't require more work from you if your projects already build
+with `Stack` or `cabal-install`.
 
-The Haskell builder in `nixpkgs` provides control over executables and
-libraries, to build a specific executable only however is rather
-tricky to do.  This also leads to the cyclic dependencies issue.
+`haskell.nix` can also be used to provide developer environments including
+common Haskell tools: GHC, cabal-install, HLS (Haskell Language Server), hlint,
+etc. With these environments, you don't need to use `ghcup` nor to pass programs
+explicitly (e.g. as in `cabal -w ghc-9.2.2`). See [devx](https://github.com/input-output-hk/devx).
 
-## Cyclic dependencies
 
-The Haskell builder in `nixpkgs` exposes packages at the
-package level. If packages mutually depend on each other through tests
-and libraries, this leads to cyclic dependencies that nix can't resolve. By
-exposing the components to nix as separate derivations this will only
-occur if you have mutually dependent components.
+## Comparison with `nixpkgs`
 
-## Build times
+To properly compare with `nixpkgs` we need to get more into the technical details
+of both solutions.
 
-The Haskell builder in nixpkgs builds a package sequentially, first the
-library then the executables and finally the tests.  It then executes
-the tests before the package is considered done.  The upshot of this
-is that packages are only considered done if the test-suites
-passed.  The downside is that if you have to compile multiple packages
-the likelihood of them failing is low, you have unnecessarily
-serialized your build.  In a more aggressive setting libraries could
-start building as early as their dependent libraries are built.  Of
-course they will have to be invalidated later should the test-suites
-of their dependencies fail, but this way we can make use of parallel
-building.  In an ideal scenario this will reduce build times close to
-the optimum.
+### Cross compilation
 
-## More logic in nix
+`haskell.nix` has more maintainable support for cross-compilation (e.g.
+compiling Haskell code on a Linux machine to produce a program that runs on
+Windows).
+
+Both `nixpkgs` and `haskell.nix` rely on tools to convert `.cabal` files into
+`nix` expressions. `.cabal` files can contain conditionals (e.g. `os(windows)`) to
+conditionally build modules, pass flags to the compiler, etc.
+
+The difference is that:
+- `nixpkgs` generates a different `nix` expression for each os/arch/flags
+  configuration.
+- `haskell.nix` generates a single `nix` expression that exposes the conditionals
+  to `nix`.
+
+The drawback of the `nixpkgs` approach is that managing so many different `nix`
+expressions for a single `.cabal` file becomes a maintenance burden over time.
+
+### Performance: build-type
+
+When `haskell.nix` converts a `.cabal` file into a `nix` expression, it keeps
+track of the `build-type` value. All the `.cabal` files that use `build-type:
+simple` reuse the same `Setup` program that is built once and cached.
+
+### Dependencies: package sets
+
+Not all Haskell packages work well together. As it is cumbersome to pinpoint
+every package version explicitly, it is common to rely on curated sets of
+packages: packages that are known to work well together to some extent (e.g.
+Stackage snapshots).
+
+- `nixpkgs` provides its own curated set of packages which might or might not
+  work for the project we work on.
+
+- `haskell.nix` allows any form of package set.
+
+First [hackage.nix](https://github.com/input-output-hk/hackage.nix) exposes the
+`nix` expressions of every revision of every package from Hackage.
+
+As the Hackage index is an ever growing repository of Haskell packages,
+`haskell.nix` supports pinning the Hackage index to a specific revision
+and letting Cabal's solver resolve the dependencies in a reproducible way.
+
+An alternative is to start with a curated package set. For example,
+[stackage.nix](https://github.com/input-output-hk/stackage.nix) exposes the
+`nix` expressions of every Stackage Snapshot.
+
+In addition, it is possible to explicitly specify a package version and
+revision, or even to fetch its sources (e.g. using Git).
+
+### Granularity and performance: per component level control
+
+Haskell packages can contain several *components*: libraries, executables,
+testsuites...
+
+- `nixpkgs` mostly considers package as a whole.
+- `haskell.nix` uses component granularity for dependencies.
+
+The `nixpkgs` approach leads to some issues:
+
+- building only a specific component (e.g. an executable) in a package is tricky
+  to do
+
+- dependencies of the different components are mixed up: this can lead to cyclic
+  dependencies that `nix` can't solve. For example, package `unicode` exposes
+  `lib-unicode` and `test-unicode` executable, where `test-unicode` depends on
+  `lib-print` from package `print`, which itself depends on `lib-unicode`.
+  Component-wise, dependencies aren't cyclic, however, package-wise, they are.
+
+- build times: the Haskell builder in nixpkgs builds a package sequentially,
+  first the library then the executables and finally the tests. It then executes
+  the tests before the package is considered done. The upshot of this is that
+  packages are only considered done if the test-suites passed. The downside is
+  that if you have to compile multiple packages the likelihood of them failing
+  is low, you have unnecessarily serialized your build. In a more aggressive
+  setting libraries could start building as early as their dependent libraries
+  are built.  Of course they will have to be invalidated later should the
+  test-suites of their dependencies fail, but this way we can make use of
+  parallel building.  In an ideal scenario this will reduce build times close to
+  the optimum.
+
+### More logic in nix
 
 The `cabal2nix` tool has a resolver that resolves system dependencies
 and licenses to values in `nixpkgs`.  This logic ends up being a simple
@@ -71,10 +138,10 @@ do into nix, and as such if changes are necessary (or needed to be
 performed ad hoc) there is no need to rebuild the conversion tool and
 subsequently mark every derived expression as out of date.
 
-## Decoupling
+### Decoupling
 
-Finally, by treating Haskell.nix and nixpkgs as separate entities we
-can decouple the Haskell packages and infrastructure from the nixpkgs
+Finally, by treating `haskell.nix` and `nixpkgs` as separate entities we
+can decouple the Haskell packages and infrastructure from the `nixpkgs`
 package set, and rely on it to provide us with system packages while
 staying up to date with Haskell packages from hackage while retaining
 a stable (or known to be good) nixpkgs revision.

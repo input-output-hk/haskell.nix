@@ -1,0 +1,260 @@
+cabal-version:       3.8
+name:                nix-tools
+version:             0.1.0.0
+synopsis:            cabal/stack to nix translation tools
+description:         A set of tools to aid in trating stack and cabal projects into nix expressions.
+license:             BSD-3-Clause
+license-file:        LICENSE
+author:              Moritz Angermann
+maintainer:          moritz.angermann@gmail.com
+category:            Distribution
+build-type:          Simple
+
+common warnings
+  ghc-options:         -Wall
+
+library
+  import:              warnings
+  exposed-modules:     Cabal2Nix
+                     , Cabal2Nix.Util
+                     , Cabal2Nix.Plan
+                     , CabalName
+                     , CabalName.CLI
+                     , Distribution.Nixpkgs.Fetch
+                     , StackRepos
+                     , StackRepos.CLI
+                     , Stack2nix
+                     , Stack2nix.Cache
+                     , Stack2nix.CLI
+                     , Stack2nix.External.Resolve
+                     , Stack2nix.Project
+                     , Stack2nix.Stack
+  build-depends:       base          >= 4      && <4.18
+                     , Cabal         >= 3.10.3 && <3.11
+                     , Cabal-syntax  >= 3.10   && <3.11
+                     , aeson         >= 2.0    && <2.3
+                     , aeson-pretty
+                     , base16-bytestring
+                     , bytestring
+                     , cryptohash-sha256
+                     , containers
+                     , data-fix
+                     , deepseq
+                     , directory
+                     , extra
+                     , filepath
+-- Needs https://github.com/input-output-hk/iohk-nix/commit/6a8c29117eff36ce975e02e01efc8b25d93fcb90#diff-6fb0c6517b547a8baf082d5d2d604842
+-- to work with the data-dir issues when building components.
+-- This commit is included since 0.6.5.
+                     , hnix          >= 0.6.5 && <0.17
+                     , hpack
+                     , http-client
+                     , http-client-tls
+                     , http-types
+                     , network-uri
+                     , optparse-applicative
+                     , prettyprinter
+                     , process
+                     , text
+                     , transformers
+                     , unordered-containers
+                     , yaml
+
+  hs-source-dirs:      lib
+  default-language:    Haskell2010
+
+
+executable cabal-to-nix
+  import:              warnings
+  ghc-options:         -Wall
+  main-is:             Main.hs
+  build-depends:       base
+                     , transformers
+                     , bytestring
+                     , hpack
+                     , hnix
+                     , text
+                     , nix-tools
+                     , filepath
+                     , directory
+                     , prettyprinter
+  hs-source-dirs:      cabal2nix
+  default-language:    Haskell2010
+
+executable hashes-to-nix
+  ghc-options:         -Wall
+  main-is:             Main.hs
+  build-depends:       base
+                     , hnix
+                     , nix-tools
+                     , data-fix
+                     , aeson
+                     , microlens
+                     , microlens-aeson
+                     , text
+                     , filepath
+                     , directory
+  hs-source-dirs:      hashes2nix
+  default-language:    Haskell2010
+
+executable plan-to-nix
+  import:              warnings
+  ghc-options:         -Wall
+  main-is:             Main.hs
+  other-modules:       Plan2Nix
+                     , Plan2Nix.Cache
+                     , Plan2Nix.CLI
+                     , Plan2Nix.Project
+                     , Plan2Nix.Plan
+  build-depends:       base
+                     , nix-tools
+                     , hnix
+                     , Cabal
+                     , text
+                     , hpack
+                     , unordered-containers
+                     , vector
+                     , aeson
+                     , microlens
+                     , microlens-aeson
+                     , optparse-applicative
+                     , prettyprinter
+                     , filepath
+                     , directory
+                     , bytestring
+                     , transformers
+                     , extra
+  hs-source-dirs:      plan2nix
+  default-language:    Haskell2010
+
+executable hackage-to-nix
+  import:              warnings
+  main-is:             Main.hs
+  build-depends:       base
+                     , nix-tools
+                     , hackage-db
+                     , hnix
+                     , Cabal
+                     , aeson
+                     , aeson-pretty
+                     , containers
+                     , bytestring
+                     , text
+                     , cryptohash-sha256
+                     , base16-bytestring
+                     , base64-bytestring
+                     , filepath
+                     , directory
+                     , transformers
+  hs-source-dirs:      hackage2nix
+  default-language:    Haskell2010
+
+executable lts-to-nix
+  import:              warnings
+  main-is:             Main.hs
+  build-depends:       base
+                     , nix-tools
+                     , hnix
+                     , yaml
+                     , aeson
+                     , microlens
+                     , microlens-aeson
+                     , text
+                     , filepath
+                     , directory
+                     , unordered-containers
+                     , vector
+                     , Cabal
+  hs-source-dirs:      lts2nix
+  default-language:    Haskell2010
+
+executable stack-to-nix
+  import:              warnings
+  main-is:             Main.hs
+  build-depends:       base
+                     , nix-tools
+  hs-source-dirs:      stack2nix
+  default-language:    Haskell2010
+
+executable truncate-index
+  import:              warnings
+  main-is:             Main.hs
+  build-depends:       base
+                     , optparse-applicative
+                     , zlib
+                     , tar
+                     , bytestring
+                     , time
+  hs-source-dirs:      truncate-index
+  default-language:    Haskell2010
+
+executable stack-repos
+  import:              warnings
+  main-is:             Main.hs
+  build-depends:       base
+                     , nix-tools
+  hs-source-dirs:      stack-repos
+  default-language:    Haskell2010
+
+executable cabal-name
+  import:              warnings
+  main-is:             Main.hs
+  build-depends:       base
+                     , nix-tools
+  hs-source-dirs:      cabal-name
+  default-language:    Haskell2010
+
+executable make-install-plan
+  import:              warnings
+  main-is:             MakeInstallPlan.hs
+  other-modules:       Freeze
+  build-depends:       base
+                     , bytestring
+                     , Cabal         >= 3.10
+                     , cabal-install >= 3.10
+                     , cabal-install-solver >= 3.10
+                     , Cabal-syntax  >= 3.10
+                     , containers
+                     , filepath
+                     , hnix
+                     , nix-tools
+                     , prettyprinter
+                     , text
+  hs-source-dirs:      make-install-plan
+                     , plan2nix
+  default-language:    Haskell2010
+
+executable default-setup
+  import:              warnings
+  main-is:             Setup.hs
+  build-depends:       base
+                     , Cabal
+  hs-source-dirs:      setup
+  default-language:    Haskell2010
+
+executable default-setup-ghcjs
+  import:              warnings
+  main-is:             Setup.hs
+  build-depends:       base
+                     , Cabal
+                     , directory
+                     , filepath
+  hs-source-dirs:      setup-ghcjs
+  default-language:    Haskell2010
+
+etest-suite tests
+  import:              warnings
+  main-is:             Tests.hs
+  build-depends:       base
+                     , bytestring
+                     , directory
+                     , extra
+                     , filepath
+                     , process
+                     , tasty
+                     , tasty-golden
+  build-tool-depends:  nix-tools:make-install-plan
+                     , nix-tools:plan-to-nix
+                     , cabal-install:cabal
+  hs-source-dirs:      tests
+  default-language:    Haskell2010

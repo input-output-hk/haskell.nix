@@ -9,7 +9,6 @@ final: prev: { haskell-nix = prev.haskell-nix // { hix = {
     , ...}@commandArgs:
     let
       inherit (final) lib;
-      hixDefaults = { compiler-nix-name = lib.mkDefault "ghc8107"; };
       inherit ((lib.evalModules {
         modules = [
           (import ../modules/project-common.nix)
@@ -31,7 +30,7 @@ final: prev: { haskell-nix = prev.haskell-nix // { hix = {
                 else [{ inherit name; value = commandArgs.${name}; }]
         ) (builtins.attrNames commandArgs));
       importDefaults = src:
-        if src == null || !(__pathExists src)
+        if src == null || !(builtins.pathExists src)
           then {}
           else import src;
       projectDefaults = importDefaults (toString (src.origSrcSubDir or src) + "/nix/hix.nix");
@@ -41,7 +40,7 @@ final: prev: { haskell-nix = prev.haskell-nix // { hix = {
             commandArgs'
             ({config, ...}: {
               src =
-                if __pathExists (toString (src.origSrcSubDir or src) + "/.git")
+                if builtins.pathExists (toString (src.origSrcSubDir or src) + "/.git")
                   then config.evalPackages.haskell-nix.haskellLib.cleanGit {
                     inherit src name;
                   }

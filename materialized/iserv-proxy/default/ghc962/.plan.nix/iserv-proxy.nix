@@ -43,8 +43,7 @@
           (hsPkgs."network" or (errorHandler.buildDepError "network"))
           (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
           (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-          (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"))
-          ];
+          ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "9.8") (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"));
         buildable = true;
         modules = [ "IServ/Remote/Message" "IServ/Remote/Interpreter" ];
         hsSourceDirs = [ "src" ];
@@ -59,11 +58,12 @@
             (hsPkgs."network" or (errorHandler.buildDepError "network"))
             (hsPkgs."filepath" or (errorHandler.buildDepError "filepath"))
             (hsPkgs."ghci" or (errorHandler.buildDepError "ghci"))
-            (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"))
             (hsPkgs."iserv-proxy" or (errorHandler.buildDepError "iserv-proxy"))
-            ];
+            ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "9.8") (hsPkgs."libiserv" or (errorHandler.buildDepError "libiserv"));
           buildable = true;
-          mainPath = [ "Main.hs" ];
+          mainPath = [
+            "Main.hs"
+            ] ++ (pkgs.lib).optional (compiler.isGhc && (compiler.version).lt "9.8") "";
           };
         "iserv-proxy-interpreter" = {
           depends = [

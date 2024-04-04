@@ -2,7 +2,7 @@
 
 1. Use niv to update the sources.json:
    ```shell
-   nix flake lock --update-input nix-tools
+   nix flake update nix-tools
    ```
 
 2. If `nix-tools.cabal` or `plan-to-nix` have changed, check the

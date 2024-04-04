@@ -35,21 +35,23 @@ in {
   ];
 
   foldrAttrVals = f: z: attrs:
-    lib.foldr (g: acc: g acc) z (lib.mapAttrsToList (_name: f) attrs);
+    lib.foldr f z (builtins.attrValues attrs);
 
   foldComponents = tys: f: z: conf:
     let
-      comps = conf.components or {};
+      comps = conf.components or { };
       # ensure that comps.library exists and is not null.
-      libComp = acc: if (comps.library or null) != null then f comps.library acc else acc;
+      libComp = acc:
+        if comps ? library then f comps.library acc else acc;
       subComps = acc:
         lib.foldr
-          (ty: acc': foldrAttrVals f acc' (comps.${ty} or {}))
+          (ty: acc': foldrAttrVals f acc' (comps.${ty} or { }))
           acc
           tys;
-    in libComp (subComps z);
+    in
+    libComp (subComps z);
 
-  getAllComponents = foldComponents subComponentTypes (c: acc: [c] ++ acc) [];
+  getAllComponents = foldComponents subComponentTypes (c: acc: [ c ] ++ acc) [ ];
 
   componentPrefix = {
     sublibs = "lib";
@@ -74,7 +76,7 @@ in {
         config.package.buildable # Set manually in a module (allows whole packages to be disabled)
         && comp.buildable        # Set based on `buildable` in `.cabal` files
         && comp.planned;         # Set if the component was in the `plan.json`
-      buildableAttrs = lib.filterAttrs (n: isBuildable);
+      buildableAttrs = lib.filterAttrs (_n: isBuildable);
       libComp = if comps.library == null || !(isBuildable comps.library)
         then {}
         else lib.mapAttrs applyLibrary (removeAttrs comps (subComponentTypes ++ [ "setup" ]));
@@ -91,18 +93,17 @@ in {
        isExe componentId
     || isTest componentId
     || isBenchmark componentId;
-  mayHaveExecutable = componentId:
-       isExecutableType componentId;
+  mayHaveExecutable = isExecutableType;
 
   # Was there a reference to the package source in the `cabal.project` or `stack.yaml` file.
   # This is used to make the default `packages` list for `shellFor`.
   isLocalPackage = p: p.isLocal or false;
-  selectLocalPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p) ps;
+  selectLocalPackages = lib.filterAttrs (_n: p: p != null && isLocalPackage p);
 
   # if it's a project package it has a src attribute set with an origSubDir attribute.
   # project packages are a subset of localPackages
   isProjectPackage = p: p.isProject or false;
-  selectProjectPackages = ps: lib.filterAttrs (n: p: p != null && isLocalPackage p && isProjectPackage p) ps;
+  selectProjectPackages = lib.filterAttrs (_n: p: p != null && isLocalPackage p && isProjectPackage p);
 
   # Format a componentId as it should appear as a target on the
   # command line of the setup script.
@@ -133,7 +134,7 @@ in {
   ## flatLibDepends :: Component -> [Package]
   flatLibDepends = component:
     let
-      makePairs = map (p: rec { key=val.name; val=(p.components.library or p); });
+      makePairs = map (p: rec { key=val.name; val=p.components.library or p; });
       closure = builtins.genericClosure {
         startSet = makePairs component.depends;
         operator = {val,...}: makePairs val.config.depends;
@@ -155,14 +156,14 @@ in {
   #     to: tests.mypackage.unit-tests
   #
   collectComponents = group: packageSel: haskellPackages:
-    let packageToComponents = name: package:
+    let packageToComponents = _name: package:
           # look for the components with this group if there are any
           let components = package.components.${group} or {};
           # set recurseForDerivations unless it's a derivation itself (e.g. the "library" component) or an empty set
           in if lib.isDerivation components || components == {}
              then components
              else recurseIntoAttrs components;
-        packageFilter = name: package: (package.isHaskell or false) && packageSel package;
+        packageFilter = _name: package: (package.isHaskell or false) && packageSel package;
         filteredPkgs = lib.filterAttrs packageFilter haskellPackages;
         # at this point we can filter out packages that don't have any of the given kind of component
         packagesByComponent = lib.filterAttrs (_: components: components != {}) (lib.mapAttrs packageToComponents filteredPkgs);
@@ -181,7 +182,7 @@ in {
   #
   # This can be used to collect all the test runs in your project, so that can be run in CI.
   collectChecks = packageSel: haskellPackages:
-    let packageFilter = name: package: (package.isHaskell or false) && packageSel package;
+    let packageFilter = _name: package: (package.isHaskell or false) && packageSel package;
     in recurseIntoAttrs (lib.mapAttrs (_: p: p.checks) (lib.filterAttrs packageFilter haskellPackages));
 
   # Equivalent to collectChecks with (_: true) as selection function.
@@ -212,7 +213,7 @@ in {
   #
   # See docs/user-guide/clean-git.md for details of how to use this
   # with `cabalProject`.
-  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }@args:
+  cleanGits = { src, gitDirs, name ? null, caller ? "cleanGits" }:
     let
       # List of filters, one for each git directory.
       filters = builtins.map (subDir:
@@ -230,6 +231,7 @@ in {
   # Check a test component
   check = import ./check.nix {
     inherit stdenv lib haskellLib;
+    inherit (pkgs) buildPackages;
   };
 
   # Do coverage of a package
@@ -333,7 +335,7 @@ in {
             inherit (project) hsPkgs;
           })
         ];
-      }).config;
+      });
     in project;
 
   # Converts from a `compoent.depends` value to a library derivation.
@@ -425,47 +427,46 @@ in {
       }]) (packageNames coverageProject));
 
   # Flake package names that are flat and match the cabal component names.
-  mkFlakePackages = haskellPackages: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: package:
-        lib.optional (package.components ? library)
-            { name = "${packageName}:lib:${packageName}"; value = package.components.library; }
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:lib:${n}"; value = v; })
-          (package.components.sublibs)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = v; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = v; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:bench:${n}"; value = v; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+  mkFlakePackages =
+    foldrAttrVals
+      (package: acc:
+        foldComponents
+          subComponentTypes
+          (component: a: a // {
+            ${component.passthru.identifier.component-id} = component;
+          })
+          acc
+          package)
+      { };
 
   # Flake package names that are flat and match the cabal component names.
-  mkFlakeApps = haskellPackages: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: package:
-      lib.mapAttrsToList (n: v:
-            { name = "${packageName}:exe:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.exes)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:test:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.tests)
-        ++ lib.mapAttrsToList (n: v:
-            { name = "${packageName}:benchmark:${n}"; value = { type = "app"; program = v.exePath; }; })
-          (package.components.benchmarks)
-    ) haskellPackages));
+  mkFlakeApps =
+    foldrAttrVals
+      (package: acc:
+        foldComponents
+          [ "exes" "tests" "benchmarks" ]
+          (component: a: a // {
+            ${component.passthru.identifier.component-id} = {
+              type = "app";
+              program = component.exePath;
+            };
+          })
+          acc
+          package)
+      { };
 
   # Flatten the result of collectChecks or collectChecks' for use in flake `checks`
-  mkFlakeChecks = allChecks: builtins.listToAttrs (
-    lib.concatLists (lib.mapAttrsToList (packageName: checks:
-      # Avoid `recurseForDerivations` issues
-      lib.optionals (lib.isAttrs checks) (
-        lib.mapAttrsToList (n: v:
-          { name = "${packageName}:test:${n}"; value = v; })
-        (lib.filterAttrs (_: v: lib.isDerivation v) checks))
-    ) allChecks));
+  mkFlakeChecks = allChecks:
+    foldrAttrVals
+      (package: acc:
+        foldrAttrVals
+          (check: a: a // {
+            ${check.passthru.identifier.component-id} = check;
+          })
+          acc
+          package)
+      { }
+      (removeRecurseForDerivations allChecks);
 
   removeRecurseForDerivations = x:
     let clean = builtins.removeAttrs x ["recurseForDerivations"];
@@ -494,11 +495,11 @@ in {
     }
     # Build the plan-nix and check it if materialized
     // lib.optionalAttrs (checkedProject ? plan-nix) {
-      plan-nix = checkedProject.plan-nix;
+      inherit (checkedProject) plan-nix;
     }
     # Build the stack-nix and check it if materialized
     // lib.optionalAttrs (checkedProject ? stack-nix) {
-      stack-nix = checkedProject.stack-nix;
+      inherit (checkedProject) stack-nix;
     };
 
   mkFlake = project: {
@@ -603,4 +604,6 @@ in {
         __toJSON (__attrNames (lib.filterAttrs (_: v: __length v > 1) (
           builtins.groupBy (x: if __typeOf x == "set" then x.name or "noname" else "notset") x)))
       }";
+
+  types = import ./types.nix { inherit lib; };
 }

@@ -1,0 +1,204 @@
+diff --git a/rts/Linker.c b/rts/Linker.c
+index 10b0764..587f16a 100644
+--- a/rts/Linker.c
++++ b/rts/Linker.c
+@@ -268,6 +268,7 @@ int ghciInsertSymbolTable(
+    const SymbolName* key,
+    SymbolAddr* data,
+    HsBool weak,
++   HsBool hidden,
+    ObjectCode *owner)
+ {
+    RtsSymbolInfo *pinfo = lookupStrHashTable(table, key);
+@@ -277,6 +278,7 @@ int ghciInsertSymbolTable(
+       pinfo->value = data;
+       pinfo->owner = owner;
+       pinfo->weak = weak;
++      pinfo->hidden = hidden;
+       insertStrHashTable(table, key, pinfo);
+       return 1;
+    }
+@@ -340,11 +342,23 @@ int ghciInsertSymbolTable(
+            call this function again to trigger the duplicate error. */
+         return 1;
+     }
++    else if(pinfo->hidden && !hidden)
++    {
++        /* The existing symbol is hidden, let's replace it */
++        pinfo->value = data;
++        pinfo->owner = owner;
++        pinfo->weak = weak;
++
++        pinfo->hidden = hidden;
++        return 1;
++    }
+
+    pathchar* archiveName = NULL;
+    debugBelch(
+       "GHC runtime linker: fatal error: I found a duplicate definition for symbol\n"
+       "   %s\n"
++      "   new symbol is hidden: %d\n"
++      "   old symbol is hidden: %d\n"
+       "whilst processing object file\n"
+       "   %" PATH_FMT "\n"
+       "The symbol was previously defined in\n"
+@@ -355,6 +369,8 @@ int ghciInsertSymbolTable(
+       "   * An incorrect `package.conf' entry, causing some object to be\n"
+       "     loaded twice.\n",
+       (char*)key,
++      hidden ? 1 : 0,
++      pinfo->hidden ? 1 : 0,
+       obj_name,
+       pinfo->owner == NULL ? WSTR("(GHCi built-in symbols)") :
+       pinfo->owner->archiveMemberName ? archiveName = mkPath(pinfo->owner->archiveMemberName)
+@@ -451,7 +467,7 @@ initLinker_ (int retain_cafs)
+     for (sym = rtsSyms; sym->lbl != NULL; sym++) {
+         if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"),
+                                     symhash, sym->lbl, sym->addr,
+-                                    sym->weak, NULL)) {
++                                    sym->weak, HS_BOOL_FALSE, NULL)) {
+             barf("ghciInsertSymbolTable failed");
+         }
+         IF_DEBUG(linker, debugBelch("initLinker: inserting rts symbol %s, %p\n", sym->lbl, sym->addr));
+@@ -463,7 +479,7 @@ initLinker_ (int retain_cafs)
+        use an arbitrary (hopefully unique) address here.
+     */
+     if (! ghciInsertSymbolTable(WSTR("(GHCi special symbols)"),
+-                                symhash, "__dso_handle", (void *)0x12345687, HS_BOOL_FALSE, NULL)) {
++                                symhash, "__dso_handle", (void *)0x12345687, HS_BOOL_FALSE, HS_BOOL_FALSE, NULL)) {
+         barf("ghciInsertSymbolTable failed");
+     }
+
+@@ -471,7 +487,7 @@ initLinker_ (int retain_cafs)
+     if (! ghciInsertSymbolTable(WSTR("(GHCi built-in symbols)"), symhash,
+                                 MAYBE_LEADING_UNDERSCORE_STR("newCAF"),
+                                 retain_cafs ? newRetainedCAF : newGCdCAF,
+-                                HS_BOOL_FALSE, NULL)) {
++                                HS_BOOL_FALSE, HS_BOOL_FALSE, NULL)) {
+         barf("ghciInsertSymbolTable failed");
+     }
+
+@@ -845,7 +861,7 @@ HsBool removeLibrarySearchPath(HsPtr dll_path_index)
+ HsInt insertSymbol(pathchar* obj_name, SymbolName* key, SymbolAddr* data)
+ {
+     return ghciInsertSymbolTable(obj_name, symhash, key, data, HS_BOOL_FALSE,
+-                                 NULL);
++                                 HS_BOOL_FALSE, NULL);
+ }
+
+ /* -----------------------------------------------------------------------------
+@@ -1699,7 +1715,8 @@ int ocTryLoad (ObjectCode* oc) {
+         if (   symbol.name
+             && !ghciInsertSymbolTable(oc->fileName, symhash, symbol.name,
+                                       symbol.addr,
+-                                      isSymbolWeak(oc, symbol.name), oc)) {
++                                      isSymbolWeak(oc, symbol.name),
++                                      HS_BOOL_FALSE, oc)) {
+             return 0;
+         }
+     }
+diff --git a/rts/LinkerInternals.h b/rts/LinkerInternals.h
+index f326a84..1bc082c 100644
+--- a/rts/LinkerInternals.h
++++ b/rts/LinkerInternals.h
+@@ -306,6 +306,7 @@ typedef struct _RtsSymbolInfo {
+     SymbolAddr* value;
+     ObjectCode *owner;
+     HsBool weak;
++    HsBool hidden;
+ } RtsSymbolInfo;
+
+ void exitLinker( void );
+@@ -334,6 +335,7 @@ int ghciInsertSymbolTable(
+     const SymbolName* key,
+     SymbolAddr* data,
+     HsBool weak,
++    HsBool hidden,
+     ObjectCode *owner);
+
+ /* Lock-free version of lookupSymbol. When 'dependent' is not NULL, adds it as a
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index fdfe87a..4a53687 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -976,7 +976,9 @@ ocGetNames_ELF ( ObjectCode* oc )
+                            setWeakSymbol(oc, nm);
+                        }
+                        if (!ghciInsertSymbolTable(oc->fileName, symhash,
+-                                                  nm, symbol->addr, isWeak, oc)
++                                                  nm, symbol->addr, isWeak,
++                                                  ELF_ST_VISIBILITY(symbol->elf_sym->st_other) == STV_HIDDEN,
++                                                  oc)
+                            ) {
+                            goto fail;
+                        }
+diff --git a/rts/linker/ElfTypes.h b/rts/linker/ElfTypes.h
+index e5333d7..0a8e44a 100644
+--- a/rts/linker/ElfTypes.h
++++ b/rts/linker/ElfTypes.h
+@@ -32,6 +32,9 @@
+ #define Elf_Sym     Elf64_Sym
+ #define Elf_Rel     Elf64_Rel
+ #define Elf_Rela    Elf64_Rela
++#if !defined(ELF_ST_VISIBILITY)
++#define ELF_ST_VISIBILITY ELF64_ST_VISIBILITY
++#endif
+ #if !defined(ELF_ST_TYPE)
+ #define ELF_ST_TYPE ELF64_ST_TYPE
+ #endif
+@@ -56,6 +59,9 @@
+ #define Elf_Sym     Elf32_Sym
+ #define Elf_Rel     Elf32_Rel
+ #define Elf_Rela    Elf32_Rela
++#if !defined(ELF_ST_VISIBILITY)
++#define ELF_ST_VISIBILITY ELF32_ST_VISIBILITY
++#endif /* ELF_ST_VISIBILITY */
+ #if !defined(ELF_ST_TYPE)
+ #define ELF_ST_TYPE ELF32_ST_TYPE
+ #endif /* ELF_ST_TYPE */
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index 6d0d417..841faa8 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -292,7 +292,7 @@ const void* __rts_iob_func = (void*)&__acrt_iob_func;
+ void initLinker_PEi386()
+ {
+     if (!ghciInsertSymbolTable(WSTR("(GHCi/Ld special symbols)"),
+-                               symhash, "__image_base__", __image_base, HS_BOOL_TRUE, NULL)) {
++                               symhash, "__image_base__", __image_base, HS_BOOL_TRUE, HS_BOOL_FALSE, NULL)) {
+         barf("ghciInsertSymbolTable failed");
+     }
+
+@@ -1541,7 +1541,7 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+           sname = strdup (sname);
+           addr  = strdup (addr);
+           if (!ghciInsertSymbolTable(oc->fileName, symhash, sname,
+-                                     addr, false, oc)) {
++                                     addr, false, HS_BOOL_FALSE, oc)) {
+              releaseOcInfo (oc);
+              stgFree (oc->image);
+              oc->image = NULL;
+@@ -1759,7 +1759,9 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+           stgFree(tmp);
+           sname = strdup (sname);
+           if (!ghciInsertSymbolTable(oc->fileName, symhash, sname,
+-                                     addr, false, oc))
++                                     addr, false,
++                                     section->info->props & IMAGE_SCN_LNK_COMDAT,
++                                     oc))
+                return false;
+
+           break;
+@@ -1776,9 +1778,10 @@ ocGetNames_PEi386 ( ObjectCode* oc )
+          if (isWeak) {
+              setWeakSymbol(oc, sname);
+          }
+-
+          if (! ghciInsertSymbolTable(oc->fileName, symhash, sname, addr,
+-                                     isWeak, oc))
++                                     isWeak,
++                                     section->info->props & IMAGE_SCN_LNK_COMDAT,
++                                     oc))
+              return false;
+       } else {
+           /* We're skipping the symbol, but if we ever load this

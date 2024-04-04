@@ -17,7 +17,7 @@
 with pkgs;
 
 let
-  inherit (import ../ci-lib.nix { inherit pkgs; }) filterAttrsOnlyRecursive;
+  inherit (import ../ci-lib.nix { inherit lib; }) filterAttrsOnlyRecursive;
   isDisabled = d: d.meta.disabled or false;
 
   # Set recurseForDerivations for both children and grand-children values in
@@ -54,7 +54,7 @@ let
         else val
       );
 
-  util = import ./util.nix { cabal-install = pkgs.buildPackages.haskell-nix.cabal-install.${compiler-nix-name}; };
+  util = import ./util.nix { cabal-install = pkgs.buildPackages.haskell-nix.nix-tools-unchecked.exes.cabal; };
 
   # Map the values in an association list over the withIfdInputs function.
   #
@@ -175,6 +175,7 @@ let
     with-packages = callTest ./with-packages { inherit util; };
     builder-haddock = callTest ./builder-haddock {};
     stack-simple = callTest ./stack-simple {};
+    stack-compiler = callTest ./stack-compiler {};
     stack-local-resolver = callTest ./stack-local-resolver {};
     stack-local-resolver-subdir = callTest ./stack-local-resolver-subdir {};
     stack-remote-resolver = callTest ./stack-remote-resolver {};
@@ -216,6 +217,9 @@ let
     ca-derivations = callTest ./ca-derivations { inherit CADerivationsEnabled; };
     ca-derivations-include = callTest ./ca-derivations-include { inherit CADerivationsEnabled; };
     test-only = callTest ./test-only { inherit util; };
+    annotations = callTest ./annotations { inherit util; };
+    cabal-project-nix-path = callTest ./cabal-project-nix-path {};
+    plugin = callTest ./plugin {};
     unit = unitTests;
   };
 

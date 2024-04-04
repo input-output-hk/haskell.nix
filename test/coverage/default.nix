@@ -1,4 +1,4 @@
-{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabal-install, cabalProject', stackProject', recurseIntoAttrs, runCommand, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -6,6 +6,7 @@ let
   projectArgs = {
     inherit evalPackages;
     src = testSrc "coverage";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [{
       # Package has no exposed modules which causes
       #   haddock: No input file(s)
@@ -85,7 +86,7 @@ in recurseIntoAttrs ({
 
       ${concatStringsSep "\n" (map (project: ''
         pkga_basedir="${project.hsPkgs.pkga.coverageReport}/share/hpc/vanilla"
-        findFileExistsNonEmpty "$pkga_basedir/mix/pkga-0.1.0.0/" "PkgA.mix"
+        findFileExistsNonEmpty $pkga_basedir/mix/pkga-0.1.0.0* "PkgA.mix"
         dirExists "$pkga_basedir/tix/pkga-0.1.0.0"
         dirExists "$pkga_basedir/html/pkga-0.1.0.0"
   
@@ -94,8 +95,8 @@ in recurseIntoAttrs ({
         libTix="$pkgb_basedir/tix/pkgb-0.1.0.0/pkgb-0.1.0.0.tix"
         fileExistsNonEmpty "$testTix"
         fileExistsNonEmpty "$libTix"
-        findFileExistsNonEmpty "$pkgb_basedir/mix/pkgb-0.1.0.0/" "ConduitExample.mix"
-        findFileExistsNonEmpty "$pkgb_basedir/mix/pkgb-0.1.0.0/" "PkgB.mix"
+        findFileExistsNonEmpty $pkgb_basedir/mix/pkgb-0.1.0.0* "ConduitExample.mix"
+        findFileExistsNonEmpty $pkgb_basedir/mix/pkgb-0.1.0.0* "PkgB.mix"
         fileExistsNonEmpty "$pkgb_basedir/html/pkgb-0.1.0.0/hpc_index.html"
   
         filesizeTestsTix=$(command stat --format '%s' "$testTix")

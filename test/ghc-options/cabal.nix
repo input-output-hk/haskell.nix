@@ -1,4 +1,4 @@
-{ stdenv, lib, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabalProject', recurseIntoAttrs, haskellLib, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -33,10 +33,8 @@ in recurseIntoAttrs {
       touch $out
     '';
 
-    meta = rec {
+    meta = {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
-      disabled = broken;
     };
 
     passthru = {

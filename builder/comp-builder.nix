@@ -1,4 +1,4 @@
-{ pkgs, stdenv, buildPackages, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
+{ pkgs, stdenv, buildPackages, pkgsBuildBuild, ghc, lib, gobject-introspection ? null, haskellLib, makeConfigFiles, haddockBuilder, ghcForComponent, hsPkgs, compiler, runCommand, libffi, gmp, windows, zlib, ncurses, nodejs, nonReinstallablePkgs }@defaults:
 lib.makeOverridable (
 let self =
 { componentId
@@ -39,10 +39,12 @@ let self =
 
 , dontPatchELF ? component.dontPatchELF
 , dontStrip ? component.dontStrip
+, dontUpdateAutotoolsGnuConfigScripts ? component.dontUpdateAutotoolsGnuConfigScripts
 , hardeningDisable ? component.hardeningDisable
 
 , enableStatic ? component.enableStatic
 , enableShared ? ghc.enableShared && component.enableShared && !haskellLib.isCrossHost
+, enableExecutableDynamic ? component.enableExecutableDynamic && !stdenv.hostPlatform.isMusl
 , enableDeadCodeElimination ? component.enableDeadCodeElimination
 , writeHieFiles ? component.writeHieFiles
 
@@ -78,7 +80,7 @@ let self =
 , enableSeparateDataOutput ? component.enableSeparateDataOutput
 
 # Prelinked ghci libraries; will make iserv faster; especially for static builds.
-, enableLibraryForGhci ? true
+, enableLibraryForGhci ? component.enableLibraryForGhci
 
 # Debug
 , enableDebugRTS ? false
@@ -108,8 +110,8 @@ let
 
   ghc = (if enableDWARF then (x: x.dwarf) else (x: x)) (
         (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) defaults.ghc);
-  setup = (if enableDWARF then (x: x.dwarf) else (x: x)) (
-        (if smallAddressSpace then (x: x.smallAddressSpace) else (x: x)) drvArgs.setup);
+  setup = (if enableDWARF then (x: x.dwarf or x) else (x: x)) (
+          (if smallAddressSpace then (x: x.smallAddressSpace or x) else (x: x)) drvArgs.setup);
 
   # TODO fix cabal wildcard support so hpack wildcards can be mapped to cabal wildcards
   canCleanSource = !(cabal-generator == "hpack" && !(package.cleanHpack or false));
@@ -171,7 +173,7 @@ let
     ) ++ [ "$(cat $configFiles/configure-flags)"
     ] ++ commonConfigureFlags);
 
-  commonConfigureFlags = ([
+  commonConfigureFlags = [
       # GHC
       "--with-ghc=${ghc.targetPrefix}ghc"
       "--with-ghc-pkg=${ghc.targetPrefix}ghc-pkg"
@@ -187,28 +189,36 @@ let
         "--with-ar=${stdenv.cc.bintools.targetPrefix}ar"
         "--with-strip=${stdenv.cc.bintools.targetPrefix}strip"
       ]
-    ) ++ [ # other flags
+    ) # Starting with ghc 9.10 the `ld command` will no longer be in the GHC `settings` file.
+      # We need to start passing it explicitly to setup like we do for `ar` and `strip`.
+      ++ lib.optional (!stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" >= 0)
+        "--with-ld=${stdenv.cc.bintools.targetPrefix}ld"
+      ++ lib.optionals (stdenv.hostPlatform.isGhcjs) [
+        "--with-gcc=${pkgsBuildBuild.emscripten}/bin/emcc"
+        "--with-ld=${pkgsBuildBuild.emscripten}/bin/emcc"
+      ]
+      ++ [ # other flags
       (disableFeature dontStrip "executable-stripping")
       (disableFeature dontStrip "library-stripping")
       (enableFeature enableLibraryProfiling "library-profiling")
       (enableFeature enableProfiling "profiling")
       (enableFeature enableStatic "static")
       (enableFeature enableShared "shared")
+      (enableFeature enableExecutableDynamic "executable-dynamic")
       (enableFeature doCoverage "coverage")
-      (enableFeature enableLibraryForGhci "library-for-ghci")
+      (enableFeature (enableLibraryForGhci && !stdenv.hostPlatform.isGhcjs) "library-for-ghci")
     ] ++ lib.optionals (stdenv.hostPlatform.isMusl && (haskellLib.isExecutableType componentId)) [
       # These flags will make sure the resulting executable is statically linked.
       # If it uses other libraries it may be necessary for to add more
       # `--ghc-option=-optl=-L` options to the `configureFlags` of the
       # component.
-      "--disable-executable-dynamic"
       "--ghc-option=-optl=-pthread"
       "--ghc-option=-optl=-static"
     ] ++ lib.optional enableSeparateDataOutput "--datadir=$data/share/${ghc.name}"
       ++ lib.optional (enableLibraryProfiling || enableProfiling) "--profiling-detail=${profilingDetail}"
       ++ lib.optional stdenv.hostPlatform.isLinux (enableFeature enableDeadCodeElimination "split-sections")
       ++ lib.optionals haskellLib.isCrossHost (
-        map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals (stdenv.hostPlatform.isWindows) ["--via-asm"])
+        map (arg: "--hsc2hs-option=" + arg) (["--cross-compile"] ++ lib.optionals stdenv.hostPlatform.isWindows ["--via-asm"])
         ++ lib.optional (package.buildType == "Configure") "--configure-option=--host=${
            # Older ghcjs patched config.sub to support "js-unknown-ghcjs" (not "javascript-unknown-ghcjs")
            if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9" < 0
@@ -222,7 +232,7 @@ let
       ++ lib.optionals useLLVM [
         "--ghc-option=-fPIC" "--gcc-option=-fPIC"
         ]
-      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs) "js"}-options="${o}"'') ghcOptions
+      ++ map (o: ''--ghc${lib.optionalString (stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9" < 0) "js"}-options="${o}"'') ghcOptions
       ++ lib.optional (
         # GHC 9.2 cross compiler built with older versions of GHC seem to have problems
         # with unique conters.  Perhaps because the name changed for the counters.
@@ -230,15 +240,14 @@ let
         haskellLib.isCrossHost
           && builtins.compareVersions defaults.ghc.version "9.2.1" >= 0
           && builtins.compareVersions defaults.ghc.version "9.3" < 0)
-        "--ghc-options=-j1"
-    );
+        "--ghc-options=-j1";
 
   # the build-tools version might be depending on the version of the package, similarly to patches
   executableToolDepends =
     (lib.concatMap (c: if c.isHaskell or false
       then builtins.attrValues (c.components.exes or {})
       else [c])
-      (builtins.filter (x: !(isNull x)
+      (builtins.filter (x: x != null
         # We always exclude hsc2hs from build-tools because it is unecessary as it is provided by ghc
         # and hsc2hs from ghc is first in PATH so the one from build-tools is never used.
         && x.identifier.name or "" != "hsc2hs")
@@ -261,8 +270,9 @@ let
                      if builtins.isFunction shellHook then shellHook { inherit package shellWrappers; }
                      else abort "shellHook should be a string or a function";
 
-  exeExt = if stdenv.hostPlatform.isGhcjs then ".jsexe/all.js" else
-    stdenv.hostPlatform.extensions.executable;
+  exeExt = if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" < 0
+    then ".jsexe/all.js"
+    else stdenv.hostPlatform.extensions.executable;
   exeName = componentId.cname + exeExt;
   testExecutable = "dist/build/${componentId.cname}/${exeName}";
 
@@ -275,7 +285,7 @@ let
 
       enableParallelBuilding = true;
 
-      SETUP_HS = setup + /bin/Setup;
+      SETUP_HS = setup + "/bin/${setup.exeName}";
 
       inherit cabalFile;
       passAsFile = [ "cabalFile" ];
@@ -295,10 +305,8 @@ let
         (if cabalFile != null
           then ''cp -v $cabalFilePath ${package.identifier.name}.cabal''
           else
-            # When building hpack package we use the internal nix-tools
-            # (compiled with a fixed GHC version)
             lib.optionalString (cabal-generator == "hpack") ''
-              ${buildPackages.haskell-nix.internal-nix-tools}/bin/hpack
+              ${buildPackages.haskell-nix.nix-tools-unchecked}/bin/hpack
             ''
         ) + lib.optionalString (prePatch != null) "\n${prePatch}";
     }
@@ -320,6 +328,9 @@ let
     // lib.optionalAttrs stdenv.hostPlatform.isMusl {
       # This fixes musl compilation of TH code that depends on C++ (for instance TH code that uses the double-conversion package)
       LD_LIBRARY_PATH="${pkgs.buildPackages.gcc-unwrapped.lib}/x86_64-unknown-linux-musl/lib";
+    }
+    // lib.optionalAttrs dontUpdateAutotoolsGnuConfigScripts {
+      inherit dontUpdateAutotoolsGnuConfigScripts;
     };
 
   haddock = haddockBuilder {
@@ -347,7 +358,11 @@ let
     inherit dontPatchELF dontStrip;
 
     passthru = {
-      inherit (package) identifier;
+      identifier = package.identifier // {
+        component-id = "${package.identifier.name}:${componentId.ctype}:${componentId.cname}";
+        component-name = componentId.cname;
+        component-type = componentId.ctype;
+      };
       config = component;
       srcSubDir = cleanSrc.subDir;
       srcSubDirPath = cleanSrc.root + cleanSrc.subDir;
@@ -361,7 +376,7 @@ let
       });
       profiled = self (drvArgs // { enableLibraryProfiling = true; });
       dwarf = self (drvArgs // { enableDWARF = true; });
-    } // lib.optionalAttrs (haskellLib.isLibrary componentId) ({
+    } // lib.optionalAttrs (haskellLib.isLibrary componentId || haskellLib.isTest componentId) ({
         inherit haddock;
         inherit (haddock) haddockDir; # This is null if `doHaddock = false`
       } // lib.optionalAttrs (haddock ? doc) {
@@ -393,7 +408,7 @@ let
       # These only need to be propagated for library components (otherwise they
       # will be in `buildInputs`)
       ++ lib.optionals (haskellLib.isLibrary componentId) configFiles.libDeps # libDeps is already deduplicated
-      ++ lib.optionals (stdenv.hostPlatform.isWindows)
+      ++ lib.optionals stdenv.hostPlatform.isWindows
         (haskellLib.uniqueWithName (lib.flatten component.libs)));
 
     buildInputs = haskellLib.checkUnique "${ghc.targetPrefix}${fullName} buildInputs" (
@@ -414,8 +429,12 @@ let
 
     prePatch =
       # emcc is very slow if it cannot cache stuff in $HOME
-      (lib.optionalString (stdenv.hostPlatform.isGhcjs) ''
+      # Newer nixpkgs default the cache dir to nix store path.
+      # This seems to cause problems as it is not writeable.
+      # Setting EM_CACHE explicitly avoids this problem.
+      (lib.optionalString stdenv.hostPlatform.isGhcjs ''
       export HOME=$(mktemp -d)
+      export EM_CACHE=$(mktemp -d)
       '') +
       (lib.optionalString (!canCleanSource) ''
       echo "Cleaning component source not supported, leaving it un-cleaned"
@@ -526,7 +545,7 @@ let
               # we assume that if the SETUP_HS command fails and the following line was found in the error
               # log, that it was the only error. Hence if we do _not_ find the line, grep will fail and this derivation
               # will be marked as failure.
-              cat $SETUP_ERR | grep 'Error: Setup: No executables and no library found\. Nothing to do\.'
+              cat $SETUP_ERR | grep 'No executables and no library found\. Nothing to do\.'
             fi
             ''}
       ${lib.optionalString (haskellLib.isLibrary componentId) ''
@@ -578,13 +597,13 @@ let
               '')
         }
       ''}
-      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId) ''
+      ${(lib.optionalString (haskellLib.isTest componentId || haskellLib.isBenchmark componentId || (haskellLib.isExe componentId && stdenv.hostPlatform.isGhcjs)) ''
         mkdir -p $out/bin
         if [ -f ${testExecutable} ]; then
           mkdir -p $(dirname $out/bin/${exeName})
           ${lib.optionalString stdenv.buildPlatform.isLinux "sync"}
-          ${if stdenv.hostPlatform.isGhcjs then ''
-            cat <(echo \#!${lib.getBin buildPackages.nodejs-18_x}/bin/node) ${testExecutable} >| $out/bin/${exeName}
+          ${if stdenv.hostPlatform.isGhcjs && builtins.compareVersions defaults.ghc.version "9.8" < 0 then ''
+            cat <(echo \#!/usr/bin/env node) ${testExecutable} >| $out/bin/${exeName}
             chmod +x $out/bin/${exeName}
           '' else ''
              cp -r ${testExecutable} $(dirname $out/bin/${exeName})
@@ -600,7 +619,10 @@ let
         for p in ${lib.concatStringsSep " " ([ libffi gmp ] ++
               # Also include C++ and mcfgthreads DLLs for GHC 9.4.1 and newer
               lib.optionals (builtins.compareVersions defaults.ghc.version "9.4.1" >= 0)
-                [ buildPackages.gcc-unwrapped windows.mcfgthreads ])}; do
+                [ buildPackages.gcc-unwrapped
+                  # Find the versions of mcfgthreads used by stdenv.cc
+                  (pkgs.threadsCrossFor or (_x: { package = pkgs.windows.mcfgthreads; }) pkgs.stdenv.cc.version).package
+                ])}; do
           find "$p" -iname '*.dll' -exec ln -s {} $out/bin \;
         done
         ''
@@ -613,7 +635,11 @@ let
       ''))
       + (lib.optionalString doCoverage ''
         mkdir -p $out/share
-        cp -r dist/hpc $out/share
+        if [ -d dist/build/extra-compilation-artifacts ]; then
+          cp -r dist/build/extra-compilation-artifacts/hpc $out/share
+        else
+          cp -r dist/hpc $out/share
+        fi
         cp dist/setup-config $out/
       '')
       }

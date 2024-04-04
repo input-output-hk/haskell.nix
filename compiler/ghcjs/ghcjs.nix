@@ -64,6 +64,7 @@ let
       dontInstall = true;
       buildPhase = ''
         export HOME=$TMP
+        export EM_CACHE=$(mktemp -d)
         mkdir $HOME/.cabal
         touch $HOME/.cabal/config
         cd lib/boot

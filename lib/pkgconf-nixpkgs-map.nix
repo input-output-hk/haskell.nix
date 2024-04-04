@@ -2,10 +2,12 @@
 # See ../docs/tutorials/pkg-map.md
 pkgs:
   let
+    inherit (pkgs) lib;
+
     # Only include derivations that exist in the current pkgs.
     # This allows us to use this mapping to be used in allPkgConfigWrapper.
     # See ./overlas
-    lookupAttrsIn = x: __mapAttrs (pname: names:
+    lookupAttrsIn = x: __mapAttrs (_pname: names:
         # The first entry is should be used for the version by allPkgConfigWrapper
         # so we need it to be present.
         if __length names != 0 && x ? ${__head names}
@@ -18,7 +20,7 @@ pkgs:
 
     # The entries that were duplicated in the generated list blow
     # have been removed.  Some that remain are old and some are
-    
+
     "adns"                               = [ "adns" ];
     "alut"                               = [ "freealut" ];
     "asound"                             = [ "alsaLib" ];
@@ -91,7 +93,7 @@ pkgs:
     "gtk-mac-integration"                = [ "gtk-mac-integration" ];
     "gtk-mac-integration-gtk2"           = [ "gtk-mac-integration-gtk2" ];
     "gtk-mac-integration-gtk3"           = [ "gtk-mac-integration-gtk3" ];
-    
+
     # List generated with scripts/find-pkg-config-all.nix
     # Deduplicated by hand (duplicates were commented out).
 #    "cbc" = [ "CoinMP" ];
@@ -569,7 +571,7 @@ pkgs:
     "alure" = [ "alure" ];
     "alure-static" = [ "alure" ];
     "aml" = [ "aml" ];
-    "amtk-5" = [ "amtk" ];
+    "amtk-5" = [ "libgedit-amtk" ];
     "anthy" = [ "anthy" ];
     "apk" = [ "apk-tools" ];
     "libapngasm" = [ "apngasm" ];
@@ -645,7 +647,7 @@ pkgs:
 #    "avahi-gobject" = [ "avahi-compat" ];
 #    "avahi-libevent" = [ "avahi-compat" ];
     "avfs" = [ "avfs" ];
-    "avogadro" = [ "avogadro" ];
+#   "avogadro" = [ "avogadro" ];
     "avro-c" = [ "avro-c" ];
     "aws-cpp-sdk-accessanalyzer" = [ "aws-sdk-cpp" ];
     "aws-cpp-sdk-access-management" = [ "aws-sdk-cpp" ];
@@ -1405,7 +1407,7 @@ pkgs:
     "libbeidpkcs11" = [ "eid-mw" ];
     "eigen3" = [ "eigen" ];
     "eigen2" = [ "eigen2" ];
-    "plannercore" = [ "elementary-planner" ];
+#    "plannercore" = [ "elementary-planner" ];
 #    "libbitcoinconsensus" = [ "elements" ];
 #    "libbitcoinconsensus" = [ "elementsd" ];
     "libdw" = [ "elfutils" ];
@@ -2860,7 +2862,7 @@ pkgs:
 #    "libjpeg" = [ "libjpeg_original" ];
 #    "libjpeg" = [ "libjpeg_turbo" ];
 #    "libturbojpeg" = [ "libjpeg_turbo" ];
-    "libjreen" = [ "libjreen" ];
+#   "libjreen" = [ "libjreen" ];
     "libjsonrpccpp-client" = [ "libjson-rpc-cpp" ];
     "libjsonrpccpp-common" = [ "libjson-rpc-cpp" ];
     "libjsonrpccpp-server" = [ "libjson-rpc-cpp" ];
@@ -2927,7 +2929,7 @@ pkgs:
     "modsecurity" = [ "libmodsecurity" ];
     "libmodule" = [ "libmodule" ];
     "modulemd-2.0" = [ "libmodulemd" ];
-    "libmongo-client" = [ "libmongo-client" ];
+#    "libmongo-client" = [ "libmongo-client" ];
     "libmowgli-2" = [ "libmowgli" ];
     "libmp3splt" = [ "libmp3splt" ];
     "mpack" = [ "libmpack" ];
@@ -3136,7 +3138,6 @@ pkgs:
     "libstilview" = [ "libsidplayfp" ];
     "libsieve" = [ "libsieve" ];
     "sigc++-2.0" = [ "libsigcxx" ];
-    "sigc++-1.2" = [ "libsigcxx12" ];
     "sigc++-3.0" = [ "libsigcxx30" ];
     "libsignal-protocol-c" = [ "libsignal-protocol-c" ];
     "libsignon-glib" = [ "libsignon-glib" ];
@@ -3679,7 +3680,7 @@ pkgs:
 #    "mysqlclient" = [ "mysql57" ];
 #    "mysqlclient" = [ "mysql80" ];
     "mythes" = [ "mythes" ];
-    "libnamecoinconsensus" = [ "namecoin" ];
+#   "libnamecoinconsensus" = [ "namecoin" ];
 #    "libnamecoinconsensus" = [ "namecoind" ];
     "nanoflann" = [ "nanoflann" ];
     "nanomsg" = [ "nanomsg" ];
@@ -3805,9 +3806,9 @@ pkgs:
     "ntk_gl" = [ "ntk" ];
     "ntk_images" = [ "ntk" ];
     "ntk" = [ "ntk" ];
-    "libntrack-glib" = [ "ntrack" ];
-    "libntrack" = [ "ntrack" ];
-    "libntrack-qt4" = [ "ntrack" ];
+#   "libntrack-glib" = [ "ntrack" ];
+#   "libntrack" = [ "ntrack" ];
+#   "libntrack-qt4" = [ "ntrack" ];
     "numa" = [ "numactl" ];
     "nuspell" = [ "nuspell" ];
     "libnutclient" = [ "nut" ];
@@ -4053,11 +4054,11 @@ pkgs:
     "pappl" = [ "pappl" ];
     "libparted-fs-resize" = [ "parted" ];
     "libparted" = [ "parted" ];
-    "Irony" = [ "pash" ];
-    "Microsoft.PowerShell.Commands.Management" = [ "pash" ];
-    "Microsoft.PowerShell.Commands.Utility" = [ "pash" ];
-    "Microsoft.PowerShell.Security" = [ "pash" ];
-    "System.Management.Automation" = [ "pash" ];
+    "Irony" = [ "powershell" ];
+    "Microsoft.PowerShell.Commands.Management" = [ "powershell" ];
+    "Microsoft.PowerShell.Commands.Utility" = [ "powershell" ];
+    "Microsoft.PowerShell.Security" = [ "powershell" ];
+    "System.Management.Automation" = [ "powershell" ];
     "libpci" = [ "pciutils" ];
     "pcl_2d-1.12" = [ "pcl" ];
     "pcl_common-1.12" = [ "pcl" ];
@@ -4296,7 +4297,7 @@ pkgs:
     "qhull_r" = [ "qhull" ];
     "qhullstatic" = [ "qhull" ];
     "qhullstatic_r" = [ "qhull" ];
-    "qimageblitz" = [ "qimageblitz" ];
+#   "qimageblitz" = [ "qimageblitz" ];
     "QJson" = [ "qjson" ];
     "qmmp" = [ "qmmp" ];
     "qmmpui" = [ "qmmp" ];
@@ -4466,7 +4467,7 @@ pkgs:
     "r_util" = [ "radare2" ];
     "raft" = [ "raft-canonical" ];
     "RapidJSON" = [ "rapidjson" ];
-    "rarian" = [ "rarian" ];
+#    "rarian" = [ "rarian" ];
     "raul-1" = [ "raul" ];
     "rav1e" = [ "rav1e" ];
     "raylib" = [ "raylib" ];
@@ -4807,7 +4808,6 @@ pkgs:
 #    "gmock" = [ "robo3t" ];
 #    "gtest_main" = [ "robo3t" ];
 #    "gtest" = [ "robo3t" ];
-    "libhsakmt" = [ "rocm-thunk" ];
     "rofi" = [ "rofi" ];
 #    "rofi" = [ "rofi-unwrapped" ];
 #    "rofi" = [ "rofi-wayland" ];
@@ -5582,7 +5582,7 @@ pkgs:
 
     # This might be an old name for xscrnsaver
     "xss"                                = [ "libXScrnSaver" ];
-    
+
     # List generated with scripts/find-pkg-config-all.nix
     # Deduplicated by hand (duplicates were commented out).
     "fontutil" = [ "fontutil" ];
@@ -5732,4 +5732,9 @@ pkgs:
       else if pkgs ? gdk_pixbuf
         then [ pkgs.gdk_pixbuf ]
       else [];
+    # rocm-thunk was replaced by rocmPackages.rocm-thunk in 23.11
+    "libhsakmt" = [ pkgs.rocmPackages.rocm-thunk or pkgs.rocm-thunk ];
+} // lib.optionalAttrs (pkgs ? libsigcxx12) {
+    # libsigcxx12 was removed in 23.11
+    "sigc++-1.2" = [ "libsigcxx12" ];
 }

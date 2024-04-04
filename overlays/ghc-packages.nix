@@ -1,13 +1,13 @@
-final: prev:
+final: _prev:
 let
-  callCabal2Nix = compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
+  callCabal2Nix = _compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
     inherit src;
     nativeBuildInputs = [
       # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
       # infinite recursion (so using nix-tools-unchecked).
-      final.buildPackages.haskell-nix.nix-tools-unchecked.${compiler-nix-name}
+      final.buildPackages.haskell-nix.nix-tools-unchecked
     ];
     phases = [ "unpackPhase" "buildPhase" ];
 
@@ -41,13 +41,16 @@ let
   # into a single derivation and materialize it.
   combineAndMaterialize = unchecked: materialized-dir: ghcName: bootPackages:
       (final.haskell-nix.materialize ({
-          materialized = materialized-dir + "/ghc-boot-packages-nix/${ghcName +
-              # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
-              # so it needs its own materialization.
-              final.lib.optionalString final.stdenv.targetPlatform.isAarch64 "-aarch64"
-              # GHCJS bytestring and libiserv versions differs
-              + final.lib.optionalString final.stdenv.hostPlatform.isGhcjs "-ghcjs"
-            }";
+          materialized =
+            if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
+              then materialized-dir + "/ghc-boot-packages-nix/${ghcName +
+                # The 3434.patch we apply to fix linking on arm systems changes ghc-prim.cabal
+                # so it needs its own materialization.
+                final.lib.optionalString final.stdenv.targetPlatform.isAarch64 "-aarch64"
+                # GHCJS bytestring and libiserv versions differs
+                + final.lib.optionalString final.stdenv.hostPlatform.isGhcjs "-ghcjs"
+              }"
+              else null;
         } // final.lib.optionalAttrs unchecked {
           checkMaterialization = false;
         }) (combineFiles "${ghcName}-boot-packages-nix" ".nix" (builtins.mapAttrs
@@ -68,9 +71,9 @@ let
       integer-gmp  = "libraries/integer-gmp";
       template-haskell = "libraries/template-haskell";
       iserv        = "utils/iserv";
-    } // final.lib.optionalAttrs (!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9.6" < 0) {
+    } // final.lib.optionalAttrs ((!final.stdenv.hostPlatform.isGhcjs || builtins.compareVersions ghcVersion "9.6" < 0) && builtins.compareVersions ghcVersion "9.8" < 0) {
       libiserv     = "libraries/libiserv";
-    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.6" > 0) {
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" > 0) {
       Cabal        = "libraries/Cabal/Cabal";
       Cabal-syntax = "libraries/Cabal/Cabal-syntax";
       cabal-install = "libraries/Cabal/cabal-install";
@@ -100,11 +103,16 @@ let
     } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.2.1" >= 0) {
       deepseq      = "libraries/deepseq";
       pretty       = "libraries/pretty";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.8" >= 0) {
+      parsec       = "libraries/parsec";
+    } // final.lib.optionalAttrs (builtins.compareVersions ghcVersion "9.9" >= 0) {
+      ghc-platform = "libraries/ghc-platform";
+      ghc-internal = "libraries/ghc-internal";
     };
 
   # The nix produced by `cabalProject` differs slightly depending on
   # what the platforms are.  There are currently 3 possible outputs.
-  ghc-extra-projects-type = ghc:
+  ghc-extra-projects-type = _ghc:
     if final.stdenv.hostPlatform.isWindows
       then "windows"
       else if final.stdenv.hostPlatform.isGhcjs
@@ -164,6 +172,9 @@ in rec {
                 if [[ -f ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs ]]; then
                   ln -s ${ghc.generated}/compiler/stage2/build/GHC/Settings/Config.hs $out/compiler/GHC/Settings
                 fi
+                if [[ -f ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs ]]; then
+                  ln -s ${ghc.generated}/compiler/GHC/CmmToLlvm/Version/Bounds.hs $out/compiler/GHC/CmmToLlvm/Version
+                fi
                 ln -s ${ghc.generated}/includes/dist-derivedconstants/header/* $out/compiler
                 ln -s ${ghc.generated}/compiler/stage2/build/*.hs-incl $out/compiler
               '');
@@ -206,7 +217,7 @@ in rec {
     let package-locs =
         # TODO ghc-heap.cabal requires cabal 3.  We should update the cabalProject' call
         # in `ghc-extra-projects` below to work with this.
-        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq"
+        (final.lib.filterAttrs (n: _: !(builtins.elem n [ "base" "ghc" "ghc-boot" "ghci" "Win32" "ghc-heap" "ghc-bignum" "ghc-prim" "integer-gmp" "template-haskell" "pretty" "bytestring" "deepseq"
            "Cabal" "Cabal-syntax" "cabal-install" "cabal-install-solver" ])) (ghc-extra-pkgs ghc.version));
       cabalProject = ''
         packages: ${final.lib.concatStringsSep " " (final.lib.attrValues package-locs)}
@@ -246,8 +257,10 @@ in rec {
       cabalProjectFreeze = null;
       index-state = final.haskell-nix.internalHackageIndexState;
       # Where to look for materialization files
-      materialized = ../materialized/ghc-extra-projects
-                       + "/${ghc-extra-projects-type proj.ghc}/${ghcName}";
+      materialized =
+        if __compareVersions final.buildPackages.haskell-nix.compiler.${ghcName}.version "9.8" < 0
+          then ../materialized/ghc-extra-projects + "/${ghc-extra-projects-type proj.ghc}/${ghcName}"
+          else null;
       compiler-nix-name = ghcName;
       configureArgs = "--disable-tests --disable-benchmarks --allow-newer='terminfo:base'"; # avoid failures satisfying bytestring package tests dependencies
       modules = [{

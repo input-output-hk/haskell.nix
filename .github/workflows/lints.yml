@@ -1,0 +1,32 @@
+name: "Lints"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+
+  push:
+    branches:
+      - master
+
+defaults:
+  run:
+    shell: bash
+
+# do we really want nixos-unstable?
+env:
+  NIX_PATH: "nixpkgs=channel:nixos-unstable"
+  REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  deadnix:
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          nix run github:astro/deadnix -- --edit --no-lambda-pattern-names --exclude materialized
+          TMPFILE=$(mktemp)
+          git diff >"${TMPFILE}"
+          git stash -u && git stash drop
+          nix-shell -p reviewdog --run "reviewdog -f=diff -f.diff.strip=1 -reporter=github-pr-review < \"${TMPFILE}\""

@@ -74,7 +74,7 @@ let
             cabal-install
         ];
 
-    inherit (pkgs.buildPackages) emscriptenupstream emscripten emsdk;
+    inherit (pkgs.pkgsBuildBuild) emscriptenupstream emscripten emsdk;
 
     # Inputs needed to boot the GHCJS compiler
     bootInputs = with pkgs.buildPackages; [
@@ -86,7 +86,7 @@ let
             makeWrapper
             xorg.lndir
             gmp
-            pkgconfig
+            (pkgs.buildPackages.pkg-config or pkgconfig)
         ]
         ++ [ ghc cabal-install emsdk ];
     # Configured the GHCJS source

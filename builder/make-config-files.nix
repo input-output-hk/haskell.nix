@@ -37,18 +37,18 @@ let
   #            pkg id for z-{pkg name}-z-{sublib name}.  As we do not provide the
   #            sublib name to exactDep, as we don't have access to it at the call-site,
   #            we resort to a bit of globbing, which (as pkg db's should contain only
-  #            a single package) work.
-
-  getLibComponent = dep:
-       dep.components.library # Regular package dependency
-    or dep;                   # or a sublib
+  #            a single package) work.                   # or a sublib
 
   # Work our suitable packageCfgDir subdirectory
   isGhcjs        = ghc.isGhcjs or false;
   ghcCommand'    = if isGhcjs then "ghcjs" else "ghc";
   ghcCommand     = "${ghc.targetPrefix}${ghcCommand'}";
   ghcCommandCaps = lib.toUpper ghcCommand';
-  libDir         = ghc.libDir or "lib/${ghcCommand}-${ghc.version}";
+  libDir         = ghc.libDir or
+    # nixpkgs versions of `ghc` do not have a `.libDir`.  So this
+    # default is for them.
+    ("lib/${ghcCommand}-${ghc.version}"
+      + lib.optionalString (__compareVersions ghc.version "9.6.1" >= 0) "/lib");
   packageCfgDir  = "${libDir}/package.conf.d";
 
   libDeps = haskellLib.uniqueWithName (
@@ -62,15 +62,27 @@ let
     ${target-pkg} init $configFiles/${packageCfgDir}
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
-      "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") (lib.flatten component.libs)
-        # On windows also include `bin` directories that may contain DLLs
-        ++ lib.optionals (stdenv.hostPlatform.isWindows)
-          (map (p: "${lib.getBin p}/bin")
-               (lib.flatten component.libs ++ lib.concatLists component.pkgconfig));
+      "extra-lib-dirs" = map (p: "${lib.getLib p}/lib") (lib.flatten component.libs);
       "extra-include-dirs" = map (p: "${lib.getDev p}/include") (lib.flatten component.libs);
       "extra-framework-dirs" = lib.optionals (stdenv.hostPlatform.isDarwin)
         (map (p: "${p}/Library/Frameworks") component.frameworks);
     })}
+    ${
+      # On windows also include `bin` directories that may contain DLLs
+      # It might be tempting to use `builtins.pathExists` here instead of `if [ -d ]`,
+      # however that would cause this detivation to depend on the output of the
+      # library derivation.
+      lib.concatStringsSep "\n" (map (p:
+        let binDir = "${lib.getBin p}/bin";
+        in ''
+          if [ -d ${binDir} ]; then
+            ${lib.concatStringsSep "\n" (lib.mapAttrsToList flagsAndConfig {
+              "extra-lib-dirs" = [binDir];
+            })}
+          fi
+      '') (lib.optionals (stdenv.hostPlatform.isWindows)
+          (lib.flatten component.libs ++ lib.concatLists component.pkgconfig))
+    )}
 
     unwrappedGhc=${ghc}
     ghcDeps=${ghc.cachedDeps
@@ -81,9 +93,14 @@ let
         find $unwrappedGhc/${packageCfgDir} -name $p'*.conf' -exec cp -f {} $configFiles/${packageCfgDir} \;
       done
     ''}
+    ${ # From GHC 9.6 the nixpkgs ghc derviations now use ${pkgroot} in their `.conf` files.
+    ''
+      sed -i 's|''${pkgroot}/../../../../|/nix/store/|' $configFiles/${packageCfgDir}/*.conf
+      sed -i 's|''${pkgroot}|${ghc}/${packageCfgDir}/..|' $configFiles/${packageCfgDir}/*.conf
+    ''}
 
     for l in "''${pkgsHostTarget[@]}"; do
-      if [ -d "$l/${packageCfgDir}" ]; then
+      if [ -d "$l/${packageCfgDir}" ] && [[ "$l" != "${ghc}" ]]; then
         files=("$l/${packageCfgDir}/"*.conf)
         if (( ''${#files[@]} )); then
           cp -f "''${files[@]}" $configFiles/${packageCfgDir}

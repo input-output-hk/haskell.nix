@@ -670,6 +670,206 @@ depends:              base-4.15.0.0
 haddock-interfaces:
 haddock-html:
 ---
+name:                 ghc
+version:              9.0.1
+visibility:           public
+id:                   ghc-9.0.1
+key:                  ghc-9.0.1
+license:              BSD-3-Clause
+maintainer:           glasgow-haskell-users@haskell.org
+author:               The GHC Team
+homepage:             http://www.haskell.org/ghc/
+synopsis:             The GHC API
+description:
+    GHC's functionality can be useful for more things than just
+    compiling Haskell programs. Important use cases are programs
+    that analyse (and perhaps transform) Haskell code. Others
+    include loading Haskell code dynamically in a GHCi-like manner.
+    For this reason, a lot of GHC's functionality is made available
+    through this package.
+    See <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/compiler>
+    for more information.
+category:             Development
+exposed-modules:
+    GHC GHC.Builtin.Names GHC.Builtin.Names.TH GHC.Builtin.PrimOps
+    GHC.Builtin.RebindableNames GHC.Builtin.Types
+    GHC.Builtin.Types.Literals GHC.Builtin.Types.Prim
+    GHC.Builtin.Uniques GHC.Builtin.Utils GHC.ByteCode.Asm
+    GHC.ByteCode.InfoTable GHC.ByteCode.Instr GHC.ByteCode.Linker
+    GHC.ByteCode.Types GHC.Cmm GHC.Cmm.BlockId GHC.Cmm.CLabel
+    GHC.Cmm.CallConv GHC.Cmm.CommonBlockElim GHC.Cmm.ContFlowOpt
+    GHC.Cmm.Dataflow GHC.Cmm.Dataflow.Block
+    GHC.Cmm.Dataflow.Collections GHC.Cmm.Dataflow.Graph
+    GHC.Cmm.Dataflow.Label GHC.Cmm.DebugBlock GHC.Cmm.Expr
+    GHC.Cmm.Graph GHC.Cmm.Info GHC.Cmm.Info.Build GHC.Cmm.LayoutStack
+    GHC.Cmm.Lexer GHC.Cmm.Lint GHC.Cmm.Liveness GHC.Cmm.MachOp
+    GHC.Cmm.Monad GHC.Cmm.Node GHC.Cmm.Opt GHC.Cmm.Parser
+    GHC.Cmm.Pipeline GHC.Cmm.Ppr GHC.Cmm.Ppr.Decl GHC.Cmm.Ppr.Expr
+    GHC.Cmm.ProcPoint GHC.Cmm.Sink GHC.Cmm.Switch
+    GHC.Cmm.Switch.Implement GHC.Cmm.Type GHC.Cmm.Utils GHC.CmmToAsm
+    GHC.CmmToAsm.BlockLayout GHC.CmmToAsm.CFG
+    GHC.CmmToAsm.CFG.Dominators GHC.CmmToAsm.CPrim GHC.CmmToAsm.Config
+    GHC.CmmToAsm.Dwarf GHC.CmmToAsm.Dwarf.Constants
+    GHC.CmmToAsm.Dwarf.Types GHC.CmmToAsm.Format GHC.CmmToAsm.Instr
+    GHC.CmmToAsm.Monad GHC.CmmToAsm.PIC GHC.CmmToAsm.PPC.CodeGen
+    GHC.CmmToAsm.PPC.Cond GHC.CmmToAsm.PPC.Instr GHC.CmmToAsm.PPC.Ppr
+    GHC.CmmToAsm.PPC.RegInfo GHC.CmmToAsm.PPC.Regs GHC.CmmToAsm.Ppr
+    GHC.CmmToAsm.Reg.Graph GHC.CmmToAsm.Reg.Graph.Base
+    GHC.CmmToAsm.Reg.Graph.Coalesce GHC.CmmToAsm.Reg.Graph.Spill
+    GHC.CmmToAsm.Reg.Graph.SpillClean GHC.CmmToAsm.Reg.Graph.SpillCost
+    GHC.CmmToAsm.Reg.Graph.Stats GHC.CmmToAsm.Reg.Graph.TrivColorable
+    GHC.CmmToAsm.Reg.Graph.X86 GHC.CmmToAsm.Reg.Linear
+    GHC.CmmToAsm.Reg.Linear.Base GHC.CmmToAsm.Reg.Linear.FreeRegs
+    GHC.CmmToAsm.Reg.Linear.JoinToTargets GHC.CmmToAsm.Reg.Linear.PPC
+    GHC.CmmToAsm.Reg.Linear.SPARC GHC.CmmToAsm.Reg.Linear.StackMap
+    GHC.CmmToAsm.Reg.Linear.State GHC.CmmToAsm.Reg.Linear.Stats
+    GHC.CmmToAsm.Reg.Linear.X86 GHC.CmmToAsm.Reg.Linear.X86_64
+    GHC.CmmToAsm.Reg.Liveness GHC.CmmToAsm.Reg.Target
+    GHC.CmmToAsm.Reg.Utils GHC.CmmToAsm.SPARC.AddrMode
+    GHC.CmmToAsm.SPARC.Base GHC.CmmToAsm.SPARC.CodeGen
+    GHC.CmmToAsm.SPARC.CodeGen.Amode GHC.CmmToAsm.SPARC.CodeGen.Base
+    GHC.CmmToAsm.SPARC.CodeGen.CondCode
+    GHC.CmmToAsm.SPARC.CodeGen.Expand GHC.CmmToAsm.SPARC.CodeGen.Gen32
+    GHC.CmmToAsm.SPARC.CodeGen.Gen64 GHC.CmmToAsm.SPARC.CodeGen.Sanity
+    GHC.CmmToAsm.SPARC.Cond GHC.CmmToAsm.SPARC.Imm
+    GHC.CmmToAsm.SPARC.Instr GHC.CmmToAsm.SPARC.Ppr
+    GHC.CmmToAsm.SPARC.Regs GHC.CmmToAsm.SPARC.ShortcutJump
+    GHC.CmmToAsm.SPARC.Stack GHC.CmmToAsm.X86.CodeGen
+    GHC.CmmToAsm.X86.Cond GHC.CmmToAsm.X86.Instr GHC.CmmToAsm.X86.Ppr
+    GHC.CmmToAsm.X86.RegInfo GHC.CmmToAsm.X86.Regs GHC.CmmToC
+    GHC.CmmToLlvm GHC.CmmToLlvm.Base GHC.CmmToLlvm.CodeGen
+    GHC.CmmToLlvm.Data GHC.CmmToLlvm.Mangler GHC.CmmToLlvm.Ppr
+    GHC.CmmToLlvm.Regs GHC.Core GHC.Core.Class GHC.Core.Coercion
+    GHC.Core.Coercion.Axiom GHC.Core.Coercion.Opt GHC.Core.ConLike
+    GHC.Core.DataCon GHC.Core.FVs GHC.Core.FamInstEnv GHC.Core.InstEnv
+    GHC.Core.Lint GHC.Core.Make GHC.Core.Map GHC.Core.Multiplicity
+    GHC.Core.Opt.Arity GHC.Core.Opt.CSE GHC.Core.Opt.CallArity
+    GHC.Core.Opt.ConstantFold GHC.Core.Opt.CprAnal GHC.Core.Opt.DmdAnal
+    GHC.Core.Opt.Exitify GHC.Core.Opt.FloatIn GHC.Core.Opt.FloatOut
+    GHC.Core.Opt.LiberateCase GHC.Core.Opt.Monad GHC.Core.Opt.OccurAnal
+    GHC.Core.Opt.Pipeline GHC.Core.Opt.SetLevels GHC.Core.Opt.Simplify
+    GHC.Core.Opt.Simplify.Env GHC.Core.Opt.Simplify.Monad
+    GHC.Core.Opt.Simplify.Utils GHC.Core.Opt.SpecConstr
+    GHC.Core.Opt.Specialise GHC.Core.Opt.StaticArgs
+    GHC.Core.Opt.WorkWrap GHC.Core.Opt.WorkWrap.Utils GHC.Core.PatSyn
+    GHC.Core.Ppr GHC.Core.Ppr.TyThing GHC.Core.Predicate GHC.Core.Rules
+    GHC.Core.Seq GHC.Core.SimpleOpt GHC.Core.Stats GHC.Core.Subst
+    GHC.Core.Tidy GHC.Core.TyCo.FVs GHC.Core.TyCo.Ppr GHC.Core.TyCo.Rep
+    GHC.Core.TyCo.Subst GHC.Core.TyCo.Tidy GHC.Core.TyCon GHC.Core.Type
+    GHC.Core.Unfold GHC.Core.Unify GHC.Core.UsageEnv GHC.Core.Utils
+    GHC.CoreToByteCode GHC.CoreToIface GHC.CoreToStg GHC.CoreToStg.Prep
+    GHC.Data.Bag GHC.Data.Bitmap GHC.Data.BooleanFormula
+    GHC.Data.EnumSet GHC.Data.FastMutInt GHC.Data.FastString
+    GHC.Data.FastString.Env GHC.Data.FiniteMap GHC.Data.Graph.Base
+    GHC.Data.Graph.Color GHC.Data.Graph.Directed GHC.Data.Graph.Ops
+    GHC.Data.Graph.Ppr GHC.Data.Graph.UnVar GHC.Data.IOEnv
+    GHC.Data.List.SetOps GHC.Data.Maybe GHC.Data.OrdList GHC.Data.Pair
+    GHC.Data.Stream GHC.Data.StringBuffer GHC.Data.TrieMap
+    GHC.Driver.Backend GHC.Driver.Backpack GHC.Driver.Backpack.Syntax
+    GHC.Driver.CmdLine GHC.Driver.CodeOutput GHC.Driver.Finder
+    GHC.Driver.Flags GHC.Driver.Hooks GHC.Driver.Main GHC.Driver.Make
+    GHC.Driver.MakeFile GHC.Driver.Monad GHC.Driver.Phases
+    GHC.Driver.Pipeline GHC.Driver.Pipeline.Monad GHC.Driver.Plugins
+    GHC.Driver.Session GHC.Driver.Types GHC.Driver.Ways GHC.Hs
+    GHC.Hs.Binds GHC.Hs.Decls GHC.Hs.Doc GHC.Hs.Dump GHC.Hs.Expr
+    GHC.Hs.Extension GHC.Hs.ImpExp GHC.Hs.Instances GHC.Hs.Lit
+    GHC.Hs.Pat GHC.Hs.Stats GHC.Hs.Type GHC.Hs.Utils GHC.HsToCore
+    GHC.HsToCore.Arrows GHC.HsToCore.Binds GHC.HsToCore.Coverage
+    GHC.HsToCore.Docs GHC.HsToCore.Expr GHC.HsToCore.Foreign.Call
+    GHC.HsToCore.Foreign.Decl GHC.HsToCore.GuardedRHSs
+    GHC.HsToCore.ListComp GHC.HsToCore.Match
+    GHC.HsToCore.Match.Constructor GHC.HsToCore.Match.Literal
+    GHC.HsToCore.Monad GHC.HsToCore.PmCheck GHC.HsToCore.PmCheck.Oracle
+    GHC.HsToCore.PmCheck.Ppr GHC.HsToCore.PmCheck.Types
+    GHC.HsToCore.Quote GHC.HsToCore.Usage GHC.HsToCore.Utils
+    GHC.Iface.Binary GHC.Iface.Env GHC.Iface.Ext.Ast
+    GHC.Iface.Ext.Binary GHC.Iface.Ext.Debug GHC.Iface.Ext.Types
+    GHC.Iface.Ext.Utils GHC.Iface.Load GHC.Iface.Make GHC.Iface.Recomp
+    GHC.Iface.Recomp.Binary GHC.Iface.Recomp.Flags GHC.Iface.Rename
+    GHC.Iface.Syntax GHC.Iface.Tidy GHC.Iface.Tidy.StaticPtrTable
+    GHC.Iface.Type GHC.Iface.UpdateIdInfos GHC.IfaceToCore GHC.Llvm
+    GHC.Llvm.MetaData GHC.Llvm.Ppr GHC.Llvm.Syntax GHC.Llvm.Types
+    GHC.Parser GHC.Parser.Annotation GHC.Parser.CharClass
+    GHC.Parser.Header GHC.Parser.Lexer GHC.Parser.PostProcess
+    GHC.Parser.PostProcess.Haddock GHC.Platform.AArch64
+    GHC.Platform.ARM GHC.Platform.NoRegs GHC.Platform.PPC
+    GHC.Platform.Reg GHC.Platform.Reg.Class GHC.Platform.Regs
+    GHC.Platform.S390X GHC.Platform.SPARC GHC.Platform.X86
+    GHC.Platform.X86_64 GHC.Plugins GHC.Prelude GHC.Rename.Bind
+    GHC.Rename.Doc GHC.Rename.Env GHC.Rename.Expr GHC.Rename.Fixity
+    GHC.Rename.HsType GHC.Rename.Module GHC.Rename.Names GHC.Rename.Pat
+    GHC.Rename.Splice GHC.Rename.Unbound GHC.Rename.Utils
+    GHC.Runtime.Debugger GHC.Runtime.Eval GHC.Runtime.Eval.Types
+    GHC.Runtime.Heap.Inspect GHC.Runtime.Heap.Layout
+    GHC.Runtime.Interpreter GHC.Runtime.Interpreter.Types
+    GHC.Runtime.Linker GHC.Runtime.Linker.Types GHC.Runtime.Loader
+    GHC.Settings GHC.Settings.Config GHC.Settings.Constants
+    GHC.Settings.IO GHC.Stg.CSE GHC.Stg.DepAnal GHC.Stg.FVs
+    GHC.Stg.Lift GHC.Stg.Lift.Analysis GHC.Stg.Lift.Monad GHC.Stg.Lint
+    GHC.Stg.Pipeline GHC.Stg.Stats GHC.Stg.Subst GHC.Stg.Syntax
+    GHC.Stg.Unarise GHC.StgToCmm GHC.StgToCmm.ArgRep GHC.StgToCmm.Bind
+    GHC.StgToCmm.CgUtils GHC.StgToCmm.Closure GHC.StgToCmm.DataCon
+    GHC.StgToCmm.Env GHC.StgToCmm.Expr GHC.StgToCmm.ExtCode
+    GHC.StgToCmm.Foreign GHC.StgToCmm.Heap GHC.StgToCmm.Hpc
+    GHC.StgToCmm.Layout GHC.StgToCmm.Monad GHC.StgToCmm.Prim
+    GHC.StgToCmm.Prof GHC.StgToCmm.Ticky GHC.StgToCmm.Types
+    GHC.StgToCmm.Utils GHC.SysTools GHC.SysTools.Ar
+    GHC.SysTools.BaseDir GHC.SysTools.Elf GHC.SysTools.ExtraObj
+    GHC.SysTools.FileCleanup GHC.SysTools.Info GHC.SysTools.Process
+    GHC.SysTools.Tasks GHC.SysTools.Terminal GHC.Tc.Deriv
+    GHC.Tc.Deriv.Functor GHC.Tc.Deriv.Generate GHC.Tc.Deriv.Generics
+    GHC.Tc.Deriv.Infer GHC.Tc.Deriv.Utils GHC.Tc.Errors
+    GHC.Tc.Errors.Hole GHC.Tc.Errors.Hole.FitTypes
+    GHC.Tc.Gen.Annotation GHC.Tc.Gen.Arrow GHC.Tc.Gen.Bind
+    GHC.Tc.Gen.Default GHC.Tc.Gen.Export GHC.Tc.Gen.Expr
+    GHC.Tc.Gen.Foreign GHC.Tc.Gen.HsType GHC.Tc.Gen.Match
+    GHC.Tc.Gen.Pat GHC.Tc.Gen.Rule GHC.Tc.Gen.Sig GHC.Tc.Gen.Splice
+    GHC.Tc.Instance.Class GHC.Tc.Instance.Family
+    GHC.Tc.Instance.FunDeps GHC.Tc.Instance.Typeable GHC.Tc.Module
+    GHC.Tc.Plugin GHC.Tc.Solver GHC.Tc.Solver.Canonical
+    GHC.Tc.Solver.Flatten GHC.Tc.Solver.Interact GHC.Tc.Solver.Monad
+    GHC.Tc.TyCl GHC.Tc.TyCl.Build GHC.Tc.TyCl.Class
+    GHC.Tc.TyCl.Instance GHC.Tc.TyCl.PatSyn GHC.Tc.TyCl.Utils
+    GHC.Tc.Types GHC.Tc.Types.Constraint GHC.Tc.Types.EvTerm
+    GHC.Tc.Types.Evidence GHC.Tc.Types.Origin GHC.Tc.Utils.Backpack
+    GHC.Tc.Utils.Env GHC.Tc.Utils.Instantiate GHC.Tc.Utils.Monad
+    GHC.Tc.Utils.TcMType GHC.Tc.Utils.TcType GHC.Tc.Utils.Unify
+    GHC.Tc.Utils.Zonk GHC.Tc.Validity GHC.ThToHs GHC.Types.Annotations
+    GHC.Types.Avail GHC.Types.Basic GHC.Types.CostCentre
+    GHC.Types.CostCentre.State GHC.Types.Cpr GHC.Types.Demand
+    GHC.Types.FieldLabel GHC.Types.ForeignCall GHC.Types.Id
+    GHC.Types.Id.Info GHC.Types.Id.Make GHC.Types.Literal
+    GHC.Types.Name GHC.Types.Name.Cache GHC.Types.Name.Env
+    GHC.Types.Name.Occurrence GHC.Types.Name.Reader GHC.Types.Name.Set
+    GHC.Types.Name.Shape GHC.Types.RepType GHC.Types.SrcLoc
+    GHC.Types.Unique GHC.Types.Unique.DFM GHC.Types.Unique.DSet
+    GHC.Types.Unique.FM GHC.Types.Unique.Set GHC.Types.Unique.Supply
+    GHC.Types.Var GHC.Types.Var.Env GHC.Types.Var.Set GHC.Unit
+    GHC.Unit.Info GHC.Unit.Module GHC.Unit.Module.Env
+    GHC.Unit.Module.Location GHC.Unit.Module.Name GHC.Unit.Parser
+    GHC.Unit.Ppr GHC.Unit.State GHC.Unit.Types GHC.Utils.Asm
+    GHC.Utils.Binary GHC.Utils.BufHandle GHC.Utils.CliOption
+    GHC.Utils.Encoding GHC.Utils.Error GHC.Utils.Exception GHC.Utils.FV
+    GHC.Utils.Fingerprint GHC.Utils.IO.Unsafe GHC.Utils.Json
+    GHC.Utils.Lexeme GHC.Utils.Misc GHC.Utils.Monad
+    GHC.Utils.Monad.State GHC.Utils.Outputable GHC.Utils.Panic
+    GHC.Utils.Panic.Plain GHC.Utils.Ppr GHC.Utils.Ppr.Colour
+import-dirs:
+library-dirs:
+dynamic-library-dirs:
+data-dir:
+hs-libraries:         HSghc-9.0.1
+include-dirs:
+depends:
+    Win32-2.10.0.0 array-0.5.4.0 base-4.15.0.0 binary-0.8.8.0
+    bytestring-0.10.12.1 containers-0.6.4.1 deepseq-1.4.5.0
+    directory-1.3.6.1 exceptions-0.10.4 filepath-1.4.2.1 ghc-boot-9.0.1
+    ghc-boot-th-9.0.1 ghc-heap-9.0.1 ghci-9.0.1 hpc-0.6.1.0
+    process-1.6.11.0 template-haskell-2.17.0.0 time-1.9.3
+    transformers-0.5.6.2
+haddock-interfaces:
+haddock-html:
+---
 name:                 ghc-bignum
 version:              1.0
 visibility:           public
@@ -688,11 +888,14 @@ exposed-modules:
     GHC.Num.Backend GHC.Num.Backend.Native GHC.Num.Backend.Selected
     GHC.Num.BigNat GHC.Num.Integer GHC.Num.Natural GHC.Num.Primitives
     GHC.Num.WordArray
+hidden-modules:       GHC.Num.Backend.GMP
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSghc-bignum-1.0
+extra-libraries:      gmp
+include-dirs:
 depends:              ghc-prim-0.7.0
 haddock-interfaces:
 haddock-html:

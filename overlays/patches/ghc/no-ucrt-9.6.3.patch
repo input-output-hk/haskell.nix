@@ -1,0 +1,26 @@
+diff --git a/libraries/ghc-prim/ghc-prim.cabal b/libraries/ghc-prim/ghc-prim.cabal
+index 7e565b9f95..b5dd0135d0 100644
+--- a/libraries/ghc-prim/ghc-prim.cabal
++++ b/libraries/ghc-prim/ghc-prim.cabal
+@@ -74,7 +74,7 @@ Library
+         --          mingw32 which is required by mingwex.
+         -- user32: provides access to apis to modify user components (UI etc)
+         --         on Windows. Required because of mingw32.
+-        extra-libraries: user32, mingw32, mingwex, ucrt
++        extra-libraries: user32, mingw32, msvcrt, mingwex
+ 
+     if os(linux)
+         -- we need libm, but for musl and other's we might need libc, as libm
+diff --git a/m4/fp_setup_windows_toolchain.m4 b/m4/fp_setup_windows_toolchain.m4
+index 1f44a388fe..122a20598a 100644
+--- a/m4/fp_setup_windows_toolchain.m4
++++ b/m4/fp_setup_windows_toolchain.m4
+@@ -86,7 +86,7 @@ AC_DEFUN([FP_SETUP_WINDOWS_TOOLCHAIN],[
+     # Signal that we are linking against UCRT with the _UCRT macro. This is
+     # necessary to ensure correct behavior when MinGW-w64 headers are in the
+     # header include path (#22159).
+-    cflags="--rtlib=compiler-rt -D_UCRT"
++    cflags=""
+     CFLAGS="$cflags"
+     CONF_CC_OPTS_STAGE1="$cflags"
+     CONF_CC_OPTS_STAGE2="$cflags"

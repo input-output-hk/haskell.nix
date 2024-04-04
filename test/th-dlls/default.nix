@@ -1,5 +1,5 @@
 # Test building TH code that needs DLLs when cross compiling for windows
-{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, util, project', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -7,6 +7,7 @@ let
   project = externalInterpreter: project' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "th-dlls";
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [({pkgs, ...}: lib.optionalAttrs externalInterpreter {
       packages.th-dlls.components.library.ghcOptions = [ "-fexternal-interpreter" ];
       # Static openssl seems to fail to load in iserv for musl
@@ -18,14 +19,12 @@ let
   packages-ei = (project true).hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = stdenv.hostPlatform.isGhcjs ||
-    # TH breaks for ghc 9.4.3 cross compile for windows if the library even
-    # just depends on the `text` package (this may be related to the C++ dependency).
-    (stdenv.hostPlatform.isWindows && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc96020230302" "ghc961" "ghc962"]) ||
-    # Similar problem on macOS
-    (stdenv.hostPlatform.isDarwin && __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc96020230302" "ghc961" "ghc962"]) ||
+  meta.disabled = stdenv.hostPlatform.isGhcjs
     # On aarch64 this test also breaks form musl builds (including cross compiles on x86_64-linux)
-    (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl);
+    || (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isMusl)
+    # Failed to lookup symbol: __aarch64_swp8_acq_rel
+    || (builtins.elem compiler-nix-name ["ghc947" "ghc948"] && haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64)
+    ;
 
   ifdInputs = {
     inherit (project true) plan-nix;

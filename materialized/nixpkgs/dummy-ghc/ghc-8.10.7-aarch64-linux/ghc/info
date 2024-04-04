@@ -35,7 +35,7 @@
  ,("Use interpreter","YES")
  ,("Use native code generator","NO")
  ,("Support SMP","YES")
- ,("RTS ways","l debug thr thr_debug thr_l  dyn debug_dyn thr_dyn thr_debug_dyn l_dyn thr_l_dyn ")
+ ,("RTS ways","l debug thr thr_debug thr_l thr_p dyn debug_dyn thr_dyn thr_debug_dyn l_dyn thr_l_dyn thr_debug_p debug_p")
  ,("Tables next to code","YES")
  ,("Leading underscore","NO")
  ,("Use LibFFI","YES")

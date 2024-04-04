@@ -1,0 +1,23 @@
+name: "Publish a flake to flakestry"
+on:
+    push:
+        tags:
+          # This pattern matches tags in the format YYYY.MM.DD
+          # It expects a four-digit year, followed by a two-digit month and day
+          - "[0-9]{4}.[0-9]{2}.[0-9]{2}"
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "The existing tag to publish"
+                type: "string"
+                required: true
+jobs:
+    publish-flake:
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: "write"
+            contents: "read"
+        steps:
+            - uses: flakestry/flakestry-publish@main
+              with:
+                version: "${{ inputs.tag || github.ref_name }}"

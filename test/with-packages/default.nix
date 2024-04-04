@@ -1,4 +1,4 @@
-{ stdenv, lib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, haskellLib, util, cabalProject', recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 with util;
@@ -7,9 +7,7 @@ let
   project = doExactConfig: cabalProject' {
     inherit compiler-nix-name evalPackages;
     src = testSrc "with-packages";
-    cabalProjectLocal = lib.optionalString (__elem compiler-nix-name ["ghc96020230302" "ghc961" "ghc962"]) ''
-      allow-newer: *:base, *:ghc-prim, *:template-haskell
-    '';
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
     modules = [
       # overrides to fix the build
       {
@@ -40,19 +38,15 @@ in recurseIntoAttrs {
   # Used for testing externally with nix-shell (../tests.sh).
   # This just adds cabal-install to the existing shells.
   test-shell = (addCabalInstall library.shell).overrideAttrs (_: _: {
-    meta = rec {
+    meta = {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
-      disabled = broken;
     };
   });
 
   # A variant of test-shell with the component option doExactConfig enabled
   test-shell-dec = (addCabalInstall decLibrary.shell).overrideAttrs (_: _: {
-    meta = rec {
+    meta = {
       platforms = lib.platforms.all;
-      broken = stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"];
-      disabled = broken;
     };
   });
 
@@ -82,7 +76,7 @@ in recurseIntoAttrs {
 
       printf "checking that the 'library' with doExactConfig works... " >& 2
       echo ${decLibrary} >& 2
-    '' + (if stdenv.hostPlatform.isWindows || stdenv.hostPlatform.isGhcjs
+    '' + (if haskellLib.isCrossHost
       then ''
         printf "runghc tests are not working yet for windows or ghcjs. skipping. " >& 2
       ''
@@ -108,7 +102,7 @@ in recurseIntoAttrs {
 
     meta = rec {
       platforms = lib.platforms.all;
-      broken = (stdenv.hostPlatform.isGhcjs && __elem compiler-nix-name ["ghc961" "ghc962"]) || stdenv.hostPlatform.isMusl;
+      broken = stdenv.hostPlatform.isMusl;
       disabled = broken;
     };
 

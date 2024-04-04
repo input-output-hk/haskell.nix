@@ -186,7 +186,7 @@
           };
         };
       };
-  extras = hackage:
+  extras = _hackage:
     {
       packages = { pkgb = ./.plan.nix/pkgb.nix; pkga = ./.plan.nix/pkga.nix; };
       };

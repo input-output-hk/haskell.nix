@@ -31,7 +31,7 @@ final: prev: {
   # like that might be because the dependency on libredirect
   # was changed.
   # See https://github.com/NixOS/nixpkgs/pull/182143
-  libredirect = prev.libredirect.overrideAttrs (attrs: {
+  libredirect = prev.libredirect.overrideAttrs (_attrs: {
     libName = "libredirect" + final.stdenv.hostPlatform.extensions.sharedLibrary;
   });
 

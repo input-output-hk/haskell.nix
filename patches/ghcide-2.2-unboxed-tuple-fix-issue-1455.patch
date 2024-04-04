@@ -1,0 +1,80 @@
+diff --git a/src/Development/IDE/Core/Compile.hs b/src/Development/IDE/Core/Compile.hs
+index 2b355639..84b77e8a 100644
+--- a/src/Development/IDE/Core/Compile.hs
++++ b/src/Development/IDE/Core/Compile.hs
+@@ -154,6 +154,15 @@ import           GHC.Driver.Config.CoreToStg.Prep
+ import           GHC.Core.Lint.Interactive
+ #endif
+ 
++import StgSyn
++import FastString
++import Unique
++import CostCentre
++import Data.Either
++import CoreSyn
++import CoreToStg
++import SimplStg
++
+ --Simple constants to make sure the source is consistently named
+ sourceTypecheck :: T.Text
+ sourceTypecheck = "typecheck"
+@@ -294,9 +303,38 @@ captureSplicesAndDeps TypecheckHelpers{..} env k = do
+                        stg_expr
+                        [] Nothing
+ #else
++             {- Create a temporary binding and convert to STG -}
++           ; let bco_tmp_id = mkSysLocal (fsLit "BCO_toplevel")
++                                         (mkPseudoUniqueE 0)
++                                         (exprType prepd_expr)
++           ; (binds, _) <-
++               myCoreToStg hsc_env
++                           (icInteractiveModule (hsc_IC hsc_env))
++                           [NonRec bco_tmp_id prepd_expr]
++
++           ; let (_strings, lifted_binds) = partitionEithers $ do  -- list monad
++                  bnd <- binds
++                  case bnd of
++                    StgTopLifted (StgNonRec i expr) -> [Right (i, expr)]
++                    StgTopLifted (StgRec bnds)      -> map Right bnds
++                    StgTopStringLit b str           -> [Left (b, str)]
++
++           ; let stg_expr = case lifted_binds of
++                              [(_i, e)] -> e
++                              _        ->
++                                StgRhsClosure noExtFieldSilent
++                                              dontCareCCS
++                                              ReEntrant
++                                              []
++                                              (StgLet noExtFieldSilent
++                                                 (StgRec lifted_binds)
++                                                 (StgApp bco_tmp_id []))
++
+              {- Convert to BCOs -}
+            ; bcos <- coreExprToBCOs hsc_env
+-                       (icInteractiveModule (hsc_IC hsc_env)) prepd_expr
++                       (icInteractiveModule (hsc_IC hsc_env))
++                       bco_tmp_id
++                       stg_expr
+ #endif
+ 
+             -- Exclude wired-in names because we may not have read
+@@ -1747,6 +1785,19 @@ pathToModuleName = mkModuleName . map rep
+       rep ':' = '_'
+       rep c = c
+ 
++myCoreToStg :: HscEnv -> Module -> CoreProgram
++            -> IO ( [StgTopBinding] -- output program
++                  , CollectedCCs )  -- CAF cost centre info (declared and used)
++myCoreToStg hsc_env this_mod prepd_binds = do
++    let (stg_binds, cost_centre_info)
++         = {-# SCC "Core2Stg" #-}
++           coreToStg (hsc_dflags hsc_env) this_mod prepd_binds
++    stg_binds2
++        <- {-# SCC "Stg2Stg" #-}
++           stg2stg hsc_env this_mod stg_binds
++
++    return (stg_binds2, cost_centre_info)
++
+ {- Note [Guidelines For Using CPP In GHCIDE Import Statements]
+   GHCIDE's interface with GHC is extensive, and unfortunately, because we have
+   to work with multiple versions of GHC, we have several files that need to use

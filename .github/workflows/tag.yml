@@ -1,0 +1,25 @@
+name: "Weekly Date Tag"
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  tag-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create and push tag using current date
+        run: |
+          TAG_DATE=$(date -u "+%Y.%m.%d")
+          if git rev-parse "$TAG_DATE" >/dev/null 2>&1; then
+              echo "Tag $TAG_DATE already exists. Skipping tag creation."
+          else
+              git config user.name "github-actions"
+              git config user.email "github-actions@github.com"
+              git tag $TAG_DATE
+              git push origin $TAG_DATE
+          fi

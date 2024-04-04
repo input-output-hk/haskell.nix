@@ -277,9 +277,9 @@ exposed-modules:
     GHC.IO.SubSystem, GHC.IO.Unsafe, GHC.IOArray, GHC.IOPort,
     GHC.IORef, GHC.Int, GHC.Integer, GHC.Integer.Logarithms, GHC.Ix,
     GHC.List, GHC.MVar, GHC.Maybe, GHC.Natural, GHC.Num,
-    GHC.Num.BigNat from ghc-bignum-1.2:GHC.Num.BigNat,
-    GHC.Num.Integer from ghc-bignum-1.2:GHC.Num.Integer,
-    GHC.Num.Natural from ghc-bignum-1.2:GHC.Num.Natural, GHC.OldList,
+    GHC.Num.BigNat from ghc-bignum-1.3:GHC.Num.BigNat,
+    GHC.Num.Integer from ghc-bignum-1.3:GHC.Num.Integer,
+    GHC.Num.Natural from ghc-bignum-1.3:GHC.Num.Natural, GHC.OldList,
     GHC.OverloadedLabels, GHC.Pack, GHC.Profiling, GHC.Ptr,
     GHC.RTS.Flags, GHC.Read, GHC.Real, GHC.Records, GHC.ResponseFile,
     GHC.ST, GHC.STRef, GHC.Show, GHC.Stable, GHC.StableName, GHC.Stack,
@@ -317,7 +317,7 @@ data-dir:
 hs-libraries:         HSbase-4.16.4.0
 include-dirs:
 includes:             HsBase.h
-depends:              ghc-bignum-1.2 ghc-prim-0.8.0 rts
+depends:              ghc-bignum-1.3 ghc-prim-0.8.0 rts
 haddock-interfaces:
 haddock-html:
 ---
@@ -860,10 +860,10 @@ haddock-interfaces:
 haddock-html:
 ---
 name:                 ghc-bignum
-version:              1.2
+version:              1.3
 visibility:           public
-id:                   ghc-bignum-1.2
-key:                  ghc-bignum-1.2
+id:                   ghc-bignum-1.3
+key:                  ghc-bignum-1.3
 license:              BSD-3-Clause
 maintainer:           libraries@haskell.org
 author:               Sylvain Henry
@@ -877,11 +877,14 @@ exposed-modules:
     GHC.Num.Backend GHC.Num.Backend.Native GHC.Num.Backend.Selected
     GHC.Num.BigNat GHC.Num.Integer GHC.Num.Natural GHC.Num.Primitives
     GHC.Num.WordArray
+hidden-modules:       GHC.Num.Backend.GMP
 import-dirs:
 library-dirs:
 dynamic-library-dirs:
 data-dir:
-hs-libraries:         HSghc-bignum-1.2
+hs-libraries:         HSghc-bignum-1.3
+extra-libraries:      gmp
+include-dirs:
 depends:              ghc-prim-0.8.0
 haddock-interfaces:
 haddock-html:
@@ -1190,7 +1193,7 @@ library-dirs:
 dynamic-library-dirs:
 data-dir:
 hs-libraries:         HSinteger-gmp-1.1
-depends:              base-4.16.4.0 ghc-bignum-1.2 ghc-prim-0.8.0
+depends:              base-4.16.4.0 ghc-bignum-1.3 ghc-prim-0.8.0
 haddock-interfaces:
 haddock-html:
 ---

@@ -17,15 +17,35 @@ final: prev:
    mfpr = if !prev.stdenv.hostPlatform.isWindows then prev.mpfr else prev.mfpr.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
+} // prev.lib.optionalAttrs (prev.stdenv.hostPlatform.isWindows && prev.stdenv.hostPlatform.libc == "ucrt") {
+  windows = prev.windows // {
+    # TODO update stdenv.cc so that the wrapper adds -D_UCRT for libc=="ucrt"
+    mingw_w64_pthreads = prev.windows.mingw_w64_pthreads.overrideAttrs { CPPFLAGS = "-D_UCRT"; };
+  };
 } // {
    libmpc = if !prev.stdenv.hostPlatform.isWindows then prev.libmpc else prev.libmpc.overrideAttrs (drv: {
      configureFlags = (drv.configureFlags or []) ++ [ "--enable-static --disable-shared" ];
    });
 
+   # This work around still seems to be needed for GHC <9.4 to build
+   # on windows, however it does not work on nixpkgs >= 23.11 and it breaks
+   # all windows builds (including GHC >9.4).  In particular `windows.mcfgthreads`
+   # fails to build.
+
+   # We are using the `glibc.version` to determine if the fix will work.
+   # `prev.lib.version` (the nixpkgs version) is not granular enough
+   # (all the unstable release leading up to 23.11 have the same version as 23.11)
+   # and the newer version of `glibc` in nixpkgs 23.11 might be the
+   # change that caused this to break.
+
+   # For now we have set it to be left out for nixpkgs >= 23.11
+   # This means if we want to cross compile for windows and
+   # use nixpkgs >= 23.11, we will need to use GHC >9.4.
+   
    # GHC <9.4 does not work with binutils 2.38 from newer nixpkgs.
    # GHC >=9.4 will use clang/llvm instead.
    binutils-unwrapped =
-     if final.stdenv.targetPlatform.isWindows
+     if final.stdenv.targetPlatform.isWindows && builtins.compareVersions prev.pkgsBuildBuild.glibc.version "2.38" < 0
        then (import prev.haskell-nix.sources.nixpkgs-2111 { inherit (prev) system; })
          .pkgsCross.mingwW64.buildPackages.binutils-unwrapped
        else prev.binutils-unwrapped;
@@ -36,16 +56,14 @@ final: prev:
       let
         withTH = import ./mingw_w64.nix {
           inherit (pkgs.stdenv) hostPlatform;
-          inherit (pkgs) stdenv lib writeScriptBin;
-          wine = pkgs.buildPackages.winePackages.minimal;
+          inherit (pkgs.pkgsBuildBuild) lib writeShellScriptBin;
+          wine = pkgs.pkgsBuildBuild.winePackages.minimal;
           inherit (pkgs.windows) mingw_w64_pthreads;
           inherit (pkgs) gmp;
-          inherit (pkgs.buildPackages) symlinkJoin;
+          inherit (pkgs.pkgsBuildBuild) symlinkJoin;
           # iserv-proxy needs to come from the buildPackages, as it needs to run on the
           # build host.
           inherit (final.haskell-nix.iserv-proxy-exes.${config.compiler.nix-name}) iserv-proxy iserv-proxy-interpreter;
-          # we need to use openssl.bin here, because the .dll's are in the .bin expression.
-          # extra-test-libs = [ pkgs.rocksdb pkgs.openssl.bin pkgs.libffi pkgs.gmp ];
         } // {
           # we can perform testing of cross compiled test-suites by using wine.
           # Therefore let's enable doCrossCheck here!
@@ -78,6 +96,7 @@ final: prev:
           conduit.patches            = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ({ version }: if builtins.compareVersions version "1.3.1.1" < 0 then ./patches/conduit-1.3.0.2.patch else null) ];
           streaming-commons.patches  = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/streaming-commons-0.2.0.0.patch ];
           x509-system.patches        = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/x509-system-1.6.6.patch ];
+          crypton-x509-system.patches = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isWindows [ ./patches/crypton-x509-system.patch ];
 
           # Set all of these to [], as these form the
           # dependency graph of the libiserv, iserv-proxy, and iserv-remote

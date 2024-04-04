@@ -20,13 +20,14 @@ let
   haskell = pkgs.haskell-nix;
   buildHaskell = pkgs.buildPackages.haskell-nix;
   tool = buildHaskell.tool;
+  ghcFromTo = from: to: __compareVersions haskell.compiler.${compiler-nix-name}.version from >= 0 && __compareVersions haskell.compiler.${compiler-nix-name}.version to < 0;
 in rec {
   tests = import ./test/default.nix { inherit pkgs evalPackages ifdLevel compiler-nix-name; };
 
   tools = pkgs.lib.optionalAttrs (ifdLevel >= 3) (
     pkgs.recurseIntoAttrs ({
       cabal-latest = tool compiler-nix-name "cabal" { inherit evalPackages; };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.8" < 0) {
       hlint-latest = tool compiler-nix-name "hlint" {
         inherit evalPackages;
         version = {
@@ -41,29 +42,26 @@ in rec {
             "ghc8105" = "3.4.1";
             "ghc8106" = "3.4.1";
             "ghc8107" = "3.4.1";
+            "ghc928" = "3.6.1";
           }.${compiler-nix-name} or "latest";
       };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.2" "9.6") {
       stack =
         tool compiler-nix-name "stack" {
-          cabalProjectLocal = ''
-            constraints: optparse-applicative <0.18
-          '';
-          version =
-            if __compareVersions haskell.compiler.${compiler-nix-name}.version "9.2" < 0
-              then "2.9.3"
-              else "2.11.1";
+          version = "2.11.1";
           inherit evalPackages;
         };
-    } // pkgs.lib.optionalAttrs (__compareVersions haskell.compiler.${compiler-nix-name}.version "9.6" < 0) {
-      "hls-110" = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "8.10.7" "9.0") {
+      # This version will build for ghc < 9.8, but we are only going to test it for
+      # ghc < 9.0 (since newer versions do not work with ghc 8.10.7).
+      "hls-22" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-1.10";
+        src = pkgs.haskell-nix.sources."hls-2.2";
       };
-    } // {
-      "hls-20" = tool compiler-nix-name "haskell-language-server" {
+    } // pkgs.lib.optionalAttrs (ghcFromTo "9.0" "9.8") {
+      "hls-26" = tool compiler-nix-name "haskell-language-server" {
         inherit evalPackages;
-        src = pkgs.haskell-nix.sources."hls-2.0";
+        src = pkgs.haskell-nix.sources."hls-2.6";
       };
     })
   );
@@ -76,17 +74,15 @@ in rec {
     update-hackage = import ./scripts/update-hackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nixFlakes gawk bash curl findutils;
-      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
-      nix-tools = haskell.internal-nix-tools;
-      cabal-install = haskell.internal-cabal-install;
+      # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
+      nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) update-index-state-hashes cabal-issue-8352-workaround;
     };
     update-stackage = haskell.callPackage ./scripts/update-stackage.nix {
       inherit (pkgs) stdenv lib writeScript coreutils glibc git
         openssh nixFlakes gawk bash curl findutils;
-      # Update scripts use the internal nix-tools and cabal-install (compiled with a fixed GHC version)
-      nix-tools = haskell.internal-nix-tools;
-      cabal-install = haskell.internal-cabal-install;
+      # Update scripts use the internal nix-tools (compiled with a fixed GHC version)
+      nix-tools = haskell.nix-tools-unchecked;
       inherit (haskell) cabal-issue-8352-workaround;
     };
     update-pins = haskell.callPackage ./scripts/update-pins.nix {};
@@ -95,11 +91,7 @@ in rec {
     };
     check-hydra = pkgs.buildPackages.callPackage ./scripts/check-hydra.nix {};
     check-closure-size = pkgs.buildPackages.callPackage ./scripts/check-closure-size.nix {
-      # Includes cabal-install since this is commonly used.
-      nix-tools = pkgs.linkFarm "common-tools" [
-        { name = "nix-tools";     path = haskell.nix-tools.${compiler-nix-name}; }
-        { name = "cabal-install"; path = haskell.cabal-install.${compiler-nix-name}; }
-      ];
+      nix-tools = haskell.nix-tools-unchecked; # includes cabal-install and default-setup
     };
     check-materialization-concurrency = pkgs.buildPackages.callPackage ./scripts/check-materialization-concurrency/check.nix {};
     check-path-support = pkgsForGitHubAction.buildPackages.callPackage ./scripts/check-path-support.nix {
@@ -118,7 +110,7 @@ in rec {
         # Some of the dependencies of the impure scripts so that they will
         # will be in the cache too for buildkite.
         inherit (pkgs.buildPackages) glibc coreutils git openssh cabal-install nix-prefetch-git;
-        inherit (haskell) nix-tools;
+        nix-tools = pkgs.haskell-nix.nix-tools-unchecked;
       })
   );
 }

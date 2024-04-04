@@ -9,10 +9,6 @@ with types;
       type = str;
       default = "stack.yaml";
     };
-    ignorePackageYaml = mkOption {
-      type = bool;
-      default = false;
-    };
     cache = mkOption {
       type = nullOr unspecified;
       default = null;
@@ -37,7 +33,7 @@ with types;
     };
     nix-tools = mkOption {
       type = package;
-      default = config.evalPackages.haskell-nix.internal-nix-tools; # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
+      default = config.evalPackages.haskell-nix.nix-tools-unchecked; # When building stack projects we use the internal nix-tools (compiled with a fixed GHC version)
       description = "nix-tools to use when converting the `plan.json` to nix";
     };
 

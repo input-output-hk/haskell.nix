@@ -36,18 +36,18 @@ in
 lib.runTests {
   # identity function for applyComponents
   test-applyComponents-id = {
-    expr = haskellLib.applyComponents (componentId: component: component) emptyConfig;
+    expr = haskellLib.applyComponents (_componentId: component: component) emptyConfig;
     expected = emptyConfig.components;
   };
 
   # map a component to its component name and check these are correct
   test-applyComponents-library = {
-    expr = haskellLib.applyComponents (componentId: component: componentId.cname) emptyConfig;
+    expr = haskellLib.applyComponents (componentId: _component: componentId.cname) emptyConfig;
     expected = emptyConfig.components // { library = "empty"; };
   };
 
   test-applyComponents-components = {
-    expr = haskellLib.applyComponents (componentId: component: component) componentsConfig;
+    expr = haskellLib.applyComponents (_componentId: component: component) componentsConfig;
     expected = componentsConfig.components;
   };
 
@@ -58,7 +58,7 @@ lib.runTests {
   };
 
   testParseBlock1 = {
-    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} ''
+    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -66,13 +66,14 @@ lib.runTests {
       -- end of block
     '');
     expected = __toJSON {
-      otherText = "-- end of block\n";
+      followingText = "-- end of block\n";
+      indentation = "";
       sourceRepo = testRepoData // { subdirs = ["."]; };
     };
   };
 
   testParseBlock2 = {
-    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} ''
+    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -81,13 +82,14 @@ lib.runTests {
       -- end of block
     '');
     expected = __toJSON {
-      otherText = "-- end of block\n";
+      followingText = "-- end of block\n";
+      indentation = "";
       sourceRepo = testRepoData // { subdirs = ["dir"]; };
     };
   };
 
   testParseBlock3 = {
-    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} ''
+    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -96,13 +98,14 @@ lib.runTests {
       -- end of block
     '');
     expected = __toJSON {
-      otherText = "-- end of block\n";
+      followingText = "-- end of block\n";
+      indentation = "";
       sourceRepo = testRepoData // { subdirs = ["dir1" "dir2"]; };
     };
   };
 
   testParseBlock4 = {
-    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} ''
+    expr = __toJSON (haskellLib.parseSourceRepositoryPackageBlock "cabal.project" {} {} "" ''
         type: git
         location: https://github.com/input-output-hk/haskell.nix.git
         tag: 487eea1c249537d34c27f6143dff2b9d5586c657
@@ -113,7 +116,8 @@ lib.runTests {
       -- end of block
     '');
     expected = __toJSON {
-      otherText = "-- end of block\n";
+      followingText = "-- end of block\n";
+      indentation = "";
       sourceRepo = testRepoData // { subdirs = ["dir1" "dir2"]; };
     };
   };
@@ -124,17 +128,16 @@ lib.runTests {
       # and connot be easily compared.
       removeNix = x: x // {
         hackage =
-          lib.mapAttrs (packageName: vers:
-            lib.mapAttrs (ver: data: data // {
+          lib.mapAttrs (_packageName: vers:
+            lib.mapAttrs (_ver: data: data // {
               revisions =
-                lib.mapAttrs (rev: x: x // { nix = __typeOf x.nix; }) data.revisions;
+                lib.mapAttrs (_rev: x: x // { nix = __typeOf x.nix; }) data.revisions;
             }) vers
           ) x.hackage;
       };
-    in rec {
+      result = rec {
       expr = __toJSON (removeNix (haskellLib.parseRepositoryBlock evalPackages "cabal.project" {} {}
-        evalPackages.haskell-nix.cabal-install.${compiler-nix-name}
-        evalPackages.haskell-nix.nix-tools.${compiler-nix-name} ''
+        evalPackages.haskell-nix.nix-tools-unchecked ''
           ghcjs-overlay
             url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32
             secure: True
@@ -321,4 +324,5 @@ lib.runTests {
         };
       };
     };
+    in result;
 }

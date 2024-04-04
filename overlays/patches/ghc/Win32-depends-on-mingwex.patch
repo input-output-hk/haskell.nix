@@ -1,0 +1,13 @@
+diff --git a/libraries/Win32/Win32.cabal b/libraries/Win32/Win32.cabal
+index e986b7e..603354f 100644
+--- a/libraries/Win32/Win32.cabal
++++ b/libraries/Win32/Win32.cabal
+@@ -138,7 +138,7 @@ Library
+         System.Win32.Time.Internal
+
+     extra-libraries:
+-        "user32", "gdi32", "winmm", "advapi32", "shell32", "shfolder", "shlwapi", "msimg32", "imm32"
++        "user32", "gdi32", "winmm", "advapi32", "shell32", "shfolder", "shlwapi", "msimg32", "imm32", "mingwex"
+     ghc-options:      -Wall
+     include-dirs:     include
+     includes:         "alphablend.h", "diatemp.h", "dumpBMP.h", "ellipse.h", "errors.h", "HsGDI.h", "HsWin32.h", "Win32Aux.h", "win32debug.h", "windows_cconv.h", "WndProc.h", "alignment.h"

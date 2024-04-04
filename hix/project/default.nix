@@ -30,11 +30,8 @@ let
             then []
             else [{ inherit name; value = commandArgs.${name}; }]
     ) (builtins.attrNames commandArgs));
-  defaultArgs = {
-    nixpkgsPin = "nixpkgs-unstable";
-  };
   importDefaults = src:
-    if src == null || !(__pathExists src)
+    if src == null || !(builtins.pathExists src)
       then {}
       else import src;
   userDefaults = importDefaults (commandArgs.userDefaults or null);
@@ -64,7 +61,7 @@ let
             commandArgs'
             ({config, ...}: {
               src =
-                if __pathExists (toString (src.origSrcSubDir or src) + "/.git")
+                if builtins.pathExists (toString (src.origSrcSubDir or src) + "/.git")
                   then config.evalPackages.haskell-nix.haskellLib.cleanGit {
                     inherit src name;
                   }
@@ -73,5 +70,5 @@ let
           ];
       })
     ];
-  }).config) project shell;
+  }).config) project;
 in project

@@ -1,0 +1,18 @@
+diff --git a/rts/RtsSymbols.c b/rts/RtsSymbols.c
+index e0901c3..05a4310 100644
+--- a/rts/RtsSymbols.c
++++ b/rts/RtsSymbols.c
+@@ -991,9 +991,13 @@
+       SymI_HasProto(cas)                                                \
+       SymI_HasProto(_assertFail)                                        \
+       SymI_HasProto(keepCAFs)                                           \
++      SymI_NeedsProto(gettimeofday)                                     \
++      SymI_HasProto(clock)                                              \
+       RTS_USER_SIGNALS_SYMBOLS                                          \
+       RTS_INTCHAR_SYMBOLS
+
++      // need gettimeofday, clock for split-mix; otherwise will segv when calling this from iserv :-/
++
+
+ // 64-bit support functions in libgcc.a
+ #if defined(__GNUC__) && SIZEOF_VOID_P <= 4 && !defined(_ABIN32)

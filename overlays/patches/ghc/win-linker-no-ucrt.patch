@@ -1,0 +1,16 @@
+diff --git a/rts/linker/PEi386.c b/rts/linker/PEi386.c
+index c404992..fd060e4 100644
+--- a/rts/linker/PEi386.c
++++ b/rts/linker/PEi386.c
+@@ -1132,6 +1132,11 @@ lookupSymbolInDLLs ( const SymbolName* lbl, ObjectCode *dependent )
+     for (o_dll = opened_dlls; o_dll != NULL; o_dll = o_dll->next) {
+         /* debugBelch("look in %ls for %s\n", o_dll->name, lbl); */
+
++        if (wcsncmp(o_dll->name,WSTR("ucrtbase.dll"),wcslen(WSTR("ucrtbase.dll"))) == 0) {
++            IF_DEBUG(linker, debugBelch("warning: ignoring " PATH_FMT "\n", o_dll->name));
++            continue;
++        }
++
+         sym = GetProcAddress(o_dll->instance, lbl+STRIP_LEADING_UNDERSCORE);
+         if (sym != NULL) {
+             /*debugBelch("found %s in %s\n", lbl+1,o_dll->name);*/

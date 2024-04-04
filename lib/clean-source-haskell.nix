@@ -9,7 +9,7 @@
 { lib }:
 
 rec {
-  haskellSourceFilter = name: type:
+  haskellSourceFilter = name: _type:
     let baseName = baseNameOf (toString name);
     in ! (
       # Filter out cabal build products.

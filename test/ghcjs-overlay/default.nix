@@ -1,4 +1,4 @@
-{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages }:
+{ stdenv, lib, cabalProject', haskellLib, recurseIntoAttrs, testSrc, compiler-nix-name, evalPackages, buildPackages }:
 
 with lib;
 
@@ -6,27 +6,11 @@ let
   project = cabalProject' {
     src = testSrc "ghcjs-overlay";
     inherit compiler-nix-name evalPackages;
-    cabalProjectLocal = if stdenv.hostPlatform.isGhcjs then ''
-        repository ghcjs-overlay
-          url: https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32
-          secure: True
-          root-keys:
-          key-threshold: 0
-          --sha256: sha256-y1vQnXI1XzkjnC4h66tVDmu2TZjZPcMrZEnE3m0XOfg=
-      ''
-      else ''
-        allow-newer: double-conversion:bytestring
-      '';
-    # Alternative to the --sha256 comment in cabal.project
-    # sha256map = {
-    #  "https://raw.githubusercontent.com/input-output-hk/hackage-overlay-ghcjs/bfc363b9f879c360e0a0460ec0c18ec87222ec32" =
-    #    "sha256-g9xGgJqYmiczjxjQ5JOiK5KUUps+9+nlNGI/0SpSOpg=";
-    # };
+    cabalProjectLocal = builtins.readFile ../cabal.project.local;
   };
   packages = project.hsPkgs;
 
 in recurseIntoAttrs {
-  meta.disabled = __elem compiler-nix-name ["ghc941" "ghc942" "ghc943" "ghc944" "ghc945" "ghc96020230302" "ghc961" "ghc962"];
   ifdInputs = {
     inherit (project) plan-nix;
   };
@@ -57,6 +41,7 @@ in recurseIntoAttrs {
       touch $out
     '';
     meta.platforms = platforms.all;
+    meta.disabled = haskellLib.isCrossHost && stdenv.hostPlatform.isAarch64;
     passthru = {
       inherit project;
     };

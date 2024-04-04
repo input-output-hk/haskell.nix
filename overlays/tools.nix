@@ -50,6 +50,7 @@ in { haskell-nix = prev.haskell-nix // {
     cabal = "cabal-install";
     sos = "steeloverseer";
     gen-hie = "implicit-hie";
+    refactor = "apply-refact";
   };
 
   # Packages that are better known by their package name.  We are not
@@ -59,6 +60,7 @@ in { haskell-nix = prev.haskell-nix // {
     cabal-install = "cabal";
     steeloverseer = "sos";
     implicit-hie = "gen-hie";
+    apply-refact = "refactor";
   };
 
   hackage-tool = projectModules:
