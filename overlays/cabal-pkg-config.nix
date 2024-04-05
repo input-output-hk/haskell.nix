@@ -56,8 +56,7 @@ final: prev:
         ${final.pkgs.lib.concatStrings (map (name: ''
           ${name}
         '') (__attrNames pkgconfigPkgs))
-         }
-        EOF2
+         }EOF2
         elif [[ "\$1" == "--modversion" ]]; then
           OUTPUT=\$(mktemp)
           ERROR=\$(mktemp)
@@ -65,8 +64,7 @@ final: prev:
         ${final.pkgs.lib.concatStrings (map (p: ''
           ${getVersion (builtins.head p)}
         '') (__attrValues pkgconfigPkgs))
-        }
-        EOF2
+        }EOF2
         else
           $out/bin/${targetPrefix}${baseBinName}-wrapped "\$@"
         fi

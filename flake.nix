@@ -36,10 +36,6 @@
       url = "github:input-output-hk/stackage.nix";
       flake = false;
     };
-    nix-tools-static = {
-      url = "github:input-output-hk/haskell-nix-example/nix";
-      flake = false;
-    };
     cabal-32 = {
       url = "github:haskell/cabal/3.2";
       flake = false;
@@ -132,7 +128,7 @@
         stripAttrsForHydra
         filterDerivations;
 
-    in traceHydraJobs ({
+      flake = {
       inherit config;
       overlay = self.overlays.combined;
       overlays = import ./overlays { sources = inputs; };
@@ -247,10 +243,6 @@
               inherit system;
               pkgs = self.legacyPackages.${system};
               src = ./nix-tools;
-              override-inputs = {
-                # Avoid downloading another `hackage.nix`.
-                inherit (inputs) hackage;
-              };
             };
             in cf.defaultNix.hydraJobs;
         in
@@ -287,7 +279,23 @@
                 "ghc901"
                 "ghc921" "ghc922" "ghc923"])
       );
-    });
+    }; in with (import nixpkgs { system = "x86_64-linux"; });
+          traceHydraJobs (lib.recursiveUpdate flake {
+            hydraJobs.nix-tools = pkgs.releaseTools.aggregate {
+              name = "nix-tools";
+              constituents = [
+                "aarch64-darwin.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-darwin.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64"
+                "aarch64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-darwin.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-no-ifd"
+                "x86_64-linux.nix-tools.static.zipped.nix-tools-static-arm64-no-ifd"
+                (writeText "gitrev" (self.rev or "0000000000000000000000000000000000000000"))
+              ];
+            };
+          });
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

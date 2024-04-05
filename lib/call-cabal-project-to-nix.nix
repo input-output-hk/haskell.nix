@@ -70,11 +70,10 @@ let
   # These defaults are here rather than in modules/cabal-project.nix to make them
   # lazy enough to avoid infinite recursion issues.
   # Using null as the default also improves performance as they are not forced by the
-  # nix module system for `nix-tools-unchecked` and `cabal-install-unchecked`.
+  # nix module system for `nix-tools-unchecked`.
   nix-tools = if args.nix-tools or null != null
     then args.nix-tools
     else evalPackages.haskell-nix.nix-tools-unchecked;
-  cabal-install = nix-tools.exes.cabal;
   forName = pkgs.lib.optionalString (name != null) (" for " + name);
   nameAndSuffix = suffix: if name == null then suffix else name + "-" + suffix;
 
@@ -262,7 +261,7 @@ let
 
       # Parse the `repository` blocks
       repoResult = pkgs.haskell-nix.haskellLib.parseRepositories
-        evalPackages cabalProjectFileName sha256map inputMap cabal-install nix-tools sourceRepoFixedProjectFile;
+        evalPackages cabalProjectFileName sha256map inputMap nix-tools sourceRepoFixedProjectFile;
     in {
       sourceRepos = sourceReposBuild;
       inherit (repoResult) repos extra-hackages;
@@ -451,7 +450,7 @@ let
       # some packages that will be excluded by `index-state-max`
       # which is used by cabal (cached-index-state >= index-state-max).
       dotCabal {
-        inherit cabal-install nix-tools extra-hackage-tarballs;
+        inherit nix-tools extra-hackage-tarballs;
         extra-hackage-repos = fixedProject.repos;
         index-state = cached-index-state;
         sha256 = index-sha256-found;

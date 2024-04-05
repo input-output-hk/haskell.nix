@@ -100,6 +100,7 @@ in
   # compile C sources (https://github.com/fpco/odbc/blob/master/cbits/odbc.c)
   odbc = [ unixODBC ];
   opencv = [ opencv3 ];
+  phonenumber = [ libphonenumber ];
   icuuc = [ icu ];
   icui18n = [ icu ];
   icu-i18n = [ icu ];

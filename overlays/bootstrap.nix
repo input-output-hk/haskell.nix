@@ -13,7 +13,7 @@ let
       "9.8" = "9.8.2";
     };
     gitInputs = {
-      ghc910X = "9.9";
+      ghc910X = "9.10.0";
       ghc911 = "9.11";
     };
     versionToNixName = v: "ghc${builtins.replaceStrings ["."] [""] v}";
@@ -1329,41 +1329,11 @@ in {
     cabal-install-tool = {compiler-nix-name, ...}@args:
       (final.haskell-nix.tool compiler-nix-name "cabal" ({pkgs, ...}: {
         evalPackages = pkgs.buildPackages;
-        version = "3.10.1.0";
-      } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" >= 0) {
-        # It is important not to include this when not needed as it
-        # introduces a eval time dependency on the `buildPackages`
-        # version of nix-tools (on platforms where we cannot use the
-        # static nix-tools).
-        cabalProjectLocal = ''
-          -- allow newer packages, that are bound to be newer due to
-          -- being shipped with a newer compiler.  If you extend this
-          -- be very careful to only extend it for absolutely necessary packages
-          -- otherwise we risk running into broken build-plans down the line.
-          allow-newer: *:base, *:template-haskell, *:bytestring, *:text
-
-          repository head.hackage.ghc.haskell.org
-            url: https://ghc.gitlab.haskell.org/head.hackage/
-            secure: True
-            key-threshold: 3
-            root-keys:
-               f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
-               26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
-               7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-            --sha256: sha256-h/vbKTUdGVdkt2ogJer2d+gRuHkayiblQ7oFRqpj14c=
-
-          active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
-        '';
-      } // final.lib.optionalAttrs (__compareVersions final.buildPackages.haskell-nix.compiler.${compiler-nix-name}.version "9.8.0" < 0) {
-        index-state = final.haskell-nix.internalHackageIndexState;
-        materialized = ../materialized + "/${compiler-nix-name}/cabal-install";
+        version = "3.10.3.0";
       } // args));
 
     # Memoize the cabal-install and nix-tools derivations by adding:
     #   haskell-nix.cabal-install.ghcXXX
-    #   haskell-nix.cabal-install-unchecked.ghcXXX
-    #   haskell-nix.nix-tools.ghcXXX
-    #   haskell-nix.nix-tools-unchecked.ghcXXX
     # Using these avoids unnecessary calls to mkDerivation.
     # For cabal projects we match the versions used to the compiler
     # selected for the project to avoid the chance of a dependency
@@ -1373,32 +1343,6 @@ in {
     # that GHC itself in your closure).
     cabal-install = final.lib.mapAttrs (compiler-nix-name: _:
       final.haskell-nix.cabal-install-tool { inherit compiler-nix-name; }) final.haskell-nix.compiler;
-    cabal-install-unchecked = final.lib.mapAttrs (compiler-nix-name: _:
-      final.haskell-nix.cabal-install-tool {
-        compiler-nix-name =
-          # If there is no materialized version for this GHC version fall back on
-          # a version of GHC for which there will be.
-          if builtins.pathExists (../materialized + "/${compiler-nix-name}/cabal-install/default.nix")
-            then compiler-nix-name
-            else "ghc928";
-        checkMaterialization = false;
-      }) final.haskell-nix.compiler;
-
-    # These `internal` versions are used for:
-    # * `nix-tools` for stack projects (since we use `nix-tools` to process
-    #   the `stack.yaml` file we cannot match the ghc of the project the
-    #   way we do for cabal projects).
-    # * Scripts are used to update stackage and hackage
-    # Updating the version of GHC selected here should be fairly safe as
-    # there should be no difference in the behaviour of these tools.
-    # (stack projects on macOS may see a significant change in the
-    # closure size of their build dependencies due to dynamic linking).
-    internal-cabal-install =
-      final.haskell-nix.cabal-install-tool {
-        compiler-nix-name = "ghc8107";
-        compilerSelection = p: p.haskell.compiler;
-        checkMaterialization = false;
-      };
 
     # WARN: The `import ../. {}` will prevent
     #       any cross to work, as we will loose

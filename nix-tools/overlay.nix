@@ -4,14 +4,10 @@ let
   compiler-nix-name = "ghc8107";
 
   nix-tools = nix-tools-set {
-    materialized = ./materialized;
     nix-tools = nix-tools-unchecked;
   };
 
-  nix-tools-unchecked = nix-tools-set {
-    materialized = ./materialized;
-    checkMaterialization = false;
-  };
+  nix-tools-unchecked = nix-tools-set {};
 
   nix-tools-set = args:
     let
@@ -45,6 +41,8 @@ let
         inherit (project.hsPkgs.nix-tools.components.exes)
           cabal-name
           cabal-to-nix
+          default-setup
+          default-setup-ghcjs
           hackage-to-nix
           hashes-to-nix
           lts-to-nix
