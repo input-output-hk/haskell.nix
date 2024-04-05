@@ -4,15 +4,15 @@ pkgs:
   let
     # Only include derivations that exist in the current pkgs.
     # This allows us to use this mapping to be used in allPkgConfigWrapper.
-    # See ./overlas
+    # See ./overlays
     lookupAttrsIn = x: __mapAttrs (_pname: names:
-        # The first entry is should be used for the version by allPkgConfigWrapper
-        # so we need it to be present.
-        if __length names != 0 && x ? ${__head names}
-          then
-            pkgs.lib.concatMap (
-              name: if x ? ${name} then [ x.${name} ] else []) names
-          else []);
+      # The first entry is should be used for the version by allPkgConfigWrapper
+      # so we need it to be present.
+      with pkgs.lib; optionals (__length names != 0 && x ? ${__head names})
+        (concatMap
+          (name: optionals (x ? ${name})
+            (let p = __tryEval (x.${name}); in optionals p.success p.value))
+          names));
   in lookupAttrsIn pkgs ({
     # Based on https://github.com/NixOS/cabal2nix/blob/11c68fdc79461fb74fa1dfe2217c3709168ad752/src/Distribution/Nixpkgs/Haskell/FromCabal/Name.hs#L23
 
