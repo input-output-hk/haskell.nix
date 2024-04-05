@@ -9,7 +9,15 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
   zlib = prev.zlib.override { splitStaticOutput = false; };
 
   # and a few more packages that need their static libs explicitly enabled
-  bzip2 = prev.bzip2.override { enableStatic = true; };
+  bzip2 = prev.bzip2.override (
+    # This option was renamed to `enableStatic`, to be more consistent with packages with a similar
+    # static toggles. However, it now correctly defaults to true when `hostPlatform.isStatic` is true.
+    if builtins.compareVersions prev.lib.trivial.release "23.11" < 0
+      then { linkStatic = true; }
+      else {
+        # `isMusl` does not always mean `isStatic`, so setting `enableStatic` to true here.
+        enableStatic = true;
+      });
   gmp = prev.gmp.override { withStatic = true; };
   ncurses = prev.ncurses.override { enableStatic = true; };
   libsodium = prev.libsodium.overrideAttrs (_: { dontDisableStatic = true; });
@@ -40,8 +48,4 @@ final: prev: prev.lib.optionalAttrs prev.stdenv.hostPlatform.isMusl ({
 } // prev.lib.optionalAttrs (prev.lib.versionAtLeast prev.lib.trivial.release "20.03") {
   # Fix infinite recursion between openssh and fetchcvs
   openssh = prev.openssh.override { withFIDO = false; };
-} // prev.lib.optionalAttrs (prev.lib.versionOlder prev.lib.trivial.release "23.11") {
-  # This option was renamed to enableStatic, to be more consistent with packages with a similar
-  # static toggles. However, it now correctly defaults to true when `hostPlatform.isStatic` is true.
-  bzip2 = prev.bzip2.override { linkStatic = true; };
 })
