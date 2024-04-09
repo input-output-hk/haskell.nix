@@ -1,0 +1,35 @@
+This file contains bugs we find while working on haskell.nix.  The format is as
+follow:
+<separator: 80 * '-'>
+YYYY-MM-DD: nix-job name
+
+<error>
+
+<discussion>
+
+--------------------------------------------------------------------------------
+2024-04-09 x86_64-linux.R2305.ghc8107.mingwW64.ghc
+
+/build/ghc62733_0/ghc_1.s:50:0: error:
+     Error: CFI instruction used without previous .cfi_startproc
+   |
+50 |         .cfi_escape 0x16, 0x07, 0x04, 0x77, 152, 65
+   | ^
+`x86_64-w64-mingw32-cc' failed in phase `Assembler'. (Exit code: 1)
+make[1]: *** [rts/ghc.mk:325: rts/dist/build/StgCRun.o] Error 1
+
+The source for this is
+> https://github.com/ghc/ghc/blob/1f02b7430b2fbab403d7ffdde9cfd006e884678e/rts/StgCRun.c#L433
+
+It appears that GCC C17 12.2.0 does _not_ emit .cfi_startproc / .cfi_endprocs
+whereas GCC C17 13.2.0 _does_. Specificall x86_64-w64-mingw32-cc. So this might
+be a cross compilation issue.
+
+The -g is hardcoded in
+https://github.com/ghc/ghc/blob/1f02b7430b2fbab403d7ffdde9cfd006e884678e/mk/config.mk.in#L361
+
+Turns out, this was disabled for anything but linux in https://github.com/ghc/ghc/commit/5b08e0c06e038448a63aa9bd7f163b23d824ba4b,
+hence we backport that patch to GHC-8.10 when targeting windows (to prevent mass rebuilds for
+other archs).
+
+--------------------------------------------------------------------------------
