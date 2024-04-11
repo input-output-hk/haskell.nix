@@ -25,7 +25,7 @@ repository ghcjs-overlay
   secure: True
   root-keys:
   key-threshold: 0
-  --sha256: sha256-mZT7c+xR5cUTjLdCqOxpprjYL3kr/+9rmumtXvWAQlM=
+  --sha256: sha256-ddxP+nxBsM0SLvaiiB80k5DpX0PsKJq9VXhESPHKAF8=
 
 if !impl(ghc>=9.10) && !os(ghcjs)
   active-repositories: hackage.haskell.org
