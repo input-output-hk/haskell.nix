@@ -570,11 +570,6 @@ in {
     inherit (pkgs.buildPackages.buildPackages) lib runCommand;
   };
 
-  makeDummyGhcData = import ./make-dummy-ghc-data.nix {
-    inherit pkgs;
-    inherit (pkgs.buildPackages.buildPackages) runCommand;
-  };
-
   # Here we try to figure out which qemu to use based on the host platform.
   # This guess can be overridden by passing qemuSuffix
   qemuByHostPlatform = hostPlatform:

@@ -121,7 +121,7 @@
       "flake": false,
       "locked": {
         "lastModified": 1711543129,
-        "narHash": "sha256-MUI07CxYOng7ZwHnMCw0ugY3HmWo2p/f4r07CGV7OAM=",
+        "narHash": "sha256-PZvNroYZF1fnK/cAVU2iKSZdbCFdnv+hDIjJ0xvR7Z4=",
         "ref": "ghc-9.10",
         "rev": "6ecd5f2ff97af53c7334f2d8581651203a2c6b7d",
         "revCount": 62607,

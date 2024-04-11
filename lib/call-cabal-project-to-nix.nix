@@ -288,7 +288,7 @@ let
 
   fixedProject = replaceSourceRepos rawCabalProject;
 
-  inherit (ghc) dummy-ghc-data;
+  ghcSrc = ghc.raw-src or ghc.buildGHC.raw-src;
 
   # Dummy `ghc` that uses the captured output
   dummy-ghc = evalPackages.writeTextFile {
@@ -299,30 +299,30 @@ let
       #!${evalPackages.runtimeShell}
       case "$*" in
         --version*)
-          cat ${dummy-ghc-data}/ghc/version
+          echo "The Glorious Glasgow Haskell Compilation System, version ${ghc.version}"
           ;;
         --numeric-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-version
+          echo "${ghc.version}"
           ;;
       ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
         --numeric-ghc-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-ghc-version
+          echo "${ghc.version}"
           ;;
         --numeric-ghcjs-version*)
-          cat ${dummy-ghc-data}/ghc/numeric-ghcjs-version
+          echo "${ghc.version}"
           ;;
       ''}
         --supported-languages*)
-          cat ${dummy-ghc-data}/ghc/supported-languages
+          cat ${import ./supported-languages.nix { inherit pkgs evalPackages ghc; }}
           ;;
         --print-global-package-db*)
           echo "$out/dumby-db"
           ;;
         --info*)
-          cat ${dummy-ghc-data}/ghc/info
+          echo '[("Build platform","${pkgs.stdenv.buildPlatform.config}"),("Host platform","${pkgs.stdenv.hostPlatform.config}"),("Target platform","${pkgs.stdenv.targetPlatform.config}")]'
           ;;
         --print-libdir*)
-          echo ${dummy-ghc-data}/ghc/libdir
+          echo $out/ghc/libdir
           ;;
         *)
           echo "Unknown argument '$*'" >&2
@@ -342,15 +342,34 @@ let
       #!${evalPackages.runtimeShell}
       case "$*" in
         --version)
-          cat ${dummy-ghc-data}/ghc-pkg/version
+          echo "GHC package manager version ${ghc.version}"
           ;;
       ${pkgs.lib.optionalString (ghc.targetPrefix == "js-unknown-ghcjs-") ''
         --numeric-ghcjs-version)
-          cat ${dummy-ghc-data}/ghc-pkg/numeric-ghcjs-version
+          echo "${ghc.version}"
           ;;
       ''}
         'dump --global -v0')
-          cat ${dummy-ghc-data}/ghc-pkg/dump-global
+          ${builtins.concatStringsSep ''
+              echo '---'
+            '' (builtins.map (name: ''
+              echo "name: ${name}"
+              if [ -f ${ghcSrc}/libraries/${name}/${name}.cabal ]; then
+                grep '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal
+              else
+                grep '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal.in
+              fi
+            '') (["base" "ghc-prim" "template-haskell"]
+              ++ pkgs.lib.optional (builtins.compareVersions ghc.version "9.0" < 0) "integer-gmp"
+              ++ pkgs.lib.optional (builtins.compareVersions ghc.version "9.0" >= 0) "ghc-bignum"))}
+          ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) ''
+            echo '---'
+            echo "name: ghc"
+            echo "version: ${ghc.version}"
+            echo '---'
+            echo "name: system-cxx-std-lib"
+            echo "version: 1.0"
+          ''}
           ;;
         *)
           echo "Unknown argument '$*'. " >&2

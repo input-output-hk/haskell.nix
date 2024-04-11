@@ -181,7 +181,7 @@ in rec {
               inherit subDir;
               includeSiblings = true;
             }
-            else "${ghc.passthru.configured-src}/${subDir}";
+            else "${ghc.passthru.raw-src}/${subDir}";
         nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
       }) (ghc-extra-pkgs ghc.version))
     final.buildPackages.haskell-nix.compiler;

@@ -16,7 +16,7 @@ let
            f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
            26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
            7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-        --sha256: sha256-Bkn2Etb0JVmb7tM7jxuIoYLFnSp7acqraEYVq0I5oUM=
+        --sha256: sha256-ddxP+nxBsM0SLvaiiB80k5DpX0PsKJq9VXhESPHKAF8=
 
       if impl(ghc < 9.7)
         active-repositories: hackage.haskell.org
