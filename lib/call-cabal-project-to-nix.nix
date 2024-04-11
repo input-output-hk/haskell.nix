@@ -359,7 +359,7 @@ let
               else
                 grep '^version:' ${ghcSrc}/libraries/${name}/${name}.cabal.in
               fi
-            '') (["base" "ghc-prim" "template-haskell"]
+            '') (["base" "ghc-prim" "ghci" "template-haskell"]
               ++ pkgs.lib.optional (builtins.compareVersions ghc.version "9.0" < 0) "integer-gmp"
               ++ pkgs.lib.optional (builtins.compareVersions ghc.version "9.0" >= 0) "ghc-bignum"))}
           ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) ''
