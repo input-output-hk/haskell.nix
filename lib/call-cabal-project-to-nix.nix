@@ -361,19 +361,19 @@ let
               fi
             '') (["base" "ghc-prim" "template-haskell" "integer-gmp"]
               ++ pkgs.lib.optional (builtins.compareVersions ghc.version "9.0" >= 0) "ghc-bignum"))}
+          echo '---'
+          echo "name: ghc"
+          echo "version: ${ghc.version}"
+          echo '---'
+          echo "name: ghc-boot"
+          echo "version: ${ghc.version}"
+          echo '---'
+          echo "name: ghc-boot-th"
+          echo "version: ${ghc.version}"
+          echo '---'
+          echo "name: ghci"
+          echo "version: ${ghc.version}"
           ${pkgs.lib.optionalString (builtins.compareVersions ghc.version "9.2" >= 0) ''
-            echo '---'
-            echo "name: ghc"
-            echo "version: ${ghc.version}"
-            echo '---'
-            echo "name: ghc-boot"
-            echo "version: ${ghc.version}"
-            echo '---'
-            echo "name: ghc-boot-th"
-            echo "version: ${ghc.version}"
-            echo '---'
-            echo "name: ghci"
-            echo "version: ${ghc.version}"
             echo '---'
             echo "name: system-cxx-std-lib"
             echo "version: 1.0"
