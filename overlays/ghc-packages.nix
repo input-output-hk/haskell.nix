@@ -181,7 +181,7 @@ in rec {
               inherit subDir;
               includeSiblings = true;
             }
-            else if builtins.elem subDir ["libraries/ghc-heap" "utils/remote-iserv" "libraries/ghci" "libraries/template-haskell" "utils/iserv" "libraries/ghc-prim" "libraries/libiserv"]
+            else if builtins.elem subDir ["libraries/ghc-heap" "utils/remote-iserv" "libraries/ghci" "libraries/template-haskell" "utils/iserv" "libraries/ghc-prim" "libraries/libiserv" "utils/iserv-proxy"]
               then "${ghc.passthru.configured-src}/${subDir}"
             else "${ghc.passthru.raw-src}/${subDir}";
         nix = callCabal2Nix ghcName "${ghcName}-${pkgName}" src;
