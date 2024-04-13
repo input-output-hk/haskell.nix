@@ -88,7 +88,7 @@
        || (system == "aarch64-darwin" && !builtins.elem compiler-nix-name ["ghc884" "ghc902" "ghc928" "ghc948"])
        )) {
     inherit (lib.systems.examples) ghcjs;
-  } // lib.optionalAttrs ((nixpkgsName != "unsable" || nixpkgName == "unstable") # build mingw for all for now.
+  } // lib.optionalAttrs ((nixpkgsName != "unsable" || nixpkgsName == "unstable") # build mingw for all for now.
       && (__match ".*llvm" compiler-nix-name == null)
       && ((system == "x86_64-linux"  && !builtins.elem compiler-nix-name ["ghc884"])
        || (system == "x86_64-darwin" && builtins.elem compiler-nix-name []))) { # TODO add ghc versions when we have more darwin build capacity
