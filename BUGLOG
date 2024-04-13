@@ -33,3 +33,32 @@ hence we backport that patch to GHC-8.10 when targeting windows (to prevent mass
 other archs).
 
 --------------------------------------------------------------------------------
+2024-04-10 x86_64-linux.R2305.ghc902.mingwW64.ghc
+
+make[1]: *** [utils/hsc2hs/ghc.mk:22: utils/hsc2hs/dist-install/build/tmp/hsc2hs.exe] Error 1
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x2a): relocation truncated to fit: R_X86_64_32S against `.text'
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x46): relocation truncated to fit: IMAGE_REL_AMD64_ADDR32 against `.data'
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x8b): relocation truncated to fit: R_X86_64_32S against symbol `stg_bh_upd_frame_info' defined in .text section in /build/ghc-9.0.2/rts/dist/build/libHSrts.a(Updates.o)
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x95): relocation truncated to fit: IMAGE_REL_AMD64_ADDR32 against `.rdata'
+utils/runghc/dist-install/build/Main.o:fake:(.text+0xe3): relocation truncated to fit: R_X86_64_32S against symbol `stg_bh_upd_frame_info' defined in .text section in /build/ghc-9.0.2/rts/dist/build/libHSrts.a(Updates.o)
+utils/runghc/dist-install/build/Main.o:fake:(.text+0xed): relocation truncated to fit: IMAGE_REL_AMD64_ADDR32 against `.rdata'
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x13b): relocation truncated to fit: R_X86_64_32S against symbol `stg_bh_upd_frame_info' defined in .text section in /build/ghc-9.0.2/rts/dist/build/libHSrts.a(Updates.o)
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x145): relocation truncated to fit: IMAGE_REL_AMD64_ADDR32 against `.rdata'
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x193): relocation truncated to fit: R_X86_64_32S against symbol `stg_bh_upd_frame_info' defined in .text section in /build/ghc-9.0.2/rts/dist/build/libHSrts.a(Updates.o)
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x19d): relocation truncated to fit: IMAGE_REL_AMD64_ADDR32 against `.rdata'
+utils/runghc/dist-install/build/Main.o:fake:(.text+0x1eb): additional relocation overflows omitted from the output
+
+We notice `fake`, which is GHC failing to provide .file identifier in the source.
+We also see lots of R_X64_64_32S relocations, which are signed 32bit relocations.
+These fall with ASLR and high entropy base images from later binutils.
+
+The underlying issue is that GHC emits _absolute_ label loads (mov $... reg), instead
+of %rpi or other relative loads. This then leads to the linker emitting 32bit
+absolute relocation. With the final image being potentially loaded into high memory
+(e.g. dynamic base, and the base image being set to some high address), the linker
+starts falling over itself, because it simply can't resolve those absolute addresses
+in the 32bit slots.
+
+This was fixed in GHC upstream in https://gitlab.haskell.org/ghc/ghc/-/merge_requests/7449,
+while the patch in haskell.nix is a bit more pedestrian and just sets PIC on windows to
+always be on, and then uses the PIC pipeline.
