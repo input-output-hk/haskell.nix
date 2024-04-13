@@ -1,0 +1,98 @@
+diff --git a/compiler/GHC/CmmToAsm.hs b/compiler/GHC/CmmToAsm.hs
+index 23175a1..d812289 100644
+--- a/compiler/GHC/CmmToAsm.hs
++++ b/compiler/GHC/CmmToAsm.hs
+@@ -333,6 +333,13 @@ nativeCodeGen' dflags this_mod modLoc ncgImpl h us cmms
+         -- Pretty if it weren't for the fact that we do lots of little
+         -- printDocs here (in order to do codegen in constant space).
+         bufh <- newBufHandle h
++        let Module _u nm = (ncgThisModule config)
++        -- emit file prolue. Including file meta inforamtion. e.g. The
++        -- current name of the compile file. This may show up during linking,
++        -- and thus having the proper file name is essential.
++        _ <- emitNativeCode logger dflags config bufh $
++                text "\t.file \"" <> ftext (moduleNameFS nm) <> text ".hs\""
++
+         let ngs0 = NGS [] [] [] [] [] [] emptyUFM mapEmpty
+         (ngs, us', a) <- cmmNativeGenStream dflags this_mod modLoc ncgImpl bufh us
+                                          cmms ngs0
+diff --git a/compiler/GHC/CmmToAsm/PIC.hs b/compiler/GHC/CmmToAsm/PIC.hs
+index 1eb5f14..e74848f 100644
+--- a/compiler/GHC/CmmToAsm/PIC.hs
++++ b/compiler/GHC/CmmToAsm/PIC.hs
+@@ -156,10 +156,17 @@ cmmMakeDynamicReference config referenceKind lbl
+
+ cmmMakePicReference :: NCGConfig -> CLabel -> CmmExpr
+ cmmMakePicReference config lbl
+-  -- Windows doesn't need PIC,
+-  -- everything gets relocated at runtime
++  -- Windows used to be absolute 32bit only (small code model)
++  -- however with ASLR, and high entropy base images, we assume
++  -- everything to be RIP relative. This basically for windows
++  -- we want always PIC relative addressing.
+   | OSMinGW32 <- platformOS platform
+-  = CmmLit $ CmmLabel lbl
++  = CmmMachOp (MO_Add (wordWidth platform))
++          [ CmmReg (CmmGlobal PicBaseReg)
++          , CmmLit $ picRelative (wordWidth platform)
++                          (platformArch platform)
++                          (platformOS   platform)
++                          lbl ]
+
+   | OSAIX <- platformOS platform
+   = CmmMachOp (MO_Add W32)
+@@ -454,6 +461,8 @@ picRelative _ arch os lbl
+
+           in    result
+
++picRelative _ ArchX86_64 OSMinGW32 lbl = CmmLabel lbl
++
+ picRelative _ _ _ _
+         = panic "GHC.CmmToAsm.PIC.picRelative undefined for this platform"
+
+diff --git a/compiler/GHC/CmmToAsm/X86/CodeGen.hs b/compiler/GHC/CmmToAsm/X86/CodeGen.hs
+index 2cce508..376ebf0 100644
+--- a/compiler/GHC/CmmToAsm/X86/CodeGen.hs
++++ b/compiler/GHC/CmmToAsm/X86/CodeGen.hs
+@@ -338,6 +338,13 @@ stmtToInstrs bid stmt = do
+                   lbl <- mkAsmTempLabel <$> getUniqueM
+                   return $ unitOL $ UNWIND lbl tbl
+
++      CmmAssign reg src@(CmmLit lit)
++        | isFloatType ty         -> assignReg_FltCode format reg src
++        | is32Bit && isWord64 ty -> assignReg_I64Code      reg src
++        | otherwise              -> assignReg_IntCode format reg src
++          where ty = cmmRegType platform reg
++                format = cmmTypeFormat ty
++
+       CmmAssign reg src
+         | isFloatType ty         -> assignReg_FltCode format reg src
+         | is32Bit && isWord64 ty -> assignReg_I64Code      reg src
+@@ -345,6 +352,13 @@ stmtToInstrs bid stmt = do
+           where ty = cmmRegType platform reg
+                 format = cmmTypeFormat ty
+
++      CmmStore addr src@(CmmLit lit) _alignment
++        | isFloatType ty         -> assignMem_FltCode format addr src
++        | is32Bit && isWord64 ty -> assignMem_I64Code      addr src
++        | otherwise              -> assignMem_IntCode format addr src
++          where ty = cmmExprType platform src
++                format = cmmTypeFormat ty
++
+       CmmStore addr src _alignment
+         | isFloatType ty         -> assignMem_FltCode format addr src
+         | is32Bit && isWord64 ty -> assignMem_I64Code      addr src
+@@ -3443,7 +3457,12 @@ genSwitch :: CmmExpr -> SwitchTargets -> NatM InstrBlock
+ genSwitch expr targets = do
+   config <- getConfig
+   let platform = ncgPlatform config
+-  if ncgPIC config
++  -- Windows is a bit odd.  It's virtually PIC on x86_64, by preference of
++  -- %rip relative addressing to produce the appropriate IMAGE relative
++  -- relocations.  Absolute relocations start to fail with binutils switching
++  -- to default to high entropy ASLR and dynamic base.  For most things, we can
++  -- simply consider Windows to be PIC on x86_64.
++  if ncgPIC config || (platformOS platform) == OSMinGW32
+   then do
+         (reg,e_code) <- getNonClobberedReg (cmmOffset platform expr offset)
+            -- getNonClobberedReg because it needs to survive across t_code

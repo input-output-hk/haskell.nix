@@ -279,6 +279,13 @@ in {
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols.patch
                 ++ final.lib.optional (versionAtLeast "9.6"    && versionLessThan "9.8" && (final.stdenv.targetPlatform.isWindows || final.stdenv.targetPlatform.isMusl)) ./patches/ghc/ghc-9.6-0006-Adds-support-for-Hidden-symbols-2.patch
                 ++ fromUntil "9.9" "9.12" ./patches/ghc/ghc-9.9-Cabal-3.11.patch
+
+                # This patch will make windows stop emitting absolute relocations. This is one way in which binutils 2.36+ (with ASLR enabled), will just choke on the
+                # assembly we generate because it's always absolute (32bit) addressing modes.
+                # GHC from 9.6+ seems to have https://gitlab.haskell.org/ghc/ghc/-/merge_requests/7449, which should fix this as well.
+                ++ final.lib.optional (versionAtLeast "8.10" && versionLessThan "9.0" && (final.stdenv.targetPlatform.isWindows)) ./patches/ghc/windows-pseudo-pic-8.10.patch
+                ++ final.lib.optional (versionAtLeast "9.0" && versionLessThan "9.2" && (final.stdenv.targetPlatform.isWindows)) ./patches/ghc/windows-pseudo-pic.patch
+                ++ final.lib.optional (versionAtLeast "9.2" && versionLessThan "9.4" && (final.stdenv.targetPlatform.isWindows)) ./patches/ghc/windows-pseudo-pic-9.2.patch
                 ;
         in ({
             ghc865 = final.callPackage ../compiler/ghc (traceWarnOld "8.6" {
