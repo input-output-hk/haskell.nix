@@ -25,7 +25,7 @@ in
   #
   #    error: 'libcxxabi' was merged into 'libcxx'
   #
-  "c++abi" = [ if (__tryEval libcxxabi).success then libcxxabi else libcxx ];
+  "c++abi" = if (__tryEval libcxxabi).success then [ libcxxabi ] else [ libcxx ];
   system-cxx-std-lib = [];
   "stdc++" = gcclibs;
   "stdc++-6" = gcclibs;
