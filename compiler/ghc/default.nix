@@ -671,9 +671,14 @@ stdenv.mkDerivation (rec {
           ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
           cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
         done
-      '' + lib.optionalString stdenv.isDarwin ''
+      '' + lib.optionalString stdenv.isDarwin && (__tryEval libcxxabi).success ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        find . -name 'system*.conf*'
+        cat mk/system-cxx-std-lib-1.0.conf
+      '' + lib.optionalString stdenv.isDarwin && !(__tryEval libcxxabi).success ''
+        substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+          --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
       '' + lib.optionalString (installStage1 && stdenv.targetPlatform.isMusl) ''
@@ -756,9 +761,14 @@ stdenv.mkDerivation (rec {
     export XATTR=$(mktemp -d)/nothing
   '';
 } // lib.optionalAttrs useHadrian {
-  postConfigure = lib.optionalString stdenv.isDarwin ''
+  postConfigure = lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
     substituteInPlace mk/system-cxx-std-lib-1.0.conf \
       --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+    find . -name 'system*.conf*'
+    cat mk/system-cxx-std-lib-1.0.conf
+  '' + lib.optionalString (stdenv.isDarwin && !(__tryEval libcxxabi).success) ''
+    substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+      --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
     find . -name 'system*.conf*'
     cat mk/system-cxx-std-lib-1.0.conf
   '' + lib.optionalString (installStage1 && !haskell-nix.haskellLib.isCrossTarget && stdenv.targetPlatform.isMusl) ''
@@ -820,11 +830,17 @@ stdenv.mkDerivation (rec {
         ${hadrian}/bin/hadrian ${hadrianArgs} binary-dist-dir
         cd _build/bindist/ghc-*
         ./configure --prefix=$out ${lib.concatStringsSep " " configureFlags}
-        ${lib.optionalString stdenv.isDarwin ''
+        ${lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
           substituteInPlace mk/system-cxx-std-lib-1.0.conf \
             --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
           substituteInPlace lib/package.conf.d/system-cxx-std-lib-1.0.conf \
             --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
+        ''}
+        ${lib.optionalString (stdenv.isDarwin && !(__tryEval libcxxabi).success) ''
+          substituteInPlace mk/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
+          substituteInPlace lib/package.conf.d/system-cxx-std-lib-1.0.conf \
+            --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         ''}
         mkdir -p utils
         cp -r ../../../utils/completion utils
