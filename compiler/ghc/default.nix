@@ -671,12 +671,12 @@ stdenv.mkDerivation (rec {
           ${hadrian}/bin/hadrian ${hadrianArgs} _build/stage0/compiler/build/$a
           cp _build/stage0/compiler/build/$a compiler/GHC/Builtin/$a
         done
-      '' + lib.optionalString stdenv.isDarwin && (__tryEval libcxxabi).success ''
+      '' + lib.optionalString (stdenv.isDarwin && (__tryEval libcxxabi).success) ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib ${libcxxabi}/lib'
         find . -name 'system*.conf*'
         cat mk/system-cxx-std-lib-1.0.conf
-      '' + lib.optionalString stdenv.isDarwin && !(__tryEval libcxxabi).success ''
+      '' + lib.optionalString (stdenv.isDarwin && !(__tryEval libcxxabi).success) ''
         substituteInPlace mk/system-cxx-std-lib-1.0.conf \
           --replace 'dynamic-library-dirs:' 'dynamic-library-dirs: ${libcxx}/lib'
         find . -name 'system*.conf*'
