@@ -334,8 +334,8 @@ let
   };
 
   ghc-pkgs = {
-    Cabal.depends = ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "text" "time" "transformers" "unix"];
-    Cabal-syntax.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers" "unix"];
+    # Cabal.depends = ["Cabal-syntax" "array" "base" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "process" "text" "time" "transformers" "unix"];
+    # Cabal-syntax.depends = ["array" "base" "binary" "bytestring" "containers" "deepseq" "directory" "filepath" "mtl" "parsec" "pretty" "text" "time" "transformers" "unix"];
     array.depends = ["base"];
     base.depends = ["ghc-bignum" "ghc-prim" "rts"];
     binary.depends = ["array" "base" "bytestring" "containers"];

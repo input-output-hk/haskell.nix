@@ -2,7 +2,7 @@ final: _prev:
 let
   callCabal2Nix = _compiler-nix-name: name: src: final.buildPackages.stdenv.mkDerivation {
     name = "${name}-package.nix";
-    inherit src;
+    src = src.srcForCabal2Nix or src;
     nativeBuildInputs = [
       # It is not safe to check the nix-tools materialization here
       # as we would need to run this code to do so leading to
@@ -151,7 +151,7 @@ in rec {
               mkdir $out
               lndir -silent ${ghc.passthru.configured-src}/${subDir} $out
               lndir -silent ${ghc.generated}/libraries/ghc-boot/dist-install/build/GHC $out/GHC
-            '')
+            '') // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
           else if subDir == "compiler"
             then final.haskell-nix.haskellLib.cleanSourceWith {
               src = nix24srcFix (final.buildPackages.runCommand "ghc-src" { nativeBuildInputs = [final.buildPackages.xorg.lndir]; } ''
@@ -180,7 +180,7 @@ in rec {
               '');
               inherit subDir;
               includeSiblings = true;
-            }
+            } // { srcForCabal2Nix = ghc.passthru.configured-src + "/${subDir}"; }
             else if builtins.elem subDir ["libraries/ghc-heap" "utils/remote-iserv" "libraries/ghci" "libraries/template-haskell" "utils/iserv" "libraries/ghc-prim" "libraries/libiserv" "utils/iserv-proxy"]
               then "${ghc.passthru.configured-src}/${subDir}"
             else "${ghc.passthru.raw-src}/${subDir}";
